@@ -124,7 +124,7 @@ test("New Job books a maintenance visit, or starts a plan for a new customer", a
   await page.getByLabel("Name").fill(once);
   await page.getByLabel("Street address").fill("455 N Galvin Pkwy");
   await page.getByLabel("City").fill("Phoenix");
-  await page.getByLabel("State").fill("AZ");
+  await page.getByLabel("State", { exact: true }).fill("AZ");
   await page.getByRole("radio", { name: "Service", exact: true }).click();
   await expect(page.getByLabel("Second tech (optional)")).toHaveCount(0);
   await page.getByLabel("Date").fill(day);
@@ -151,7 +151,7 @@ test("New Job books a maintenance visit, or starts a plan for a new customer", a
   await page.getByLabel("Name").fill(weekly);
   await page.getByLabel("Street address").fill("1201 N Galvin Pkwy");
   await page.getByLabel("City").fill("Phoenix");
-  await page.getByLabel("State").fill("AZ");
+  await page.getByLabel("State", { exact: true }).fill("AZ");
   await page.getByRole("radio", { name: "Service", exact: true }).click();
   await page.getByLabel("Repeats").selectOption("weekly");
   await page.getByLabel("First visit").fill(day);

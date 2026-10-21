@@ -334,8 +334,8 @@ public final class QuoteFlow {
     @discardableResult
     public func addCustom(description: String, price: String, to quoteId: String) -> Bool {
         let text = description.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !text.isEmpty else {
-            error = "Describe the work."
+        if let problem = Limits.lineDescriptionError(text) {
+            error = problem
             return false
         }
         guard let cents = parseDollars(price), cents >= 0 else {
@@ -363,8 +363,8 @@ public final class QuoteFlow {
         var change = QuoteWrites.LineChange()
         if let description {
             let text = description.trimmingCharacters(in: .whitespacesAndNewlines)
-            guard !text.isEmpty else {
-                error = "Describe the work."
+            if let problem = Limits.lineDescriptionError(text) {
+                error = problem
                 return
             }
             if text != line.description { change.description = text }
@@ -415,6 +415,10 @@ public final class QuoteFlow {
             return
         }
         let subtotal = quote.lines.reduce(0) { $0 + lineTotal($1) }
+        if let tooLarge = Limits.discountTooLarge(cents, subtotal: subtotal) {
+            error = tooLarge
+            return
+        }
         let limit = techDiscountLimitBps(settings)
         guard discountAllowed(subtotal, cents, isManager, limit) else {
             error = "Techs can give up to \(percentText(limit))% off. Ask an owner for more."

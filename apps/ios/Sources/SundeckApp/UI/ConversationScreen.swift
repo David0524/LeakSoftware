@@ -44,6 +44,7 @@
             }
             .navigationTitle(conversation?.name ?? "")
             .navigationBarTitleDisplayMode(.large)
+            .discardOnBack(dirty: draft.hasUnsent)
             .task(id: "\(sync.revision)|\(session.company?.id ?? "")") { reload() }
             // Opening it marks it read for the whole team, and so does a new message while open.
             .task(id: conversation?.lastAt) {
@@ -311,6 +312,9 @@
         var sending = false
         var error: String?
 
+        /// Typed or picked and not sent: leaving the conversation asks first (owner, 2026-10-20).
+        var hasUnsent: Bool { !body.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty || !photos.isEmpty }
+
         var canSend: Bool {
             !sending && (!body.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty || !photos.isEmpty)
         }
@@ -524,6 +528,7 @@
             }
             .navigationTitle("New Message")
             .navigationBarTitleDisplayMode(.large)
+            .discardOnBack(dirty: draft.hasUnsent)
             .browserSheet($browser)
             .task(id: "\(sync.revision)|\(to)") { reload() }
         }

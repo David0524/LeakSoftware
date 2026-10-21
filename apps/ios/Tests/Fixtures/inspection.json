@@ -15104,6 +15104,793 @@
         }
       ],
       "result": {}
+    },
+    {
+      "args": [
+        {
+          "fields": [
+            {
+              "key": "start_psi",
+              "label": "Start pressure",
+              "type": "number",
+              "unit": "PSI",
+              "required": true,
+              "min": 0,
+              "max": 150
+            },
+            {
+              "key": "end_psi",
+              "label": "End pressure",
+              "type": "number",
+              "unit": "PSI",
+              "required": true,
+              "min": 0,
+              "max": 150
+            },
+            {
+              "key": "duration_min",
+              "label": "Duration",
+              "type": "number",
+              "unit": "min",
+              "min": 0,
+              "max": 1440
+            },
+            {
+              "key": "level",
+              "label": "Level",
+              "type": "number",
+              "min": 0.5
+            },
+            {
+              "key": "flow",
+              "label": "Flow",
+              "type": "number",
+              "unit": "gal",
+              "max": 2.5
+            },
+            {
+              "key": "temp",
+              "label": "Temperature",
+              "type": "number",
+              "min": -40,
+              "max": 120
+            }
+          ]
+        },
+        {
+          "start_psi": "1e23",
+          "end_psi": "-2",
+          "duration_min": 1441
+        }
+      ],
+      "result": {
+        "start_psi": "Enter start pressure between 0 and 150 PSI.",
+        "end_psi": "Enter end pressure between 0 and 150 PSI.",
+        "duration_min": "Enter duration between 0 and 1440 min."
+      }
+    },
+    {
+      "args": [
+        {
+          "fields": [
+            {
+              "key": "start_psi",
+              "label": "Start pressure",
+              "type": "number",
+              "unit": "PSI",
+              "required": true,
+              "min": 0,
+              "max": 150
+            },
+            {
+              "key": "end_psi",
+              "label": "End pressure",
+              "type": "number",
+              "unit": "PSI",
+              "required": true,
+              "min": 0,
+              "max": 150
+            },
+            {
+              "key": "duration_min",
+              "label": "Duration",
+              "type": "number",
+              "unit": "min",
+              "min": 0,
+              "max": 1440
+            },
+            {
+              "key": "level",
+              "label": "Level",
+              "type": "number",
+              "min": 0.5
+            },
+            {
+              "key": "flow",
+              "label": "Flow",
+              "type": "number",
+              "unit": "gal",
+              "max": 2.5
+            },
+            {
+              "key": "temp",
+              "label": "Temperature",
+              "type": "number",
+              "min": -40,
+              "max": 120
+            }
+          ]
+        },
+        {
+          "start_psi": 150,
+          "end_psi": "0",
+          "duration_min": "1440",
+          "level": "0.5",
+          "flow": 2.5
+        }
+      ],
+      "result": {}
+    },
+    {
+      "args": [
+        {
+          "fields": [
+            {
+              "key": "start_psi",
+              "label": "Start pressure",
+              "type": "number",
+              "unit": "PSI",
+              "required": true,
+              "min": 0,
+              "max": 150
+            },
+            {
+              "key": "end_psi",
+              "label": "End pressure",
+              "type": "number",
+              "unit": "PSI",
+              "required": true,
+              "min": 0,
+              "max": 150
+            },
+            {
+              "key": "duration_min",
+              "label": "Duration",
+              "type": "number",
+              "unit": "min",
+              "min": 0,
+              "max": 1440
+            },
+            {
+              "key": "level",
+              "label": "Level",
+              "type": "number",
+              "min": 0.5
+            },
+            {
+              "key": "flow",
+              "label": "Flow",
+              "type": "number",
+              "unit": "gal",
+              "max": 2.5
+            },
+            {
+              "key": "temp",
+              "label": "Temperature",
+              "type": "number",
+              "min": -40,
+              "max": 120
+            }
+          ]
+        },
+        {
+          "start_psi": "150.01",
+          "end_psi": 0,
+          "level": 0.49,
+          "flow": "2.6",
+          "temp": -41
+        }
+      ],
+      "result": {
+        "start_psi": "Enter start pressure between 0 and 150 PSI.",
+        "level": "Enter level of 0.5 or more.",
+        "flow": "Enter flow of 2.5 gal or less.",
+        "temp": "Enter temperature between -40 and 120."
+      }
+    },
+    {
+      "args": [
+        {
+          "fields": [
+            {
+              "key": "start_psi",
+              "label": "Start pressure",
+              "type": "number",
+              "unit": "PSI",
+              "required": true,
+              "min": 0,
+              "max": 150
+            },
+            {
+              "key": "end_psi",
+              "label": "End pressure",
+              "type": "number",
+              "unit": "PSI",
+              "required": true,
+              "min": 0,
+              "max": 150
+            },
+            {
+              "key": "duration_min",
+              "label": "Duration",
+              "type": "number",
+              "unit": "min",
+              "min": 0,
+              "max": 1440
+            },
+            {
+              "key": "level",
+              "label": "Level",
+              "type": "number",
+              "min": 0.5
+            },
+            {
+              "key": "flow",
+              "label": "Flow",
+              "type": "number",
+              "unit": "gal",
+              "max": 2.5
+            },
+            {
+              "key": "temp",
+              "label": "Temperature",
+              "type": "number",
+              "min": -40,
+              "max": 120
+            }
+          ]
+        },
+        {
+          "start_psi": "Infinity",
+          "end_psi": "abc",
+          "temp": -3
+        }
+      ],
+      "result": {
+        "start_psi": "Enter a number.",
+        "end_psi": "Enter a number."
+      }
+    },
+    {
+      "args": [
+        {
+          "fields": [
+            {
+              "key": "start_psi",
+              "label": "Start pressure",
+              "type": "number",
+              "unit": "PSI",
+              "required": true,
+              "min": 0,
+              "max": 150
+            },
+            {
+              "key": "end_psi",
+              "label": "End pressure",
+              "type": "number",
+              "unit": "PSI",
+              "required": true,
+              "min": 0,
+              "max": 150
+            },
+            {
+              "key": "duration_min",
+              "label": "Duration",
+              "type": "number",
+              "unit": "min",
+              "min": 0,
+              "max": 1440
+            },
+            {
+              "key": "level",
+              "label": "Level",
+              "type": "number",
+              "min": 0.5
+            },
+            {
+              "key": "flow",
+              "label": "Flow",
+              "type": "number",
+              "unit": "gal",
+              "max": 2.5
+            },
+            {
+              "key": "temp",
+              "label": "Temperature",
+              "type": "number",
+              "min": -40,
+              "max": 120
+            }
+          ]
+        },
+        {
+          "start_psi": 20,
+          "end_psi": 12,
+          "temp": 121
+        }
+      ],
+      "result": {
+        "temp": "Enter temperature between -40 and 120."
+      }
+    },
+    {
+      "args": [
+        {
+          "fields": [
+            {
+              "key": "x",
+              "label": "X",
+              "type": "number",
+              "min": 1e+21,
+              "max": 1e-7
+            }
+          ]
+        },
+        {
+          "x": 5
+        }
+      ],
+      "result": {
+        "x": "Enter x between 1e+21 and 1e-7."
+      }
+    },
+    {
+      "args": [
+        {
+          "fields": [
+            {
+              "key": "x",
+              "label": "X",
+              "type": "number",
+              "unit": "",
+              "max": 1
+            }
+          ]
+        },
+        {
+          "x": 5
+        }
+      ],
+      "result": {
+        "x": "Enter x of 1 or less."
+      }
+    }
+  ],
+  "previewTest": [
+    {
+      "args": [
+        {
+          "id": "tt",
+          "company_id": "c",
+          "key": "k",
+          "name": "Test",
+          "field_schema": {
+            "fields": [
+              {
+                "key": "start_psi",
+                "label": "Start pressure",
+                "type": "number",
+                "unit": "PSI",
+                "required": true,
+                "min": 0,
+                "max": 150
+              },
+              {
+                "key": "end_psi",
+                "label": "End pressure",
+                "type": "number",
+                "unit": "PSI",
+                "required": true,
+                "min": 0,
+                "max": 150
+              },
+              {
+                "key": "duration_min",
+                "label": "Duration",
+                "type": "number",
+                "unit": "min",
+                "min": 0,
+                "max": 1440
+              },
+              {
+                "key": "level",
+                "label": "Level",
+                "type": "number",
+                "min": 0.5
+              },
+              {
+                "key": "flow",
+                "label": "Flow",
+                "type": "number",
+                "unit": "gal",
+                "max": 2.5
+              },
+              {
+                "key": "temp",
+                "label": "Temperature",
+                "type": "number",
+                "min": -40,
+                "max": 120
+              }
+            ]
+          },
+          "schema_version": 1,
+          "calculator": "pressure_drop",
+          "result_options": [
+            "pass",
+            "fail",
+            "inconclusive"
+          ],
+          "sort_order": 1,
+          "active": true
+        },
+        {
+          "start_psi": "1e23",
+          "end_psi": "0"
+        }
+      ],
+      "result": {
+        "computed": {},
+        "suggested": null,
+        "summary": null
+      }
+    },
+    {
+      "args": [
+        {
+          "id": "tt",
+          "company_id": "c",
+          "key": "k",
+          "name": "Test",
+          "field_schema": {
+            "fields": [
+              {
+                "key": "start_psi",
+                "label": "Start pressure",
+                "type": "number",
+                "unit": "PSI",
+                "required": true,
+                "min": 0,
+                "max": 150
+              },
+              {
+                "key": "end_psi",
+                "label": "End pressure",
+                "type": "number",
+                "unit": "PSI",
+                "required": true,
+                "min": 0,
+                "max": 150
+              },
+              {
+                "key": "duration_min",
+                "label": "Duration",
+                "type": "number",
+                "unit": "min",
+                "min": 0,
+                "max": 1440
+              },
+              {
+                "key": "level",
+                "label": "Level",
+                "type": "number",
+                "min": 0.5
+              },
+              {
+                "key": "flow",
+                "label": "Flow",
+                "type": "number",
+                "unit": "gal",
+                "max": 2.5
+              },
+              {
+                "key": "temp",
+                "label": "Temperature",
+                "type": "number",
+                "min": -40,
+                "max": 120
+              }
+            ]
+          },
+          "schema_version": 1,
+          "calculator": "pressure_drop",
+          "result_options": [
+            "pass",
+            "fail",
+            "inconclusive"
+          ],
+          "sort_order": 1,
+          "active": true
+        },
+        {
+          "start_psi": "20",
+          "end_psi": "12",
+          "duration_min": "15"
+        }
+      ],
+      "result": {
+        "computed": {
+          "drop_psi": 8,
+          "drop_psi_per_min": 0.533
+        },
+        "suggested": "fail",
+        "summary": "Dropped 8 PSI in 15 min"
+      }
+    },
+    {
+      "args": [
+        {
+          "id": "tt",
+          "company_id": "c",
+          "key": "k",
+          "name": "Test",
+          "field_schema": {
+            "fields": [
+              {
+                "key": "start_psi",
+                "label": "Start pressure",
+                "type": "number",
+                "unit": "PSI",
+                "required": true,
+                "min": 0,
+                "max": 150
+              },
+              {
+                "key": "end_psi",
+                "label": "End pressure",
+                "type": "number",
+                "unit": "PSI",
+                "required": true,
+                "min": 0,
+                "max": 150
+              },
+              {
+                "key": "duration_min",
+                "label": "Duration",
+                "type": "number",
+                "unit": "min",
+                "min": 0,
+                "max": 1440
+              },
+              {
+                "key": "level",
+                "label": "Level",
+                "type": "number",
+                "min": 0.5
+              },
+              {
+                "key": "flow",
+                "label": "Flow",
+                "type": "number",
+                "unit": "gal",
+                "max": 2.5
+              },
+              {
+                "key": "temp",
+                "label": "Temperature",
+                "type": "number",
+                "min": -40,
+                "max": 120
+              }
+            ]
+          },
+          "schema_version": 1,
+          "calculator": "pressure_drop",
+          "result_options": [
+            "pass",
+            "fail",
+            "inconclusive"
+          ],
+          "sort_order": 1,
+          "active": true
+        },
+        {
+          "start_psi": "20",
+          "end_psi": "12",
+          "duration_min": "9999"
+        }
+      ],
+      "result": {
+        "computed": {
+          "drop_psi": 8
+        },
+        "suggested": "fail",
+        "summary": "Dropped 8 PSI"
+      }
+    },
+    {
+      "args": [
+        {
+          "id": "tt",
+          "company_id": "c",
+          "key": "k",
+          "name": "Test",
+          "field_schema": {
+            "fields": [
+              {
+                "key": "start_psi",
+                "label": "Start pressure",
+                "type": "number",
+                "unit": "PSI",
+                "required": true,
+                "min": 0,
+                "max": 150
+              },
+              {
+                "key": "end_psi",
+                "label": "End pressure",
+                "type": "number",
+                "unit": "PSI",
+                "required": true,
+                "min": 0,
+                "max": 150
+              },
+              {
+                "key": "duration_min",
+                "label": "Duration",
+                "type": "number",
+                "unit": "min",
+                "min": 0,
+                "max": 1440
+              },
+              {
+                "key": "level",
+                "label": "Level",
+                "type": "number",
+                "min": 0.5
+              },
+              {
+                "key": "flow",
+                "label": "Flow",
+                "type": "number",
+                "unit": "gal",
+                "max": 2.5
+              },
+              {
+                "key": "temp",
+                "label": "Temperature",
+                "type": "number",
+                "min": -40,
+                "max": 120
+              }
+            ]
+          },
+          "schema_version": 1,
+          "calculator": "pressure_drop",
+          "result_options": [
+            "pass",
+            "fail",
+            "inconclusive"
+          ],
+          "sort_order": 1,
+          "active": true
+        },
+        {
+          "start_psi": 20,
+          "end_psi": "",
+          "duration_min": 15
+        }
+      ],
+      "result": {
+        "computed": {},
+        "suggested": null,
+        "summary": null
+      }
+    },
+    {
+      "args": [
+        {
+          "id": "tt",
+          "company_id": "c",
+          "key": "k",
+          "name": "Test",
+          "field_schema": {
+            "fields": []
+          },
+          "schema_version": 1,
+          "calculator": "pressure_drop",
+          "result_options": [
+            "pass",
+            "fail",
+            "inconclusive"
+          ],
+          "sort_order": 1,
+          "active": true
+        },
+        {
+          "start_psi": "1e21",
+          "end_psi": 0,
+          "duration_min": 3
+        }
+      ],
+      "result": {
+        "computed": {
+          "drop_psi": 999999999999999900000,
+          "drop_psi_per_min": 333333333333333300000
+        },
+        "suggested": "fail",
+        "summary": "Dropped 999999999999999900000 PSI in 3 min"
+      }
+    },
+    {
+      "args": [
+        {
+          "id": "tt",
+          "company_id": "c",
+          "key": "k",
+          "name": "Test",
+          "field_schema": {
+            "fields": []
+          },
+          "schema_version": 1,
+          "calculator": "bucket_evaporation",
+          "result_options": [
+            "pass",
+            "fail",
+            "inconclusive"
+          ],
+          "sort_order": 1,
+          "active": true
+        },
+        {
+          "pool_start_in": 10,
+          "bucket_start_in": 10,
+          "duration_hours": 24,
+          "pool_end_in": 9.5,
+          "bucket_end_in": 9.75
+        }
+      ],
+      "result": {
+        "computed": {
+          "pool_loss_in": 0.5,
+          "bucket_loss_in": 0.25,
+          "unexplained_loss_in": 0.25,
+          "unexplained_in_per_day": 0.25
+        },
+        "suggested": "pass",
+        "summary": "0.25 in lost beyond evaporation over 24 h (0.25 in/day)"
+      }
+    },
+    {
+      "args": [
+        {
+          "id": "tt",
+          "company_id": "c",
+          "key": "k",
+          "name": "Test",
+          "field_schema": {
+            "fields": []
+          },
+          "schema_version": 1,
+          "calculator": null,
+          "result_options": [
+            "pass",
+            "fail",
+            "inconclusive"
+          ],
+          "sort_order": 1,
+          "active": true
+        },
+        {
+          "start_psi": 20,
+          "end_psi": 10
+        }
+      ],
+      "result": {
+        "computed": {},
+        "suggested": null,
+        "summary": null
+      }
     }
   ],
   "normalizeTestData": [

@@ -4,6 +4,7 @@ import { StyleSheet, TextInput, View } from "react-native";
 import {
   calculate,
   normalizeTestData,
+  previewTest,
   validateTestData,
   type Outcome,
   type TestData,
@@ -17,7 +18,8 @@ import { OUTCOME_LABELS } from "../../../../../../features/inspection/OutcomeChi
 import { confirmDeleteTest } from "../../../../../../features/inspection/remove";
 import { haptics } from "../../../../../../ui/haptics";
 import { Select } from "../../../../../../ui/Select";
-import { confirmDiscard, useSheetLock } from "../../../../../../ui/sheet";
+import { useDiscardChanges } from "../../../../../../ui/discard";
+import { useSheetLock } from "../../../../../../ui/sheet";
 import { color, space } from "../../../../../../ui/theme";
 
 /**
@@ -68,7 +70,9 @@ export default function TestScreen() {
   const snapshot = () => JSON.stringify({ typeId, componentId, values, result, notes });
   const [initial, setInitial] = useState(snapshot);
   const dirty = snapshot() !== initial;
-  useSheetLock(dirty, cancel);
+  useSheetLock(dirty);
+  // Every way out asks first while there are changes (owner, 2026-10-20).
+  const leave = useDiscardChanges(dirty);
   // The readings' fields, in order, for Return / Next.
   const [refs] = useState(() => new Map<string, RefObject<TextInput | null>>());
   const refFor = (key: string) => {
@@ -77,14 +81,10 @@ export default function TestScreen() {
     return ref;
   };
 
-  const calc = useMemo(
-    () => (type ? calculate(type, normalizeTestData(type.field_schema, values)) : null),
-    [type, values],
-  );
+  const calc = useMemo(() => (type ? previewTest(type, values) : null), [type, values]);
 
   function cancel() {
-    if (!dirty) return router.back();
-    confirmDiscard(() => router.back());
+    router.back();
   }
 
   const title = existing || savedId ? `Edit ${type?.name ?? "Test"}` : "Add Test";
@@ -155,7 +155,7 @@ export default function TestScreen() {
     if (stay) {
       setSavedId(id);
       setInitial(snapshot());
-    } else router.back();
+    } else leave(() => router.back());
     return id;
   }
 
@@ -280,7 +280,7 @@ export default function TestScreen() {
               wide
               onPress={() =>
                 confirmDeleteTest(services.sync, company.id, existing.id, type.name, () =>
-                  router.back(),
+                  leave(() => router.back()),
                 )
               }
             />

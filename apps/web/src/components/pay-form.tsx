@@ -6,6 +6,7 @@ import { loadStripe } from "@stripe/stripe-js";
 import type { PayState } from "@/app/actions/auth";
 import { Banner } from "./doc-ui";
 import { Button, cx } from "./ui";
+import { orOffline } from "@/lib/offline";
 
 /**
  * The customer's Pay button (quote deposits and invoices). The server starts a Stripe
@@ -35,7 +36,7 @@ export function PayForm({
   /** The page is being printed (?print=1): keep the look the PDF has always had. */
   print?: boolean;
 }) {
-  const [state, action, pending] = useActionState(pay, {});
+  const [state, action, pending] = useActionState(orOffline(pay), {});
   const [preview, setPreview] = useState(false);
   const checkout = state.checkout;
   // One Stripe.js instance per checkout, on the shop's account (direct charges).

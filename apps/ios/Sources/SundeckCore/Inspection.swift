@@ -194,6 +194,24 @@ public struct TestField: Codable, Equatable, Sendable {
     public var unit: String?
     public var required: Bool?
     public var options: [String]?
+    /// A number field's lowest and highest believable reading, e.g. 0 and 150 PSI.
+    public var min: Double?
+    public var max: Double?
+}
+
+extension TestField {
+    /// A bound that isn't a number (a shop's typo) is ignored, as in TypeScript.
+    public init(from decoder: Decoder) throws {
+        let c = try decoder.container(keyedBy: CodingKeys.self)
+        key = try c.decode(String.self, forKey: .key)
+        label = try c.decode(String.self, forKey: .label)
+        type = try c.decode(FieldType.self, forKey: .type)
+        unit = try c.decodeIfPresent(String.self, forKey: .unit)
+        required = try c.decodeIfPresent(Bool.self, forKey: .required)
+        options = try c.decodeIfPresent([String].self, forKey: .options)
+        min = (try? c.decodeIfPresent(Double.self, forKey: .min)) ?? nil
+        max = (try? c.decodeIfPresent(Double.self, forKey: .max)) ?? nil
+    }
 }
 
 /// A test type's form, plus its calculator settings.
@@ -517,7 +535,19 @@ private func toNumber(_ value: TestValue?) -> Double? {
     }
 }
 
-/// Errors by field key for a test's form.
+/// "Enter start pressure between 0 and 150 PSI."
+private func rangeMessage(_ field: TestField, _ min: Double?, _ max: Double?) -> String {
+    let unit = field.unit.flatMap { $0.isEmpty ? nil : " \($0)" } ?? ""
+    let label = ECMA.lowercase(field.label)
+    switch (min, max) {
+    case (let min?, let max?):
+        return "Enter \(label) between \(ECMA.numberString(min)) and \(ECMA.numberString(max))\(unit)."
+    case (let min?, nil): return "Enter \(label) of \(ECMA.numberString(min))\(unit) or more."
+    default: return "Enter \(label) of \(ECMA.numberString(max ?? 0))\(unit) or less."
+    }
+}
+
+/// Errors by field key: blanks in required fields, unreadable numbers, readings out of range.
 public func validateTestData(_ schema: TestFieldSchema, _ data: TestData) -> [String: String] {
     var errors: [String: String] = [:]
     for field in schema.fields {
@@ -532,8 +562,21 @@ public func validateTestData(_ schema: TestFieldSchema, _ data: TestData) -> [St
             if field.required == true { errors[field.key] = "Enter \(ECMA.lowercase(field.label))." }
             continue
         }
-        if field.type == .number && toNumber(value) == nil { errors[field.key] = "Enter a number." }
-        if field.type == .number && (toNumber(value) ?? 0) < 0 { errors[field.key] = "Can't be negative." }
+        if field.type == .number {
+            let min = field.min.flatMap { $0.isFinite ? $0 : nil }
+            let max = field.max.flatMap { $0.isFinite ? $0 : nil }
+            if let n = toNumber(value) {
+                if let min, n < min {
+                    errors[field.key] = rangeMessage(field, min, max)
+                } else if let max, n > max {
+                    errors[field.key] = rangeMessage(field, min, max)
+                } else if min == nil && n < 0 {
+                    errors[field.key] = "Can't be negative."
+                }
+            } else {
+                errors[field.key] = "Enter a number."
+            }
+        }
         if field.type == .select, let options = field.options, let value, !options.contains(ECMA.string(value)) {
             errors[field.key] = "Pick one of the options."
         }
@@ -617,6 +660,14 @@ public func calculate(_ type: TestType, _ data: TestData) -> Calculation {
     case .bucketEvaporation: return bucketEvaporation(data, options)
     case nil, .unsupported: return .empty
     }
+}
+
+/// The calculation shown while the tech types: a reading that fails the checks counts as blank,
+/// so an impossible number never reaches the summary ("Dropped 1e+23 PSI").
+public func previewTest(_ type: TestType, _ data: TestData) -> Calculation {
+    var usable = data
+    for key in validateTestData(type.fieldSchema, data).keys { usable[key] = .null }
+    return calculate(type, usable)
 }
 
 /// Store numbers as numbers, blanks as null, text trimmed.

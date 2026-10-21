@@ -15,6 +15,7 @@ import { parseServices, type Services } from "@leakbook/core";
 import { Banner } from "./doc-ui";
 import { ServicesChoice } from "./services-form";
 import { Button, FieldGroup, GroupedField } from "./ui";
+import { orOffline } from "@/lib/offline";
 
 /** The browser's time zone, so a new company's schedule shows local times. */
 function TimezoneInput() {
@@ -75,8 +76,8 @@ const PASSWORD = {
 
 export function SignInForm({ next }: { next: string }) {
   const [withLink, setWithLink] = useState(false);
-  const [passwordState, passwordAction, passwordPending] = useActionState(signIn, {});
-  const [linkState, linkAction, linkPending] = useActionState(sendSignInLink, {});
+  const [passwordState, passwordAction, passwordPending] = useActionState(orOffline(signIn), {});
+  const [linkState, linkAction, linkPending] = useActionState(orOffline(sendSignInLink), {});
 
   if (withLink) {
     return (
@@ -132,7 +133,7 @@ export function SignInForm({ next }: { next: string }) {
 }
 
 export function TrialForm({ services = "pool" }: { services?: Services }) {
-  const [state, action, pending] = useActionState(startTrial, {});
+  const [state, action, pending] = useActionState(orOffline(startTrial), {});
   // Leads (owner, 2026-10-16): once the email is valid, what's typed so far is kept, so
   // Sundeck Pro can help people who don't finish. Sent again only when something changed.
   const sent = useRef("");
@@ -211,7 +212,7 @@ export function TrialForm({ services = "pool" }: { services?: Services }) {
 }
 
 export function SetupForm({ suggested, services }: { suggested: string; services: Services }) {
-  const [state, action, pending] = useActionState(createCompany, {});
+  const [state, action, pending] = useActionState(orOffline(createCompany), {});
   return (
     <form action={action} className="space-y-4">
       <TimezoneInput />
@@ -243,7 +244,7 @@ export function InviteForm({
   signedInAs: string | null;
 }) {
   const [mode, setMode] = useState<"sign-up" | "sign-in">("sign-up");
-  const [state, action, pending] = useActionState(acceptInvite, {});
+  const [state, action, pending] = useActionState(orOffline(acceptInvite), {});
   if (state.message) return <Banner tone="success">{state.message}</Banner>;
 
   if (signedInAs) {
@@ -254,14 +255,18 @@ export function InviteForm({
           Signed in as <strong>{signedInAs}</strong>.
         </p>
         {signedInAs.toLowerCase() !== email.toLowerCase() ? (
+          // The database refuses another email, so there's nothing to press here.
           <Banner tone="warning">
             This invite is for {email}. Sign out and sign in with that email to accept it.
           </Banner>
-        ) : null}
-        <Messages state={state} />
-        <Button type="submit" disabled={pending} className="w-full">
-          {pending ? "Joining…" : "Accept Invite"}
-        </Button>
+        ) : (
+          <>
+            <Messages state={state} />
+            <Button type="submit" disabled={pending} className="w-full">
+              {pending ? "Joining…" : "Accept Invite"}
+            </Button>
+          </>
+        )}
       </form>
     );
   }

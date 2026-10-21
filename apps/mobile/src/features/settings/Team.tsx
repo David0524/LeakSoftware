@@ -52,6 +52,8 @@ import {
   SettingsList,
   useEditSheet,
 } from "./SettingsList";
+import { formChanged } from "../../lib/discard";
+import { useUnsavedChanges } from "../../ui/ModalSheet";
 
 // Settings › Team (the website's settings/team): what techs can do (owners), then the people as
 // one list (owner, 2026-10-20; docs/design/2026-10-20-team-week.md section 2): the active A to
@@ -371,6 +373,10 @@ function InviteForm({ owner, onDone }: { owner: boolean; onDone: (message: strin
   const [role, setRole] = useState<Role>("tech");
   const [error, setError] = useState<string | undefined>();
   const [busy, setBusy] = useState(false);
+  // Unsaved entries ask before closing (owner, 2026-10-20: "Discard changes?" everywhere).
+  const entries = { email, role };
+  const [startEntries] = useState(entries);
+  useUnsavedChanges(formChanged(startEntries, entries));
   async function create() {
     const address = email.trim().toLowerCase();
     if (!/^\S+@\S+\.\S+$/.test(address)) return setError("Enter a valid email.");
@@ -461,6 +467,10 @@ function ProfileForm({
     emergency_phone: profile?.emergency_phone ?? "",
     notes: profile?.notes ?? "",
   });
+  // Unsaved entries ask before closing (owner, 2026-10-20: "Discard changes?" everywhere).
+  const entries = { ...f, role, tech };
+  const [startEntries] = useState(entries);
+  useUnsavedChanges(formChanged(startEntries, entries));
   const [errors, setErrors] = useState<Partial<Record<keyof TeamProfileForm, string>>>({});
   const set = (k: keyof TeamProfileForm) => (v: string) => setF((o) => ({ ...o, [k]: v }));
   // Where their day starts (owner, 2026-10-21): their member_start row, owners and admins only.

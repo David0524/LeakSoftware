@@ -23,6 +23,8 @@ import { confirmDestructive } from "../../ui/confirm";
 import { haptics } from "../../ui/haptics";
 import { color, MAX_TEXT_SCALE, space, type } from "../../ui/theme";
 import { ManagersOnly } from "./SettingsList";
+import { formChanged } from "../../lib/discard";
+import { useUnsavedChanges } from "../../ui/ModalSheet";
 
 // Settings › Phone and Texting (the website's settings/phone): a company number is needed to
 // text customers. Get a new one (area code, then pick), or use the shop's own; then the line's
@@ -264,6 +266,8 @@ function NewNumber({ act }: { act: Act }) {
 
 function KeepNumber({ act }: { act: Act }) {
   const [number, setNumber] = useState("");
+  // A number typed but not sent asks before leaving (owner, 2026-10-20).
+  useUnsavedChanges(number.trim() !== "");
   const [error, setError] = useState<string | undefined>();
   const [busy, setBusy] = useState(false);
   async function keep() {
@@ -306,14 +310,19 @@ function LineSettings({ line, team, act }: { line: Line; team: Teammate[]; act: 
   const [greeting, setGreeting] = useState(line.voicemail_greeting ?? "");
   const [rings, setRings] = useState<string[]>(team.filter((t) => t.rings).map((t) => t.user_id));
   const [busy, setBusy] = useState(false);
+  // Unsaved entries ask before leaving (owner, 2026-10-20: "Discard changes?" everywhere).
+  const entries = { pictures, greeting, rings: [...rings].sort() };
+  const [startEntries, setStartEntries] = useState(entries);
+  useUnsavedChanges(formChanged(startEntries, entries));
   async function save() {
     setBusy(true);
-    await act("save", {
+    const r = await act("save", {
       pictures,
       ring_user_ids: rings,
       voicemail_greeting: greeting.trim() || null,
     });
     setBusy(false);
+    if (!r.error && !r.fields) setStartEntries(entries);
   }
   return (
     <Section title="Texts and calls">

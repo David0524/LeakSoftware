@@ -42,7 +42,8 @@ import {
 import { PadBlock } from "../../../../features/report/PadBlock";
 import { InspectionReview } from "../../../../features/report/InspectionReport";
 import { ReportTests } from "../../../../features/report/ReportTests";
-import { confirmDiscard, useBackPrompt } from "../../../../ui/sheet";
+import { signerNameError } from "../../../../lib/limits";
+import { useDiscardChanges } from "../../../../ui/discard";
 import { color, face, space } from "../../../../ui/theme";
 
 /**
@@ -81,10 +82,10 @@ export default function ReviewScreen() {
   // (owner, 2026-10-20). Finishing leaves without asking.
   const signed = strokes.length > 0 && busy === null;
   function cancel() {
-    if (!signed) return router.back();
-    confirmDiscard(() => router.back());
+    router.back();
   }
-  useBackPrompt(signed, cancel);
+  // Every way out asks first (owner, 2026-10-20).
+  const leave = useDiscardChanges(signed);
 
   const bar = (
     <Stack.Screen
@@ -125,6 +126,8 @@ export default function ReviewScreen() {
     if (!customerAway && purposes.length) {
       if (!purpose) return setError("Choose what this signature is for.");
       if (!signer) return setError("Enter your name.");
+      const tooLong = signerNameError(signer);
+      if (tooLong) return setError(tooLong);
       if (inkLength(strokes) < MIN_INK) return setError("Sign in the box with your finger.");
     }
     if (customerAway && !draft) return setError("Write the draft first, then finish it here.");
@@ -153,13 +156,13 @@ export default function ReviewScreen() {
     }
     if (!draft) {
       // Offline or before the draft: the report is finished from the Report tab later.
-      router.back();
+      leave(() => router.back());
       return;
     }
     try {
       setStep(0);
       await finishReportFromPhone(draft.id, customerAway, setStep);
-      router.back();
+      leave(() => router.back());
     } catch (e) {
       if (customerAway) {
         setError(e instanceof Error ? e.message : String(e));
@@ -167,7 +170,7 @@ export default function ReviewScreen() {
         return;
       }
       // Signed, but not finished yet: the Report tab offers Finish Report.
-      router.back();
+      leave(() => router.back());
     }
   }
 

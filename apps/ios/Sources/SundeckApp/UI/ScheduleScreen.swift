@@ -57,6 +57,7 @@
 
         var body: some View {
             ScreenScroll(spacing: 16) {
+                RootLargeTitle(stackSpacing: 16)
                 if let board, let company = session.company {
                     PageHeader {
                         Text(board.title)
@@ -132,9 +133,10 @@
                 }
             }
             .refreshable { await sync.syncNow() }
+            .rootTitleScroll()
             // A change's result has one Undo for the whole change (undo-and-redo.md).
             .resultBanner($banner, onUndo: undo.map { u in { undoLast(u) } })
-            .navigationTitle("Schedule")
+            .rootTitle("Schedule")
             .toolbar { NewJobToolbar(back: "Schedule") }
             .sensoryFeedback(.success, trigger: saved)
             .sensoryFeedback(.error, trigger: failed)
@@ -1563,8 +1565,9 @@
                                 .foregroundStyle(Color.warning)
                         }
                         if let n = job.number {
+                            // Verbatim: a number put in a Text literal is formatted, "#1,038".
                             Text(verbatim: "#\(n)").textRole(.footnote).foregroundStyle(Color.textMuted)
-                                .accessibilityLabel("Job \(n)")
+                                .accessibilityLabel("Job " + String(n))
                         }
                     }
                     if !job.address.isEmpty {

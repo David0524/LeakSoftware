@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { useId, type ComponentProps, type CSSProperties, type ReactNode } from "react";
+import { Fragment, useId, type ComponentProps, type CSSProperties, type ReactNode } from "react";
 import { JOB_STATUS_LABELS, type JobStatus } from "@leakbook/core";
 import { NavBar } from "./nav-bar";
 
@@ -142,14 +142,39 @@ export function PageHeader({
           </Link>
         </p>
       ) : null}
-      <div className="mb-4 flex flex-wrap items-end justify-between gap-x-4 gap-y-3 sm:mb-6">
-        <div className="min-w-0">
-          {/* Phones: the iOS large title (34 pt); it hands off to the bar as it scrolls. */}
+      <div
+        data-page-header
+        className={cx(
+          "mb-4 flex flex-wrap items-end justify-between gap-x-4 gap-y-3 sm:mb-6",
+          // Phones without Back: the title moves up into the navigation bar's row, beside the
+          // "+" (owner, 2026-10-20), and the page rises with it. NavBar sets data-stacked when
+          // a word of the title is too wide to fit there.
+          !back && "max-sm:[&:not([data-stacked])]:-mt-11",
+        )}
+      >
+        <div className={cx("min-w-0", !back && "max-sm:basis-full")}>
+          {/* Phones: the iOS large title (34 pt); it hands off to the bar as it scrolls. Beside
+              the bar's action, it keeps clear of it (NavBar measures it into --nav-action) and
+              wraps instead (one line is 42.5 tall, centered on the bar's 44 pt row). */}
           <h1
             id={titleId}
-            className="font-display text-[2.125rem] leading-tight font-extrabold sm:text-3xl"
+            className={cx(
+              "font-display text-[2.125rem] leading-tight font-extrabold sm:text-3xl",
+              !back &&
+                (navAction
+                  ? "max-sm:pr-[var(--nav-action,2.75rem)]"
+                  : "max-sm:pr-[var(--nav-action,0px)]"),
+            )}
           >
-            {title}
+            {back
+              ? title
+              : // One span a word, so NavBar can tell whether the widest one fits beside the "+".
+                title.split(" ").map((word, i) => (
+                  <Fragment key={i}>
+                    {i ? " " : null}
+                    <span>{word}</span>
+                  </Fragment>
+                ))}
           </h1>
           {subtitle ? <div className="mt-1 text-text-muted">{subtitle}</div> : null}
         </div>

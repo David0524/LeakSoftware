@@ -67,7 +67,13 @@
             // The customer's name on top, the job number smaller below (owner, 2026-10-20).
             .navigationTitle(job.map(jobPageTitle) ?? "New Job")
             .navigationBarTitleDisplayMode(.large)
+            // An invoice or quote line typed but not added: Back asks first (owner, 2026-10-20).
+            .discardOnBack(dirty: app.unsavedEdits.any(under: "job:\(jobId)"))
             .task(id: sync.revision) { reload() }
+            // First under Recent in search (docs/plans/search-and-activity.md).
+            .task(id: job.map { recentItem(job: $0) }) {
+                if let job { RecentSearches(kv: sync.kv).opened(recentItem(job: job)) }
+            }
             .sensoryFeedback(.success, trigger: changes)
             .alert(
                 "Couldn’t Save", isPresented: Binding(get: { saveError != nil }, set: { if !$0 { saveError = nil } })

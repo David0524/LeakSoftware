@@ -230,7 +230,8 @@ From `tokens.space`: 4, 8, 12, 16, 24, 32, 48.
 - **Page margins: 16** left and right. Content does not touch the screen edge, except sideways
   scrolling rows (filter pills, "whose day" pills, Needs a Time), which run to the edge and start
   16 in.
-- Below the navigation bar: the large title starts right under the 44 pt bar (plus the safe area).
+- Below the navigation bar: the large title starts right under the 44 pt bar (plus the safe area);
+  on tab roots it is in the bar's row instead (3.1).
 - Large title block: subtitle 4 below the title; 16 below the block to the first content. Content
   under the title on the job page: the section switcher starts 16 lower.
 - Between grouped lists and cards on a screen: **24**. Between a section label and its group: 8.
@@ -314,7 +315,12 @@ Look, top to bottom:
      `link` at 10% behind it.
    - Background: transparent while at the top (the page's `bg` shows through); once content
      scrolls under it, the bar material (2.5) with a 0.5 hairline at its bottom.
-2. **The large title** in the content, 16 from the left: `largeTitle`, `text` color.
+2. **The large title** in the content, 16 from the left: `largeTitle`, `text` color. On screens
+   with no Back (the tab roots) it sits **in the bar's row**, left of the right-hand buttons and
+   centered on them, and the page rises with it (owner, 2026-10-20). It keeps clear of the buttons
+   and wraps between words; when its widest word can't fit beside them (very large text), it takes
+   its own row under the bar, as with Back. The small title fades in once half of it has scrolled
+   off the top.
 3. **The subtitle**, optional, 4 below: body 17, `textMuted`. It can hold inline content (Today's
    date and weather; the job's status chip, type and date; Schedule's date and "· Today" link).
 4. **Header actions**, optional, under the subtitle: a row of buttons (Today's "Open Route in
@@ -323,6 +329,11 @@ Look, top to bottom:
 
 Build:
 
+- Tab roots (title in the bar's row): web `PageHeader` without `back` (NavBar measures the action
+  into `--nav-action`); Swift `.rootTitle(_:)`, `RootLargeTitle()` and `.rootTitleScroll()`
+  (`UI/RootTitle.swift`: an inline bar whose small title, background and iOS 26 scroll edge effect
+  wait until the title has scrolled away); Expo `useScreenChrome` draws the title in the page on
+  both platforms for a tab's first screen, with the native iPhone bar's large title off.
 - Swift: `NavigationStack` with `.navigationTitle` and `.navigationBarTitleDisplayMode(.large)`.
   Set the large title font once at launch:
   `UINavigationBar.appearance().largeTitleTextAttributes = [.font: UIFontMetrics(forTextStyle:

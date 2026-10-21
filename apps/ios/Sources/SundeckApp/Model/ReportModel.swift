@@ -281,7 +281,10 @@ public final class ReportFlow {
 
     /// Saves every pending edit in one write of `final_sections`, so no edit overwrites
     /// another. Only a draft is edited: a sent report never changes.
-    public func saveEdits() {
+    /// `keepTyping` (saving by itself while the field is still in use): the field keeps showing
+    /// what was typed, so a trailing space or new line isn't taken away mid-sentence. Nothing is
+    /// written when the text is what's saved already.
+    public func saveEdits(keepTyping: Bool = false) {
         guard !edits.isEmpty else { return }
         guard let draft, let sections = draft.finalSections else {
             edits = [:]
@@ -293,8 +296,15 @@ public final class ReportFlow {
             } ?? s
         }
         do {
-            try sync.write("report", id: draft.id, companyId: companyId, ["final_sections": try json(next)])
-            edits = [:]
+            if next != sections {
+                try sync.write("report", id: draft.id, companyId: companyId, ["final_sections": try json(next)])
+            }
+            edits =
+                keepTyping
+                ? edits.filter { key, typed in
+                    sections.contains { $0.key == key }
+                        && typed != typed.trimmingCharacters(in: .whitespacesAndNewlines)
+                } : [:]
         } catch {
             saveError = String(describing: error)
         }
@@ -391,6 +401,7 @@ public final class ReportFlow {
                 guard let id else { throw WebAPI.Failure(description: "There’s no draft to finish.") }
                 if queues { return keep(.finish, reportId: id, to: nil) }
                 _ = try await server.finish(reportId: id, customerAway: false)
+                sends?.forget(reportId: id, action: .finish)
                 message = "Report finished. Send it to the customer below."
             case .email, .text:
                 let id = reportId ?? draft?.id
@@ -414,11 +425,25 @@ public final class ReportFlow {
                 let sent = try await server.send(
                     reportId: id, channel: action == .email ? .email : .smsDevice,
                     to: action == .email ? email : customer?["phone"]?.string)
+                // Tapped offline before: that copy doesn't go too.
+                sends?.forget(reportId: id, action: action == .email ? .email : .text)
                 if action == .text {
                     share = sent.message
                 } else {
                     message = "Sent to \(email)."
                 }
+            }
+        } catch let failure as WebAPI.Failure
+            where failure.description == ReportSendText.uploadsPending && action != .draft && sends != nil
+        {
+            // Photos still uploading: it waits on the phone and goes once they're up (apps/mobile).
+            if let id = reportId ?? draft?.id {
+                let to =
+                    action == .email
+                    ? (self.to ?? customer?["email"]?.string ?? "").trimmingCharacters(in: .whitespacesAndNewlines)
+                    : action == .text ? customer?["phone"]?.string : nil
+                keep(action == .finish ? .finish : action == .email ? .email : .text, reportId: id, to: to)
+                message = ReportSendText.willSendAfterUploads
             }
         } catch {
             let text = (error as? WebAPI.Failure)?.description ?? String(describing: error)

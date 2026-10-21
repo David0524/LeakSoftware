@@ -3,13 +3,14 @@
 import { useActionState } from "react";
 import { deleteMyAccount } from "@/app/actions/account";
 import { Button, Field, Notice } from "./ui";
+import { orOffline } from "@/lib/offline";
 
 /**
  * Delete My Account (M11; App Store rule 5.1.1(v)). Folded away and confirmed by typing,
  * since it can't be undone (apple-design: destructive actions get a warning).
  */
 export function DeleteAccount() {
-  const [state, action, pending] = useActionState(deleteMyAccount, {});
+  const [state, action, pending] = useActionState(orOffline(deleteMyAccount), {});
   return (
     <details className="mt-6 card px-4 py-1.5">
       <summary className="flex min-h-12 cursor-pointer items-center font-medium text-status-fail">

@@ -30,8 +30,9 @@
             let company = session.company
             let working = line?.status == "active"
             List {
-                if let line, working {
-                    Section {
+                Section {
+                    RootLargeTitle(stackSpacing: 0).plainListRow()
+                    if let line, working {
                         PageHeader(subtitle: "Your company number: \(formatPhone(line.number))").plainListRow()
                     }
                 }
@@ -82,8 +83,8 @@
             }
             .groupedList()
             .refreshable { await sync.syncNow() }
-            .navigationTitle("Messages")
-            .navigationBarTitleDisplayMode(.large)
+            .rootTitleScroll()
+            .rootTitle("Messages", trailingButtons: working ? 1 : 0)
             .toolbar {
                 if working {
                     ToolbarItem(placement: .topBarTrailing) {

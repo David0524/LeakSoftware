@@ -19,13 +19,14 @@ import { useCompany } from "../../state/session";
 import { Button, Field, Group, ListRow, Section, T } from "../../ui/components";
 import { confirmDestructive } from "../../ui/confirm";
 import { haptics } from "../../ui/haptics";
-import { ModalSheet } from "../../ui/ModalSheet";
+import { ModalSheet, useUnsavedChanges } from "../../ui/ModalSheet";
 import { Select } from "../../ui/Select";
 import { color, face, MAX_TEXT_SCALE, space, type } from "../../ui/theme";
 import { CleaningIcon, cleaningType, usePlanCleanings } from "./Cleanings";
 import { DateField, TimeField } from "../schedule/DateField";
 import { checkPlan, firstVisitHint, type PlanErrors } from "./plan";
 import { PlanRepeat } from "./PlanRepeat";
+import { formChanged } from "../../lib/discard";
 
 type Plan = ServicePlanRow & { notes?: string | null };
 
@@ -209,6 +210,9 @@ function PlanSheet({
     endsOn: plan?.ends_on ?? "",
     notes: plan?.notes ?? "",
   });
+  // Unsaved entries ask before closing (owner, 2026-10-20: "Discard changes?" everywhere).
+  const [startF] = useState(f);
+  useUnsavedChanges(formChanged(startF, f));
   const [errors, setErrors] = useState<PlanErrors>({});
   const set = (k: keyof typeof f) => (v: string) => setF((x) => ({ ...x, [k]: v }));
 

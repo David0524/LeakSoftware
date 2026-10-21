@@ -26,6 +26,15 @@ function Badge({ count, className }: { count?: number; className?: string }) {
   );
 }
 
+/** Something new (Activity), as iOS marks it: a small dot in the tint color, read as "New". */
+export function Dot({ className, label = "New" }: { className?: string; label?: string }) {
+  return (
+    <span className={cx("inline-block size-2.5 shrink-0 rounded-full bg-primary", className)}>
+      <span className="sr-only">{label}</span>
+    </span>
+  );
+}
+
 interface Icon {
   /** The outline drawn when the tab isn't selected (and in the desktop lists). */
   line: ReactNode;
@@ -85,6 +94,9 @@ const ICONS: Record<string, Icon> = {
     cut: "M9 8h6M9 12h6M9 16h3",
   },
   "/dashboard": { line: <path d="M4 20V10M10 20V4M16 20v-7M22 20H2" /> },
+  "/activity": {
+    line: <path d="M3 12h4l3-8 4 16 3-8h4" />,
+  },
   "/more": {
     line: (
       <>
@@ -111,7 +123,7 @@ function TabIcon({ href, selected }: { href: string; selected: boolean }) {
   return (
     <svg
       viewBox="0 0 24 24"
-      className="size-7"
+      className="size-[min(1.75rem,42px)]"
       fill="none"
       stroke="currentColor"
       strokeWidth="1.8"
@@ -146,7 +158,7 @@ export function TabBar({ links: all }: { links: OfficeLink[] }) {
   const path = usePathname();
   const overflow = all.length > 5 ? all.slice(4) : [];
   const links: OfficeLink[] = overflow.length
-    ? [...all.slice(0, 4), { href: "/more", label: "More" }]
+    ? [...all.slice(0, 4), { href: "/more", label: "More", dot: overflow.some((o) => o.dot) }]
     : all;
   return (
     // The full-width layer under the floating bar catches taps that miss it (the margins
@@ -155,8 +167,13 @@ export function TabBar({ links: all }: { links: OfficeLink[] }) {
     // page is still scrolling or the browser's toolbar is moving.
     <div
       data-testid="tab-bar-layer"
-      className="fixed inset-x-0 bottom-0 z-30 transform-gpu touch-manipulation px-3 pt-2 pb-[max(0.75rem,env(safe-area-inset-bottom))] sm:hidden"
+      className="fixed inset-x-0 bottom-0 z-30 transform-gpu touch-manipulation px-3 pt-(--tab-bar-top) pb-(--tab-bar-bottom) sm:hidden"
     >
+      {/* Large text (owner, 2026-10-20): the bar grows with the text, its labels up to 13 px
+          and its symbols and height up to one and a half times, then stops, as
+          iOS keeps its tab bar compact at accessibility sizes. A label that still doesn't fit
+          is cut short, and on a very narrow screen the tabs show only their symbols (each
+          keeps its name for VoiceOver). */}
       <nav aria-label="Main" className="glass rounded-[28px] px-1">
         <ul className="flex">
           {links.map((l) => {
@@ -164,12 +181,12 @@ export function TabBar({ links: all }: { links: OfficeLink[] }) {
               inSection(path, l) ||
               (l.href === "/more" && overflow.some((o) => inSection(path, o)));
             return (
-              <li key={l.href} className="flex-1">
+              <li key={l.href} className="@container min-w-0 flex-1">
                 <Link
                   href={l.href}
                   aria-current={active ? "page" : undefined}
                   className={cx(
-                    "flex min-h-14 flex-col items-center justify-center gap-0.5 rounded-3xl text-[0.6875rem] font-medium",
+                    "flex min-h-(--tab-bar-row) flex-col items-center justify-center gap-0.5 rounded-3xl text-[min(0.6875rem,13px)] font-medium",
                     active ? "text-link" : "text-text-muted",
                   )}
                 >
@@ -179,8 +196,11 @@ export function TabBar({ links: all }: { links: OfficeLink[] }) {
                       count={l.badge}
                       className="absolute -top-1 left-4 bg-primary text-on-primary"
                     />
+                    {l.dot && !l.badge ? (
+                      <Dot className="absolute -top-0.5 -right-1" label="New activity" />
+                    ) : null}
                   </span>
-                  {l.label}
+                  <span className="max-w-full truncate px-0.5 @max-[44px]:sr-only">{l.label}</span>
                 </Link>
               </li>
             );
@@ -271,6 +291,7 @@ export function DesktopNav({
             className={barLink(moreActive || open)}
           >
             More
+            {more.some((l) => l.dot) ? <Dot label="New activity" /> : null}
             <svg
               viewBox="0 0 24 24"
               className={cx("size-4 transition-transform", open && "rotate-180")}
@@ -305,7 +326,8 @@ export function DesktopNav({
                       <span className="text-text-muted [&_svg]:size-6">
                         <TabIcon href={l.href} selected={false} />
                       </span>
-                      {l.label}
+                      <span className="flex-1">{l.label}</span>
+                      {l.dot ? <Dot /> : null}
                     </Link>
                   </li>
                 );

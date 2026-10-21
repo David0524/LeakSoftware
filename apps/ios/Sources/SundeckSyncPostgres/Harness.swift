@@ -99,6 +99,13 @@ public final class TestDatabase: Sendable {
         }
         try await texts(
             "insert into membership (company_id, user_id, role) values (\(id)::uuid, \(tech.id)::uuid, 'tech')")
+        // The scenarios have the tech work on jobs nobody is assigned to, so the shop lets techs
+        // see every job (new shops start with only their own, 2026-10-20).
+        try await texts(
+            """
+            update company set settings = settings || '{"techs_see_all_jobs": true}'::jsonb
+            where id = \(id)::uuid
+            """)
         var byKey: [String: String] = [:]
         let rows = try await client.query(
             """

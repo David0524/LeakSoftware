@@ -275,6 +275,19 @@ public final class SyncService {
         changed()
     }
 
+    /// True while a photo, video, voice note or signature image of this job is still waiting to
+    /// upload, so a report sent now would miss it (apps/mobile `hasPendingUploads`).
+    public func hasPendingUploads(jobId: String) -> Bool {
+        let rows = try? store.database.query(
+            """
+            select count(*) as n from upload_queue q
+              join sync_records r on r.table_name = q.record_table and r.id = q.media_id
+             where json_extract(r.data, '$.job_id') = ?
+            """, [.text(jobId)])
+        if case .integer(let n)? = rows?.first?["n"] { return n > 0 }
+        return false
+    }
+
     /// True while local edits to this row (or, without an id, this table) are unsent.
     public func hasPendingWrites(_ table: String, _ id: String? = nil) -> Bool {
         let sql =

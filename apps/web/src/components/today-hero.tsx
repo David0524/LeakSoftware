@@ -27,6 +27,7 @@ import {
 } from "./icons";
 import { OnMyWayMessage } from "./on-my-way";
 import { TodayComplete } from "./today-complete";
+import { DoLaterButton } from "./today-reorder";
 import type { SendPrompt } from "./job-work";
 import { showBanner } from "./top-banner";
 import { cx } from "./ui";
@@ -97,6 +98,7 @@ export function TodayHeroCard({
   timeZone,
   mine,
   onMyWay,
+  laterIds,
 }: {
   /** The day's stops in route order, as core's rule reads them. */
   stops: HeroStop[];
@@ -106,6 +108,12 @@ export function TodayHeroCard({
   timeZone: string;
   mine: boolean;
   onMyWay: HeroOnMyWay;
+  /**
+   * Stops Do Later can move, when the person viewing may change the order (owner, 2026-10-20;
+   * docs/plans/today-reorder.md): Do Later shows on the card's stop in the Up next and On the
+   * way moments, and for 5 seconds after it, "Moved." and Undo.
+   */
+  laterIds?: string[];
 }) {
   // The day as it stands: browsing is put away when it changes (a stop started or completed,
   // a new day), and when the page comes back to the front.
@@ -346,7 +354,8 @@ export function TodayHeroCard({
         {startRow ? (
           <>
             {c.next ? <p className={cx("mt-3 text-[0.9375rem]", SOFT)}>{c.next}</p> : null}
-            <div className="mt-3 flex items-center gap-2" data-testid="hero-start-row">
+            {/* The round buttons go under Start when the text is too large for one row. */}
+            <div className="mt-3 flex flex-wrap items-center gap-2" data-testid="hero-start-row">
               {/* Fills the row on phones; a comfortable width, not the whole card, when wider. */}
               <div className="min-w-28 flex-1 sm:max-w-xs">
                 <Primary action="start_job" job={job!} inline />
@@ -357,16 +366,18 @@ export function TodayHeroCard({
         ) : (
           <>
             {c.next || contact ? (
-              <div className="mt-3 flex items-center gap-3">
-                <p className={cx("min-w-0 flex-1 text-[0.9375rem]", SOFT)}>{c.next}</p>
+              // The round buttons go under the Next line when the text is too large for one row.
+              <div className="mt-3 flex flex-wrap items-center gap-3">
+                <p className={cx("min-w-0 flex-[1_1_5rem] text-[0.9375rem]", SOFT)}>{c.next}</p>
                 {contact}
               </div>
             ) : null}
 
-            {/* One row, equal widths: style, not size, marks the main action (buttons.md). */}
+            {/* One row, equal widths: style, not size, marks the main action (buttons.md);
+              stacked when the text is too large for two side by side. */}
             {(actions.primary && job) ||
             ((actions.complete || actions.undo) && job && (!job.done || job.undo)) ? (
-              <div className="mt-4 flex gap-2.5 [&>*]:min-w-0 [&>*]:flex-1">
+              <div className="mt-4 flex flex-wrap gap-2.5 [&>*]:min-w-0 [&>*]:flex-[1_1_7rem]">
                 {actions.primary && job ? (
                   <div>
                     <Primary action={actions.primary} job={job} />
@@ -407,6 +418,17 @@ export function TodayHeroCard({
             ) : null}
           </>
         )}
+
+        {job && laterIds && (hero.moment === "ahead" || hero.moment === "driving") ? (
+          <div className="mt-3 empty:hidden" data-no-swipe>
+            <DoLaterButton
+              jobId={job.id}
+              customer={job.customer}
+              show={laterIds.includes(job.id)}
+              onWater
+            />
+          </div>
+        ) : null}
       </div>
 
       {/* One segment per stop: each goes to its stop. The bar keeps its thin look; each
@@ -460,7 +482,7 @@ function Detail({ icon, children }: { icon: React.ReactNode; children: React.Rea
  */
 function Contact({ job, message }: { job: HeroJob; message?: React.ReactNode }) {
   return (
-    <span className="flex shrink-0 gap-2">
+    <span className="flex max-w-full shrink-0 flex-wrap gap-2">
       {message ??
         (job.phone && job.textHref ? (
           <a href={job.textHref} aria-label={`Text ${job.customer}`} className={ROUND}>

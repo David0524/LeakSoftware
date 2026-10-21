@@ -129,6 +129,12 @@ public enum MediaDetail {
         text.trimmingCharacters(in: .whitespacesAndNewlines) != (media.caption ?? "")
     }
 
+    /// The caption field after the photo's row is read again: what's typed while it matches the
+    /// saved caption (a trailing space or new line kept after saving by itself), else the saved one.
+    public static func captionShown(typed: String, _ media: Media) -> String {
+        captionChanged(media, typed) ? media.caption ?? "" : typed
+    }
+
     private static func fixed5(_ value: Double) -> String { String(format: "%.5f", value) }
 
     /// A whole number without ".0", as JavaScript prints it.

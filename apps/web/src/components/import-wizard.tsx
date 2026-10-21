@@ -14,6 +14,7 @@ import { checkImport, runImport } from "@/app/actions/import";
 import type { ImportSummary } from "@/server/import";
 import { Banner } from "./doc-ui";
 import { Button, Grouped, Notice, Row } from "./ui";
+import { NO_CONNECTION, whenOffline } from "@/lib/offline";
 
 // Import Customers (owner, 2026-10-16: "build the importer"): choose a CSV, match its
 // columns, see what will be made, import. The file is read here; the server checks it again.
@@ -77,7 +78,7 @@ export function ImportWizard({
   async function check() {
     setBusy(true);
     setError(null);
-    const r = await checkImport(companyId, mapping, rows);
+    const r = await whenOffline(checkImport(companyId, mapping, rows), { error: NO_CONNECTION });
     setBusy(false);
     if (r.error || !r.summary) return setError(r.error ?? "Couldn’t check the file.");
     setSummary(r.summary);
@@ -87,7 +88,7 @@ export function ImportWizard({
   async function run() {
     setBusy(true);
     setError(null);
-    const r = await runImport(companyId, mapping, rows);
+    const r = await whenOffline(runImport(companyId, mapping, rows), { error: NO_CONNECTION });
     setBusy(false);
     if (r.error || !r.done) return setError(r.error ?? "The import didn’t go through.");
     setDone(r.done);

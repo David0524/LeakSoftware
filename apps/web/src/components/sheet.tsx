@@ -10,6 +10,8 @@ import {
   type ReactNode,
 } from "react";
 import { createPortal } from "react-dom";
+import { DISCARD_PROMPT, fieldsOf, signature } from "@/lib/dirty";
+import { backQuietly, onBack, pushEntry } from "@/lib/history-entry";
 import { cx } from "./ui";
 
 /**
@@ -37,24 +39,84 @@ export function Sheet({
   const panel = useRef<HTMLDivElement>(null);
   const [drag, setDrag] = useState(0);
   const start = useRef<number | null>(null);
+  const [confirm, confirmSheet] = useConfirm();
+  // What the fields held when the sheet opened: closing with anything else asks first
+  // (owner, 2026-10-20: "Discard changes, everywhere"). Saving closes through the caller,
+  // not through here, so it never asks.
+  const opened = useRef<string | null>(null);
+  const asking = useRef(false);
+  // Closed from the sheet itself (Cancel, Escape, a tap outside, a swipe), not by a save.
+  const cancelled = useRef(false);
+  const latestClose = useRef(onClose);
+  useEffect(() => {
+    latestClose.current = onClose;
+  });
+  const dirty = () =>
+    !!panel.current &&
+    opened.current !== null &&
+    signature(fieldsOf(panel.current)) !== opened.current;
+  const requestClose = useCallback(async () => {
+    if (asking.current) return;
+    if (dirty()) {
+      asking.current = true;
+      const discard = await confirm(DISCARD_PROMPT);
+      asking.current = false;
+      if (!discard) return false;
+    }
+    cancelled.current = true;
+    latestClose.current();
+    return true;
+  }, [confirm]);
 
   useEffect(() => {
     if (!open) return;
     const before = document.activeElement as HTMLElement | null;
     const onKey = (e: KeyboardEvent) => {
-      if (e.key === "Escape") onClose();
+      // Escape in an alert over the sheet answers the alert only.
+      if (e.key === "Escape" && !document.querySelector("[role=alertdialog]")) void requestClose();
     };
     document.addEventListener("keydown", onKey);
     // The page behind stays put while the sheet is up.
     const overflow = document.body.style.overflow;
     document.body.style.overflow = "hidden";
     panel.current?.focus();
+    // The fields once the content has rendered (controlled fields set their values then).
+    const settle = window.setTimeout(() => {
+      if (panel.current) opened.current = signature(fieldsOf(panel.current));
+    }, 0);
+    // The browser's Back closes the sheet (asking first when something changed) instead of
+    // leaving the page: an entry for the sheet, taken off again when it's cancelled.
+    let entry = true;
+    cancelled.current = false;
+    const href = location.href;
+    pushEntry();
+    const stopBack = onBack(() => {
+      if (!entry) return false;
+      entry = false;
+      if (!dirty()) {
+        latestClose.current();
+        return true;
+      }
+      // Stay: put the entry back while asking.
+      pushEntry();
+      entry = true;
+      void requestClose();
+      return true;
+    });
     return () => {
+      window.clearTimeout(settle);
+      opened.current = null;
+      stopBack();
       document.removeEventListener("keydown", onKey);
       document.body.style.overflow = overflow;
       before?.focus?.();
+      // Cancelled: take the sheet's entry off. After a save it stays (Back from it shows this
+      // same page once): taking it off then raced the page refreshing after the save and lost
+      // what the save showed (the route board's "Moved to…").
+      if (entry && cancelled.current && location.href === href) backQuietly();
     };
-  }, [open, onClose]);
+    // requestClose is stable; the effect runs once per opening.
+  }, [open, requestClose]);
 
   // Swipe down on the grabber or title bar to close.
   const down = (e: PointerEvent) => {
@@ -67,7 +129,7 @@ export function Sheet({
   const up = () => {
     if (start.current == null) return;
     start.current = null;
-    if (drag > 90) onClose();
+    if (drag > 90) void requestClose();
     setDrag(0);
   };
 
@@ -77,7 +139,7 @@ export function Sheet({
       <div
         aria-hidden="true"
         className="absolute inset-0 bg-black/40 motion-safe:animate-[fade-in_0.2s_ease-out]"
-        onClick={onClose}
+        onClick={() => void requestClose()}
       />
       <div
         ref={panel}
@@ -106,7 +168,7 @@ export function Sheet({
           <div className="grid grid-cols-[1fr_auto_1fr] items-center px-2 pt-1 pb-2">
             <button
               type="button"
-              onClick={onClose}
+              onClick={() => void requestClose()}
               className="min-h-11 justify-self-start rounded-full px-3 text-link"
             >
               {cancelLabel}
@@ -119,6 +181,7 @@ export function Sheet({
         </div>
         <div className="overflow-y-auto px-4 pb-6">{children}</div>
       </div>
+      {confirmSheet}
     </div>,
     document.body,
   );
@@ -130,6 +193,8 @@ interface ConfirmOptions {
   message?: string;
   /** The action's name, e.g. "Delete Test". */
   confirmLabel: string;
+  /** The way back, "Cancel" unless given (e.g. "Keep Editing"). */
+  cancelLabel?: string;
   destructive?: boolean;
   /**
    * A centered iOS alert (Cancel and the action side by side, the action bold as the
@@ -171,6 +236,7 @@ function ActionSheet({
   title,
   message,
   confirmLabel,
+  cancelLabel = "Cancel",
   destructive,
   onDone,
 }: ConfirmOptions & { onDone: (ok: boolean) => void }) {
@@ -226,7 +292,7 @@ function ActionSheet({
           onClick={() => onDone(false)}
           className="glass-sheet block min-h-14 w-full rounded-[0.875rem] text-[1.25rem] font-semibold text-link"
         >
-          Cancel
+          {cancelLabel}
         </button>
       </div>
     </div>,
@@ -238,15 +304,18 @@ function Alert({
   title,
   message,
   confirmLabel,
+  cancelLabel = "Cancel",
   destructive,
   onDone,
 }: ConfirmOptions & { onDone: (ok: boolean) => void }) {
   const titleId = useId();
   const messageId = useId();
   const confirmRef = useRef<HTMLButtonElement>(null);
+  const cancelRef = useRef<HTMLButtonElement>(null);
   useEffect(() => {
     const before = document.activeElement as HTMLElement | null;
-    confirmRef.current?.focus();
+    // A destructive action is never the default: the way back is (HIG alerts).
+    (destructive ? cancelRef : confirmRef).current?.focus();
     const onKey = (e: KeyboardEvent) => {
       if (e.key === "Escape") onDone(false);
     };
@@ -255,7 +324,7 @@ function Alert({
       document.removeEventListener("keydown", onKey);
       before?.focus?.();
     };
-  }, [onDone]);
+  }, [onDone, destructive]);
   if (typeof document === "undefined") return null;
   return createPortal(
     <div className="fixed inset-0 z-50 flex items-center justify-center p-6">
@@ -282,19 +351,23 @@ function Alert({
         </div>
         <div className="grid grid-cols-2 border-t-[0.5px] border-separator">
           <button
+            ref={cancelRef}
             type="button"
             onClick={() => onDone(false)}
-            className="min-h-11 border-r-[0.5px] border-separator px-2 text-[1.0625rem] text-link"
+            className={cx(
+              "min-h-11 border-r-[0.5px] border-separator px-2 text-[1.0625rem] text-link",
+              destructive && "font-semibold",
+            )}
           >
-            Cancel
+            {cancelLabel}
           </button>
           <button
             ref={confirmRef}
             type="button"
             onClick={() => onDone(true)}
             className={cx(
-              "min-h-11 px-2 text-[1.0625rem] font-semibold",
-              destructive ? "text-status-fail" : "text-link",
+              "min-h-11 px-2 text-[1.0625rem]",
+              destructive ? "text-status-fail" : "font-semibold text-link",
             )}
           >
             {confirmLabel}

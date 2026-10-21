@@ -4,6 +4,14 @@
 /* dark: follows the appearance setting (data-theme, set before paint by lib/theme.ts). */
 @custom-variant dark (&:where([data-theme="dark"], [data-theme="dark"] *));
 
+/* The phone tab bar's padding and row (components/nav-links.tsx), shared with the Next Step
+   bar that sits on top of it: they grow with large text up to 1.5 times, then stop. */
+:root {
+  --tab-bar-top: min(0.5rem, 12px);
+  --tab-bar-row: min(3.5rem, 84px);
+  --tab-bar-bottom: max(min(0.75rem, 18px), env(safe-area-inset-bottom));
+}
+
 body {
   background: var(--lb-bg);
   color: var(--lb-text);
@@ -151,6 +159,21 @@ header:not(.glass-bar) :focus-visible {
     visibility: hidden;
   }
 }
+/* Phones, a tab's own page: the large title in the bar's row sits right of the logo (nav-bar.tsx
+   BRAND_LEAD), from the first frame. Stacked under the bar (very large text), it doesn't. */
+@media (width < 40rem) {
+  body:has([data-nav-brand]) [data-page-header]:not([data-stacked]) h1 {
+    padding-left: 110px;
+  }
+  /* Until NavBar has measured the title (before the page's script runs, as on a loading
+     screen), a word too wide for the room beside the logo is clipped at the title's edge, not
+     run past the page's; NavBar then moves the title to its own row. Sideways only, and with
+     room for the letters' overhang, so a title that fits looks the same. */
+  [data-page-header] h1 {
+    overflow-x: clip;
+    overflow-clip-margin: 0.5rem;
+  }
+}
 /* The phone navigation bar once the large title has scrolled under it. */
 /* iOS's bar material: content passes under it as a soft tint. More see-through or a strong
    saturation boost turned a blue pill scrolling under it into a bright smear (2026-10-15). */
@@ -171,6 +194,26 @@ header:not(.glass-bar) :focus-visible {
    hairline, under the accessory, not between the two. */
 body:has(.nav-accessory) .nav-main.glass-bar {
   box-shadow: none;
+}
+/* Segmented controls that scroll inside their track once large text no longer fits them
+   (useTrackOverflow in components/gestures.tsx): one row always, never two; the track only
+   becomes a scroller while it overflows, so normal sizes keep the thumb's shadow. */
+.segment-scroll {
+  flex-wrap: nowrap;
+  /* Until the page's script has measured it (or between a text size change and the check), a
+     track that doesn't fit is clipped at its edge, not run past the page's: sideways only, and
+     the clip leaves room for the thumb's shadow. */
+  overflow-x: clip;
+  overflow-clip-margin: 0.75rem;
+}
+.segment-scroll[data-overflow] {
+  overflow-x: auto;
+  overscroll-behavior-x: contain;
+  scrollbar-width: none;
+  touch-action: pan-x pan-y;
+}
+.segment-scroll[data-overflow]::-webkit-scrollbar {
+  display: none;
 }
 /* Action sheet groups: the frosted panel iOS draws them on. */
 .glass-sheet {

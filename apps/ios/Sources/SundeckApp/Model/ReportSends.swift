@@ -10,6 +10,11 @@ import SundeckSync
 
 public enum ReportSendText {
     public static let willSend = "Will send when you’re back online."
+    /// Online, but a photo or the signature is still uploading: it waits for them (apps/mobile
+    /// `UPLOADS_QUEUED_MESSAGE`).
+    public static let willSendAfterUploads = "Will send when the photos finish uploading."
+    /// The server call refused on the phone while the job's files are still uploading.
+    public static let uploadsPending = "The photos haven’t finished uploading yet. Try again in a moment."
 }
 
 /// One report request kept on the phone until it can run.
@@ -42,7 +47,20 @@ public final class ReportSendQueue {
 
     public init(kv: KeyValue) { self.kv = kv }
 
-    public var pending: [ReportSendRequest] { kv.getJSON(Self.key, as: [ReportSendRequest].self) ?? [] }
+    /// Read entry by entry: one this version can't read (or a damaged one) is skipped, not the
+    /// whole list.
+    public var pending: [ReportSendRequest] {
+        (kv.getJSON(Self.key, as: [JSONValue].self) ?? []).compactMap { try? $0.decode(ReportSendRequest.self) }
+    }
+
+    /// The same request was done online (Send tapped again with signal): it doesn't go twice.
+    public func forget(reportId: String, action: ReportSendRequest.Action) {
+        let list = pending
+        let kept = list.filter { !($0.reportId == reportId && $0.action == action) }
+        if kept.count != list.count { kv.setJSON(Self.key, kept) }
+    }
+
+    private var running = false
 
     /// Requests still waiting for this job.
     public func pending(jobId: String) -> [ReportSendRequest] { pending.filter { $0.jobId == jobId } }
@@ -73,9 +91,18 @@ public final class ReportSendQueue {
     private var texts: [String: String] { kv.getJSON(Self.textsKey, as: [String: String].self) ?? [:] }
     private var failures: [String: String] { kv.getJSON(Self.failuresKey, as: [String: String].self) ?? [:] }
 
-    /// Runs the requests in order; stops at the first one without a connection.
-    public func flush(_ api: WebAPI) async {
+    /// Runs the requests in order; stops at the first one that should wait (no connection, no
+    /// sign-in, the server busy or at fault). Only one run at a time, so two syncs finishing
+    /// together never send twice. A text runs only with the app in front (`canText`), since the
+    /// tech sends it from the phone; in the background it waits.
+    /// A job whose files are still uploading (`uploading`) waits, so its report has them.
+    public func flush(_ api: WebAPI, canText: Bool = true, uploading: (String) -> Bool = { _ in false }) async {
+        guard !running else { return }
+        running = true
+        defer { running = false }
         for request in pending {
+            if request.action == .text && !canText { continue }
+            if uploading(request.jobId) { continue }
             do {
                 switch request.action {
                 case .finish:
@@ -93,13 +120,14 @@ public final class ReportSendQueue {
                         kv.setJSON(Self.textsKey, all)
                     }
                 }
-            } catch let failure as WebAPI.Failure where failure.offline {
+            } catch let failure as WebAPI.Failure where failure.tryAgainLater {
                 return
             } catch {
                 var all = failures
                 all[request.jobId] = (error as? WebAPI.Failure)?.description ?? String(describing: error)
                 kv.setJSON(Self.failuresKey, all)
             }
+            // Only this exact request: a newer one queued meanwhile still goes.
             kv.setJSON(Self.key, pending.filter { $0 != request })
         }
     }

@@ -123,6 +123,12 @@ export async function createCompany(): Promise<TestCompany> {
     id,
     tech.id,
   ]);
+  // The scenarios have the tech work on jobs nobody is assigned to, so the shop lets techs see
+  // every job (new shops start with only their own, 2026-10-20).
+  await pool.query(
+    `update company set settings = settings || '{"techs_see_all_jobs": true}' where id = $1`,
+    [id],
+  );
   const types = await pool.query<{ key: string; id: string }>(
     "select key, id from component_type where company_id = $1 union all select key, id from test_type where company_id = $1",
     [id],

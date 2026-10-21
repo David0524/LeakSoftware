@@ -1,5 +1,5 @@
 import { useSyncExternalStore } from "react";
-import { StyleSheet, View } from "react-native";
+import { Platform, StyleSheet, View } from "react-native";
 import Svg, { Path } from "react-native-svg";
 import { LOGO_DARK, LOGO_LIGHT, LOGO_SIZE } from "./sundeckLogoArt";
 import { appearance } from "./theme";
@@ -31,6 +31,15 @@ export function SundeckLogo({ height = 24 }: { height?: number }) {
     </View>
   );
 }
+
+/** The bar logo's width (24 tall). */
+const BAR_LOGO_WIDTH = (24 * LOGO_SIZE.width) / LOGO_SIZE.height;
+/**
+ * Room a tab's large title leaves for the logo in the bar's row (ui/components.tsx
+ * useScreenChrome): the logo and 8 points in the drawn bar, where both start 16 from the edge;
+ * 16 in iPhone's native bar, which sets its left item in a little further.
+ */
+export const BRAND_TITLE_LEAD = BAR_LOGO_WIDTH + (Platform.OS === "ios" ? 16 : 8);
 
 /** The navigation bar's left item on a tab's root screen (TabStack). */
 export function BrandHeaderLeft() {

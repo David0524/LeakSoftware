@@ -1,0 +1,1443 @@
+{
+  "constants": [
+    {
+      "args": [],
+      "result": {
+        "ACTIVITY_TITLE": "Activity",
+        "ACTIVITY_PAGE_SIZE": 50,
+        "ACTIVITY_DASHBOARD_COUNT": 3,
+        "ACTIVITY_OFFLINE": "Activity shows when you’re online.",
+        "ACTIVITY_EMPTY": "Nothing yet. Accepted quotes, payments, reports, finished jobs, and customer texts show here.",
+        "ACTIVITY_DETAIL": "Quotes, payments, reports, jobs, and texts"
+      }
+    }
+  ],
+  "firstName": [
+    {
+      "args": [
+        "Tony Reyes"
+      ],
+      "result": "Tony"
+    },
+    {
+      "args": [
+        "  Maria  Alvarez "
+      ],
+      "result": "Maria"
+    },
+    {
+      "args": [
+        ""
+      ],
+      "result": null
+    },
+    {
+      "args": [
+        null
+      ],
+      "result": null
+    },
+    {
+      "args": [
+        "Cher"
+      ],
+      "result": "Cher"
+    }
+  ],
+  "activityTime": [
+    {
+      "args": [
+        "2026-10-20T16:42:00Z",
+        "2026-10-20T17:00:00Z",
+        "America/Phoenix"
+      ],
+      "result": "9:42 AM"
+    },
+    {
+      "args": [
+        "2026-10-20T07:00:00Z",
+        "2026-10-20T17:00:00Z",
+        "America/Phoenix"
+      ],
+      "result": "12:00 AM"
+    },
+    {
+      "args": [
+        "2026-10-20T06:59:00Z",
+        "2026-10-20T17:00:00Z",
+        "America/Phoenix"
+      ],
+      "result": "Yesterday"
+    },
+    {
+      "args": [
+        "2026-10-19T07:00:00Z",
+        "2026-10-20T17:00:00Z",
+        "America/Phoenix"
+      ],
+      "result": "Yesterday"
+    },
+    {
+      "args": [
+        "2026-10-14T16:42:00Z",
+        "2026-10-20T17:00:00Z",
+        "America/Phoenix"
+      ],
+      "result": "Oct 14"
+    },
+    {
+      "args": [
+        "2026-01-01T07:00:00Z",
+        "2026-10-20T17:00:00Z",
+        "America/Phoenix"
+      ],
+      "result": "Jan 1"
+    },
+    {
+      "args": [
+        "2025-12-31T16:00:00Z",
+        "2026-10-20T17:00:00Z",
+        "America/Phoenix"
+      ],
+      "result": "Dec 31, 2025"
+    },
+    {
+      "args": [
+        "2026-10-20T16:42:00Z",
+        "2026-10-20T17:00:00Z",
+        "Asia/Tokyo"
+      ],
+      "result": "1:42 AM"
+    },
+    {
+      "args": [
+        "2026-12-31T23:00:00Z",
+        "2027-01-01T08:00:00Z",
+        "UTC"
+      ],
+      "result": "Yesterday"
+    }
+  ],
+  "activityDay": [
+    {
+      "args": [
+        "2026-10-20T16:42:00Z",
+        "2026-10-20T17:00:00Z",
+        "America/Phoenix"
+      ],
+      "result": "Today"
+    },
+    {
+      "args": [
+        "2026-10-20T07:00:00Z",
+        "2026-10-20T17:00:00Z",
+        "America/Phoenix"
+      ],
+      "result": "Today"
+    },
+    {
+      "args": [
+        "2026-10-20T06:59:00Z",
+        "2026-10-20T17:00:00Z",
+        "America/Phoenix"
+      ],
+      "result": "Yesterday"
+    },
+    {
+      "args": [
+        "2026-10-19T07:00:00Z",
+        "2026-10-20T17:00:00Z",
+        "America/Phoenix"
+      ],
+      "result": "Yesterday"
+    },
+    {
+      "args": [
+        "2026-10-14T16:42:00Z",
+        "2026-10-20T17:00:00Z",
+        "America/Phoenix"
+      ],
+      "result": "Wed, Oct 14"
+    },
+    {
+      "args": [
+        "2026-01-01T07:00:00Z",
+        "2026-10-20T17:00:00Z",
+        "America/Phoenix"
+      ],
+      "result": "Thu, Jan 1"
+    },
+    {
+      "args": [
+        "2025-12-31T16:00:00Z",
+        "2026-10-20T17:00:00Z",
+        "America/Phoenix"
+      ],
+      "result": "Wed, Dec 31, 2025"
+    },
+    {
+      "args": [
+        "2026-02-28T12:00:00Z",
+        "2026-03-01T12:00:00Z",
+        "UTC"
+      ],
+      "result": "Yesterday"
+    },
+    {
+      "args": [
+        "2024-02-28T12:00:00Z",
+        "2024-03-01T12:00:00Z",
+        "UTC"
+      ],
+      "result": "Wed, Feb 28"
+    }
+  ],
+  "movedTo": [
+    {
+      "args": [
+        "2026-10-20T16:30:00Z",
+        "2026-10-20T17:00:00Z",
+        "America/Phoenix"
+      ],
+      "result": "Tue 9:30 AM"
+    },
+    {
+      "args": [
+        "2026-10-26T23:30:00Z",
+        "2026-10-20T17:00:00Z",
+        "America/Phoenix"
+      ],
+      "result": "Mon 4:30 PM"
+    },
+    {
+      "args": [
+        "2026-10-27T16:30:00Z",
+        "2026-10-20T17:00:00Z",
+        "America/Phoenix"
+      ],
+      "result": "Oct 27, 9:30 AM"
+    },
+    {
+      "args": [
+        "2026-10-13T16:30:00Z",
+        "2026-10-20T17:00:00Z",
+        "America/Phoenix"
+      ],
+      "result": "Oct 13, 9:30 AM"
+    },
+    {
+      "args": [
+        "2026-10-14T16:30:00Z",
+        "2026-10-20T17:00:00Z",
+        "America/Phoenix"
+      ],
+      "result": "Oct 14, 9:30 AM"
+    },
+    {
+      "args": [
+        "2027-02-01T16:30:00Z",
+        "2026-10-20T17:00:00Z",
+        "America/Phoenix"
+      ],
+      "result": "Feb 1, 2027, 9:30 AM"
+    }
+  ],
+  "activityRow": [
+    {
+      "args": [
+        {
+          "id": "e1",
+          "kind": "quote_accepted",
+          "created_at": "2026-10-20T16:42:00Z",
+          "job_id": "j1",
+          "conversation_id": null,
+          "customer_name": "Maria Alvarez",
+          "job_number": 1038,
+          "amount_cents": 97500,
+          "scheduled_at": null,
+          "preview": null,
+          "actor_name": null,
+          "assignee_name": null
+        },
+        "2026-10-20T17:00:00Z",
+        "America/Phoenix"
+      ],
+      "result": {
+        "id": "e1",
+        "symbol": "quote",
+        "title": "Quote accepted",
+        "detail": "Maria Alvarez, $975.00",
+        "time": "9:42 AM",
+        "open": {
+          "screen": "job",
+          "id": "j1"
+        }
+      }
+    },
+    {
+      "args": [
+        {
+          "id": "e1",
+          "kind": "quote_accepted",
+          "created_at": "2026-10-20T16:42:00Z",
+          "job_id": "j1",
+          "conversation_id": null,
+          "customer_name": "Maria Alvarez",
+          "job_number": 1038,
+          "amount_cents": null,
+          "scheduled_at": null,
+          "preview": null,
+          "actor_name": null,
+          "assignee_name": null
+        },
+        "2026-10-20T17:00:00Z",
+        "America/Phoenix"
+      ],
+      "result": {
+        "id": "e1",
+        "symbol": "quote",
+        "title": "Quote accepted",
+        "detail": "Maria Alvarez",
+        "time": "9:42 AM",
+        "open": {
+          "screen": "job",
+          "id": "j1"
+        }
+      }
+    },
+    {
+      "args": [
+        {
+          "id": "e1",
+          "kind": "payment_received",
+          "created_at": "2026-10-20T16:42:00Z",
+          "job_id": "j1",
+          "conversation_id": null,
+          "customer_name": "Maria Alvarez",
+          "job_number": 1038,
+          "amount_cents": 48750,
+          "scheduled_at": null,
+          "preview": null,
+          "actor_name": null,
+          "assignee_name": null
+        },
+        "2026-10-20T17:00:00Z",
+        "America/Phoenix"
+      ],
+      "result": {
+        "id": "e1",
+        "symbol": "payment",
+        "title": "Payment received",
+        "detail": "Maria Alvarez, $487.50",
+        "time": "9:42 AM",
+        "open": {
+          "screen": "job",
+          "id": "j1"
+        }
+      }
+    },
+    {
+      "args": [
+        {
+          "id": "e1",
+          "kind": "payment_received",
+          "created_at": "2026-10-20T16:42:00Z",
+          "job_id": "j1",
+          "conversation_id": null,
+          "customer_name": "Maria Alvarez",
+          "job_number": 1038,
+          "amount_cents": 123456789,
+          "scheduled_at": null,
+          "preview": null,
+          "actor_name": null,
+          "assignee_name": null
+        },
+        "2026-10-20T17:00:00Z",
+        "America/Phoenix"
+      ],
+      "result": {
+        "id": "e1",
+        "symbol": "payment",
+        "title": "Payment received",
+        "detail": "Maria Alvarez, $1,234,567.89",
+        "time": "9:42 AM",
+        "open": {
+          "screen": "job",
+          "id": "j1"
+        }
+      }
+    },
+    {
+      "args": [
+        {
+          "id": "e1",
+          "kind": "report_signed",
+          "created_at": "2026-10-20T16:42:00Z",
+          "job_id": "j1",
+          "conversation_id": null,
+          "customer_name": "Maria Alvarez",
+          "job_number": 1038,
+          "amount_cents": null,
+          "scheduled_at": null,
+          "preview": null,
+          "actor_name": null,
+          "assignee_name": null
+        },
+        "2026-10-20T17:00:00Z",
+        "America/Phoenix"
+      ],
+      "result": {
+        "id": "e1",
+        "symbol": "signature",
+        "title": "Report signed",
+        "detail": "Maria Alvarez",
+        "time": "9:42 AM",
+        "open": {
+          "screen": "job",
+          "id": "j1"
+        }
+      }
+    },
+    {
+      "args": [
+        {
+          "id": "e1",
+          "kind": "report_sent",
+          "created_at": "2026-10-20T16:42:00Z",
+          "job_id": "j1",
+          "conversation_id": null,
+          "customer_name": "Maria Alvarez",
+          "job_number": 1038,
+          "amount_cents": null,
+          "scheduled_at": null,
+          "preview": null,
+          "actor_name": null,
+          "assignee_name": null
+        },
+        "2026-10-20T17:00:00Z",
+        "America/Phoenix"
+      ],
+      "result": {
+        "id": "e1",
+        "symbol": "report",
+        "title": "Report sent",
+        "detail": "Maria Alvarez",
+        "time": "9:42 AM",
+        "open": {
+          "screen": "job",
+          "id": "j1"
+        }
+      }
+    },
+    {
+      "args": [
+        {
+          "id": "e1",
+          "kind": "report_sent",
+          "created_at": "2026-10-20T16:42:00Z",
+          "job_id": "j1",
+          "conversation_id": null,
+          "customer_name": null,
+          "job_number": 1038,
+          "amount_cents": null,
+          "scheduled_at": null,
+          "preview": null,
+          "actor_name": null,
+          "assignee_name": null
+        },
+        "2026-10-20T17:00:00Z",
+        "America/Phoenix"
+      ],
+      "result": {
+        "id": "e1",
+        "symbol": "report",
+        "title": "Report sent",
+        "detail": "A customer",
+        "time": "9:42 AM",
+        "open": {
+          "screen": "job",
+          "id": "j1"
+        }
+      }
+    },
+    {
+      "args": [
+        {
+          "id": "e1",
+          "kind": "report_sent",
+          "created_at": "2026-10-20T16:42:00Z",
+          "job_id": "j1",
+          "conversation_id": null,
+          "customer_name": "   ",
+          "job_number": 1038,
+          "amount_cents": null,
+          "scheduled_at": null,
+          "preview": null,
+          "actor_name": null,
+          "assignee_name": null
+        },
+        "2026-10-20T17:00:00Z",
+        "America/Phoenix"
+      ],
+      "result": {
+        "id": "e1",
+        "symbol": "report",
+        "title": "Report sent",
+        "detail": "A customer",
+        "time": "9:42 AM",
+        "open": {
+          "screen": "job",
+          "id": "j1"
+        }
+      }
+    },
+    {
+      "args": [
+        {
+          "id": "e1",
+          "kind": "job_completed",
+          "created_at": "2026-10-20T16:42:00Z",
+          "job_id": "j1",
+          "conversation_id": null,
+          "customer_name": "Maria Alvarez",
+          "job_number": 1038,
+          "amount_cents": null,
+          "scheduled_at": null,
+          "preview": null,
+          "actor_name": "Tony Reyes",
+          "assignee_name": null
+        },
+        "2026-10-20T17:00:00Z",
+        "America/Phoenix"
+      ],
+      "result": {
+        "id": "e1",
+        "symbol": "done",
+        "title": "Job completed",
+        "detail": "Maria Alvarez, by Tony",
+        "time": "9:42 AM",
+        "open": {
+          "screen": "job",
+          "id": "j1"
+        }
+      }
+    },
+    {
+      "args": [
+        {
+          "id": "e1",
+          "kind": "job_completed",
+          "created_at": "2026-10-20T16:42:00Z",
+          "job_id": "j1",
+          "conversation_id": null,
+          "customer_name": "Maria Alvarez",
+          "job_number": 1038,
+          "amount_cents": null,
+          "scheduled_at": null,
+          "preview": null,
+          "actor_name": "tony@example.com",
+          "assignee_name": null
+        },
+        "2026-10-20T17:00:00Z",
+        "America/Phoenix"
+      ],
+      "result": {
+        "id": "e1",
+        "symbol": "done",
+        "title": "Job completed",
+        "detail": "Maria Alvarez, by tony@example.com",
+        "time": "9:42 AM",
+        "open": {
+          "screen": "job",
+          "id": "j1"
+        }
+      }
+    },
+    {
+      "args": [
+        {
+          "id": "e1",
+          "kind": "job_completed",
+          "created_at": "2026-10-20T16:42:00Z",
+          "job_id": "j1",
+          "conversation_id": null,
+          "customer_name": "Maria Alvarez",
+          "job_number": 1038,
+          "amount_cents": null,
+          "scheduled_at": null,
+          "preview": null,
+          "actor_name": " ",
+          "assignee_name": null
+        },
+        "2026-10-20T17:00:00Z",
+        "America/Phoenix"
+      ],
+      "result": {
+        "id": "e1",
+        "symbol": "done",
+        "title": "Job completed",
+        "detail": "Maria Alvarez",
+        "time": "9:42 AM",
+        "open": {
+          "screen": "job",
+          "id": "j1"
+        }
+      }
+    },
+    {
+      "args": [
+        {
+          "id": "e1",
+          "kind": "job_assigned",
+          "created_at": "2026-10-20T16:42:00Z",
+          "job_id": "j1",
+          "conversation_id": null,
+          "customer_name": "Maria Alvarez",
+          "job_number": 1038,
+          "amount_cents": null,
+          "scheduled_at": null,
+          "preview": null,
+          "actor_name": null,
+          "assignee_name": "Tony Reyes"
+        },
+        "2026-10-20T17:00:00Z",
+        "America/Phoenix"
+      ],
+      "result": {
+        "id": "e1",
+        "symbol": "person",
+        "title": "Job #1038 assigned to Tony",
+        "detail": "Maria Alvarez",
+        "time": "9:42 AM",
+        "open": {
+          "screen": "job",
+          "id": "j1"
+        }
+      }
+    },
+    {
+      "args": [
+        {
+          "id": "e1",
+          "kind": "job_assigned",
+          "created_at": "2026-10-20T16:42:00Z",
+          "job_id": "j1",
+          "conversation_id": null,
+          "customer_name": "Maria Alvarez",
+          "job_number": 1038,
+          "amount_cents": null,
+          "scheduled_at": null,
+          "preview": null,
+          "actor_name": null,
+          "assignee_name": null
+        },
+        "2026-10-20T17:00:00Z",
+        "America/Phoenix"
+      ],
+      "result": {
+        "id": "e1",
+        "symbol": "person",
+        "title": "Job #1038 assigned",
+        "detail": "Maria Alvarez",
+        "time": "9:42 AM",
+        "open": {
+          "screen": "job",
+          "id": "j1"
+        }
+      }
+    },
+    {
+      "args": [
+        {
+          "id": "e1",
+          "kind": "job_assigned",
+          "created_at": "2026-10-20T16:42:00Z",
+          "job_id": "j1",
+          "conversation_id": null,
+          "customer_name": "Maria Alvarez",
+          "job_number": null,
+          "amount_cents": null,
+          "scheduled_at": null,
+          "preview": null,
+          "actor_name": null,
+          "assignee_name": "Tony"
+        },
+        "2026-10-20T17:00:00Z",
+        "America/Phoenix"
+      ],
+      "result": {
+        "id": "e1",
+        "symbol": "person",
+        "title": "Job assigned to Tony",
+        "detail": "Maria Alvarez",
+        "time": "9:42 AM",
+        "open": {
+          "screen": "job",
+          "id": "j1"
+        }
+      }
+    },
+    {
+      "args": [
+        {
+          "id": "e1",
+          "kind": "job_moved",
+          "created_at": "2026-10-20T16:42:00Z",
+          "job_id": "j1",
+          "conversation_id": null,
+          "customer_name": "Maria Alvarez",
+          "job_number": 1038,
+          "amount_cents": null,
+          "scheduled_at": "2026-10-20T16:30:00Z",
+          "preview": null,
+          "actor_name": null,
+          "assignee_name": null
+        },
+        "2026-10-20T17:00:00Z",
+        "America/Phoenix"
+      ],
+      "result": {
+        "id": "e1",
+        "symbol": "calendar",
+        "title": "Job #1038 moved to Tue 9:30 AM",
+        "detail": "Maria Alvarez",
+        "time": "9:42 AM",
+        "open": {
+          "screen": "job",
+          "id": "j1"
+        }
+      }
+    },
+    {
+      "args": [
+        {
+          "id": "e1",
+          "kind": "job_moved",
+          "created_at": "2026-10-20T16:42:00Z",
+          "job_id": "j1",
+          "conversation_id": null,
+          "customer_name": "Maria Alvarez",
+          "job_number": 1038,
+          "amount_cents": null,
+          "scheduled_at": "2026-10-26T23:30:00Z",
+          "preview": null,
+          "actor_name": null,
+          "assignee_name": null
+        },
+        "2026-10-20T17:00:00Z",
+        "America/Phoenix"
+      ],
+      "result": {
+        "id": "e1",
+        "symbol": "calendar",
+        "title": "Job #1038 moved to Mon 4:30 PM",
+        "detail": "Maria Alvarez",
+        "time": "9:42 AM",
+        "open": {
+          "screen": "job",
+          "id": "j1"
+        }
+      }
+    },
+    {
+      "args": [
+        {
+          "id": "e1",
+          "kind": "job_moved",
+          "created_at": "2026-10-20T16:42:00Z",
+          "job_id": "j1",
+          "conversation_id": null,
+          "customer_name": "Maria Alvarez",
+          "job_number": 1038,
+          "amount_cents": null,
+          "scheduled_at": "2026-10-27T16:30:00Z",
+          "preview": null,
+          "actor_name": null,
+          "assignee_name": null
+        },
+        "2026-10-20T17:00:00Z",
+        "America/Phoenix"
+      ],
+      "result": {
+        "id": "e1",
+        "symbol": "calendar",
+        "title": "Job #1038 moved to Oct 27, 9:30 AM",
+        "detail": "Maria Alvarez",
+        "time": "9:42 AM",
+        "open": {
+          "screen": "job",
+          "id": "j1"
+        }
+      }
+    },
+    {
+      "args": [
+        {
+          "id": "e1",
+          "kind": "job_moved",
+          "created_at": "2026-10-20T16:42:00Z",
+          "job_id": "j1",
+          "conversation_id": null,
+          "customer_name": "Maria Alvarez",
+          "job_number": 1038,
+          "amount_cents": null,
+          "scheduled_at": "2027-02-01T16:30:00Z",
+          "preview": null,
+          "actor_name": null,
+          "assignee_name": null
+        },
+        "2026-10-20T17:00:00Z",
+        "America/Phoenix"
+      ],
+      "result": {
+        "id": "e1",
+        "symbol": "calendar",
+        "title": "Job #1038 moved to Feb 1, 2027, 9:30 AM",
+        "detail": "Maria Alvarez",
+        "time": "9:42 AM",
+        "open": {
+          "screen": "job",
+          "id": "j1"
+        }
+      }
+    },
+    {
+      "args": [
+        {
+          "id": "e1",
+          "kind": "job_moved",
+          "created_at": "2026-10-20T16:42:00Z",
+          "job_id": "j1",
+          "conversation_id": null,
+          "customer_name": "Maria Alvarez",
+          "job_number": 1038,
+          "amount_cents": null,
+          "scheduled_at": "2026-10-14T16:30:00Z",
+          "preview": null,
+          "actor_name": null,
+          "assignee_name": null
+        },
+        "2026-10-20T17:00:00Z",
+        "America/Phoenix"
+      ],
+      "result": {
+        "id": "e1",
+        "symbol": "calendar",
+        "title": "Job #1038 moved to Oct 14, 9:30 AM",
+        "detail": "Maria Alvarez",
+        "time": "9:42 AM",
+        "open": {
+          "screen": "job",
+          "id": "j1"
+        }
+      }
+    },
+    {
+      "args": [
+        {
+          "id": "e1",
+          "kind": "job_moved",
+          "created_at": "2026-10-20T16:42:00Z",
+          "job_id": "j1",
+          "conversation_id": null,
+          "customer_name": "Maria Alvarez",
+          "job_number": 1038,
+          "amount_cents": null,
+          "scheduled_at": null,
+          "preview": null,
+          "actor_name": null,
+          "assignee_name": null
+        },
+        "2026-10-20T17:00:00Z",
+        "America/Phoenix"
+      ],
+      "result": {
+        "id": "e1",
+        "symbol": "calendar",
+        "title": "Job #1038 moved",
+        "detail": "Maria Alvarez",
+        "time": "9:42 AM",
+        "open": {
+          "screen": "job",
+          "id": "j1"
+        }
+      }
+    },
+    {
+      "args": [
+        {
+          "id": "e1",
+          "kind": "text_received",
+          "created_at": "2026-10-20T16:42:00Z",
+          "job_id": null,
+          "conversation_id": "c1",
+          "customer_name": "Maria Alvarez",
+          "job_number": 1038,
+          "amount_cents": null,
+          "scheduled_at": null,
+          "preview": "Is Tony on the way?",
+          "actor_name": null,
+          "assignee_name": null
+        },
+        "2026-10-20T17:00:00Z",
+        "America/Phoenix"
+      ],
+      "result": {
+        "id": "e1",
+        "symbol": "text",
+        "title": "Text from Maria Alvarez",
+        "detail": "Is Tony on the way?",
+        "time": "9:42 AM",
+        "open": {
+          "screen": "conversation",
+          "id": "c1"
+        }
+      }
+    },
+    {
+      "args": [
+        {
+          "id": "e1",
+          "kind": "text_received",
+          "created_at": "2026-10-20T16:42:00Z",
+          "job_id": null,
+          "conversation_id": "c1",
+          "customer_name": "Maria Alvarez",
+          "job_number": 1038,
+          "amount_cents": null,
+          "scheduled_at": null,
+          "preview": null,
+          "actor_name": null,
+          "assignee_name": null
+        },
+        "2026-10-20T17:00:00Z",
+        "America/Phoenix"
+      ],
+      "result": {
+        "id": "e1",
+        "symbol": "text",
+        "title": "Text from Maria Alvarez",
+        "detail": "Sent a picture",
+        "time": "9:42 AM",
+        "open": {
+          "screen": "conversation",
+          "id": "c1"
+        }
+      }
+    },
+    {
+      "args": [
+        {
+          "id": "e1",
+          "kind": "text_received",
+          "created_at": "2026-10-20T16:42:00Z",
+          "job_id": null,
+          "conversation_id": "c1",
+          "customer_name": "Maria Alvarez",
+          "job_number": 1038,
+          "amount_cents": null,
+          "scheduled_at": null,
+          "preview": "  ",
+          "actor_name": null,
+          "assignee_name": null
+        },
+        "2026-10-20T17:00:00Z",
+        "America/Phoenix"
+      ],
+      "result": {
+        "id": "e1",
+        "symbol": "text",
+        "title": "Text from Maria Alvarez",
+        "detail": "Sent a picture",
+        "time": "9:42 AM",
+        "open": {
+          "screen": "conversation",
+          "id": "c1"
+        }
+      }
+    },
+    {
+      "args": [
+        {
+          "id": "e1",
+          "kind": "text_received",
+          "created_at": "2026-10-20T16:42:00Z",
+          "job_id": null,
+          "conversation_id": null,
+          "customer_name": "+16025550199",
+          "job_number": 1038,
+          "amount_cents": null,
+          "scheduled_at": null,
+          "preview": null,
+          "actor_name": null,
+          "assignee_name": null
+        },
+        "2026-10-20T17:00:00Z",
+        "America/Phoenix"
+      ],
+      "result": {
+        "id": "e1",
+        "symbol": "text",
+        "title": "Text from +16025550199",
+        "detail": "Sent a picture",
+        "time": "9:42 AM",
+        "open": null
+      }
+    },
+    {
+      "args": [
+        {
+          "id": "e1",
+          "kind": "job_completed",
+          "created_at": "2026-10-20T16:42:00Z",
+          "job_id": null,
+          "conversation_id": null,
+          "customer_name": "Maria Alvarez",
+          "job_number": 1038,
+          "amount_cents": null,
+          "scheduled_at": null,
+          "preview": null,
+          "actor_name": null,
+          "assignee_name": null
+        },
+        "2026-10-20T17:00:00Z",
+        "America/Phoenix"
+      ],
+      "result": {
+        "id": "e1",
+        "symbol": "done",
+        "title": "Job completed",
+        "detail": "Maria Alvarez",
+        "time": "9:42 AM",
+        "open": null
+      }
+    },
+    {
+      "args": [
+        {
+          "id": "e1",
+          "kind": "something_new",
+          "created_at": "2026-10-20T16:42:00Z",
+          "job_id": "j1",
+          "conversation_id": null,
+          "customer_name": "Maria Alvarez",
+          "job_number": 1038,
+          "amount_cents": null,
+          "scheduled_at": null,
+          "preview": null,
+          "actor_name": null,
+          "assignee_name": null
+        },
+        "2026-10-20T17:00:00Z",
+        "America/Phoenix"
+      ],
+      "result": {
+        "id": "e1",
+        "symbol": "report",
+        "title": "Update",
+        "detail": "Maria Alvarez",
+        "time": "9:42 AM",
+        "open": {
+          "screen": "job",
+          "id": "j1"
+        }
+      }
+    },
+    {
+      "args": [
+        {
+          "id": "e1",
+          "kind": "report_sent",
+          "created_at": "2026-10-19T16:42:00Z",
+          "job_id": "j1",
+          "conversation_id": null,
+          "customer_name": "Maria Alvarez",
+          "job_number": 1038,
+          "amount_cents": null,
+          "scheduled_at": null,
+          "preview": null,
+          "actor_name": null,
+          "assignee_name": null
+        },
+        "2026-10-20T17:00:00Z",
+        "America/Phoenix"
+      ],
+      "result": {
+        "id": "e1",
+        "symbol": "report",
+        "title": "Report sent",
+        "detail": "Maria Alvarez",
+        "time": "Yesterday",
+        "open": {
+          "screen": "job",
+          "id": "j1"
+        }
+      }
+    },
+    {
+      "args": [
+        {
+          "id": "e1",
+          "kind": "report_sent",
+          "created_at": "2026-10-14T16:42:00Z",
+          "job_id": "j1",
+          "conversation_id": null,
+          "customer_name": "Maria Alvarez",
+          "job_number": 1038,
+          "amount_cents": null,
+          "scheduled_at": null,
+          "preview": null,
+          "actor_name": null,
+          "assignee_name": null
+        },
+        "2026-10-20T17:00:00Z",
+        "America/Phoenix"
+      ],
+      "result": {
+        "id": "e1",
+        "symbol": "report",
+        "title": "Report sent",
+        "detail": "Maria Alvarez",
+        "time": "Oct 14",
+        "open": {
+          "screen": "job",
+          "id": "j1"
+        }
+      }
+    },
+    {
+      "args": [
+        {
+          "id": "e1",
+          "kind": "report_sent",
+          "created_at": "2025-10-14T16:42:00Z",
+          "job_id": "j1",
+          "conversation_id": null,
+          "customer_name": "Maria Alvarez",
+          "job_number": 1038,
+          "amount_cents": null,
+          "scheduled_at": null,
+          "preview": null,
+          "actor_name": null,
+          "assignee_name": null
+        },
+        "2026-10-20T17:00:00Z",
+        "America/Phoenix"
+      ],
+      "result": {
+        "id": "e1",
+        "symbol": "report",
+        "title": "Report sent",
+        "detail": "Maria Alvarez",
+        "time": "Oct 14, 2025",
+        "open": {
+          "screen": "job",
+          "id": "j1"
+        }
+      }
+    },
+    {
+      "args": [
+        {
+          "id": "e1",
+          "kind": "report_sent",
+          "created_at": "2026-10-20T06:59:00Z",
+          "job_id": "j1",
+          "conversation_id": null,
+          "customer_name": "Maria Alvarez",
+          "job_number": 1038,
+          "amount_cents": null,
+          "scheduled_at": null,
+          "preview": null,
+          "actor_name": null,
+          "assignee_name": null
+        },
+        "2026-10-20T17:00:00Z",
+        "America/Phoenix"
+      ],
+      "result": {
+        "id": "e1",
+        "symbol": "report",
+        "title": "Report sent",
+        "detail": "Maria Alvarez",
+        "time": "Yesterday",
+        "open": {
+          "screen": "job",
+          "id": "j1"
+        }
+      }
+    },
+    {
+      "args": [
+        {
+          "id": "e1",
+          "kind": "report_sent",
+          "created_at": "2026-10-20T07:00:00Z",
+          "job_id": "j1",
+          "conversation_id": null,
+          "customer_name": "Maria Alvarez",
+          "job_number": 1038,
+          "amount_cents": null,
+          "scheduled_at": null,
+          "preview": null,
+          "actor_name": null,
+          "assignee_name": null
+        },
+        "2026-10-20T17:00:00Z",
+        "America/Phoenix"
+      ],
+      "result": {
+        "id": "e1",
+        "symbol": "report",
+        "title": "Report sent",
+        "detail": "Maria Alvarez",
+        "time": "12:00 AM",
+        "open": {
+          "screen": "job",
+          "id": "j1"
+        }
+      }
+    },
+    {
+      "args": [
+        {
+          "id": "e1",
+          "kind": "job_moved",
+          "created_at": "2026-10-20T16:42:00Z",
+          "job_id": "j1",
+          "conversation_id": null,
+          "customer_name": "Maria Alvarez",
+          "job_number": 1038,
+          "amount_cents": null,
+          "scheduled_at": "2026-10-20T16:30:00Z",
+          "preview": null,
+          "actor_name": null,
+          "assignee_name": null
+        },
+        "2026-10-20T17:00:00Z",
+        "Asia/Tokyo"
+      ],
+      "result": {
+        "id": "e1",
+        "symbol": "calendar",
+        "title": "Job #1038 moved to Wed 1:30 AM",
+        "detail": "Maria Alvarez",
+        "time": "1:42 AM",
+        "open": {
+          "screen": "job",
+          "id": "j1"
+        }
+      }
+    }
+  ],
+  "groupActivity": [
+    {
+      "args": [
+        [],
+        "2026-10-20T17:00:00Z",
+        "America/Phoenix"
+      ],
+      "result": []
+    },
+    {
+      "args": [
+        [
+          {
+            "id": "a",
+            "kind": "report_sent",
+            "created_at": "2026-10-20T16:00:00Z",
+            "job_id": "j1",
+            "conversation_id": null,
+            "customer_name": "Maria Alvarez",
+            "job_number": 1038,
+            "amount_cents": null,
+            "scheduled_at": null,
+            "preview": null,
+            "actor_name": null,
+            "assignee_name": null
+          },
+          {
+            "id": "b",
+            "kind": "report_sent",
+            "created_at": "2026-10-20T08:00:00Z",
+            "job_id": "j1",
+            "conversation_id": null,
+            "customer_name": "Maria Alvarez",
+            "job_number": 1038,
+            "amount_cents": null,
+            "scheduled_at": null,
+            "preview": null,
+            "actor_name": null,
+            "assignee_name": null
+          },
+          {
+            "id": "c",
+            "kind": "report_sent",
+            "created_at": "2026-10-20T06:00:00Z",
+            "job_id": "j1",
+            "conversation_id": null,
+            "customer_name": "Maria Alvarez",
+            "job_number": 1038,
+            "amount_cents": null,
+            "scheduled_at": null,
+            "preview": null,
+            "actor_name": null,
+            "assignee_name": null
+          },
+          {
+            "id": "d",
+            "kind": "report_sent",
+            "created_at": "2026-10-12T08:00:00Z",
+            "job_id": "j1",
+            "conversation_id": null,
+            "customer_name": "Maria Alvarez",
+            "job_number": 1038,
+            "amount_cents": null,
+            "scheduled_at": null,
+            "preview": null,
+            "actor_name": null,
+            "assignee_name": null
+          },
+          {
+            "id": "e",
+            "kind": "report_sent",
+            "created_at": "2025-10-12T08:00:00Z",
+            "job_id": "j1",
+            "conversation_id": null,
+            "customer_name": "Maria Alvarez",
+            "job_number": 1038,
+            "amount_cents": null,
+            "scheduled_at": null,
+            "preview": null,
+            "actor_name": null,
+            "assignee_name": null
+          }
+        ],
+        "2026-10-20T17:00:00Z",
+        "America/Phoenix"
+      ],
+      "result": [
+        {
+          "key": "2026-10-20",
+          "title": "Today",
+          "rows": [
+            {
+              "id": "a",
+              "symbol": "report",
+              "title": "Report sent",
+              "detail": "Maria Alvarez",
+              "time": "9:00 AM",
+              "open": {
+                "screen": "job",
+                "id": "j1"
+              }
+            },
+            {
+              "id": "b",
+              "symbol": "report",
+              "title": "Report sent",
+              "detail": "Maria Alvarez",
+              "time": "1:00 AM",
+              "open": {
+                "screen": "job",
+                "id": "j1"
+              }
+            }
+          ]
+        },
+        {
+          "key": "2026-10-19",
+          "title": "Yesterday",
+          "rows": [
+            {
+              "id": "c",
+              "symbol": "report",
+              "title": "Report sent",
+              "detail": "Maria Alvarez",
+              "time": "Yesterday",
+              "open": {
+                "screen": "job",
+                "id": "j1"
+              }
+            }
+          ]
+        },
+        {
+          "key": "2026-10-12",
+          "title": "Mon, Oct 12",
+          "rows": [
+            {
+              "id": "d",
+              "symbol": "report",
+              "title": "Report sent",
+              "detail": "Maria Alvarez",
+              "time": "Oct 12",
+              "open": {
+                "screen": "job",
+                "id": "j1"
+              }
+            }
+          ]
+        },
+        {
+          "key": "2025-10-12",
+          "title": "Sun, Oct 12, 2025",
+          "rows": [
+            {
+              "id": "e",
+              "symbol": "report",
+              "title": "Report sent",
+              "detail": "Maria Alvarez",
+              "time": "Oct 12, 2025",
+              "open": {
+                "screen": "job",
+                "id": "j1"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "args": [
+        [
+          {
+            "id": "a",
+            "kind": "report_sent",
+            "created_at": "2026-10-20T16:00:00Z",
+            "job_id": "j1",
+            "conversation_id": null,
+            "customer_name": "Maria Alvarez",
+            "job_number": 1038,
+            "amount_cents": null,
+            "scheduled_at": null,
+            "preview": null,
+            "actor_name": null,
+            "assignee_name": null
+          }
+        ],
+        "2026-10-20T17:00:00Z",
+        "Asia/Tokyo"
+      ],
+      "result": [
+        {
+          "key": "2026-10-21",
+          "title": "Today",
+          "rows": [
+            {
+              "id": "a",
+              "symbol": "report",
+              "title": "Report sent",
+              "detail": "Maria Alvarez",
+              "time": "1:00 AM",
+              "open": {
+                "screen": "job",
+                "id": "j1"
+              }
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

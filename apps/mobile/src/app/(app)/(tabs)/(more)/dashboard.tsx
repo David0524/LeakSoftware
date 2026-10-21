@@ -2,14 +2,24 @@ import { router } from "expo-router";
 import { useCallback, useEffect, useState } from "react";
 import { Pressable, RefreshControl, StyleSheet, View } from "react-native";
 import {
+  ACTIVITY_DASHBOARD_COUNT,
+  ACTIVITY_EMPTY,
+  ACTIVITY_OFFLINE,
+  ACTIVITY_TITLE,
   JOB_STATUSES,
   JOB_STATUS_LABELS,
+  SEARCH_WORDS,
   acceptanceRate,
+  activityRow,
   dashboardTotals,
   formatCents,
   monthLabel,
+  type ActivityEvent,
   type Dashboard,
 } from "@leakbook/core";
+import { useActivityUnread } from "../../../../data/activity";
+import { ActivityItem, ACTIVITY_SEPARATOR_INSET } from "../../../../features/activity/ActivityRow";
+import { fetchActivity } from "../../../../lib/activity";
 import { getServices } from "../../../../lib/services";
 import { useCompany } from "../../../../state/session";
 import { ManagersOnly } from "../../../../features/settings/SettingsList";
@@ -47,6 +57,8 @@ function DashboardPage() {
   const company = useCompany();
   const [load, setLoad] = useState<Load>({ at: "loading", step: 0 });
   const [refreshing, setRefreshing] = useState(false);
+  // Pull to refresh asks for the latest activity again too.
+  const [pulled, setPulled] = useState(0);
 
   const fetchDashboard = useCallback(
     async (quiet: boolean) => {
@@ -85,6 +97,7 @@ function DashboardPage() {
 
   async function refresh() {
     setRefreshing(true);
+    setPulled((n) => n + 1);
     await fetchDashboard(load.at === "ready");
     setRefreshing(false);
   }
@@ -111,13 +124,13 @@ function DashboardPage() {
           <Button title="Try Again" kind="secondary" onPress={() => void fetchDashboard(false)} />
         </>
       ) : d ? (
-        <DashboardBody d={d} />
+        <DashboardBody d={d} pulled={pulled} />
       ) : null}
     </Screen>
   );
 }
 
-function DashboardBody({ d }: { d: Dashboard }) {
+function DashboardBody({ d, pulled }: { d: Dashboard; pulled: number }) {
   const totals = dashboardTotals(d.months);
   const statuses = JOB_STATUSES.map((s) => ({ status: s, n: d.statuses[s] ?? 0 })).filter(
     (s) => s.n > 0,
@@ -150,6 +163,8 @@ function DashboardBody({ d }: { d: Dashboard }) {
           note={`${MONTHS} months`}
         />
       </View>
+
+      <LatestActivity pulled={pulled} />
 
       <Card style={styles.card}>
         <T variant="cardTitle">Collected by Month</T>
@@ -256,6 +271,64 @@ function DashboardBody({ d }: { d: Dashboard }) {
   );
 }
 
+/**
+ * The latest few events, then See All (owner, 2026-10-20: "a shortcut to it on the owner's
+ * dashboard page"), with the dot when there is something new; as the website's Dashboard.
+ */
+function LatestActivity({ pulled }: { pulled: number }) {
+  const company = useCompany();
+  const dot = useActivityUnread(company.id);
+  const [events, setEvents] = useState<ActivityEvent[] | "offline" | null>(null);
+  useEffect(() => {
+    let live = true;
+    fetchActivity(getServices().supabase, company.id, null, ACTIVITY_DASHBOARD_COUNT).then(
+      (page) => live && setEvents(page.events),
+      () => live && setEvents("offline"),
+    );
+    return () => {
+      live = false;
+    };
+  }, [company.id, pulled]);
+  const now = new Date();
+  return (
+    <View style={{ gap: space["2"] }}>
+      <View style={styles.activityHead}>
+        <View style={styles.activityTitle} accessibilityRole="header">
+          <T variant="sectionLabel">{ACTIVITY_TITLE}</T>
+          {dot ? (
+            <View
+              accessible
+              accessibilityLabel="New activity"
+              style={[styles.dot, { backgroundColor: color.primary }]}
+            />
+          ) : null}
+        </View>
+        <Pressable
+          accessibilityRole="link"
+          accessibilityLabel={`${SEARCH_WORDS.seeAll} ${ACTIVITY_TITLE}`}
+          onPress={() => router.push("/activity" as never)}
+          style={({ pressed }) => [styles.seeAll, pressed && { opacity: 0.5 }]}
+        >
+          <T variant="secondary" style={{ color: color.link }}>
+            {SEARCH_WORDS.seeAll}
+          </T>
+        </Pressable>
+      </View>
+      {events === null ? null : events === "offline" ? (
+        <Empty>{ACTIVITY_OFFLINE}</Empty>
+      ) : events.length === 0 ? (
+        <Empty>{ACTIVITY_EMPTY}</Empty>
+      ) : (
+        <Group separatorInset={ACTIVITY_SEPARATOR_INSET}>
+          {events.map((e) => (
+            <ActivityItem key={e.id} row={activityRow(e, now, company.timezone)} />
+          ))}
+        </Group>
+      )}
+    </View>
+  );
+}
+
 function Stat({
   label,
   value,
@@ -325,4 +398,8 @@ const styles = StyleSheet.create({
   statusTrack: { flex: 1 },
   statusBar: { height: 12, borderTopRightRadius: 4, borderBottomRightRadius: 4 },
   count: { width: 40, textAlign: "right" },
+  activityHead: { flexDirection: "row", justifyContent: "space-between", alignItems: "flex-end" },
+  activityTitle: { flexDirection: "row", alignItems: "center", gap: space["2"] },
+  dot: { width: 10, height: 10, borderRadius: 5 },
+  seeAll: { minHeight: minTap, justifyContent: "center", marginVertical: -12 },
 });

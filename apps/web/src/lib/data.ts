@@ -34,6 +34,7 @@ import {
 } from "@leakbook/core";
 import type { Office } from "./auth";
 import { createClient } from "./supabase/server";
+import { isUuid } from "./uuid";
 
 // Office reads. Every query runs as the signed-in user (RLS) and is also scoped to the
 // active company, since one person can belong to more than one shop.
@@ -404,6 +405,8 @@ export function checklistCount(detail: JobDetail): { done: number; total: number
 }
 
 export async function getJob(office: Office, id: string): Promise<JobDetail | null> {
+  // A mistyped link (/jobs/abc) is "not found", not the error screen (the query would fail).
+  if (!isUuid(id)) return null;
   const supabase = await db();
   const live = <T>(table: string) =>
     supabase.from(table).select("*").eq("job_id", id).is("deleted_at", null) as unknown as Promise<{

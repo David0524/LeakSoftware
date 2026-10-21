@@ -167,6 +167,9 @@ export function useSwipe<
     const down = (e: PointerEvent) => {
       const o = opts.current;
       if (!o.enabled || e.pointerType === "mouse" || !e.isPrimary || pending.current) return;
+      // Only touches in the area itself: a sheet or alert opened from it (a portal) must not
+      // change the page behind it.
+      if (!el.contains(e.target as Node)) return;
       if (startsOnOwnGesture(e.target as Element, el)) return;
       start = { x: e.clientX, y: e.clientY, id: e.pointerId };
       lock = null;

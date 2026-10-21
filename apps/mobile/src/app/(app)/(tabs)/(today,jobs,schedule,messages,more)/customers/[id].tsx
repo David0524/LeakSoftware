@@ -22,6 +22,7 @@ import { Alert, Linking, StyleSheet, Text, View } from "react-native";
 import { latestByPool, useChemicalLog } from "../../../../../data/chemicals";
 import { KIND_LABELS, useCustomerData } from "../../../../../data/customers";
 import { MaintenancePlans } from "../../../../../features/maintenance/MaintenancePlans";
+import { useRememberOpened } from "../../../../../features/search/useRememberOpened";
 import { useTeam } from "../../../../../data/schedule";
 import { useLine } from "../../../../../data/texting";
 import { useRoutingOn } from "../../../../../lib/routing";
@@ -46,7 +47,8 @@ import {
 } from "../../../../../ui/components";
 import { confirmDestructive } from "../../../../../ui/confirm";
 import { haptics } from "../../../../../ui/haptics";
-import { ModalSheet } from "../../../../../ui/ModalSheet";
+import { formChanged } from "../../../../../lib/discard";
+import { ModalSheet, useUnsavedChanges } from "../../../../../ui/ModalSheet";
 import { Select } from "../../../../../ui/Select";
 import { color, face, MAX_TEXT_SCALE, space, type } from "../../../../../ui/theme";
 
@@ -70,6 +72,17 @@ export default function CustomerPage() {
   const [editing, setEditing] = useState<"contact" | Property | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
   const customer = customers.find((c) => c.id === id && !c.deleted_at);
+  // First under Recent in search (docs/plans/search-and-activity.md), as the website's.
+  useRememberOpened(
+    customer
+      ? {
+          kind: "customer",
+          id: customer.id,
+          title: customer.name,
+          detail: customer.phone?.trim() || customer.email?.trim() || null,
+        }
+      : null,
+  );
 
   if (!customer) {
     return (
@@ -359,6 +372,9 @@ function ContactForm({ customer, onSaved }: { customer: CustomerFields; onSaved:
     notes: customer.notes ?? "",
     optOut: Boolean(customer.marketing_opt_out),
   });
+  // Unsaved entries ask before closing (owner, 2026-10-20: "Discard changes?" everywhere).
+  const [startF] = useState(f);
+  useUnsavedChanges(formChanged(startF, f));
   const [errors, setErrors] = useState<Record<string, string>>({});
   const set = (k: keyof typeof f) => (v: string) => setF({ ...f, [k]: v });
 

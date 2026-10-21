@@ -47,7 +47,6 @@
         @Environment(\.dismiss) private var dismiss
         @Environment(SyncService.self) private var sync
         @Environment(AppEnvironment.self) private var app
-        @State private var confirmingDiscard = false
         @State private var saveProblem: String?
         @State private var saved = 0
         @State private var suggestions: (list: [Suggestion], note: String?)?
@@ -92,26 +91,10 @@
             .scrollDismissesKeyboard(.interactively)
             .onChange(of: form.jobType) { form.jobTypeChanged() }
             .navigationTitle("New Job")
-            .navigationBarBackButtonHidden(form.isDirty)
-            .toolbar {
-                if form.isDirty {
-                    ToolbarItem(placement: .topBarLeading) {
-                        Button {
-                            confirmingDiscard = true
-                        } label: {
-                            HStack(spacing: 2) {
-                                Image(systemName: "chevron.left").font(.system(size: 17, weight: .semibold))
-                                Text(back)
-                            }
-                        }
-                        .accessibilityLabel("Back to \(back)")
-                    }
-                }
-            }
-            .confirmationDialog("Discard this new job?", isPresented: $confirmingDiscard, titleVisibility: .visible) {
-                Button("Discard Job", role: .destructive) { dismiss() }
-                Button("Keep Editing", role: .cancel) {}
-            }
+            // Explicit: the tab roots it's pushed from have an inline bar (RootTitle.swift).
+            .navigationBarTitleDisplayMode(.large)
+            // Back with something typed asks "Discard changes?" (owner, 2026-10-20: everywhere).
+            .discardOnBack(dirty: form.isDirty && saved == 0, back: back)
             .sensoryFeedback(.success, trigger: saved)
             .alert(
                 "Couldn’t Save the Job",

@@ -32,11 +32,81 @@
         @State private var undoJob: String?
         /// Whether the "N done" row is open.
         @State private var showDone = false
+        /// Reorder: the list in edit mode, as iOS Reminders (owner, 2026-10-20).
+        @State private var reordering = false
+        /// Do Later just done: "Moved." and Undo where the button was, for 5 seconds.
+        @State private var moved: StopMoveUndo?
+        /// The last move's message, or why it wasn't made.
+        @State private var moveNote: (text: String, error: Bool)?
         @Environment(\.scenePhase) private var scenePhase
         @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
         var body: some View {
+            Group {
+                if reordering, let day, let route = day.route, !route.jobs.isEmpty {
+                    reorderList(day, route)
+                } else {
+                    page
+                }
+            }
+            // The sync bar stays in view under the navigation bar (owner, 2026-10-20).
+            .pinnedSyncBar()
+            .refreshable { await sync.syncNow() }
+            .undoWindow($moved)
+            .onChange(of: techId) { _, _ in
+                reordering = false
+                moved = nil
+                moveNote = nil
+            }
+            .onChange(of: reordering) { _, _ in moveNote = nil }
+            .onChange(of: app.stopRequest, initial: true) { _, request in
+                // A Live Activity button: show my day, where the stop's card does it (a done stop's
+                // card is in the "N done" row, which opens).
+                if request != nil {
+                    techId = nil
+                    reordering = false
+                }
+                if let request, let day,
+                    day.route?.jobs.first(where: { $0.id == request.jobId })?.doneOn(day.ctx.today) == true
+                {
+                    showDone = true
+                }
+            }
+            .rootTitle(title)
+            .toolbar { NewJobToolbar(back: "Today") }
+            .task(id: "\(sync.revision)|\(session.company?.id ?? "")|\(techId ?? "")|\(drive.known.count)") {
+                await reload()
+            }
+            .task(id: flash) {
+                guard flash != nil else { return }
+                try? await Task.sleep(for: .seconds(0.6))
+                flash = nil
+            }
+            .resultBanner($banner, onUndo: { undoCompleted() })
+            .onChange(of: scenePhase) { _, phase in
+                // Back to the stop the day is on when the app opens again.
+                if phase == .active { viewing = nil }
+            }
+            .task(id: session.company?.id) {
+                guard let company = session.company, let user = session.user else { return }
+                // Read off the main thread: every job's row, for the drive times' points.
+                let store = sync.store
+                let (zip, keys) = await Task.detached(priority: .utility) {
+                    let ctx = scheduleContext(store, company: company, userId: user.id)
+                    return (
+                        ctx.shopZip, routePoints(scheduleJobs(store, companyId: company.id), starts: ctx.startPoints)
+                    )
+                }.value
+                async let w = app.api.weather(zip: zip)
+                drive = await cachedDriveTimes(app, companyId: company.id, keys: keys)
+                weather = await w
+            }
+        }
+
+        /// Today as it usually is: the header, whose day, the card and the stops, and the tip.
+        private var page: some View {
             ScreenScroll {
+                RootLargeTitle(stackSpacing: 24)
                 // Only this flag, not the whole sync status: Today doesn't redraw on every sync.
                 let firstSync = sync.firstSyncRunning
                 if session.company != nil && (day == nil || (firstSync && day?.route == nil)) {
@@ -76,48 +146,7 @@
                     }
                 }
             }
-            // The sync bar stays in view under the navigation bar (owner, 2026-10-20).
-            .pinnedSyncBar()
-            .refreshable { await sync.syncNow() }
-            .onChange(of: app.stopRequest, initial: true) { _, request in
-                // A Live Activity button: show my day, where the stop's card does it (a done stop's
-                // card is in the "N done" row, which opens).
-                if request != nil { techId = nil }
-                if let request, let day,
-                    day.route?.jobs.first(where: { $0.id == request.jobId })?.doneOn(day.ctx.today) == true
-                {
-                    showDone = true
-                }
-            }
-            .navigationTitle(title)
-            .toolbar { NewJobToolbar(back: "Today") }
-            .task(id: "\(sync.revision)|\(session.company?.id ?? "")|\(techId ?? "")|\(drive.known.count)") {
-                await reload()
-            }
-            .task(id: flash) {
-                guard flash != nil else { return }
-                try? await Task.sleep(for: .seconds(0.6))
-                flash = nil
-            }
-            .resultBanner($banner, onUndo: { undoCompleted() })
-            .onChange(of: scenePhase) { _, phase in
-                // Back to the stop the day is on when the app opens again.
-                if phase == .active { viewing = nil }
-            }
-            .task(id: session.company?.id) {
-                guard let company = session.company, let user = session.user else { return }
-                // Read off the main thread: every job's row, for the drive times' points.
-                let store = sync.store
-                let (zip, keys) = await Task.detached(priority: .utility) {
-                    let ctx = scheduleContext(store, company: company, userId: user.id)
-                    return (
-                        ctx.shopZip, routePoints(scheduleJobs(store, companyId: company.id), starts: ctx.startPoints)
-                    )
-                }.value
-                async let w = app.api.weather(zip: zip)
-                drive = await cachedDriveTimes(app, companyId: company.id, keys: keys)
-                weather = await w
-            }
+            .rootTitleScroll()
         }
 
         /// Whose day: a teammate's, a cross-fade of the list, and the card back to their now.
@@ -167,20 +196,15 @@
                 let now = day.next?.id
                 // Rows are built as they scroll on (gestures spec section 6: long lists virtualized).
                 LazyVStack(alignment: .leading, spacing: 4) {
-                    Text(day.summaryText)
-                        .textRole(.body)
-                        .foregroundStyle(Color.textMuted)
-                        .monospacedDigit()
-                        .contentTransition(.numericText())
-                        .padding(.bottom, 12)
-                    TodayHeroPager(day: day, viewing: $viewing, flash: flash).padding(.bottom, 20)
+                    summaryLine(day).padding(.bottom, 12)
+                    TodayHeroPager(day: day, viewing: $viewing, flash: flash, moves: stopMoves).padding(.bottom, 20)
                     if !done.isEmpty {
                         TodayDoneRow(count: done.count, open: $showDone)
                         if showDone {
                             ForEach(done, id: \.element.id) { i, job in
                                 TodayStopCard(
                                     number: i + 1, job: job, day: day, leg: route.summary.legs[routeIndex: i] ?? 0,
-                                    isNext: false
+                                    isNext: false, moves: stopMoves, undoShown: moved?.jobId == job.id ? moved : nil
                                 )
                                 .equatable()
                             }
@@ -193,7 +217,7 @@
                             short: route.summary.short[routeIndex: i] ?? 0, inset: 16)
                         TodayStopCard(
                             number: i + 1, job: job, day: day, leg: route.summary.legs[routeIndex: i] ?? 0,
-                            isNext: job.id == now
+                            isNext: job.id == now, moves: stopMoves, undoShown: moved?.jobId == job.id ? moved : nil
                         )
                         .equatable()
                     }
@@ -204,6 +228,121 @@
                     text: "Nothing on \(day.techId == day.ctx.userId ? "your" : "this") route today.",
                     link: "Open the schedule."
                 ) { openTab(.schedule) }
+            }
+        }
+
+        /// "6 stops · 1 hr 15 min driving · Reorder" (Done while reordering), and
+        /// the last move's message under it.
+        private func summaryLine(_ day: TodayDay) -> some View {
+            let button = reordering || day.reorderable
+            return VStack(alignment: .leading, spacing: 4) {
+                HStack(alignment: .firstTextBaseline, spacing: 6) {
+                    Text(day.summaryText + (button ? " ·" : ""))
+                        .textRole(.body)
+                        .foregroundStyle(Color.textMuted)
+                        .monospacedDigit()
+                        .contentTransition(.numericText())
+                        .fixedSize(horizontal: false, vertical: true)
+                    if button {
+                        Button(reordering ? TodayReorderText.done : TodayReorderText.reorder) {
+                            withAnimation(Motion.smooth) { reordering.toggle() }
+                        }
+                        .textRole(.bodyEmphasis)
+                        .foregroundStyle(Color.link)
+                        .buttonStyle(.plain)
+                        .frame(minHeight: minTarget)
+                        .contentShape(Rectangle())
+                        .accessibilityHint(
+                            reordering ? "Ends reordering" : "Shows Move Up and Move Down on each stop")
+                    }
+                    Spacer(minLength: 0)
+                }
+                if let moveNote {
+                    Text(moveNote.text)
+                        .textRole(.secondary)
+                        .foregroundStyle(moveNote.error ? Color.fail : Color.textMuted)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+            }
+        }
+
+        /// Reorder (owner, 2026-10-20): the day's stops still to do in a list in edit mode, as iOS
+        /// Reminders. Each stop that can move has a drag handle and Move Up and Move Down (the
+        /// visible alternative to dragging); one that can't shows a lock and why. Each move saves at
+        /// once, and the times and drives update as you go. Done ends it.
+        private func reorderList(_ day: TodayDay, _ route: DayRoute) -> some View {
+            let stops = Array(route.jobs.enumerated()).filter { !$0.element.doneOn(day.ctx.today) }
+            return List {
+                Section {
+                    summaryLine(day).plainListRow()
+                }
+                Section {
+                    ForEach(stops, id: \.element.id) { i, job in
+                        let lock = day.lock(job)
+                        TodayReorderRow(
+                            number: i + 1, job: job, timeZone: day.ctx.timeZone,
+                            leg: route.summary.legs[routeIndex: i] ?? 0, first: i == 0, start: day.startLabel,
+                            lock: lock,
+                            canUp: day.canPlace(job, .up), canDown: day.canPlace(job, .down)
+                        ) { place in
+                            moveStop(job, place, from: .reorder)
+                        }
+                        .moveDisabled(lock != nil)
+                    }
+                    .onMove { from, to in
+                        guard let first = from.first, to != first, to != first + 1 else { return }
+                        // `to` counts the stop itself; places count the others.
+                        moveStop(stops[first].element, .place(to > first ? to - 1 : to), from: .reorder)
+                    }
+                } footer: {
+                    Text(verbatim: "\(durationLabel(route.summary.backLegMin)) \(backLegLabel(day.startLabel))")
+                        .textRole(.secondary)
+                        .foregroundStyle(Color.textMuted)
+                }
+            }
+            .listStyle(.insetGrouped)
+            .scrollContentBackground(.hidden)
+            .background(Color.bg)
+            .environment(\.editMode, .constant(.active))
+        }
+
+        /// Do Later and Undo for the card and the stops.
+        private var stopMoves: StopMoves {
+            StopMoves(
+                pending: moved, doLater: { job, source in moveStop(job, .later, from: source) },
+                undoMove: { undoMove($0) })
+        }
+
+        /// Moves a stop with the Schedule's move, saved through the sync layer (offline too).
+        private func moveStop(_ job: ScheduleJob, _ place: StopPlace, from source: StopMoveUndo.Source) {
+            guard let company = session.company, let day else { return }
+            do {
+                guard
+                    let undo = try moveTodayStop(
+                        sync, companyId: company.id, ctx: day.ctx, team: day.team, techId: day.techId, jobId: job.id,
+                        to: place, source: source, drive: drive)
+                else { return }
+                if source == .reorder {
+                    moveNote = (undo.text, false)
+                    AccessibilityNotification.Announcement(undo.text).post()
+                } else {
+                    moveNote = nil
+                    withAnimation(Motion.smooth) { moved = undo }
+                }
+            } catch {
+                moveNote = (String(describing: error), true)
+                AccessibilityNotification.Announcement(String(describing: error)).post()
+            }
+        }
+
+        /// Undo: the rows the move changed back to their saved values.
+        private func undoMove(_ undo: StopMoveUndo) {
+            guard let company = session.company else { return }
+            do {
+                try undo.undo(sync, companyId: company.id)
+                withAnimation(Motion.smooth) { moved = nil }
+            } catch {
+                moveNote = (String(describing: error), true)
             }
         }
 
@@ -264,6 +403,8 @@
         let token = UUID()
         var ctx: ScheduleContext
         var techs: [TeamMember]
+        /// The whole shop, for moves.
+        var team: [TeamMember]
         var techId: String
         var route: DayRoute?
         var mapsApp: MapsApp
@@ -282,6 +423,7 @@
         ) {
             ctx = scheduleContext(store, company: company, userId: userId)
             let team = teamMembers(store, kv: kv, companyId: company.id, userId: userId)
+            self.team = team
             let jobs = scheduleJobs(store, companyId: company.id)
             let loaded = loadRoutes(jobs, ctx: ctx, dates: [ctx.today], team: team, drive: drive)
             let today = ctx.today
@@ -334,6 +476,24 @@
                 stops: route.jobs.map { (place: $0.place, done: $0.doneOn(ctx.today)) })
         }
 
+        /// Why a stop keeps its place (started, locked, done), or nil when it can move.
+        func lock(_ job: ScheduleJob) -> StopLock? {
+            todayStopLock(job, routeTech: techId, today: ctx.today, timeZone: ctx.timeZone)
+        }
+
+        /// Whether the stop can go there: techs on their own day, owners and admins on any.
+        func canPlace(_ job: ScheduleJob, _ place: StopPlace) -> Bool {
+            guard canReorderDay(ctx, techId: techId), let route else { return false }
+            return reorderIndex(
+                route.jobs, jobId: job.id, to: place, routeTech: techId, today: ctx.today, timeZone: ctx.timeZone)
+                != nil
+        }
+
+        /// Whether any stop can change places (Reorder shows).
+        var reorderable: Bool {
+            (route?.jobs ?? []).contains { canPlace($0, .later) || canPlace($0, .up) }
+        }
+
         /// "3 stops · 1 hr 20 min driving" (no clock times, owner 2026-10-21)
         var summaryText: String {
             guard let route else { return "" }
@@ -359,10 +519,17 @@
         var day: TodayDay
         var leg: Int
         var isNext: Bool
+        /// Do Later and its Undo (docs/plans/today-reorder.md).
+        var moves: StopMoves
+        /// Do Later just done on this stop: "Moved." and Undo, for 5 seconds (compared, so the row
+        /// redraws when it shows and goes).
+        var undoShown: StopMoveUndo?
 
-        /// A row redraws only when its own stop, its place, or the day it was read from changes.
+        /// A row redraws only when its own stop, its place, the day it was read from, or its
+        /// Undo changes.
         nonisolated static func == (a: TodayStopCard, b: TodayStopCard) -> Bool {
             a.number == b.number && a.job == b.job && a.leg == b.leg && a.isNext == b.isNext && a.day == b.day
+                && a.undoShown == b.undoShown
         }
         @State private var open: Bool?
         /// Message's text from the phone, addressed to the customer (`StopText`).
@@ -419,7 +586,11 @@
             ]
         }
 
-        /// Swipe left: Call and Directions (the row's call button and address stay visible).
+        /// Whether Do Later can move this stop (it isn't done, and isn't last already).
+        private func canDoLater(done: Bool) -> Bool { !done && day.canPlace(job, .later) }
+
+        /// Swipe left: Call and Directions, then Do Later when the stop can move (the row's call
+        /// button, address and Do Later button stay visible).
         private func trailingActions(done: Bool) -> [SwipeAction] {
             var list: [SwipeAction] = []
             if let phone = job.customerPhone {
@@ -428,6 +599,14 @@
             if !job.address.isEmpty {
                 list.append(
                     SwipeAction(title: "Directions", systemImage: "location.fill", tint: Color.link) { directions() })
+            }
+            if canDoLater(done: done) {
+                list.append(
+                    SwipeAction(
+                        title: TodayReorderText.doLater, systemImage: "clock.arrow.circlepath", tint: Color.water
+                    ) {
+                        moves.doLater(job, .row)
+                    })
             }
             return list
         }
@@ -439,6 +618,9 @@
             }
             if !job.address.isEmpty {
                 Button("Directions", systemImage: "location") { directions() }
+            }
+            if canDoLater(done: done) {
+                Button(TodayReorderText.doLater, systemImage: "clock.arrow.circlepath") { moves.doLater(job, .row) }
             }
             Button("Open Job", systemImage: "arrow.up.right") { openRoute(.job(job.id)) }
         }
@@ -512,6 +694,13 @@
                     .padding(.bottom, 12)
                     .transition(.opacity)
                 }
+                // Do Later just done here: "Moved." and Undo, open or closed.
+                if let undo = undoShown {
+                    UndoRow(text: undo.text) { moves.undoMove(undo) }
+                        .padding(.horizontal, 12)
+                        .padding(.bottom, 8)
+                        .transition(.opacity)
+                }
             }
         }
 
@@ -582,6 +771,12 @@
                 VStack(alignment: .leading, spacing: 8) {
                     FlowRow(spacing: 8) {
                         if markStopTitle(job, day: day.ctx.today) != nil { TodayMarkButton(job: job, day: day) }
+                        if canDoLater(done: done) && undoShown == nil {
+                            Button(TodayReorderText.doLater) { moves.doLater(job, .row) }
+                                .buttonStyle(.secondary)
+                                .accessibilityLabel("\(TodayReorderText.doLater), \(job.customerName)")
+                                .accessibilityHint("Moves the stop after the last one")
+                        }
                     }
                 }
                 Spacer(minLength: 0)

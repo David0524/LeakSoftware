@@ -1,4 +1,5 @@
 import { expect, test } from "@playwright/test";
+import { adminClient } from "./backend";
 import { OWNER, RUN, signIn } from "./helpers";
 
 // M11 launch pieces: the pages the app stores link to, the status page an uptime monitor
@@ -22,6 +23,12 @@ test("privacy, terms, and status pages are public", async ({ page, request }) =>
 });
 
 test("a tech deletes their account and can't sign in again", async ({ page, browser }) => {
+  // Deleting needs the server's admin key; without it the account stays and the test tech is
+  // left active on the demo shop (2026-10-20).
+  test.skip(
+    !adminClient(),
+    "Needs SUPABASE_SERVICE_ROLE_KEY (CI runs it against Supabase in Docker).",
+  );
   const email = `e2e-leaver-${RUN}@demo.leakbook.test`;
   await signIn(page, OWNER, "/settings/team");
   // Invite Someone opens the invite form in a sheet; the open invite's row holds the link.

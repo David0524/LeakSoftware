@@ -10,6 +10,9 @@ import { Select } from "../../ui/Select";
 import { color, MAX_TEXT_SCALE, tabular, type } from "../../ui/theme";
 import { useRowMenu } from "../../ui/RowMenu";
 import { EditSheet, FormActions, ManagersOnly, SettingsList, useEditSheet } from "./SettingsList";
+import { formChanged } from "../../lib/discard";
+import { priceItemErrors } from "../../lib/limits";
+import { useUnsavedChanges } from "../../ui/ModalSheet";
 
 interface PriceItem {
   id: string;
@@ -134,6 +137,9 @@ function ItemForm({
     taxable: item ? item.taxable : true,
     active: item ? item.active : true,
   });
+  // Unsaved entries ask before closing (owner, 2026-10-20: "Discard changes?" everywhere).
+  const [startF] = useState(f);
+  useUnsavedChanges(formChanged(startF, f));
   const [errors, setErrors] = useState<Record<string, string>>({});
   const set = (k: keyof typeof f) => (v: string) => setF({ ...f, [k]: v });
 
@@ -142,6 +148,8 @@ function ItemForm({
     const e: Record<string, string> = {};
     if (!f.name.trim()) e.name = "Enter a name.";
     if (price === null || price < 0) e.price = "Enter a price, like 185 or 185.50.";
+    // The website's limits (owner, 2026-10-20).
+    Object.assign(e, priceItemErrors(f.name, f.unit));
     setErrors(e);
     if (Object.keys(e).length) return;
     saveConfig("price_book_item", company.id, item?.id ?? null, {
@@ -170,7 +178,7 @@ function ItemForm({
           keyboardType="decimal-pad"
           error={errors.price}
         />
-        <FieldRow label="Unit" value={f.unit} onChangeText={set("unit")} />
+        <FieldRow label="Unit" value={f.unit} onChangeText={set("unit")} error={errors.unit} />
         <FieldRow label="Category" value={f.category} onChangeText={set("category")} />
         <FieldRow
           label="Order"

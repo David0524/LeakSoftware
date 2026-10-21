@@ -37,6 +37,8 @@ Run the checks the change can affect (owner, 2026-10-14):
 
 Do not commit with failing checks, and never skip or disable a test to get green. CI (`.github/workflows/ci.yml`) runs everything on every push, plus the web build and Playwright. Don't wait for it after pushing; check its result before the next push and fix anything red first. Wait for a green CI only before `pnpm db:deploy`.
 
+**Merge finished work into the default branch yourself** (owner, 2026-10-21: "You got to start merging on your own going forward"). When a piece of work is committed, pushed, and CI is green on it, first merge the default branch into your branch (resolve, run the checks, push, green CI), then merge your branch into the default branch and push it, without asking. Never force-push the default branch. Session branches deploy migrations to the shared dev project too, so name new migrations after the latest prefix on the default branch and check `supabase_migrations.schema_migrations` for collisions before `pnpm db:deploy`.
+
 `pnpm test:db` uses real Supabase in Docker when available (CI), otherwise local Postgres 16 with the shim in `supabase/test-shim/` (kept outside `supabase/tests/`, which `supabase test db` runs in full) (cloud sessions; `scripts/session-start.sh` installs pgTAP). Write SQL that works on both: only rely on `auth.uid()`, `auth.jwt()`, `auth.users`, and `storage.objects`/`storage.foldername()` from Supabase's schemas.
 
 ## Design review (Apple Design skill)

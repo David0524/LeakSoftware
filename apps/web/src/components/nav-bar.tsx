@@ -2,11 +2,16 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useEffect, useState, useSyncExternalStore, type ReactNode } from "react";
+import { useEffect, useRef, useState, useSyncExternalStore, type ReactNode } from "react";
 import { Logo } from "./logo";
 
 /** The phone tab bar's pages. Their bars carry the logo at the left; pushed pages keep Back. */
 const TAB_ROOTS = ["/today", "/jobs", "/schedule", "/messages", "/more"];
+/**
+ * Room the large title leaves for the logo in the bar's row: the logo (24 tall, 102 wide) and
+ * 8 px, both starting 16 from the edge. globals.css applies it before the page is interactive.
+ */
+const BRAND_LEAD = 110;
 
 // Local helper: ui.tsx renders NavBar, so importing from it here would be circular.
 const cx = (...parts: (string | false | null | undefined)[]) => parts.filter(Boolean).join(" ");
@@ -42,6 +47,13 @@ export function useStillNavBar(on: boolean) {
  * bar. Back sits on the left ("‹ Jobs") and the page's main action on the right. The tab bar's
  * own pages (Today, Jobs, Schedule, Messages, More) show the logo there instead (owner,
  * 2026-10-21: "Incorporate this logo with the text in the top left of each main page").
+ *
+ * Without Back (the tab roots), the large title sits in the bar's row, left of the action, as
+ * in Apple's App Store and Music (owner, 2026-10-20: "push up towards where the plus button
+ * is"), and right of the logo on the tab bar's pages. The bar sets `--nav-action` on the title
+ * to the action's width, so a long or enlarged title wraps between words before it reaches the
+ * "+"; when one of its words is wider than the room left (very large text), the title moves to
+ * its own row under the bar instead.
  */
 export function NavBar({
   title,
@@ -61,40 +73,81 @@ export function NavBar({
     () => stills > 0,
     () => false,
   );
+  const actionRef = useRef<HTMLDivElement>(null);
+  // Beside the action, unless a word of the title can't fit there (very large text): then it
+  // takes its own row under the bar, as with Back.
+  const [stacked, setStacked] = useState(false);
+  const inline = !back && !stacked;
   useEffect(() => {
     const el = document.getElementById(titleId);
     if (!el) return;
+    // Under the bar, the title has gone once it passes under it; in the bar's row, once half
+    // of it has scrolled off the top. A page whose content fits (it can't scroll the title
+    // away) never collapses; only a real scroll past the large title does.
     const io = new IntersectionObserver(
       ([e]) =>
-        // A page whose content fits (it can't scroll the title away) never collapses; only a
-        // real scroll past the large title does.
         setPast(
-          !e!.isIntersecting &&
+          (inline ? e!.intersectionRatio < 0.5 : !e!.isIntersecting) &&
             document.documentElement.scrollHeight - window.innerHeight >
-              el.getBoundingClientRect().height + 52,
+              el.getBoundingClientRect().height + (inline ? 0 : 52),
         ),
-      { rootMargin: "-52px 0px 0px 0px" },
+      inline ? { threshold: [0, 0.5, 1] } : { rootMargin: "-52px 0px 0px 0px" },
     );
     io.observe(el);
     return () => io.disconnect();
-  }, [titleId]);
+  }, [titleId, inline]);
   const collapsed = past && !still;
   const path = usePathname();
   const brand = !back && TAB_ROOTS.includes(path);
+  useEffect(() => {
+    const el = document.getElementById(titleId);
+    const row = el?.closest<HTMLElement>("[data-page-header]");
+    const action = actionRef.current;
+    if (back || !el || !row || !action) return;
+    const lead = brand ? BRAND_LEAD : 0;
+    const measure = () => {
+      const room =
+        (el.parentElement ?? el).clientWidth - action.getBoundingClientRect().width - lead;
+      const words = [...el.children].map((w) => w.getBoundingClientRect().width);
+      const stack = Math.max(0, ...words) > room;
+      setStacked(stack);
+      row.toggleAttribute("data-stacked", stack);
+      el.style.setProperty(
+        "--nav-action",
+        stack ? "0px" : `${action.getBoundingClientRect().width}px`,
+      );
+    };
+    const ro = new ResizeObserver(measure);
+    ro.observe(action);
+    ro.observe(el);
+    ro.observe(row);
+    return () => {
+      ro.disconnect();
+      row.removeAttribute("data-stacked");
+      el.style.removeProperty("--nav-action");
+    };
+  }, [titleId, back, brand]);
 
   return (
     <div
+      data-nav-brand={brand ? "" : undefined}
       className={cx(
         "nav-main fixed inset-x-0 top-0 z-30 pt-[env(safe-area-inset-top)] transition-colors sm:hidden",
         collapsed ? "glass-bar" : "bg-transparent",
       )}
     >
-      <div className="grid h-11 grid-cols-[1fr_auto_1fr] items-center px-2">
-        <div className="min-w-0 justify-self-start">
+      {/* Large text (owner, 2026-10-20), as iOS does: the bar grows in height with the text,
+          the title truncates, and the back label gives way before it collides: truncated
+          first, then only the chevron (the cell is a container, so the label hides once its
+          column is under about 3.5 of its own letters wide). The action column keeps its
+          button's width; the title's column shrinks instead. */}
+      <div className="grid min-h-11 grid-cols-[minmax(2.75rem,1fr)_minmax(0,auto)_minmax(2.75rem,1fr)] items-center px-2">
+        <div className="@container min-w-0">
           {back ? (
             <Link
               href={back.href}
-              className="flex min-h-11 items-center gap-0.5 rounded-full pr-2 text-link"
+              aria-label={back.label}
+              className="inline-flex min-h-11 max-w-full min-w-11 items-center gap-0.5 rounded-full pr-2 text-link"
             >
               <svg
                 viewBox="0 0 12 20"
@@ -108,7 +161,7 @@ export function NavBar({
               >
                 <path d="M10 2 2 10l8 8" />
               </svg>
-              <span className="truncate">{back.label}</span>
+              <span className="truncate @max-[3.5em]:hidden">{back.label}</span>
             </Link>
           ) : brand ? (
             // 24 pt tall like the leading brand in Apple's own apps; the light or reverse
@@ -124,14 +177,21 @@ export function NavBar({
             // The large title's face at 17 pt, so the title reads the same scrolled or not
             // (owner, 2026-10-20: "'Schedule' has different fonts depending on if the map is
             // hidden or not").
-            brand ? "max-w-[calc(100vw-15rem)]" : "max-w-[55vw]",
             "truncate font-display text-[1.0625rem] font-bold transition-opacity",
-            collapsed ? "opacity-100" : "opacity-0",
+            // Hidden, it takes no room, so "‹ Jobs" shows in full above the large title. Beside
+            // the logo, it leaves the logo its room.
+            collapsed
+              ? brand
+                ? "max-w-[calc(100vw-15rem)] opacity-100"
+                : "max-w-[55vw] opacity-100"
+              : "max-w-0 opacity-0",
           )}
         >
           {title}
         </p>
-        <div className="flex min-w-0 items-center gap-1 justify-self-end">{action}</div>
+        <div ref={actionRef} className="flex items-center gap-1 justify-self-end">
+          {action}
+        </div>
       </div>
     </div>
   );

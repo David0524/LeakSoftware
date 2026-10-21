@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Alert, Linking, View } from "react-native";
 import { FINISH_PHOTO_MESSAGE, requiresFinishPhoto, type Media } from "@leakbook/core";
-import { saveCapture, useJobMedia } from "../../data/media";
+import { forgetCapture, rememberCapture, saveCapture, useJobMedia } from "../../data/media";
 import { MediaError, askLocationOnce, captureWithCamera, currentPosition } from "../../lib/media";
 import { useCompany } from "../../state/session";
 import { Button, Notice, T } from "../../ui/components";
@@ -39,6 +39,12 @@ export function FinishPhotoNotice({ jobId }: { jobId: string }) {
     try {
       await askLocationOnce();
       const position = currentPosition();
+      rememberCapture({
+        companyId: company.id,
+        target: { jobId },
+        kind: "photo",
+        source: "camera",
+      });
       const file = await captureWithCamera("photo");
       if (file) await saveCapture(company.id, { jobId }, file, position);
     } catch (e) {
@@ -50,6 +56,7 @@ export function FinishPhotoNotice({ jobId }: { jobId: string }) {
         ]);
       } else setError(message);
     } finally {
+      forgetCapture();
       setBusy(false);
     }
   }

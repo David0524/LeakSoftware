@@ -11,6 +11,7 @@ import {
 import type { FormState } from "@/app/actions/auth";
 import { Banner } from "./doc-ui";
 import { Button, FieldGroup, GroupedField } from "./ui";
+import { orOffline } from "@/lib/offline";
 
 const CODE = {
   inputMode: "numeric" as const,
@@ -22,7 +23,7 @@ const CODE = {
 
 /** After the password: the code from the authenticator app. */
 export function VerifyCodeForm({ next }: { next: string }) {
-  const [state, act, pending] = useActionState(verifyTwoStep, {} as FormState);
+  const [state, act, pending] = useActionState(orOffline(verifyTwoStep), {} as FormState);
   return (
     <form action={act} className="space-y-4">
       <input type="hidden" name="next" value={next} />
@@ -45,9 +46,18 @@ export function VerifyCodeForm({ next }: { next: string }) {
 
 /** More › Two-Step Sign-In: turn it on (scan, then the first code) or off. */
 export function TwoStepSettings({ on }: { on: boolean }) {
-  const [setup, start, starting] = useActionState(async () => startTwoStep(), {} as SetupState);
-  const [confirmed, confirm, confirming] = useActionState(confirmTwoStep, {} as SetupState);
-  const [off, turnOff, turningOff] = useActionState(async () => turnOffTwoStep(), {} as FormState);
+  const [setup, start, starting] = useActionState(
+    orOffline(async () => startTwoStep()),
+    {} as SetupState,
+  );
+  const [confirmed, confirm, confirming] = useActionState(
+    orOffline(confirmTwoStep),
+    {} as SetupState,
+  );
+  const [off, turnOff, turningOff] = useActionState(
+    orOffline(async () => turnOffTwoStep()),
+    {} as FormState,
+  );
 
   if (confirmed.message) return <Banner tone="success">{confirmed.message}</Banner>;
   if (off.message) return <Banner tone="success">{off.message}</Banner>;

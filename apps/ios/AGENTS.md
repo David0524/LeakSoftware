@@ -47,5 +47,7 @@ is still the shipping app and keeps getting fixes.
 - The database key is hex from the Keychain, same scheme as the Expo app, so S9 can move an
   Expo database into this app.
 - UI follows CLAUDE.md's design rules; plan each screen with the apple-design skill.
+- Job, quote and invoice numbers never get thousands separators. A number interpolated into a
+  `Text("…")` literal is formatted ("#1,038"), so use `Text(verbatim:)` or build a `String`.
 - CI: `ios-linux` (format and tests on Linux) and `ios-macos` (tests on macOS and an Xcode
   build for iPhone).

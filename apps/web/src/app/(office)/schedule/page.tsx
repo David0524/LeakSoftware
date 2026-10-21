@@ -66,6 +66,7 @@ import {
 import { NavPlus } from "@/components/nav-bar";
 import { Suspense } from "react";
 import { ScreenTip } from "@/components/screen-tip";
+import { scheduleDate } from "@/lib/limits";
 import { redirect } from "next/navigation";
 import { loadRouteCustomers } from "@/app/actions/service-days";
 import { CustomersToAdd } from "@/components/customers-to-add";
@@ -214,7 +215,7 @@ export default async function SchedulePage({ searchParams }: PageProps<"/schedul
   const viewLinks = (current: string, d: string, t: string) => (
     <SegmentedLinks
       label="View"
-      className={cx(SEGMENT_TRACK, "ml-auto shrink-0 flex-nowrap")}
+      className={cx(SEGMENT_TRACK, "ml-auto")}
       items={views.map((v) => ({
         href: `/schedule?view=${v}&date=${d}&tech=${t}`,
         label: VIEW_NAMES[v],
@@ -224,7 +225,8 @@ export default async function SchedulePage({ searchParams }: PageProps<"/schedul
   );
   const view: ScheduleView =
     params.view === "week" ? "week" : params.view === "month" ? "month" : "day";
-  const date = isDateString(params.date) ? params.date : today;
+  // A bad date in the link (9999-99-99, Feb 31) shows today, not an error page.
+  const date = isDateString(params.date) && scheduleDate(params.date) ? params.date : today;
   const days = scheduleDays(view, date);
   // Settings, routes, and Needs a Time all load at once.
   const ctxP = routeContext(office);
@@ -362,8 +364,9 @@ export default async function SchedulePage({ searchParams }: PageProps<"/schedul
       </Suspense>
       {/* Swipe sideways for the previous or next day, week, or month (owner, 2026-10-20). */}
       <SwipeHrefs page={href(date)} scope="schedule" prev={href(move(-1))} next={href(move(1))}>
-        {/* One row: previous, the date, next, and Day / Week / Month at the far right. */}
-        <div className="mb-3 flex items-center gap-2">
+        {/* One row: previous, the date, next, and Day / Week / Month at the far right. With
+            large text Day / Week / Month moves to its own row instead of off the screen. */}
+        <div className="mb-3 flex flex-wrap items-center gap-2">
           <Link
             href={href(move(-1))}
             className={buttonClass("secondary", "min-w-11 shrink-0 px-3")}

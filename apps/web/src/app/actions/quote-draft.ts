@@ -14,6 +14,7 @@ import {
 } from "@leakbook/core";
 import { getOffice } from "@/lib/auth";
 import { getCompany } from "@/lib/data";
+import { discountTooLarge, friendlyDbError, lineDescriptionError } from "@/lib/limits";
 import { createClient } from "@/lib/supabase/server";
 
 // Building a quote on the website (M9.5), the same steps as the phone's Quote tab. Drafts are
@@ -116,7 +117,7 @@ async function insertLine(
     price_book_item_id: line.price_book_item_id ?? null,
     sort_order: Math.max(0, ...lines.map((l) => l.sort_order)) + 1,
   });
-  if (error) return { ok: false, error: error.message };
+  if (error) return { ok: false, error: friendlyDbError(error.message) };
   return saveTotals(db, settings, quoteId, quote.job_id, quote.discount_cents);
 }
 
@@ -143,7 +144,8 @@ export async function addCustomLine(input: {
   price: string;
 }): Promise<Result> {
   const cents = parseDollars(input.price);
-  if (!input.description.trim()) return { ok: false, error: "Describe the work." };
+  const described = lineDescriptionError(input.description);
+  if (described) return { ok: false, error: described };
   if (cents === null || cents < 0) return { ok: false, error: "Enter a price like 125 or 125.50." };
   return insertLine(input.quoteId, {
     description: input.description.trim(),
@@ -165,7 +167,8 @@ export async function updateQuoteLine(input: {
   if (!quote) return { ok: false, error: "This quote was already sent." };
   const quantity = Number(input.quantity.replace(",", "."));
   const cents = parseDollars(input.price);
-  if (!input.description.trim()) return { ok: false, error: "Describe the work." };
+  const described = lineDescriptionError(input.description);
+  if (described) return { ok: false, error: described };
   if (!(quantity > 0 && quantity < 100_000))
     return { ok: false, error: "Quantity must be more than 0." };
   if (cents === null || cents < 0) return { ok: false, error: "Enter a price like 125 or 125.50." };
@@ -178,7 +181,7 @@ export async function updateQuoteLine(input: {
     })
     .eq("id", input.lineId)
     .eq("quote_id", input.quoteId);
-  if (error) return { ok: false, error: error.message };
+  if (error) return { ok: false, error: friendlyDbError(error.message) };
   return saveTotals(db, settings, input.quoteId, quote.job_id, quote.discount_cents);
 }
 
@@ -207,6 +210,8 @@ export async function setQuoteDiscount(input: {
   if (cents === null || cents < 0)
     return { ok: false, error: "Enter a discount like 50 or 50.00." };
   const subtotal = (await liveLines(db, input.quoteId)).reduce((sum, l) => sum + lineTotal(l), 0);
+  const tooLarge = discountTooLarge(cents, subtotal);
+  if (tooLarge) return { ok: false, error: tooLarge };
   const limit = settings.tech_discount_limit_bps ?? 0;
   if (!discountAllowed(subtotal, cents, office.isManager, limit))
     return {

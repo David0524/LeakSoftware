@@ -44,6 +44,7 @@ import {
 } from "@/app/actions/media";
 import { MarkupOverlay } from "./markup";
 import { Segmented } from "./segmented";
+import { DISCARD_PROMPT } from "@/lib/dirty";
 import { useNextStep } from "./next-step-events";
 import { RowActions, RowMenuButton, type MenuEntry } from "./row-actions";
 import { useConfirm } from "./sheet";
@@ -797,15 +798,7 @@ export function MarkupEditor({
           kind="quiet"
           className="justify-self-start px-3 font-normal"
           onClick={async () => {
-            if (
-              !dirty ||
-              (await confirm({
-                title: "Discard your markup changes?",
-                confirmLabel: "Discard Changes",
-                destructive: true,
-              }))
-            )
-              onCancel();
+            if (!dirty || (await confirm(DISCARD_PROMPT))) onCancel();
           }}
         >
           Cancel
@@ -1003,7 +996,7 @@ export function MarkupEditor({
           </Button>
         </div>
         {savedCaption !== undefined ? (
-          <div>
+          <div data-autosave={onCaptionSave ? "" : undefined}>
             <Field
               label="Caption (optional)"
               name="caption"

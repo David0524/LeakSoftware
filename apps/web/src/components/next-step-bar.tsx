@@ -3,6 +3,7 @@
 import { useState, useTransition } from "react";
 import type { JobStatus } from "@leakbook/core";
 import { changeJobStatus } from "@/app/actions/inspection";
+import { orOffline } from "@/lib/offline";
 import { NEXT_STEP_LABELS, nextStepButtons, type NextStep } from "@/lib/next-step";
 import { CompleteJobButton, type SendPrompt } from "./job-work";
 import { requestNextStep, useDraftWritable, useTyping } from "./next-step-events";
@@ -37,7 +38,7 @@ export function NextStepBar({ section, job }: { section: string; job: NextStepJo
         role="toolbar"
         aria-label="Next step"
         hidden={typing}
-        className="fixed inset-x-0 bottom-[calc(4.125rem+max(0.75rem,env(safe-area-inset-bottom)))] z-30 px-3 sm:hidden"
+        className="fixed inset-x-0 bottom-[calc(var(--tab-bar-top)+var(--tab-bar-row)+2px+var(--tab-bar-bottom))] z-30 px-3 sm:hidden"
       >
         <div className="glass flex gap-2 rounded-[28px] p-2">
           {buttons.map((step, i) =>
@@ -90,7 +91,7 @@ function StartJob({ jobId }: { jobId: string }) {
             const form = new FormData();
             form.set("job", jobId);
             form.set("to", "in_progress");
-            const result = await changeJobStatus({}, form);
+            const result = await orOffline(changeJobStatus)({}, form);
             setError(result.error ?? null);
           })
         }

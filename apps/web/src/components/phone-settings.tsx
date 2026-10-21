@@ -6,10 +6,11 @@ import { findNumbers, takeNumber, type NumberSearch } from "@/app/actions/textin
 import { Banner } from "./doc-ui";
 import { SettingsForm } from "./settings-forms";
 import { Button, Field } from "./ui";
+import { orOffline } from "@/lib/offline";
 
 /** Find a local number by area code, then take one (Sundeck Pro pays for it). */
 export function NumberPicker() {
-  const [state, search, pending] = useActionState(findNumbers, {} as NumberSearch);
+  const [state, search, pending] = useActionState(orOffline(findNumbers), {} as NumberSearch);
   return (
     <div className="space-y-4">
       <form action={search} className="flex items-end gap-2">

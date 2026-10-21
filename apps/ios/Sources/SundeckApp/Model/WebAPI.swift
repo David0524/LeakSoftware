@@ -29,9 +29,18 @@ public struct WebAPI: Sendable {
         }
 
         public static let noConnection = "No connection. Try again when you have signal."
+        public static let signInAgain = "Sign in again to continue."
 
         /// The phone couldn't reach the server (nothing was done there).
         public var offline: Bool { description == Self.noConnection }
+
+        /// Worth trying again later rather than a refusal: no connection, no sign-in, or the server
+        /// busy or at fault (401, 408, 429, 5xx). Decided by the status when the server answered,
+        /// so a fault with its own message isn't taken for a refusal (apps/mobile `tryAgainLater`).
+        public var tryAgainLater: Bool {
+            if status != 0 { return status == 401 || status == 408 || status == 429 || status >= 500 }
+            return offline || description == Self.signInAgain
+        }
     }
 
     /// POSTs `body` as JSON with the person's sign-in, and returns the JSON reply.
@@ -65,7 +74,7 @@ public struct WebAPI: Sendable {
     }
 
     private func send(_ prepared: URLRequest) async throws -> JSONValue {
-        guard let token = await accessToken() else { throw Failure(description: "Sign in again to continue.") }
+        guard let token = await accessToken() else { throw Failure(description: Failure.signInAgain) }
         var request = prepared
         request.setValue("Bearer \(token)", forHTTPHeaderField: "authorization")
         let data: Data

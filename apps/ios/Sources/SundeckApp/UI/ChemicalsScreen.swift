@@ -23,6 +23,8 @@
         @State private var showDoses = false
         @State private var submitResult: (text: String, error: Bool)?
         @State private var removing: ChemicalLogEntry?
+        /// The readings last submitted to the pool's log.
+        @State private var submitted: [ReadingKey: String] = [:]
 
         var body: some View {
             let _ = sync.revision  // the log reloads after any write or pull
@@ -52,6 +54,9 @@
             }
             .navigationTitle("Chemical")
             .navigationBarTitleDisplayMode(.large)
+            // Readings for a pool not submitted yet: Back asks first. Without a pool it's only a
+            // calculator, with nothing to keep.
+            .discardOnBack(dirty: pool != nil && form.hasUnsubmittedReadings(since: submitted))
             .safeAreaInset(edge: .bottom) {
                 WhatToAddBar(summary: form.summary, ready: ready) { showDoses = true }
                     .padding(.horizontal, 12)
@@ -128,6 +133,7 @@
             guard let companyId = session.company?.id else { return }
             do {
                 try ChemicalLogWrites.submit(sync, companyId: companyId, pool: pool, form: form)
+                submitted = form.readings
                 submitResult = (ChemicalLogText.submitted, false)
             } catch let error as ChemicalSubmitError {
                 submitResult = (error.message, true)

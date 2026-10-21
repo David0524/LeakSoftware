@@ -228,6 +228,10 @@
 
                 MoneyRows(rows: model.totalRows)
             }
+            // A custom line typed but not added: leaving the job asks first (owner, 2026-10-20).
+            .tracksUnsaved(
+                "job:\(flow.jobId)", dirty: textChanged(custom, from: "") || textChanged(customPrice, from: "")
+            )
             .confirmationDialog(
                 removing.map(QuoteBuilderModel.removeTitle) ?? "",
                 isPresented: Binding(get: { removing != nil }, set: { if !$0 { removing = nil } }),

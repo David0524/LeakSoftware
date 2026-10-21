@@ -31,6 +31,9 @@ export function useAutosaveText(saved: string, save: (value: string) => void) {
       },
     }),
   );
+  // What's on the phone can change without this field (the answer cleared its Where, another
+  // device): typing the old text again must still save.
+  useEffect(() => auto.rebase(saved), [auto, saved]);
   // Leaving the screen saves what's waiting (leaving often doesn't blur the field).
   useEffect(() => () => void auto.flush(), [auto]);
   return {

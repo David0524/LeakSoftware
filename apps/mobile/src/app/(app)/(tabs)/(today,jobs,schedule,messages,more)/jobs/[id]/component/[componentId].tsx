@@ -2,6 +2,7 @@ import { router, useLocalSearchParams } from "expo-router";
 import { StyleSheet, View } from "react-native";
 import {
   saveChecklistResult,
+  saveWhere,
   useInspectionConfig,
   useJobInspection,
 } from "../../../../../../../data/inspection";
@@ -58,7 +59,7 @@ export default function ComponentScreen() {
   const save = (values: Parameters<typeof saveChecklistResult>[5]) =>
     saveChecklistResult(services.sync, company.id, jobId, componentId, result, values);
   const where = useAutosaveText(result?.location_text ?? "", (v) =>
-    save({ location_text: v.trim() || null }),
+    saveWhere(services.sync, company.id, jobId, componentId, v.trim() || null),
   );
   const notes = useAutosaveText(result?.notes ?? "", (v) => save({ notes: v.trim() || null }));
   // The checklist's order, for Previous Item and Next Item.

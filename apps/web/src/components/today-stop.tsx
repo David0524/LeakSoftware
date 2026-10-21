@@ -3,6 +3,16 @@
 import Link from "next/link";
 import { useState, type ReactNode } from "react";
 import { KeyIcon } from "./icons";
+import {
+  DoLaterButton,
+  DoLaterRow,
+  DoLaterSwipeAction,
+  ReorderControls,
+  ReorderHandle,
+  useDoLater,
+  useTodayReorder,
+  type StopMoves,
+} from "./today-reorder";
 import { SwipeRow } from "./swipe-row";
 import { cx } from "./ui";
 
@@ -23,12 +33,19 @@ export function TodayStop({
   extra,
   access,
   startOpen = current,
+  moves,
   swipe,
   children,
 }: {
   /**
+   * Its moves on today's route, when the person viewing may change the order (owner,
+   * 2026-10-20): Do Later in its actions and as a swipe, and Reorder's controls.
+   */
+  moves?: StopMoves;
+  /**
    * Swipe actions on the row (touch; gestures.md section 5): leading Mark Complete, trailing
-   * Call and Directions. The same buttons are in the open card.
+   * Call and Directions, then Do Later when it can move. The same buttons are in the open card.
+   * Left out while the page pages between techs (a sideways swipe there changes the day).
    */
   swipe?: { leading?: ReactNode; trailing?: ReactNode };
   label: string;
@@ -53,117 +70,157 @@ export function TodayStop({
 }) {
   const [open, setOpen] = useState(startOpen);
   const body = `stop-${number}`;
+  const reorder = useTodayReorder();
+  const doLater = useDoLater(moves?.jobId ?? "");
+  const editing = !!(reorder?.editing && moves && !done);
+  // Swiped closed, the row shows its Undo under the name (where an open row's button is).
+  const undoShown = !!doLater?.notice && (!open || editing);
+  const later = !!moves?.later && !editing && !done;
+  const rowSwipe =
+    swipe && !editing
+      ? {
+          leading: swipe.leading,
+          trailing:
+            swipe.trailing || later ? (
+              <>
+                {swipe.trailing}
+                {later ? <DoLaterSwipeAction customer={name} /> : null}
+              </>
+            ) : undefined,
+        }
+      : undefined;
   return (
-    <section
-      aria-label={label}
-      className={cx("card", current && "ring-2 ring-link")}
-      data-testid="today-stop"
-    >
-      {/* The rest of the row (number, time, chevron) opens and closes the card; the chevron is
-          its button for keyboards and screen readers. The name is a link to the job instead of
-          an Open Job button (owner, 2026-10-20: "We're wasting space by keeping as a new
-          button"). */}
-      <SwipeRowMaybe swipe={swipe}>
-        <div
-          onClick={() => setOpen(!open)}
-          className="flex min-h-14 w-full cursor-pointer items-center gap-2 px-3 py-2 text-left"
-        >
-          <span
-            aria-hidden="true"
-            className={cx(
-              "grid size-8 shrink-0 place-items-center rounded-full font-display font-bold",
-              done ? "bg-status-pass text-on-status" : current ? "bg-link text-bg" : "bg-bg",
-            )}
-          >
-            {done ? (
-              <svg
-                viewBox="0 0 24 24"
-                className="size-4"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="3"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              >
-                <path d="M5 12.5l4.5 4.5L19 7.5" />
-              </svg>
-            ) : (
-              number
-            )}
-          </span>
-          <span
-            className={cx(
-              "flex min-w-0 flex-1 flex-wrap items-center gap-x-2",
-              done && "opacity-70",
-            )}
-          >
-            <span className="font-display text-[1.0625rem] font-bold">{time}</span>
-            {/* The name opens the job, open or closed (owner, 2026-10-20). */}
-            <Link
-              href={href}
-              onClick={(e) => e.stopPropagation()}
-              className="-my-2 flex min-h-11 min-w-0 flex-1 items-center gap-0.5 font-semibold text-link"
+    <DoLaterRow value={moves ? doLater : null}>
+      <section
+        aria-label={label}
+        className={cx("card", current && !editing && "ring-2 ring-link")}
+        data-testid="today-stop"
+        data-reorder-row={editing || undefined}
+      >
+        <>
+          {/* The rest of the row (number, time, chevron) opens and closes the card; the chevron
+              is its button for keyboards and screen readers. The name is a link to the job
+              instead of an Open Job button (owner, 2026-10-20: "We're wasting space by keeping
+              as a new button"). In Reorder, the drag handle takes the chevron's place. */}
+          <SwipeRowMaybe swipe={rowSwipe}>
+            <div
+              onClick={() => !editing && setOpen(!open)}
+              className="flex min-h-14 w-full cursor-pointer items-center gap-2 px-3 py-2 text-left"
             >
-              <span className="truncate">{name}</span>
-              <svg
-                viewBox="0 0 24 24"
+              <span
                 aria-hidden="true"
-                className="size-4 shrink-0"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2.4"
-                strokeLinecap="round"
-                strokeLinejoin="round"
+                className={cx(
+                  "grid size-8 shrink-0 place-items-center rounded-full font-display font-bold",
+                  done ? "bg-status-pass text-on-status" : current ? "bg-link text-bg" : "bg-bg",
+                )}
               >
-                <path d="M9 6l6 6-6 6" />
-              </svg>
-            </Link>
-            {extra}
-          </span>
-          <button
-            type="button"
-            aria-expanded={open}
-            aria-controls={body}
-            aria-label={open ? `Hide ${name}` : `Show ${name}`}
-            onClick={(e) => {
-              e.stopPropagation();
-              setOpen(!open);
-            }}
-            className="-mr-2 grid size-11 shrink-0 place-items-center rounded-full"
-          >
-            <svg
-              viewBox="0 0 24 24"
-              aria-hidden="true"
-              className={cx(
-                "size-5 text-text-muted transition-transform motion-reduce:transition-none",
-                open && "rotate-180",
+                {done ? (
+                  <svg
+                    viewBox="0 0 24 24"
+                    className="size-4"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="3"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  >
+                    <path d="M5 12.5l4.5 4.5L19 7.5" />
+                  </svg>
+                ) : (
+                  number
+                )}
+              </span>
+              <span
+                className={cx(
+                  "@container flex min-w-0 flex-1 flex-wrap items-center gap-x-2",
+                  done && "opacity-70",
+                )}
+              >
+                <span className="font-display text-[1.0625rem] font-bold whitespace-nowrap">
+                  {time}
+                </span>
+                {/* The name opens the job, open or closed (owner, 2026-10-20). With large text (the
+              row under 9 of its letters wide) it takes its own line under the time and wraps,
+              without its chevron, rather than shrinking to a letter or two. */}
+                <Link
+                  href={href}
+                  onClick={(e) => e.stopPropagation()}
+                  className="-my-2 flex min-h-11 min-w-0 flex-1 items-center gap-0.5 font-semibold text-link @max-[9em]:my-0 @max-[9em]:basis-full"
+                >
+                  <span className="truncate @max-[9em]:break-words @max-[9em]:whitespace-normal">
+                    {name}
+                  </span>
+                  <svg
+                    viewBox="0 0 24 24"
+                    aria-hidden="true"
+                    className="size-4 shrink-0 @max-[9em]:hidden"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2.4"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  >
+                    <path d="M9 6l6 6-6 6" />
+                  </svg>
+                </Link>
+                {extra}
+              </span>
+              {editing ? (
+                <ReorderHandle moves={moves!} />
+              ) : (
+                <button
+                  type="button"
+                  aria-expanded={open}
+                  aria-controls={body}
+                  aria-label={open ? `Hide ${name}` : `Show ${name}`}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setOpen(!open);
+                  }}
+                  className="-mr-2 grid size-11 shrink-0 place-items-center rounded-full"
+                >
+                  <svg
+                    viewBox="0 0 24 24"
+                    aria-hidden="true"
+                    className={cx(
+                      "size-5 text-text-muted transition-transform motion-reduce:transition-none",
+                      open && "rotate-180",
+                    )}
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2.2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  >
+                    <path d="M6 9l6 6 6-6" />
+                  </svg>
+                </button>
               )}
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2.2"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            >
-              <path d="M6 9l6 6 6-6" />
-            </svg>
-          </button>
-        </div>
-      </SwipeRowMaybe>
-      {access?.trim() && !done ? (
-        <p className="-mt-1 flex items-start gap-1.5 px-3 pb-2 pl-[3.25rem] text-[0.9375rem] font-medium text-text">
-          <KeyIcon className="mt-0.5 size-[1.125rem] shrink-0 text-status-warning" />
-          <span className={cx("min-w-0", open ? "whitespace-pre-line" : "truncate")}>
-            <span className="sr-only">Access: </span>
-            {access.trim()}
-          </span>
-        </p>
-      ) : null}
-      {open ? (
-        <div id={body} className="space-y-1 px-3 pb-3">
-          {children}
-        </div>
-      ) : null}
-    </section>
+            </div>
+          </SwipeRowMaybe>
+          {editing ? <ReorderControls moves={moves!} /> : null}
+          {access?.trim() && !done && !editing ? (
+            <p className="-mt-1 flex items-start gap-1.5 px-3 pb-2 pl-[3.25rem] text-[0.9375rem] font-medium text-text">
+              <KeyIcon className="mt-0.5 size-[1.125rem] shrink-0 text-status-warning" />
+              <span className={cx("min-w-0", open ? "whitespace-pre-line" : "truncate")}>
+                <span className="sr-only">Access: </span>
+                {access.trim()}
+              </span>
+            </p>
+          ) : null}
+          {undoShown && moves ? (
+            <div className="px-3 pb-2 pl-[3.25rem]">
+              <DoLaterButton jobId={moves.jobId} customer={name} show={false} />
+            </div>
+          ) : null}
+          {open && !editing ? (
+            <div id={body} className="space-y-1 px-3 pb-3">
+              {children}
+            </div>
+          ) : null}
+        </>
+      </section>
+    </DoLaterRow>
   );
 }
 

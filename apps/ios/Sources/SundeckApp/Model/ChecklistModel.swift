@@ -246,8 +246,8 @@ extension InspectionWrites {
     }
 }
 
-/// The checklist item screen's form: Result, Where, Method, Exclusion reason and Notes, saved only
-/// on Save. Port of apps/mobile/src/app/(app)/jobs/[id]/component/[componentId].tsx, with what the
+/// The checklist item screen's form: Result, Where, Method, Exclusion reason and Notes, saved by
+/// Save, or by themselves (`saveChanges`) after typing stops and when the item is left. Port of apps/mobile/src/app/(app)/jobs/[id]/component/[componentId].tsx, with what the
 /// website's row has no room for on a phone (spec 5.4).
 @MainActor @Observable
 public final class ComponentForm {
@@ -274,11 +274,87 @@ public final class ComponentForm {
         self.component = component
         self.type = type
         self.result = result
-        verdict = currentVerdict(status: result?.status, outcome: result?.outcome)
-        location = result?.locationText ?? ""
-        notes = result?.notes ?? ""
-        method = result?.method ?? ""
-        exclusionReason = result?.exclusionReason ?? ""
+        let saved = Fields(result)
+        baseline = saved
+        verdict = saved.verdict
+        location = saved.location
+        notes = saved.notes
+        method = saved.method
+        exclusionReason = saved.exclusionReason
+    }
+
+    /// The form's fields as the phone has them saved.
+    private struct Fields: Equatable {
+        var verdict: Verdict?
+        var location: String
+        var notes: String
+        var method: String
+        var exclusionReason: String
+
+        init(_ result: ChecklistItemResult?) {
+            verdict = currentVerdict(status: result?.status, outcome: result?.outcome)
+            location = result?.locationText ?? ""
+            notes = result?.notes ?? ""
+            method = result?.method ?? ""
+            exclusionReason = result?.exclusionReason ?? ""
+        }
+
+        init(verdict: Verdict?, location: String, notes: String, method: String, exclusionReason: String) {
+            self.verdict = verdict
+            self.location = location
+            self.notes = notes
+            self.method = method
+            self.exclusionReason = exclusionReason
+        }
+    }
+
+    /// What the fields were last loaded or saved as: what's changed since is the tech's.
+    private var baseline: Fields
+
+    private var current: Fields {
+        Fields(verdict: verdict, location: location, notes: notes, method: method, exclusionReason: exclusionReason)
+    }
+
+    /// Something was changed on the page and isn't saved yet (saved by itself when the item is
+    /// left, owner 2026-10-20).
+    public var isDirty: Bool { current != baseline }
+
+    /// The item's row changed (a sync, the checklist, Undo): fields the tech hasn't touched follow
+    /// it, so saving never puts back an old answer and text typed again saves (apps/mobile
+    /// `rebase`).
+    public func refresh(_ newResult: ChecklistItemResult?) {
+        result = newResult
+        let saved = Fields(newResult)
+        if verdict == baseline.verdict { verdict = saved.verdict }
+        if location == baseline.location { location = saved.location }
+        if notes == baseline.notes { notes = saved.notes }
+        if method == baseline.method { method = saved.method }
+        if exclusionReason == baseline.exclusionReason { exclusionReason = saved.exclusionReason }
+        baseline = saved
+    }
+
+    /// Saves only what was changed on the page (the answer with its stamps, or the text), so
+    /// notes saved by themselves never overwrite an answer given elsewhere. Returns whether
+    /// anything was written.
+    @discardableResult
+    public func saveChanges(_ sync: SyncService, userId: String?, now: Date = Date()) throws -> Bool {
+        let was = baseline
+        let changed = current
+        guard changed != was else { return false }
+        let all = values(userId: userId, now: now)
+        var keys: Set<String> = []
+        if changed.verdict != was.verdict {
+            keys.formUnion(["status", "outcome", "inspected_at", "inspected_by", "location_text", "exclusion_reason"])
+        }
+        if changed.location != was.location { keys.insert("location_text") }
+        if changed.notes != was.notes { keys.insert("notes") }
+        if changed.method != was.method { keys.insert("method") }
+        if changed.exclusionReason != was.exclusionReason { keys.insert("exclusion_reason") }
+        try InspectionWrites.saveChecklistResult(
+            sync, companyId: companyId, jobId: jobId, componentId: component.id, existing: result,
+            all.filter { keys.contains($0.key) })
+        baseline = changed
+        return true
     }
 
     /// The methods to choose from: blank first, then the type's, and the saved one if it's gone.
@@ -308,6 +384,7 @@ public final class ComponentForm {
         try InspectionWrites.saveChecklistResult(
             sync, companyId: companyId, jobId: jobId, componentId: component.id, existing: result,
             values(userId: userId))
+        baseline = current
     }
 }
 

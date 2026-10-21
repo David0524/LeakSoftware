@@ -61,5 +61,9 @@ public enum KVKey {
     public static let signOutClears = [
         activeCompany, lastSyncedAt, initialSyncDone, teamProfiles, tipsSeen, launchSeen, gettingStartedHidden,
         notificationPrefs, liveStopTarget, liveStopDismissed, liveStopStarted,
+        // Search's Recent is the person's own (docs/plans/search-and-activity.md).
+        searchRecent,
+        // Reports waiting to send go with the person's work (ReportSendQueue, VisitReportQueue).
+        "report_send:pending", "report_send:texts", "report_send:failures", "visit_report:pending",
     ]
 }

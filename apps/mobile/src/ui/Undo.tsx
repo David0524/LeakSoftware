@@ -3,7 +3,7 @@ import { AccessibilityInfo, StyleSheet, Text, View } from "react-native";
 import { createUndoWindow } from "../lib/undo";
 import { Button } from "./components";
 import { haptics } from "./haptics";
-import { color, MAX_TEXT_SCALE, minTap, space, type } from "./theme";
+import { color, MAX_TEXT_SCALE, minTap, space, tint, type } from "./theme";
 
 interface Shown {
   text: string;
@@ -42,21 +42,43 @@ export function useUndoWindow() {
   };
 }
 
-/** "Marked 3" in secondary text and an Undo pill, in the place of the button. */
-export function UndoRow({ text, onUndo }: { text: string; onUndo: () => void }) {
+/**
+ * "Marked 3" in secondary text and an Undo pill, in the place of the button. `onWater` on
+ * Today's water-blue card (Do Later there, docs/plans/today-reorder.md).
+ */
+export function UndoRow({
+  text,
+  onUndo,
+  onWater = false,
+}: {
+  text: string;
+  onUndo: () => void;
+  onWater?: boolean;
+}) {
   return (
     <View style={styles.row} accessibilityLiveRegion="polite">
       <Text
-        style={[type.secondary, { color: color.textMuted }]}
+        style={[
+          type.secondary,
+          { color: onWater ? tint(color.paper, 0.92) : color.textMuted, flexShrink: 1 },
+        ]}
         maxFontSizeMultiplier={MAX_TEXT_SCALE}
       >
         {text}
       </Text>
-      <Button title="Undo" kind="secondary" accessibilityLabel={`Undo, ${text}`} onPress={onUndo} />
+      <Button
+        title="Undo"
+        kind={onWater ? "onWaterTinted" : "secondary"}
+        accessibilityLabel={`Undo, ${text}`}
+        onPress={onUndo}
+        style={onWater ? styles.onWater : undefined}
+      />
     </View>
   );
 }
 
 const styles = StyleSheet.create({
   row: { flexDirection: "row", alignItems: "center", gap: space["3"], minHeight: minTap },
+  // The card's buttons stretch to their slot; Undo stays a pill sized to its label.
+  onWater: { alignSelf: "center", paddingHorizontal: space["5"] },
 });

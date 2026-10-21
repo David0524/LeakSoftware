@@ -2,6 +2,7 @@
 
 import { useState, useTransition } from "react";
 import { dismissTip } from "@/app/actions/walkthrough";
+import { whenOffline } from "@/lib/offline";
 
 /**
  * A tip on the screen it explains, shown once (as iOS TipKit draws them): an icon, a short
@@ -33,7 +34,7 @@ export function TipCard({ id, title, message }: { id: string; title: string; mes
         aria-label="Close Tip"
         onClick={() => {
           setOpen(false);
-          start(() => dismissTip(id));
+          start(() => whenOffline(dismissTip(id), undefined));
         }}
         className="inline-flex size-11 shrink-0 items-center justify-center rounded-full text-text-muted hover:bg-text/[0.06]"
       >

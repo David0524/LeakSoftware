@@ -5,6 +5,10 @@ set search_path = public, extensions;
 select no_plan();
 
 create temp table fx as select tests.make_company('a') as a, tests.make_company('b') as b;
+-- Written for a shop whose techs see every job (new shops start with only their own,
+-- 2026-10-20; 190_job_visibility covers that).
+update company set settings = settings || '{"techs_see_all_jobs": true}'
+  where id in (select (a ->> 'company')::uuid from fx);
 -- These rules need a deposit and a tech discount limit (new shops start with neither).
 update company set settings = settings || '{"deposit": {"type": "percent", "value_bps": 5000, "minimum_cents": 0},
                                             "tech_discount_limit_bps": 1000}'::jsonb

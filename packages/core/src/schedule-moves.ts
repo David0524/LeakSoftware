@@ -12,6 +12,8 @@ import {
   jobLock,
   jobMinutes,
   localMinutes,
+  lockReason,
+  LOCK_LABELS,
   propertyLocation,
   routeUpdates,
   stopFor,
@@ -63,6 +65,8 @@ export interface JobChange {
   status?: string;
   assigned_user_id?: string | null;
   arrival_fixed?: boolean;
+  lock_day?: boolean;
+  lock_time?: boolean;
 }
 
 export interface ScheduleChange {
@@ -267,6 +271,123 @@ export function moveJobChange(ctx: PlanContext, input: MoveInput, drive: DriveFn
     updates: [mine, ...updates.filter((u) => u !== mine), ...leaving(stayed)],
     message: "Moved.",
   };
+}
+
+// ---------------------------------------------------------------------------
+// Today: change the order of stops (owner, 2026-10-20; docs/plans/today-reorder.md)
+// ---------------------------------------------------------------------------
+
+/** A stop on Today, as the reorder rules see it. */
+export interface TodayMoveStop {
+  id: string;
+  /** Done for the day (folded away): stays where it is, and nothing moves above it. */
+  done: boolean;
+  /** Why it can't move ("Started", "Locked", "Time locked"), or null. */
+  lock: string | null;
+  /** In progress: nothing moves above it. */
+  started: boolean;
+}
+
+/**
+ * Why a stop on Today can't move, in Reorder's words, or null when it can: a started job is in
+ * progress, a time lock (Time or Both) keeps its clock time, and a two-tech job is in two routes.
+ * A day lock alone stays on its day but may change its place in it (owner, 2026-10-20: locks by
+ * day, time, or both), so it can move here. The words are the lock icons' ("Locked", "Time
+ * locked"), with no clock time (owner, 2026-10-21).
+ */
+export function todayStopLock(job: PlanJob, _timeZone?: string): string | null {
+  const lock = lockReason(job);
+  return lock ? LOCK_LABELS[lock] : null;
+}
+
+/** Do Later (last of the stops still to do), Move Up, Move Down, or a place (0 = first to do). */
+export type TodayMove = "later" | "up" | "down" | number;
+
+/**
+ * Where a stop goes in the day for `moveJobChange` (its `index`, among the day's other jobs), or
+ * null when it can't go there: it's locked or done, it's already in that place, or the place is
+ * above a started stop. Places count the stops still to do; done stops stay where they are.
+ */
+export function todayMoveIndex(stops: TodayMoveStop[], id: string, to: TodayMove): number | null {
+  const self = stops.find((s) => s.id === id);
+  if (!self || self.done || self.lock) return null;
+  const todo = stops.filter((s) => !s.done);
+  const at = todo.indexOf(self);
+  const rest = todo.filter((s) => s !== self);
+  const others = stops.filter((s) => s !== self);
+  // Nothing goes above a stop that's under way.
+  const floor = rest.reduce((n, s, i) => (s.started ? i + 1 : n), 0);
+  let place: number;
+  if (to === "later") place = rest.length;
+  else if (to === "down") place = at + 1;
+  else if (to === "up") place = at - 1 < floor ? -1 : at - 1;
+  else if (Number.isInteger(to)) place = Math.min(Math.max(to, floor), rest.length);
+  else return null;
+  if (rest.length === 0 || place < 0 || place > rest.length || place === at) return null;
+  return place === 0 ? others.indexOf(rest[0]!) : others.indexOf(rest[place - 1]!) + 1;
+}
+
+/** What Move Up, Move Down, and Do Later can do for each stop (false when they'd do nothing). */
+export function todayMoves(stops: TodayMoveStop[]) {
+  return new Map(
+    stops.map((s) => [
+      s.id,
+      {
+        up: todayMoveIndex(stops, s.id, "up") !== null,
+        down: todayMoveIndex(stops, s.id, "down") !== null,
+        later: todayMoveIndex(stops, s.id, "later") !== null,
+      },
+    ]),
+  );
+}
+
+/** The fields a job change may set, so Undo can put each back. */
+const CHANGE_FIELDS = [
+  "route_order",
+  "scheduled_start",
+  "scheduled_end",
+  "status",
+  "assigned_user_id",
+  "arrival_fixed",
+  "lock_day",
+  "lock_time",
+] as const;
+
+const sameValue = (key: string, a: unknown, b: unknown) =>
+  (key === "scheduled_start" || key === "scheduled_end") &&
+  typeof a === "string" &&
+  typeof b === "string"
+    ? Date.parse(a) === Date.parse(b)
+    : (a ?? null) === (b ?? null);
+
+/**
+ * A change's rows trimmed to what actually changes, and the saved values of those same fields
+ * to put them back exactly (Undo after Do Later: owner, 2026-10-20). Rows that change nothing
+ * are left out of both.
+ */
+export function changeWithUndo(
+  updates: JobChange[],
+  jobs: PlanJob[],
+): { updates: JobChange[]; undo: JobChange[] } {
+  const byId = new Map(jobs.map((j) => [j.id, j]));
+  const out: JobChange[] = [];
+  const undo: JobChange[] = [];
+  for (const u of updates) {
+    const was = byId.get(u.id);
+    const next: Record<string, unknown> = { id: u.id };
+    const back: Record<string, unknown> = { id: u.id };
+    for (const key of CHANGE_FIELDS) {
+      if (!(key in u)) continue;
+      const before = was ? (was[key] ?? null) : null;
+      if (was && sameValue(key, u[key], before)) continue;
+      next[key] = u[key];
+      back[key] = before;
+    }
+    if (Object.keys(next).length === 1) continue;
+    out.push(next as unknown as JobChange);
+    undo.push(back as unknown as JobChange);
+  }
+  return { updates: out, undo };
 }
 
 /** The shop's date of an instant ("2026-10-19"). */

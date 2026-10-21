@@ -50,9 +50,11 @@ begin
       -- A real place (Phoenix City Hall), so routes start somewhere real. © OpenStreetMap.
       latitude = 33.44879, longitude = -112.07711,
       geocoded_address = '200 W Washington St, Phoenix, AZ 85003',
-      -- The demo shows deposits and tech discounts (new shops start with neither).
+      -- The demo shows deposits and tech discounts (new shops start with neither), and its
+      -- tech sees every job (new shops start with techs seeing only their own).
       settings = settings || '{"deposit": {"type": "percent", "value_bps": 5000, "minimum_cents": 0},
-                               "tech_discount_limit_bps": 1000}'::jsonb
+                               "tech_discount_limit_bps": 1000,
+                               "techs_see_all_jobs": true}'::jsonb
   where id = demo_company;
   -- The demo shop never runs out of trial (M10 billing).
   update public.subscription set status = 'active', plan = 'demo', onboarded_at = now()

@@ -1,8 +1,8 @@
 import { useSyncExternalStore } from "react";
 import { AppState, Share } from "react-native";
-import { call } from "../data/reports";
+import { call, tryAgainLater } from "../data/reports";
 import { API_URL } from "./config";
-import { addRequest, parseRequests, removeRequest, type ReportRequest } from "./reportRequests";
+import { addRequest, parseRequests, type ReportRequest } from "./reportRequests";
 import { getServices } from "./services";
 
 // Report requests made offline (owner, 2026-10-20: one-handed use, item 6), queued the way
@@ -31,6 +31,16 @@ export function queueReportRequest(req: ReportRequest) {
   write(addRequest(read(), req));
 }
 
+/**
+ * The same request is being made now, with a signal: the one waiting is dropped, so the
+ * customer doesn't get the report twice.
+ */
+export function forgetReportRequest(kind: ReportRequest["kind"], reportId: string) {
+  const queue = read();
+  const rest = queue.filter((r) => r.kind !== kind || r.reportId !== reportId);
+  if (rest.length !== queue.length) write(rest);
+}
+
 /** The requests waiting for this job (re-renders when the queue changes). */
 export function useQueuedReportRequests(jobId: string): ReportRequest[] {
   useSyncExternalStore(
@@ -42,6 +52,11 @@ export function useQueuedReportRequests(jobId: string): ReportRequest[] {
     () => 0,
   );
   return read().filter((r) => r.jobId === jobId);
+}
+
+/** Takes this request off the queue, but not a newer one for the same report made meanwhile. */
+function done(req: ReportRequest) {
+  write(read().filter((r) => JSON.stringify(r) !== JSON.stringify(req)));
 }
 
 let running = false;
@@ -57,7 +72,12 @@ export async function flushReportRequests(): Promise<void> {
       if (
         sync.hasPendingWrites("job", req.jobId) ||
         sync.hasPendingWrites("report", req.reportId) ||
-        sync.hasPendingWrites("signature")
+        sync.hasPendingWrites("signature") ||
+        // The signature image and the job's photos go with the report: uploaded first.
+        sync.hasPendingUploads(req.jobId) ||
+        // The text goes from the tech's phone: it waits until the app is in front, where the
+        // share sheet can open (the server counts it as sent).
+        (req.kind === "text" && AppState.currentState !== "active")
       )
         continue;
       try {
@@ -68,17 +88,14 @@ export async function flushReportRequests(): Promise<void> {
             channel: req.kind === "email" ? "email" : "sms_device",
             to: req.to,
           });
-          // The text goes from the tech's phone: the share sheet, when the app is in front.
-          if (req.kind === "text" && AppState.currentState === "active")
-            await Share.share({ message: r.message }).catch(() => undefined);
+          if (req.kind === "text") await Share.share({ message: r.message }).catch(() => undefined);
         }
         sent = true;
-        write(removeRequest(read(), req));
+        done(req);
       } catch (e) {
         // No connection, signed out, or a server fault: later. A refusal is final.
-        const message = e instanceof Error ? e.message : "";
-        if (/connection|Sign in|said 5/.test(message)) break;
-        write(removeRequest(read(), req));
+        if (tryAgainLater(e)) break;
+        done(req);
       }
     }
     if (sent) await sync.syncNow();

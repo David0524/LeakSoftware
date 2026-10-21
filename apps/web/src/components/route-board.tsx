@@ -86,6 +86,7 @@ import { Sheet, useChoice } from "./sheet";
 import { showBanner } from "./top-banner";
 import { useFlip } from "./use-flip";
 import { Button, StatusBadge, buttonClass, cx, pillClass } from "./ui";
+import { NO_CONNECTION, whenOffline } from "@/lib/offline";
 
 type Tech = { id: string; name: string; color?: string | null };
 
@@ -374,7 +375,7 @@ export function RouteBoard({
   function run(move: Move, call: () => Promise<RouteResult>) {
     start(async () => {
       optimistic(move);
-      const r = await call();
+      const r = await whenOffline(call(), { error: NO_CONNECTION });
       // Updates after an await join the transition only when wrapped, so the banner shows
       // with the refreshed day, not before it.
       start(() => report(r));
@@ -385,7 +386,7 @@ export function RouteBoard({
   function optimize(techId: string, date: string) {
     setPlanning(`${techId}|${date}`);
     startOptimize(async () => {
-      const r = await planRoute(techId, date);
+      const r = await whenOffline(planRoute(techId, date), { error: NO_CONNECTION });
       startOptimize(() => {
         report(r);
         setPlanning(null);
@@ -862,14 +863,23 @@ function DayFacts({ column: c, stops }: { column: BoardColumn; stops: BoardStop[
 /** Optimize and the day in the maps app: what a tech's day is for, so they lead. */
 function DayButtons({ column: c, stops, busy, optimizing = false, onPlan }: DayHeaderProps) {
   if (!c.techId || !stops.length) return null;
+  // Two side by side; with large text (the column under 14 of its letters wide) one above the
+  // other, so neither label runs past its pill.
   return (
-    <div className="mt-3 grid grid-cols-2 gap-2">
-      {c.open ? (
-        <OptimizeButton optimizing={optimizing} disabled={busy} onClick={onPlan} className="px-2" />
-      ) : null}
-      {c.routeHref ? (
-        <OpenRouteInMaps href={c.routeHref} app={c.routeApp} compact className="px-2" />
-      ) : null}
+    <div className="mt-3 @container">
+      <div className="grid grid-cols-1 gap-2 @min-[14em]:grid-cols-2">
+        {c.open ? (
+          <OptimizeButton
+            optimizing={optimizing}
+            disabled={busy}
+            onClick={onPlan}
+            className="px-2"
+          />
+        ) : null}
+        {c.routeHref ? (
+          <OpenRouteInMaps href={c.routeHref} app={c.routeApp} compact className="px-2" />
+        ) : null}
+      </div>
     </div>
   );
 }
@@ -1657,7 +1667,9 @@ function WeekGrid({
   return (
     <TopScroller
       data-testid="week-grid"
-      className="card overflow-x-auto overscroll-x-contain [scrollbar-width:thin]"
+      // relative: the screen-reader-only Move buttons are positioned, and would otherwise
+      // widen the page past this scroller on a narrow window (or at 200% zoom).
+      className="card relative overflow-x-auto overscroll-x-contain [scrollbar-width:thin]"
     >
       <table className="w-full table-fixed text-left" style={{ minWidth: `${minRem}rem` }}>
         {/* Days with no width share what's left equally. */}
@@ -2122,7 +2134,7 @@ export function Suggestions({
   const close = useCallback(() => setState(null), []);
   function load() {
     start(async () => {
-      const r = await suggestTimes(target);
+      const r = await whenOffline(suggestTimes(target), { error: NO_CONNECTION });
       setState({ list: r.suggestions, note: r.note, error: r.error });
     });
   }

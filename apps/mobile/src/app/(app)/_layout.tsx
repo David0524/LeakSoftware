@@ -1,6 +1,7 @@
 import { router, Stack } from "expo-router";
 import { PushSetup } from "../../features/notifications/PushSetup";
 import { VisitReportQueue } from "../../features/maintenance/VisitReport";
+import { RecoverCapture } from "../../features/media/MediaSection";
 import { ReportRequestQueue } from "../../features/report/ReportTab";
 import { LiveStopNotification } from "../../features/today/LiveStop";
 import { HeaderButton } from "../../ui/components";
@@ -24,6 +25,8 @@ export default function AppLayout() {
       <VisitReportQueue />
       {/* Finish Report and sending tapped offline go once the signal is back (2026-10-20). */}
       <ReportRequestQueue />
+      {/* A photo taken while Android closed the app is still saved (2026-10-20). */}
+      <RecoverCapture />
       <Stack screenOptions={stackScreenOptions()}>
         <Stack.Screen name="(tabs)" options={{ headerShown: false, title: "Back" }} />
         <Stack.Screen

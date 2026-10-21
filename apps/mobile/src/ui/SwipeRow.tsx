@@ -44,6 +44,33 @@ export function SwipeToDelete({
   onDelete: () => void;
   children: ReactNode;
 }) {
+  return (
+    <SwipeTrailing label={label} onPress={onDelete}>
+      {children}
+    </SwipeTrailing>
+  );
+}
+
+/**
+ * Swipe left to reveal an action at the row's trailing edge (red Delete by default; Today's
+ * Do Later in the link blue); a full swipe acts on release. As with SwipeToDelete, the swipe is
+ * never the only way: the row keeps a visible button and the same accessibility action.
+ */
+export function SwipeTrailing({
+  label,
+  onPress,
+  tint = color.fail,
+  enabled = true,
+  children,
+}: {
+  label: string;
+  onPress: () => void;
+  /** The revealed button's color. */
+  tint?: string;
+  /** Off: the row doesn't swipe (Today while reordering). */
+  enabled?: boolean;
+  children: ReactNode;
+}) {
   const ref = useRef<SwipeableMethods>(null);
   const [rowWidth, setRowWidth] = useState(0);
   const armed = useRef(false);
@@ -58,7 +85,7 @@ export function SwipeToDelete({
   function act() {
     armed.current = false;
     ref.current?.close();
-    onDelete();
+    onPress();
   }
 
   return (
@@ -67,6 +94,7 @@ export function SwipeToDelete({
         {...quiet}
         onSwipeableWillClose={() => swipeEnded()}
         ref={ref}
+        enabled={enabled}
         friction={1}
         rightThreshold={ACTION_WIDTH / 2}
         overshootRight
@@ -83,6 +111,7 @@ export function SwipeToDelete({
             translation={translation}
             fullAt={rowWidth * FULL_SWIPE}
             label={label}
+            tint={tint}
             onPress={act}
             onArm={arm}
           />
@@ -98,12 +127,14 @@ function DeleteAction({
   translation,
   fullAt,
   label,
+  tint,
   onPress,
   onArm,
 }: {
   translation: SharedValue<number>;
   fullAt: number;
   label: string;
+  tint: string;
   onPress: () => void;
   onArm: (on: boolean) => void;
 }) {
@@ -119,7 +150,7 @@ function DeleteAction({
     width: Math.max(ACTION_WIDTH, -translation.value),
   }));
   return (
-    <Animated.View style={[styles.action, grow]}>
+    <Animated.View style={[styles.action, { backgroundColor: tint }, grow]}>
       <Pressable
         // Hidden from screen readers: the row offers the same action as an accessibility action.
         accessibilityElementsHidden

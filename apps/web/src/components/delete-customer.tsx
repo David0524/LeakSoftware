@@ -4,6 +4,7 @@ import { useState, useTransition } from "react";
 import { deleteCustomer } from "@/app/actions/jobs";
 import { useConfirm } from "./sheet";
 import { Notice } from "./ui";
+import { NO_CONNECTION, whenOffline } from "@/lib/offline";
 
 /**
  * Owners: delete a customer, then go back to the list. The action is called directly and the
@@ -33,7 +34,7 @@ export function DeleteCustomerForm({ id, name }: { id: string; name: string }) {
           startTransition(async () => {
             const form = new FormData();
             form.set("customer", id);
-            const r = await deleteCustomer({}, form);
+            const r = await whenOffline(deleteCustomer({}, form), { error: NO_CONNECTION });
             if (r.error) setError(r.error);
             // A full load on purpose: in-app navigation from this page kept showing the deleted
             // customer (CI runs 44 and 45).

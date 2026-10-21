@@ -5,6 +5,7 @@ import { formatCents, dateFormat } from "@leakbook/core";
 import { billMaintenanceMonth } from "@/app/actions/invoices";
 import type { UnbilledMonth } from "@/lib/data";
 import { Button, Notice, SectionTitle } from "./ui";
+import { orOffline } from "@/lib/offline";
 
 const monthName = (month: string) =>
   dateFormat("en-US", { month: "long", year: "numeric", timeZone: "UTC" }).format(
@@ -12,7 +13,7 @@ const monthName = (month: string) =>
   );
 
 function MonthRow({ m, current }: { m: UnbilledMonth; current: boolean }) {
-  const [state, action, pending] = useActionState(billMaintenanceMonth, {});
+  const [state, action, pending] = useActionState(orOffline(billMaintenanceMonth), {});
   return (
     <li className="space-y-3 px-4 py-3">
       <form action={action} className="flex flex-wrap items-center justify-between gap-3">

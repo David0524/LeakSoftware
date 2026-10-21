@@ -4,6 +4,7 @@ import { toE164, type ReportSnapshot } from "@leakbook/core";
 import { emailConfigured, fromAddress, sendEmail } from "./email";
 import { activeLine, sendCompanyText } from "./texting";
 import { LIMIT_MESSAGE, ccList, emailRefusal, takeAllowance } from "./usage";
+import { Refusal, dbFailure } from "./failures";
 
 // Maintenance visit reports (owner, 2026-10-20: "build a report with the tested chemicals,
 // checklist, cleanings, photos, etc. Then have an option to send the report to customers.
@@ -48,7 +49,7 @@ export async function sendVisitReport(
     target_job: jobId,
     automatic: !!opts.automatic,
   });
-  if (error) throw new Error(error.message);
+  if (error) throw dbFailure(error);
   const sent = data as { token?: string; report_id?: string; skipped?: string };
   if (sent.skipped || !sent.token) return { skipped: sent.skipped ?? "not_sent" };
 
@@ -82,8 +83,8 @@ export async function sendVisitReport(
     });
 
   if (channel === "email") {
-    if (!/^\S+@\S+\.\S+$/.test(email)) throw new Error("Enter the customer’s email.");
-    if (!emailConfigured()) throw new Error("Email isn’t set up on this server. Text the link.");
+    if (!/^\S+@\S+\.\S+$/.test(email)) throw new Refusal("Enter the customer’s email.");
+    if (!emailConfigured()) throw new Refusal("Email isn’t set up on this server. Text the link.");
     const cc = ccList(snapshot.customer?.cc_emails, email);
     // The daily catch-up (no person) checks only the shop's email allowance.
     const refusal = opts.userId
@@ -91,7 +92,7 @@ export async function sendVisitReport(
       : (await takeAllowance(companyId, "email", 1 + cc.length))
         ? null
         : LIMIT_MESSAGE;
-    if (refusal) throw new Error(refusal);
+    if (refusal) throw new Refusal(refusal);
     const greeting = snapshot.customer?.name ? `Hi ${snapshot.customer.name},` : "Hello,";
     const where = snapshot.property.address;
     try {

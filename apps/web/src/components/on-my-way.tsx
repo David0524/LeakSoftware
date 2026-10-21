@@ -5,6 +5,7 @@ import { localMinutes, onMyWayText, type OnMyWayVia } from "@leakbook/core";
 import { sendMessage } from "@/app/actions/texting";
 import { recordOnMyWay } from "@/app/actions/inspection";
 import { Sheet, useConfirm } from "./sheet";
+import { NO_CONNECTION, whenOffline } from "@/lib/offline";
 import { CarIcon, CheckIcon, MessageIcon } from "./icons";
 import { showBanner } from "./top-banner";
 import { buttonClass, cx, iconButtonClass } from "./ui";
@@ -108,7 +109,7 @@ export function OnMyWayMessage({
       form.set("phone", phone);
       form.set("body", body);
       form.set("job_id", jobId);
-      const sent = await sendMessage({}, form);
+      const sent = await whenOffline(sendMessage({}, form), { error: NO_CONNECTION });
       if (sent.error) {
         setError(sent.error);
         return;
@@ -251,7 +252,7 @@ export function OnMyWay({
       form.set("body", text);
       if (jobId) form.set("job_id", jobId);
       setDone({ label: "Sending…", spoken: "" });
-      const sent = await sendMessage({}, form);
+      const sent = await whenOffline(sendMessage({}, form), { error: NO_CONNECTION });
       setDone(
         sent.error
           ? { label: "Not Sent", spoken: sent.error }

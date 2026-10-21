@@ -3,9 +3,13 @@
 import { useActionState } from "react";
 import { setUpPayments } from "@/app/actions/quotes";
 import { Button, Notice } from "./ui";
+import { orOffline } from "@/lib/offline";
 
 export function PaymentsSetupButton({ label }: { label: string }) {
-  const [state, action, pending] = useActionState(() => setUpPayments(), {});
+  const [state, action, pending] = useActionState(
+    orOffline(() => setUpPayments()),
+    {},
+  );
   return (
     <form action={action} className="space-y-3">
       <Button type="submit" disabled={pending}>

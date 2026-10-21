@@ -122,6 +122,9 @@ export interface TestField {
   unit?: string;
   required?: boolean;
   options?: string[];
+  /** A number field's lowest and highest believable reading, e.g. 0 and 150 PSI. */
+  min?: number;
+  max?: number;
 }
 
 export interface TestFieldSchema {
@@ -416,6 +419,21 @@ export function toNumber(v: string | number | null | undefined): number | null {
   return Number.isFinite(n) ? n : null;
 }
 
+/** A field's min or max, when it's a usable number. */
+function bound(v: unknown): number | null {
+  return typeof v === "number" && Number.isFinite(v) ? v : null;
+}
+
+/** "Enter start pressure between 0 and 150 PSI." */
+function rangeMessage(f: TestField, min: number | null, max: number | null): string {
+  const unit = f.unit ? ` ${f.unit}` : "";
+  const label = f.label.toLowerCase();
+  if (min !== null && max !== null) return `Enter ${label} between ${min} and ${max}${unit}.`;
+  if (min !== null) return `Enter ${label} of ${min}${unit} or more.`;
+  return `Enter ${label} of ${max}${unit} or less.`;
+}
+
+/** Errors by field key: blanks in required fields, unreadable numbers, readings out of range. */
 export function validateTestData(schema: TestFieldSchema, data: TestData): Record<string, string> {
   const errors: Record<string, string> = {};
   for (const f of schema.fields) {
@@ -425,8 +443,15 @@ export function validateTestData(schema: TestFieldSchema, data: TestData): Recor
       if (f.required) errors[f.key] = `Enter ${f.label.toLowerCase()}.`;
       continue;
     }
-    if (f.type === "number" && toNumber(v) === null) errors[f.key] = "Enter a number.";
-    if (f.type === "number" && (toNumber(v) ?? 0) < 0) errors[f.key] = "Can't be negative.";
+    if (f.type === "number") {
+      const n = toNumber(v);
+      const min = bound(f.min);
+      const max = bound(f.max);
+      if (n === null) errors[f.key] = "Enter a number.";
+      else if ((min !== null && n < min) || (max !== null && n > max))
+        errors[f.key] = rangeMessage(f, min, max);
+      else if (min === null && n < 0) errors[f.key] = "Can't be negative.";
+    }
     if (f.type === "select" && f.options && !f.options.includes(String(v)))
       errors[f.key] = "Pick one of the options.";
   }
@@ -517,6 +542,20 @@ export function calculate(
   if (type.calculator === "pressure_drop") return pressureDrop(data, options);
   if (type.calculator === "bucket_evaporation") return bucketEvaporation(data, options);
   return { computed: {}, suggested: null, summary: null };
+}
+
+/**
+ * The calculation shown while the tech types: a reading that fails the checks counts as blank,
+ * so an impossible number never reaches the summary ("Dropped 1e+23 PSI").
+ */
+export function previewTest(
+  type: Pick<TestType, "calculator" | "field_schema">,
+  data: TestData,
+): Calculation {
+  const errors = validateTestData(type.field_schema, data);
+  const usable: TestData = { ...data };
+  for (const key of Object.keys(errors)) usable[key] = null;
+  return calculate(type, usable);
 }
 
 /** Store numbers as numbers, blanks as null, text trimmed. */

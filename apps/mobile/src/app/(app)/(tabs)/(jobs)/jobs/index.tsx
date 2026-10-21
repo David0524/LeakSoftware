@@ -39,12 +39,16 @@ import {
   Empty,
   FilterPills,
   HeaderButton,
-  SearchField,
   Segmented,
   StatusChip,
   T,
   useScreenChrome,
 } from "../../../../../ui/components";
+import {
+  ShopSearchField,
+  ShopSearchResults,
+  useShopSearchState,
+} from "../../../../../features/search/ShopSearch";
 import { haptics } from "../../../../../ui/haptics";
 import { useResultBanner } from "../../../../../ui/ResultBanner";
 import { rowGestures, useRowMenu, type RowGestures } from "../../../../../ui/RowMenu";
@@ -95,7 +99,9 @@ type View_ = "jobs" | "reports";
 
 /**
  * Jobs (spec 5.2) and Reports (5.3) in one tab: a segmented control switches the list and the
- * large title. The jobs list filters as you type from the phone's database.
+ * large title. Under the Jobs title, one search across the shop (owner, 2026-10-20; docs/plans/
+ * search-and-activity.md), as the phone website's: while it's in use its results take the
+ * list's place, and Cancel puts the list back. It replaces the jobs-only search.
  */
 export default function Jobs() {
   const company = useCompany();
@@ -116,7 +122,8 @@ export default function Jobs() {
     }
   }
   const [reportFilter, setReportFilter] = useState("all");
-  const [search, setSearch] = useState("");
+  const shop = useShopSearchState();
+  const searching = view === "jobs" && shop.searching;
   // Sort, as Invoices sorts (owner, 2026-10-20: "Add sorting on the jobs page just like
   // invoices"): Scheduled Date first, kept while the app runs.
   const [sort, setSortState] = useState(() => jobSort(lastSort));
@@ -204,16 +211,9 @@ export default function Jobs() {
 
   const shown = useMemo(() => {
     const statuses = FILTERS.find((f) => f.value === filter)?.statuses;
-    const q = search.trim().toLowerCase().replace(/^#/, "");
     const matched = jobs
       .filter((j) => !j.deleted_at)
-      .filter((j) => !statuses || statuses.includes(j.status))
-      .filter(
-        (j) =>
-          !q ||
-          String(j.number ?? "").includes(q) ||
-          (j.customer?.name ?? "").toLowerCase().includes(q),
-      );
+      .filter((j) => !statuses || statuses.includes(j.status));
     // core sortJobs, as the website: the customer's name as `customer`.
     const keyed = matched.map((j) => ({
       job: j,
@@ -223,7 +223,7 @@ export default function Jobs() {
       customer: j.customer?.name ?? null,
     }));
     return sortJobs(keyed, sort).map((k) => k.job);
-  }, [jobs, filter, search, sort]);
+  }, [jobs, filter, sort]);
 
   const reportRows = useMemo(() => {
     const byId = new Map(jobs.map((j) => [j.id, j]));
@@ -256,125 +256,125 @@ export default function Jobs() {
     setRefreshing(false);
   }
 
+  // One tree whether searching or not, so the field keeps its focus as the results appear.
   const top = (
     <View style={styles.top}>
       {header}
-      <Segmented
-        fill={false}
-        minSegmentWidth={112}
-        accessibilityLabel="Jobs or reports"
-        options={[
-          { value: "jobs", label: "Jobs" },
-          { value: "reports", label: "Reports" },
-        ]}
-        value={view}
-        onChange={setView}
-      />
-      <SyncBar onPress={() => router.push("/more/sync")} />
-      {view === "jobs" ? (
-        <>
-          <ScreenTip screen="jobs" />
-          <FilterPills label="Status" options={FILTERS} value={filter} onChange={setFilter} />
-          <View style={styles.searchRow}>
-            <View style={{ flex: 1 }}>
-              <SearchField
-                value={search}
-                onChangeText={setSearch}
-                placeholder="Customer name or job number"
-              />
-            </View>
-            <Pressable
-              accessibilityRole="button"
-              accessibilityLabel={`Sort, ${sortLabel}`}
-              onPress={() =>
-                menu.open({
-                  title: "Sort",
-                  items: JOB_SORTS.map((x) => ({
-                    label: x.label,
-                    checked: x.key === sort,
-                    onPress: () => setSort(x.key),
-                  })),
-                })
-              }
-              style={({ pressed }) => [styles.sort, pressed && { opacity: 0.5 }]}
-            >
-              <Text
-                style={[type.secondary, face.semiBold, { color: color.link }]}
-                maxFontSizeMultiplier={MAX_TEXT_SCALE}
-              >
-                {sortLabel}
-              </Text>
-              <WebIcon name="updown" size={16} color={color.link} strokeWidth={2} />
-            </Pressable>
-          </View>
-          {menu.element}
-        </>
+      {view === "jobs" ? <ShopSearchField search={shop} /> : null}
+      {searching ? (
+        <ShopSearchResults search={shop} />
       ) : (
-        <FilterPills
-          label="Reports"
-          options={REPORT_FILTERS}
-          value={reportFilter}
-          onChange={setReportFilter}
-        />
+        <>
+          <Segmented
+            fill={false}
+            minSegmentWidth={112}
+            accessibilityLabel="Jobs or reports"
+            options={[
+              { value: "jobs", label: "Jobs" },
+              { value: "reports", label: "Reports" },
+            ]}
+            value={view}
+            onChange={setView}
+          />
+          <SyncBar onPress={() => router.push("/more/sync")} />
+          {view === "jobs" ? (
+            <>
+              <ScreenTip screen="jobs" />
+              <FilterPills label="Status" options={FILTERS} value={filter} onChange={setFilter} />
+              {/* Sort, as Invoices sorts; the search across the shop above replaces the old
+                  jobs-only search. */}
+              <View style={styles.searchRow}>
+                <Pressable
+                  accessibilityRole="button"
+                  accessibilityLabel={`Sort, ${sortLabel}`}
+                  onPress={() =>
+                    menu.open({
+                      title: "Sort",
+                      items: JOB_SORTS.map((x) => ({
+                        label: x.label,
+                        checked: x.key === sort,
+                        onPress: () => setSort(x.key),
+                      })),
+                    })
+                  }
+                  style={({ pressed }) => [styles.sort, pressed && { opacity: 0.5 }]}
+                >
+                  <Text
+                    style={[type.secondary, face.semiBold, { color: color.link }]}
+                    maxFontSizeMultiplier={MAX_TEXT_SCALE}
+                  >
+                    {sortLabel}
+                  </Text>
+                  <WebIcon name="updown" size={16} color={color.link} strokeWidth={2} />
+                </Pressable>
+              </View>
+              {menu.element}
+            </>
+          ) : (
+            <FilterPills
+              label="Reports"
+              options={REPORT_FILTERS}
+              value={reportFilter}
+              onChange={setReportFilter}
+            />
+          )}
+        </>
       )}
     </View>
   );
 
-  const empty =
-    view === "jobs" ? (
-      <Empty>
-        {search.trim()
-          ? `No jobs match “${search.trim()}”.`
-          : "No jobs here. Add one with New Job, or on the phone."}
-      </Empty>
-    ) : (
-      <Empty>
-        {reportFilter === "sent"
-          ? "No reports sent yet."
-          : reportFilter === "draft"
-            ? "No drafts."
-            : "No reports yet. A job’s report is drafted from its Wrap-Up."}
-      </Empty>
-    );
+  const empty = searching ? null : view === "jobs" ? (
+    <Empty>No jobs here. Add one with New Job, or on the phone.</Empty>
+  ) : (
+    <Empty>
+      {reportFilter === "sent"
+        ? "No reports sent yet."
+        : reportFilter === "draft"
+          ? "No drafts."
+          : "No reports yet. A job’s report is drafted from its Wrap-Up."}
+    </Empty>
+  );
 
   const data: { key: string; node: (first: boolean, last: boolean) => React.ReactNode }[] =
-    view === "jobs"
-      ? shown.map((j) => ({
-          key: j.id,
-          node: (first, last) => (
-            <JobRow
-              job={j}
-              gestures={gesturesFor}
-              onComplete={completeJob}
-              tech={techName(j.assigned_user_id)}
-              when={
-                j.status === "in_progress" && j.started_at
-                  ? "Started"
-                  : formatSchedule(j.scheduled_start, now, company.timezone)
-              }
-              first={first}
-              last={last}
-            />
-          ),
-        }))
-      : reportRows.map(({ report, job }) => ({
-          key: report.id,
-          node: (first, last) => (
-            <ReportRow
-              report={report}
-              job={job}
-              first={first}
-              last={last}
-              onMenu={(open) =>
-                rowMenu.open(
-                  menuTitle(job?.customer?.name, job?.number ? `#${job.number}` : null),
-                  reportRowActions().menu,
-                  open,
-                )
-              }
-            />
-          ),
-        }));
+    searching
+      ? []
+      : view === "jobs"
+        ? shown.map((j) => ({
+            key: j.id,
+            node: (first, last) => (
+              <JobRow
+                job={j}
+                gestures={gesturesFor}
+                onComplete={completeJob}
+                tech={techName(j.assigned_user_id)}
+                when={
+                  j.status === "in_progress" && j.started_at
+                    ? "Started"
+                    : formatSchedule(j.scheduled_start, now, company.timezone)
+                }
+                first={first}
+                last={last}
+              />
+            ),
+          }))
+        : reportRows.map(({ report, job }) => ({
+            key: report.id,
+            node: (first, last) => (
+              <ReportRow
+                report={report}
+                job={job}
+                first={first}
+                last={last}
+                onMenu={(open) =>
+                  rowMenu.open(
+                    menuTitle(job?.customer?.name, job?.number ? `#${job.number}` : null),
+                    reportRowActions().menu,
+                    open,
+                  )
+                }
+              />
+            ),
+          }));
 
   return (
     <View style={{ flex: 1, backgroundColor: color.bg }}>
@@ -387,6 +387,9 @@ export default function Jobs() {
         keyExtractor={(d) => d.key}
         ListHeaderComponent={top}
         ListEmptyComponent={empty}
+        // Results stay tappable with the keyboard up; scrolling puts it away.
+        keyboardShouldPersistTaps="handled"
+        keyboardDismissMode="on-drag"
         renderItem={({ item, index }) => <>{item.node(index === 0, index === data.length - 1)}</>}
         initialNumToRender={20}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={refresh} />}
@@ -575,6 +578,11 @@ const styles = StyleSheet.create({
     paddingHorizontal: space["4"],
   },
   rowBody: { flex: 1, gap: 2 },
-  searchRow: { flexDirection: "row", alignItems: "center", gap: space["3"] },
+  searchRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "flex-end",
+    gap: space["3"],
+  },
   sort: { minHeight: minTap, flexDirection: "row", alignItems: "center", gap: 4 },
 });

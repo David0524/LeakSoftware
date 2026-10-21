@@ -1,8 +1,10 @@
+import { RememberRecent } from "@/components/remember-recent";
 import { mapStatus, offersLeak, offersPool } from "@leakbook/core";
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { NotOnMapTag } from "@/components/not-on-map";
 import { routingConfigured } from "@/server/routing";
+import { isUuid } from "@/lib/uuid";
 import {
   JOB_TYPE_LABELS,
   POOL_TYPE_LABELS,
@@ -55,6 +57,7 @@ const KIND: Record<string, string> = {
 
 export default async function CustomerPage({ params }: PageProps<"/customers/[id]">) {
   const { id } = await params;
+  if (!isUuid(id)) notFound();
   const office = await getOffice();
   // All three at once: each used to wait for the one before.
   const [data, team, company, line, componentTypes, priceBook] = await Promise.all([
@@ -116,6 +119,17 @@ export default async function CustomerPage({ params }: PageProps<"/customers/[id
   // edited in a sheet ("There is no way to change a homeowner's address").
   return (
     <SheetNotices>
+      {/* First under Recent in search (docs/plans/search-and-activity.md). */}
+      <RememberRecent
+        userId={office.user.id}
+        item={{
+          kind: "customer",
+          id: customer.id,
+          title: customer.name,
+          detail: customer.phone?.trim() || customer.email?.trim() || null,
+          open: { screen: "customer", id: customer.id },
+        }}
+      />
       <PageHeader
         title={customer.name}
         back={{ href: "/customers", label: "Customers" }}

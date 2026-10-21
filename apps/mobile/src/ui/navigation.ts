@@ -12,7 +12,7 @@ import { color, font, ios } from "./theme";
  * iOS 26 and later draw the bar in Liquid Glass with a scroll edge effect on their own; adding
  * a blur there doubles the effect (react-native-screens warns about it), so it is for older iOS.
  */
-const liquidGlass = ios && Number.parseInt(String(Platform.Version), 10) >= 26;
+export const liquidGlass = ios && Number.parseInt(String(Platform.Version), 10) >= 26;
 
 /** A translucent bar the page scrolls under. */
 export const translucentBar: NativeStackNavigationOptions = ios

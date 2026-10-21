@@ -1,5 +1,13 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { createAutosave, createUndoTimer, type AutosaveStatus } from "../src/lib/autosave";
+import {
+  AUTOSAVE_OFFLINE,
+  createAutosave,
+  createUndoTimer,
+  type AutosaveStatus,
+} from "../src/lib/autosave";
+import { NO_CONNECTION, orOffline, whenOffline } from "../src/lib/offline";
+import { parseQuantity } from "../src/lib/quantity";
+import { isUuid } from "../src/lib/uuid";
 import { completeSendPrompt, nextStepButtons, type NextStepState } from "../src/lib/next-step";
 
 // One-handed use (owner, 2026-10-20): docs/design/2026-10-20-one-handed-use.md.
@@ -95,6 +103,58 @@ describe("createAutosave (item 4)", () => {
     await a.flush();
     expect(statuses.at(-1)).toBe("saved");
   });
+  it("keeps text that couldn't reach the server and saves it on the next try", async () => {
+    let online = false;
+    const save = vi.fn(async () => {
+      if (!online) throw new TypeError("Failed to fetch");
+      return null;
+    });
+    const statuses: AutosaveStatus[] = [];
+    const a = createAutosave({ initial: "", save, onStatus: (s) => statuses.push(s) });
+    a.change("Seam at the skimmer");
+    await vi.advanceTimersByTimeAsync(1000);
+    expect(statuses.at(-1)).toEqual({ error: AUTOSAVE_OFFLINE });
+    // Back online: the field is left (or the signal returns) without typing anything new.
+    online = true;
+    await a.flush();
+    expect(save).toHaveBeenLastCalledWith("Seam at the skimmer");
+    expect(statuses.at(-1)).toBe("saved");
+    await a.flush();
+    expect(save).toHaveBeenCalledTimes(2);
+  });
+
+  it("saves text typed again after the stored value changed from outside", async () => {
+    const save = vi.fn(async () => null);
+    const a = createAutosave({ initial: "", save });
+    a.change("deck");
+    await a.flush();
+    // An answer change cleared Where on the server; the tech types the same text again.
+    a.rebase("");
+    a.change("deck");
+    await a.flush();
+    expect(save).toHaveBeenCalledTimes(2);
+  });
+
+  it("keeps a trailing space just typed when the saved text comes back trimmed", async () => {
+    // The field holds what was typed; the autosave only ever reads it, and the server's
+    // trimmed copy coming back (rebase) neither rewrites it nor saves again.
+    let field = "deck";
+    const save = vi.fn(async () => null);
+    const a = createAutosave({ initial: "", save });
+    a.change(field.trim());
+    await a.flush();
+    field += " ";
+    a.change(field.trim());
+    a.rebase("deck");
+    await a.flush();
+    expect(field).toBe("deck ");
+    expect(save).toHaveBeenCalledExactlyOnceWith("deck");
+    field += "drain";
+    a.change(field.trim());
+    await a.flush();
+    expect(save).toHaveBeenLastCalledWith("deck drain");
+  });
+
   it("never saves old text over a draft written again (pause, then reset)", async () => {
     let finish: (() => void) | null = null;
     const save = vi.fn(
@@ -192,5 +252,66 @@ describe("completeSendPrompt (item 5)", () => {
       ).toBeNull();
     for (const jobType of ["detection", "repair"])
       expect(completeSendPrompt({ jobType, reportMode: "auto", customer: "Sam" })).toBeNull();
+  });
+});
+
+describe("parseQuantity (invoice lines)", () => {
+  it("takes 1, 2.5 and 2,5, and blank as 1", () => {
+    expect(parseQuantity("1")).toBe(1);
+    expect(parseQuantity(" 2.5 ")).toBe(2.5);
+    expect(parseQuantity("2,5")).toBe(2.5);
+    expect(parseQuantity("")).toBe(1);
+  });
+
+  it("refuses what isn't a quantity", () => {
+    for (const bad of ["1e309", "Infinity", "1e3", "-1", "0", "abc", "1.234", "100000", "NaN"])
+      expect(parseQuantity(bad)).toBeNull();
+  });
+});
+
+describe("orOffline (no signal)", () => {
+  it("answers a connection error where the button is, instead of the error screen", async () => {
+    type S = { error?: string };
+    const offline: (state: S, form: FormData) => Promise<S> = async () => {
+      throw new TypeError("Failed to fetch");
+    };
+    const action = orOffline(offline);
+    expect(await action({}, new FormData())).toEqual({ message: undefined, error: NO_CONNECTION });
+  });
+
+  it("leaves answers and other errors as they were", async () => {
+    type S = { error?: string; message?: string };
+    const saved: (state: S, n: number) => Promise<S> = async () => ({ message: "Saved." });
+    const ok = orOffline(saved);
+    expect(await ok({}, 1)).toEqual({ message: "Saved." });
+    const failing: (state: S, n: number) => Promise<S> = async () => {
+      throw new Error("Server Components render failed");
+    };
+    const broken = orOffline(failing);
+    await expect(broken({}, 1)).rejects.toThrow("Server Components render failed");
+  });
+});
+
+describe("isUuid (job links)", () => {
+  it("takes the database's ids and nothing else", () => {
+    expect(isUuid("00000000-0000-4000-8000-00000000e001")).toBe(true);
+    expect(isUuid("0190A1B2-C3D4-7E5F-8A9B-0123456789AB")).toBe(true);
+    for (const bad of ["not-a-uuid", "' or 1=1--", "", "00000000-0000-4000-8000-00000000e00"])
+      expect(isUuid(bad)).toBe(false);
+  });
+});
+
+describe("whenOffline (a button's own server action call)", () => {
+  it("answers the fallback only when the request never reached the server", async () => {
+    const fallback = { error: NO_CONNECTION };
+    expect(await whenOffline(Promise.reject(new TypeError("Failed to fetch")), fallback)).toBe(
+      fallback,
+    );
+    expect(await whenOffline(Promise.resolve({ error: "No." }), fallback)).toEqual({
+      error: "No.",
+    });
+    await expect(whenOffline(Promise.reject(new Error("render")), fallback)).rejects.toThrow(
+      "render",
+    );
   });
 });

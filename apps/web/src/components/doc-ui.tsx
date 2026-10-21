@@ -47,7 +47,9 @@ export function actionCardClass(print: boolean) {
 }
 
 /** Phones: the customer pages sit on the grouped gray background; the PDF stays on paper. */
-export const DOC_PAGE = "lb-light min-h-full flex-1 bg-paper text-text max-sm:bg-bg";
+// Long unbroken text (a pasted link, a mistyped line) wraps instead of widening the page.
+export const DOC_PAGE =
+  "lb-light min-h-full flex-1 bg-paper text-text max-sm:bg-bg [overflow-wrap:anywhere]";
 
 /** Phones: a list (dl, ul) as one iOS inset grouped block. Wider (and printed), unchanged. */
 export const PHONE_GROUP = "max-sm:overflow-hidden max-sm:rounded-xl max-sm:bg-surface max-sm:pl-4";

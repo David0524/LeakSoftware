@@ -57,7 +57,7 @@ select throws_ok(format($$ update membership set role = 'tech' where id = %L $$,
   pg_temp.member((select admin_a from ids))), '42501', null, 'or change an admin''s role');
 select throws_ok(format($$ update membership set status = 'disabled' where id = %L $$,
   pg_temp.member((select owner_a from ids))), '42501', null, 'or turn an owner off');
-select throws_ok(format($$ update company set settings = settings || '{"techs_see_all_jobs": false}' where id = %L $$,
+select throws_ok(format($$ update company set settings = settings || '{"techs_see_all_jobs": true}' where id = %L $$,
   (select ca from ids)), '42501', null, 'or change what techs may see');
 select throws_ok(format($$ update company set settings = settings || '{"techs_make_jobs": false}' where id = %L $$,
   (select ca from ids)), '42501', null, 'or whether techs make jobs');

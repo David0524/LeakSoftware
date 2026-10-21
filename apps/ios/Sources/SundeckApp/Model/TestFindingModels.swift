@@ -96,8 +96,8 @@ public struct TestForm: Equatable, Sendable {
 
     var data: TestData { values.mapValues { TestValue.string($0) } }
 
-    /// The live calculator result.
-    public var calculation: Calculation { calculate(type, data) }
+    /// The live calculator result; a reading that fails the checks counts as blank.
+    public var calculation: Calculation { previewTest(type, data) }
 
     /// The outcome the segmented control shows: the tech's pick, else the suggestion.
     public var outcome: Outcome? { chosenOutcome ?? calculation.suggested }
@@ -112,7 +112,7 @@ public struct TestForm: Equatable, Sendable {
     }
 
     /// Cancel with changes asks this (spec 3.15).
-    public var discardTitle: String { "Discard changes?" }
+    public var discardTitle: String { DiscardText.title }
 
     /// The sheet's title: "Add Test", or "Edit Pressure Test" with the type's name.
     public var sheetTitle: String { isNew ? "Add Test" : "Edit \(type.name)" }
@@ -248,7 +248,7 @@ public struct FindingForm: Equatable, Sendable {
     public var showsStatus: Bool { true }
     public var navigationTitle: String { isNew ? "Add Finding" : "Edit Finding" }
     public var submitTitle: String { isNew ? "Add Finding" : "Save Finding" }
-    public var discardTitle: String { "Discard changes?" }
+    public var discardTitle: String { DiscardText.title }
     /// "Delete “Skimmer seam leak”?"
     public var deleteTitle: String { "Delete “\(title)”?" }
     public var pinHint: String { "Tap where the leak is." }

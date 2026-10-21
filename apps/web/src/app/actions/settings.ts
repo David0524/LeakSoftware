@@ -22,6 +22,7 @@ import {
   TECH_COLORS,
 } from "@leakbook/core";
 import { OWNER_ONLY, requireManager, requireOwner } from "@/lib/auth";
+import { friendlyDbError, isWebUrl } from "@/lib/limits";
 import { createClient } from "@/lib/supabase/server";
 import { logPriceSyncError, syncSubscriptionPrice } from "@/server/billing";
 import { locateCompany } from "@/server/route-days";
@@ -56,7 +57,7 @@ function done(path: string, message = "Saved."): FormState {
 }
 
 function failed(error: { message: string } | null, fallback = "Couldn’t save. Try again.") {
-  return { error: error?.message ?? fallback };
+  return { error: error ? friendlyDbError(error.message) : fallback };
 }
 
 // ---------------------------------------------------------------------------
@@ -70,6 +71,10 @@ export async function saveCompany(_: FormState, form: FormData): Promise<FormSta
   const timezone = text(form, "timezone");
   if (!Intl.supportedValuesOf("timeZone").includes(timezone) && timezone !== "UTC")
     return { fields: { timezone: "Pick a time zone." } };
+  // It goes into customer emails as a link: web pages only, never javascript: or data:.
+  const review = text(form, "review_url");
+  if (review && !isWebUrl(review))
+    return { fields: { review_url: "Enter a web address that starts with https://." } };
   const { error } = await supabase
     .from("company")
     .update({
@@ -479,6 +484,8 @@ export async function savePriceItem(_: FormState, form: FormData): Promise<FormS
   const fields: Record<string, string> = {};
   if (!name) fields.name = "Enter a name.";
   if (price === null || price < 0) fields.price = "Enter a price, like 185 or 185.50.";
+  if (name.length > 200) fields.name = "Keep the name under 200 characters.";
+  if (text(form, "unit").length > 40) fields.unit = "Keep the unit short, like each or hour.";
   if (Object.keys(fields).length) return { fields };
   const { error } = await upsert(supabase, "price_book_item", office.company.id, text(form, "id"), {
     name,

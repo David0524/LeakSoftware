@@ -170,3 +170,33 @@ import Testing
         }
     }
 }
+
+/// Document numbers never get thousands separators (owner, 2026-10-20: "Job numbers should never
+/// have commas"). SwiftUI formats a number interpolated into a Text literal ("#1,038"), so a
+/// "#" followed by an interpolation must be Text(verbatim:) or a String.
+@Suite struct DocumentNumberTests {
+    @Test func noNumberAfterAHashInATextLiteral() throws {
+        let sources = URL(fileURLWithPath: #filePath)
+            .deletingLastPathComponent()
+            .appendingPathComponent("../../Sources")
+            .standardized
+        let files = FileManager.default.enumerator(at: sources, includingPropertiesForKeys: nil)
+        var offenders: [String] = []
+        while let url = files?.nextObject() as? URL {
+            guard url.pathExtension == "swift" else { continue }
+            let lines = try String(contentsOf: url, encoding: .utf8).components(separatedBy: "\n")
+            for (i, line) in lines.enumerated()
+            where line.range(
+                of: #"(Text|Label|accessibilityLabel|navigationTitle)\("[^"]*#\\\("#, options: .regularExpression)
+                != nil
+            {
+                offenders.append("\(url.lastPathComponent):\(i + 1)")
+            }
+        }
+        #expect(offenders.isEmpty, "Use Text(verbatim:) for: \(offenders)")
+    }
+
+    @Test func documentNumbersReadPlainly() {
+        #expect("Job #" + String(10_381) == "Job #10381")
+    }
+}

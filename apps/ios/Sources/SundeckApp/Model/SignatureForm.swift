@@ -79,6 +79,8 @@ public struct SignatureForm: Equatable, Sendable {
     public var signer: String { nameText.trimmingCharacters(in: .whitespacesAndNewlines) }
 
     public var canClear: Bool { !strokes.isEmpty }
+    /// A signature drawn and not saved: leaving asks "Discard changes?" first (owner, 2026-10-20).
+    public var isDirty: Bool { !strokes.isEmpty }
 
     /// A stroke ended: the pad's strokes so far. Clears the message.
     public mutating func draw(_ strokes: [SignatureStroke]) {
@@ -93,6 +95,7 @@ public struct SignatureForm: Equatable, Sendable {
         if purpose == nil { return "Choose what this signature is for." }
         let review = kind == .review
         if signer.isEmpty { return review ? "Enter your name." : "Enter the signer’s name." }
+        if let tooLong = Limits.signerNameError(signer) { return tooLong }
         if inkLength(strokes) < minInk {
             return review ? "Sign in the box with your finger." : "Ask them to sign in the box."
         }

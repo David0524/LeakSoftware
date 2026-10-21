@@ -188,6 +188,14 @@
             .navigationBarTitleDisplayMode(.large)
             .navigationDestination(isPresented: $newMessage) { NewMessageScreen(customerId: customerId) }
             .task(id: "\(sync.revision)|\(session.company?.id ?? "")") { reload() }
+            // First under Recent in search (docs/plans/search-and-activity.md).
+            .task(id: detail.map { recent($0) }) {
+                if let detail { RecentSearches(kv: sync.kv).opened(recent(detail)) }
+            }
+        }
+
+        private func recent(_ c: CustomerDetail) -> RecentItem {
+            recentItem(customerId: c.id, name: c.name, phone: c.phone, email: c.email)
         }
 
         private func page(_ c: CustomerDetail) -> some View {

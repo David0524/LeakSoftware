@@ -1,4 +1,12 @@
-import type { ReactNode } from "react";
+import {
+  createContext,
+  useCallback,
+  useContext,
+  useEffect,
+  useId,
+  useState,
+  type ReactNode,
+} from "react";
 import {
   Modal,
   Pressable,
@@ -9,8 +17,30 @@ import {
   useWindowDimensions,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { useDiscardChanges } from "./discard";
 import { KeyboardAvoider } from "./keyboard";
+import { confirmDiscard } from "./sheet";
 import { color, face, ios, minTap, shape, space, type } from "./theme";
+
+type ReportDirty = (id: string, dirty: boolean) => void;
+const SheetDirty = createContext<ReportDirty | null>(null);
+
+/**
+ * An editor's unsaved changes (owner, 2026-10-20: "Discard changes?" everywhere). Inside a
+ * ModalSheet, its Cancel, Android back, the scrim and leaving the screen ask first; elsewhere,
+ * leaving the screen does. Returns `leave` for navigating away after a save (see
+ * useDiscardChanges). Fields that save by themselves don't count.
+ */
+export function useUnsavedChanges(dirty: boolean): (go: () => void) => void {
+  const report = useContext(SheetDirty);
+  const id = useId();
+  useEffect(() => {
+    if (!report) return;
+    report(id, dirty);
+    return () => report(id, false);
+  }, [report, id, dirty]);
+  return useDiscardChanges(dirty && !report);
+}
 
 /**
  * A sheet for one short task that isn't its own route (spec 3.15): Move, Suggested Times,
@@ -39,13 +69,28 @@ export function ModalSheet({
   locked?: boolean;
   children: ReactNode;
 }) {
+  // Forms inside report unsaved changes (useUnsavedChanges): closing then asks first.
+  const [dirtyIds, setDirtyIds] = useState<ReadonlySet<string>>(() => new Set());
+  const report = useCallback<ReportDirty>((id, dirty) => {
+    setDirtyIds((prev) => {
+      if (prev.has(id) === dirty) return prev;
+      const next = new Set(prev);
+      if (dirty) next.add(id);
+      else next.delete(id);
+      return next;
+    });
+  }, []);
+  const dirty = visible && dirtyIds.size > 0;
+  useDiscardChanges(dirty);
+  const held = locked || dirty;
+  const close = dirty ? () => confirmDiscard(onClose) : onClose;
   const insets = useSafeAreaInsets();
   const { height } = useWindowDimensions();
   const bar = (
     <View style={styles.bar}>
       <Pressable
         accessibilityRole="button"
-        onPress={onClose}
+        onPress={close}
         hitSlop={4}
         style={({ pressed }) => [styles.cancel, pressed && { opacity: 0.5 }]}
       >
@@ -69,7 +114,7 @@ export function ModalSheet({
       keyboardShouldPersistTaps="handled"
       contentContainerStyle={[styles.content, { paddingBottom: space["6"] + insets.bottom }]}
     >
-      {children}
+      <SheetDirty.Provider value={report}>{children}</SheetDirty.Provider>
     </ScrollView>
   );
 
@@ -79,7 +124,7 @@ export function ModalSheet({
         visible={visible}
         animationType="slide"
         presentationStyle="pageSheet"
-        onRequestClose={locked ? undefined : onClose}
+        onRequestClose={held ? undefined : close}
       >
         <View style={[styles.flex, { backgroundColor: color.bg }]}>
           <View style={[styles.grabber, { backgroundColor: color.grabber }]} />
@@ -96,13 +141,13 @@ export function ModalSheet({
       animationType="slide"
       statusBarTranslucent
       navigationBarTranslucent
-      onRequestClose={onClose}
+      onRequestClose={close}
     >
       <Pressable
         accessibilityLabel="Close"
         accessibilityRole="button"
         style={[StyleSheet.absoluteFill, { backgroundColor: color.scrim }]}
-        onPress={locked ? undefined : onClose}
+        onPress={held ? undefined : close}
       />
       <KeyboardAvoider style={styles.dock} pointerEvents="box-none">
         <View

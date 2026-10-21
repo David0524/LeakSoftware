@@ -8,6 +8,7 @@ import {
   type PointerEvent,
   type ReactNode,
 } from "react";
+import { useTrackOverflow } from "./gestures";
 import { SEGMENT_TRACK, cx, segmentClass } from "./ui";
 
 /** SEGMENT_TRACK as one full-width row. */
@@ -56,6 +57,15 @@ export function Segmented<T extends string>({
   // (owner, 2026-10-19: "hold the slider/selector like a bubble and drag it around"): the
   // choice follows the finger and the segment lifts while held.
   const [held, setHeld] = useState(false);
+  // Fit: with large text the row scrolls inside its track rather than squeezing the labels.
+  const track = useTrackOverflow<HTMLDivElement>(
+    fit
+      ? Math.max(
+          0,
+          options.findIndex((o) => o.value === value),
+        )
+      : undefined,
+  );
   const dragging = useRef(false);
   function segmentAt(e: PointerEvent<HTMLDivElement>): T | null {
     const buttons = [...e.currentTarget.querySelectorAll<HTMLButtonElement>("[role=radio]")];
@@ -69,12 +79,17 @@ export function Segmented<T extends string>({
     if (segmentAt(e) !== value) return;
     dragging.current = true;
     setHeld(true);
-    e.currentTarget.setPointerCapture(e.pointerId);
   }
   function onPointerMove(e: PointerEvent<HTMLDivElement>) {
     if (!dragging.current) return;
     const next = segmentAt(e);
-    if (next !== null && next !== value) onChange(next);
+    if (next === null || next === value) return;
+    // Capture only once the thumb really moves: captured from the start, a mouse click on
+    // the chosen segment went to the track instead, so tapping the chosen checklist answer
+    // again couldn't clear it.
+    if (!e.currentTarget.hasPointerCapture(e.pointerId))
+      e.currentTarget.setPointerCapture(e.pointerId);
+    onChange(next);
   }
   function onPointerEnd() {
     dragging.current = false;
@@ -92,12 +107,17 @@ export function Segmented<T extends string>({
       ) : null}
       <input type="hidden" name={name} value={value} />
       <div
+        ref={fit ? track : undefined}
         role="radiogroup"
         aria-labelledby={labelId}
         aria-describedby={description ? `${labelId}-note` : undefined}
         // Dragging the thumb sideways never swipes to the next job section.
         data-no-swipe
-        className={cx(fit ? FIT_TRACK : SEGMENT_TRACK, "touch-pan-y select-none")}
+        className={cx(
+          fit ? FIT_TRACK : SEGMENT_TRACK,
+          fit && "segment-scroll",
+          "touch-pan-y select-none",
+        )}
         onKeyDown={onKeyDown}
         onPointerDown={onPointerDown}
         onPointerMove={onPointerMove}
@@ -109,6 +129,7 @@ export function Segmented<T extends string>({
             key={o.value}
             type="button"
             role="radio"
+            data-segment
             aria-checked={value === o.value}
             // Nothing chosen yet: the first segment takes the Tab stop.
             tabIndex={
@@ -118,9 +139,7 @@ export function Segmented<T extends string>({
             className={segmentClass(
               value === o.value,
               cx(
-                fit
-                  ? "min-w-0 flex-auto px-1.5 text-[0.8125rem] sm:px-4 sm:text-[0.9375rem]"
-                  : undefined,
+                fit ? "flex-auto px-1.5 text-[0.8125rem] sm:px-4 sm:text-[0.9375rem]" : undefined,
                 "transition-transform duration-200 motion-reduce:transition-none",
                 held && value === o.value && "scale-[1.06] shadow-lg",
                 segmentClassName,

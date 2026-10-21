@@ -20,6 +20,7 @@ import {
   createChecklist,
   removeComponent,
   saveChecklistResult,
+  saveWhere,
   useInspectionConfig,
   useJobInspection,
 } from "../../data/inspection";
@@ -30,6 +31,7 @@ import { confirmDestructive } from "../../ui/confirm";
 import { haptics } from "../../ui/haptics";
 import { Select } from "../../ui/Select";
 import { useNoSwipe } from "../../ui/SwipeNav";
+import { marksToUndo } from "../../lib/undo";
 import { checklistRowActions } from "../../lib/rowActions";
 import { rowGestures, useRowMenu, type RowMenu } from "../../ui/RowMenu";
 import { SwipeActions } from "../../ui/SwipeRow";
@@ -289,10 +291,10 @@ function ChecklistGroup({
         );
     });
     haptics.success();
-    // Undo clears what it marked, back to To do.
+    // Undo clears what it marked, back to To do (not an item answered again since).
     undo.start(`Marked ${marked.length}`, () =>
       services.sync.batch(() => {
-        for (const id of marked)
+        for (const id of marksToUndo(marked, results.current))
           saveChecklistResult(
             services.sync,
             job.company_id,
@@ -500,9 +502,7 @@ function ChecklistItem({
           item={component.label}
           value={result.location_text ?? ""}
           onSave={(where) =>
-            saveChecklistResult(services.sync, job.company_id, job.id, component.id, result, {
-              location_text: where || null,
-            })
+            saveWhere(services.sync, job.company_id, job.id, component.id, where || null)
           }
         />
       ) : null}

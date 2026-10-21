@@ -39,6 +39,7 @@ import { color, space } from "../../ui/theme";
 import { TechValue } from "../../ui/TechDot";
 import { WebIcon } from "../../ui/WebIcon";
 import { MoveSheet, SuggestSheet, type MoveTarget } from "../schedule/MoveSheet";
+import { jobDateError } from "../../lib/limits";
 import { usePlanMove } from "../schedule/planMove";
 
 /**
@@ -137,6 +138,9 @@ export function useJobMove(onResult: (r: MoveResult) => void) {
   });
 
   function moveTo(j: JobView, techId: string | null, d: string | null, index: number) {
+    // Years 2000 to 2100 and a real day, as the website (owner, 2026-10-20).
+    const badDate = d ? jobDateError(d) : null;
+    if (badDate) return onResult({ error: badDate });
     planMove.move({
       job: j,
       to: { tech: techId, date: d },

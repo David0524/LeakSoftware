@@ -31,6 +31,14 @@ import {
   type SlotSuggestion,
   type TechDay,
   dateFormat,
+  changeWithUndo,
+  lockReason,
+  moveJobChange,
+  stopDone,
+  todayMoveIndex,
+  todayStopLock,
+  type JobChange,
+  type TodayMove,
 } from "@leakbook/core";
 import { getOffice, requireManager, type Office } from "@/lib/auth";
 import { getTeam } from "@/lib/data";
@@ -362,6 +370,154 @@ async function renumber(
       .map((j, i) => ({ id: j.id, route_order: i + 1 }))
       .filter((u, i) => left[i]!.route_order !== u.route_order),
   );
+}
+
+// ---------------------------------------------------------------------------
+// Today: Do Later, Move Up, Move Down (owner, 2026-10-20; docs/plans/today-reorder.md)
+// ---------------------------------------------------------------------------
+
+export interface TodayMoveResult extends RouteResult {
+  /** The saved values of every row the move changed, for Undo. */
+  undo?: JobChange[];
+}
+
+const validMove = (to: unknown): to is TodayMove =>
+  to === "later" ||
+  to === "up" ||
+  to === "down" ||
+  (typeof to === "number" && Number.isInteger(to) && to >= 0 && to < 200);
+
+/** Today's route for a tech, when the person may change its order (theirs, or an owner's). */
+async function todayRoute(office: Office, tech: string) {
+  if (tech !== office.user.id && !office.isManager)
+    return { error: "You can change the order of your own day only." } as const;
+  const ctx = await routeContext(office);
+  const { routes, drive } = await loadRoutes(office, ctx, [ctx.today], { live: true });
+  return { ctx, drive, day: routes.get(routeKey(tech, ctx.today))?.jobs ?? [] } as const;
+}
+
+/** Writes rows in order; if one fails, the rows already written go back. */
+async function saveOrRestore(db: Db, office: Office, updates: JobChange[], undo: JobChange[]) {
+  for (let i = 0; i < updates.length; i++) {
+    const error = await save(db, office, [updates[i]!]);
+    if (error) {
+      await save(db, office, undo.slice(0, i));
+      return error;
+    }
+  }
+  return null;
+}
+
+/**
+ * Move a stop on today's route: Do Later (after every stop still to do), Move Up, Move Down, or
+ * to a place among the stops still to do. The Schedule's move decides the times
+ * (moveJobChange): promised times never move and stops after it move later only when they
+ * must. Same tech and day, so nobody is notified: the person moving it already knows.
+ */
+export async function moveTodayStop(input: {
+  job: string;
+  tech: string;
+  to: TodayMove;
+}): Promise<TodayMoveResult> {
+  if (!UUID.test(input.job) || !UUID.test(input.tech) || !validMove(input.to))
+    return { error: "That move isn’t possible." };
+  const office = await getOffice();
+  const route = await todayRoute(office, input.tech);
+  if ("error" in route) return { error: route.error };
+  const { ctx, drive, day } = route;
+  const job = day.find((j) => j.id === input.job);
+  if (!job) return { error: "This stop isn’t on this day anymore. Refresh the page." };
+  const stops = day.map((j) => {
+    const done = stopDone(j, ctx.today);
+    return {
+      id: j.id,
+      done,
+      lock: todayStopLock(j, ctx.timeZone),
+      started: !done && j.status === "in_progress",
+    };
+  });
+  const self = stops.find((s) => s.id === job.id)!;
+  if (self.done) return { error: "This stop is done, so it stays where it is." };
+  if (self.lock) return { error: `${self.lock}, so it stays where it is.` };
+  // Stops already done for the day stay as they are: the move plans the rest of the day.
+  const planned = day.filter((j) => !stopDone(j, ctx.today));
+  const index = todayMoveIndex(
+    stops.filter((s) => !s.done),
+    job.id,
+    input.to,
+  );
+  if (index === null) return { error: "It’s already there." };
+  const change = moveJobChange(
+    ctx,
+    {
+      job,
+      tech: input.tech,
+      date: ctx.today,
+      index,
+      targetDay: planned,
+      fromDay: planned,
+      seesAll: office.isManager,
+      userId: office.user.id,
+    },
+    drive,
+  );
+  if (change.error) return { error: change.error };
+  const { updates, undo } = changeWithUndo(change.updates, day);
+  const error = await saveOrRestore(await createClient(), office, updates, undo);
+  if (error) return { error };
+  refresh();
+  return { message: change.message, undo };
+}
+
+const UNDO_KEYS = new Set([
+  "id",
+  "route_order",
+  "scheduled_start",
+  "scheduled_end",
+  "status",
+  "assigned_user_id",
+  "arrival_fixed",
+  "lock_day",
+  "lock_time",
+]);
+
+/**
+ * Undo after Do Later: put back exactly the saved values `moveTodayStop` returned, for jobs
+ * still on that tech's day today. Only a place in the route changes on a stop that can't move.
+ */
+export async function undoTodayMove(tech: string, rows: JobChange[]): Promise<RouteResult> {
+  if (!UUID.test(tech) || !Array.isArray(rows) || rows.length === 0 || rows.length > 100)
+    return { error: "That can’t be undone." };
+  const office = await getOffice();
+  const route = await todayRoute(office, tech);
+  if ("error" in route) return { error: route.error };
+  const { ctx, day } = route;
+  const byId = new Map(day.map((j) => [j.id, j]));
+  const onToday = (v: unknown) =>
+    typeof v === "string" &&
+    !Number.isNaN(Date.parse(v)) &&
+    localDate(new Date(v), ctx.timeZone) === ctx.today;
+  for (const r of rows) {
+    const j = r && typeof r === "object" && UUID.test(String(r.id)) ? byId.get(r.id) : undefined;
+    if (!j || Object.keys(r).some((k) => !UNDO_KEYS.has(k)))
+      return { error: "This stop isn’t on this day anymore. Refresh the page." };
+    const movable = lockReason(j) === null;
+    const ok =
+      (r.route_order == null ||
+        (Number.isInteger(r.route_order) && (r.route_order as number) > 0)) &&
+      (r.scheduled_start === undefined || (movable && onToday(r.scheduled_start))) &&
+      (r.scheduled_end === undefined || (movable && onToday(r.scheduled_end))) &&
+      (r.status === undefined || (movable && r.status === "scheduled")) &&
+      (r.assigned_user_id === undefined || (movable && r.assigned_user_id === tech)) &&
+      (r.arrival_fixed === undefined || (movable && r.arrival_fixed === false)) &&
+      (r.lock_day === undefined || (movable && r.lock_day === false)) &&
+      (r.lock_time === undefined || (movable && r.lock_time === false));
+    if (!ok) return { error: "That can’t be undone." };
+  }
+  const error = await save(await createClient(), office, rows);
+  if (error) return { error };
+  refresh();
+  return { message: "Undone." };
 }
 
 // ---------------------------------------------------------------------------

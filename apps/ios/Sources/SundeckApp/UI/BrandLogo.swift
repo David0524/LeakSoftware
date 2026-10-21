@@ -48,8 +48,23 @@
         private static let darkLayers = drawn(SundeckLogoArt.dark)
     }
 
-    /// The logo at the leading edge of a tab's root navigation bar, above the large title. A
-    /// picture, not a button, so on iOS 26 it sits on the bar without a glass capsule.
+    extension SundeckLogo {
+        /// The bar's logo width (24 tall), and the room a tab's large title leaves for it in the
+        /// bar's row (RootTitle.swift): the logo and 12 points, since the bar sets its leading
+        /// item in a little further than the page's 16-point margin.
+        static let barWidth: CGFloat = 24 * SundeckLogoArt.size.width / SundeckLogoArt.size.height
+        static let titleLead: CGFloat = barWidth + 12
+    }
+
+    extension EnvironmentValues {
+        /// The view is a tab's own page, whose bar has the logo at its leading edge (AppTabs). A
+        /// screen pushed onto the stack doesn't have it.
+        @Entry var brandInBar = false
+    }
+
+    /// The logo at the leading edge of a tab's root navigation bar, with the large title beside
+    /// it in the bar's row (RootTitle.swift). A picture, not a button, so on iOS 26 it sits on
+    /// the bar without a glass capsule.
     struct BrandToolbarItem: ToolbarContent {
         var body: some ToolbarContent {
             if #available(iOS 26, *) {

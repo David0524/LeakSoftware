@@ -273,6 +273,20 @@ export class SyncService {
     return (this.store.database.get<{ n: number }>(sql, id ? [table, id] : [table])?.n ?? 0) > 0;
   }
 
+  /**
+   * True while a file of this job (a photo, video or signature image) is still waiting to
+   * upload, so a report sent now would go without it.
+   */
+  hasPendingUploads(jobId: string): boolean {
+    const row = this.store.database.get<{ n: number }>(
+      `select count(*) as n from upload_queue q
+         join sync_records r on r.table_name = q.record_table and r.id = q.media_id
+        where r.job_id = ?`,
+      [jobId],
+    );
+    return (row?.n ?? 0) > 0;
+  }
+
   /** The signed-in user's access token, for calls to the Sundeck Pro server. */
   async accessToken(): Promise<string | null> {
     return (await this.supabase.auth.getSession()).data.session?.access_token ?? null;
@@ -492,9 +506,15 @@ export class SyncService {
       "sync:initial_done",
       "team_profiles",
       "active_company",
+      // Reports waiting to send go with the person's data (lib/reportQueue, lib/visitReports).
+      "report_request:queue",
+      "visit_report:queue",
+      "capture:pending",
       // A different person on this phone gets the tips and welcome cards fresh.
       "walkthrough:tips_seen",
       "walkthrough:launch_seen",
+      // Recent in search: what this person opened (lib/shopSearch RECENT_KEY).
+      "search:recent",
     ]) {
       this.kv.remove(key);
     }

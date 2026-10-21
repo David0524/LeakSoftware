@@ -1,5 +1,6 @@
 import { useMemo } from "react";
 import {
+  currentVerdict,
   checklistTally,
   foldedItems,
   inspectionAnswerValues,
@@ -149,13 +150,41 @@ export function saveChecklistResult(
   existing: ChecklistItemResult | undefined,
   values: Record<string, JsonValue>,
 ) {
-  if (existing) sync.write("checklist_item_result", existing.id, companyId, values);
+  // `existing` is what the screen last showed; two saves before it re-renders (the notes saved
+  // as the field is left, then the answer) would otherwise both add a result.
+  const current =
+    existing ??
+    (sync.list("checklist_item_result", companyId, jobId) as unknown as ChecklistItemResult[]).find(
+      (r) => r.job_component_id === componentId,
+    );
+  if (current) sync.write("checklist_item_result", current.id, companyId, values);
   else
     sync.insert("checklist_item_result", companyId, {
       job_id: jobId,
       job_component_id: componentId,
       ...values,
     });
+}
+
+/**
+ * "Where" typed on a Leaking or Attention item. Saved by itself after typing stops or when the
+ * field goes away, so by then the answer may have changed to one without a Where (Not Leaking
+ * clears it): then it isn't written back.
+ */
+export function saveWhere(
+  sync: SyncService,
+  companyId: string,
+  jobId: string,
+  componentId: string,
+  where: string | null,
+) {
+  const current = (
+    sync.list("checklist_item_result", companyId, jobId) as unknown as ChecklistItemResult[]
+  ).find((r) => r.job_component_id === componentId);
+  const verdict = currentVerdict(current);
+  if (!current || (verdict !== "leaking" && verdict !== "attention")) return;
+  if ((current.location_text ?? null) === where) return;
+  sync.write("checklist_item_result", current.id, companyId, { location_text: where });
 }
 
 /**

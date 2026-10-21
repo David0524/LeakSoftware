@@ -4,6 +4,10 @@ set search_path = public, extensions;
 select no_plan();
 
 create temp table fx as select tests.make_company('a') as a;
+-- Written for a shop whose techs see every job (new shops start with only their own,
+-- 2026-10-20; 190_job_visibility covers that).
+update company set settings = settings || '{"techs_see_all_jobs": true}'
+  where id in (select (a ->> 'company')::uuid from fx);
 grant select on fx to authenticated;
 create temp view ids as select
   (a ->> 'company')::uuid as ca, (a ->> 'owner')::uuid as owner_a, (a ->> 'tech')::uuid as tech_a,

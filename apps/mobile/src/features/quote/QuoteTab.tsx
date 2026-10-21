@@ -31,6 +31,7 @@ import {
 } from "../../data/quotes";
 import { reportsOnline } from "../../data/reports";
 import { API_URL } from "../../lib/config";
+import { discountTooLarge, lineDescriptionError } from "../../lib/limits";
 import { getServices } from "../../lib/services";
 import { useCompany, useSession } from "../../state/session";
 import { Button, Card, Field, Notice, T } from "../../ui/components";
@@ -39,6 +40,7 @@ import { haptics } from "../../ui/haptics";
 import { Select } from "../../ui/Select";
 import { color, face, MAX_TEXT_SCALE, minTap, shape, space, tabular } from "../../ui/theme";
 import { WebIcon } from "../../ui/WebIcon";
+import { useUnsavedChanges } from "../../ui/ModalSheet";
 
 const PAYMENT_LABELS: Record<string, string> = {
   pending: "processing",
@@ -173,6 +175,12 @@ function QuoteBuilder({ job, quote }: { job: Job; quote: JobQuote }) {
   const [discount, setDiscountText] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [sending, setSending] = useState(false);
+  // A line or discount typed but not added or saved asks before leaving (owner, 2026-10-20).
+  useUnsavedChanges(
+    Boolean(custom.description.trim() || custom.price.trim()) ||
+      (discount !== null &&
+        (discount.trim() === "" ? 0 : parseDollars(discount)) !== (quote.discount_cents ?? 0)),
+  );
   // Owners and admins may discount past the techs' limit (owner, 2026-10-18).
   const isOwner = isManagerRole(membership?.role);
   const limitBps = company.settings.tech_discount_limit_bps ?? 0;
@@ -201,6 +209,8 @@ function QuoteBuilder({ job, quote }: { job: Job; quote: JobQuote }) {
     const cents = discount.trim() === "" ? 0 : parseDollars(discount);
     setDiscountText(null);
     if (cents === null || cents < 0) return setError("Enter a discount like 50 or 50.00.");
+    const tooLarge = discountTooLarge(cents, totals.subtotal_cents);
+    if (tooLarge) return setError(tooLarge);
     if (!discountAllowed(totals.subtotal_cents, cents, isOwner, limitBps))
       return setError(`Techs can give up to ${limitBps / 100}% off. Ask an owner for more.`);
     setError(null);
@@ -209,7 +219,8 @@ function QuoteBuilder({ job, quote }: { job: Job; quote: JobQuote }) {
 
   function addCustom() {
     const cents = parseDollars(custom.price);
-    if (!custom.description.trim()) return setError("Describe the work.");
+    const described = lineDescriptionError(custom.description);
+    if (described) return setError(described);
     if (cents === null || cents < 0) return setError("Enter a price like 125 or 125.50.");
     setError(null);
     addLine(sync, company, quote, {
@@ -466,9 +477,19 @@ function LineEditor({
   const [quantity, setQuantity] = useState<string | null>(null);
   const [price, setPrice] = useState<string | null>(null);
 
+  // Edits not saved yet (they save when the field is left) ask before leaving (2026-10-20).
+  useUnsavedChanges(
+    (description !== null && description.trim() !== l.description) ||
+      (quantity !== null && Number(quantity.replace(",", ".")) !== Number(l.quantity)) ||
+      (price !== null && parseDollars(price) !== l.unit_price_cents),
+  );
+
   function commit() {
-    if (description !== null && description.trim() && description.trim() !== l.description)
-      onSave({ description: description.trim() });
+    if (description !== null && description.trim() && description.trim() !== l.description) {
+      const described = lineDescriptionError(description);
+      if (described) onError(described);
+      else onSave({ description: description.trim() });
+    }
     if (quantity !== null) {
       const n = Number(quantity.replace(",", "."));
       if (n > 0 && n < 100_000) {

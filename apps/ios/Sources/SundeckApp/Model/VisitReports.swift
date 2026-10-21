@@ -148,11 +148,19 @@ public final class VisitReportQueue {
         if jobType == .maintenance && visitReportMode(settings) == .auto { add(jobId) }
     }
 
-    public func flush(_ api: WebAPI) async {
-        for jobId in pending {
+    private var running = false
+
+    /// One run at a time; waits on no connection, no sign-in or a server fault (as the shipping
+    /// app does); any other answer is final.
+    public func flush(_ api: WebAPI, uploading: (String) -> Bool = { _ in false }) async {
+        guard !running else { return }
+        running = true
+        defer { running = false }
+        // A visit whose photos are still uploading waits, so its report has them.
+        for jobId in pending where !uploading(jobId) {
             do {
                 _ = try await api.post("api/jobs/\(jobId)/visit-report", ["automatic": true])
-            } catch let failure as WebAPI.Failure where failure.offline {
+            } catch let failure as WebAPI.Failure where failure.tryAgainLater {
                 return
             } catch {}
             kv.setJSON(Self.key, pending.filter { $0 != jobId })

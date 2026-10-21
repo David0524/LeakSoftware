@@ -14,6 +14,7 @@ import { DiagramShapes, PoolDiagram, type Pin } from "./pool-diagram";
 import { PoolShapeEditor } from "./pool-shape-editor";
 import { Sheet } from "./sheet";
 import { Button } from "./ui";
+import { NO_CONNECTION, whenOffline } from "@/lib/offline";
 
 /**
  * The job's pool diagram (owner, 2026-10-19: "More customization to pool shape. Be able to
@@ -107,7 +108,10 @@ export function DiagramPanel({
           shapes={markup}
           onCancel={close}
           onSave={async (shapes) => {
-            const r = await saveDiagramMarkup({ jobId, markup: { version: 1, shapes } });
+            const r = await whenOffline(
+              saveDiagramMarkup({ jobId, markup: { version: 1, shapes } }),
+              { ok: false as const, error: NO_CONNECTION },
+            );
             if (!r.ok) return r.error;
             setError(null);
             close();

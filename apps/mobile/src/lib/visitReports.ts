@@ -1,5 +1,5 @@
 import { visitReportMode } from "@leakbook/core";
-import { call } from "../data/reports";
+import { call, tryAgainLater } from "../data/reports";
 import { API_URL } from "./config";
 import { getServices } from "./services";
 
@@ -52,16 +52,16 @@ export async function flushVisitReports(pushFirst = true): Promise<void> {
     if (pushFirst) await sync.syncNow();
     let sent = false;
     for (const jobId of readQueue()) {
-      // The completed visit must be on the server first; it waits for the next sync.
-      if (sync.hasPendingWrites("job", jobId)) continue;
+      // The completed visit and its photos must be on the server first; it waits for the next
+      // sync.
+      if (sync.hasPendingWrites("job", jobId) || sync.hasPendingUploads(jobId)) continue;
       try {
         await call<VisitSendResult>(`/api/jobs/${jobId}/visit-report`, { automatic: true });
         sent = true;
         writeQueue(readQueue().filter((id) => id !== jobId));
       } catch (e) {
         // No connection, signed out or a server fault: try again later. A refusal from the server is final.
-        const message = e instanceof Error ? e.message : "";
-        if (/connection|Sign in|said 5/.test(message)) break;
+        if (tryAgainLater(e)) break;
         writeQueue(readQueue().filter((id) => id !== jobId));
       }
     }

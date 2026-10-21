@@ -147,11 +147,25 @@ export async function notificationsAllowed(): Promise<boolean> {
   }
 }
 
+const handled = new Set<string>();
+
 /**
  * A tap on a notification or one of its buttons: open the job or the conversation, call, or
  * (the current stop's On My Way and Mark Complete) open Today on that stop and do it there.
  */
 export function handleResponse(response: Notifications.NotificationResponse) {
+  // The tap that launched the app can arrive twice (the listener and the last response):
+  // each tap is handled once. The current stop's notification keeps one identifier all day,
+  // so its showing time and job tell its taps apart.
+  const { notification } = response;
+  const tap = [
+    notification.request.identifier,
+    response.actionIdentifier,
+    notification.date,
+    (notification.request.content.data as { job?: unknown } | null)?.job ?? "",
+  ].join("|");
+  if (handled.has(tap)) return;
+  handled.add(tap);
   const data = (response.notification.request.content.data ?? {}) as {
     job?: string;
     conversation?: string;

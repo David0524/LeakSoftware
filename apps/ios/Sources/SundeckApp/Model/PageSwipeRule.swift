@@ -13,7 +13,10 @@ public enum PageSwipeRule {
     public static func direction(start: CGPoint, translation: CGSize) -> Int {
         let dx = translation.width
         let dy = translation.height
-        guard start.x > edge, abs(dx) >= distance, abs(dx) >= ratio * abs(dy) else { return 0 }
+        // A drag without real numbers (NaN, infinity) never pages.
+        guard dx.isFinite, dy.isFinite, start.x > edge, abs(dx) >= distance, abs(dx) >= ratio * abs(dy) else {
+            return 0
+        }
         return dx < 0 ? 1 : -1
     }
 

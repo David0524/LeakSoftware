@@ -13,7 +13,7 @@ test("a pool inspection: New Job, answers and gates, and its report", async ({ p
   await page.getByLabel("Name").fill(name);
   await page.getByLabel("Street address").fill("1201 N Galvin Pkwy");
   await page.getByLabel("City").fill("Phoenix");
-  await page.getByLabel("State").fill("AZ");
+  await page.getByLabel("State", { exact: true }).fill("AZ");
   await page.getByRole("radio", { name: "Inspection", exact: true }).click();
   // The price book's Pool inspection price, and the inspection's own booking questions.
   await expect(page.getByLabel("Price ($)")).toHaveValue("495.00");

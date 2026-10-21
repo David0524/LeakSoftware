@@ -21,6 +21,8 @@
     struct TodayHeroCard: View {
         var hero: TodayHero
         var day: TodayDay
+        /// Do Later and its Undo (docs/plans/today-reorder.md).
+        var moves: StopMoves? = nil
         /// The stop just completed, drawn done with its check for a moment before the card moves
         /// on (owner, 2026-10-20: gestures spec section 9). No Back to Now then.
         var flashing = false
@@ -99,6 +101,11 @@
                             .accessibilitySortPriority(3)
                     }
                 }
+                if moves?.shown(for: .card) != nil || laterJob != nil {
+                    laterRow
+                        .padding(.top, 12)
+                        .accessibilitySortPriority(2)
+                }
                 progress
                     .padding(.top, 16)
                     .accessibilitySortPriority(0)
@@ -129,6 +136,47 @@
                 OnMyWaySheet(job: job, day: day, leg: day.leg(job))
             }
             .composeTextSheet($phoneText)
+        }
+
+        /// Do Later on the card's stop, Up next and On the way (docs/plans/today-reorder.md): the
+        /// stop can move and isn't last already.
+        private var laterJob: ScheduleJob? {
+            guard moves != nil, hero.moment == .ahead || hero.moment == .driving, let job,
+                day.canPlace(job, .later)
+            else { return nil }
+            return job
+        }
+
+        /// Do Later on its own row under the card's buttons; for 5 seconds after it, "Moved." and
+        /// Undo in its place (the website's and Android's card do the same).
+        @ViewBuilder private var laterRow: some View {
+            if let moves, let undo = moves.shown(for: .card) {
+                HStack(spacing: 8) {
+                    Text(undo.text)
+                        .font(.subheadline.weight(.semibold))
+                        .foregroundStyle(Color.white)
+                        .fixedSize(horizontal: false, vertical: true)
+                    Button(TodayReorderText.undo) { moves.undoMove(undo) }
+                        .buttonStyle(HeroButtonStyle(filled: false))
+                        .fixedSize()
+                        .accessibilityHint("Puts it back as it was")
+                        .onAppear {
+                            AccessibilityNotification.Announcement(
+                                "\(undo.text). \(TodayReorderText.undo) available."
+                            ).post()
+                        }
+                    Spacer(minLength: 0)
+                }
+            } else if let moves, let later = laterJob {
+                HStack(spacing: 8) {
+                    Button(TodayReorderText.doLater) { moves.doLater(later, .card) }
+                        .buttonStyle(HeroButtonStyle(filled: false))
+                        .fixedSize()
+                        .accessibilityLabel("\(TodayReorderText.doLater), \(later.customerName)")
+                        .accessibilityHint("Moves the stop after the last one")
+                    Spacer(minLength: 0)
+                }
+            }
         }
 
         /// "At the pool · Stop 2 of 3", the name (it opens the job), the type and the drive, and
@@ -659,6 +707,8 @@
         @Binding var viewing: String?
         /// The stop just completed, shown done with its check for a moment (gestures section 9).
         var flash: String?
+        /// Do Later and its Undo on the card (docs/plans/today-reorder.md).
+        var moves: StopMoves? = nil
         @Environment(\.accessibilityReduceMotion) private var reduceMotion
         /// The stop drawn now: follows `flash ?? viewing` after the slide.
         @State private var shown: String?
@@ -679,7 +729,7 @@
             if let hero = day.hero(viewing: flash ?? shown) {
                 let at = hero.stopId.flatMap { ids.firstIndex(of: $0) }
                 TodayHeroCard(
-                    hero: hero, day: day, flashing: flash != nil,
+                    hero: hero, day: day, moves: moves, flashing: flash != nil,
                     go: { pick($0) }, backToNow: { viewing = nil }
                 )
                 .disabled(swiping)

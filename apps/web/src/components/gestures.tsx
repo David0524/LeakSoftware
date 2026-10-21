@@ -56,6 +56,39 @@ export function useSegmentDrag(
 }
 
 /**
+ * Large text (owner, 2026-10-20): a segmented control whose labels no longer fit on one row
+ * scrolls sideways inside its own track, as iOS apps do at accessibility text sizes (iOS never
+ * wraps a segmented control onto two rows, and the page itself never scrolls sideways). Give
+ * the track the returned ref and the `segment-scroll` class; the track gets `data-overflow`
+ * only while it overflows, so at normal sizes nothing changes (no clipped thumb shadow).
+ * `selected` keeps the chosen segment in view.
+ */
+export function useTrackOverflow<T extends HTMLElement>(selected?: number) {
+  const ref = useRef<T>(null);
+  useEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    const check = () => el.toggleAttribute("data-overflow", el.scrollWidth > el.clientWidth + 1);
+    const watch = new ResizeObserver(check);
+    watch.observe(el);
+    for (const child of el.children) watch.observe(child);
+    check();
+    return () => watch.disconnect();
+  }, []);
+  useEffect(() => {
+    const el = ref.current;
+    if (!el || selected == null || !el.hasAttribute("data-overflow")) return;
+    const segment = el.querySelectorAll<HTMLElement>("[data-segment]")[selected];
+    if (!segment) return;
+    const left = segment.offsetLeft - el.offsetLeft;
+    if (left < el.scrollLeft) el.scrollLeft = left - 8;
+    else if (left + segment.offsetWidth > el.scrollLeft + el.clientWidth)
+      el.scrollLeft = left + segment.offsetWidth - el.clientWidth + 8;
+  }, [selected]);
+  return ref;
+}
+
+/**
  * Swipe left or right across the content to go to the next or previous page (owner,
  * 2026-10-20: "Add gestures throughout. I want to navigate the different job pages with
  * gestures"), as a paging view does on iPhone: the page follows the finger and settles with a
@@ -120,8 +153,14 @@ export function SegmentedLinks({
     onRelease: true,
   });
   const shown = held ?? active;
+  const track = useTrackOverflow<HTMLElement>(active);
   return (
-    <nav aria-label={label} className={cx(className, "touch-pan-y select-none")} {...handlers}>
+    <nav
+      ref={track}
+      aria-label={label}
+      className={cx(className, "segment-scroll touch-pan-y select-none")}
+      {...handlers}
+    >
       {items.map((item, i) => (
         <a
           key={item.href}

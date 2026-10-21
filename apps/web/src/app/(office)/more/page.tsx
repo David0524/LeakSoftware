@@ -1,9 +1,15 @@
 import type { Metadata } from "next";
 import { cookies } from "next/headers";
-import { NOTIFICATION_KINDS, START_FROM_COPY, notificationOn } from "@leakbook/core";
+import {
+  ACTIVITY_DETAIL,
+  NOTIFICATION_KINDS,
+  START_FROM_COPY,
+  notificationOn,
+} from "@leakbook/core";
 import { signOut } from "@/app/actions/auth";
 import { showTipsAgain } from "@/app/actions/walkthrough";
 import { DeleteAccount } from "@/components/delete-account";
+import { SignOutForm } from "@/components/sign-out-form";
 import { FeatureRequest } from "@/components/feature-request";
 import { MapsChoice } from "@/components/maps-choice";
 import { AppearanceChoice } from "@/components/theme-toggle";
@@ -11,6 +17,8 @@ import { Grouped, PageHeader, Row } from "@/components/ui";
 import { getOffice } from "@/lib/auth";
 import { getCompany } from "@/lib/data";
 import { officeLinks } from "@/lib/nav";
+import { activityUnread } from "@/lib/activity";
+import { Dot } from "@/components/nav-links";
 import { createClient } from "@/lib/supabase/server";
 import { CONTACT_EMAIL } from "@/lib/site";
 import { memberStartOf } from "@/server/member-start";
@@ -23,10 +31,10 @@ export const metadata: Metadata = { title: "More · Sundeck Pro" };
  */
 export default async function MorePage() {
   const office = await getOffice();
-  const company = await getCompany(office);
-  const rest = officeLinks(office.isManager, company.settings).slice(4);
   const db = await createClient();
-  const [{ data: profile }, start] = await Promise.all([
+  const [company, dot, { data: profile }, start] = await Promise.all([
+    getCompany(office),
+    activityUnread(office),
     db
       .from("profile")
       .select("two_step, notification_prefs")
@@ -34,6 +42,7 @@ export default async function MorePage() {
       .maybeSingle(),
     memberStartOf(db, office.company.id, office.user.id),
   ]);
+  const rest = officeLinks(office.isManager, company.settings, 0, dot).slice(4);
   const twoStep = Boolean(profile?.two_step);
   const saved = (await cookies()).get("lb_maps")?.value;
   const maps = saved === "apple" || saved === "google" ? saved : "auto";
@@ -43,7 +52,13 @@ export default async function MorePage() {
       <div className="max-w-xl space-y-6">
         <Grouped>
           {rest.map((l) => (
-            <Row key={l.href} href={l.href} label={l.label} />
+            <Row
+              key={l.href}
+              href={l.href}
+              label={l.label}
+              detail={l.href === "/activity" ? ACTIVITY_DETAIL : undefined}
+              value={l.dot ? <Dot label="New activity" /> : undefined}
+            />
           ))}
         </Grouped>
         <Grouped title="Your account">
@@ -129,7 +144,7 @@ export default async function MorePage() {
         </Grouped>
         {/* Phones: Sign Out lives here (wider screens have it in the header), on its own
             row, centered and red, as iOS draws it. */}
-        <form action={signOut} className="sm:hidden">
+        <SignOutForm action={signOut} className="sm:hidden">
           <ul className="grouped">
             <li>
               <button
@@ -140,7 +155,7 @@ export default async function MorePage() {
               </button>
             </li>
           </ul>
-        </form>
+        </SignOutForm>
         <DeleteAccount />
       </div>
     </>

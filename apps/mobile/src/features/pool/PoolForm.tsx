@@ -7,6 +7,8 @@ import { useCompany } from "../../state/session";
 import { Button, FieldGroup, FieldRow, Toggle } from "../../ui/components";
 import { haptics } from "../../ui/haptics";
 import { Select } from "../../ui/Select";
+import { formChanged } from "../../lib/discard";
+import { useUnsavedChanges } from "../../ui/ModalSheet";
 
 /**
  * A pool's details (the website's pool-details.tsx): the street with address suggestions, unit,
@@ -27,6 +29,9 @@ export function PoolForm({ pool, onSaved }: { pool: Property; onSaved: () => voi
     approx_gallons: pool.approx_gallons ? pool.approx_gallons.toLocaleString("en-US") : "",
     access_notes: pool.access_notes ?? "",
   });
+  // Unsaved entries ask before closing (owner, 2026-10-20: "Discard changes?" everywhere).
+  const [startF] = useState(f);
+  useUnsavedChanges(formChanged(startF, f));
   const [error, setError] = useState<string | undefined>();
   const [gallonsError, setGallonsError] = useState<string | undefined>();
   const set = (k: keyof typeof f) => (v: string) => setF({ ...f, [k]: v });

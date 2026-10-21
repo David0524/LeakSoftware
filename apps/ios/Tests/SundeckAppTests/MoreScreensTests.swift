@@ -57,11 +57,15 @@ import Testing
 
 @Suite @MainActor struct MoreModelTests {
     @Test func moreListFollowsRoleAndPackage() {
-        #expect(moreLinks(role: "tech", services: .leak) == [.customers, .invoices])
+        #expect(moreLinks(role: "tech", services: .leak) == [.customers, .invoices, .activity])
         #expect(
-            moreLinks(role: "owner", services: .both) == [.dashboard, .customers, .invoices, .chemicals, .settings])
+            moreLinks(role: "owner", services: .both) == [
+                .dashboard, .customers, .invoices, .activity, .chemicals, .settings,
+            ])
         #expect(
-            moreLinks(role: "admin", services: .pool) == [.dashboard, .customers, .invoices, .chemicals, .settings])
+            moreLinks(role: "admin", services: .pool) == [
+                .dashboard, .customers, .invoices, .activity, .chemicals, .settings,
+            ])
     }
 
     @Test func settingsGroupsHideLeakPagesForPoolShops() {

@@ -15,16 +15,25 @@ public func formatCents(_ cents: Cents) -> String {
     return "\(cents < 0 ? "-" : "")$\(grouped).\(remainder < 10 ? "0" : "")\(remainder)"
 }
 
+/// The largest amount a person can type: $9,999,999.99 (it fits the database's integer cents).
+public let maxEnteredCents: Cents = 999_999_999
+
 /// Parse a user-entered dollar amount ("1,234.5", "$12") into cents. Returns nil if invalid.
+/// Commas only group thousands, so "1,5" (a decimal comma) is refused rather than read as $15.
+/// Amounts over `maxEnteredCents` are refused.
 public func parseDollars(_ input: String) -> Cents? {
-    let cleaned = String(input.filter { $0 != "$" && $0 != "," && !$0.isWhitespace })
-    guard cleaned.wholeMatch(of: /-?\d+(\.\d{0,2})?/) != nil else { return nil }
+    let trimmed = String(input.filter { $0 != "$" && !$0.isWhitespace })
+    guard trimmed.wholeMatch(of: /-?(\d{1,3}(,\d{3})+|\d+)(\.\d{0,2})?/) != nil else { return nil }
+    let cleaned = String(trimmed.filter { $0 != "," })
     let negative = cleaned.hasPrefix("-")
     let parts = cleaned.drop(while: { $0 == "-" }).split(separator: ".", omittingEmptySubsequences: false)
     let whole = parts.first.map(String.init) ?? "0"
     var fraction = parts.count > 1 ? String(parts[1]) : ""
     while fraction.count < 2 { fraction.append("0") }
     guard let wholeValue = Int(whole), let fractionValue = Int(fraction) else { return nil }
-    let cents = wholeValue * 100 + fractionValue
+    // Too large for integer cents ("999999999999999999"): refused rather than overflowing.
+    let (hundreds, over) = wholeValue.multipliedReportingOverflow(by: 100)
+    let (cents, over2) = hundreds.addingReportingOverflow(fractionValue)
+    guard !over, !over2, cents <= maxEnteredCents else { return nil }
     return negative ? -cents : cents
 }

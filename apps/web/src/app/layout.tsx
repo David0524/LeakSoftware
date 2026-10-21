@@ -1,6 +1,8 @@
 import type { Metadata, Viewport } from "next";
+import { Suspense } from "react";
 import { tokens } from "@leakbook/tokens";
 import { THEME_SCRIPT } from "@/lib/theme";
+import { DiscardGuard } from "@/components/discard-guard";
 import { body, display } from "./fonts";
 import startupImage from "./splash.json";
 import "./globals.css";
@@ -39,6 +41,10 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
       </head>
       <body className="min-h-full flex flex-col">
         {children}
+        {/* Unsaved page forms ask before a link, Back, or reload leaves them. */}
+        <Suspense fallback={null}>
+          <DiscardGuard />
+        </Suspense>
         <PhoneFormatting />
       </body>
     </html>

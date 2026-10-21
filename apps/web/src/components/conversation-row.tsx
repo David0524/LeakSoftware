@@ -7,6 +7,7 @@ import { callCustomer, setUnread } from "@/app/actions/texting";
 import { PhoneIcon } from "./icons";
 import { RowActions, bannerFor, type MenuEntry, type SwipeAction } from "./row-actions";
 import { cx } from "./ui";
+import { NO_CONNECTION, whenOffline } from "@/lib/offline";
 
 /**
  * One conversation in the inbox. Unread is shared by the whole team (owner, 2026-10-16), and
@@ -45,7 +46,7 @@ export function InboxRow({
     const next = !isUnread;
     setShown({ value: next, was: unread });
     start(async () => {
-      const r = await setUnread(id, next);
+      const r = await whenOffline(setUnread(id, next), { error: NO_CONNECTION });
       if (r.error) {
         setShown(null);
         bannerFor(r, "");

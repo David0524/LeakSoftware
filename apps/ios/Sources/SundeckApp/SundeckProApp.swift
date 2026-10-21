@@ -30,6 +30,7 @@
                         .environment(environment.session)
                         .environment(environment.session.sync)
                         .environment(environment)
+                        .environment(environment.unsavedEdits)
                         .environment(\.mediaURLSigner, environment.signer)
                 case .failure(let error):
                     ContentUnavailableView(
@@ -66,6 +67,10 @@
         let liveStop: LiveStopController
         /// Where a tapped notification or the Live Activity's Open Job goes (MainView opens it).
         var link: AppLink?
+        /// Editors with unsaved changes; a link waits for "Discard changes?" while any are open.
+        let unsavedEdits = UnsavedEdits()
+        /// Drops the same link arriving twice at once.
+        @ObservationIgnored var linkGate = LinkGate()
         @ObservationIgnored private let monitor = NWPathMonitor()
 
         init(client: SupabaseClient, session: Session, walkthrough: Walkthrough) {
@@ -161,12 +166,15 @@
             session.reloadCompanies()
             if !visitReports.pending.isEmpty, session.sync.status.pending == 0 {
                 let before = visitReports.pending.count
-                await visitReports.flush(api)
+                await visitReports.flush(api) { [sync = session.sync] in sync.hasPendingUploads(jobId: $0) }
                 if visitReports.pending.count < before { session.sync.syncSoon(2) }  // bring the sent report down
             }
             if !reportSends.pending.isEmpty, session.sync.status.pending == 0 {
                 let before = reportSends.pending.count
-                await reportSends.flush(api)
+                // A queued text opens for the tech to send: only with the app in front.
+                await reportSends.flush(api, canText: UIApplication.shared.applicationState == .active) {
+                    [sync = session.sync] in sync.hasPendingUploads(jobId: $0)
+                }
                 if reportSends.pending.count < before { session.sync.syncSoon(2) }  // bring the report down
             }
             let waiting = locate.pending.count

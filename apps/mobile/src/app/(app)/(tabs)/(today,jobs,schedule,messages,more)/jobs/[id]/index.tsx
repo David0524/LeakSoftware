@@ -21,7 +21,6 @@ import {
   parseDollars,
   propertyLocation,
   toE164,
-  userTransitions,
   type CompanySettings,
   REPAIR_ITEM_KEY,
   REPAIR_ITEM_LABEL,
@@ -34,7 +33,12 @@ import type { JsonValue } from "@leakbook/sync";
 import { useRow, useSyncStatus } from "../../../../../../data/hooks";
 import { reportsOnline, useJobReports } from "../../../../../../data/reports";
 import { AUTOSAVE_DELAY_MS } from "../../../../../../lib/autosave";
-import { NEXT_STEP_LABELS, nextStepButtons, type NextStep } from "../../../../../../lib/nextStep";
+import {
+  NEXT_STEP_LABELS,
+  jobMoves,
+  nextStepButtons,
+  type NextStep,
+} from "../../../../../../lib/nextStep";
 import {
   useChecklistProgress,
   useInspectionConfig,
@@ -75,7 +79,7 @@ import { KeyboardAvoider } from "../../../../../../ui/keyboard";
 import { SwipeNav, useNoSwipe } from "../../../../../../ui/SwipeNav";
 import { usePinnedSyncBar } from "../../../../../../ui/SyncBar";
 import { AddressLine, NotOnMapRow } from "../../../../../../ui/NotOnMap";
-import { ModalSheet } from "../../../../../../ui/ModalSheet";
+import { ModalSheet, useUnsavedChanges } from "../../../../../../ui/ModalSheet";
 import { useTeam } from "../../../../../../data/schedule";
 import { TechValue } from "../../../../../../ui/TechDot";
 import { PoolForm } from "../../../../../../features/pool/PoolForm";
@@ -103,6 +107,7 @@ import { FindingsTab } from "../../../../../../features/inspection/FindingsTab";
 import { TestsTab } from "../../../../../../features/inspection/TestsTab";
 import { JobSchedule, showsJobSchedule } from "../../../../../../features/job/JobSchedule";
 import { JobTimeline } from "../../../../../../features/job/Timeline";
+import { useRememberOpened } from "../../../../../../features/search/useRememberOpened";
 import { MediaSection, type MediaControls } from "../../../../../../features/media/MediaSection";
 import { InvoiceSection } from "../../../../../../features/invoice/InvoiceSection";
 import { QuoteTab } from "../../../../../../features/quote/QuoteTab";
@@ -131,6 +136,17 @@ export default function JobDetail() {
   const job = useRow<Job>("job", id);
   const property = useRow<Property>("property", job?.property_id);
   const customer = useRow<Customer>("customer", job?.bill_to_customer_id ?? property?.customer_id);
+  // First under Recent in search (docs/plans/search-and-activity.md), as the website's.
+  useRememberOpened(
+    job
+      ? {
+          kind: "job",
+          id: job.id,
+          title: `${job.number ? `Job #${job.number}` : "New job"} · ${JOB_TYPE_LABELS[job.type] ?? "Job"}`,
+          detail: customer?.name ?? null,
+        }
+      : null,
+  );
   const insp = useJobInspection(company.id, id);
   const insets = useSafeAreaInsets();
   const [section, setSectionState] = useState<JobSection>(
@@ -245,7 +261,7 @@ export default function JobDetail() {
   }
   // Start Job moved to the Next Step bar (owner, 2026-10-20); the other moves stay here.
   const startable = job.status === "scheduled" || job.status === "unscheduled";
-  const transitions = userTransitions(job.status, job.type).filter(
+  const transitions = jobMoves(job.status, job.type).filter(
     (to) => to !== "canceled" && !(to === "in_progress" && startable),
   );
 
@@ -405,7 +421,7 @@ export default function JobDetail() {
                 customer={customer}
                 update={update}
                 onCancel={
-                  userTransitions(job.status, job.type).includes("canceled")
+                  jobMoves(job.status, job.type).includes("canceled")
                     ? () =>
                         confirmDestructive({
                           title: "Cancel this job?",
@@ -623,6 +639,15 @@ function Details({
     setGallons(null);
   }
 
+  // A fee or gallons typed but not saved yet asks before leaving (owner, 2026-10-20); notes
+  // save by themselves.
+  const savedFee = job.fee_cents != null ? (job.fee_cents / 100).toFixed(2) : "";
+  useUnsavedChanges(
+    (fee !== null && (fee.trim() ? parseDollars(fee) : null) !== (job.fee_cents ?? null)) ||
+      (gallons !== null &&
+        (gallons ? parseGallons(gallons) : null) !== (property?.approx_gallons ?? null)),
+  );
+
   return (
     <>
       <Section title="Customer">
@@ -819,7 +844,7 @@ function Details({
               <TextInput
                 {...noSwipe}
                 accessibilityLabel={`${jobFeeLabel(job.type)} in dollars`}
-                value={fee ?? (job.fee_cents != null ? (job.fee_cents / 100).toFixed(2) : "")}
+                value={fee ?? savedFee}
                 onChangeText={setFee}
                 onBlur={saveFee}
                 keyboardType="decimal-pad"

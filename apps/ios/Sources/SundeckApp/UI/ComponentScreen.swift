@@ -13,8 +13,7 @@
         /// The item shown: starts at the one opened, then Previous Item and Next Item move it.
         @State private var componentId: String
         @State private var neighbors: (previous: String?, next: String?) = (nil, nil)
-        /// Where or Notes typed since the last save, and "Saved" after one.
-        @State private var typed = false
+        /// "Saved" after the page saves by itself.
         @State private var savedText = false
         @Environment(Session.self) private var session
         @Environment(SyncService.self) private var sync
@@ -144,8 +143,13 @@
                         Button("Save") { save(form) }.buttonStyle(.primary)
                         if savedText { SavedLabel() }
                     }
-                    .task(id: "\(form.location)|\(form.notes)") {
-                        guard typed else { return }
+                    // Every change on the page saves by itself (the answer too, so Next Item never
+                    // drops it); only what changed is written.
+                    .task(
+                        id:
+                            "\(form.verdict?.rawValue ?? "")|\(form.location)|\(form.notes)|\(form.method)|\(form.exclusionReason)"
+                    ) {
+                        guard form.isDirty else { return }
                         try? await Task.sleep(for: Autosave.delay)
                         guard !Task.isCancelled else { return }
                         autosave()
@@ -220,23 +224,21 @@
 
         // MARK: - Writes
 
-        /// A field binding that marks the item as typed in, for saving by itself.
+        /// A field binding that hides "Saved" while typing.
         private func typing(_ text: Binding<String>) -> Binding<String> {
             Binding(
                 get: { text.wrappedValue },
                 set: {
                     text.wrappedValue = $0
-                    typed = true
                     savedText = false
                 })
         }
 
-        /// Saves what was typed (the whole form, as Save does) without leaving the item.
+        /// Saves what was changed on the page (only those fields) without leaving the item.
         private func autosave() {
-            guard typed, let form else { return }
+            guard let form, form.isDirty else { return }
             do {
-                try form.save(sync, userId: session.user?.id)
-                typed = false
+                try form.saveChanges(sync, userId: session.user?.id)
                 withAnimation { savedText = true }
             } catch {
                 saveError = String(describing: error)
@@ -255,7 +257,6 @@
         private func save(_ form: ComponentForm) {
             do {
                 try form.save(sync, userId: session.user?.id)
-                typed = false
                 saved += 1
                 dismiss()
             } catch {
@@ -312,7 +313,7 @@
                 ).neighbors(of: componentId)
             }
             if let form {
-                form.result = inspection.resultByComponent[componentId]
+                form.refresh(inspection.resultByComponent[componentId])
             } else {
                 form = ComponentForm(
                     companyId: company.id, jobId: jobId, component: component, type: type,

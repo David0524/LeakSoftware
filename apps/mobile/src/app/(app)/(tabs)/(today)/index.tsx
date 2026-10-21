@@ -30,6 +30,7 @@ import { CleaningsDue } from "../../../../features/maintenance/Cleanings";
 import { TodayComplete, undoStopDone } from "../../../../features/job/CompleteJob";
 import { OnMyWayTrigger } from "../../../../features/today/OnMyWay";
 import { useStopMessage } from "../../../../features/today/useStopMessage";
+import { ReorderStopRow, useRowPlaces, useTodayReorder } from "../../../../features/today/Reorder";
 import { TodayHeroCard, heroPlace } from "../../../../features/today/TodayHero";
 import { useHeroViewing, useTodayHero } from "../../../../features/today/useTodayHero";
 import { doneIds, newlyDone, viewingFor, viewingResetKey } from "../../../../lib/heroBrowse";
@@ -51,9 +52,11 @@ import { useCompany, useSession } from "../../../../state/session";
 import { useWalkthrough } from "../../../../state/walkthrough";
 import { openDirections, useDirectionsChoice } from "../../../../state/directions";
 import {
+  Button,
   Empty,
   FilterPills,
   HeaderButton,
+  Notice,
   Pill,
   RoundButton,
   Screen,
@@ -63,6 +66,7 @@ import {
 import { haptics } from "../../../../ui/haptics";
 import { usePinnedSyncBar } from "../../../../ui/SyncBar";
 import { LockTag } from "../../../../ui/LockTag";
+import { UndoRow } from "../../../../ui/Undo";
 import { AddressLine } from "../../../../ui/NotOnMap";
 import { useRoutingOn } from "../../../../lib/routing";
 import { ScreenTip } from "../../../../ui/Tip";
@@ -263,16 +267,42 @@ export default function Today() {
   const [doneOpen, setDoneOpen] = useState(false);
   const heroAt = heroJob ? stops.indexOf(heroJob) : -1;
   const backLeg = summary.driveMin - summary.legs.reduce((a, b) => a + b, 0);
+  // Do Later and Reorder (owner, 2026-10-20; docs/plans/today-reorder.md): the Schedule's move,
+  // from this phone's jobs, saved through the sync layer.
+  const reorder = useTodayReorder({ company, stops, techId: shownTech, me, manager, drive });
+  const places = useRowPlaces();
+  const [dragging, setDragging] = useState(false);
+  const shownRows = [...(doneOpen ? doneStops : []), ...rest].map((j) => j.id);
 
   function stopRow(j: JobView, withLeg: boolean) {
     const i = stops.indexOf(j);
+    const leg = withLeg ? (
+      <Leg
+        text={`${durationLabel(summary.legs[i] ?? 0)} ${i === 0 ? startLegLabel(start.label) : "drive"}`}
+      />
+    ) : null;
+    const info = reorder.row(j.id);
+    // Reorder's edit mode: a handle, Move Up and Move Down, or a lock and the reason.
+    if (reorder.editing && info) {
+      return (
+        <ReorderStopRow
+          key={j.id}
+          job={j}
+          n={i + 1}
+          timeZone={tz}
+          info={info}
+          now={j.id === nowId}
+          leg={leg}
+          onLayout={places.onLayout(j.id)}
+          onAct={(a) => reorder.act(j.id, a)}
+          onDragging={setDragging}
+          onDrop={(dy) => reorder.drop(j.id, places.landsBefore(j.id, dy, shownRows))}
+        />
+      );
+    }
     return (
       <View key={j.id} style={styles.stopWrap}>
-        {withLeg ? (
-          <Leg
-            text={`${durationLabel(summary.legs[i] ?? 0)} ${i === 0 ? startLegLabel(start.label) : "drive"}`}
-          />
-        ) : null}
+        {leg}
         <Stop
           job={j}
           n={i + 1}
@@ -283,6 +313,9 @@ export default function Today() {
           mine={mine}
           onMessage={onMessage}
           onDirections={onDirections}
+          doLater={info?.canLater ? () => reorder.doLater(j.id, "row") : null}
+          undoText={reorder.undoText(j.id, "row")}
+          onUndo={reorder.undo}
         />
       </View>
     );
@@ -337,12 +370,15 @@ export default function Today() {
         </View>
       }
       headerRight={
-        canAdd
-          ? () => (
-              <HeaderButton title="New Job" icon="add" onPress={() => router.push("/jobs/new")} />
-            )
-          : undefined
+        reorder.editing
+          ? () => <HeaderButton title="Done" strong onPress={() => reorder.setEditing(false)} />
+          : canAdd
+            ? () => (
+                <HeaderButton title="New Job" icon="add" onPress={() => router.push("/jobs/new")} />
+              )
+            : undefined
       }
+      scrollEnabled={!dragging}
       refreshControl={<RefreshControl refreshing={refreshing} onRefresh={refresh} />}
       topInset={sync.height}
       overlay={
@@ -368,7 +404,7 @@ export default function Today() {
 
       {omwTrigger}
       <SwipeNav
-        enabled={manager && people.length > 1}
+        enabled={manager && people.length > 1 && !reorder.editing && !dragging}
         onPrevious={() => pickTech(people[shownAt - 1])}
         onNext={() => pickTech(people[shownAt + 1])}
       >
@@ -391,12 +427,37 @@ export default function Today() {
           </Empty>
         ) : (
           <View style={styles.route}>
-            <T muted style={{ marginBottom: space["4"] - space["1"] }}>
-              {stops.length} {stops.length === 1 ? "stop" : "stops"} ·{" "}
-              {durationLabel(summary.driveMin)} driving
-              {start.label === "home" ? ` · ${startLegLabel("home")}` : null}
-            </T>
-            {hero ? (
+            {/* "6 stops · 1 hr 15 min driving · Reorder" (Done while reordering). */}
+            <View style={styles.dayLine}>
+              <T muted>
+                {stops.length} {stops.length === 1 ? "stop" : "stops"} ·{" "}
+                {durationLabel(summary.driveMin)} driving
+                {start.label === "home" ? ` · ${startLegLabel("home")}` : ""}
+                {reorder.canReorder || reorder.editing ? " ·" : ""}
+              </T>
+              {reorder.canReorder || reorder.editing ? (
+                <Pressable
+                  accessibilityRole="button"
+                  accessibilityLabel={reorder.editing ? "Done" : "Reorder"}
+                  accessibilityHint={reorder.editing ? undefined : "Change the order of the stops"}
+                  onPress={() => {
+                    haptics.selection();
+                    reorder.setEditing(!reorder.editing);
+                  }}
+                  hitSlop={4}
+                  style={({ pressed }) => [styles.dayLineButton, pressed && { opacity: 0.5 }]}
+                >
+                  <Text
+                    style={[type.body, face.semiBold, { color: color.link }]}
+                    maxFontSizeMultiplier={MAX_TEXT_SCALE}
+                  >
+                    {reorder.editing ? "Done" : "Reorder"}
+                  </Text>
+                </Pressable>
+              ) : null}
+            </View>
+            {reorder.error ? <Notice tone="error">{reorder.error}</Notice> : null}
+            {hero && !reorder.editing ? (
               <TodayHeroCard
                 hero={hero}
                 job={heroJob}
@@ -408,6 +469,11 @@ export default function Today() {
                 onBrowse={onBrowse}
                 onMessage={onMessage}
                 onDirections={onDirections}
+                doLater={{
+                  canMove: (j) => !!reorder.row(j.id)?.canLater,
+                  onPress: (j) => reorder.doLater(j.id, "card"),
+                  undo: reorder.cardUndo ? { text: reorder.cardUndo, onUndo: reorder.undo } : null,
+                }}
               />
             ) : null}
             {doneStops.length ? (
@@ -485,6 +551,9 @@ const Stop = memo(function Stop({
   mine,
   onDirections,
   onMessage,
+  doLater,
+  undoText,
+  onUndo,
 }: {
   job: JobView;
   n: number;
@@ -498,6 +567,11 @@ const Stop = memo(function Stop({
   onDirections: (job: JobView) => void;
   /** The notification asked to do something on this stop: it opens and does it. */
   action: { action: StopAction; nonce: number } | null;
+  /** Do Later, when this stop can move (docs/plans/today-reorder.md). */
+  doLater: (() => void) | null;
+  /** "Moved." for 5 seconds after its Do Later, with Undo. */
+  undoText: string | null;
+  onUndo: () => void;
 }) {
   const done = stopDone(job, day);
   const routing = useRoutingOn();
@@ -527,6 +601,7 @@ const Stop = memo(function Stop({
     complete ? { name: "complete", label: "Mark Complete", run: complete } : null,
     call ? { name: "call", label: "Call", run: call } : null,
     directions ? { name: "directions", label: "Directions", run: directions } : null,
+    doLater ? { name: "doLater", label: "Do Later", run: doLater } : null,
   ].filter((a): a is { name: string; label: string; run: () => void } => a !== null);
   return (
     <SwipeActions
@@ -534,6 +609,7 @@ const Stop = memo(function Stop({
       trailing={[
         ...(call ? [{ label: "Call", tint: color.link, onPress: call }] : []),
         ...(directions ? [{ label: "Directions", tint: color.water, onPress: directions }] : []),
+        ...(doLater ? [{ label: "Do Later", tint: color.link, onPress: doLater }] : []),
       ]}
     >
       <View
@@ -632,6 +708,13 @@ const Stop = memo(function Stop({
             </Text>
           </View>
         ) : null}
+        {/* After Do Later, where its button was: "Moved." and Undo, open or closed (a swipe
+            moves a closed row). */}
+        {undoText ? (
+          <View style={styles.undo}>
+            <UndoRow text={undoText} onUndo={onUndo} />
+          </View>
+        ) : null}
         {expanded ? (
           <View style={styles.body}>
             {job.property ? (
@@ -664,6 +747,14 @@ const Stop = memo(function Stop({
                 pressNonce={completeAsked}
                 onPressHandled={() => setCompleteAsked(0)}
               />
+              {doLater && !undoText ? (
+                <Button
+                  kind="secondary"
+                  title="Do Later"
+                  accessibilityLabel={`Do Later, ${name}`}
+                  onPress={doLater}
+                />
+              ) : null}
               {done ? null : (
                 <View style={styles.actions}>
                   {/* One text button: On My Way lives in Message (gestures spec section 2). */}
@@ -697,6 +788,16 @@ const styles = StyleSheet.create({
     rowGap: space["1"],
   },
   route: { gap: 0 },
+  dayLine: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    alignItems: "center",
+    columnGap: 4,
+    marginBottom: space["2"],
+  },
+  // Reorder and Done: 44 pt tall, though they read as the end of the line.
+  dayLineButton: { minHeight: minTap, justifyContent: "center" },
+  undo: { paddingHorizontal: space["3"], paddingBottom: space["2"] },
   stopWrap: { gap: space["1"], marginBottom: space["1"] },
   leg: {
     flexDirection: "row",

@@ -9,9 +9,9 @@ import {
   jobFeeLabel,
   calculate,
   currentVerdict,
-  normalizeTestData,
   parseDiagramLayout,
   poolDiagram,
+  previewTest,
   userTransitions,
   verdictOptions,
   type ChecklistItemResult,
@@ -27,6 +27,7 @@ import {
   removeItemConfirm,
 } from "@leakbook/core";
 import type { FormState } from "@/app/actions/auth";
+import { orOffline } from "@/lib/offline";
 import {
   addComponent,
   changeJobStatus,
@@ -78,7 +79,9 @@ export function useRun() {
         before?.();
         const form = new FormData();
         for (const [k, v] of Object.entries(fields)) form.set(k, v);
-        const result = await action({}, form);
+        // No signal: the request never reached the server. Say so here instead of the
+        // whole page giving way to the error screen.
+        const result = await orOffline(action)({}, form);
         setError(result.error ?? Object.values(result.fields ?? {})[0] ?? null);
         after?.(result);
         resolve(result);
@@ -479,7 +482,7 @@ function ChecklistGroup({
           aria-expanded={open}
           aria-controls={panel}
           onClick={() => setOpen(!folded)}
-          className="flex min-h-14 w-full items-center gap-3 px-4 text-left"
+          className="flex min-h-14 w-full flex-wrap items-center gap-x-3 gap-y-0.5 px-4 py-1 text-left"
         >
           <svg
             viewBox="0 0 24 24"
@@ -496,10 +499,13 @@ function ChecklistGroup({
           >
             <path d="M9 6l6 6-6 6" />
           </svg>
-          <span className="flex-1 font-sans text-[1.0625rem] font-semibold">{title}</span>
+          {/* Large text: the summary drops under the title rather than past the edge. */}
+          <span className="min-w-0 flex-1 font-sans text-[1.0625rem] font-semibold break-words">
+            {title}
+          </span>
           <span
             className={cx(
-              "text-[0.9375rem] font-medium",
+              "ml-auto text-[0.9375rem] font-medium",
               toDo.length ? "text-text-muted" : leaking ? "text-status-fail" : "text-status-pass",
             )}
           >
@@ -715,6 +721,7 @@ function WhereField({
     <div className="pt-2">
       <input
         aria-label={`Where: ${item}`}
+        data-autosave
         title="Where"
         defaultValue={value ?? ""}
         placeholder="Where? Under the deck, at the throat…"
@@ -1013,7 +1020,7 @@ function TestForm({
     ),
   );
   const type = types.find((t) => t.id === typeId);
-  const calc = type ? calculate(type, normalizeTestData(type.field_schema, values)) : null;
+  const calc = type ? previewTest(type, values) : null;
   const set = (k: string, v: string) => setValues((old) => ({ ...old, [k]: v }));
   // In a sheet: the sheet carries the title and Cancel.
   return (

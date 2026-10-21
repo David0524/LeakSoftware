@@ -41,6 +41,7 @@ import { Button, RoundButton, useReduceMotion } from "../../ui/components";
 import { haptics } from "../../ui/haptics";
 import { NotOnMapTag } from "../../ui/NotOnMap";
 import { useNoSwipe } from "../../ui/SwipeNav";
+import { UndoRow } from "../../ui/Undo";
 import { WebIcon } from "../../ui/WebIcon";
 import {
   color,
@@ -85,6 +86,7 @@ export const TodayHeroCard = memo(function TodayHeroCard({
   onBrowse,
   onMessage,
   onDirections,
+  doLater,
 }: {
   hero: TodayHero;
   /** The stop on the card (the one just done, in the done moment). */
@@ -103,6 +105,16 @@ export const TodayHeroCard = memo(function TodayHeroCard({
   /** Message for a stop: the On My Way text before arriving, else a blank text. */
   onMessage: (job: JobView) => void;
   onDirections: (job: JobView) => void;
+  /**
+   * Do Later for the card's stop (docs/plans/today-reorder.md): a secondary button on its own
+   * row in the Up next and On the way moments; afterwards "Moved." and Undo in its place for
+   * 5 seconds. `canMove` false: this stop can't move (or is already last).
+   */
+  doLater?: {
+    canMove: (job: JobView) => boolean;
+    onPress: (job: JobView) => void;
+    undo: { text: string; onUndo: () => void } | null;
+  };
 }) {
   const c = hero.content;
   // The card is about one stop and its buttons are for that stop (gestures spec section 9): a
@@ -146,6 +158,11 @@ export const TodayHeroCard = memo(function TodayHeroCard({
   }, [shown, reduceMotion, fade]);
   // Message, Call and Directions for the card's stop, while it's still to come or under way.
   const contact = Boolean(target && hero.moment !== "done" && (phone || target.property));
+  const later =
+    doLater && job && (hero.moment === "ahead" || hero.moment === "driving") && doLater.canMove(job)
+      ? doLater.onPress
+      : null;
+  const laterUndo = doLater?.undo ?? null;
 
   const adjustValue = heroAdjustValue(hero, job?.customer?.name);
   // Browsing (gestures spec section 1). The stop the card stands on: none once the day is done,
@@ -572,6 +589,25 @@ export const TodayHeroCard = memo(function TodayHeroCard({
             ) : null}
           </>
         )}
+
+        {laterUndo ? (
+          <View style={[styles.buttons, stacked && styles.buttonsStacked]}>
+            <View style={stacked ? undefined : styles.slot}>
+              <UndoRow text={laterUndo.text} onUndo={laterUndo.onUndo} onWater />
+            </View>
+          </View>
+        ) : later && job ? (
+          <View style={[styles.buttons, stacked && styles.buttonsStacked]}>
+            <View style={stacked ? undefined : styles.slot}>
+              <Button
+                kind="onWaterTinted"
+                title="Do Later"
+                accessibilityLabel={`Do Later, ${job.customer?.name ?? "this stop"}`}
+                onPress={() => later(job)}
+              />
+            </View>
+          </View>
+        ) : null}
 
         {/* The checkmark that marks a stop just completed. */}
         <Reanimated.View pointerEvents="none" style={[styles.checkLayer, checkStyle]}>

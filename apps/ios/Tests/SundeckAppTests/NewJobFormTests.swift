@@ -183,6 +183,14 @@ import Testing
         #expect(!f.validate())
         #expect(f.errors["scheduleDate"] == "Pick a date.")
         #expect(f.feeError == "Enter a price like 649.")
+        // The website's range (apps/web/src/lib/limits.ts): a typo'd year or a day that doesn't exist.
+        f.input.scheduleDate = "0026-10-20"
+        #expect(!f.validate())
+        #expect(f.errors["scheduleDate"] == "Pick a date between 2000 and 2100.")
+        f.input.scheduleDate = "2026-02-30"
+        #expect(!f.validate())
+        #expect(f.errors["scheduleDate"] == "Pick a date.")
+        f.input.scheduleDate = ""
 
         // Not Yet ignores the schedule; a blank fee is fine.
         f.when = .notYet

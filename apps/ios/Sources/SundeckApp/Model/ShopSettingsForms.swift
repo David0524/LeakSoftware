@@ -65,6 +65,10 @@ public struct CompanyProfileForm: Equatable, Sendable {
         var e: [String: String] = [:]
         if trimmed(name).isEmpty { e["name"] = "Enter the company name." }
         if TimeZone(identifier: timeZone) == nil && timeZone != "UTC" { e["timezone"] = "Pick a time zone." }
+        // It goes into customer emails as a link: web pages only (website `isWebUrl`).
+        if !trimmed(reviewURL).isEmpty && !Limits.isWebURL(trimmed(reviewURL)) {
+            e["review_url"] = Limits.reviewLinkText
+        }
         return e
     }
 

@@ -43,6 +43,8 @@ import {
   type,
 } from "../../ui/theme";
 import { WebIcon } from "../../ui/WebIcon";
+import { formChanged } from "../../lib/discard";
+import { useUnsavedChanges } from "../../ui/ModalSheet";
 
 // The pool chemical calculator (spec 5.11; owner, 2026-10-16): the pool's size and today's
 // readings in, what to add out, in order. The math is packages/core/src/chemistry.ts. Used by
@@ -119,6 +121,9 @@ export function useChemCalculator(pool: Property | undefined, jobId: string | nu
   });
   const [submitted, setSubmitted] = useState<{ error?: string; message?: string }>({});
   const [values, setValues] = useState<Record<string, string>>({});
+  // Readings for a pool typed but not submitted ask before leaving (owner, 2026-10-20).
+  const [submittedValues, setSubmittedValues] = useState<Record<string, string>>({});
+  useUnsavedChanges(Boolean(pool) && formChanged(submittedValues, values));
   // Levels to aim for instead of the recommended ones (owner, 2026-10-18: "chlorine won't
   // always be 4"). Blank uses the recommended level; the phone remembers the rest.
   const [goals, setGoalsState] = useState<Record<string, string>>(savedGoals);
@@ -177,6 +182,7 @@ export function useChemCalculator(pool: Property | undefined, jobId: string | nu
     // A pool's gallons fill in from the first submit that has them, as on the website.
     if (size !== null && !pool.approx_gallons)
       sync.write("property", pool.id, pool.company_id, { approx_gallons: size });
+    setSubmittedValues(values);
     setSubmitted({ message: "Submitted." });
   }
 

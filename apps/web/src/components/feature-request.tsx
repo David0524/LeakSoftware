@@ -5,6 +5,7 @@ import { useActionState, useState } from "react";
 import { requestFeature } from "@/app/actions/feature-requests";
 import { Sheet } from "./sheet";
 import { Button, cx, Notice } from "./ui";
+import { orOffline } from "@/lib/offline";
 
 /**
  * Request a Feature (owner, 2026-10-19): a button that opens a sheet with one box. It goes to
@@ -38,7 +39,7 @@ export function FeatureRequest({ className }: { className?: string }) {
 }
 
 function RequestForm({ onDone }: { onDone: () => void }) {
-  const [state, action, pending] = useActionState(requestFeature, {});
+  const [state, action, pending] = useActionState(orOffline(requestFeature), {});
   const page = usePathname();
   if (state.message)
     return (

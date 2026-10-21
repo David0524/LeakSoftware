@@ -432,6 +432,8 @@ public func moveJob(
     guard let job = jobs.first(where: { $0.id == jobId }) else {
         throw ScheduleProblem("This job is gone. Pull down to refresh.")
     }
+    // Years 2000 through 2100 only, as the website (a typo'd year never reaches a route).
+    if let date, let bad = Limits.jobDateError(date) { throw ScheduleProblem(bad) }
     let fromDate = job.start.map { localDay($0, timeZone: ctx.timeZone) }
     let input = MoveInput(
         job: job, tech: tech, date: date, index: index,

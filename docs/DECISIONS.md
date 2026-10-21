@@ -8,21 +8,8 @@ Newest first. Each entry: date, decision, reason.
 - **No internal team chat.** Not planned.
 - **"Routes start at the shop, which has no map location yet"** shows only while someone on the schedule starts from the shop (website, iPhone, Android).
 
-## 2026-10-20 (owner: "Yes do your suggestion"; Apple Maps on the website)
-
-Plan: `docs/plans/apple-maps.md`.
-- **Apple for maps, map images, address search and desktop directions; Mapbox for drive times
-  only.** The website's live maps use MapKit JS, day-map images come from Apple Snapshots (days
-  with 10 or more stops stay on Mapbox, since an Apple pin's number is one character), address
-  suggestions come from Apple's autocomplete, and "Open in Maps" on a computer opens
-  maps.apple.com. Drive times for Plan Route, Plan Week and Routes stay on the Mapbox matrix.
-- **Apple's free allowance is guarded in `app.mapbox_budget`** for every shop together:
-  `apple_snapshot` 22,500 a month, `apple_service` 600,000 a month and 22,500 a day,
-  `apple_map_view` 6,000,000 a month and 225,000 a day (a new `daily_limit`, counted in
-  `app.mapbox_usage_daily`). Apple never bills; past its limit it refuses, and Mapbox takes over.
-- **`MAP_PROVIDER`:** `apple` by default once `APPLE_MAPS_TEAM_ID`, `APPLE_MAPS_KEY_ID` and
-  `APPLE_MAPS_PRIVATE_KEY` are set, `mapbox` without them; `MAP_PROVIDER=mapbox` forces Mapbox.
-  Until the keys exist nothing changes, desktop directions links included.
+## 2026-10-21 (owner: "Merge it straight in. You got to start merging on your own going forward")
+- **Sessions merge their own finished work into the default branch** once checks and CI are green, after bringing the default branch's newer commits in first (CLAUDE.md, Checks before every commit).
 
 ## 2026-10-21 (owner: "Remove the 'Runs 28 min past the end of the day.'"; "I don't care about days running late. … times are pretty irrelevant in this business"; "make the techs slide horizontally"; "Yes, start clearing out going forward")
 
@@ -38,6 +25,25 @@ Plan: `docs/plans/apple-maps.md`.
   that earlier runs made through the API ("Created via API"), before and after the upload
   (`scripts/asc-revoke-ci-certs.mjs`). Certificates made on a Mac, and distribution
   certificates, stay.
+
+## 2026-10-20 (owner, from a screenshot of the iPhone app's Today: "The page titles sit a little low. Let's push up towards where the plus button is.")
+- **Tab roots put the large title in the bar's row**, left of the bar's buttons (the "+"), as in the App Store and Music; the page rises with it. Screens with Back keep the title under the Back row. Scrolled, the small centered title shows in the bar as before. With very large text the title wraps before the buttons, and when a word can't fit beside them it takes its own row under the bar. All four platforms (spec 3.1).
+
+## 2026-10-20 (owner: "Yes do your suggestion"; Apple Maps on the website)
+
+Plan: `docs/plans/apple-maps.md`.
+- **Apple for maps, map images, address search and desktop directions; Mapbox for drive times
+  only.** The website's live maps use MapKit JS, day-map images come from Apple Snapshots (days
+  with 10 or more stops stay on Mapbox, since an Apple pin's number is one character), address
+  suggestions come from Apple's autocomplete, and "Open in Maps" on a computer opens
+  maps.apple.com. Drive times for Plan Route, Plan Week and Routes stay on the Mapbox matrix.
+- **Apple's free allowance is guarded in `app.mapbox_budget`** for every shop together:
+  `apple_snapshot` 22,500 a month, `apple_service` 600,000 a month and 22,500 a day,
+  `apple_map_view` 6,000,000 a month and 225,000 a day (a new `daily_limit`, counted in
+  `app.mapbox_usage_daily`). Apple never bills; past its limit it refuses, and Mapbox takes over.
+- **`MAP_PROVIDER`:** `apple` by default once `APPLE_MAPS_TEAM_ID`, `APPLE_MAPS_KEY_ID` and
+  `APPLE_MAPS_PRIVATE_KEY` are set, `mapbox` without them; `MAP_PROVIDER=mapbox` forces Mapbox.
+  Until the keys exist nothing changes, desktop directions links included.
 
 ## 2026-10-20: owner list g (team colors, Week with routes, the demo)
 
@@ -168,9 +174,22 @@ Spec: `docs/design/2026-10-20-gestures.md`.
 - **The inspection report uses the homeowner report's draft, sign-off, and send**, titled Pool Inspection Report, rather than a separate report template.
 - **An inspection's report can be signed and sent before every question is answered** (unlike a leak detection, which waits for its whole checklist): the report lists the questions answered, and Needs attention lists the flagged ones. Write Draft doesn't check an inspection's text for leak checklist names ("Main drain", "Pool"), since its questions use those words.
 
+## 2026-10-20 (owner: techs change the order of stops from Today, "Fix this")
+- **Do Later and Reorder on Today** on every platform (`docs/plans/today-reorder.md`): Do Later moves a stop to the end of the day's route (with a 5-second Undo); Reorder puts the day in edit mode with drag handles and Move Up / Move Down. Both use the Schedule's own move, so promised times and started jobs stay put and techs move only their own stops.
+
+## 2026-10-20 (owner: navigation compared with other SaaS apps)
+- **Search across the shop** on every platform (`docs/plans/search-and-activity.md`): customers, pools, jobs, quotes and invoices by name, phone, address or number; at the top of Jobs on phones (offline, from the phone's data), a header field and ⌘K on desktop; Recent when empty. It follows the existing visibility rules.
+- **Activity** in More on every platform, with a card on the owner's Dashboard: quotes accepted, payments, reports signed and sent, jobs completed, assigned or moved, customer texts. Recorded by the database; techs see only events about jobs and conversations they can see.
+- **Kept as is:** no create-anything "+" (customers are added through jobs); Customers and Invoices stay under More (jobs drive them).
+
+## 2026-10-20 (owner: "Job numbers should never have commas to separate digits")
+- **Job, quote and invoice numbers never have thousands separators** on any platform ("Job #1038", not "#1,038"). On iPhone a number put in a SwiftUI `Text` literal is formatted with them, so document numbers use `Text(verbatim:)` or a `String`; `DocumentNumberTests` fails on a `#\(…)` inside a Text literal.
+
 ## 2026-10-20 (owner: one-handed use review, "Do all changes except for 11")
 - **One-handed use on every platform** (`docs/design/2026-10-20-one-handed-use.md`): a Next Step bar at the bottom of the job page on phones (Start Job, Complete Job, Add Test · Add Finding, Add Photo · Add Video, Write Draft); photos on a test or finding before its first save; Save pinned in the test and finding sheets; typed text saves by itself (no Save Text); Android back asks before discarding; completing a visit asks "Ready to send the visit report?" when it would send one (Automatic shops), and Mark Remaining gets a 5-second Undo; report send controls first and versions folded; offline Finish and Send queue on the phones; checklist answers as one-tap segments (Remove Item only behind Edit and swipe); Delete in a photo's More menu; camera straight from Add Photo, Library visible; sync bar pinned; Today's tip after the stops. Reason: frequent field actions were at the top of the screen, two or more taps deep, or one slip from losing work.
 - **Not changed:** tap targets stay at the 44 pt minimum (review item 11, declined).
+- **New shops start with techs seeing only their own jobs** (owner: a tech reaching jobs not assigned to them is "not intended"; "Default to Only Their Own"). Owners can still choose Every Job in Settings › Team. Existing shops keep what they had (written down as Every Job by `20261020000100_techs_see_own_jobs.sql`); the demo shop stays on Every Job.
+- **Discard changes, everywhere:** every editor with unsaved changes asks "Discard changes?" before closing, on all four platforms and every way out (Cancel, swipe down, tap outside, Escape, Back, Android back, links and notifications).
 
 ## 2026-10-20 (owner: "Dashboard should be in the apps"; "On invoices tab add some filtering and sorting"; visit reports)
 - **The Dashboard is in both apps**, first in More, for owners and admins: the website's numbers (collected, owed, quotes accepted, invoiced, collected by month, jobs by status) as phone cards and a bar chart, from the same `owner_dashboard`. Replaces decision 12 of the native-apps spec ("Dashboard is left out of the apps").

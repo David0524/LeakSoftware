@@ -5,6 +5,7 @@ import { acceptQuote, payDeposit } from "@/app/actions/quotes";
 import { Banner } from "./doc-ui";
 import { PayForm } from "./pay-form";
 import { Button, Checkbox, Field } from "./ui";
+import { orOffline } from "@/lib/offline";
 
 /**
  * Typed name and the terms switch (BUILD_PLAN 6.4). On screen an iOS grouped form: the name
@@ -24,7 +25,7 @@ export function AcceptForm({
   defaultName: string;
   print?: boolean;
 }) {
-  const [state, action, pending] = useActionState(acceptQuote, {});
+  const [state, action, pending] = useActionState(orOffline(acceptQuote), {});
   const consent = `I accept this quote and ask ${shop} to do the work for ${total}.`;
   return (
     <form action={action} className="space-y-4">

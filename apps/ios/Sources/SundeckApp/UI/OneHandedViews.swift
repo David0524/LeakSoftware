@@ -27,7 +27,7 @@
 
     extension View {
         /// The Undo window: `pending` clears after `UndoText.seconds`, or when the view goes away.
-        func undoWindow(_ pending: Binding<MarkedUndo?>) -> some View {
+        func undoWindow<Value: Equatable & Sendable>(_ pending: Binding<Value?>) -> some View {
             modifier(UndoWindow(pending: pending))
         }
 
@@ -63,8 +63,8 @@
         }
     }
 
-    private struct UndoWindow: ViewModifier {
-        @Binding var pending: MarkedUndo?
+    private struct UndoWindow<Value: Equatable & Sendable>: ViewModifier {
+        @Binding var pending: Value?
 
         func body(content: Content) -> some View {
             content

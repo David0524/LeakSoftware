@@ -29,7 +29,8 @@ import { haptics } from "../../../../../../ui/haptics";
 import { PoolDiagram } from "../../../../../../ui/PoolDiagram";
 import { Select } from "../../../../../../ui/Select";
 import { ShapePicker } from "../../../../../../ui/ShapePicker";
-import { confirmDiscard, useSheetLock } from "../../../../../../ui/sheet";
+import { useDiscardChanges } from "../../../../../../ui/discard";
+import { useSheetLock } from "../../../../../../ui/sheet";
 import { color, space } from "../../../../../../ui/theme";
 
 const STATUSES = Object.keys(FINDING_STATUS_LABELS) as FindingStatus[];
@@ -77,11 +78,12 @@ export default function FindingScreen() {
     JSON.stringify({ title, componentId, severity, location, pin, status, notes });
   const [initial, setInitial] = useState(snapshot);
   const dirty = snapshot() !== initial;
-  useSheetLock(dirty, cancel);
+  useSheetLock(dirty);
+  // Every way out asks first while there are changes (owner, 2026-10-20).
+  const leave = useDiscardChanges(dirty);
 
   function cancel() {
-    if (!dirty) return router.back();
-    confirmDiscard(() => router.back());
+    router.back();
   }
 
   const bar = (
@@ -129,7 +131,7 @@ export default function FindingScreen() {
     if (stay) {
       setSavedId(id);
       setInitial(snapshot());
-    } else router.back();
+    } else leave(() => router.back());
     return id;
   }
 
@@ -256,7 +258,7 @@ export default function FindingScreen() {
               wide
               onPress={() =>
                 confirmDeleteFinding(services.sync, company.id, existing.id, existing.title, () =>
-                  router.back(),
+                  leave(() => router.back()),
                 )
               }
             />

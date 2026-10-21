@@ -40,9 +40,17 @@ create temp table expect as select
   'checklist_item_result=0 finding=0 invoice=0 invoice_line_item=0 job=0 job_component=0 media=0 message=0 payment=0 quote=0 quote_line_item=0 report=0 share_link=0 signature=0 test_result=0'::text as all_zero;
 grant select on expect to authenticated;
 
--- Default: everyone sees every job.
+-- New shops: techs see only their own jobs (owner, 2026-10-20).
+select is((select settings -> 'techs_see_all_jobs' from company where id = (select ca from ids)),
+  'false'::jsonb, 'a new shop starts with techs seeing only their own jobs');
 select tests.authenticate_as((select tech2 from ids));
-select is(pg_temp.seen(), (select all_one from expect), 'by default techs see every job');
+select is(pg_temp.seen(), (select all_zero from expect), 'so a new shop''s tech sees no one else''s job');
+reset role;
+
+-- A shop that chose Every Job: everyone sees every job.
+update company set settings = settings || '{"techs_see_all_jobs": true}' where id = (select ca from ids);
+select tests.authenticate_as((select tech2 from ids));
+select is(pg_temp.seen(), (select all_one from expect), 'with Every Job, techs see every job');
 select alike(sync_scope(), '%:all', 'and their phones sync everything');
 reset role;
 

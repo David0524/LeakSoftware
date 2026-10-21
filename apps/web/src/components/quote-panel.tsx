@@ -7,6 +7,7 @@ import { sendQuoteAction } from "@/app/actions/quotes";
 import type { QuoteRow } from "@/lib/data";
 import { CopyLink } from "./settings-forms";
 import { Button, Notice } from "./ui";
+import { orOffline } from "@/lib/offline";
 
 const PAYMENT_LABELS: Record<string, string> = {
   pending: "processing",
@@ -28,7 +29,7 @@ export function QuotePanel({
   /** The line editor, for a draft. */
   children?: ReactNode;
 }) {
-  const [state, action, pending] = useActionState(sendQuoteAction, {});
+  const [state, action, pending] = useActionState(orOffline(sendQuoteAction), {});
   const link = state.link ?? (quote.token ? `${origin}/q/${quote.token}` : null);
   const deposit = quote.payments.find((p) => p.status === "succeeded" || p.status === "pending");
   return (
@@ -45,11 +46,11 @@ export function QuotePanel({
         <ul className="mt-3 space-y-1 text-[0.9375rem]">
           {quote.lines.map((l) => (
             <li key={l.id} className="flex justify-between gap-4">
-              <span>
+              <span className="min-w-0 break-words">
                 {l.description}
                 {Number(l.quantity) !== 1 ? ` × ${Number(l.quantity)}` : ""}
               </span>
-              <span className="tabular-nums">
+              <span className="shrink-0 tabular-nums">
                 {formatCents(
                   lineTotal({ quantity: Number(l.quantity), unit_price_cents: l.unit_price_cents }),
                 )}

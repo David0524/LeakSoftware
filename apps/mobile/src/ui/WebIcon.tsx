@@ -125,7 +125,10 @@ const SHAPES = {
   directions: { line: "M3 11l18-8-8 18-2-8z" },
   // The website's not-on-map warning (not-on-map.tsx).
   warning: { line: "M12 3l9.5 17h-19zM12 10v4.5M12 17.5v.01" },
-  // A padlock (the website's LockIcon): a job locked to its day, time, or both.
+  // Today's Reorder (docs/plans/today-reorder.md): the drag handle, as iOS's reorder control.
+  grip: { line: "M5 8h14M5 12h14M5 16h14" },
+  // A padlock (the website's LockIcon): a job locked to its day, time, or both, and the lock on
+  // a stop that can't move in Today's Reorder.
   lock: {
     line: "M7.5 11h9a2.5 2.5 0 0 1 2.5 2.5v5a2.5 2.5 0 0 1-2.5 2.5h-9A2.5 2.5 0 0 1 5 18.5v-5A2.5 2.5 0 0 1 7.5 11zM8 11V8a4 4 0 0 1 8 0v3",
   },

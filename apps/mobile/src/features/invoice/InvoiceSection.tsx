@@ -25,11 +25,14 @@ import { getServices } from "../../lib/services";
 import { useCompany, useSession } from "../../state/session";
 import { Button, Card, Empty, Field, Notice, T, Toggle } from "../../ui/components";
 import { confirmDestructive } from "../../ui/confirm";
+import { parseLineQuantity } from "../../lib/lineQuantity";
+import { discountTooLarge, lineDescriptionError } from "../../lib/limits";
 import { haptics } from "../../ui/haptics";
 import { color, face, MAX_TEXT_SCALE, space, tabular } from "../../ui/theme";
 import { Divider } from "../report/ReportTab";
 import { DateField } from "../schedule/DateField";
 import { LinkRow } from "../quote/QuoteTab";
+import { useUnsavedChanges } from "../../ui/ModalSheet";
 
 const INVOICEABLE = ["in_progress", "report_sent", "quote_sent", "quote_accepted", "invoiced"];
 
@@ -273,14 +276,22 @@ function DraftParts({ invoice, customer }: { invoice: JobInvoice; customer?: Cus
   const email = (to ?? customer?.email ?? "").trim();
   const [busy, setBusy] = useState<"email" | "link" | null>(null);
   const [sendMessage, setSendMessage] = useState<Message>(null);
+  // A line or details typed but not added or saved ask before leaving (owner, 2026-10-20).
+  useUnsavedChanges(
+    Boolean(line.description.trim() || line.price.trim()) ||
+      (line.quantity.trim() !== "1" && line.quantity.trim() !== "") ||
+      (discount.trim() ? parseDollars(discount) : 0) !== (invoice.discount_cents ?? 0) ||
+      due.trim() !== (invoice.due_date ?? "") ||
+      notes.trim() !== (invoice.notes ?? "").trim(),
+  );
 
   function addLine() {
-    const quantity = Number(line.quantity.replace(",", ".") || "1");
+    const quantity = parseLineQuantity(line.quantity);
     const price = parseDollars(line.price);
     const errors: Record<string, string> = {};
-    if (!line.description.trim()) errors.description = "Describe the work.";
-    if (!(quantity > 0) || Math.round(quantity * 100) !== quantity * 100)
-      errors.quantity = "Enter a quantity like 1 or 2.5.";
+    const described = lineDescriptionError(line.description);
+    if (described) errors.description = described;
+    if (quantity === null) errors.quantity = "Enter a quantity like 1 or 2.5.";
     if (price === null || price < 0) errors.price = "Enter a price like 125.";
     setLineErrors(errors);
     if (Object.keys(errors).length) return;
@@ -304,6 +315,8 @@ function DraftParts({ invoice, customer }: { invoice: JobInvoice; customer?: Cus
         tone: "error",
         text: "Enter an amount like 50, or leave it empty.",
       });
+    const tooLarge = discountTooLarge(cents, invoiceTotals(invoice.lines, 0, 0).subtotal_cents);
+    if (tooLarge) return setDetailsMessage({ tone: "error", text: tooLarge });
     if (due.trim() && !/^\d{4}-\d{2}-\d{2}$/.test(due.trim()))
       return setDetailsMessage({ tone: "error", text: "Enter the due date like 2026-11-01." });
     sync.write("invoice", invoice.id, company.id, {
@@ -471,6 +484,8 @@ export function RecordPayment({
   onRecorded?: (text: string) => void;
 }) {
   const [amount, setAmount] = useState<string | null>(null);
+  // An amount typed but not recorded asks before leaving (owner, 2026-10-20).
+  useUnsavedChanges(Boolean(amount?.trim()));
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState<Message>(null);
 

@@ -22,4 +22,18 @@ describe("money", () => {
     expect(parseDollars("abc")).toBeNull();
     expect(parseDollars("")).toBeNull();
   });
+
+  it("reads commas only as thousands separators", () => {
+    expect(parseDollars("1,234,567.89")).toBe(123456789);
+    // A decimal comma is refused, not read as $15 or $150.
+    expect(parseDollars("1,5")).toBeNull();
+    expect(parseDollars("1,50")).toBeNull();
+    expect(parseDollars("12,34,567")).toBeNull();
+  });
+
+  it("refuses amounts too large for the database", () => {
+    expect(parseDollars("9999999.99")).toBe(999_999_999);
+    expect(parseDollars("10000000")).toBeNull();
+    expect(parseDollars("999999999999999999")).toBeNull();
+  });
 });

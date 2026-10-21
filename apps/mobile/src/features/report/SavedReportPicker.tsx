@@ -13,8 +13,9 @@ import { useCompany } from "../../state/session";
 import { Button, FieldGroup, FieldRow, Group, ListRow, Notice, T } from "../../ui/components";
 import { confirmDestructive } from "../../ui/confirm";
 import { haptics } from "../../ui/haptics";
-import { ModalSheet } from "../../ui/ModalSheet";
+import { ModalSheet, useUnsavedChanges } from "../../ui/ModalSheet";
 import { space } from "../../ui/theme";
+import { formChanged } from "../../lib/discard";
 
 // Saved reports on a report draft (owner, 2026-10-20): Use Saved Report fills the draft's
 // sections with a shop's own wording, word for word, asking first before replacing different
@@ -117,6 +118,10 @@ function SaveAsForm({
   const [error, setError] = useState<string | undefined>();
   const text = savedReportFrom(sections);
   const empty = Object.keys(text).length === 0;
+  // Unsaved entries ask before closing (owner, 2026-10-20: "Discard changes?" everywhere).
+  const entries = { name };
+  const [startEntries] = useState(entries);
+  useUnsavedChanges(formChanged(startEntries, entries));
   function save() {
     if (!name.trim()) return setError("Enter a name.");
     if (name.trim().length > 80) return setError("Use 80 characters or fewer.");
