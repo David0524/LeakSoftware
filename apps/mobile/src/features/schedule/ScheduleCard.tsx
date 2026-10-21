@@ -9,7 +9,11 @@ import { LockTag } from "../../ui/LockTag";
 import { NotOnMapTag } from "../../ui/NotOnMap";
 import { TechStripe } from "../../ui/TechDot";
 import { WebIcon } from "../../ui/WebIcon";
-import { color, font, MAX_TEXT_SCALE, tabular, type } from "../../ui/theme";
+import { DriveChip } from "../../ui/DriveChip";
+import { driveChipMinutes, driveSpoken } from "../../lib/scheduleTile";
+import { useDragHover } from "./ScheduleDrag";
+import Svg, { Path } from "react-native-svg";
+import { color, font, MAX_TEXT_SCALE, space, tabular, type } from "../../ui/theme";
 import type { Stop } from "./RouteCard";
 
 // A schedule card (docs/design/2026-10-21-schedule-card.md; owner, 2026-10-21: "Redesign those
@@ -49,19 +53,37 @@ export function cardLabel(s: Stop, n: number | null, tray = false): string {
     .join(", ");
 }
 
-function Badge({ n, status, done }: { n: number; status: JobStatus; done: boolean }) {
+function Badge({
+  n,
+  status,
+  done,
+  big = false,
+}: {
+  n: number;
+  status: JobStatus;
+  done: boolean;
+  /** A stop tile's: 32 pt, Barlow ExtraBold (the order matters more than the time). */
+  big?: boolean;
+}) {
   const going = status === "in_progress" && !done;
   return (
     <View
-      style={[styles.badge, { backgroundColor: done ? color.pass : going ? color.link : color.bg }]}
+      style={[
+        big ? styles.badgeBig : styles.badge,
+        { backgroundColor: done ? color.pass : going ? color.link : color.bg },
+      ]}
       accessibilityElementsHidden
       importantForAccessibility="no"
     >
       {done ? (
-        <WebIcon name="check" size={14} color={color.onStatus} strokeWidth={3} />
+        <WebIcon name="check" size={big ? 18 : 14} color={color.onStatus} strokeWidth={3} />
       ) : (
         <Text
-          style={[styles.badgeText, tabular, { color: going ? color.onPrimary : color.text }]}
+          style={[
+            big ? styles.badgeTextBig : styles.badgeText,
+            tabular,
+            { color: going ? color.onPrimary : color.text },
+          ]}
           maxFontSizeMultiplier={1.6}
         >
           {n}
@@ -185,6 +207,174 @@ export function ScheduleCardFace({
   );
 }
 
+/**
+ * What a stop tile reads as to TalkBack: its number, the customer, the kind of visit (it's off
+ * the tile, so it's read here), the time, the drive to it, then the rest.
+ */
+export function tileLabel(s: Stop, n: number, fromOffMap = false): string {
+  const twoTechs = s.lock?.kind === "two_techs" ? s.lock.label : null;
+  const missing = s.notOnMap || Boolean(s.address && !s.location);
+  const drive = driveChipMinutes(s.legMin, missing, fromOffMap);
+  return [
+    `Stop ${n}`,
+    s.customer,
+    s.visit,
+    s.time ?? "no time",
+    drive != null ? driveSpoken(drive) : null,
+    s.tag !== s.visit ? s.tag : null,
+    s.address ? streetOf(s.address) : null,
+    s.status !== "scheduled" && s.status !== "unscheduled" ? JOB_STATUS_LABELS[s.status] : null,
+    s.lock && !twoTechs ? s.lock.label : null,
+    missing ? NOT_ON_MAP.title : null,
+    s.cleanings?.[0] ? `${s.cleanings[0].name} due` : null,
+    s.done ? "done" : null,
+  ]
+    .filter(Boolean)
+    .join(", ");
+}
+
+/** Where a tile's hairline starts: after the stop number (16 + 32 + 10). */
+export const TILE_INSET = 58;
+
+/**
+ * A stop's tile in a tech's block on Day and Week (docs/design/2026-10-21-schedule-tile.md;
+ * owner, 2026-10-21: "The tiles should be thin and touching like in the weekly view … job
+ * order number is more important than expected arrival time"), as on the website and the
+ * iPhone app: the stop number leads; line 1 is the customer as the link (only the name opens
+ * the job) with the exception icons after it, or the status at the line's end; line 2 is the
+ * drive to it as a chip, the time, "With …" for a two-tech stop, and the street. The kind of
+ * visit is the menu's first title line. The grip, which alone drags it, at the trailing edge.
+ * The tech's stripe is on the block (`tech` only on the carried copy).
+ */
+export function StopTileFace({
+  stop: s,
+  n,
+  tech = null,
+  fromOffMap = false,
+  onOpen,
+  onHold,
+  gripGesture,
+}: {
+  stop: Stop;
+  n: number;
+  /** The drive into it starts off the map (the stop before, or the start): no chip. */
+  fromOffMap?: boolean;
+  /** The carried copy's stripe (tiles in a block have the block's). */
+  tech?: string | null;
+  onOpen?: () => void;
+  onHold?: () => void;
+  gripGesture?: PanGesture;
+}) {
+  const twoTechs = s.lock?.kind === "two_techs";
+  const street = s.address ? streetOf(s.address) : null;
+  const missing = s.notOnMap || Boolean(s.address && !s.location);
+  const drive = driveChipMinutes(s.legMin, missing, fromOffMap);
+  // While a tile is lifted the chips keep their room but don't show: the drives change where
+  // it lands (the iPhone app's rule). Moves save on the phone at once, so nothing waits after.
+  const lifted = useDragHover().id != null;
+  const second = [s.time ?? "No time", s.tag !== s.visit ? s.tag : null, street]
+    .filter(Boolean)
+    .join(" · ");
+  const cleaning = s.cleanings?.[0];
+  const status = s.status !== "scheduled" && s.status !== "unscheduled";
+  return (
+    <View style={[styles.tile, { backgroundColor: color.surface }]}>
+      {tech !== null ? <TechStripe tech={tech} /> : null}
+      <Badge n={n} status={s.status} done={s.done} big />
+      <View style={[styles.text, s.done && { opacity: 0.7 }]}>
+        <View style={styles.line1}>
+          {onOpen ? (
+            <Pressable
+              accessibilityRole="link"
+              accessibilityLabel={`Open ${s.customer}`}
+              onPress={onOpen}
+              onLongPress={onHold}
+              hitSlop={{ top: 12, bottom: 12, left: 6, right: 8 }}
+              style={({ pressed }) => [styles.name, pressed && { opacity: 0.5 }]}
+            >
+              <Name customer={s.customer} />
+            </Pressable>
+          ) : (
+            <View style={styles.name}>
+              <Name customer={s.customer} />
+            </View>
+          )}
+          {s.lock && !twoTechs ? <LockTag lock={s.lock} /> : null}
+          {missing ? <NotOnMapTag size={17} /> : null}
+          {cleaning ? (
+            <View accessible accessibilityRole="image" accessibilityLabel={`${cleaning.name} due`}>
+              <CleaningIcon kind={cleaning.kind} size={18} tone={color.textMuted} />
+            </View>
+          ) : null}
+          {status ? (
+            <View style={styles.status}>
+              <StatusChip status={s.status} />
+            </View>
+          ) : null}
+        </View>
+        <View style={styles.line2}>
+          {drive != null ? (
+            <View
+              style={lifted ? { opacity: 0 } : undefined}
+              importantForAccessibility={lifted ? "no-hide-descendants" : "auto"}
+            >
+              <DriveChip minutes={drive} />
+            </View>
+          ) : null}
+          <Text
+            numberOfLines={1}
+            style={[type.secondary, tabular, { color: color.textMuted, flexShrink: 1 }]}
+            maxFontSizeMultiplier={MAX_TEXT_SCALE}
+          >
+            {second}
+          </Text>
+        </View>
+      </View>
+      {s.movable && gripGesture ? (
+        <GestureDetector gesture={gripGesture}>
+          <View
+            collapsable={false}
+            testID="schedule-grip"
+            style={styles.gripHit}
+            onStartShouldSetResponder={() => true}
+            accessible={false}
+            importantForAccessibility="no-hide-descendants"
+          >
+            <Grip width={28} />
+          </View>
+        </GestureDetector>
+      ) : s.movable ? (
+        <Grip width={28} />
+      ) : null}
+    </View>
+  );
+}
+
+/** The block's last line: a house and "27 min back to the shop". */
+export function DriveHome({ text }: { text: string }) {
+  return (
+    <View
+      style={[styles.home, { borderTopColor: color.separator }]}
+      accessible
+      accessibilityLabel={text}
+    >
+      <Svg width={14} height={14} viewBox="0 0 24 24" fill={color.textMuted}>
+        <Path d={HOUSE_FILL} />
+      </Svg>
+      <Text
+        style={[type.footnote, { color: color.textMuted, flexShrink: 1 }]}
+        maxFontSizeMultiplier={MAX_TEXT_SCALE}
+      >
+        {text}
+      </Text>
+    </View>
+  );
+}
+
+/** The website's HouseFillIcon. */
+const HOUSE_FILL =
+  "M11.3 3.3a1 1 0 0 1 1.4 0l8 7.2a.8.8 0 0 1-.5 1.4H19v7.6a1 1 0 0 1-1 1h-3.5v-5.5h-5v5.5H6a1 1 0 0 1-1-1v-7.6H3.8a.8.8 0 0 1-.5-1.4z";
+
 /** The customer's name, as a link: "Rebecca Soto ›". */
 function Name({ customer }: { customer: string }) {
   return (
@@ -217,6 +407,36 @@ const styles = StyleSheet.create({
     justifyContent: "center",
   },
   badgeText: { fontFamily: font.displayBold, fontSize: 15, lineHeight: 20 },
+  badgeBig: {
+    minWidth: 32,
+    height: 32,
+    borderRadius: 16,
+    paddingHorizontal: 3,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  badgeTextBig: { fontFamily: font.displayExtraBold, fontSize: 17, lineHeight: 22 },
+  tile: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
+    minHeight: 58,
+    paddingLeft: 16,
+    paddingRight: 4,
+    paddingVertical: 6,
+  },
+  line1: { flexDirection: "row", alignItems: "center", gap: 6, minWidth: 0 },
+  line2: { flexDirection: "row", alignItems: "center", gap: 6, minWidth: 0 },
+  status: { marginLeft: "auto" },
+  home: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+    paddingLeft: 16,
+    paddingRight: space["3"],
+    paddingVertical: space["2"],
+    borderTopWidth: StyleSheet.hairlineWidth,
+  },
   time: { fontFamily: font.displayBold },
   text: { flex: 1, minWidth: 0, gap: 1 },
   line: { flexDirection: "row", alignItems: "baseline", gap: 8, minWidth: 0 },

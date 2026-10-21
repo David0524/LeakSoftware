@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useState, type ReactNode } from "react";
+import { DriveChip } from "./drive-chip";
 import { KeyIcon } from "./icons";
 import {
   DoLaterButton,
@@ -18,7 +19,9 @@ import { cx } from "./ui";
  * A stop on Today (owner, 2026-10-19: "keep these cards on Today collapsed except for the job
  * you are on. Then a tap on an old job or future job expands it"): one row (number, time,
  * customer, state) that opens to the address, notes, and buttons, with the name then a link to
- * the job.
+ * the job. The day's stops touch in one block (owner, 2026-10-21; docs/design/
+ * 2026-10-21-schedule-tile.md, Today): line 1 ends with the drive chip and the chevron, and the
+ * Now, status and lock pills start line 2, before the access note.
  */
 export function TodayStop({
   label,
@@ -28,7 +31,9 @@ export function TodayStop({
   time,
   name,
   href,
-  extra,
+  pills,
+  driveMin,
+  hairline = false,
   access,
   startOpen = current,
   moves,
@@ -44,15 +49,19 @@ export function TodayStop({
   /** Open at first; the stop you're on, unless Today's card already shows it. */
   startOpen?: boolean;
   number: number;
-  /** The stop you're on: open, and ringed. */
+  /** The stop you're on: its number blue, its tile tinted. */
   current: boolean;
   done: boolean;
   time: ReactNode;
   /** The customer: once the card is open, their name opens the job (owner, 2026-10-20). */
   name: string;
   href: string;
-  /** State after the name (a badge, a lock). */
-  extra?: ReactNode;
+  /** Now, the status label, the lock: at the start of line 2. Null when there are none. */
+  pills?: ReactNode;
+  /** The drive into the stop (from the start for the first): its chip. Null when unknown. */
+  driveMin?: number | null;
+  /** A hairline above the tile, from after the number (not on the block's first tile). */
+  hairline?: boolean;
   /**
    * The pool's access notes (gate code, which gate, dogs), shown on the card open or closed
    * (owner, 2026-10-20): one line while closed, all of it open.
@@ -68,15 +77,29 @@ export function TodayStop({
   // Closed (or in Reorder), the row shows its Undo under the name (where an open row's button
   // is).
   const undoShown = !!doLater?.notice && (!open || editing);
+  const note = access?.trim() && !done && !editing ? access.trim() : null;
   return (
     <DoLaterRow value={moves ? doLater : null}>
       <section
         aria-label={label}
-        className={cx("card", current && !editing && "ring-2 ring-link")}
+        // Touching tiles can't each have a ring: the stop you're on is tinted (link at 8%),
+        // opaque so a tile lifted in Reorder doesn't show the ones under it.
+        className={cx(
+          "relative",
+          current && !editing
+            ? "bg-[color-mix(in_srgb,var(--lb-link)_8%,var(--lb-surface))]"
+            : "bg-surface",
+        )}
         data-testid="today-stop"
         data-reorder-row={editing || undefined}
       >
         <>
+          {hairline ? (
+            <span
+              aria-hidden="true"
+              className="absolute top-0 right-0 left-[3.25rem] h-[0.5px] bg-separator"
+            />
+          ) : null}
           {/* The rest of the row (number, time, chevron) opens and closes the card; the chevron
               is its button for keyboards and screen readers. The name is a link to the job
               instead of an Open Job button (owner, 2026-10-20: "We're wasting space by keeping
@@ -141,8 +164,10 @@ export function TodayStop({
                   <path d="M9 6l6 6-6 6" />
                 </svg>
               </Link>
-              {extra}
             </span>
+            {driveMin != null ? (
+              <DriveChip minutes={driveMin} className={done ? "opacity-70" : undefined} />
+            ) : null}
             {editing ? (
               <ReorderHandle moves={moves!} />
             ) : (
@@ -176,14 +201,27 @@ export function TodayStop({
             )}
           </div>
           {editing ? <ReorderControls moves={moves!} /> : null}
-          {access?.trim() && !done && !editing ? (
-            <p className="-mt-1 flex items-start gap-1.5 px-3 pb-2 pl-[3.25rem] text-[0.9375rem] font-medium text-text">
-              <KeyIcon className="mt-0.5 size-[1.125rem] shrink-0 text-status-warning" />
-              <span className={cx("min-w-0", open ? "whitespace-pre-line" : "truncate")}>
-                <span className="sr-only">Access: </span>
-                {access.trim()}
-              </span>
-            </p>
+          {/* Line 2: the pills that sat at line 1's end (Now, the status, the lock), then the
+              access notes (gate code, which gate, dogs), open or closed (owner, 2026-10-20):
+              one line closed, all of it open. A tile with neither stays one line. */}
+          {pills || note ? (
+            <div
+              className={cx(
+                "-mt-1 flex items-start gap-x-2 px-3 pb-2 pl-[3.25rem]",
+                done && "opacity-70",
+              )}
+            >
+              {pills ? <span className="flex shrink-0 items-center gap-1.5">{pills}</span> : null}
+              {note ? (
+                <p className="flex min-w-0 flex-1 items-start gap-1.5 text-[0.9375rem] font-medium text-text">
+                  <KeyIcon className="mt-0.5 size-[1.125rem] shrink-0 text-status-warning" />
+                  <span className={cx("min-w-0", open ? "whitespace-pre-line" : "truncate")}>
+                    <span className="sr-only">Access: </span>
+                    {note}
+                  </span>
+                </p>
+              ) : null}
+            </div>
           ) : null}
           {undoShown && moves ? (
             <div className="px-3 pb-2 pl-[3.25rem]">

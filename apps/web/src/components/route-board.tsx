@@ -43,9 +43,9 @@ import {
 import {
   PLAN_MOVE_CHOICES,
   asksPlanMove,
-  backLegLabel,
   directionsHref,
   durationLabel,
+  formatDay,
   planMovedBanner,
   startLegLabel,
   visitMovedBanner,
@@ -78,7 +78,9 @@ import {
   type RowActionsHandle,
 } from "./row-actions";
 import { DayMap } from "./day-map";
-import { CleaningIcon } from "./icons";
+import { CleaningIcon, HouseFillIcon } from "./icons";
+import { DriveChip } from "./drive-chip";
+import { driveChipMinutes, driveFromOffMap, driveHomeLine } from "@/lib/schedule-tile";
 import { LockTag } from "./lock-tag";
 import { PlanWeek } from "./plan-week";
 import { dayMap, weekdayName } from "@/lib/day-map";
@@ -167,6 +169,8 @@ export interface BoardStop {
    * inspection"), or "Second tech, with …" / "With …" for a two-tech job.
    */
   tag: string;
+  /** The kind of visit alone ("Repair"): the first line of the stop's menu title. */
+  visit: string;
   /** The address wasn't found on the map, so drive times leave the stop out. */
   notOnMap: boolean;
   /** The pool's access notes (gate code, which gate, dogs): one line on the card. */
@@ -230,6 +234,11 @@ interface StopActions {
   inTray: (id: string) => boolean;
   /** A drag just ended: the click it ends with doesn't open the job. */
   dragged: () => boolean;
+  /**
+   * A tile is lifted or a new order is saving: the drive chips keep their room but don't show,
+   * since the drives are worked out again once it's saved (the iPhone app's rule).
+   */
+  drivesHidden: boolean;
 }
 const BoardActions = createContext<StopActions | null>(null);
 
@@ -307,6 +316,7 @@ export function RouteBoard({
   planDates = null,
   planWaiting = 0,
   plans = null,
+  phone = false,
 }: {
   mode: "day" | "week";
   columns: BoardColumn[];
@@ -329,6 +339,12 @@ export function RouteBoard({
    * sidebar beside Needs a Time (owner, 2026-10-20: Routes moved into Week).
    */
   plans?: { list: RoutePlanCard[]; workDays: number[] } | null;
+  /**
+   * Week on a phone: day by day, each tech's day a block of stop tiles that drag as on Day
+   * (owner, 2026-10-21: "The drag/drop on the week schedule page should be similar to the
+   * daily one"), with Needs a Time and Customers to Add above. No sidebar.
+   */
+  phone?: boolean;
 }) {
   const initial = useMemo(() => {
     const lists: Lists = { [TRAY]: tray ?? [] };
@@ -338,7 +354,7 @@ export function RouteBoard({
   const [lists, optimistic] = useOptimistic(initial, applyMove);
   // Moves and Optimize run apart, so a move made while a day is optimizing isn't held up, and
   // only the day being optimized shows it.
-  const [, start] = useTransition();
+  const [saving, start] = useTransition();
   const [optimizing, startOptimize] = useTransition();
   const [planning, setPlanning] = useState<string | null>(null);
   const [dragging, setDragging] = useState<BoardStop | null>(null);
@@ -405,7 +421,7 @@ export function RouteBoard({
   // Day and Week on a computer: Needs a Time (and in Week, Customers to Add) in a sidebar on
   // the left, listed down (owner, 2026-10-21: "needs a time is being moved to the left hand side
   // as a vertical window").
-  const side = !!tray || (mode === "week" && !!plans);
+  const side = !phone && (!!tray || (mode === "week" && !!plans));
 
   // The board as it is and as it's being dragged: lists that reorder slide into place.
   const board = useRef<HTMLDivElement>(null);
@@ -661,6 +677,7 @@ export function RouteBoard({
     lock,
     inTray: (id) => (lists[TRAY] ?? []).some((x) => x.id === id),
     dragged: () => Date.now() - dragEnd.current < 400,
+    drivesHidden: !!dragging || saving,
   };
 
   function onDragStart(e: DragStartEvent) {
@@ -787,6 +804,16 @@ export function RouteBoard({
                 onSuggestion={(job, s) => moveTo(job, `${s.techId}|${s.date}`, s.position)}
               />
             ) : null}
+            {phone && plans && mode === "week" ? (
+              <div className="mb-5">
+                <CustomersToAdd
+                  variant="phone"
+                  plans={plans.list}
+                  techs={techs}
+                  workDays={plans.workDays}
+                />
+              </div>
+            ) : null}
 
             {mode === "day" ? (
               // On a computer or tablet the techs sit side by side in one row that slides
@@ -810,6 +837,8 @@ export function RouteBoard({
                   />
                 ))}
               </TopScroller>
+            ) : phone ? (
+              <WeekDays columns={columns} lists={lists} days={weekDays ?? []} today={today} />
             ) : (
               <div className="min-w-0">
                 <WeekMaps
@@ -1046,8 +1075,8 @@ function DayColumn({
     <section
       aria-label={c.title}
       data-testid="route"
-      // The stops are cards of their own, as on Today: on a phone they sit on the page; wider
-      // screens group each tech's day in a faint well so the columns read apart.
+      // The day's stops are one block of tiles: on a phone it sits on the page; wider screens
+      // group each tech's day in a faint well so the columns read apart.
       className={cx(
         "flex flex-col rounded-[22px] sm:bg-text/[0.03] sm:p-3",
         c.phoneHidden && "max-sm:hidden",
@@ -1070,44 +1099,18 @@ function DayColumn({
           today={today}
         />
       </div>
-      <SortableContext
-        id={c.key}
-        items={stops.map((s) => s.id)}
-        strategy={verticalListSortingStrategy}
-      >
-        <ol ref={setNodeRef} data-flip-list={c.key} className="mt-3 min-h-16 flex-1 space-y-1">
-          {stops.length === 0 ? (
-            <li className="card p-4 text-center text-text-muted">
-              {c.open ? "Nothing scheduled. Drop a job here." : "Nothing scheduled."}
-            </li>
-          ) : null}
-          {stops.map((s, i) => (
-            <li key={s.id} data-flip={s.id}>
-              {s.legMin != null && c.techId ? (
-                <Leg minutes={s.legMin} label={i === 0 ? startLegLabel(c.start.label) : "drive"} />
-              ) : null}
-              <StopCard stop={s} position={i + 1} color={c.color} />
-            </li>
-          ))}
-          {c.techId && stops.length && c.backLegMin != null ? (
-            <li>
-              <Leg minutes={c.backLegMin} label={backLegLabel(c.start.label)} />
-            </li>
-          ) : null}
-        </ol>
-      </SortableContext>
+      {/* One block of touching tiles (docs/design/2026-10-21-schedule-tile.md); the room
+          under it takes a drop too. */}
+      <div ref={setNodeRef} className="mt-3 min-h-16 flex-1">
+        {stops.length === 0 ? (
+          <p className="card p-4 text-center text-text-muted">
+            {c.open ? "Nothing scheduled. Drop a job here." : "Nothing scheduled."}
+          </p>
+        ) : (
+          <StopBlock column={c} stops={stops} />
+        )}
+      </div>
     </section>
-  );
-}
-
-function Leg({ minutes, label = "drive" }: { minutes: number; label?: string }) {
-  return (
-    // Today's connector between stops: a dotted line and the drive.
-    // Tighter beside desktop's one-line cards, so about 12 stops fit on a day.
-    <p className="flex items-center gap-2 py-0.5 pl-4 text-[0.9375rem] text-text-muted lg:py-0 lg:pl-3 lg:text-[0.8125rem]">
-      <span aria-hidden="true" className="h-4 border-l-2 border-dotted border-text-muted lg:h-3" />
-      {durationLabel(minutes)} {label}
-    </p>
   );
 }
 
@@ -1159,16 +1162,18 @@ function StopBadge({
 }: {
   position: number;
   status: JobStatus;
-  /** Desktop's one-line cards. */
+  /** A week cell's tighter tile. */
   small?: boolean;
 }) {
   const done = finished(status);
   return (
+    // It leads the tile (owner, 2026-10-21: "job order number is more important than expected
+    // arrival time"): 32 pt, Barlow ExtraBold.
     <span
       aria-hidden="true"
       className={cx(
-        "grid shrink-0 place-items-center rounded-full font-display font-bold",
-        small ? "size-6 text-[0.8125rem]" : "size-8",
+        "grid shrink-0 place-items-center rounded-full font-display font-extrabold tabular-nums",
+        small ? "size-7 text-[0.9375rem]" : "size-8 text-[1.0625rem]",
         done
           ? "bg-status-pass text-on-status"
           : status === "in_progress"
@@ -1179,7 +1184,7 @@ function StopBadge({
       {done ? (
         <svg
           viewBox="0 0 24 24"
-          className={small ? "size-3.5" : "size-4"}
+          className={small ? "size-4" : "size-[1.125rem]"}
           fill="none"
           stroke="currentColor"
           strokeWidth="3"
@@ -1358,37 +1363,189 @@ function ScheduleCard({
   );
 }
 
-/** The card as it's carried (DragOverlay): lifted, with a shadow. */
+/** The tile as it's carried (DragOverlay): lifted, with a shadow. */
 function LiftedCard({ stop: s, week }: { stop: BoardStop; week: boolean }) {
   const street = s.address ? streetOf(s.address) : null;
+  const withNote = s.tag !== s.visit ? s.tag : null;
   return (
     <div
       className={cx(
-        "card scale-[1.03] cursor-grabbing py-2 pr-3 pl-3.5 shadow-xl ring-1 ring-text/10 motion-reduce:scale-100",
+        "card scale-[1.03] cursor-grabbing py-2 pr-3 pl-4 shadow-xl ring-1 ring-text/10 motion-reduce:scale-100",
         week ? "max-w-48" : "max-w-sm",
       )}
     >
-      <p className="flex min-w-0 items-baseline gap-1.5">
-        {s.time ? <span className="shrink-0 font-bold tabular-nums">{s.time}</span> : null}
-        <span className="truncate font-semibold">{s.customer}</span>
-      </p>
+      <p className="truncate font-semibold text-link">{s.customer} ›</p>
+      {/* No drive chip while it's carried: the drives change where it lands. */}
       <p className="truncate text-[0.9375rem] text-text-muted">
-        {[s.tag, street].filter(Boolean).join(" · ")}
+        {[s.time ?? "No time", withNote, street].filter(Boolean).join(" · ")}
       </p>
     </div>
   );
 }
 
-/** A stop on a tech's day: the schedule card, sliding aside as another is dragged past it. */
-function StopCard({
+/**
+ * A schedule stop's tile (docs/design/2026-10-21-schedule-tile.md; owner, 2026-10-21: "The
+ * tiles should be thin and touching like in the weekly view … job order number is more
+ * important than expected arrival time"), the same in Day and Week, on a phone and a
+ * computer: the stop's number leads; line 1 is the customer as the link (only the name opens
+ * the job), the exception icons, and the status when it isn't plain Scheduled; line 2 is the
+ * drive to it as a chip, then the time, "With …" for a two-tech stop, and the street. The kind
+ * of visit is the menu's first title line. "⋯" (not in a week cell) and the grip, which alone
+ * drags it, at the trailing edge. The tech's stripe is on the block, not the tile.
+ */
+function StopTile({
   stop: s,
   position,
-  color,
+  listeners,
+  attributes,
+  menu,
+  compact = false,
+  fromOffMap = false,
 }: {
   stop: BoardStop;
   position: number;
-  /** Whose route it's on: a stripe on the card's leading edge. */
-  color?: string | null;
+  /** The drive into it starts off the map (the stop before, or the start): no chip. */
+  fromOffMap?: boolean;
+  listeners: ReturnType<typeof useSortable>["listeners"];
+  attributes: ReturnType<typeof useSortable>["attributes"];
+  menu: Ref<RowActionsHandle>;
+  /** A week cell on a computer (about 10 rem): tighter, no "⋯", the time without AM or PM. */
+  compact?: boolean;
+}) {
+  const actions = use(BoardActions);
+  const street = s.address ? streetOf(s.address) : null;
+  // "With Dana" (or "Second tech, with Luis") for a two-tech stop; the kind of visit is in the
+  // menu's title.
+  const withNote = s.tag !== s.visit ? s.tag : null;
+  const missing = s.notOnMap || (!!s.address && !s.location);
+  const drive = driveChipMinutes(s.legMin, missing, fromOffMap);
+  const time = s.time ? (compact ? s.time.replace(/\s?(AM|PM)$/, "") : s.time) : "No time";
+  const twoTechs = s.lock?.kind === "two_techs";
+  const cleaning = s.cleanings?.[0];
+  const status = s.status !== "scheduled" && s.status !== "unscheduled";
+  return (
+    <RowActions
+      title={`${s.customer}${s.number ? ` · Job #${s.number}` : ""}`}
+      kicker={s.visit}
+      menu={stopMenu(s, actions)}
+      handle={menu}
+      button="none"
+      // Touch and hold on the tile opens its menu, never a drag (the grip drags).
+      className="rounded-[inherit]"
+    >
+      <div
+        data-testid="stop-line"
+        // A drag that ends on the tile isn't a click on it.
+        onClickCapture={(e) => {
+          if (actions?.dragged()) {
+            e.preventDefault();
+            e.stopPropagation();
+          }
+        }}
+        className={cx(
+          "relative flex items-center bg-surface select-none [-webkit-touch-callout:none]",
+          compact ? "min-h-14 gap-1.5 py-1.5 pl-3" : "min-h-[3.625rem] gap-2.5 py-1.5 pl-4",
+          s.draggable ? "pr-0.5" : "pr-2",
+        )}
+      >
+        <StopBadge position={position} status={s.status} small={compact} />
+        <div className={cx("min-w-0 flex-1", finished(s.status) && "opacity-70")}>
+          <p
+            className={cx(
+              "flex min-w-0 gap-1.5 leading-snug",
+              compact ? "items-start" : "items-center",
+            )}
+          >
+            {/* Only the customer's name opens the job (owner, 2026-10-21: "I find myself
+                accidentally opening jobs all the time"), its hit area 44 pt tall. */}
+            <Link
+              href={`/jobs/${s.id}`}
+              draggable={false}
+              data-testid="stop-open"
+              className={cx(
+                "relative inline-flex min-w-0 items-baseline gap-0.5 font-semibold text-link after:absolute after:-inset-x-1.5 after:-inset-y-3 after:content-[''] hover:underline",
+                compact ? "text-[0.9375rem]" : "text-[1.0625rem] lg:text-[0.9375rem]",
+              )}
+            >
+              {/* In Week's narrow desktop cells the name takes two lines rather than being cut
+                  to a few letters. */}
+              <span className={cx("min-w-0", compact ? "line-clamp-2 break-words" : "truncate")}>
+                {s.customer}
+              </span>
+              <span aria-hidden="true" className="shrink-0">
+                ›
+              </span>
+            </Link>
+            {/* Exceptions only, as small icons after the name; the status at the line's end
+                when the stop isn't plain Scheduled. */}
+            {s.lock && !twoTechs ? <LockTag lock={s.lock} className="relative" /> : null}
+            {missing ? <NotOnMapTag /> : null}
+            {cleaning ? (
+              <span
+                className="relative inline-flex shrink-0 text-text-muted"
+                title={`${cleaning.name} due`}
+              >
+                <CleaningIcon kind={cleaning.kind} className="size-[1.125rem]" />
+                <span className="sr-only">{`${cleaning.name} due`}</span>
+              </span>
+            ) : null}
+            {status ? (
+              <span className="relative ml-auto shrink-0">
+                <StatusBadge status={s.status} />
+              </span>
+            ) : null}
+          </p>
+          <p
+            className={cx(
+              "flex min-w-0 items-center gap-1.5 text-text-muted",
+              compact ? "text-[0.8125rem]" : "text-[0.9375rem] lg:text-[0.8125rem]",
+            )}
+            title={s.address || undefined}
+          >
+            {drive != null ? (
+              <DriveChip
+                minutes={drive}
+                className={actions?.drivesHidden ? "invisible" : undefined}
+              />
+            ) : null}
+            {/* The time is never cut short; "With …" and the street are, after it. */}
+            <span className="shrink-0 tabular-nums">{time}</span>
+            {withNote || street ? (
+              <span className="min-w-0 truncate">
+                {[withNote, street]
+                  .filter(Boolean)
+                  .map((t) => `· ${t}`)
+                  .join(" ")}
+              </span>
+            ) : null}
+          </p>
+        </div>
+        {compact ? null : <RowMenuButton visible className="relative size-9! shrink-0" />}
+        {s.draggable ? (
+          <Grip
+            compact={compact}
+            label={`Drag ${s.customer}`}
+            className={cx("relative", compact && "w-5!")}
+            {...attributes}
+            {...listeners}
+          />
+        ) : null}
+      </div>
+    </RowActions>
+  );
+}
+
+/** A stop on a tech's day: its tile, sliding aside as another is dragged past it. */
+function StopCard({
+  stop: s,
+  position,
+  compact = false,
+  fromOffMap = false,
+}: {
+  stop: BoardStop;
+  position: number;
+  compact?: boolean;
+  fromOffMap?: boolean;
 }) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
     id: s.id,
@@ -1401,25 +1558,162 @@ function StopCard({
       ref={setNodeRef}
       style={{ transform: CSS.Translate.toString(transform), transition }}
       data-testid="stop"
-      aria-label={`${s.time ?? "No time"}, ${s.customer}`}
-      // While carried, its place is an empty gap: never a card under the one being dragged.
-      className={cx("card relative overflow-hidden lg:rounded-xl", isDragging && "invisible")}
+      aria-label={`${s.time ?? "No time"}, ${s.customer}, ${s.visit}`}
+      // While carried, its place is an empty gap: never a tile under the one being dragged.
+      className={cx("relative", isDragging && "invisible")}
     >
-      <ScheduleCard
+      <StopTile
         stop={s}
         position={position}
-        color={color}
         listeners={listeners}
         attributes={attributes}
         menu={menu}
+        compact={compact}
+        fromOffMap={fromOffMap}
       />
     </article>
+  );
+}
+
+/**
+ * One tech's day as one block (docs/design/2026-10-21-schedule-tile.md): their color stripe on
+ * its leading edge, the tiles touching with hairlines that start after the stop number, and the
+ * drive home as its last line ("27 min back to the shop"). Day and Week, phone and computer.
+ */
+function StopBlock({
+  column: c,
+  stops,
+  compact = false,
+}: {
+  column: BoardColumn;
+  stops: BoardStop[];
+  compact?: boolean;
+}) {
+  const home = c.techId ? driveHomeLine(c.backLegMin, c.start.label) : null;
+  const offMap = stops.map((s) => s.notOnMap || (!!s.address && !s.location));
+  return (
+    <div
+      data-testid="stop-block"
+      className={cx("card relative overflow-hidden", compact && "rounded-xl")}
+    >
+      {c.color ? <TechStripe color={c.color} /> : null}
+      <SortableContext
+        id={c.key}
+        items={stops.map((s) => s.id)}
+        strategy={verticalListSortingStrategy}
+      >
+        <ol data-flip-list={c.key} className={cx("stop-block", compact && "stop-block-compact")}>
+          {stops.map((s, i) => (
+            <li key={s.id} data-flip={s.id}>
+              <StopCard
+                stop={s}
+                position={i + 1}
+                compact={compact}
+                fromOffMap={driveFromOffMap(i, offMap, !!c.start.at)}
+              />
+            </li>
+          ))}
+        </ol>
+      </SortableContext>
+      {home ? (
+        <p
+          data-testid="drive-home"
+          title={home}
+          className={cx(
+            "flex items-center gap-1.5 border-t-[0.5px] border-separator text-[0.8125rem] text-text-muted",
+            compact ? "py-1.5 pr-2 pl-3" : "py-2 pr-3 pl-4",
+          )}
+        >
+          <HouseFillIcon className="size-3.5 shrink-0" />
+          <span className={cx("min-w-0", compact && "text-[0.75rem] leading-4")}>{home}</span>
+        </p>
+      ) : null}
+    </div>
   );
 }
 
 // ---------------------------------------------------------------------------
 // Week: techs down, days across
 // ---------------------------------------------------------------------------
+
+/**
+ * Week on a phone (docs/design/2026-10-21-schedule-tile.md): day by day, each tech's day as
+ * their row (dot, name, "4 stops · 1 hr 44 min") and a block of the same tiles as Day. A stop
+ * drags from its grip as on Day: the others slide aside, another day's block takes it at the
+ * drop position, Needs a Time takes it off.
+ */
+function WeekDays({
+  columns,
+  lists,
+  days,
+  today,
+}: {
+  columns: BoardColumn[];
+  lists: Lists;
+  days: [string, string][];
+  today: string;
+}) {
+  return (
+    <div className="space-y-5">
+      {days.map(([d]) => {
+        const cols = columns.filter((c) => c.date === d && !c.phoneHidden);
+        const long = formatDay(d, "long");
+        return (
+          <section key={d} aria-label={long} data-testid="week-day">
+            <h2 className={cx("mb-1 font-display text-lg font-bold", d === today && "text-link")}>
+              <Link
+                href={`/schedule?view=day&date=${d}`}
+                aria-current={d === today ? "date" : undefined}
+                className="inline-flex min-h-11 items-center underline-offset-4 hover:underline"
+              >
+                {long}
+                {d === today ? " · Today" : ""}
+              </Link>
+            </h2>
+            <div className="space-y-2">
+              {cols.map((c) => (
+                <WeekTechDay key={c.key} column={c} stops={lists[c.key] ?? []} />
+              ))}
+            </div>
+          </section>
+        );
+      })}
+    </div>
+  );
+}
+
+/** One tech's day in Week on a phone: their row, then the block; the whole of it takes a drop. */
+function WeekTechDay({ column: c, stops }: { column: BoardColumn; stops: BoardStop[] }) {
+  const { setNodeRef, isOver } = useDroppable({ id: c.key, disabled: !c.open });
+  const summary = stops.length
+    ? [
+        `${stops.length} ${stops.length === 1 ? "stop" : "stops"}`,
+        c.driveMin ? `${durationLabel(c.driveMin)} driving` : null,
+        // Someone who starts from home: the day's driving is counted from there.
+        c.driveMin && c.start.label === "home" ? startLegLabel("home") : null,
+      ]
+        .filter(Boolean)
+        .join(" · ")
+    : "Nothing scheduled";
+  return (
+    <div
+      ref={setNodeRef}
+      role="group"
+      aria-label={`${c.title}, ${c.date}`}
+      data-testid="week-route"
+      className={cx("-mx-2 rounded-[22px] px-2 pb-1", isOver && "bg-link/5 ring-2 ring-link")}
+    >
+      <p className="flex min-h-9 items-center gap-2">
+        <TechDot color={c.color} />
+        <span className="min-w-0 truncate font-semibold">{c.title}</span>
+        <span className="ml-auto shrink-0 text-[0.9375rem] text-text-muted tabular-nums">
+          {summary}
+        </span>
+      </p>
+      {stops.length ? <StopBlock column={c} stops={stops} /> : null}
+    </div>
+  );
+}
 
 /**
  * The week as a row of day maps for one tech (PayThePoolMan's route screen, owner 2026-10-20):
@@ -1759,15 +2053,8 @@ function WeekCell({
         isOver && "outline-2 -outline-offset-2 outline-link",
       )}
     >
-      <SortableContext id={c.key} items={stops.map((s) => s.id)} strategy={rectSortingStrategy}>
-        <ul data-flip-list={c.key} className="min-h-12 space-y-1.5 lg:space-y-1">
-          {stops.map((s, i) => (
-            <li key={s.id} data-flip={s.id}>
-              <WeekChip stop={s} position={i + 1} color={c.color} />
-            </li>
-          ))}
-        </ul>
-      </SortableContext>
+      {/* The same tiles in the same block as Day (docs/design/2026-10-21-schedule-tile.md). */}
+      {stops.length ? <StopBlock column={c} stops={stops} compact /> : <div className="min-h-12" />}
       {c.techId && stops.length ? (
         <p className="mt-1 px-1 text-[0.8125rem] text-text-muted">
           {durationLabel(c.driveMin)} driving
@@ -1775,43 +2062,6 @@ function WeekCell({
         </p>
       ) : null}
     </td>
-  );
-}
-
-/** A stop in a week cell: the schedule card, tighter. */
-function WeekChip({
-  stop: s,
-  position,
-  color,
-}: {
-  stop: BoardStop;
-  position: number;
-  color?: string | null;
-}) {
-  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
-    id: s.id,
-    disabled: !s.draggable,
-    transition: reducedMotion() ? null : SORT_SLIDE,
-  });
-  const menu = useRef<RowActionsHandle>(null);
-  return (
-    <div
-      ref={setNodeRef}
-      style={{ transform: CSS.Translate.toString(transform), transition }}
-      data-testid="stop"
-      aria-label={`${s.time ?? "No time"}, ${s.customer}`}
-      className={cx("card relative overflow-hidden rounded-xl", isDragging && "invisible")}
-    >
-      <ScheduleCard
-        stop={s}
-        position={position}
-        color={color}
-        listeners={listeners}
-        attributes={attributes}
-        menu={menu}
-        week
-      />
-    </div>
   );
 }
 

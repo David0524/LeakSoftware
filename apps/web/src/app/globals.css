@@ -233,6 +233,26 @@ body:has(.nav-accessory) .nav-main.glass-bar {
 }
 
 @layer components {
+  /* A tech's day on Schedule (docs/design/2026-10-21-schedule-tile.md): touching tiles in one
+     block, a hairline between them that starts after the stop number (16 pt inset, 32 pt
+     badge, 10 pt gap; a week cell's tighter tile 12 + 28 + 6). On the tile, so it moves with
+     it as the tiles slide during a drag. */
+  .stop-block > li + li > article::before {
+    content: "";
+    position: absolute;
+    top: 0;
+    left: 3.625rem;
+    right: 0;
+    border-top: 0.5px solid var(--lb-separator);
+    pointer-events: none;
+    z-index: 1;
+  }
+  .stop-block-compact > li + li > article::before {
+    left: 2.875rem;
+  }
+}
+
+@layer components {
   /* iOS inset grouped list: one rounded white block; hairlines start where the text does. */
   .grouped {
     overflow: hidden;

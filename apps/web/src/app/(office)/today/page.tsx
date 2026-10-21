@@ -1,7 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import {
-  backLegLabel,
   durationLabel,
   startLegLabel,
   formatAddress,
@@ -40,6 +39,8 @@ import { CleaningIcon, PhoneIcon } from "@/components/icons";
 import { OnMyWay } from "@/components/on-my-way";
 import { TodayComplete } from "@/components/today-complete";
 import { TodayStop } from "@/components/today-stop";
+import { HouseFillIcon } from "@/components/icons";
+import { driveChipMinutes, driveFromOffMap, driveHomeLine } from "@/lib/schedule-tile";
 import {
   DoLaterButton,
   HideWhileReordering,
@@ -225,9 +226,13 @@ export default async function TodayPage({ searchParams }: PageProps<"/today">) {
         ? { jobId: j.id, customer: j.customer?.name ?? "Customer", lock: s.lock, ...m }
         : undefined;
     };
+    const homeLine = driveHomeLine(route ? backLeg : null, startLabel);
     const anyMoves = canReorder && [...moveable.values()].some((m) => m.up || m.down);
 
-    const stopRow = (j: (typeof jobs)[number], withLeg: boolean) => {
+    // The day's stops touch in one block (owner, 2026-10-21; docs/design/
+    // 2026-10-21-schedule-tile.md, Today): a hairline above every tile but the block's first,
+    // the drive into each stop as a chip on its tile, and the drive home as the last line.
+    const stopRow = (j: (typeof jobs)[number], hairline: boolean) => {
       const i = jobs.indexOf(j);
       const address = j.property ? formatAddress(j.property) : "";
       const lock = lockTag(j);
@@ -237,12 +242,6 @@ export default async function TodayPage({ searchParams }: PageProps<"/today">) {
       const moves = movesFor(j);
       return (
         <li key={j.id} data-move-row={done ? undefined : j.id}>
-          {withLeg ? (
-            <p className="flex items-center gap-2 py-0.5 pl-4 text-[0.9375rem] text-text-muted">
-              <span aria-hidden="true" className="h-4 border-l-2 border-dotted border-text-muted" />
-              {durationLabel(leg)} {i === 0 ? startLegLabel(startLabel) : "drive"}
-            </p>
-          ) : null}
           <TodayStop
             label={`Stop ${i + 1}: ${j.customer?.name ?? "Customer"}`}
             number={i + 1}
@@ -255,18 +254,32 @@ export default async function TodayPage({ searchParams }: PageProps<"/today">) {
             href={`/jobs/${j.id}`}
             access={j.property?.access_notes ?? null}
             moves={moves}
-            extra={
-              <>
-                {isNext ? (
-                  <span className="rounded-full bg-water px-2.5 py-0.5 text-[0.8125rem] font-semibold text-white">
-                    Now
-                  </span>
-                ) : null}
-                {/* Most stops are scheduled; the badge shows other states. */}
-                {/* The Now row leaves its state to the card, so the name has room. */}
-                {j.status !== "scheduled" && !isNext ? <StatusBadge status={j.status} /> : null}
-                {lock ? <LockTag lock={lock} /> : null}
-              </>
+            hairline={hairline}
+            // The drive in: from the start (shop or home) for the first stop. None when it
+            // isn't known (this stop or the place before it not on the map).
+            driveMin={driveChipMinutes(
+              route!.summary.legs[i] ?? null,
+              propertyLocation(j.property) === null,
+              driveFromOffMap(
+                i,
+                jobs.map((x) => propertyLocation(x.property) === null),
+                !!route!.start.at,
+              ),
+            )}
+            pills={
+              isNext || (j.status !== "scheduled" && !isNext) || lock ? (
+                <>
+                  {isNext ? (
+                    <span className="rounded-full bg-water px-2.5 py-0.5 text-[0.8125rem] font-semibold text-white">
+                      Now
+                    </span>
+                  ) : null}
+                  {/* Most stops are scheduled; the badge shows other states. */}
+                  {/* The Now row leaves its state to the card, so the name has room. */}
+                  {j.status !== "scheduled" && !isNext ? <StatusBadge status={j.status} /> : null}
+                  {lock ? <LockTag lock={lock} /> : null}
+                </>
+              ) : null
             }
           >
             <p className="flex w-fit max-w-full items-center gap-1.5 text-[0.9375rem]">
@@ -431,36 +444,44 @@ export default async function TodayPage({ searchParams }: PageProps<"/today">) {
                   />
                 </HideWhileReordering>
               ) : null}
-              <ol className="space-y-1">
+              <ol className="card overflow-hidden" data-testid="today-stops">
                 {doneJobs.length ? (
                   <li>
                     <details className="group" data-testid="today-done">
-                      <summary className="card flex min-h-12 cursor-pointer list-none items-center gap-2 px-4 py-2 font-semibold text-text-muted">
-                        <span aria-hidden="true" className="text-status-pass">
+                      <summary className="flex min-h-12 cursor-pointer list-none items-center gap-2 px-3 py-2 font-semibold text-text-muted">
+                        <span aria-hidden="true" className="w-8 text-center text-status-pass">
                           ✓
                         </span>
                         {doneJobs.length} done
                         <span
                           aria-hidden="true"
-                          className="ml-auto transition-transform group-open:rotate-90"
+                          className="mr-2 ml-auto transition-transform group-open:rotate-90"
                         >
                           ›
                         </span>
                       </summary>
-                      <ol className="mt-1 space-y-1">{doneJobs.map((j) => stopRow(j, false))}</ol>
+                      <ol>{doneJobs.map((j) => stopRow(j, true))}</ol>
                     </details>
                   </li>
                 ) : null}
-                {jobs.filter((j) => !stopDone(j, ctx.today)).map((j) => stopRow(j, true))}
-                <li>
-                  <p className="flex items-center gap-2 py-0.5 pl-4 text-[0.9375rem] text-text-muted">
+                {jobs
+                  .filter((j) => !stopDone(j, ctx.today))
+                  .map((j, k) => stopRow(j, k > 0 || doneJobs.length > 0))}
+                {homeLine ? (
+                  <li className="relative">
                     <span
                       aria-hidden="true"
-                      className="h-4 border-l-2 border-dotted border-text-muted"
+                      className="absolute top-0 right-0 left-[3.25rem] h-[0.5px] bg-separator"
                     />
-                    {durationLabel(backLeg)} {backLegLabel(startLabel)}
-                  </p>
-                </li>
+                    <p
+                      className="flex min-h-11 items-center gap-1.5 py-2 pr-3 pl-[3.25rem] text-[0.8125rem] text-text-muted"
+                      data-testid="today-drive-home"
+                    >
+                      <HouseFillIcon className="size-3.5 shrink-0" />
+                      {homeLine}
+                    </p>
+                  </li>
+                ) : null}
               </ol>
             </TodayReorderProvider>
           )}

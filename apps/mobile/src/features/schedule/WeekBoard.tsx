@@ -10,8 +10,9 @@ import type { RowGestures } from "../../ui/RowMenu";
 import { useMenu } from "../../ui/Select";
 import { TechDot } from "../../ui/TechDot";
 import { color, MAX_TEXT_SCALE, minTap, shape, space, tabular, type } from "../../ui/theme";
-import type { Route, Stop } from "./RouteCard";
-import { cardLabel, ScheduleCardFace } from "./ScheduleCard";
+import { offMap, StopBlock, TileHairline, type Route, type Stop } from "./RouteCard";
+import { driveFromOffMap } from "../../lib/scheduleTile";
+import { cardLabel, ScheduleCardFace, StopTileFace, tileLabel } from "./ScheduleCard";
 import { dropTint, useDragHover, useDragSource, useDropZones, useSlide } from "./ScheduleDrag";
 
 // Schedule › Week with the routes in it (owner, 2026-10-20: "On routes, you can't optimize or
@@ -180,15 +181,21 @@ function WeekRoute({
         >
           {r.title}
         </Text>
-        {summary ? (
-          <T variant="secondary" muted style={[tabular, { flexShrink: 1 }]} numberOfLines={1}>
-            {summary}
-          </T>
-        ) : null}
+        {/* The tech's row above the block, as on Day: "4 stops · 1 hr 44 min driving";
+            an empty day is this one line. */}
+        <T
+          variant="secondary"
+          muted
+          style={[tabular, { flexShrink: 1, marginLeft: "auto" }]}
+          numberOfLines={1}
+        >
+          {summary ?? "Nothing scheduled"}
+        </T>
       </View>
+      {/* The same tiles in the same block as Day (docs/design/2026-10-21-schedule-tile.md). */}
       {r.stops.length ? (
-        <View style={[styles.rows, { backgroundColor: color.surface }]}>
-          {r.stops.map((s, i) => (
+        <StopBlock route={r}>
+          {r.stops.map((s, i, all) => (
             <WeekStop
               key={s.id}
               stop={s}
@@ -212,16 +219,12 @@ function WeekRoute({
                   : null
               }
               gestures={gesturesFor(s)}
+              tile
+              fromOffMap={driveFromOffMap(i, all.map(offMap), r.startOnMap ?? true)}
             />
           ))}
-        </View>
-      ) : (
-        <View style={[styles.empty, { backgroundColor: color.well }]}>
-          <T variant="secondary" muted>
-            Nothing scheduled
-          </T>
-        </View>
-      )}
+        </StopBlock>
+      ) : null}
     </View>
   );
 }
@@ -234,10 +237,16 @@ function WeekStop({
   item,
   route,
   gestures,
+  tile = false,
+  fromOffMap = false,
 }: {
   stop: Stop;
   n: number;
   first: boolean;
+  /** On a tech's block: the stop tile (the stripe is the block's). "No tech yet": the card. */
+  tile?: boolean;
+  /** The drive into it starts off the map: no chip. */
+  fromOffMap?: boolean;
   /** The row's tech color (null: nobody yet, no stripe). */
   tech: string | null;
   item: DragItem | null;
@@ -254,7 +263,11 @@ function WeekStop({
     item,
     () => (
       <View style={[styles.ghost, { backgroundColor: color.surface }]}>
-        <ScheduleCardFace stop={s} n={n} tech={tech} />
+        {tile ? (
+          <StopTileFace stop={s} n={n} tech={tech} />
+        ) : (
+          <ScheduleCardFace stop={s} n={n} tech={tech} />
+        )}
       </View>
     ),
     undefined,
@@ -270,18 +283,20 @@ function WeekStop({
       }}
       collapsable={false}
       style={[
-        !first && { borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: color.separator },
+        !first &&
+          !tile && { borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: color.separator },
         // Carried: its place is an empty gap.
         hover.id === s.id && { opacity: 0 },
         { backgroundColor: color.surface },
         slide,
       ]}
     >
+      {tile && !first ? <TileHairline /> : null}
       {/* A tap on the body does nothing (only the name opens the job); TalkBack's double
             tap opens it. */}
       <Pressable
         accessibilityRole="link"
-        accessibilityLabel={cardLabel(s, n)}
+        accessibilityLabel={tile ? tileLabel(s, n, fromOffMap) : cardLabel(s, n)}
         accessibilityHint="Opens the job"
         accessibilityActions={[
           { name: "activate", label: "Open Job" },
@@ -293,14 +308,25 @@ function WeekStop({
         onLongPress={gestures.onLongPress}
         style={{ backgroundColor: color.surface }}
       >
-        <ScheduleCardFace
-          stop={s}
-          n={n}
-          tech={tech}
-          onOpen={open}
-          onHold={gestures.onLongPress}
-          gripGesture={item ? gesture : undefined}
-        />
+        {tile ? (
+          <StopTileFace
+            stop={s}
+            n={n}
+            fromOffMap={fromOffMap}
+            onOpen={open}
+            onHold={gestures.onLongPress}
+            gripGesture={item ? gesture : undefined}
+          />
+        ) : (
+          <ScheduleCardFace
+            stop={s}
+            n={n}
+            tech={tech}
+            onOpen={open}
+            onHold={gestures.onLongPress}
+            gripGesture={item ? gesture : undefined}
+          />
+        )}
       </Pressable>
     </Reanimated.View>
   );
@@ -331,11 +357,5 @@ const styles = StyleSheet.create({
     paddingHorizontal: space["1"],
   },
   rows: { borderRadius: shape.grouped, overflow: "hidden" },
-  empty: {
-    borderRadius: shape.grouped,
-    paddingHorizontal: space["4"],
-    minHeight: minTap,
-    justifyContent: "center",
-  },
   ghost: { borderRadius: shape.grouped, overflow: "hidden" },
 });

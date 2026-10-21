@@ -18,7 +18,6 @@ import {
   routingSettings,
   workDay,
   startLegLabel,
-  backLegLabel,
   scheduleOrder,
 } from "@leakbook/core";
 import { inRouteOrderViews, stopLockTag, useJobViews, type JobView } from "../../../../data/jobs";
@@ -75,6 +74,9 @@ import { AddressLine } from "../../../../ui/NotOnMap";
 import { useRoutingOn } from "../../../../lib/routing";
 import { ScreenTip } from "../../../../ui/Tip";
 import { WebIcon } from "../../../../ui/WebIcon";
+import { DriveChip } from "../../../../ui/DriveChip";
+import { driveChipMinutes, driveFromOffMap, driveHomeLine } from "../../../../lib/scheduleTile";
+import Svg, { Path } from "react-native-svg";
 import { unlessSwiping } from "../../../../ui/swipeQuiet";
 import {
   cardShadow,
@@ -86,6 +88,7 @@ import {
   shape,
   space,
   tabular,
+  tint,
   type,
 } from "../../../../ui/theme";
 
@@ -275,6 +278,7 @@ export default function Today() {
   const [doneOpen, setDoneOpen] = useState(false);
   const heroAt = heroJob ? stops.indexOf(heroJob) : -1;
   const backLeg = summary.driveMin - summary.legs.reduce((a, b) => a + b, 0);
+  const homeLine = driveHomeLine(backLeg, start.label);
   // Do Later and Reorder (owner, 2026-10-20; docs/plans/today-reorder.md): the Schedule's move,
   // from this phone's jobs, saved through the sync layer.
   const reorder = useTodayReorder({ company, stops, techId: shownTech, me, manager, drive });
@@ -297,13 +301,21 @@ export default function Today() {
   // The rows in Reorder's edit mode, top first (where a dragged one lands among them).
   const editRows = reorder.editing ? shownRows.filter((id) => reorder.row(id)) : [];
 
-  function stopRow(j: JobView, withLeg: boolean) {
+  // The day's stops touch in one block (owner, 2026-10-21; docs/design/
+  // 2026-10-21-schedule-tile.md, Today): a hairline above every tile but the block's first, the
+  // drive into each stop as a chip on its tile (the first from the start), the drive home last.
+  function stopRow(j: JobView, hairline: boolean) {
     const i = stops.indexOf(j);
-    const leg = withLeg ? (
-      <Leg
-        text={`${durationLabel(summary.legs[i] ?? 0)} ${i === 0 ? startLegLabel(start.label) : "drive"}`}
-      />
-    ) : null;
+    // No chip when this stop or the place before it isn't on the map (the drive isn't known).
+    const drive = driveChipMinutes(
+      summary.legs[i] ?? null,
+      propertyLocation(j.property) === null,
+      driveFromOffMap(
+        i,
+        stops.map((s) => propertyLocation(s.property) === null),
+        start.at != null,
+      ),
+    );
     const info = reorder.row(j.id);
     // Reorder's edit mode: a handle, Move Up and Move Down, or a lock and the reason.
     if (reorder.editing && info) {
@@ -315,7 +327,7 @@ export default function Today() {
           timeZone={tz}
           info={info}
           now={j.id === nowId}
-          leg={leg}
+          drive={drive}
           onLayout={places.onLayout(j.id)}
           onAct={(a) => reorder.act(j.id, a)}
           onDragging={setDragging}
@@ -332,11 +344,12 @@ export default function Today() {
       );
     }
     return (
-      <View key={j.id} style={styles.stopWrap}>
-        {leg}
+      <View key={j.id}>
+        {hairline ? <Hairline /> : null}
         <Stop
           job={j}
           n={i + 1}
+          drive={drive}
           next={j.id === nowId}
           timeZone={tz}
           day={today}
@@ -496,44 +509,60 @@ export default function Today() {
                 }}
               />
             ) : null}
-            {doneStops.length ? (
-              <View style={styles.stopWrap}>
-                <Pressable
-                  testID="today-done"
-                  accessibilityRole="button"
-                  accessibilityLabel={`${doneStops.length} done`}
-                  accessibilityState={{ expanded: doneOpen }}
-                  onPress={() => setDoneOpen(!doneOpen)}
-                  style={({ pressed }) => [
-                    styles.doneRow,
-                    { backgroundColor: color.surface },
-                    cardShadow(),
-                    pressed && { opacity: 0.7 },
-                  ]}
-                >
-                  <WebIcon name="check" size={18} color={color.pass} strokeWidth={3} />
-                  <Text
-                    style={[type.bodyEmphasis, { flex: 1, color: color.textMuted }]}
-                    maxFontSizeMultiplier={MAX_TEXT_SCALE}
+            {reorder.editing ? (
+              // Reorder's rows are cards of their own, so a dragged one lifts clear of the rest.
+              <>
+                {doneOpen || (asked && doneStops.some((j) => j.id === asked.jobId))
+                  ? doneStops.map((j) => stopRow(j, false))
+                  : null}
+                {rest.map((j) => stopRow(j, false))}
+                {homeLine ? <DriveHome text={homeLine} /> : null}
+              </>
+            ) : (
+              <View
+                testID="today-stops"
+                style={[styles.block, { backgroundColor: color.surface }, cardShadow()]}
+              >
+                {doneStops.length ? (
+                  <Pressable
+                    testID="today-done"
+                    accessibilityRole="button"
+                    accessibilityLabel={`${doneStops.length} done`}
+                    accessibilityState={{ expanded: doneOpen }}
+                    onPress={() => setDoneOpen(!doneOpen)}
+                    style={({ pressed }) => [styles.doneRow, pressed && { opacity: 0.7 }]}
                   >
-                    {doneStops.length} done
-                  </Text>
-                  <View style={{ transform: [{ rotate: doneOpen ? "90deg" : "0deg" }] }}>
-                    <WebIcon
-                      name="chevronRight"
-                      size={20}
-                      color={color.textMuted}
-                      strokeWidth={2.2}
-                    />
-                  </View>
-                </Pressable>
+                    <View style={styles.doneCheck}>
+                      <WebIcon name="check" size={18} color={color.pass} strokeWidth={3} />
+                    </View>
+                    <Text
+                      style={[type.bodyEmphasis, { flex: 1, color: color.textMuted }]}
+                      maxFontSizeMultiplier={MAX_TEXT_SCALE}
+                    >
+                      {doneStops.length} done
+                    </Text>
+                    <View style={{ transform: [{ rotate: doneOpen ? "90deg" : "0deg" }] }}>
+                      <WebIcon
+                        name="chevronRight"
+                        size={20}
+                        color={color.textMuted}
+                        strokeWidth={2.2}
+                      />
+                    </View>
+                  </Pressable>
+                ) : null}
+                {doneOpen || (asked && doneStops.some((j) => j.id === asked.jobId))
+                  ? doneStops.map((j) => stopRow(j, true))
+                  : null}
+                {rest.map((j, k) => stopRow(j, k > 0 || doneStops.length > 0))}
+                {homeLine ? (
+                  <>
+                    <Hairline />
+                    <DriveHome text={homeLine} />
+                  </>
+                ) : null}
               </View>
-            ) : null}
-            {doneOpen || (asked && doneStops.some((j) => j.id === asked.jobId))
-              ? doneStops.map((j) => stopRow(j, false))
-              : null}
-            {rest.map((j) => stopRow(j, true))}
-            <Leg text={`${durationLabel(backLeg)} ${backLegLabel(start.label)}`} />
+            )}
           </View>
         )}
       </>
@@ -543,12 +572,27 @@ export default function Today() {
   );
 }
 
-/** The drive into a stop: a dotted line and the minutes (spec 5.1). */
-function Leg({ text }: { text: string }) {
+/** The hairline between tiles in the day's block, from after the stop number. */
+function Hairline() {
+  return <View style={[styles.hairline, { backgroundColor: color.separator }]} />;
+}
+
+const HOUSE_FILL =
+  "M11.3 3.3a1 1 0 0 1 1.4 0l8 7.2a.8.8 0 0 1-.5 1.4H19v7.6a1 1 0 0 1-1 1h-3.5v-5.5h-5v5.5H6a1 1 0 0 1-1-1v-7.6H3.8a.8.8 0 0 1-.5-1.4z";
+
+/** The block's last line: a house and "35 min back to the shop" (or "back home"). */
+function DriveHome({ text }: { text: string }) {
   return (
-    <View style={styles.leg}>
-      <View style={[styles.dots, { borderColor: color.textMuted }]} />
-      <Text style={[type.secondary, { color: color.textMuted, flexShrink: 1 }]}>{text}</Text>
+    <View style={styles.home} accessible accessibilityLabel={text}>
+      <Svg width={14} height={14} viewBox="0 0 24 24" fill={color.textMuted}>
+        <Path d={HOUSE_FILL} />
+      </Svg>
+      <Text
+        style={[type.footnote, { color: color.textMuted, flexShrink: 1 }]}
+        maxFontSizeMultiplier={MAX_TEXT_SCALE}
+      >
+        {text}
+      </Text>
     </View>
   );
 }
@@ -564,6 +608,7 @@ function Leg({ text }: { text: string }) {
 const Stop = memo(function Stop({
   job,
   n,
+  drive,
   next,
   timeZone,
   day,
@@ -578,8 +623,10 @@ const Stop = memo(function Stop({
 }: {
   job: JobView;
   n: number;
-  /** The stop on Today's card: ringed and marked Now, and closed, since the card shows it. */
+  /** The stop on Today's card: tinted and marked Now, and closed, since the card shows it. */
   next: boolean;
+  /** The drive into it, as a chip at line 1's end; null when it isn't known. */
+  drive: number | null;
   timeZone: string;
   day: string;
   /** Your own day: Message can fill in On My Way. */
@@ -613,6 +660,9 @@ const Stop = memo(function Stop({
     }).start();
   }, [expanded, turn]);
   const lock = stopLockTag(job);
+  const status = job.status !== "scheduled" && !next;
+  const pills = next || status || !!lock;
+  const note = (!done && job.property?.access_notes?.trim()) || null;
   const name = job.customer?.name ?? "Customer";
   const phone = job.customer?.phone;
   const call = phone ? () => void Linking.openURL(`tel:${phone}`) : null;
@@ -633,12 +683,9 @@ const Stop = memo(function Stop({
       onAccessibilityAction={(e) =>
         rowActions.find((a) => a.name === e.nativeEvent.actionName)?.run()
       }
-      style={[
-        styles.stop,
-        { backgroundColor: color.surface },
-        cardShadow(),
-        next && { borderWidth: 2, borderColor: color.link },
-      ]}
+      // A tile in the day's block. The stop you're on is tinted (link at about 8%), not
+      // ringed: touching tiles can't each have a ring.
+      style={next ? { backgroundColor: tint(color.link, 0.08) } : undefined}
     >
       <Pressable
         accessibilityRole="button"
@@ -686,12 +733,13 @@ const Stop = memo(function Stop({
             </Text>
             <WebIcon name="chevronRight" size={16} color={color.link} strokeWidth={2.4} />
           </Pressable>
-          {next ? <Pill label="Now" color={color.water} /> : null}
-          {/* Most stops are scheduled; the chip shows other states. The Now row leaves it to the
-              card, which already says it, so the name isn't cut short (2026-10-20). */}
-          {job.status !== "scheduled" && !next ? <StatusChip status={job.status} /> : null}
-          {lock ? <LockTag lock={lock} /> : null}
         </View>
+        {/* Only the drive chip and the chevron at line 1's end; the pills are on line 2. */}
+        {drive != null ? (
+          <View style={done && { opacity: 0.7 }}>
+            <DriveChip minutes={drive} />
+          </View>
+        ) : null}
         <Animated.View
           style={{
             transform: [
@@ -704,23 +752,34 @@ const Stop = memo(function Stop({
           <WebIcon name="chevronDown" size={20} color={color.textMuted} strokeWidth={2.2} />
         </Animated.View>
       </Pressable>
-      {/* Gate code, which gate, dogs: on the card open or closed (owner, 2026-10-20). */}
-      {job.property?.access_notes?.trim() && !done ? (
-        <View
-          accessible
-          accessibilityLabel={`Access: ${job.property.access_notes.trim()}`}
-          style={styles.access}
-        >
-          <View style={styles.accessIcon}>
-            <WebIcon name="key" size={18} color={color.warning} />
-          </View>
-          <Text
-            numberOfLines={expanded ? undefined : 1}
-            style={[type.secondary, face.medium, { flex: 1, color: color.text }]}
-            maxFontSizeMultiplier={MAX_TEXT_SCALE}
-          >
-            {job.property.access_notes.trim()}
-          </Text>
+      {/* Line 2: the pills that sat at line 1's end (Now, the status, the lock), then the gate
+          code, which gate, dogs: open or closed (owner, 2026-10-20), one line closed. A tile
+          with neither stays one line. */}
+      {pills || note ? (
+        <View style={[styles.line2, done && { opacity: 0.7 }]}>
+          {pills ? (
+            <View style={styles.pills}>
+              {next ? <Pill label="Now" color={color.water} /> : null}
+              {/* Most stops are scheduled; the chip shows other states. The Now row leaves it to
+                  the card, which already says it (2026-10-20). */}
+              {status ? <StatusChip status={job.status} /> : null}
+              {lock ? <LockTag lock={lock} /> : null}
+            </View>
+          ) : null}
+          {note ? (
+            <View accessible accessibilityLabel={`Access: ${note}`} style={styles.access}>
+              <View style={styles.accessIcon}>
+                <WebIcon name="key" size={18} color={color.warning} />
+              </View>
+              <Text
+                numberOfLines={expanded ? undefined : 1}
+                style={[type.secondary, face.medium, { flex: 1, color: color.text }]}
+                maxFontSizeMultiplier={MAX_TEXT_SCALE}
+              >
+                {note}
+              </Text>
+            </View>
+          ) : null}
         </View>
       ) : null}
       {/* After Do Later, where its button was: "Moved." and Undo, open or closed. */}
@@ -811,26 +870,30 @@ const styles = StyleSheet.create({
   // Reorder and Done: 44 pt tall, though they read as the end of the line.
   dayLineButton: { minHeight: minTap, justifyContent: "center" },
   undo: { paddingHorizontal: space["3"], paddingBottom: space["2"] },
-  stopWrap: { gap: space["1"], marginBottom: space["1"] },
-  leg: {
+  // The day's stops in one block (`.card`), the tiles touching.
+  block: { borderRadius: shape.card, overflow: "hidden" },
+  hairline: { height: StyleSheet.hairlineWidth, marginLeft: space["3"] + 32 + space["2"] },
+  home: {
+    minHeight: minTap,
     flexDirection: "row",
     alignItems: "center",
-    gap: space["2"],
-    paddingLeft: space["4"],
-    paddingVertical: 2,
+    gap: 6,
+    paddingLeft: space["3"] + 32 + space["2"],
+    paddingRight: space["3"],
+    paddingVertical: space["2"],
   },
-  dots: { height: 16, borderLeftWidth: 2, borderStyle: "dotted" },
-  stop: { borderRadius: shape.card, overflow: "hidden" },
-  // Done stops folded into one row (owner, 2026-10-20), as the website's "N done".
+  // Done stops folded into one row (owner, 2026-10-20), as the website's "N done": the block's
+  // first row, the check in the stop number's column.
   doneRow: {
     minHeight: 48,
     flexDirection: "row",
     alignItems: "center",
     gap: space["2"],
-    paddingHorizontal: space["4"],
+    paddingLeft: space["3"],
+    paddingRight: space["4"],
     paddingVertical: space["2"],
-    borderRadius: shape.card,
   },
+  doneCheck: { width: 32, alignItems: "center" },
   stopTop: {
     minHeight: 56,
     flexDirection: "row",
@@ -873,14 +936,16 @@ const styles = StyleSheet.create({
   time: { fontFamily: font.displayBold, fontSize: 17 },
   actions: { marginLeft: "auto", flexDirection: "row", gap: space["2"] },
   // Lined up with the time and name, under the stop's number.
-  access: {
+  line2: {
     flexDirection: "row",
     alignItems: "flex-start",
-    gap: 6,
+    gap: space["2"],
     marginTop: -space["1"],
     paddingLeft: space["3"] + 32 + space["2"],
     paddingRight: space["3"],
     paddingBottom: space["2"],
   },
+  pills: { flexDirection: "row", alignItems: "center", gap: 6, flexShrink: 0 },
+  access: { flex: 1, minWidth: 0, flexDirection: "row", alignItems: "flex-start", gap: 6 },
   accessIcon: { marginTop: 1 },
 });

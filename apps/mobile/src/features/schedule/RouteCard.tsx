@@ -3,7 +3,6 @@ import type { ReactNode } from "react";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 import Reanimated, { LinearTransition } from "react-native-reanimated";
 import {
-  backLegLabel,
   durationLabel,
   startLegLabel,
   type CleaningKind,
@@ -15,7 +14,8 @@ import type { LockTagKind } from "../../lib/dayMap";
 import type { DragItem } from "../../lib/scheduleDrag";
 import { Button, Card, T, useReduceMotion } from "../../ui/components";
 import type { RowGestures } from "../../ui/RowMenu";
-import { TechDot } from "../../ui/TechDot";
+import { TechDot, TechStripe } from "../../ui/TechDot";
+import { driveFromOffMap, driveHomeLine } from "../../lib/scheduleTile";
 import { cardShadow, color, MAX_TEXT_SCALE, shape, space, type } from "../../ui/theme";
 import {
   dropTint,
@@ -25,7 +25,7 @@ import {
   useDropZones,
   useSlide,
 } from "./ScheduleDrag";
-import { cardLabel, ScheduleCardFace } from "./ScheduleCard";
+import { DriveHome, ScheduleCardFace, StopTileFace, TILE_INSET, tileLabel } from "./ScheduleCard";
 
 // Schedule › Day: one card per person's route (spec 5.6; the website's route-board.tsx
 // DayColumn and StopCard): the summary, Optimize and the maps button, then the stops with
@@ -52,6 +52,8 @@ export interface Stop {
   note: string | null;
   /** The kind of stop, as a pill: "Leak detection", "Repair", or the second-tech note. */
   tag: string;
+  /** The kind of visit alone ("Repair"): the first line of the stop's menu title. */
+  visit: string;
   /** Its address wasn't found on the map, so drive times leave it out. */
   notOnMap: boolean;
   /** Gate code, which gate, dogs. */
@@ -73,6 +75,8 @@ export interface Route {
   date: string;
   /** Where the tech's day starts and ends: "home" for someone who starts there. */
   startLabel?: RouteStartLabel;
+  /** That start has a map point (else the first stop gets no drive chip). */
+  startOnMap?: boolean;
   stops: Stop[];
   driveMin: number;
   backLegMin: number | null;
@@ -195,55 +199,80 @@ export function RouteCard({
           <RouteFacts route={c} busy={busy} mapsButton={mapsButton} onPlan={onPlan} />
         </Card>
       )}
-      <View style={styles.stops}>
-        {c.stops.length === 0 ? (
-          <View style={[styles.empty, { backgroundColor: color.well }]}>
-            <T muted style={{ textAlign: "center" }}>
-              Nothing scheduled.
-            </T>
-          </View>
-        ) : null}
-        {c.stops.map((s, i) => (
-          // A moved stop glides to its new place (owner, 2026-10-21: as smooth as Reorder
-          // Techs); the move is saved on the phone at once, so the list changes right away.
-          <Reanimated.View key={s.id} layout={slide}>
-            <Slide id={s.id} route={c.key} position={i}>
-              {s.legMin != null ? (
-                <Leg
-                  text={`${durationLabel(s.legMin)} ${i === 0 ? startLegLabel(c.startLabel ?? "shop") : "drive"}`}
+      {c.stops.length === 0 ? (
+        <View style={[styles.empty, { backgroundColor: color.well }]}>
+          <T muted style={{ textAlign: "center" }}>
+            Nothing scheduled.
+          </T>
+        </View>
+      ) : (
+        <StopBlock route={c}>
+          {c.stops.map((s, i, all) => (
+            // A moved stop glides to its new place (owner, 2026-10-21: as smooth as Reorder
+            // Techs); the move is saved on the phone at once, so the list changes right away.
+            <Reanimated.View key={s.id} layout={slide}>
+              <Slide id={s.id} route={c.key} position={i}>
+                <StopCard
+                  stop={s}
+                  n={i + 1}
+                  first={i === 0}
+                  fromOffMap={driveFromOffMap(i, all.map(offMap), c.startOnMap ?? true)}
+                  item={
+                    s.movable
+                      ? {
+                          id: s.id,
+                          status: s.status,
+                          from: {
+                            kind: "route",
+                            route: c.key,
+                            tech: s.mainTech ?? c.techId,
+                            date: c.date,
+                            index: i,
+                          },
+                        }
+                      : null
+                  }
+                  route={c.key}
+                  tech={c.color ?? null}
+                  onMove={onMove}
+                  gestures={gesturesFor?.(s)}
                 />
-              ) : null}
-              <StopCard
-                stop={s}
-                n={i + 1}
-                item={
-                  s.movable
-                    ? {
-                        id: s.id,
-                        status: s.status,
-                        from: {
-                          kind: "route",
-                          route: c.key,
-                          tech: s.mainTech ?? c.techId,
-                          date: c.date,
-                          index: i,
-                        },
-                      }
-                    : null
-                }
-                route={c.key}
-                tech={c.color ?? null}
-                onMove={onMove}
-                gestures={gesturesFor?.(s)}
-              />
-            </Slide>
-          </Reanimated.View>
-        ))}
-        {c.stops.length && c.backLegMin != null ? (
-          <Leg text={`${durationLabel(c.backLegMin)} ${backLegLabel(c.startLabel ?? "shop")}`} />
-        ) : null}
+              </Slide>
+            </Reanimated.View>
+          ))}
+        </StopBlock>
+      )}
+    </View>
+  );
+}
+
+/**
+ * One tech's day as one block (docs/design/2026-10-21-schedule-tile.md): their color stripe on
+ * its leading edge, the tiles touching with hairlines after the stop number, and the drive home
+ * as its last line. Day and Week.
+ */
+export function StopBlock({ route: c, children }: { route: Route; children: ReactNode }) {
+  const home = driveHomeLine(c.backLegMin, c.startLabel ?? "shop");
+  return (
+    <View style={[styles.block, { backgroundColor: color.surface }, cardShadow()]}>
+      <View style={styles.blockClip}>
+        {children}
+        {home ? <DriveHome text={home} /> : null}
+        <TechStripe tech={c.color ?? null} />
       </View>
     </View>
+  );
+}
+
+/** A stop is off the map: drive times leave it out. */
+export function offMap(s: Stop): boolean {
+  return s.notOnMap || Boolean(s.address && !s.location);
+}
+
+/** A tile's hairline, after the stop number (not on the first). */
+export function TileHairline() {
+  return (
+    <View pointerEvents="none" style={[styles.hairline, { backgroundColor: color.separator }]} />
   );
 }
 
@@ -268,6 +297,8 @@ function TechTitle({ route: c }: { route: Route }) {
 function StopCard({
   stop: s,
   n,
+  first,
+  fromOffMap,
   item,
   route,
   tech,
@@ -276,6 +307,9 @@ function StopCard({
 }: {
   stop: Stop;
   n: number;
+  /** The block's first tile: no hairline above it. */
+  first: boolean;
+  fromOffMap: boolean;
   /** What a drag picks up; null for a stop that can't move (a canceled job). */
   item: DragItem | null;
   route: string;
@@ -289,7 +323,7 @@ function StopCard({
     item,
     () => (
       <View style={styles.clip}>
-        <ScheduleCardFace stop={s} n={n} tech={tech} />
+        <StopTileFace stop={s} n={n} tech={tech} />
       </View>
     ),
     undefined,
@@ -304,12 +338,13 @@ function StopCard({
         slot(node);
       }}
       collapsable={false}
-      style={[styles.card, cardShadow()]}
+      style={{ backgroundColor: color.surface }}
     >
+      {first ? null : <TileHairline />}
       {/* A tap on the body does nothing; TalkBack's double tap opens the job. */}
       <Pressable
         accessibilityRole="link"
-        accessibilityLabel={cardLabel(s, n)}
+        accessibilityLabel={tileLabel(s, n, fromOffMap)}
         accessibilityHint="Opens the job"
         accessibilityActions={[
           { name: "activate", label: "Open Job" },
@@ -325,12 +360,11 @@ function StopCard({
           else onMove(s);
         }}
         onLongPress={gestures?.onLongPress}
-        style={styles.clip}
       >
-        <ScheduleCardFace
+        <StopTileFace
           stop={s}
           n={n}
-          tech={tech}
+          fromOffMap={fromOffMap}
           onOpen={open}
           onHold={gestures?.onLongPress}
           gripGesture={item ? gesture : undefined}
@@ -340,7 +374,7 @@ function StopCard({
   );
 }
 
-/** A stop and the drive into it, sliding aside while another stop is carried past. */
+/** A stop's tile, sliding aside while another stop is carried past. */
 function Slide({
   id,
   route,
@@ -353,7 +387,7 @@ function Slide({
   children: ReactNode;
 }) {
   const style = useSlide(id, route, position);
-  // Carried: its place (and the drive into it) is an empty gap.
+  // Carried: its place is an empty gap.
   const carried = useDragHover().id === id;
   return (
     <Reanimated.View style={[styles.stopWrap, style, carried && { opacity: 0 }]}>
@@ -379,9 +413,18 @@ const styles = StyleSheet.create({
     padding: space["2"],
     borderRadius: shape.card + space["2"],
   },
-  stops: { gap: 0 },
+  block: { borderRadius: shape.card },
+  blockClip: { borderRadius: shape.card, overflow: "hidden" },
+  hairline: {
+    position: "absolute",
+    top: 0,
+    left: TILE_INSET,
+    right: 0,
+    height: StyleSheet.hairlineWidth,
+    zIndex: 1,
+  },
   techTitle: { flexDirection: "row", alignItems: "center", gap: space["2"] },
-  stopWrap: { gap: space["1"], marginBottom: space["1"] },
+  stopWrap: {},
   leg: {
     flexDirection: "row",
     alignItems: "center",
@@ -393,6 +436,5 @@ const styles = StyleSheet.create({
   buttons: { flexDirection: "row", gap: space["2"], marginTop: space["3"] },
   half: { flex: 1 },
   empty: { borderRadius: shape.card, padding: space["4"] },
-  card: { borderRadius: shape.card },
   clip: { borderRadius: shape.card, overflow: "hidden" },
 });

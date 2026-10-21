@@ -57,12 +57,15 @@ export type { MenuAction, MenuEntry, SwipeAction };
  */
 export function ContextMenu({
   title,
+  kicker,
   entries,
   at,
   touch = false,
   onClose,
 }: {
   title: string;
+  /** A line above the title (a schedule stop's kind of visit: "Repair"). */
+  kicker?: string;
   entries: readonly MenuEntry[];
   at: { x: number; y: number };
   touch?: boolean;
@@ -191,7 +194,7 @@ export function ContextMenu({
         ref={menu}
         id={id}
         role="menu"
-        aria-label={title}
+        aria-label={kicker ? `${kicker}, ${title}` : title}
         onKeyDown={onKeyDown}
         data-testid="row-menu"
         style={
@@ -210,9 +213,10 @@ export function ContextMenu({
         {/* The row's name, so the menu says what it acts on (gestures.md section 12). */}
         <div
           aria-hidden="true"
-          className="truncate border-b-[0.5px] border-separator px-4 pt-1.5 pb-2 text-[0.8125rem] font-semibold text-text-muted"
+          className="border-b-[0.5px] border-separator px-4 pt-1.5 pb-2 text-[0.8125rem] font-semibold text-text-muted"
         >
-          {title}
+          {kicker ? <span className="block truncate font-normal">{kicker}</span> : null}
+          <span className="block truncate">{title}</span>
         </div>
         {shown.map((e, i) => {
           if (e === "separator")
@@ -362,6 +366,7 @@ const NO_HOLD =
 export function RowActions({
   as = "div",
   title,
+  kicker,
   menu,
   leading,
   trailing,
@@ -378,6 +383,8 @@ export function RowActions({
   as?: "div" | "li" | "tr" | "article";
   /** The menu's title: the row's name (the customer, plus the job or invoice number). */
   title: string;
+  /** A line above the menu's title (a schedule stop's kind of visit). */
+  kicker?: string;
   menu?: readonly MenuEntry[];
   /** Swipe right to show (Mark Complete). Touch only. */
   leading?: SwipeAction[];
@@ -555,7 +562,14 @@ export function RowActions({
         {body}
       </Tag>
       {open && menu ? (
-        <ContextMenu title={title} entries={menu} at={open.at} touch={open.touch} onClose={close} />
+        <ContextMenu
+          title={title}
+          kicker={kicker}
+          entries={menu}
+          at={open.at}
+          touch={open.touch}
+          onClose={close}
+        />
       ) : null}
     </RowMenu>
   );

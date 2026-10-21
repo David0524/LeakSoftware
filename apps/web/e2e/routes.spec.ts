@@ -109,7 +109,8 @@ async function routeNames(page: Page, tech: string) {
     .getByRole("region", { name: tech })
     .getByTestId("stop")
     .evaluateAll((els) => els.map((e) => e.getAttribute("aria-label") ?? ""));
-  return labels.map((l) => l.replace(/^[^,]*, /, ""));
+  // "8:00 AM, Customer, Leak detection": the time, the customer, the kind of visit.
+  return labels.map((l) => l.replace(/^[^,]*, /, "").replace(/, [^,]*$/, ""));
 }
 
 test("plan a tech's day, move jobs, suggest times, and give directions", async ({ page }) => {
@@ -150,6 +151,15 @@ test("plan a tech's day, move jobs, suggest times, and give directions", async (
     name("scottsdale"),
   ]);
   await expect(route.getByText(/^3 stops · .* driving$/)).toBeVisible();
+  // One block of touching tiles (docs/design/2026-10-21-schedule-tile.md): the drive to each
+  // stop is a chip on its tile, read as "N minute drive", and the drive home is the block's
+  // last line; no drive lines between the stops.
+  await expect(route.getByTestId("stop-block")).toHaveCount(1);
+  await expect(route.getByRole("img", { name: /^\d+ minute drive$/ }).first()).toBeVisible();
+  await expect(route.getByTestId("drive-home")).toHaveText(
+    /^\d+ (min|hr).* back (to the shop|home)$/,
+  );
+  await expect(route.getByText(/ min (drive|from the shop|from home)$/)).toHaveCount(0);
 
   // 1. Optimize (owner, 2026-10-20: was Plan Route): Goodyear no longer sits between the
   //    east-side stops, and the promised 2:00 PM stays. The result is a banner at the top of
@@ -220,6 +230,10 @@ test("plan a tech's day, move jobs, suggest times, and give directions", async (
     .getByTestId("stop-line");
   await zooLine.scrollIntoViewIfNeeded();
   await zooLine.click({ button: "right" });
+  // The kind of visit is off the tile: it's the menu title's first line.
+  await expect(page.getByRole("menu")).toHaveAccessibleName(
+    new RegExp(`^(Leak detection|Repair|Maintenance|Pool inspection), ${name("zoo")}`),
+  );
   await page.getByRole("menu").getByRole("menuitem", { name: "Move…" }).click();
   const zooSheet = page.getByRole("dialog", { name: `Move ${name("zoo")}` });
   await zooSheet.getByLabel("Tech").selectOption({ label: "Nobody yet (waits in Needs a Time)" });
@@ -321,10 +335,12 @@ test("on a phone, a stop drags by its grip to another place in the day", async (
   await page.goto(url);
   const route = page.getByRole("region", { name: "Priya Shah" });
   await expect(route.getByTestId("stop")).toHaveCount(3);
-  // The card (docs/design/2026-10-21-schedule-card.md): two lines, the time and customer, then
-  // the kind of visit and the street only; Move… is in its menu ("⋯"), not on the card.
+  // The tile (docs/design/2026-10-21-schedule-tile.md): the stop number, the customer, then the
+  // drive chip, the time and the street only; the kind of visit is in its menu's title, and
+  // Move… is in the menu ("⋯"), not on the tile.
   const tempe = route.getByRole("article", { name: `12:00 PM, ${name("tempe")}` });
-  await expect(tempe).toContainText("Leak detection · 3500 S Rural Rd");
+  await expect(tempe.getByTestId("stop-line")).toContainText(/12:00 PM\s?· 3500 S Rural Rd/);
+  await expect(tempe).not.toContainText("Leak detection");
   await expect(tempe).not.toContainText("85282");
   await expect(tempe.getByRole("button", { name: "Move…" })).toHaveCount(0);
   await expect(tempe.getByRole("button", { name: /^More: / })).toBeVisible();
@@ -334,28 +350,32 @@ test("on a phone, a stop drags by its grip to another place in the day", async (
   expect(grip44.width).toBeGreaterThanOrEqual(44);
   expect(grip44.height).toBeGreaterThanOrEqual(44);
 
-  // A plain drag on the card scrolls the page; it doesn't pick the job up (owner, 2026-10-21:
-  // "I can't scroll on a Scheduling tile").
-  await page.evaluate(() => window.scrollTo(0, 0));
-  const card0 = (await tempe.boundingBox())!;
-  const room = await page.evaluate(
-    () => document.documentElement.scrollHeight - window.innerHeight,
-  );
-  if (room > 100 && card0.y + card0.height < 844) {
+  // A plain drag on the tile scrolls the page; it doesn't pick the job up (owner, 2026-10-21:
+  // "I can't scroll on a Scheduling tile"). The tile leaves vertical panning to the browser
+  // (only the grip is touch-action: none), and a finger dragged up its body moves nothing.
+  // (Headless Chromium here doesn't scroll the page for a synthesized touch gesture anywhere,
+  // even on the title, so the scroll itself isn't measured.)
+  const body0 = tempe.getByTestId("stop-line");
+  await body0.evaluate((el) => el.scrollIntoView({ block: "center" }));
+  expect(await body0.evaluate((el) => getComputedStyle(el).touchAction)).not.toBe("none");
+  expect(await grip.evaluate((el) => getComputedStyle(el).touchAction)).toBe("none");
+  {
+    const b = (await body0.boundingBox())!;
     const cdp = await context.newCDPSession(page);
-    const x = card0.x + card0.width / 3;
-    const y = card0.y + card0.height / 2;
-    await cdp.send("Input.synthesizeScrollGesture", {
-      x,
-      y,
-      yDistance: -200,
-      gestureSourceType: "touch",
-      speed: 1200,
-    });
-    await expect.poll(() => page.evaluate(() => window.scrollY)).toBeGreaterThan(50);
+    const x = b.x + b.width / 3;
+    const y = b.y + b.height / 2;
+    await cdp.send("Input.dispatchTouchEvent", { type: "touchStart", touchPoints: [{ x, y }] });
+    for (let i = 1; i <= 10; i++)
+      await cdp.send("Input.dispatchTouchEvent", {
+        type: "touchMove",
+        touchPoints: [{ x, y: y - i * 20 }],
+      });
+    await cdp.send("Input.dispatchTouchEvent", { type: "touchEnd", touchPoints: [] });
     await cdp.detach();
+    await page.waitForTimeout(600);
     await expect(page.getByText("Moved.", { exact: true })).toHaveCount(0);
     expect((await routeNames(page, "Priya Shah"))[2]).toBe(name("tempe"));
+    await expect(route.locator("[data-testid=stop].invisible")).toHaveCount(0);
   }
 
   // A tap on the card's body doesn't open the job (owner, 2026-10-21: "I find myself

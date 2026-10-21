@@ -37,17 +37,7 @@ import {
 } from "@/components/route-board";
 import { DateJump } from "@/components/date-jump";
 import { WeekStrip } from "@/components/week-strip";
-import {
-  Grouped,
-  Notice,
-  PageHeader,
-  Row,
-  StatusBadge,
-  buttonClass,
-  cx,
-  pillClass,
-  SEGMENT_TRACK,
-} from "@/components/ui";
+import { Notice, PageHeader, buttonClass, cx, pillClass, SEGMENT_TRACK } from "@/components/ui";
 import { getOffice } from "@/lib/auth";
 import { mapsAppForRequest } from "@/lib/maps";
 import { mapsConfigured, resolveMapProvider } from "@/lib/map-provider";
@@ -70,7 +60,6 @@ import { ScreenTip } from "@/components/screen-tip";
 import { scheduleDate } from "@/lib/limits";
 import { redirect } from "next/navigation";
 import { loadRouteCustomers } from "@/app/actions/service-days";
-import { CustomersToAdd } from "@/components/customers-to-add";
 import { TechDot } from "@/components/tech-dot";
 import { ReorderTechs } from "@/components/reorder-techs";
 
@@ -128,6 +117,9 @@ function toStop(j: JobRow, ctx: RouteContext, route?: DayRoute, i = 0): BoardSto
     legMin: route ? (route.summary.legs[i] ?? null) : null,
     shortMin: route ? (route.summary.short[i] ?? 0) : 0,
     tag,
+    // The kind of visit, for the stop's menu title and screen readers (it's off the tile:
+    // docs/design/2026-10-21-schedule-tile.md).
+    visit: JOB_TYPE_LABELS[j.type],
     notOnMap,
     access: j.property?.access_notes?.trim() || null,
     // One line for Needs a Time's compact cards.
@@ -484,7 +476,8 @@ export default async function SchedulePage({ searchParams }: PageProps<"/schedul
           </>
         ) : view === "week" ? (
           <>
-            {/* Phones: the week as an agenda, day by day. Moving is done from the day view. */}
+            {/* Phones: the week day by day, each tech's day a block of stop tiles that drag as
+                on Day (docs/design/2026-10-21-schedule-tile.md). */}
             <div className="space-y-5 sm:hidden">
               {planDates.length ? (
                 <PlanWeek
@@ -495,79 +488,16 @@ export default async function SchedulePage({ searchParams }: PageProps<"/schedul
                   buttonClassName="w-full"
                 />
               ) : null}
-              {plans ? (
-                <CustomersToAdd
-                  variant="phone"
-                  plans={plans.list}
-                  techs={planTechs}
-                  workDays={plans.workDays}
-                />
-              ) : null}
-              {days.map((d) => {
-                const list = phoneColumns
-                  .filter((c) => c.date === d)
-                  .flatMap((c) =>
-                    c.stops
-                      .filter((s) => !s.tag.startsWith("Second tech"))
-                      .map((s) => ({ s, tech: { name: c.title, color: c.color ?? null } })),
-                  )
-                  .concat(
-                    (tech === "all" ? (unassigned.get(d) ?? []) : []).map((j) => ({
-                      s: toStop(j, ctx),
-                      tech: { name: "No tech yet", color: null },
-                    })),
-                  );
-                return (
-                  <section key={d} aria-label={formatDay(d, "long")}>
-                    {/* An empty day is one line: the day, then "Nothing scheduled" beside it. */}
-                    <h2
-                      className={cx(
-                        "flex flex-wrap items-baseline gap-x-2 font-display text-lg font-bold",
-                        list.length > 0 && "mb-2",
-                        d === today && "text-link",
-                      )}
-                    >
-                      <Link
-                        href={href(d, "day")}
-                        className="inline-flex min-h-11 items-center underline-offset-4 hover:underline"
-                      >
-                        {formatDay(d, "long")}
-                        {d === today ? " · Today" : ""}
-                      </Link>
-                      {list.length === 0 ? (
-                        <span className="font-sans text-[0.9375rem] font-normal text-text-muted">
-                          Nothing scheduled
-                        </span>
-                      ) : null}
-                    </h2>
-                    {list.length === 0 ? null : (
-                      <Grouped>
-                        {list.map(({ s, tech }) => (
-                          <Row
-                            key={s.id}
-                            href={`/jobs/${s.id}`}
-                            label={
-                              <span className="font-semibold">
-                                {s.time} · {s.number ? `#${s.number}` : "New"}
-                              </span>
-                            }
-                            detail={
-                              <>
-                                <span className="text-text">{s.customer}</span> ·{" "}
-                                {tech.color ? (
-                                  <TechDot color={tech.color} className="mr-1" />
-                                ) : null}
-                                {tech.name}
-                              </>
-                            }
-                            value={<StatusBadge status={s.status} />}
-                          />
-                        ))}
-                      </Grouped>
-                    )}
-                  </section>
-                );
-              })}
+              <RouteBoard
+                mode="week"
+                phone
+                columns={phoneColumns}
+                tray={trayJobs}
+                techs={planTechs}
+                plans={plans}
+                today={today}
+                weekDays={days.map((d) => [d, formatDay(d)])}
+              />
             </div>
             <div className="hidden sm:block">
               <RouteBoard

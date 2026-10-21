@@ -289,17 +289,19 @@ export function ScheduleScreen() {
   ): Stop => {
     const onSecond = techId && j.assigned_user_id !== techId;
     const name = (id: string | null | undefined) => team.find((t) => t.user_id === id)?.name;
+    const visit =
+      j.type === "repair"
+        ? "Repair"
+        : j.type === "maintenance"
+          ? "Maintenance"
+          : j.type === "inspection"
+            ? "Pool inspection"
+            : "Leak detection";
     const tag = onSecond
       ? `Second tech, with ${name(j.assigned_user_id) ?? "the main tech"}`
       : j.second_tech_id
         ? `With ${name(j.second_tech_id) ?? "the second tech"}`
-        : j.type === "repair"
-          ? "Repair"
-          : j.type === "maintenance"
-            ? "Maintenance"
-            : j.type === "inspection"
-              ? "Pool inspection"
-              : "Leak detection";
+        : visit;
     // Left out of drive times until its address is found (owner, 2026-10-20).
     const notOnMap = mapStatus(j.property, routing) === "missing";
     return {
@@ -317,6 +319,7 @@ export function ScheduleScreen() {
       // Not found on the map shows as a symbol after the address, not as words (2026-10-20).
       note: tag,
       tag,
+      visit,
       notOnMap,
       access: j.property?.access_notes?.trim() || null,
       done: day ? stopDone(j, day) : false,
@@ -347,6 +350,7 @@ export function ScheduleScreen() {
       color: team.find((t) => t.user_id === techId)?.color ?? null,
       date: d,
       startLabel: start.label,
+      startOnMap: start.at != null,
       stops: list.map((j, i) =>
         toStop(j, techId, summary.legs[i] ?? null, summary.short[i] ?? 0, d),
       ),
@@ -672,7 +676,10 @@ export function ScheduleScreen() {
       hasAddress: Boolean(s.address),
       tray,
     });
-    const title = menuTitle(s.customer, s.number ? `#${s.number}` : null);
+    // A stop on a day: the kind of visit is the title's first line, since it's off the tile
+    // (docs/design/2026-10-21-schedule-tile.md). Needs a Time's cards still show it.
+    const name = menuTitle(s.customer, s.number ? `#${s.number}` : null);
+    const title = tray ? name : `${s.visit}\n${name}`;
     const run = (id: StopActionId) => {
       if (id === "open") router.push(`/jobs/${s.id}`);
       if (id === "move") openMove(s);

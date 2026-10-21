@@ -1,4 +1,4 @@
-import { useLayoutEffect, useMemo, useRef, useState, type ReactNode } from "react";
+import { useLayoutEffect, useMemo, useRef, useState } from "react";
 import { StyleSheet, Text, View, type LayoutChangeEvent } from "react-native";
 import { Gesture, GestureDetector } from "react-native-gesture-handler";
 import Animated, {
@@ -26,6 +26,7 @@ import { Button, Pill, useReduceMotion } from "../../ui/components";
 import { haptics } from "../../ui/haptics";
 import { useUndoWindow } from "../../ui/Undo";
 import { WebIcon } from "../../ui/WebIcon";
+import { DriveChip } from "../../ui/DriveChip";
 import {
   cardShadow,
   color,
@@ -215,7 +216,8 @@ export function useRowPlaces() {
 /**
  * A stop in Reorder's edit mode: its number, time and customer, then the drag handle (≡) at the
  * trailing edge with Move Up and Move Down under the name, or a lock and why it can't move
- * ("Started", "Locked", "Time locked"). `leg` is the drive into it, which moves with it.
+ * ("Started", "Locked", "Time locked"). `drive` is the drive into it, a chip before the handle
+ * (docs/design/2026-10-21-schedule-tile.md: no drive lines between stops).
  */
 export function ReorderStopRow({
   job,
@@ -223,7 +225,7 @@ export function ReorderStopRow({
   timeZone,
   info,
   now,
-  leg,
+  drive,
   onLayout,
   onAct,
   onDragging,
@@ -246,7 +248,8 @@ export function ReorderStopRow({
   info: RowInfo;
   /** The stop on Today's card. */
   now: boolean;
-  leg: ReactNode;
+  /** The drive into it, minutes; null when it isn't known (no chip). */
+  drive: number | null;
   onLayout: (e: LayoutChangeEvent) => void;
   onAct: (action: ReorderAction) => void;
   /** A drag started (true) or ended (false): the page stops scrolling meanwhile. */
@@ -347,7 +350,6 @@ export function ReorderStopRow({
   ];
   return (
     <Animated.View onLayout={onLayout} style={[styles.wrap, lift]} layout={layout}>
-      {leg}
       <View
         style={[
           styles.card,
@@ -384,6 +386,7 @@ export function ReorderStopRow({
             </Text>
             {now ? <Pill label="Now" color={color.water} /> : null}
           </View>
+          {drive != null ? <DriveChip minutes={drive} /> : null}
           {info.lock ? (
             <View style={styles.lock}>
               <WebIcon name="lock" size={16} color={color.textMuted} strokeWidth={2} />

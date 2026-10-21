@@ -48,6 +48,28 @@ export const CarIcon = ({ className }: { className?: string }) => (
   </Icon>
 );
 
+/**
+ * A small solid car for the drive chip (docs/design/2026-10-21-schedule-tile.md): filled, so it
+ * reads at 12 pt. The Android app's ui/DriveChip.tsx draws the same path.
+ */
+export const CarFillIcon = ({ className = "size-3.5" }: { className?: string }) => (
+  <svg viewBox="0 0 24 24" className={className} fill="currentColor" aria-hidden="true">
+    <path
+      fillRule="evenodd"
+      d="M7.3 4.5h9.4c.8 0 1.5.5 1.8 1.2L20.4 10c.4.3.6.8.6 1.3V17a1 1 0 0 1-1 1h-1v1.5a1 1 0 0 1-1 1h-1.5a1 1 0 0 1-1-1V18H8.5v1.5a1 1 0 0 1-1 1H6a1 1 0 0 1-1-1V18H4a1 1 0 0 1-1-1v-5.7c0-.5.2-1 .6-1.3l1.9-4.3c.3-.7 1-1.2 1.8-1.2zM7.6 6.6 6.2 9.8h11.6l-1.4-3.2zM5.5 12.5v2.2h3v-2.2zM15.5 12.5v2.2h3v-2.2z"
+    />
+  </svg>
+);
+
+/** A small solid house: the drive home on a schedule block's last line. */
+export const HouseFillIcon = ({ className = "size-3.5" }: { className?: string }) => (
+  <svg viewBox="0 0 24 24" className={className} fill="currentColor" aria-hidden="true">
+    <path d={HOUSE_FILL} />
+  </svg>
+);
+export const HOUSE_FILL =
+  "M11.3 3.3a1 1 0 0 1 1.4 0l8 7.2a.8.8 0 0 1-.5 1.4H19v7.6a1 1 0 0 1-1 1h-3.5v-5.5h-5v5.5H6a1 1 0 0 1-1-1v-7.6H3.8a.8.8 0 0 1-.5-1.4z";
+
 /** A check mark: done. */
 export const CheckIcon = ({ className }: { className?: string }) => (
   <Icon className={className}>
