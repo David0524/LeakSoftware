@@ -57,11 +57,12 @@ test("a weekly cleaning plan puts visits on the route, and a visit is marked don
   await expect(plan).toContainText(/^Every \w+day · any time · 30 min · \$95\.00 a month/);
   await expect(plan).toContainText("Priya Shah");
 
-  // 2. Tomorrow's visit is on Priya's route, 30 minutes, marked Maintenance.
+  // 2. Tomorrow's visit is on Priya's route, a Maintenance visit (the kind is read out and is
+  // in its menu, no longer drawn on the tile: docs/design/2026-10-21-schedule-tile.md).
   await page.goto(`/schedule?view=day&date=${day}&tech=all`);
   const route = page.getByRole("region", { name: "Priya Shah" });
   const stop = route.getByTestId("stop").filter({ hasText: name });
-  await expect(stop).toContainText("Maintenance");
+  await expect(stop).toHaveAttribute("aria-label", /Maintenance/);
 
   // 3. The visit: started, the service checklist done, then Complete Job (in the header and
   // under the checklist).
