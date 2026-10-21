@@ -368,21 +368,6 @@
             }
         }
 
-        /// The layer tree, for working out what the off-screen renderer can't draw.
-        private func dumpLayers(_ layer: CALayer, depth: Int) {
-            guard depth < 40 else { return }
-            let kind = String(describing: type(of: layer))
-            let frame = layer.convert(layer.bounds, to: window.layer)
-            if !["CGDrawingLayer", "CALayer", "ColorShapeLayer"].contains(kind) || depth < 12 {
-                print(
-                    "video layer " + String(repeating: ". ", count: depth) + kind
-                        + " \(Int(frame.minX)),\(Int(frame.minY)) \(Int(frame.width))x\(Int(frame.height))"
-                        + (layer.isHidden ? " hidden" : "") + (layer.opacity < 1 ? " opacity \(layer.opacity)" : "")
-                        + (layer.mask != nil ? " masked" : ""))
-            }
-            for sub in layer.sublayers ?? [] { dumpLayers(sub, depth: depth + 1) }
-        }
-
         /// Portal layers left on screen (each draws black off screen), by their size.
         private func portals(_ layer: CALayer) -> [String] {
             let here =
@@ -917,16 +902,16 @@
         }
         try sync.store.applyPage(PullPage(rows: rows, done: true, cursor: [:], serverHLC: "1760000000004-0000-srv"))
         if sent, let files = sync.media {
-            let svg = """
-                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 600 180">\
-                <path d="M40 120 C55 40 95 30 92 70 C90 100 60 110 70 90 C85 70 110 120 130 128 \
-                C140 132 150 100 160 96 C175 92 168 125 185 122 C200 118 205 95 220 100 C232 104 225 128 240 124 \
-                C255 120 262 98 275 104 C285 110 280 130 295 126"/>\
-                <path d="M330 80 C360 60 380 70 360 96 C345 116 390 120 410 108 C425 98 430 118 445 116 \
-                C460 114 462 96 476 100 C490 104 482 124 498 120 C512 116 520 104 540 100"/>\
-                <path d="M300 150 C380 140 470 138 560 146"/>\
-                </svg>
-                """
+            // Rebecca's name, as the pad saves strokes: a looping first stroke, a second, a line.
+            let first: SignatureStroke = (0...70).map { t in
+                let x = 40 + Double(t) * 3.6
+                return SIMD2(x, 100 + 30 * sin(Double(t) * 0.42) * (1 - Double(t) / 110))
+            }
+            let second: SignatureStroke = (0...55).map { t in
+                SIMD2(310 + Double(t) * 4, 96 + 22 * sin(Double(t) * 0.5 + 1))
+            }
+            let line: SignatureStroke = (0...20).map { t in SIMD2(290 + Double(t) * 13, 150 - Double(t) * 0.4) }
+            let svg = try signatureSvg([first, second, line])
             let url = files.url(SignatureDrawing.localPath("sg1"))
             try FileManager.default.createDirectory(
                 at: url.deletingLastPathComponent(), withIntermediateDirectories: true)
