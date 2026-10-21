@@ -207,28 +207,32 @@
     /// The system bars, styled once at launch (spec 3.1, 3.2, 8.1).
     @MainActor
     enum Chrome {
+        /// The large title's attributes: Barlow, the text color.
+        static var largeTitle: [NSAttributedString.Key: Any] {
+            [.font: TypeRole.largeTitle.scaledUIFont, .foregroundColor: UIColor(Tokens.Role.text)]
+        }
+
+        /// The small (scrolled or inline) title's attributes.
+        static var smallTitle: [NSAttributedString.Key: Any] {
+            [.font: TypeRole.navTitle.scaledUIFont, .foregroundColor: UIColor(Tokens.Role.text)]
+        }
+
+        /// At the top, the page shows through; once content scrolls under it, the bar material.
+        static func appearance(edge: Bool) -> UINavigationBarAppearance {
+            let look = UINavigationBarAppearance()
+            if edge { look.configureWithTransparentBackground() } else { look.configureWithDefaultBackground() }
+            look.largeTitleTextAttributes = largeTitle
+            look.titleTextAttributes = smallTitle
+            return look
+        }
+
         static func install() {
             // The title face first: the bar's fonts are made from it (and screenshots don't run
             // the app's init). Registering twice does nothing.
             BrandFonts.register()
-            let text = UIColor(Tokens.Role.text)
             let link = UIColor(Tokens.Role.link)
-            let large: [NSAttributedString.Key: Any] = [
-                .font: TypeRole.largeTitle.scaledUIFont, .foregroundColor: text,
-            ]
-            let small: [NSAttributedString.Key: Any] = [
-                .font: TypeRole.navTitle.scaledUIFont, .foregroundColor: text,
-            ]
-
-            // At the top, the page shows through; once content scrolls under it, the bar material.
-            let edge = UINavigationBarAppearance()
-            edge.configureWithTransparentBackground()
-            edge.largeTitleTextAttributes = large
-            edge.titleTextAttributes = small
-            let standard = UINavigationBarAppearance()
-            standard.configureWithDefaultBackground()
-            standard.largeTitleTextAttributes = large
-            standard.titleTextAttributes = small
+            let edge = appearance(edge: true)
+            let standard = appearance(edge: false)
             let bar = UINavigationBar.appearance()
             bar.standardAppearance = standard
             bar.compactAppearance = standard

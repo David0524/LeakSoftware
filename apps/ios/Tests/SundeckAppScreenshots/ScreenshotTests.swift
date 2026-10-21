@@ -527,7 +527,8 @@
     @MainActor
     func snapshot(
         _ name: String, dark: Bool = false, largeText: Bool = false, height: CGFloat? = nil,
-        scrolled: CGFloat? = nil, _ view: some View
+        scrolled: CGFloat? = nil, liveMaps: Bool = false, keepsTitleFont: Bool = true,
+        inspect: ((UIWindow) -> Void)? = nil, _ view: some View
     ) async throws {
         // The app's bar and tab styles (set once at launch in the app).
         Chrome.install()
@@ -543,7 +544,8 @@
         // Glass can't be drawn off screen, so screenshots show the flat look of iOS 18 to 25.
         let content = view.environment(\.dynamicTypeSize, largeText ? .accessibility2 : .large)
             .environment(\.drawsGlass, false)
-            .environment(\.drawsLiveMaps, false)
+            .environment(\.drawsLiveMaps, liveMaps)
+            .environment(\.keepsTitleFont, keepsTitleFont)
         window.rootViewController = UIHostingController(rootView: content)
         window.makeKeyAndVisible()
         // Let SwiftUI load data (.task) and settle, then lay out once more.
@@ -567,6 +569,7 @@
                 window.layer.render(in: context.cgContext)
             }
         }
+        inspect?(window)
         window.isHidden = true
         let png = try #require(image.pngData())
         if let folder = ProcessInfo.processInfo.environment["SCREENSHOT_DIR"], !folder.isEmpty {
@@ -575,6 +578,21 @@
         }
         // A blank picture means nothing was drawn.
         #expect(!isBlank(image), "\(name) rendered blank")
+    }
+
+    /// The fonts of the navigation bar's labels that read `title` (its large and small titles).
+    @MainActor
+    func barTitleFonts(_ title: String, in root: UIView) -> [String] {
+        var fonts: [String] = []
+        func walk(_ view: UIView, inBar: Bool) {
+            let bar = inBar || view is UINavigationBar
+            if bar, let label = view as? UILabel, label.text == title || label.attributedText?.string == title {
+                fonts.append(label.font.fontName)
+            }
+            for child in view.subviews { walk(child, inBar: bar) }
+        }
+        walk(root, inBar: false)
+        return fonts
     }
 
     /// The page's vertical scroll view: the widest one that scrolls up and down.
@@ -723,6 +741,30 @@
                 "32-schedule-week", height: 1800, NavigationStack { ScheduleScreen(view: .week) }.app(env))
             try await snapshot(
                 "33-schedule-month", NavigationStack { ScheduleScreen(view: .month) }.app(env))
+        }
+
+        /// With the real Day map drawn, "Schedule" stays in Barlow (owner, 2026-10-21: "The map
+        /// opening should not change it"). The first picture, without `TitleFontKeeper`, records
+        /// what the bar does on its own.
+        @Test func scheduleTitleWithMap() async throws {
+            let env = try sampleEnvironment()
+            try seedRoute(env.session.sync.store)
+            env.session.reloadCompanies()
+            UserDefaults.standard.set(true, forKey: "schedule.dayMapOpen")
+            var without: [String] = []
+            try await snapshot(
+                "31-schedule-map-no-keeper", liveMaps: true, keepsTitleFont: false,
+                inspect: { without = barTitleFonts("Schedule", in: $0) },
+                NavigationStack { ScheduleScreen() }.app(env))
+            print("Schedule title fonts without the keeper: \(without)")
+            var with: [String] = []
+            try await snapshot(
+                "31-schedule-map", liveMaps: true,
+                inspect: { with = barTitleFonts("Schedule", in: $0) },
+                NavigationStack { ScheduleScreen() }.app(env))
+            print("Schedule title fonts with the keeper: \(with)")
+            #expect(!with.isEmpty, "no Schedule title in the bar")
+            #expect(with.allSatisfy { $0.contains("Barlow") }, "Schedule title fonts: \(with)")
         }
 
         @Test func job() async throws {

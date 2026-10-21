@@ -60,6 +60,68 @@
                     }
                 }
                 .environment(state)
+                .background { if keepsTitleFont { TitleFontKeeper().frame(width: 0, height: 0) } }
+        }
+
+        @Environment(\.keepsTitleFont) private var keepsTitleFont
+    }
+
+    extension EnvironmentValues {
+        /// Off only in the screenshot test that shows the title without `TitleFontKeeper`.
+        @Entry var keepsTitleFont = true
+    }
+
+    /// Keeps the large title in Barlow (owner, 2026-10-21: "Look at the schedule font. That was
+    /// supposed to be fixed. The map opening should not change it"). The bar's fonts are set app-
+    /// wide at launch (`Chrome.install`), but with the Day map open the bar drew "Schedule" in
+    /// the system font. This puts the same fonts on the page's own navigation item, which wins
+    /// over the bar's, each time the page lays out.
+    private struct TitleFontKeeper: UIViewControllerRepresentable {
+        func makeUIViewController(context: Context) -> Controller { Controller() }
+
+        func updateUIViewController(_ controller: Controller, context: Context) { controller.keep() }
+
+        final class Controller: UIViewController {
+            override func viewWillAppear(_ animated: Bool) {
+                super.viewWillAppear(animated)
+                keep()
+            }
+
+            override func viewWillLayoutSubviews() {
+                super.viewWillLayoutSubviews()
+                keep()
+            }
+
+            /// The page's item: the controller the navigation controller holds.
+            func keep() {
+                var page: UIViewController? = self
+                while let current = page, !(current.parent is UINavigationController) { page = current.parent }
+                guard let item = page?.navigationItem else { return }
+                // Written only when they differ, so a layout doesn't lay the bar out again.
+                if let look = fonted(item.standardAppearance, edge: false) { item.standardAppearance = look }
+                if let look = fonted(item.compactAppearance, edge: false) { item.compactAppearance = look }
+                if let look = fonted(item.scrollEdgeAppearance, edge: true) { item.scrollEdgeAppearance = look }
+                if let look = fonted(item.compactScrollEdgeAppearance, edge: true) {
+                    item.compactScrollEdgeAppearance = look
+                }
+            }
+
+            /// The item's appearance with our title fonts (the app's, when it has none), or nil
+            /// when it already has them.
+            private func fonted(_ look: UINavigationBarAppearance?, edge: Bool) -> UINavigationBarAppearance? {
+                guard let look else { return Chrome.appearance(edge: edge) }
+                let large = Chrome.largeTitle[.font] as? UIFont
+                let small = Chrome.smallTitle[.font] as? UIFont
+                if (look.largeTitleTextAttributes[.font] as? UIFont) == large,
+                    (look.titleTextAttributes[.font] as? UIFont) == small
+                {
+                    return nil
+                }
+                let copy = look.copy()
+                copy.largeTitleTextAttributes = Chrome.largeTitle
+                copy.titleTextAttributes = Chrome.smallTitle
+                return copy
+            }
         }
     }
 
