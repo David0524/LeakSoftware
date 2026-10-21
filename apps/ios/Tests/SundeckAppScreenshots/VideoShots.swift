@@ -484,12 +484,15 @@
     }
 
     /// Today as the Today tab shows it: the tab's own page, with the logo over its title, under
-    /// the bar. RootTitle places that block by the safe area SwiftUI reports, which is 0 in the
-    /// test host (UIKit's is the iPhone's, 62): the status bar and the bar's row are given to it.
+    /// the bar. RootTitle places that block from geometry it reads as the screen settles, which
+    /// the test host never reports (it stays 0, and the block sat under the status bar): the
+    /// page starts under the status bar and the bar's row instead, where that block goes.
     @MainActor
     func todayPage(_ env: AppEnvironment) -> some View {
         NavigationStack {
-            TodayScreen().environment(\.brandInBar, true).safeAreaPadding(.top, videoSafeArea.top + 54)
+            TodayScreen().environment(\.brandInBar, true)
+                .padding(.top, videoSafeArea.top + 54)
+                .background(Color.bg.ignoresSafeArea())
         }
         .app(env)
     }
