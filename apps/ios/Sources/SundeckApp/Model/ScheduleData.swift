@@ -386,19 +386,28 @@ public func routePoints(_ jobs: [ScheduleJob], starts: [LatLng?]) -> [String] {
 /// or "Pool inspection". An address not found on the map shows as a symbol after the address
 /// instead (`NotOnMapTag`, owner 2026-10-20: "Don't waste space with text").
 public func stopNote(_ j: ScheduleJob, routeTech: String?, names: [String: String]) -> String? {
-    let note: String? = {
-        if let routeTech, j.assignedUserId != routeTech {
-            return "Second tech, with \(j.assignedUserId.flatMap { names[$0] } ?? "the main tech")"
-        }
-        if let second = j.secondTechId { return "With \(names[second] ?? "Teammate")" }
-        switch j.type {
-        case .repair: return "Repair"
-        case .maintenance: return "Maintenance"
-        case .inspection: return "Pool inspection"
-        case .detection: return "Leak detection"
-        }
-    }()
-    return note
+    stopTechNote(j, routeTech: routeTech, names: names) ?? visitKind(j.type)
+}
+
+/// A two-tech stop's note, nil for a stop with one tech: "Second tech, with Tony" on the second
+/// tech's day, "With Sam" on the main tech's. The schedule's tiles show only this after the time
+/// (docs/design/2026-10-21-schedule-tile.md); the kind of visit is in the menu's title.
+public func stopTechNote(_ j: ScheduleJob, routeTech: String?, names: [String: String]) -> String? {
+    if let routeTech, j.assignedUserId != routeTech {
+        return "Second tech, with \(j.assignedUserId.flatMap { names[$0] } ?? "the main tech")"
+    }
+    if let second = j.secondTechId { return "With \(names[second] ?? "Teammate")" }
+    return nil
+}
+
+/// The kind of visit: "Repair", "Maintenance", "Pool inspection", "Leak detection".
+public func visitKind(_ type: JobType) -> String {
+    switch type {
+    case .repair: "Repair"
+    case .maintenance: "Maintenance"
+    case .inspection: "Pool inspection"
+    case .detection: "Leak detection"
+    }
 }
 
 // MARK: - Planning writes

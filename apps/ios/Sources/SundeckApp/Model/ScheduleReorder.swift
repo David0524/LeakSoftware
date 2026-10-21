@@ -105,3 +105,64 @@ extension ScheduleReorder {
         return to == from ? .stay : .reorder(to)
     }
 }
+
+// Schedule tiles' drive (owner, 2026-10-21: "can we remove the little '5 min drive' tags between
+// each job"; docs/design/2026-10-21-schedule-tile.md): each stop's tile carries the drive to it as
+// a chip, the first one's from the shop (or home), and the drive home is the block's last line.
+// The minutes are the day's saved legs (`DaySummary.legs`, the numbers the drive lines between
+// stops used to show); a leg with an end off the map isn't known, so it has no chip.
+public enum StopDrive {
+    /// The chip's minutes on each stop, nil where the drive isn't known: the stop or the place
+    /// before it (the stop before, or the start for the first) has no map location, or there's
+    /// no leg for it.
+    public static func chips(legs: [Int], located: [Bool], startLocated: Bool) -> [Int?] {
+        located.indices.map { i in
+            guard located[i], i == 0 ? startLocated : located[i - 1], legs.indices.contains(i) else { return nil }
+            return legs[i]
+        }
+    }
+
+    /// The drive home's minutes for the block's last line, nil when there's none to show: no
+    /// stops, the last stop or the start off the map, or no driving.
+    public static func home(backMin: Int, located: [Bool], startLocated: Bool) -> Int? {
+        guard let last = located.last, last, startLocated, backMin > 0 else { return nil }
+        return backMin
+    }
+
+    /// What VoiceOver reads for the chip: "23 minute drive".
+    public static func spoken(_ minutes: Int) -> String { "\(minutes) minute drive" }
+}
+
+// Dragging a tile out of its block (owner, 2026-10-21: "The drag/drop on the week schedule page
+// should be similar to the daily one"): let go over another tech's or day's block, it moves
+// there, where it's let go in that block's order; over a day's or a tech's header, it goes last.
+extension ScheduleReorder {
+    /// A place a lifted tile can be let go (global frame). `mids` are the middles of the block's
+    /// tiles from its top, nil for a header (it goes last).
+    public struct Zone: Equatable, Sendable {
+        public var frame: CGRect
+        public var mids: [Double]?
+        /// The block or header's day (`routeKey`): a tile is never dropped on its own.
+        public var owner: String
+
+        public init(frame: CGRect, mids: [Double]?, owner: String) {
+            self.frame = frame
+            self.mids = mids
+            self.owner = owner
+        }
+    }
+
+    /// The zone under the finger (global) for a tile from the day `from`, if any: never the tile's
+    /// own block or header.
+    public static func zone(at finger: CGPoint?, zones: [String: Zone], from: String) -> String? {
+        guard let finger else { return nil }
+        return zones.filter { $0.value.owner != from && !$0.value.frame.isEmpty && $0.value.frame.contains(finger) }
+            .keys.sorted().first
+    }
+
+    /// Where a tile let go at `finger` goes in `zone`: its place among the block's tiles, or nil
+    /// (last) on a header.
+    public static func index(in zone: Zone, finger: CGPoint) -> Int? {
+        zone.mids.map { insertion(y: Double(finger.y - zone.frame.minY), mids: $0) }
+    }
+}

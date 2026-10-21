@@ -151,7 +151,10 @@
                     .pagingSwipe(
                         page: "\(board.view.rawValue)|\(board.date)", enabled: !scheduleDrag.liftedStop,
                         previous: { date = step(board.date, -1) },
-                        next: { date = step(board.date, 1) })
+                        next: { date = step(board.date, 1) }
+                    )
+                    // A lifted stop draws over Needs a Time when it's dragged there.
+                    .zIndex(scheduleDrag.liftedStop ? 1 : 0)
                 } else {
                     ScheduleSkeleton()
                 }
@@ -326,9 +329,12 @@
                     busy: optimizing == routeKey(t.id, board.date), onPlan: { plan(t.id, date: board.date, board) },
                     actions: stopActions,
                     onDrop: { id, index in drop(id, on: .route(tech: t.id, date: board.date, index: index)) },
-                    onReorder: { id, index in reorder(id, tech: t.id, index: index) },
+                    onReorder: { id, index in reorder(id, tech: t.id, date: board.date, index: index) },
                     settling: settling == routeKey(t.id, board.date),
-                    lead: board.leadRoute?.techId == t.id)
+                    lead: board.leadRoute?.techId == t.id
+                )
+                // A lifted stop draws over the techs below it.
+                .zIndex(scheduleDrag.holds(routeKey(t.id, board.date)) ? 1 : 0)
             }
         }
 
@@ -380,34 +386,44 @@
                 }
                 // A stop dropped on a day keeps its tech and goes last that day.
                 .scheduleDropTarget(cornerRadius: CGFloat(Radius.block)) { drop($0, on: .day(d)) }
+                .liftDropZone("day|\(d)", owner: "day|\(d)", cornerRadius: CGFloat(Radius.block)) { id, _ in
+                    drop(id, on: .day(d))
+                }
                 if empty && rows.isEmpty {
                     Text("Nothing scheduled").textRole(.secondary).foregroundStyle(Color.textMuted)
                 }
                 ForEach(rows) { row in
                     weekTech(row.tech, route: row.route, day: d, board)
+                        // A lifted stop draws over the techs below it.
+                        .zIndex(scheduleDrag.holds(routeKey(row.tech.id, d)) ? 1 : 0)
                 }
                 if !unassigned.isEmpty {
                     VStack(alignment: .leading, spacing: 4) {
                         Text("No tech yet").textRole(.bodyEmphasis).foregroundStyle(Color.text)
                             .padding(.horizontal, 16)
                             .frame(minHeight: minTarget)
-                        weekRows(
-                            unassigned.map {
-                                WeekItem(
-                                    job: $0, tech: "No tech yet", cleanings: board.cleanings[$0.id] ?? [],
-                                    note: stopNote($0, routeTech: nil, names: board.names))
-                            }, day: d, tech: nil, board)
+                        // Their own block, with no drive and no order to change: a stop dragged
+                        // from here goes to a tech's block or a day.
+                        RouteStops(
+                            tech: nil, date: d, board: board, route: nil, jobs: unassigned, actions: stopActions,
+                            onDrop: { id, _ in drop(id, on: .day(d)) }, onReorder: nil)
                     }
+                    .zIndex(scheduleDrag.holds(routeKey(nil, d)) ? 1 : 0)
                 }
             }
+            // A lifted stop draws over the days below it.
+            .zIndex(scheduleDrag.holdsDay(d) ? 1 : 0)
         }
 
         /// One tech's row on a day: their dot and name with the day's stops and driving (a stop
-        /// dropped on it goes last), then the stops (a stop dropped on one takes its place).
+        /// dropped on it goes last), then their stops as one block, the same tiles and drag as Day
+        /// (owner, 2026-10-21: "The drag/drop on the week schedule page should be similar to the
+        /// daily one"; docs/design/2026-10-21-schedule-tile.md).
         @ViewBuilder private func weekTech(_ t: TeamMember, route: DayRoute?, day d: String, _ board: Board)
             -> some View
         {
             let jobs = route?.jobs ?? []
+            let key = routeKey(t.id, d)
             VStack(alignment: .leading, spacing: 4) {
                 HStack(alignment: .firstTextBaseline, spacing: 8) {
                     TechDot(color: t.color)
@@ -429,41 +445,21 @@
                 .scheduleDropTarget(cornerRadius: CGFloat(Radius.block)) {
                     drop($0, on: .route(tech: t.id, date: d, index: nil))
                 }
+                // A tile from another block let go here goes last on this tech's day.
+                .liftDropZone("head|\(key)", owner: key, cornerRadius: CGFloat(Radius.block)) { id, _ in
+                    drop(id, on: .route(tech: t.id, date: d, index: nil))
+                }
                 .accessibilityElement(children: .combine)
-                if !jobs.isEmpty {
-                    weekRows(
-                        jobs.map {
-                            WeekItem(
-                                job: $0, tech: t.name, cleanings: board.cleanings[$0.id] ?? [],
-                                note: stopNote($0, routeTech: t.id, names: board.names),
-                                color: board.color($0.assignedUserId))
-                        }, day: d, tech: t.id, board)
+                if let route, !jobs.isEmpty {
+                    RouteStops(
+                        tech: t, date: d, board: board, route: route, jobs: jobs, actions: stopActions,
+                        onDrop: { id, index in drop(id, on: .route(tech: t.id, date: d, index: index)) },
+                        onReorder: { id, index in reorder(id, tech: t.id, date: d, index: index) },
+                        settling: settling == key)
                 }
             }
             .accessibilityElement(children: .contain)
             .accessibilityLabel("\(t.name), \(formatDay(d, long: true))")
-        }
-
-        private func weekRows(_ items: [WeekItem], day d: String, tech: String?, _ board: Board) -> some View {
-            // Not lazy: a lazy stack inside the page's lazy stack can leave rows undrawn after the
-            // board changes under it (the week's rows are a few a day).
-            GroupedRows(items, lazy: false) { item in
-                // No swipes (owner, 2026-10-21: a drag that starts on a stop scrolls the page):
-                // the customer's name opens the job, touch and hold for the menu (Move…, the
-                // locks, Take Off Schedule, Directions), and drag from the grip to move
-                // (docs/design/2026-10-21-schedule-card.md).
-                let actions = stopActions(item.job, from: "\(item.job.assignedUserId ?? "none")|\(d)")
-                WeekRow(item: item, timeZone: board.ctx.timeZone, actions: actions)
-                    .techStripe(item.color)
-                    .zoomSource(item.job.id)
-                    .swipeAccessibilityActions(actions.accessibilityActions)
-                    .scheduleDropTarget(cornerRadius: 0) { id in
-                        let index = items.firstIndex { $0.id == item.id }
-                        let target: ScheduleDrop =
-                            tech.map { ScheduleDrop.route(tech: $0, date: d, index: index) } ?? .day(d)
-                        return drop(id, on: target)
-                    }
-            }
         }
 
         /// A day's "⋯": Open Day, and Optimize for each tech with stops (today and later).
@@ -651,23 +647,23 @@
             }
         }
 
-        /// A Day stop dragged to a new place in its day (`RouteStops`), or moved by VoiceOver's
+        /// A Day or Week stop dragged to a new place in its day (`RouteStops`), or moved by VoiceOver's
         /// Move Up and Move Down: the new order shows at once, with a spring (owner, 2026-10-21:
         /// "just as smooth"), and saves through the same move as a drop. A move that can't be
         /// saved springs back with the reason on the banner; one waiting on Change Schedule or
         /// Just This Visit keeps its new place until then, and goes back on Cancel.
-        private func reorder(_ id: String, tech: String, index: Int) -> Bool {
+        private func reorder(_ id: String, tech: String, date: String, index: Int) -> Bool {
             guard let board else { return false }
-            let key = routeKey(tech, board.date)
+            let key = routeKey(tech, date)
             guard let before = board.loaded.routes[key]?.jobs, let at = before.firstIndex(where: { $0.id == id })
-            else { return drop(id, on: .route(tech: tech, date: board.date, index: index)) }
+            else { return drop(id, on: .route(tech: tech, date: date, index: index)) }
             let prior = RouteOrder(key: key, jobs: before)
             let revision = sync.revision
             withAnimation(ReorderMotion.animation(reduceMotion: reduceMotion)) {
                 self.board?.loaded.routes[key]?.jobs = ScheduleReorder.order(before, from: at, to: index)
                 settling = key
             }
-            let moved = drop(id, on: .route(tech: tech, date: board.date, index: index))
+            let moved = drop(id, on: .route(tech: tech, date: date, index: index))
             if !moved {
                 restore(prior)
             } else if planMove != nil {
@@ -1451,8 +1447,7 @@
     }
 
     /// One tech's day (spec 5.6 item 8): the tech, the day's stops and driving, Optimize and the
-    /// maps link on a card, then each stop as its own card with the drive between them, as on
-    /// Today (owner, 2026-10-20). The day's stops reorder by dragging their grips (`RouteStops`); a
+    /// maps link on a card, then the stops as one block of tiles (`RouteStops`, owner 2026-10-21). The day's stops reorder by dragging their grips (`RouteStops`); a
     /// stop from Needs a Time dropped among them goes where it's let go; on the tech's card or
     /// the empty day, it goes last.
     struct RouteCard: View {
@@ -1472,23 +1467,24 @@
         var settling = false
         /// The day's map, facts and buttons are in `DayLead` above Needs a Time.
         var lead = false
-        @Environment(ScheduleDragState.self) private var drag: ScheduleDragState?
 
         var body: some View {
             let jobs = route?.jobs ?? []
             let open = board.date >= board.ctx.today
-            VStack(alignment: .leading, spacing: 4) {
+            VStack(alignment: .leading, spacing: 8) {
                 header(jobs: jobs, open: open)
                     .scheduleDropTarget(cornerRadius: CGFloat(Radius.card)) { onDrop($0, nil) }
+                    // A tile from another tech's block let go here goes last.
+                    .liftDropZone(
+                        "head|\(routeKey(tech.id, board.date))", owner: routeKey(tech.id, board.date),
+                        cornerRadius: CGFloat(Radius.card)
+                    ) { id, _ in onDrop(id, nil) }
                 if let route, !jobs.isEmpty {
+                    // One block of touching tiles, the drive home as its last line
+                    // (docs/design/2026-10-21-schedule-tile.md).
                     RouteStops(
-                        tech: tech, board: board, route: route, jobs: jobs, actions: actions, onDrop: onDrop,
-                        onReorder: onReorder, settling: settling)
-                    LegLine(
-                        minutes: route.summary.backLegMin, label: backLegLabel(board.ctx.start(for: tech.id).label),
-                        short: 0, inset: 31
-                    )
-                    .opacity(settling || drag?.liftedStop == true ? 0 : 1)
+                        tech: tech, date: board.date, board: board, route: route, jobs: jobs, actions: actions,
+                        onDrop: onDrop, onReorder: onReorder, settling: settling)
                 }
             }
             .accessibilityElement(children: .contain)
@@ -1603,26 +1599,30 @@
         }
     }
 
-    /// A stop on a route, in two lines (owner, 2026-10-21: "Redesign those tiles too. They look
-    /// super busy"; docs/design/2026-10-21-schedule-card.md): the tech's stripe and the stop's
-    /// number, then the time and the customer, over the kind of visit and the street; small icons
-    /// only for what's unusual (a lock, not on the map, a cleaning due), or the status when it
-    /// isn't plain Scheduled; the grip. Only the customer's name opens the job (owner,
-    /// 2026-10-21: "I find myself accidentally opening jobs all the time"); touch and hold the
-    /// card for Move…, the locks, Take Off Schedule and Directions; drag from the grip (`grip`,
-    /// with its gesture) to reorder the day (`RouteStops`). Website
-    /// components/route-board.tsx `StopCard`.
+    /// A stop's tile in its tech's block, two lines (owner, 2026-10-21: "The tiles should be thin
+    /// and touching like in the weekly view. Remember that typically job order number is more
+    /// important than expected arrival time"; docs/design/2026-10-21-schedule-tile.md): the stop's
+    /// number leads, then the customer with small icons only for what's unusual (a lock, not on
+    /// the map, a cleaning due) or the status when it isn't plain Scheduled, over the drive to it
+    /// as a chip, the time and the street; the grip. The kind of visit is in the menu's title.
+    /// Only the customer's name opens the job (owner, 2026-10-21: "I find myself accidentally
+    /// opening jobs all the time"); touch and hold the tile for Move…, the locks, Take Off Schedule
+    /// and Directions; drag from the grip (`grip`, with its gesture) to move it (`RouteStops`).
+    /// Website components/route-board.tsx `StopCard`.
     struct ScheduleStopCard<Grip: View>: View {
         var number: Int
         var job: ScheduleJob
+        /// After the time: a two-tech stop's "With Dana" (`stopTechNote`).
         var note: String?
         var timeZone: String
-        var routing = false
+        var notOnMap = false
         var cleanings: [ScheduledCleaning] = []
+        /// The drive to this stop, in minutes (nil: not known, no chip).
+        var drive: Int?
+        /// The drive chips hold their place but don't show while the day is being reordered.
+        var driveHidden = false
         /// The touch-and-hold menu (gestures spec 12).
         var actions: ScheduleStopActions
-        /// The tech's color, as a 4 pt stripe on the card's leading edge (owner, 2026-10-20).
-        var stripe: TechColor? = nil
         /// A tap on the name opens the job; off while it's lifted to drag, and just after it's let go.
         var opens = true
         /// The grip at the trailing edge, shown when the stop can move.
@@ -1630,46 +1630,44 @@
         @Environment(\.openRoute) private var openRoute
 
         var body: some View {
-            let shape = RoundedRectangle(cornerRadius: CGFloat(Radius.card), style: .continuous)
             let movable = canMoveJob(job.status)
             HStack(spacing: 0) {
-                HStack(alignment: .top, spacing: 10) {
+                HStack(alignment: .center, spacing: 10) {
                     StopBadge(number: number, status: job.status)
                     StopLines(
                         job: job, note: note, timeZone: timeZone, notOnMap: notOnMap, cleanings: cleanings,
+                        drive: drive, driveHidden: driveHidden,
                         onOpen: { if opens { openRoute(.job(job.id)) } })
                 }
-                .padding(EdgeInsets(top: 10, leading: 12, bottom: 10, trailing: movable ? 0 : 12))
-                .frame(maxWidth: .infinity, minHeight: 64, alignment: .leading)
+                .padding(EdgeInsets(top: 8, leading: 16, bottom: 8, trailing: movable ? 0 : 16))
+                .frame(maxWidth: .infinity, minHeight: 58, alignment: .leading)
                 .contentShape(Rectangle())
-                // Touch and hold the card (not the grip, which drags at once) for its menu.
-                .contentShape(.contextMenuPreview, shape)
+                // Touch and hold the tile (not the grip, which drags at once) for its menu.
+                .contentShape(
+                    .contextMenuPreview, RoundedRectangle(cornerRadius: CGFloat(Radius.block), style: .continuous)
+                )
                 .rowMenu(actions.title, actions.menu)
                 // The grip at the trailing edge (owner, 2026-10-20), 44 pt wide: the only place a
-                // drag starts, so the card body never fights the page's scroll.
+                // drag starts, so the tile never fights the page's scroll.
                 if movable { grip() }
             }
-            .techStripe(stripe)
             .zoomSource(job.id)
-            // One element for VoiceOver; activating it opens the job, as the name does.
+            // One element for VoiceOver; activating it opens the job, as the name does. The kind
+            // of visit isn't on the tile any more, so VoiceOver reads it after the rest.
             .accessibilityElement(children: .combine)
+            .accessibilityValue(visitKind(job.type))
             .accessibilityAddTraits(.isButton)
             .accessibilityHint("Opens the job")
             .accessibilityAction { openRoute(.job(job.id)) }
             // Drag and drop's alternative, and the menu's actions (owner, 2026-10-20).
             .swipeAccessibilityActions(actions.accessibilityActions)
-            .clipShape(shape)
-            .card(padding: 0)
         }
-
-        /// Not found on the map, or with no map location at all.
-        private var notOnMap: Bool { (routing && job.mapMissing) || job.location == nil }
     }
 
-    /// A schedule card's two lines (Day's stops, Week's rows, Needs a Time): the time and the
-    /// customer with the exceptions on the right, over the kind of visit (or the second tech) and
-    /// the street, one line, cut short. The customer's name, in `link` with a "›", is the only
-    /// part that opens the job (`onOpen`), with a 44 pt tall hit area around its line.
+    /// A schedule tile's two lines (Day's and Week's stops, Needs a Time): the customer with the
+    /// exceptions on the right, over the drive chip, the time, the note and the street, one line,
+    /// cut short. The customer's name, in `link` with a "›", is the only part that opens the job
+    /// (`onOpen`), with a 44 pt tall hit area around its line.
     struct StopLines: View {
         var job: ScheduleJob
         var note: String?
@@ -1680,32 +1678,46 @@
         /// The status label when the stop isn't plain Scheduled (not in Needs a Time, where every
         /// job is unscheduled).
         var showsStatus = true
+        /// The drive to this stop as a chip at the start of line 2 (nil: none; Needs a Time has
+        /// no drive).
+        var drive: Int? = nil
+        /// The chip keeps its place but doesn't show (a day being reordered).
+        var driveHidden = false
         /// Opens the job: the name is a link. Nil: the name is plain text.
         var onOpen: (() -> Void)? = nil
 
         var body: some View {
             VStack(alignment: .leading, spacing: 2) {
                 HStack(alignment: .firstTextBaseline, spacing: 8) {
-                    if showsTime {
-                        Text(time).font(.custom(BrandFonts.Weight.bold.rawValue, size: 17, relativeTo: .body))
-                            .foregroundStyle(Color.text).monospacedDigit()
-                            // Never squeezed by the name: a squeezed time stacked its letters
-                            // down the card and made it three times as tall.
-                            .lineLimit(1).fixedSize()
-                    }
                     // The name gets the room it needs; the small icons give way first.
                     name
                         .multilineTextAlignment(.leading)
                         .frame(maxWidth: .infinity, alignment: .leading)
                         .layoutPriority(1)
-                        // One line, cut short only when it runs past what the time, the icons,
-                        // the "⋯" and the grip leave.
+                        // One line, cut short only when it runs past what the icons, the "⋯" and
+                        // the grip leave.
                         .lineLimit(1)
                     StopExceptions(job: job, notOnMap: notOnMap, cleanings: cleanings, showsStatus: showsStatus)
                 }
-                let second = [note, street].compactMap { $0 }.filter { !$0.isEmpty }.joined(separator: " · ")
-                if !second.isEmpty {
-                    Text(second).textRole(.secondary).foregroundStyle(Color.textMuted).lineLimit(1)
+                let rest = [note, street].compactMap { $0 }.filter { !$0.isEmpty }.joined(separator: " · ")
+                if drive != nil || showsTime || !rest.isEmpty {
+                    HStack(alignment: .firstTextBaseline, spacing: 6) {
+                        if let drive {
+                            DriveChip(minutes: drive)
+                                .opacity(driveHidden ? 0 : 1)
+                                .accessibilityHidden(driveHidden)
+                        }
+                        if showsTime {
+                            Text(time).monospacedDigit()
+                                // Never squeezed by the rest of the line: a squeezed time stacked
+                                // its letters down the card and made it three times as tall.
+                                .lineLimit(1).fixedSize()
+                        }
+                        if !rest.isEmpty {
+                            Text(showsTime ? "· " + rest : rest).lineLimit(1)
+                        }
+                    }
+                    .textRole(.secondary).foregroundStyle(Color.textMuted)
                 }
             }
             .opacity(job.finished ? 0.7 : 1)
@@ -1784,34 +1796,45 @@
         }
     }
 
-    /// A day's stops, each its own card with the drive before it. Drag a stop by its grip (owner,
-    /// 2026-10-21: "I'm still struggling to scroll when I have a page full of job tiles"; Reorder
-    /// Techs' feel): it lifts at once with a light haptic, follows the finger, the others slide up
-    /// or down by its height so the gap is always where it will land, and the drive times fade out
-    /// until the new order is saved and worked out. Let go and it settles into the gap and saves
-    /// through the same move as Move…; let go over Needs a Time and it comes off its day, as Take
-    /// Off Schedule does. Another day or tech is Move… in the card's menu. A stop from Needs a Time
-    /// can still be dropped among them (the system's drag), and goes where it's let go.
+    /// A tech's stops on a day as one block (docs/design/2026-10-21-schedule-tile.md): the tech's
+    /// stripe on its leading edge, the tiles touching with hairlines after the stop numbers, each
+    /// with the drive to it on a chip, and the drive home as the last line. The same block on Day
+    /// and Week (owner, 2026-10-21: "Do that for both schedule pages"; "The drag/drop on the week
+    /// schedule page should be similar to the daily one").
+    ///
+    /// Drag a stop by its grip (owner, 2026-10-21: "I'm still struggling to scroll when I have a
+    /// page full of job tiles"; Reorder Techs' feel): it lifts at once with a light haptic, follows
+    /// the finger, the others slide up or down by its height so the gap is always where it will
+    /// land, and the drive chips fade until the new order is saved and worked out. Let go and it
+    /// settles into the gap and saves through the same move as Move…; let go over another tech's
+    /// or day's block it moves there, where it's let go (over a header, last); let go over Needs a
+    /// Time and it comes off its day, as Take Off Schedule does. A stop from Needs a Time can still
+    /// be dropped among them (the system's drag), and goes where it's let go.
     ///
     /// The page never stays still after a drag (owner, 2026-10-21: "it sometimes freezes up"): the
     /// drag in flight is a `@GestureState`, which the system resets however the touch ends
     /// (lifted, cancelled, the menu taking over, a second finger), and the page's lock is let go
     /// on the drag's end, on that reset, and when these stops leave the screen.
     struct RouteStops: View {
-        var tech: TeamMember
+        /// Nil: Week's "No tech yet" stops (no route, no drive, no reordering).
+        var tech: TeamMember?
+        var date: String
         var board: Board
-        var route: DayRoute
+        var route: DayRoute?
         var jobs: [ScheduleJob]
         var actions: (ScheduleJob, String?) -> ScheduleStopActions
+        /// A stop dropped on this block (job id, its place or nil for last): from Needs a Time, or
+        /// a tile from another block.
         var onDrop: (String, Int?) -> Bool
-        /// A stop of this day to a new place (job id, its index in the new order). False when it
-        /// can't go there; the day's order puts it back.
-        var onReorder: (String, Int) -> Bool
+        /// A stop of this block to a new place (job id, its index in the new order). False when it
+        /// can't go there; the day's order puts it back. Nil: the block doesn't reorder.
+        var onReorder: ((String, Int) -> Bool)?
         /// The new order shows but isn't saved and worked out yet: no drive times.
         var settling = false
         @Environment(ScheduleDragState.self) private var drag: ScheduleDragState?
         @Environment(\.accessibilityReduceMotion) private var reduceMotion
-        /// Each stop's frame (its drive line and card), measured while nothing is lifted.
+        @ScaledMetric(relativeTo: .body) private var badge: CGFloat = 32
+        /// Each stop's frame, measured while nothing is lifted.
         @State private var frames: [String: CGRect] = [:]
         /// The stop following the finger, and how far it's gone (down is positive).
         @State private var lifted: String?
@@ -1820,25 +1843,31 @@
         @State private var lifts = 0
         /// The stop just let go: the lift's touch-up doesn't open it.
         @State private var dropped: String?
-        /// The stop let go over Needs a Time, fading where it was let go while it comes off.
+        /// The stop let go over Needs a Time or another block, fading where it was let go while
+        /// it moves.
         @State private var leaving: String?
         /// The grip being dragged, reset by the system however the touch ends.
         @GestureState private var inFlight: String?
 
-        static let spacing: CGFloat = 4
-        private var space: String { "route-stops-\(tech.id)" }
-        /// This day's hold on the page's lock (`ScheduleDragState`).
-        private var key: String { routeKey(tech.id, board.date) }
+        /// The tiles touch (the hairlines are inside them).
+        static let spacing: CGFloat = 0
+        private var space: String { "route-stops-\(key)" }
+        /// This day's hold on the page's lock (`ScheduleDragState`), and the block's day.
+        private var key: String { routeKey(tech?.id, date) }
+        /// Where other blocks' tiles land on this one.
+        private var zone: String { "block|\(key)" }
         private var motion: Animation? { ReorderMotion.animation(reduceMotion: reduceMotion) }
+        /// Where the hairlines start: after the stop number.
+        private var hairlineInset: CGFloat { 16 + badge + 10 }
 
         var body: some View {
             let ids = jobs.map(\.id)
-            let heights = ids.map { Double(frames[$0]?.height ?? 64) }
+            let heights = ids.map { Double(frames[$0]?.height ?? 58) }
             let from = lifted.flatMap { ids.firstIndex(of: $0) }
-            // Over Needs a Time, the others close no gap: it's leaving the day.
-            let overTray = drag?.overTray == true
+            // Over Needs a Time or another block, the others close no gap: it's leaving the day.
+            let away = drag?.overTray == true || drag?.overZone != nil
             let to = from.map {
-                overTray
+                away || onReorder == nil
                     ? $0
                     : ScheduleReorder.target(
                         from: $0, translation: Double(translation), heights: heights, spacing: Double(Self.spacing))
@@ -1848,56 +1877,66 @@
                     ScheduleReorder.offsets(from: $0, to: to ?? $0, heights: heights, spacing: Double(Self.spacing))
                 } ?? ids.map { _ in 0 }
             let shown = from.map { ScheduleReorder.order(ids, from: $0, to: to ?? $0) } ?? ids
-            let noLegs = lifted != nil || settling
+            let start = board.ctx.start(for: tech?.id).at != nil
+            let located = jobs.map { !notOnMap($0) }
+            let chips =
+                route.map { StopDrive.chips(legs: $0.summary.legs, located: located, startLocated: start) }
+                ?? jobs.map { _ in nil }
+            let home = route.flatMap {
+                StopDrive.home(backMin: $0.summary.backLegMin, located: located, startLocated: start)
+            }
+            let noDrive = lifted != nil || settling
             let space = space
-            VStack(alignment: .leading, spacing: Self.spacing) {
-                ForEach(Array(jobs.enumerated()), id: \.element.id) { i, j in
-                    let up = j.id == lifted
-                    let gone = j.id == leaving
-                    let stopActions = actions(j, key)
-                    VStack(alignment: .leading, spacing: Self.spacing) {
-                        LegLine(
-                            minutes: route.summary.legs[routeIndex: i] ?? 0,
-                            label: i == 0 ? startLegLabel(board.ctx.start(for: tech.id).label) : "drive",
-                            short: route.summary.short[routeIndex: i] ?? 0, inset: 31
+            let mids = ids.map { Double(frames[$0]?.midY ?? 0) }
+            VStack(alignment: .leading, spacing: 0) {
+                VStack(alignment: .leading, spacing: Self.spacing) {
+                    ForEach(Array(jobs.enumerated()), id: \.element.id) { i, j in
+                        tile(
+                            j, index: i, number: (shown.firstIndex(of: j.id) ?? i) + 1, drive: chips[i],
+                            noDrive: noDrive, last: shown.last == j.id && home == nil
                         )
-                        .opacity(noLegs ? 0 : 1)
-                        .animation(reduceMotion ? nil : .easeInOut(duration: 0.2), value: noLegs)
-                        ScheduleStopCard(
-                            number: (shown.firstIndex(of: j.id) ?? i) + 1, job: j,
-                            note: stopNote(j, routeTech: tech.id, names: board.names),
-                            timeZone: board.ctx.timeZone, routing: board.routing,
-                            cleanings: board.cleanings[j.id] ?? [],
-                            actions: stopActions,
-                            stripe: board.color(j.assignedUserId),
-                            opens: !up && dropped != j.id && lifted == nil
-                        ) {
-                            ScheduleGrip()
-                                .highPriorityGesture(grip(j.id, takeOff: stopActions.onTakeOff))
+                        .offset(y: j.id == lifted || j.id == leaving ? translation : CGFloat(offsets[i]))
+                        .animation(j.id == lifted || j.id == leaving ? nil : motion, value: offsets[i])
+                        .zIndex(j.id == lifted || j.id == leaving ? 1 : 0)
+                        .onGeometryChange(for: CGRect.self) {
+                            $0.frame(in: .named(space))
+                        } action: { frame in
+                            if lifted == nil { frames[j.id] = frame }
                         }
-                        .scaleEffect(up && !reduceMotion ? 1.03 : gone && !reduceMotion ? 0.92 : 1)
-                        .shadow(color: Color.navy.opacity(up ? 0.2 : 0), radius: 16, x: 0, y: 8)
-                        .opacity(gone ? 0 : 1)
-                        .accessibilityActions {
-                            if canMoveJob(j.status) && i > 0 {
-                                Button(TodayReorderText.moveUp) { _ = onReorder(j.id, i - 1) }
-                            }
-                            if canMoveJob(j.status) && i < jobs.count - 1 {
-                                Button(TodayReorderText.moveDown) { _ = onReorder(j.id, i + 1) }
-                            }
-                        }
-                    }
-                    .offset(y: up || gone ? translation : CGFloat(offsets[i]))
-                    .animation(up || gone ? nil : motion, value: offsets[i])
-                    .zIndex(up || gone ? 1 : 0)
-                    .onGeometryChange(for: CGRect.self) {
-                        $0.frame(in: .named(space))
-                    } action: { frame in
-                        if lifted == nil { frames[j.id] = frame }
                     }
                 }
+                .coordinateSpace(.named(space))
+                .liftDropZone(tech == nil ? nil : zone, owner: key, mids: mids, cornerRadius: CGFloat(Radius.card)) {
+                    onDrop($0, $1)
+                }
+                // The drive home, the block's last line (hidden when there's none).
+                if let home {
+                    Label {
+                        Text(verbatim: "\(durationLabel(home)) \(backLegLabel(board.ctx.start(for: tech?.id).label))")
+                    } icon: {
+                        Image(systemName: "house.fill").imageScale(.small)
+                    }
+                    .labelStyle(.titleAndIcon)
+                    .textRole(.footnote).foregroundStyle(Color.textMuted).monospacedDigit()
+                    .padding(.leading, hairlineInset)
+                    .padding(.trailing, 16)
+                    .padding(.vertical, 10)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .opacity(noDrive ? 0 : 1)
+                    .animation(reduceMotion ? nil : .easeInOut(duration: 0.2), value: noDrive)
+                }
             }
-            .coordinateSpace(.named(space))
+            // The tech's stripe on the block's leading edge, under the tiles, so a lifted tile
+            // passes over it; the block itself is a soft card with no outline.
+            .background {
+                if let color = board.color(tech?.id) {
+                    Rectangle().fill(color.color).frame(width: 4)
+                        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .leading)
+                        .clipShape(RoundedRectangle(cornerRadius: CGFloat(Radius.card), style: .continuous))
+                        .accessibilityHidden(true)
+                }
+            }
+            .card(padding: 0)
             .sensoryFeedback(.impact(weight: .light), trigger: lifts)
             .onChange(of: inFlight) { _, now in
                 // The touch ended without the drag's end (cancelled, the menu, a second finger):
@@ -1912,13 +1951,58 @@
             // A stop from Needs a Time: where it's let go among these.
             .dropDestination(for: String.self) { items, location in
                 guard let id = items.first else { return false }
-                let mids = ids.filter { $0 != id }.map { Double(frames[$0]?.midY ?? 0) }
-                return onDrop(id, ScheduleReorder.insertion(y: Double(location.y), mids: mids))
+                let others = ids.filter { $0 != id }.map { Double(frames[$0]?.midY ?? 0) }
+                return onDrop(id, ScheduleReorder.insertion(y: Double(location.y), mids: others))
             }
         }
 
+        /// One stop's tile, with the hairline under it (none under the last) and its lift.
+        private func tile(_ j: ScheduleJob, index i: Int, number: Int, drive: Int?, noDrive: Bool, last: Bool)
+            -> some View
+        {
+            let up = j.id == lifted
+            let gone = j.id == leaving
+            let stopActions = actions(j, key)
+            return ScheduleStopCard(
+                number: number, job: j,
+                note: stopTechNote(j, routeTech: tech?.id, names: board.names),
+                timeZone: board.ctx.timeZone, notOnMap: notOnMap(j),
+                cleanings: board.cleanings[j.id] ?? [],
+                drive: drive, driveHidden: noDrive,
+                actions: stopActions,
+                opens: !up && dropped != j.id && lifted == nil
+            ) {
+                ScheduleGrip()
+                    .highPriorityGesture(grip(j.id, takeOff: stopActions.onTakeOff))
+            }
+            .overlay(alignment: .bottom) {
+                if !last && !up && !gone { Hairline().padding(.leading, hairlineInset) }
+            }
+            .background {
+                // Lifted, the tile is a card of its own over the others.
+                if up || gone {
+                    RoundedRectangle(cornerRadius: CGFloat(Radius.card), style: .continuous).fill(Color.surface)
+                }
+            }
+            .scaleEffect(up && !reduceMotion ? 1.03 : gone && !reduceMotion ? 0.92 : 1)
+            .shadow(color: Color.navy.opacity(up ? 0.2 : 0), radius: 16, x: 0, y: 8)
+            .opacity(gone ? 0 : 1)
+            .accessibilityActions {
+                if let onReorder, canMoveJob(j.status) && i > 0 {
+                    Button(TodayReorderText.moveUp) { _ = onReorder(j.id, i - 1) }
+                }
+                if let onReorder, canMoveJob(j.status) && i < jobs.count - 1 {
+                    Button(TodayReorderText.moveDown) { _ = onReorder(j.id, i + 1) }
+                }
+            }
+        }
+
+        /// Not found on the map, or with no map location at all: no drive to it.
+        private func notOnMap(_ j: ScheduleJob) -> Bool { (board.routing && j.mapMissing) || j.location == nil }
+
         /// The grip's drag: it lifts on touch (no hold), and the page holds still until it's let
-        /// go (`ScheduleDragState`). The finger is tracked on screen for Needs a Time.
+        /// go (`ScheduleDragState`). The finger is tracked on screen for Needs a Time and the
+        /// other blocks.
         private func grip(_ id: String, takeOff: (() -> Void)?) -> some Gesture {
             DragGesture(minimumDistance: 0, coordinateSpace: .global)
                 .updating($inFlight) { _, state, _ in state = id }
@@ -1933,6 +2017,9 @@
                     translation = value.translation.height
                     let over = takeOff != nil && ScheduleReorder.isOver(tray: drag?.trayFrame, finger: value.location)
                     if drag?.overTray != over { drag?.overTray = over }
+                    let zone =
+                        over ? nil : ScheduleReorder.zone(at: value.location, zones: drag?.zones ?? [:], from: key)
+                    if drag?.overZone != zone { drag?.overZone = zone }
                 }
                 .onEnded { value in
                     guard lifted == id else { return }
@@ -1942,17 +2029,31 @@
 
         /// Let go: it settles into the gap and the new order shows at once while it saves; a move
         /// that can't be saved slides it back (the day's own order). Over Needs a Time it fades
-        /// where it was let go and comes off its day.
+        /// where it was let go and comes off its day; over another block, it fades there and moves.
         private func letGo(_ id: String, translation: CGFloat, finger: CGPoint, takeOff: (() -> Void)?) {
             let tray = drag?.trayFrame
+            let zones = drag?.zones ?? [:]
+            let drops = drag?.drops ?? [:]
             drag?.release(key)
             let ids = jobs.map(\.id)
             guard let from = ids.firstIndex(of: id) else { return putDown() }
-            let heights = ids.map { Double(frames[$0]?.height ?? 64) }
-            let release = ScheduleReorder.release(
+            let heights = ids.map { Double(frames[$0]?.height ?? 58) }
+            var release = ScheduleReorder.release(
                 from: from, translation: Double(translation), heights: heights, spacing: Double(Self.spacing),
                 finger: finger, tray: tray, canTakeOff: takeOff != nil)
             dropped = id
+            if release != .takeOff, let target = ScheduleReorder.zone(at: finger, zones: zones, from: key),
+                let zone = zones[target], let onTarget = drops[target]
+            {
+                self.translation = translation
+                withAnimation(motion) {
+                    lifted = nil
+                    leaving = id
+                }
+                _ = onTarget(id, ScheduleReorder.index(in: zone, finger: finger))
+                return settleLater(id)
+            }
+            if onReorder == nil, case .reorder = release { release = .stay }
             switch release {
             case .takeOff:
                 self.translation = translation
@@ -1965,7 +2066,7 @@
                 withAnimation(motion) {
                     lifted = nil
                     self.translation = 0
-                    _ = onReorder(id, to)
+                    _ = onReorder?(id, to)
                 }
             case .stay:
                 withAnimation(motion) {
@@ -1973,10 +2074,15 @@
                     self.translation = 0
                 }
             }
+            settleLater(id)
+        }
+
+        /// A moment after it's let go: taps open it again, and one still here (the move couldn't
+        /// be saved) slides back to its place.
+        private func settleLater(_ id: String) {
             Task {
                 try? await Task.sleep(for: .milliseconds(600))
                 if dropped == id { dropped = nil }
-                // Still here (the move couldn't be saved): it slides back to its place.
                 if leaving == id {
                     withAnimation(motion) {
                         leaving = nil
@@ -1996,9 +2102,9 @@
         }
     }
 
-    /// A Day stop lifted to reorder its day, for the page around it: while any day holds a lift,
-    /// the page doesn't scroll or turn. Each day holds and lets go by its own key, so one day's
-    /// drag ending (or leaving the screen) never leaves the page locked by another's.
+    /// A stop lifted to reorder its day or move it, for the page around it: while any day holds
+    /// a lift, the page doesn't scroll or turn. Each day holds and lets go by its own key, so one
+    /// day's drag ending (or leaving the screen) never leaves the page locked by another's.
     @MainActor @Observable final class ScheduleDragState {
         private(set) var holders: Set<String> = []
         /// A stop is lifted: the page doesn't scroll or turn.
@@ -2008,19 +2114,87 @@
         @ObservationIgnored var trayFrame: CGRect?
         /// The lifted stop is over Needs a Time: the box shows its ring.
         var overTray = false
+        /// The blocks and headers on screen a lifted stop can be let go on (global frames), and
+        /// what letting go there does (job id, its place or nil for last). Read only by the drag.
+        @ObservationIgnored var zones: [String: ScheduleReorder.Zone] = [:]
+        @ObservationIgnored var drops: [String: (String, Int?) -> Bool] = [:]
+        /// The zone the lifted stop is over: it shows its ring.
+        var overZone: String?
 
         func hold(_ key: String) {
             if !holders.contains(key) { holders.insert(key) }
         }
 
+        /// This day (`routeKey`) holds a lift: its views draw over the rest of the page.
+        func holds(_ key: String) -> Bool { holders.contains(key) }
+
+        /// Any tech's stop on this day is lifted.
+        func holdsDay(_ date: String) -> Bool { holders.contains { $0.hasSuffix("|\(date)") } }
+
         func release(_ key: String) {
             if holders.contains(key) { holders.remove(key) }
-            if holders.isEmpty && overTray { overTray = false }
+            if holders.isEmpty {
+                if overTray { overTray = false }
+                if overZone != nil { overZone = nil }
+            }
         }
 
         func releaseAll() {
             if !holders.isEmpty { holders = [] }
             if overTray { overTray = false }
+            if overZone != nil { overZone = nil }
+        }
+    }
+
+    /// Where a lifted stop can be let go (`RouteStops`): a block of stops (`mids`, its tiles'
+    /// middles from its top) or a header (nil: it goes last). A `link` ring while it's over.
+    private struct LiftDropZone: ViewModifier {
+        /// Nil: not a place to drop.
+        var id: String?
+        var owner: String
+        var mids: [Double]?
+        var cornerRadius: CGFloat
+        var onDrop: (String, Int?) -> Bool
+        @Environment(ScheduleDragState.self) private var drag: ScheduleDragState?
+
+        @ViewBuilder func body(content: Content) -> some View {
+            if let id {
+                content
+                    .overlay {
+                        if drag?.overZone == id {
+                            RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
+                                .strokeBorder(Color.link, lineWidth: 2)
+                                .allowsHitTesting(false)
+                        }
+                    }
+                    .onGeometryChange(for: CGRect.self) {
+                        $0.frame(in: .global)
+                    } action: { frame in
+                        drag?.zones[id, default: ScheduleReorder.Zone(frame: .zero, mids: mids, owner: owner)].frame =
+                            frame
+                        drag?.drops[id] = onDrop
+                    }
+                    .onChange(of: mids, initial: true) { _, now in
+                        drag?.zones[id, default: ScheduleReorder.Zone(frame: .zero, mids: now, owner: owner)].mids = now
+                        drag?.drops[id] = onDrop
+                    }
+                    .onDisappear {
+                        drag?.zones[id] = nil
+                        drag?.drops[id] = nil
+                    }
+            } else {
+                content
+            }
+        }
+    }
+
+    extension View {
+        /// Where a lifted stop can be let go (`LiftDropZone`).
+        fileprivate func liftDropZone(
+            _ id: String?, owner: String, mids: [Double]? = nil, cornerRadius: CGFloat,
+            _ onDrop: @escaping (String, Int?) -> Bool
+        ) -> some View {
+            modifier(LiftDropZone(id: id, owner: owner, mids: mids, cornerRadius: cornerRadius, onDrop: onDrop))
         }
     }
 
@@ -2042,8 +2216,9 @@
         private var dayLocked: Bool { lock == .day || lock == .both }
         private var timeLocked: Bool { lock == .time || lock == .both }
 
-        /// "Grace Holloway · Job #1040".
-        var title: String { job.customerName + (job.number.map { " · Job #\($0)" } ?? "") }
+        /// "Repair", then "Grace Holloway · Job #1040": the kind of visit is off the tile and leads
+        /// the menu's title (docs/design/2026-10-21-schedule-tile.md).
+        var title: String { visitKind(job.type) + "\n" + job.customerName + (job.number.map { " · Job #\($0)" } ?? "") }
 
         private var move: SwipeAction {
             SwipeAction(
@@ -2091,8 +2266,9 @@
         }
     }
 
-    /// The stop's number in a circle (Today's stop rows): a green check once it's finished, `link`
-    /// while it's in progress.
+    /// The stop's number in a 32 pt circle, in Barlow ExtraBold, leading each schedule tile (owner,
+    /// 2026-10-21: the order matters more than the arrival time): a green check once it's
+    /// finished, `link` while it's in progress, gray otherwise.
     struct StopBadge: View {
         var number: Int
         var status: JobStatus
@@ -2107,8 +2283,8 @@
                         .font(.system(size: 14, weight: .bold))
                         .foregroundStyle(Color.onStatus)
                 } else {
-                    Text("\(number)")
-                        .font(.custom(BrandFonts.Weight.bold.rawValue, size: 17, relativeTo: .body))
+                    Text(verbatim: "\(number)")
+                        .font(.custom(BrandFonts.Weight.extraBold.rawValue, size: 18, relativeTo: .body))
                         .monospacedDigit()
                         .foregroundStyle(status == .inProgress ? Color.bg : Color.text)
                         .minimumScaleFactor(0.6)
@@ -2253,17 +2429,6 @@
         var id: String { tech.id }
     }
 
-    struct WeekItem: Identifiable {
-        var job: ScheduleJob
-        var tech: String
-        var cleanings: [ScheduledCleaning] = []
-        /// What the stop is ("Maintenance", "Second tech, with Dana"), under the customer.
-        var note: String? = nil
-        /// The job's tech's color: the row's leading stripe.
-        var color: TechColor? = nil
-        var id: String { job.id }
-    }
-
     /// A visit's plan cleanings: the cleaning icon and name, in a row that wraps.
     struct ScheduledCleaningsRow: View {
         var cleanings: [ScheduledCleaning]
@@ -2281,40 +2446,6 @@
                 .accessibilityElement(children: .combine)
                 .accessibilityLabel("Cleanings due: " + cleanings.map(\.name).joined(separator: ", "))
             }
-        }
-    }
-
-    /// A week row, the schedule card's two lines (docs/design/2026-10-21-schedule-card.md): the
-    /// time and the customer over the kind of visit (or the tech) and the street, the exceptions,
-    /// then the drag grip when it can move. Only the customer's name opens the job; touch and hold
-    /// the row for its menu; drag from the grip to another day or tech (the system's drag).
-    struct WeekRow: View {
-        var item: WeekItem
-        var timeZone: String
-        var actions: ScheduleStopActions
-        @Environment(\.openRoute) private var openRoute
-
-        var body: some View {
-            HStack(spacing: 4) {
-                StopLines(
-                    job: item.job, note: item.note ?? item.tech, timeZone: timeZone,
-                    notOnMap: item.job.mapMissing, cleanings: item.cleanings,
-                    onOpen: { openRoute(.job(item.job.id)) }
-                )
-                .padding(.leading, item.color == nil ? 16 : 20)
-                .padding(.trailing, actions.movable ? 0 : 16)
-                .padding(.vertical, 10)
-                .frame(minHeight: minTarget)
-                .contentShape(Rectangle())
-                .rowMenu(actions.title, actions.menu)
-                if actions.movable { ScheduleGrip().scheduleDragSource(item.job) }
-            }
-            .padding(.trailing, actions.movable ? 4 : 0)
-            // One element for VoiceOver; activating it opens the job, as the name does.
-            .accessibilityElement(children: .combine)
-            .accessibilityAddTraits(.isButton)
-            .accessibilityHint("Opens the job")
-            .accessibilityAction { openRoute(.job(item.job.id)) }
         }
     }
 

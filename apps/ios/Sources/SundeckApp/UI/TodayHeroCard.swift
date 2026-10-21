@@ -634,7 +634,8 @@
     }
 
     /// Today's done stops folded into one row, "3 done", that opens to show them (owner,
-    /// 2026-10-20). Website today/page.tsx `today-done`.
+    /// 2026-10-20): the first row of the day's block, the check in the stop number's column.
+    /// Website today/page.tsx `today-done`.
     struct TodayDoneRow: View {
         var count: Int
         @Binding var open: Bool
@@ -648,6 +649,7 @@
                     Image(systemName: "checkmark")
                         .font(.system(size: 15, weight: .bold))
                         .foregroundStyle(Color.pass)
+                        .frame(width: 32)
                         .accessibilityHidden(true)
                     Text("\(count) done")
                         .textRole(.bodyEmphasis)
@@ -659,12 +661,12 @@
                         .rotationEffect(.degrees(open ? 90 : 0))
                         .accessibilityHidden(true)
                 }
-                .padding(.horizontal, 16)
+                .padding(.leading, 12)
+                .padding(.trailing, 16)
                 .frame(maxWidth: .infinity, minHeight: 48, alignment: .leading)
                 .contentShape(Rectangle())
             }
             .buttonStyle(.plain)
-            .card(padding: 0)
             .accessibilityLabel("\(count) done")
             .accessibilityValue(open ? "Expanded" : "Collapsed")
             .accessibilityHint(open ? "Hides the done stops" : "Shows the done stops")

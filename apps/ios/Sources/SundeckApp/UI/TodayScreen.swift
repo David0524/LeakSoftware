@@ -186,34 +186,47 @@
                 let done = stops.filter { $0.element.doneOn(day.ctx.today) }
                 let left = stops.filter { !$0.element.doneOn(day.ctx.today) }
                 let now = day.next?.id
+                let chips = day.driveChips
+                let chip = { (i: Int) in chips.indices.contains(i) ? chips[i] : nil }
                 // Rows are built as they scroll on (gestures spec section 6: long lists virtualized).
                 LazyVStack(alignment: .leading, spacing: 4) {
                     summaryLine(day).padding(.bottom, 12)
                     TodayHeroPager(day: day, viewing: $viewing, flash: flash, moves: stopMoves).padding(.bottom, 20)
-                    if !done.isEmpty {
-                        TodayDoneRow(count: done.count, open: $showDone)
-                        if showDone {
-                            ForEach(done, id: \.element.id) { i, job in
-                                TodayStopCard(
-                                    number: i + 1, job: job, day: day, leg: route.summary.legs[routeIndex: i] ?? 0,
-                                    isNext: false, moves: stopMoves, undoShown: moved?.jobId == job.id ? moved : nil
-                                )
-                                .equatable()
+                    // The stops touch in one block (owner, 2026-10-21; docs/design/
+                    // 2026-10-21-schedule-tile.md, Today): hairlines between tiles from after the
+                    // number, the drive as a chip on each tile, the drive home as the last line.
+                    VStack(alignment: .leading, spacing: 0) {
+                        if !done.isEmpty {
+                            TodayDoneRow(count: done.count, open: $showDone)
+                            if showDone {
+                                ForEach(done, id: \.element.id) { i, job in
+                                    TodayHairline()
+                                    TodayStopCard(
+                                        number: i + 1, job: job, day: day, leg: route.summary.legs[routeIndex: i] ?? 0,
+                                        drive: chip(i), isNext: false, moves: stopMoves,
+                                        undoShown: moved?.jobId == job.id ? moved : nil
+                                    )
+                                    .equatable()
+                                }
                             }
                         }
+                        ForEach(Array(left.enumerated()), id: \.element.element.id) { k, stop in
+                            let (i, job) = stop
+                            if k > 0 || !done.isEmpty { TodayHairline() }
+                            TodayStopCard(
+                                number: i + 1, job: job, day: day, leg: route.summary.legs[routeIndex: i] ?? 0,
+                                drive: chip(i), isNext: job.id == now, moves: stopMoves,
+                                undoShown: moved?.jobId == job.id ? moved : nil
+                            )
+                            .equatable()
+                        }
+                        if let home = day.driveHomeText {
+                            TodayHairline()
+                            TodayDriveHome(text: home)
+                        }
                     }
-                    ForEach(left, id: \.element.id) { i, job in
-                        LegLine(
-                            minutes: route.summary.legs[routeIndex: i] ?? 0,
-                            label: i == 0 ? startLegLabel(day.startLabel) : "drive",
-                            short: route.summary.short[routeIndex: i] ?? 0, inset: 16)
-                        TodayStopCard(
-                            number: i + 1, job: job, day: day, leg: route.summary.legs[routeIndex: i] ?? 0,
-                            isNext: job.id == now, moves: stopMoves, undoShown: moved?.jobId == job.id ? moved : nil
-                        )
-                        .equatable()
-                    }
-                    LegLine(minutes: route.summary.backLegMin, label: backLegLabel(day.startLabel), short: 0, inset: 16)
+                    .clipShape(RoundedRectangle(cornerRadius: CGFloat(Radius.card), style: .continuous))
+                    .card(padding: 0)
                 }
             } else {
                 EmptyState(
@@ -506,6 +519,29 @@
         /// Where this day starts and ends: home for someone who starts there, else the shop.
         var startLabel: RouteStartLabel { ctx.start(for: techId).label }
 
+        /// Whether each stop, in route order, is on the map (drive times count it).
+        private var located: [Bool] {
+            (route?.jobs ?? []).map { !((routing && $0.mapMissing) || $0.location == nil) }
+        }
+
+        /// The drive chip's minutes on each stop, in route order (docs/design/
+        /// 2026-10-21-schedule-tile.md, Today): the first from the start, nil where it isn't known.
+        var driveChips: [Int?] {
+            guard let route else { return [] }
+            return StopDrive.chips(
+                legs: route.summary.legs, located: located, startLocated: ctx.start(for: techId).at != nil)
+        }
+
+        /// The block's last line, "35 min back to the shop" (or "back home"); nil when there's none.
+        var driveHomeText: String? {
+            guard let route,
+                let min = StopDrive.home(
+                    backMin: route.summary.backLegMin, located: located,
+                    startLocated: ctx.start(for: techId).at != nil)
+            else { return nil }
+            return "\(durationLabel(min)) \(backLegLabel(startLabel))"
+        }
+
         /// The drive to a stop, from the day's start or the stop before it.
         func leg(_ job: ScheduleJob) -> Int {
             guard let route, let i = route.jobs.firstIndex(where: { $0.id == job.id }) else { return 0 }
@@ -561,6 +597,8 @@
         var job: ScheduleJob
         var day: TodayDay
         var leg: Int
+        /// The drive chip's minutes at line 1's end; nil, no chip (the drive isn't known).
+        var drive: Int?
         var isNext: Bool
         /// Do Later and its Undo (docs/plans/today-reorder.md).
         var moves: StopMoves
@@ -571,7 +609,8 @@
         /// A row redraws only when its own stop, its place, the day it was read from, or its
         /// Undo changes.
         nonisolated static func == (a: TodayStopCard, b: TodayStopCard) -> Bool {
-            a.number == b.number && a.job == b.job && a.leg == b.leg && a.isNext == b.isNext && a.day == b.day
+            a.number == b.number && a.job == b.job && a.leg == b.leg && a.drive == b.drive && a.isNext == b.isNext
+                && a.day == b.day
                 && a.undoShown == b.undoShown
         }
         @State private var open: Bool?
@@ -585,16 +624,15 @@
         @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
         var body: some View {
-            let shape = RoundedRectangle(cornerRadius: CGFloat(Radius.card), style: .continuous)
             let done = job.doneOn(day.ctx.today)
             let expanded = open ?? false
             // No row swipes and no touch-and-hold menu (owner, 2026-10-21: Today had "too many
             // gestures"): a tap opens the row, and its buttons (Mark Complete, Do Later, Call,
             // Message, the address for directions, the name for the job) do the rest.
+            // A tile in the day's block (Today's list draws the block and the hairlines). The stop
+            // you're on is tinted, not ringed: touching tiles can't each have a ring.
             rowContent(done: done, expanded: expanded)
-                .clipShape(shape)
-                .card(padding: 0)
-                .overlay { if isNext { shape.strokeBorder(Color.link, lineWidth: 2) } }
+                .background(isNext ? Color.link.opacity(0.08) : Color.clear)
                 .background {
                     // The Live Activity's On My Way for this stop (nothing on screen; owner, 2026-10-20).
                     if day.mine && !done { OnMyWayTrigger(job: job, day: day, leg: leg) }
@@ -611,10 +649,6 @@
                     if !handled { app.stopRequest = nil }
                 }
                 .zoomSource(job.id)
-                // Cards ease in as they scroll onto the screen.
-                .scrollTransition(.animated(.smooth)) { card, phase in
-                    card.opacity(phase.isIdentity ? 1 : 0.6).scaleEffect(phase.isIdentity ? 1 : 0.96)
-                }
         }
 
         /// Whether Do Later can move this stop (it isn't done, and isn't last already).
@@ -649,18 +683,44 @@
                     .accessibilityHint(expanded ? "Folds the stop" : "Shows the address and buttons")
                     .accessibilityAction { toggle(expanded) }
                     .accessibilityAction(named: "Open Job") { openRoute(.job(job.id)) }
-                // The pool's access notes (gate code, which gate, dogs) under the header, open or
-                // closed (owner, 2026-10-20): one line closed, all of it open; gone once done.
-                if !done, let notes = job.accessNotes?.trimmingCharacters(in: .whitespacesAndNewlines), !notes.isEmpty {
+                // Line 2: the pills that sat at line 1's end (Now, the status, the lock), then the
+                // pool's access notes (gate code, which gate, dogs), open or closed (owner,
+                // 2026-10-20): one line closed, all of it open; gone once done. A tile with neither
+                // stays one line.
+                let notes = done ? nil : job.accessNotes?.trimmingCharacters(in: .whitespacesAndNewlines)
+                let note = notes?.isEmpty == false ? notes : nil
+                let status = !isNext && job.status != .scheduled
+                // The lock shows on the Now stop too, as on the website and Android.
+                let lock = lockTag(job)
+                if isNext || status || lock != nil || note != nil {
                     HStack(alignment: .firstTextBaseline, spacing: 6) {
-                        Image(systemName: "key.fill")
-                            .font(.system(size: 15))
-                            .foregroundStyle(Color.warning)
-                            .accessibilityHidden(true)
-                        Text(notes)
-                            .lineLimit(expanded ? nil : 1)
-                            .fontWeight(.medium)
-                            .foregroundStyle(Color.text)
+                        if isNext || status || lock != nil {
+                            HStack(alignment: .firstTextBaseline, spacing: 6) {
+                                if isNext { NowPill() }
+                                // Most stops are scheduled; the chip shows other states. The Now
+                                // row shows only "Now": the card above says the rest
+                                // (docs/design/2026-10-20-today-card.md).
+                                if status { StatusChip(status: job.status) }
+                                if let lock { LockTagLabel(tag: lock) }
+                            }
+                            .fixedSize()
+                            .opacity(done ? 0.7 : 1)
+                            .accessibilityElement(children: .combine)
+                        }
+                        if let note {
+                            HStack(alignment: .firstTextBaseline, spacing: 6) {
+                                Image(systemName: "key.fill")
+                                    .font(.system(size: 15))
+                                    .foregroundStyle(Color.warning)
+                                    .accessibilityHidden(true)
+                                Text(note)
+                                    .lineLimit(expanded ? nil : 1)
+                                    .fontWeight(.medium)
+                                    .foregroundStyle(Color.text)
+                            }
+                            .accessibilityElement(children: .ignore)
+                            .accessibilityLabel(CleaningText.accessSpoken(note))
+                        }
                     }
                     .textRole(.secondary)
                     .padding(.leading, 52)
@@ -668,8 +728,6 @@
                     .padding(.bottom, expanded ? 4 : 10)
                     .padding(.top, -4)
                     .frame(maxWidth: .infinity, alignment: .leading)
-                    .accessibilityElement(children: .ignore)
-                    .accessibilityLabel(CleaningText.accessSpoken(notes))
                 }
                 if expanded {
                     VStack(alignment: .leading, spacing: 4) {
@@ -700,7 +758,10 @@
         }
 
         private func stopLabel(done: Bool) -> String {
-            ["Stop \(number): \(job.customerName)", done ? "done" : nil, isNext ? "now" : nil].compactMap { $0 }
+            [
+                "Stop \(number): \(job.customerName)", done ? "done" : nil, isNext ? "now" : nil,
+                drive.map(StopDrive.spoken),
+            ].compactMap { $0 }
                 .joined(separator: ", ")
         }
 
@@ -725,6 +786,8 @@
                         .font(.custom(BrandFonts.Weight.bold.rawValue, size: 17, relativeTo: .body))
                         .monospacedDigit()
                         .foregroundStyle(Color.text)
+                        // Never squeezed by the name beside it.
+                        .lineLimit(1).fixedSize()
                     Button {
                         openRoute(.job(job.id))
                     } label: {
@@ -737,11 +800,8 @@
                     }
                     .buttonStyle(.plain)
                     .frame(maxWidth: .infinity, alignment: .leading)
-                    if isNext { NowPill() }
-                    // Most stops are scheduled; the chip shows other states. The Now row shows only
-                    // "Now": the card above says the rest (docs/design/2026-10-20-today-card.md).
-                    if !isNext && job.status != .scheduled { StatusChip(status: job.status) }
-                    if !isNext, let tag = lockTag(job) { LockTagLabel(tag: tag) }
+                    // Only the drive chip and the chevron at line 1's end (the pills are on line 2).
+                    if let drive { DriveChip(minutes: drive) }
                 }
                 .opacity(done ? 0.7 : 1)
                 Image(systemName: "chevron.down")
@@ -909,26 +969,29 @@
         }
     }
 
-    /// The dotted line between stops: "12 min drive", " · 15 min late" in warning.
-    struct LegLine: View {
-        var minutes: Int
-        var label: String
-        var short: Int
-        var inset: CGFloat = 12
+    /// The hairline between tiles in Today's block, from after the stop number.
+    struct TodayHairline: View {
+        var body: some View {
+            Rectangle().fill(Color.separator).frame(height: 0.5).padding(.leading, 52).accessibilityHidden(true)
+        }
+    }
+
+    /// The block's last line: a house and "35 min back to the shop" (or "back home").
+    struct TodayDriveHome: View {
+        var text: String
 
         var body: some View {
-            HStack(spacing: 8) {
-                Rectangle()
-                    .stroke(style: StrokeStyle(lineWidth: 2, dash: [2, 2]))
-                    .foregroundStyle(Color.textMuted)
-                    .frame(width: 2, height: 16)
-                    .accessibilityHidden(true)
-                Text("\(durationLabel(minutes)) \(label)")
-                    .textRole(.secondary)
-                    .foregroundStyle(Color.textMuted)
+            Label {
+                Text(text)
+            } icon: {
+                Image(systemName: "house.fill").imageScale(.small).accessibilityHidden(true)
             }
-            .padding(.leading, inset)
-            .padding(.vertical, 2)
+            .font(.role(.footnote))
+            .foregroundStyle(Color.textMuted)
+            .padding(.leading, 52)
+            .padding(.trailing, 12)
+            .padding(.vertical, 12)
+            .frame(maxWidth: .infinity, alignment: .leading)
         }
     }
 
