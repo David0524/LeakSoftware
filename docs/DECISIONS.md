@@ -18,6 +18,21 @@ Plan: `docs/plans/apple-maps.md`.
   `APPLE_MAPS_PRIVATE_KEY` are set, `mapbox` without them; `MAP_PROVIDER=mapbox` forces Mapbox.
   Until the keys exist nothing changes, desktop directions links included.
 
+## 2026-10-21 (owner: "Remove the 'Runs 28 min past the end of the day.'"; "I don't care about days running late. … times are pretty irrelevant in this business"; "make the techs slide horizontally"; "Yes, start clearing out going forward")
+
+- **No lateness warnings or clock times on all four platforms:**
+  - "Runs … past the end of the day", "· … late" between stops, the fixed-time notes and
+    Android's "+28 min" are gone.
+  - Moving a stop says "Moved.", and Optimize says "Optimized · 1 hr less driving", with no
+    "Back by".
+  - The planner still prefers days that fit, but it doesn't say so.
+- **Desktop Schedule's Day view:** techs sit side by side in one row that slides sideways
+  (22 rem each), not wrapped into rows. Phones stack them.
+- **TestFlight clears signing certificates:** each run revokes the development certificates
+  that earlier runs made through the API ("Created via API"), before and after the upload
+  (`scripts/asc-revoke-ci-certs.mjs`). Certificates made on a Mac, and distribution
+  certificates, stay.
+
 ## 2026-10-20: owner list g (team colors, Week with routes, the demo)
 
 Spec: `docs/design/2026-10-20-team-week.md`.

@@ -71,11 +71,8 @@ public func planDay<J: PlanJobFields>(
     let message = [
         "Optimized",
         saved > 0 ? "\(durationLabel(saved)) less driving" : "\(durationLabel(route.driveMin)) driving",
-        "Back by \(minutesLabel(route.backMin))",
     ].joined(separator: " · ")
     let detail = noteSentences([
-        route.overtimeMin != 0 ? "runs \(durationLabel(route.overtimeMin)) past the end of the day" : nil,
-        route.lateMin != 0 ? "a fixed time can’t be met (\(durationLabel(route.lateMin)) late)" : nil,
         stops.contains { $0.location == nil } ? "driving to pools not on the map isn’t counted" : nil,
         ctx.depot == nil ? "the shop has no location (Settings › Scheduling)" : nil,
     ])
@@ -207,17 +204,8 @@ public func moveJobChange<J: PlanJobFields>(_ ctx: PlanContext, _ input: MoveInp
         mine.scheduledEnd = .some(try isoPlusMinutes(start, duration))
     }
     let stayed = from?.tech == tech && from?.date == date
-    let t = route.stops[index]
-    let notes = [
-        t.lateMin != 0 ? "it can’t make its fixed time (\(durationLabel(t.lateMin)) late)" : nil,
-        route.overtimeMin != 0 ? "the day runs \(durationLabel(route.overtimeMin)) late" : nil,
-        route.lateMin - t.lateMin > 0 ? "a fixed time after it can’t be met" : nil,
-    ].compactMap { $0 }
-    return ScheduleChange(
-        updates: [mine] + updates + leaving(stayed),
-        message: "Moved to \(minutesLabel(t.startMin))."
-            + (notes.isEmpty ? "" : " Note: \(notes.joined(separator: "; ")).")
-    )
+    // No times and no lateness (owner, 2026-10-21: "times are pretty irrelevant").
+    return ScheduleChange(updates: [mine] + updates + leaving(stayed), message: "Moved.")
 }
 
 /// The next 7 working days for suggestions, today included while there's time left in it.

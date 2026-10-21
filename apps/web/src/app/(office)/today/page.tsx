@@ -198,11 +198,6 @@ export default async function TodayPage({ searchParams }: PageProps<"/today">) {
             <p className="flex items-center gap-2 py-0.5 pl-4 text-[0.9375rem] text-text-muted">
               <span aria-hidden="true" className="h-4 border-l-2 border-dotted border-text-muted" />
               {durationLabel(leg)} {i === 0 ? "from the shop" : "drive"}
-              {route!.summary.short[i] ? (
-                <span className="font-semibold text-status-warning">
-                  · {durationLabel(route!.summary.short[i]!)} late
-                </span>
-              ) : null}
             </p>
           ) : null}
           <TodayStop

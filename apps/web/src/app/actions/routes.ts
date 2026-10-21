@@ -126,11 +126,8 @@ export async function planRoute(techId: string, date: string): Promise<RouteResu
   const message = [
     "Optimized",
     saved > 0 ? `${durationLabel(saved)} less driving` : `${durationLabel(route.driveMin)} driving`,
-    `Back by ${minutesLabel(route.backMin)}`,
   ].join(" · ");
   const detail = sentences([
-    route.overtimeMin ? `runs ${durationLabel(route.overtimeMin)} past the end of the day` : null,
-    route.lateMin ? `a fixed time can’t be met (${durationLabel(route.lateMin)} late)` : null,
     stops.some((s) => !s.location) ? "driving to pools not on the map isn’t counted" : null,
     !ctx.depot ? "the shop has no location (Settings › Scheduling)" : null,
   ]);
@@ -333,15 +330,8 @@ export async function moveJob(input: MoveInput): Promise<RouteResult> {
       });
   }
 
-  const t = route.stops[index]!;
-  return {
-    message: `Moved to ${minutesLabel(t.startMin)}.`,
-    detail: sentences([
-      t.lateMin ? `it can’t make its fixed time (${durationLabel(t.lateMin)} late)` : null,
-      route.overtimeMin ? `the day runs ${durationLabel(route.overtimeMin)} late` : null,
-      route.lateMin - t.lateMin > 0 ? "a fixed time after it can’t be met" : null,
-    ]),
-  };
+  // No times and no lateness (owner, 2026-10-21: "times are pretty irrelevant").
+  return { message: "Moved." };
 }
 
 /** After a job leaves a day, close up the order numbers (times stay as they are). */

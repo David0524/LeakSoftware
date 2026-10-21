@@ -42,8 +42,8 @@ function webNote(note: string): string {
 /**
  * A planning result for the banner: "Moved to 9:15 AM. Note: a; b." becomes "Moved to 9:15 AM."
  * with "A. B." under it, and Optimize's "Planned: 2 hr 8 min of driving, 1 hr 6 min less than
- * before, back at the shop by 4:28 PM." becomes "Optimized · 1 hr 6 min less driving · Back by
- * 4:28 PM".
+ * before, back at the shop by 4:28 PM." becomes "Optimized · 1 hr 6 min less driving" (no clock
+ * times: owner, 2026-10-21).
  */
 export function bannerText(text: string): { message: string; detail?: string } {
   const at = text.indexOf(" Note: ");
@@ -62,11 +62,7 @@ export function bannerText(text: string): { message: string; detail?: string } {
       main,
     );
   const message = planned
-    ? [
-        "Optimized",
-        planned[2] ? `${planned[2]} less driving` : `${planned[1]} driving`,
-        `Back by ${planned[3]}`,
-      ].join(" · ")
+    ? ["Optimized", planned[2] ? `${planned[2]} less driving` : `${planned[1]} driving`].join(" · ")
     : main;
   return detail ? { message, detail } : { message };
 }

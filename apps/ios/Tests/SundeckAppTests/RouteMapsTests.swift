@@ -118,7 +118,7 @@ extension ScheduleDataTests {
                 id(1), tech: Self.sam, date: "2026-10-21", index: 0, jobs: jobs, ctx: ctx, team: team,
                 drive: DriveTimes())
         }
-        #expect(message.hasPrefix("Moved to "))
+        #expect(message == "Moved.")
         let mine = try #require(updates.first { $0.id == id(1) })
         #expect(mine.values["lock_time"] == .bool(true) && mine.values["lock_day"] == .bool(false))
         #expect(mine.values["arrival_fixed"] == .bool(false))

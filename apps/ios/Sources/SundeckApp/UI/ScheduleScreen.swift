@@ -1272,10 +1272,6 @@
                 .textRole(.secondary).foregroundStyle(Color.textMuted)
                 .monospacedDigit()
                 .contentTransition(.numericText())
-                if route.summary.overtimeMin > 0 {
-                    Text("Runs \(durationLabel(route.summary.overtimeMin)) past the end of the day.")
-                        .textRole(.secondary).fontWeight(.semibold).foregroundStyle(Color.warning)
-                }
                 HStack(spacing: 8) {
                     if board.date >= board.ctx.today {
                         Button(action: onPlan) {

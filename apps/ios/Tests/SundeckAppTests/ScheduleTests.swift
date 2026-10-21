@@ -311,8 +311,8 @@ import Testing
         #expect(optimized.updates == planned.updates)
         // The same loop either way: no driving saved, so it says how much there is.
         let parts = optimized.summary.title.components(separatedBy: " · ")
-        #expect(parts.count == 3 && parts[0] == "Optimized")
-        #expect(parts[1].hasSuffix(" driving") && parts[2].hasPrefix("Back by "))
+        #expect(parts.count == 2 && parts[0] == "Optimized")
+        #expect(parts[1].hasSuffix(" driving"))
         #expect(optimized.summary.warning == nil)
         #expect(throws: ScheduleProblem("Past days can’t be planned.")) {
             try optimizeDay(techId: Self.me, date: "2026-10-19", jobs: jobs, ctx: ctx, team: team, drive: DriveTimes())
@@ -337,7 +337,7 @@ import Testing
         // Diana (Needs a Time) onto Sam's day tomorrow, first.
         var (updates, message) = try moveJob(
             id(4), tech: Self.sam, date: "2026-10-21", index: 0, jobs: jobs, ctx: ctx, team: team, drive: DriveTimes())
-        #expect(message.hasPrefix("Moved to "))
+        #expect(message == "Moved.")
         let mine = try #require(updates.first)
         #expect(mine.id == id(4))
         #expect(mine["assigned_user_id"] == .string(Self.sam))
@@ -373,7 +373,7 @@ import Testing
         }
         // Today's route is Grace (first) then Riley. Riley onto Grace's place goes first.
         let first = try #require(try drop(1, .route(tech: Self.me, date: "2026-10-20", index: 0)))
-        #expect(first.message.hasPrefix("Moved to "))
+        #expect(first.message == "Moved.")
         #expect(first.updates[0].id == id(1) && first.updates[0]["route_order"] == 1)
         // Dropped where it already is: nothing to do.
         #expect(try drop(2, .route(tech: Self.me, date: "2026-10-20", index: 0)) == nil)

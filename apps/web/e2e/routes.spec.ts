@@ -156,7 +156,7 @@ test("plan a tech's day, move jobs, suggest times, and give directions", async (
   //    the screen.
   await route.getByRole("button", { name: "Optimize" }).click();
   const banner = page.getByTestId("top-banner");
-  await expect(banner).toContainText(/^Optimized · .* less driving · Back by \d/);
+  await expect(banner).toContainText(/^Optimized · .* (less driving|driving)/);
   await expect(page.getByRole("status").filter({ has: banner })).toHaveCount(1);
   // A tap puts it away.
   await banner.click();
@@ -186,7 +186,7 @@ test("plan a tech's day, move jobs, suggest times, and give directions", async (
   await sheet.getByLabel("Day").fill(day);
   await sheet.getByLabel("Place in the route").selectOption({ label: "First stop" });
   await sheet.getByRole("button", { name: "Move", exact: true }).click();
-  await expect(page.getByText(/^Moved to \d/)).toBeVisible();
+  await expect(page.getByText("Moved.", { exact: true })).toBeVisible();
   await expect(route.getByTestId("stop")).toHaveCount(4);
   expect((await routeNames(page, "Priya Shah"))[0]).toBe(name("tempe"));
   await expect(tray.getByTestId("tray-job").filter({ hasText: name("tempe") })).toHaveCount(0);
@@ -236,7 +236,7 @@ test("plan a tech's day, move jobs, suggest times, and give directions", async (
     .getByRole("button", { name: /^Schedule / })
     .first()
     .click();
-  await expect(page.getByText(/^Moved to \d/)).toBeVisible();
+  await expect(page.getByText("Moved.", { exact: true })).toBeVisible();
   await expect(tray.getByTestId("tray-job").filter({ hasText: name("tempe") })).toHaveCount(0);
 
   // 5. The job's pool has directions to its spot (Google Maps off Apple devices).
@@ -350,7 +350,7 @@ test("on a phone, a stop drags by its grip to another place in the day", async (
     await page.waitForTimeout(16);
   }
   await touch("touchEnd");
-  await expect(page.getByText(/^Moved to \d/)).toBeVisible();
+  await expect(page.getByText("Moved.", { exact: true })).toBeVisible();
   expect((await routeNames(page, "Priya Shah"))[0]).toBe(name("tempe"));
   // A drag from the grip isn't a swipe to the next day.
   expect(new URL(page.url()).searchParams.get("date")).toBe(day);

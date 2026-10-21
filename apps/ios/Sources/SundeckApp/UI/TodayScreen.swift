@@ -713,10 +713,7 @@
                     .foregroundStyle(Color.textMuted)
                     .frame(width: 2, height: 16)
                     .accessibilityHidden(true)
-                (Text("\(durationLabel(minutes)) \(label)")
-                    + (short > 0
-                        ? Text(" · \(durationLabel(short)) late").fontWeight(.semibold).foregroundStyle(Color.warning)
-                        : Text("")))
+                Text("\(durationLabel(minutes)) \(label)")
                     .textRole(.secondary)
                     .foregroundStyle(Color.textMuted)
             }

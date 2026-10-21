@@ -271,7 +271,6 @@ export default function Today() {
         {withLeg ? (
           <Leg
             text={`${durationLabel(summary.legs[i] ?? 0)} ${i === 0 ? "from the shop" : "drive"}`}
-            late={summary.short[i] ? durationLabel(summary.short[i]!) : null}
           />
         ) : null}
         <Stop
@@ -459,16 +458,11 @@ export default function Today() {
 }
 
 /** The drive into a stop: a dotted line and the minutes (spec 5.1). */
-function Leg({ text, late }: { text: string; late?: string | null }) {
+function Leg({ text }: { text: string }) {
   return (
     <View style={styles.leg}>
       <View style={[styles.dots, { borderColor: color.textMuted }]} />
-      <Text style={[type.secondary, { color: color.textMuted, flexShrink: 1 }]}>
-        {text}
-        {late ? (
-          <Text style={[face.semiBold, { color: color.warning }]}> · {late} late</Text>
-        ) : null}
-      </Text>
+      <Text style={[type.secondary, { color: color.textMuted, flexShrink: 1 }]}>{text}</Text>
     </View>
   );
 }

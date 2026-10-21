@@ -80,7 +80,7 @@ export interface Route {
 }
 
 /** The drive into a stop: Today's dotted line and the minutes ("14 min drive"). */
-export function Leg({ text, late }: { text: string; late?: number }) {
+export function Leg({ text }: { text: string }) {
   return (
     <View style={styles.leg}>
       <View style={[styles.dots, { borderColor: color.textMuted }]} />
@@ -89,12 +89,6 @@ export function Leg({ text, late }: { text: string; late?: number }) {
         maxFontSizeMultiplier={MAX_TEXT_SCALE}
       >
         {text}
-        {late ? (
-          <Text style={[face.semiBold, { color: color.warning }]}>
-            {" "}
-            · {durationLabel(late)} late
-          </Text>
-        ) : null}
       </Text>
     </View>
   );
@@ -130,11 +124,6 @@ export function RouteFacts({
       {summary ? (
         <T variant="secondary" muted>
           {summary}
-        </T>
-      ) : null}
-      {c.overtimeMin > 0 ? (
-        <T variant="secondary" style={[face.semiBold, { color: color.warning, marginTop: 4 }]}>
-          Runs {durationLabel(c.overtimeMin)} past the end of the day.
         </T>
       ) : null}
       {c.stops.length && (c.open || mapsButton) ? (
@@ -211,10 +200,7 @@ export function RouteCard({
         {c.stops.map((s, i) => (
           <View key={s.id} style={styles.stopWrap}>
             {s.legMin != null ? (
-              <Leg
-                text={`${durationLabel(s.legMin)} ${i === 0 ? "from the shop" : "drive"}`}
-                late={s.shortMin}
-              />
+              <Leg text={`${durationLabel(s.legMin)} ${i === 0 ? "from the shop" : "drive"}`} />
             ) : null}
             <StopCard
               stop={s}

@@ -762,7 +762,7 @@
             "scheduled_end": "2026-10-21T22:00:00.000Z"
           }
         ],
-        "message": "Optimized · 18 min less driving · Back by 3:30 PM",
+        "message": "Optimized · 18 min less driving",
         "detail": "Driving to pools not on the map isn’t counted."
       }
     },
@@ -850,8 +850,7 @@
             "scheduled_end": "2026-10-20T23:41:00.000Z"
           }
         ],
-        "message": "Optimized · 1 hr 54 min driving · Back by 5:15 PM",
-        "detail": "Runs 15 min past the end of the day. A fixed time can’t be met (5 min late)."
+        "message": "Optimized · 1 hr 54 min driving"
       }
     },
     {
@@ -923,8 +922,8 @@
             "scheduled_end": "2026-10-21T18:03:00.000Z"
           }
         ],
-        "message": "Optimized · 33 min driving · Back by 11:03 AM",
-        "detail": "Runs 1 hr 3 min past the end of the day. The shop has no location (Settings › Scheduling)."
+        "message": "Optimized · 33 min driving",
+        "detail": "The shop has no location (Settings › Scheduling)."
       }
     },
     {
@@ -997,8 +996,7 @@
             "scheduled_end": "2026-10-22T02:00:00.000Z"
           }
         ],
-        "message": "Optimized · 1 hr 52 min driving · Back by 7:34 PM",
-        "detail": "Runs 2 hr 34 min past the end of the day."
+        "message": "Optimized · 1 hr 52 min driving"
       }
     },
     {
@@ -1073,8 +1071,7 @@
             "scheduled_end": "2026-11-01T16:00:00.000Z"
           }
         ],
-        "message": "Optimized · 1 hr 5 min driving · Back by 11:05 AM",
-        "detail": "A fixed time can’t be met (30 min late)."
+        "message": "Optimized · 1 hr 5 min driving"
       }
     },
     {
@@ -1169,7 +1166,7 @@
             "scheduled_end": "2026-10-21T23:11:00.000Z"
           }
         ],
-        "message": "Optimized · 17 min less driving · Back by 4:45 PM"
+        "message": "Optimized · 17 min less driving"
       }
     }
   ],
@@ -2216,7 +2213,7 @@
             "scheduled_end": "2026-10-22T00:21:00.000Z"
           }
         ],
-        "message": "Moved to 8:48 AM. Note: the day runs 51 min late; a fixed time after it can’t be met."
+        "message": "Moved."
       }
     },
     {
@@ -2354,7 +2351,7 @@
             "scheduled_end": "2026-10-21T23:00:00.000Z"
           }
         ],
-        "message": "Moved to 5:00 PM. Note: the day runs 3 hr 18 min late."
+        "message": "Moved."
       }
     },
     {
@@ -2492,7 +2489,7 @@
             "scheduled_end": "2026-10-22T00:21:00.000Z"
           }
         ],
-        "message": "Moved to 8:48 AM. Note: the day runs 51 min late; a fixed time after it can’t be met."
+        "message": "Moved."
       }
     },
     {
@@ -2630,7 +2627,7 @@
             "scheduled_end": "2026-10-22T01:47:00.000Z"
           }
         ],
-        "message": "Moved to 1:17 PM. Note: the day runs 2 hr 17 min late; a fixed time after it can’t be met."
+        "message": "Moved."
       }
     },
     {
@@ -2818,7 +2815,7 @@
             "scheduled_end": "2026-10-22T01:44:00.000Z"
           }
         ],
-        "message": "Moved to 1:00 PM. Note: the day runs 1 hr 49 min late."
+        "message": "Moved."
       }
     },
     {
@@ -3004,7 +3001,7 @@
             "scheduled_end": "2026-10-21T23:00:00.000Z"
           }
         ],
-        "message": "Moved to 4:41 PM. Note: the day runs 1 hr 15 min late."
+        "message": "Moved."
       }
     },
     {
@@ -3124,7 +3121,7 @@
             "route_order": 3
           }
         ],
-        "message": "Moved to 1:00 PM."
+        "message": "Moved."
       }
     },
     {
@@ -3278,7 +3275,7 @@
             "scheduled_end": "2026-10-21T00:00:00.000Z"
           }
         ],
-        "message": "Moved to 5:33 PM. Note: the day runs 3 hr 41 min late; a fixed time after it can’t be met."
+        "message": "Moved."
       }
     },
     {
@@ -3393,7 +3390,7 @@
             "scheduled_end": "2026-10-20T22:00:00.000Z"
           }
         ],
-        "message": "Moved to 10:00 AM. Note: the day runs 15 min late; a fixed time after it can’t be met."
+        "message": "Moved."
       }
     },
     {
@@ -3531,7 +3528,7 @@
             "scheduled_end": "2026-10-22T06:48:00.000Z"
           }
         ],
-        "message": "Moved to 8:34 AM. Note: the day runs 7 hr 18 min late; a fixed time after it can’t be met."
+        "message": "Moved."
       }
     },
     {
@@ -3669,7 +3666,7 @@
             "scheduled_end": "2026-10-21T23:00:00.000Z"
           }
         ],
-        "message": "Moved to 5:00 PM. Note: it can’t make its fixed time (8 hr 30 min late); the day runs 1 hr 48 min late."
+        "message": "Moved."
       }
     },
     {
@@ -3808,7 +3805,7 @@
             "scheduled_end": "2026-10-22T03:03:00.000Z"
           }
         ],
-        "message": "Moved to 1:00 PM. Note: the day runs 3 hr 33 min late; a fixed time after it can’t be met."
+        "message": "Moved."
       }
     },
     {
@@ -3947,7 +3944,7 @@
             "scheduled_end": "2026-10-21T23:00:00.000Z"
           }
         ],
-        "message": "Moved to 8:48 AM. Note: a fixed time after it can’t be met."
+        "message": "Moved."
       }
     },
     {
@@ -4050,7 +4047,7 @@
             "route_order": 3
           }
         ],
-        "message": "Moved to 10:47 AM. Note: a fixed time after it can’t be met."
+        "message": "Moved."
       }
     },
     {
@@ -4143,7 +4140,7 @@
             "scheduled_end": "2026-11-02T14:00:00.000Z"
           }
         ],
-        "message": "Moved to 8:30 AM. Note: it can’t make its fixed time (30 min late)."
+        "message": "Moved."
       }
     }
   ],

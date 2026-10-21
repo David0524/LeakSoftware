@@ -197,14 +197,6 @@ function WeekRoute({
             {summary}
           </T>
         ) : null}
-        {r.overtimeMin > 0 ? (
-          <Text
-            style={[type.footnote, face.semiBold, { color: color.warning }]}
-            maxFontSizeMultiplier={MAX_TEXT_SCALE}
-          >
-            {`+${durationLabel(r.overtimeMin)}`}
-          </Text>
-        ) : null}
       </View>
       {r.stops.length ? (
         <View style={[styles.rows, { backgroundColor: color.surface }]}>

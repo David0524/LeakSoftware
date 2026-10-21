@@ -57,7 +57,7 @@ describe("planDay", () => {
     expect(r.updates).toHaveLength(3);
     expect(r.updates.map((u) => u.route_order)).toEqual([1, 2, 3]);
     expect(r.updates.every((u) => u.scheduled_start && u.scheduled_end)).toBe(true);
-    expect(r.message).toMatch(/^Optimized · .+ · Back by \d{1,2}:\d{2} [AP]M$/);
+    expect(r.message).toMatch(/^Optimized · .+ (less driving|driving)$/);
   });
 
   it("refuses past days and empty days", () => {
@@ -99,7 +99,7 @@ describe("moveJobChange", () => {
     expect(r.error).toBeUndefined();
     expect(r.updates[0]).toMatchObject({ id: "w", assigned_user_id: "tony", status: "scheduled" });
     expect(localMinutes(r.updates[0]!.scheduled_start!, TZ)).toBeGreaterThan(9 * 60);
-    expect(r.message).toMatch(/^Moved to /);
+    expect(r.message).toBe("Moved.");
   });
 
   it("takes a job off the schedule and closes up the day it left", () => {

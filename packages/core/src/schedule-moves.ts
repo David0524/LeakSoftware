@@ -64,7 +64,7 @@ export interface ScheduleChange {
   error?: string;
 }
 
-/** "Runs 20 min past the end of the day. A fixed time can’t be met." from notes, or undefined. */
+/** "Driving to pools not on the map isn’t counted." from notes, or undefined. */
 export function noteSentences(notes: (string | null | false | undefined)[]): string | undefined {
   const list = notes.filter((n): n is string => !!n);
   return list.length
@@ -108,11 +108,8 @@ export function planDay(
   const message = [
     "Optimized",
     saved > 0 ? `${durationLabel(saved)} less driving` : `${durationLabel(route.driveMin)} driving`,
-    `Back by ${minutesLabel(route.backMin)}`,
   ].join(" · ");
   const detail = noteSentences([
-    route.overtimeMin ? `runs ${durationLabel(route.overtimeMin)} past the end of the day` : null,
-    route.lateMin ? `a fixed time can’t be met (${durationLabel(route.lateMin)} late)` : null,
     stops.some((s) => !s.location) ? "driving to pools not on the map isn’t counted" : null,
     !ctx.depot ? "the shop has no location (Settings › Scheduling)" : null,
   ]);
@@ -253,15 +250,11 @@ export function moveJobChange(ctx: PlanContext, input: MoveInput, drive: DriveFn
     ).toISOString();
   }
   const stayed = from?.tech === tech && from?.date === date;
-  const t = route.stops[index]!;
-  const notes = [
-    t.lateMin ? `it can’t make its fixed time (${durationLabel(t.lateMin)} late)` : null,
-    route.overtimeMin ? `the day runs ${durationLabel(route.overtimeMin)} late` : null,
-    route.lateMin - t.lateMin > 0 ? "a fixed time after it can’t be met" : null,
-  ].filter(Boolean);
+  // No times and no lateness (owner, 2026-10-21: "I don't care about days running late …
+  // times are pretty irrelevant in this business").
   return {
     updates: [mine, ...updates.filter((u) => u !== mine), ...leaving(stayed)],
-    message: `Moved to ${minutesLabel(t.startMin)}.${notes.length ? ` Note: ${notes.join("; ")}.` : ""}`,
+    message: "Moved.",
   };
 }
 

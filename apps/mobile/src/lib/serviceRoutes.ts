@@ -278,11 +278,6 @@ export function dayDetail(d: Pick<RouteDay, "serviceMin" | "driveMin">): string 
   return `${durationLabel(d.serviceMin)} at pools, about ${durationLabel(d.driveMin)} driving`;
 }
 
-/** "40 min past the end of the day", or null when the day fits. */
-export function overNote(d: Pick<RouteDay, "overMin">): string | null {
-  return d.overMin > 0 ? `${durationLabel(d.overMin)} past the end of the day` : null;
-}
-
 /** A day's segment for screen readers: "Monday, 6 pools". */
 export function segmentLabel(d: Pick<RouteDay, "day" | "plans">): string {
   return `${WEEKDAY_NAMES[d.day]}, ${poolsLabel(d.plans.length)}`;

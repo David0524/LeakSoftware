@@ -23,7 +23,6 @@ import {
   moveWrite,
   multiDayNote,
   nothingSuggested,
-  overNote,
   planDayDrop,
   routeCards,
   searchCards,
@@ -284,8 +283,6 @@ describe("on the phone", () => {
     expect(segmentLabel({ day: 1, plans: [plan("a"), plan("b")] })).toBe("Monday, 2 pools");
     expect(segmentLabel({ day: 2, plans: [plan("a")] })).toBe("Tuesday, 1 pool");
     expect(emptyDay(2)).toBe("No pools on Tuesday yet.");
-    expect(overNote({ overMin: 40 })).toBe("40 min past the end of the day");
-    expect(overNote({ overMin: 0 })).toBeNull();
     expect(multiDayNote([1, 4], 1)).toBe("Moves its Monday visit. Thursday stays.");
     expect(multiDayNote([1, 3, 5], 1)).toBe("Moves its Monday visit. Wednesday and Friday stay.");
     expect(multiDayNote([1], 1)).toBeNull();

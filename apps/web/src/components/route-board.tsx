@@ -721,7 +721,13 @@ export function RouteBoard({
             ) : null}
 
             {mode === "day" ? (
-              <div className="grid grid-cols-[minmax(0,1fr)] gap-5 md:grid-cols-[repeat(2,minmax(0,1fr))] xl:grid-cols-[repeat(3,minmax(0,1fr))]">
+              // On a computer or tablet the techs sit side by side in one row that slides
+              // sideways (owner, 2026-10-21: "make the techs slide horizontally instead of
+              // doing multiple rows"); on phones they stack.
+              <div
+                data-testid="day-columns"
+                className="grid grid-cols-[minmax(0,1fr)] gap-5 md:-mx-1 md:flex md:snap-x md:snap-proximity md:scroll-px-1 md:items-start md:overflow-x-auto md:overscroll-x-contain md:px-1 md:pb-2 md:[scrollbar-width:thin] md:[&>*]:w-[22rem] md:[&>*]:shrink-0 md:[&>*]:snap-start"
+              >
                 {columns.map((c) => (
                   <DayColumn
                     key={c.key}
@@ -838,16 +844,7 @@ function daySummary(c: BoardColumn, stops: BoardStop[]): string | null {
 
 function DayFacts({ column: c, stops }: { column: BoardColumn; stops: BoardStop[] }) {
   const summary = daySummary(c, stops);
-  return (
-    <>
-      {summary ? <p className="text-[0.9375rem] text-text-muted">{summary}</p> : null}
-      {c.overtimeMin > 0 ? (
-        <p className="mt-1 text-[0.9375rem] font-semibold text-status-warning">
-          Runs {durationLabel(c.overtimeMin)} past the end of the day.
-        </p>
-      ) : null}
-    </>
-  );
+  return <>{summary ? <p className="text-[0.9375rem] text-text-muted">{summary}</p> : null}</>;
 }
 
 /** Optimize and the day in the maps app: what a tech's day is for, so they lead. */
@@ -1017,18 +1014,14 @@ function DayColumn({
           {stops.map((s, i) => (
             <li key={s.id} data-flip={s.id}>
               {s.legMin != null && c.techId ? (
-                <Leg
-                  minutes={s.legMin}
-                  short={s.shortMin}
-                  label={i === 0 ? "from the shop" : "drive"}
-                />
+                <Leg minutes={s.legMin} label={i === 0 ? "from the shop" : "drive"} />
               ) : null}
               <StopCard stop={s} position={i + 1} onMove={onMove} color={c.color} />
             </li>
           ))}
           {c.techId && stops.length && c.backLegMin != null ? (
             <li>
-              <Leg minutes={c.backLegMin} label="back to the shop" short={0} />
+              <Leg minutes={c.backLegMin} label="back to the shop" />
             </li>
           ) : null}
         </ol>
@@ -1037,24 +1030,13 @@ function DayColumn({
   );
 }
 
-function Leg({
-  minutes,
-  short,
-  label = "drive",
-}: {
-  minutes: number;
-  short: number;
-  label?: string;
-}) {
+function Leg({ minutes, label = "drive" }: { minutes: number; label?: string }) {
   return (
     // Today's connector between stops: a dotted line and the drive.
     // Tighter beside desktop's one-line cards, so about 12 stops fit on a day.
     <p className="flex items-center gap-2 py-0.5 pl-4 text-[0.9375rem] text-text-muted lg:py-0 lg:pl-3 lg:text-[0.8125rem]">
       <span aria-hidden="true" className="h-4 border-l-2 border-dotted border-text-muted lg:h-3" />
       {durationLabel(minutes)} {label}
-      {short > 0 ? (
-        <span className="font-semibold text-status-warning">· {durationLabel(short)} late</span>
-      ) : null}
     </p>
   );
 }

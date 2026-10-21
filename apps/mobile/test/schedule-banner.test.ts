@@ -18,7 +18,7 @@ describe("the result banner's words", () => {
       bannerText(
         "Planned: 2 hr 8 min of driving, 1 hr 6 min less than before, back at the shop by 4:28 PM.",
       ),
-    ).toEqual({ message: "Optimized · 1 hr 6 min less driving · Back by 4:28 PM" });
+    ).toEqual({ message: "Optimized · 1 hr 6 min less driving" });
   });
   it("gives the driving when nothing was saved, and the notes as a second line", () => {
     expect(
@@ -26,7 +26,7 @@ describe("the result banner's words", () => {
         "Planned: 48 min of driving, back at the shop by 3:10 PM. Note: runs 20 min past the end of the day; some pools have no location, so driving to them isn’t counted.",
       ),
     ).toEqual({
-      message: "Optimized · 48 min driving · Back by 3:10 PM",
+      message: "Optimized · 48 min driving",
       detail: "Runs 20 min past the end of the day. Driving to pools not on the map isn’t counted.",
     });
   });
