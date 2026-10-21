@@ -304,7 +304,22 @@ struct Shell {
                 status {
                     $0.phase = .syncing
                     $0.pending = 1
+                    $0.initialSyncDone = true
                 }, now: now)?.text == "Syncing…")
+        // A new phone's first download, behind the app: how far along it is.
+        #expect(
+            syncBarMessage(
+                status {
+                    $0.phase = .syncing
+                    $0.lastSyncedAt = nil
+                }, now: now)?.text == "Downloading your company…")
+        #expect(
+            syncBarMessage(
+                status {
+                    $0.phase = .syncing
+                    $0.lastSyncedAt = nil
+                    $0.download = PullProgress(totals: ["customer": 10], pulled: ["customer": 4])
+                }, now: now)?.text == "Downloading your company · 40%")
         #expect(
             syncBarMessage(
                 status {

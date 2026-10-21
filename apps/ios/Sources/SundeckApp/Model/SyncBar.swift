@@ -1,4 +1,5 @@
 import Foundation
+import SundeckCore
 
 /// The sync bar's message. Port of apps/mobile/src/ui/SyncBar.tsx.
 public struct SyncBarMessage: Equatable, Sendable {
@@ -27,6 +28,14 @@ public func syncBarMessage(_ s: SyncStatus, now: Date = Date()) -> SyncBarMessag
     }
     switch s.phase {
     case .syncing:
+        // A new phone's first download runs behind the app (owner, 2026-10-21: "You can't hold
+        // up new users this long"): the bar says how far along it is.
+        if !s.initialSyncDone {
+            let percent = s.download.map { downloadProgress($0.pulled, $0.totals).percent } ?? ""
+            return .init(
+                text: percent.isEmpty ? "Downloading your company…" : "Downloading your company · \(percent)",
+                tone: .working)
+        }
         return .init(text: "Syncing…", tone: .working)
     case .offline:
         let waiting = [s.pending > 0 ? changes(s.pending) : nil, s.uploadsWaiting > 0 ? files : nil].compactMap { $0 }

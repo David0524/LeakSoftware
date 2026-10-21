@@ -2,6 +2,9 @@
 
 Newest first. Each entry: date, decision, reason.
 
+## 2026-10-21 (owner: "Downloading your company takes a very long time. This needs to run in the background or something. You can't hold up new users this long")
+- **A new phone opens as soon as its company arrives** (the first page of the first download); the rest downloads behind the app. The sync bar says "Downloading your company · 42%", and the screens fill in every two seconds as rows land. iPhone and Android (the website doesn't download).
+
 ## 2026-10-21 (owner: "The logo needs to park over the title"; "I can't scroll on a Scheduling tile"; "The cards should slide into new positions as I dangle the tile. Redesign those tiles too. They look super busy")
 - **The logo sits right above the large title** on the five tab pages and scrolls away with it; the bar keeps only its buttons. Every platform.
 - **Schedule scrolls from a card:** sideways gestures claim only clearly sideways drags; swipe actions on schedule cards are gone (their actions are in the card's menu); a card is picked up only from its grip or after a touch-and-hold.

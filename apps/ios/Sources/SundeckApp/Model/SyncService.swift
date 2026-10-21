@@ -146,6 +146,19 @@ public final class SyncService {
 
     // MARK: - Syncing
 
+    @ObservationIgnored private var lastDownloadRefresh = Date.distantPast
+
+    /// A page of the first download saved: the progress, and every two seconds a re-read, so the
+    /// screens fill in while the rest comes down behind the app (owner, 2026-10-21).
+    private func downloaded(_ progress: PullProgress) {
+        status.download = progress
+        let at = now()
+        if !status.initialSyncDone, at.timeIntervalSince(lastDownloadRefresh) >= 2 {
+            lastDownloadRefresh = at
+            revision += 1
+        }
+    }
+
     public func syncNow() async {
         guard online else {
             status.phase = .offline
@@ -156,7 +169,7 @@ public final class SyncService {
         if !progressWired {
             progressWired = true
             await engine.setProgressHandler { [weak self] progress in
-                Task { @MainActor in self?.status.download = progress }
+                Task { @MainActor in self?.downloaded(progress) }
             }
         }
         var summary = await engine.sync()

@@ -1,6 +1,7 @@
 import { useEffect, useState, type ReactNode } from "react";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { downloadProgress } from "@leakbook/core";
 import { useSyncStatus } from "../data/hooks";
 import type { SyncStatus } from "../lib/sync-service";
 import { SYNC_NOTE_DELAY_MS, quietWaiting, syncNoteDueAt } from "../lib/syncNote";
@@ -147,7 +148,16 @@ export function syncSummary(s: SyncStatus): { label: string; dot: string; health
     label = "Phone storage almost full · free up space so new work saves";
   } else if (s.phase === "syncing") {
     dot = color.info;
-    label = "Syncing…";
+    // A new phone's first download runs behind the app (owner, 2026-10-21): how far along.
+    const percent =
+      !s.initialSyncDone && s.download
+        ? downloadProgress(s.download.pulled, s.download.totals).percent
+        : "";
+    label = s.initialSyncDone
+      ? "Syncing…"
+      : percent
+        ? `Downloading your company · ${percent}`
+        : "Downloading your company…";
   } else if (s.phase === "offline") {
     dot = color.warning;
     const saved = [

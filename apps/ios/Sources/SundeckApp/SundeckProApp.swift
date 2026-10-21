@@ -208,6 +208,11 @@
             }
             .preferredColorScheme(app.appearance.choice.colorScheme)
             .task { await session.launch() }
+            // A new phone opens as soon as its company and membership arrive, a page or so into
+            // the first download; the rest comes down behind the app (owner, 2026-10-21).
+            .onChange(of: sync.status.download) { _, _ in
+                if session.route == .setup { session.reloadCompanies() }
+            }
             .onChange(of: scenePhase) { _, phase in
                 guard phase == .active else { return }
                 sync.appBecameActive()
