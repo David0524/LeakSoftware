@@ -76,7 +76,11 @@
                             Button("Today") { date = board.ctx.today }
                                 .font(.role(.bodyEmphasis))
                                 .foregroundStyle(Color.link)
-                                .frame(minHeight: minTarget)
+                                // A 44 pt tap area that doesn't make the line taller, so the page
+                                // doesn't shift when Today appears (owner, 2026-10-21).
+                                .padding(.vertical, 12)
+                                .contentShape(Rectangle())
+                                .padding(.vertical, -12)
                         }
                     }
                     if let tip = tipFor(
