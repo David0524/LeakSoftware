@@ -387,7 +387,7 @@
             let company = session.company
             let shop = shopLocationText(try? sync.store.get("company", company?.id ?? ""))
             ScreenScroll {
-                Text("Every tech’s route starts and ends at the shop.").textRole(.body).foregroundStyle(Color.textMuted)
+                Text("Routes start and end at the shop, or at home for anyone who starts there.").textRole(.body).foregroundStyle(Color.textMuted)
                 VStack(alignment: .leading, spacing: 12) {
                     Grouped(label: "Working day") {
                         TimeFieldRow(label: "Day starts", clock: $form.dayStart)
@@ -433,12 +433,11 @@
                     }
                     VStack(alignment: .leading, spacing: 8) {
                         SectionLabel("Arrival time customers are told")
-                        ScrollView(.horizontal, showsIndicators: false) {
-                            Segmented(
-                                selection: $form.windowMin, options: SchedulingForm.windows.map(\.minutes),
-                                label: { m in SchedulingForm.windows.first { $0.minutes == m }?.label ?? "" },
-                                title: "Arrival time customers are told", segmentPadding: 12)
-                        }
+                        // Short labels (Exact, 1 Hour…) fit the row; it no longer scrolls sideways.
+                        Segmented(
+                            selection: $form.windowMin, options: SchedulingForm.windows.map(\.minutes),
+                            label: { m in SchedulingForm.windows.first { $0.minutes == m }?.label ?? "" },
+                            title: "Arrival time customers are told", fillsWidth: true, segmentPadding: 8)
                         Text(form.windowNote).textRole(.secondary).foregroundStyle(Color.textMuted)
                     }
                     SaveRow(result: result) { save() }

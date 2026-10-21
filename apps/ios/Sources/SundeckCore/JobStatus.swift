@@ -65,7 +65,10 @@ public func jobActionLabel(from: JobStatus, to: JobStatus) -> String {
 /// Next statuses a person (not the server) can pick. Done is how a maintenance visit ends;
 /// leak detection and repairs end with a report or invoice.
 public func userTransitions(from: JobStatus, type: String? = nil) -> [JobStatus] {
+    // An unscheduled job is scheduled with a day (the Schedule's Move…), never by a status
+    // button (2026-10-21).
     from.transitions.filter {
         !JobStatus.serverStatuses.contains($0) && ($0 != .done || type == "maintenance")
+            && !(from == .unscheduled && $0 == .scheduled)
     }
 }

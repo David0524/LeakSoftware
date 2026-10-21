@@ -109,7 +109,7 @@ import Testing
             PlanShape(intervalWeeks: 1, weekdays: [1, 4], monthly: false).row == [
                 "interval_weeks": 1, "weekdays": [1, 4], "monthly": false,
             ])
-        #expect(PlanRepeat.allCases.map(\.label) == ["Several Days", "Weekly", "Every 2 Weeks", "Monthly"])
+        #expect(PlanRepeat.allCases.map(\.label) == ["2+ a Week", "Weekly", "Biweekly", "Monthly"])
         #expect(firstVisitHint(.weekly, long: false) == "Repeats on this weekday.")
         #expect(firstVisitHint(.monthly, long: true).hasSuffix("like the 2nd Tuesday."))
     }

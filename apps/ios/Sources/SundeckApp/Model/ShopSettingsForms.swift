@@ -201,7 +201,7 @@ public struct SchedulingForm: Equatable, Sendable {
     public static let dayLetters = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"]
     public static let dayNames = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"]
     public static let windows: [(minutes: Int, label: String)] = [
-        (0, "Exact Time"), (60, "1-Hour Window"), (120, "2-Hour Window"), (240, "4-Hour Window"),
+        (0, "Exact"), (60, "1 Hour"), (120, "2 Hours"), (240, "4 Hours"),
     ]
 
     public init(_ settings: JSONValue?) {

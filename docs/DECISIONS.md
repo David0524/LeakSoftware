@@ -2,6 +2,12 @@
 
 Newest first. Each entry: date, decision, reason.
 
+## 2026-10-21 (owner: "The nav bar still shrinks on 'Wrap Up'"; "Fix this white space. Keep the weather on one line. I don't need 'showers and thunderstorms'"; "make sure this is the most seamless app possible")
+- **The iPhone tab bar never shrinks** while a page scrolls (iOS 26 minimizes it by default; on the job page the Next Step bar sits on it).
+- **Today's weather is one line:** the icon, the temperature and the high; the conditions are read to screen readers only. Today's sync bar takes no room when it has nothing to say. Every platform.
+- **Shorter labels that fit a phone:** a plan repeats "2+ a Week | Weekly | Biweekly | Monthly"; arrival time customers are told "Exact | 1 Hour | 2 Hours | 4 Hours". Scheduling settings say routes start at the shop or at home.
+- **No "Move Back to Scheduled" on an unscheduled job:** an unscheduled job is scheduled with a day, from the Schedule.
+
 ## 2026-10-21 (owner: "Downloading your company takes a very long time. This needs to run in the background or something. You can't hold up new users this long")
 - **A new phone opens as soon as its company arrives** (the first page of the first download); the rest downloads behind the app. The sync bar says "Downloading your company · 42%", and the screens fill in every two seconds as rows land. iPhone and Android (the website doesn't download).
 

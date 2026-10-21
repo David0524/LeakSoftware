@@ -108,10 +108,10 @@ export function SchedulingForm({
           value={window}
           onChange={setWindow}
           options={[
-            { value: "0", label: "Exact Time" },
-            { value: "60", label: "1-Hour Window" },
-            { value: "120", label: "2-Hour Window" },
-            { value: "240", label: "4-Hour Window" },
+            { value: "0", label: "Exact" },
+            { value: "60", label: "1 Hour" },
+            { value: "120", label: "2 Hours" },
+            { value: "240", label: "4 Hours" },
           ]}
         />
         <p className="mt-1 px-4 text-[0.9375rem] text-text-muted sm:px-0">

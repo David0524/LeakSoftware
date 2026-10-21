@@ -68,7 +68,7 @@ function SchedulingPage() {
   return (
     <Screen
       title="Scheduling and Routes"
-      subtitle="Every tech’s route starts and ends at the shop."
+      subtitle="Routes start and end at the shop, or at home for anyone who starts there."
     >
       {notice ? <Notice tone={notice.tone}>{notice.text}</Notice> : null}
       <WorkingDay onSaved={said} />
@@ -239,10 +239,10 @@ function WorkingDay({ onSaved }: { onSaved: Said }) {
             value={window}
             onChange={setWindow}
             options={[
-              { value: "0", label: "Exact Time" },
-              { value: "60", label: "1-Hour Window" },
-              { value: "120", label: "2-Hour Window" },
-              { value: "240", label: "4-Hour Window" },
+              { value: "0", label: "Exact" },
+              { value: "60", label: "1 Hour" },
+              { value: "120", label: "2 Hours" },
+              { value: "240", label: "4 Hours" },
             ]}
           />
           <T variant="secondary" muted>

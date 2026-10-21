@@ -5,9 +5,9 @@ import { isDateString, parseDollars, type PlanRepeat } from "@leakbook/core";
 
 /** How often a plan repeats, in the website's order and words. */
 export const REPEAT_OPTIONS: { value: PlanRepeat; label: string }[] = [
-  { value: "days", label: "Several Days" },
+  { value: "days", label: "2+ a Week" },
   { value: "weekly", label: "Weekly" },
-  { value: "biweekly", label: "Every 2 Weeks" },
+  { value: "biweekly", label: "Biweekly" },
   { value: "monthly", label: "Monthly" },
 ];
 

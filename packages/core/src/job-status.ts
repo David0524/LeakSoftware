@@ -47,8 +47,13 @@ export const JOB_SERVER_STATUSES: readonly JobStatus[] = [
  * how a maintenance visit ends; leak detection and repairs end with a report or invoice.
  */
 export function userTransitions(from: JobStatus, type?: string): JobStatus[] {
+  // An unscheduled job is scheduled with a day (the Schedule's Move…), never by a status button:
+  // "Move Back to Scheduled" on a job never scheduled made no sense (2026-10-21).
   return JOB_STATUS_TRANSITIONS[from].filter(
-    (s) => !JOB_SERVER_STATUSES.includes(s) && (s !== "done" || type === "maintenance"),
+    (s) =>
+      !JOB_SERVER_STATUSES.includes(s) &&
+      (s !== "done" || type === "maintenance") &&
+      !(from === "unscheduled" && s === "scheduled"),
   );
 }
 

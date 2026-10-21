@@ -56,6 +56,8 @@ describe("job status machine", () => {
 
   it("does not offer server-only statuses to people", () => {
     expect(userTransitions("in_progress")).toEqual(["scheduled", "canceled"]);
+    // Scheduled with a day from the Schedule, not a status button.
+    expect(userTransitions("unscheduled")).not.toContain("scheduled");
   });
 
   it("offers Done only for maintenance visits", () => {

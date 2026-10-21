@@ -110,9 +110,9 @@ public enum PlanRepeat: String, Codable, CaseIterable, Hashable, Sendable {
     /// The website's REPEAT_OPTIONS labels.
     public var label: String {
         switch self {
-        case .days: "Several Days"
+        case .days: "2+ a Week"
         case .weekly: "Weekly"
-        case .biweekly: "Every 2 Weeks"
+        case .biweekly: "Biweekly"
         case .monthly: "Monthly"
         }
     }

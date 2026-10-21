@@ -79,7 +79,10 @@
                 }
             }
             .tint(Color.link)
-            .modifier(MinimizingTabBar())
+            // The tab bar stays full size while scrolling (owner, 2026-10-21: "The nav bar still
+            // shrinks on 'Wrap Up'"): iOS 26 minimizes it on scroll by default, and the Next
+            // Step bar sits on it on the job page.
+            .modifier(SteadyTabBar())
             .environment(\.zoomNamespace, zoom)
             .environment(activity)
             .task(id: "\(sync.revision)|\(session.company?.id ?? "")") {
@@ -230,12 +233,11 @@
         }
     }
 
-    /// On iOS 26 the Liquid Glass tab bar shrinks to the current tab while scrolling down a long
-    /// page and comes back on scrolling up.
-    private struct MinimizingTabBar: ViewModifier {
+    /// Keeps iOS 26's Liquid Glass tab bar full size while a page scrolls.
+    private struct SteadyTabBar: ViewModifier {
         func body(content: Content) -> some View {
             if #available(iOS 26, *) {
-                content.tabBarMinimizeBehavior(.onScrollDown)
+                content.tabBarMinimizeBehavior(.never)
             } else {
                 content
             }
