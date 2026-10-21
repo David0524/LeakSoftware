@@ -116,8 +116,6 @@ test.describe("Today: change the order of stops", () => {
 
   test.beforeEach(async () => {
     const now = shopNow();
-    const start = Math.ceil((now.min + 20) / 10) * 10;
-    test.skip(start + 120 > 23 * 60 + 30, "Too late in the shop's day to plan three stops.");
     owner = await signedInClient(OWNER.email, OWNER.password);
     const { data: tech } = await owner
       .from("profile")
@@ -131,6 +129,15 @@ test.describe("Today: change the order of stops", () => {
       .gte("scheduled_start", `${now.date}T00:00:00-07:00`)
       .lt("scheduled_start", `${now.date}T23:59:59-07:00`);
     saved = (day ?? []) as typeof saved;
+    // After the demo tech's last stop today (and at least 20 minutes from now), so this run's
+    // stops never land among the demo's: a started stop between them would change the moves.
+    const shopMin = (iso: string) => {
+      const t = new Date(iso).toLocaleTimeString("en-GB", { timeZone: TZ, hourCycle: "h23" });
+      return Number(t.slice(0, 2)) * 60 + Number(t.slice(3, 5));
+    };
+    const last = Math.max(0, ...saved.map((j) => shopMin(j.scheduled_end ?? j.scheduled_start)));
+    const start = Math.ceil((Math.max(now.min, last) + 20) / 10) * 10;
+    test.skip(start + 120 > 23 * 60 + 30, "Too late in the shop's day to plan three stops.");
     ids = await makeDay(owner, tech!.id as string, start, now.date);
   });
 
