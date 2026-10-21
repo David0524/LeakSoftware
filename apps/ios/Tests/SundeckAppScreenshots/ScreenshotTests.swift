@@ -590,7 +590,7 @@
             }
             view.subviews.forEach(walk)
         }
-        walk(view)
+        walk(root)
         return found.first
     }
 
