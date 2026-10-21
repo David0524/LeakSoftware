@@ -118,7 +118,7 @@
                     header(day)
                     // In the page, under the date, as on the other tabs: pinned under the bar (a
                     // top safe-area inset) it kept iOS from drawing the large title (2026-10-21).
-                    SyncBarRow()
+                    if syncBarMessage(sync.barStatus) != nil { SyncBarRow() }
                     // Getting Started is off on the phone for now: inside the tab view it stops Today
                     // drawing in the simulator screenshots, cause not found yet (docs/plans/swift-app.md).
                     if day.ctx.isManager && GettingStartedCard.enabled { GettingStartedCard(company: company) }
@@ -994,10 +994,12 @@
                 WeatherIcon(kind: weather.kind, day: weather.isDaytime)
                     .stroke(Color.text, style: StrokeStyle(lineWidth: 1.8, lineCap: .round, lineJoin: .round))
                     .frame(width: 24, height: 24)
-                (Text("\(weather.tempF)°").fontWeight(.semibold) + Text(" \(weather.conditions)")
+                // One line: the icon says the conditions; VoiceOver reads them (owner, 2026-10-21).
+                (Text("\(weather.tempF)°").fontWeight(.semibold)
                     + (weather.highF.map { Text(" · High \($0)°").foregroundStyle(Color.textMuted) } ?? Text("")))
                     .foregroundStyle(Color.text)
                     .monospacedDigit()
+                    .lineLimit(1)
             }
             .accessibilityElement(children: .ignore)
             .accessibilityLabel(weather.accessibilityLabel)

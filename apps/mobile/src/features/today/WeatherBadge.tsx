@@ -89,8 +89,10 @@ export function WeatherBadge({ weather: w }: { weather: Weather }) {
       <Text
         style={[type.body, { color: color.text, flexShrink: 1 }]}
         maxFontSizeMultiplier={MAX_TEXT_SCALE}
+        numberOfLines={1}
       >
-        <Text style={face.semiBold}>{w.tempF}°</Text> {w.conditions}
+        {/* One line: the icon says the conditions; TalkBack hears them (owner, 2026-10-21). */}
+        <Text style={face.semiBold}>{w.tempF}°</Text>
         {w.highF != null ? (
           <Text style={{ color: color.textMuted }}> · High {w.highF}°</Text>
         ) : null}

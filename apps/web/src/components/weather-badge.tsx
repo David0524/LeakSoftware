@@ -88,8 +88,9 @@ export async function WeatherBadge({ zip }: { zip: string | null }) {
       >
         {(!w.isDaytime && icon.night) || icon.day}
       </svg>
-      <span aria-hidden="true">
-        <span className="font-semibold">{w.tempF}°</span> {w.conditions}
+      {/* One line: the icon says the conditions; screen readers hear them (owner, 2026-10-21). */}
+      <span aria-hidden="true" className="whitespace-nowrap">
+        <span className="font-semibold">{w.tempF}°</span>
         {w.highF != null ? <span className="text-text-muted"> · High {w.highF}°</span> : null}
       </span>
     </span>
