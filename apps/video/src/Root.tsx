@@ -1,5 +1,5 @@
 import { Composition } from "remotion";
-import { Animatic } from "./Animatic";
+import { Video } from "./Video";
 import { FPS, TOTAL_FRAMES } from "./timing";
 
 // Each video in both formats from one edit: 16:9 for demos on a call, 9:16 to text.
@@ -16,7 +16,7 @@ export function Root() {
           <Composition
             key={story + f.suffix}
             id={`${story === "leak" ? "Leak" : "Pool"}${f.suffix}`}
-            component={Animatic}
+            component={Video}
             durationInFrames={TOTAL_FRAMES}
             fps={FPS}
             width={f.width}

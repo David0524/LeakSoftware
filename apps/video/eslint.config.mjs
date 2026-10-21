@@ -7,5 +7,8 @@ export default tseslint.config(
   { ignores: ["node_modules/**", "out/**", "assets/generated/**"] },
   js.configs.recommended,
   ...tseslint.configs.recommended,
-  { files: ["scripts/**"], languageOptions: { globals: globals.node } },
+  {
+    files: ["scripts/**", "record/**"],
+    languageOptions: { globals: { ...globals.node, ...globals.browser } },
+  },
 );
