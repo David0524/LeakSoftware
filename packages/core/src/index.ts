@@ -35,3 +35,8 @@ export * from "./notifications";
 export * from "./today-hero";
 export * from "./search";
 export * from "./activity";
+export * from "./week-plan";
+export * from "./day-map";
+export * from "./service-days";
+export * from "./download";
+export * from "./team";

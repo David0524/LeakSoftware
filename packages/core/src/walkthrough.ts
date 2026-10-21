@@ -43,8 +43,7 @@ export const TIPS: Tip[] = [
     screen: "schedule",
     roles: OWNERS,
     title: "Day, week, or month",
-    message:
-      "Switch views at the top. Plan Route puts a tech’s stops for the day in driving order.",
+    message: "Switch views at the top. Optimize puts a tech’s stops for the day in driving order.",
   },
   {
     id: "web-messages",

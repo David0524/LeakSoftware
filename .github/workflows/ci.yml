@@ -72,6 +72,15 @@ jobs:
           name: iphone-screenshots
           path: ${{ runner.temp }}/screenshots
           retention-days: 14
+      # When the screenshot process crashes ("Restarting after unexpected exit"), its crash
+      # report names the frame; the log alone doesn't.
+      - uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: iphone-crash-reports
+          path: ~/Library/Logs/DiagnosticReports/xctest*
+          if-no-files-found: ignore
+          retention-days: 14
 
   database:
     name: Database (Supabase + pgTAP)

@@ -1,6 +1,12 @@
 import Constants from "expo-constants";
 import { router } from "expo-router";
-import { ACTIVITY_DETAIL, ACTIVITY_TITLE, isManagerRole, offersPool } from "@leakbook/core";
+import {
+  ACTIVITY_DETAIL,
+  ACTIVITY_TITLE,
+  MAPS_LABELS,
+  isManagerRole,
+  offersPool,
+} from "@leakbook/core";
 import { useState, useSyncExternalStore } from "react";
 import { ActivityIndicator, Alert, Linking, Pressable, StyleSheet, View } from "react-native";
 import { notificationSummary, useNotificationPrefs } from "../../../../../data/notificationPrefs";
@@ -31,10 +37,12 @@ import { appearance, color, space, type Scheme } from "../../../../../ui/theme";
 /** Sundeck Pro's contact address, as the website's CONTACT_EMAIL (owner, 2026-10-19). */
 const CONTACT_EMAIL = "office@sundeckpro.com";
 
+// The setting names the company, since that's where it's picked; buttons say "Maps" (team and
+// week spec section 4).
 const DIRECTIONS: { value: DirectionsChoice; label: string }[] = [
-  { value: "automatic", label: "Automatic" },
-  { value: "apple", label: "Apple Maps" },
-  { value: "google", label: "Google Maps" },
+  { value: "automatic", label: MAPS_LABELS.automatic },
+  { value: "apple", label: MAPS_LABELS.apple },
+  { value: "google", label: MAPS_LABELS.google },
 ];
 
 /**
@@ -163,14 +171,14 @@ export default function More() {
           </View>
           <View style={styles.controlRow}>
             <T variant="bodyEmphasis" style={{ flex: 1 }}>
-              Directions open in
+              {MAPS_LABELS.setting}
             </T>
             <Pressable
               accessibilityRole="button"
-              accessibilityLabel={`Directions open in, ${DIRECTIONS.find((d) => d.value === directions)?.label}`}
+              accessibilityLabel={`${MAPS_LABELS.setting}, ${DIRECTIONS.find((d) => d.value === directions)?.label}`}
               onPress={() =>
                 chooseAction({
-                  title: "Directions open in",
+                  title: MAPS_LABELS.setting,
                   actions: DIRECTIONS.map((d) => ({
                     label: d.value === directions ? `${d.label} ✓` : d.label,
                     onPress: () => setDirections(d.value),

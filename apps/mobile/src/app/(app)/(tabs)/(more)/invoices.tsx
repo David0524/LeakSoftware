@@ -8,18 +8,36 @@ import {
   formatCents,
   invoiceBalance,
   invoiceOverdue,
+  invoiceShareText,
   isManagerRole,
 } from "@leakbook/core";
 import { useMemo, useState } from "react";
-import { Alert, Animated, Pressable, RefreshControl, StyleSheet, Text, View } from "react-native";
+import {
+  Alert,
+  Animated,
+  Pressable,
+  RefreshControl,
+  Share,
+  StyleSheet,
+  Text,
+  View,
+} from "react-native";
 import { useRows, useSyncRefresh } from "../../../../data/hooks";
 import {
   invoicesCsv,
   paymentsCsv,
   shareCsv,
   useInvoiceList,
+  type InvoiceListRow,
   type PaymentRow,
 } from "../../../../data/invoice-list";
+import { RecordPayment, voidInvoice } from "../../../../features/invoice/InvoiceSection";
+import { API_URL } from "../../../../lib/config";
+import { invoiceRowActions, menuTitle, type InvoiceActionId } from "../../../../lib/rowActions";
+import { confirmDestructive } from "../../../../ui/confirm";
+import { ModalSheet } from "../../../../ui/ModalSheet";
+import { useResultBanner } from "../../../../ui/ResultBanner";
+import { rowGestures, useRowMenu } from "../../../../ui/RowMenu";
 import { useJobViews } from "../../../../data/jobs";
 import { FlatGroupedRow } from "../../../../features/more/FlatGroupedRow";
 import { useCompany, useSession } from "../../../../state/session";
@@ -40,7 +58,9 @@ import { color, face, MAX_TEXT_SCALE, minTap, space, tabular, type } from "../..
  * Invoices (spec 5.10): what's owed, then the invoices, newest first. Filter pills with counts,
  * a search, and a Sort menu narrow and order them (owner, 2026-10-20: "add some filtering and
  * sorting"), with the website's rules (@leakbook/core filterInvoices). A row opens its job's
- * Wrap-Up at the invoice. Managers export invoices or payments as a CSV file to share.
+ * Wrap-Up at the invoice. Managers export invoices or payments as a CSV file to share. Swipe
+ * right on an unpaid invoice to Record Payment; touch and hold for Open, Share Payment Link,
+ * Record Payment and Void… (gestures spec section 12), each as the invoice's own card does it.
  */
 export default function Invoices() {
   const company = useCompany();
@@ -50,6 +70,13 @@ export default function Invoices() {
   const invoices = useInvoiceList(company.id, jobs);
   const payments = useRows<PaymentRow>("payment", company.id);
   const quotes = useRows<{ id: string; number?: number | null }>("quote", company.id);
+  const links = useRows<{ token: string; invoice_id: string | null; revoked_at: string | null }>(
+    "share_link",
+    company.id,
+  );
+  const rowMenu = useRowMenu();
+  const banner = useResultBanner();
+  const [paying, setPaying] = useState<InvoiceListRow | null>(null);
   const open = invoices.filter((i) => i.status === "sent" || i.status === "partially_paid");
   const owed = open.reduce((sum, i) => sum + invoiceBalance(i), 0);
   const tz = company.timezone;
@@ -123,122 +150,182 @@ export default function Invoices() {
     ) : undefined,
   });
 
+  /** The invoice card's own Share Link, Record Payment and Void Invoice. */
+  function gesturesFor(i: InvoiceListRow) {
+    const token = links.find((l) => l.invoice_id === i.id && !l.revoked_at)?.token;
+    const link = token && API_URL ? `${API_URL}/i/${token}` : null;
+    const actions = invoiceRowActions({
+      status: i.status,
+      balanceCents: invoiceBalance(i),
+      manager,
+      hasPayments: payments.some(
+        (p) =>
+          p.invoice_id === i.id &&
+          !p.deleted_at &&
+          (p.status === "succeeded" || p.status === "pending"),
+      ),
+      hasLink: Boolean(link),
+    });
+    const name = `Invoice #${i.number ?? ""}`;
+    const run = (id: InvoiceActionId) => {
+      if (id === "open") router.push(`/jobs/${i.job_id}?section=wrapup`);
+      if (id === "share" && link)
+        void Share.share({ message: invoiceShareText(company.name, link) });
+      if (id === "record") setPaying(i);
+      if (id === "void")
+        confirmDestructive({
+          title: "Void this invoice? The customer's link will show it as void.",
+          confirm: "Void Invoice",
+          onConfirm: () =>
+            void voidInvoice(i.id)
+              .then(() => banner.show({ tone: "success", message: `${name} voided` }))
+              .catch((e: unknown) =>
+                banner.show({ tone: "error", message: e instanceof Error ? e.message : String(e) }),
+              ),
+        });
+    };
+    return rowGestures(actions, run, () =>
+      rowMenu.open(menuTitle(i.customer, `#${i.number ?? ""}`), actions.menu, run),
+    );
+  }
+
   const pull = useSyncRefresh();
   return (
-    <Animated.FlatList
-      ref={ref as never}
-      {...scrollProps}
-      style={{ backgroundColor: color.bg }}
-      contentContainerStyle={contentContainerStyle}
-      data={shown}
-      refreshControl={<RefreshControl {...pull} />}
-      keyExtractor={(i) => i.id}
-      initialNumToRender={20}
-      ListHeaderComponent={
-        <View style={styles.top}>
-          {header}
-          <ScreenTip screen="invoices" />
-          {invoices.length ? (
-            <View style={styles.tools}>
-              <FilterPills
-                label="Filter invoices"
-                options={filters}
-                value={filter}
-                onChange={setFilter}
-              />
-              <View style={styles.searchRow}>
-                <View style={{ flex: 1 }}>
-                  <SearchField
-                    value={search}
-                    onChangeText={setSearch}
-                    placeholder="Customer, invoice, or job number"
-                    label="Search invoices"
-                  />
-                </View>
-                <Pressable
-                  accessibilityRole="button"
-                  accessibilityLabel={`Sort, ${sortLabel}`}
-                  onPress={() =>
-                    menu.open({
-                      title: "Sort",
-                      items: INVOICE_SORTS.map((x) => ({
-                        label: x.label,
-                        checked: x.key === sort,
-                        onPress: () => setSort(x.key),
-                      })),
-                    })
-                  }
-                  style={({ pressed }) => [styles.sort, pressed && { opacity: 0.5 }]}
-                >
-                  <Text
-                    style={[type.secondary, face.semiBold, { color: color.link }]}
-                    maxFontSizeMultiplier={MAX_TEXT_SCALE}
+    <View style={{ flex: 1, backgroundColor: color.bg }}>
+      <Animated.FlatList
+        ref={ref as never}
+        {...scrollProps}
+        style={{ backgroundColor: color.bg }}
+        contentContainerStyle={contentContainerStyle}
+        data={shown}
+        refreshControl={<RefreshControl {...pull} />}
+        keyExtractor={(i) => i.id}
+        initialNumToRender={20}
+        ListHeaderComponent={
+          <View style={styles.top}>
+            {header}
+            <ScreenTip screen="invoices" />
+            {invoices.length ? (
+              <View style={styles.tools}>
+                <FilterPills
+                  label="Filter invoices"
+                  options={filters}
+                  value={filter}
+                  onChange={setFilter}
+                />
+                <View style={styles.searchRow}>
+                  <View style={{ flex: 1 }}>
+                    <SearchField
+                      value={search}
+                      onChangeText={setSearch}
+                      placeholder="Customer, invoice, or job number"
+                      label="Search invoices"
+                    />
+                  </View>
+                  <Pressable
+                    accessibilityRole="button"
+                    accessibilityLabel={`Sort, ${sortLabel}`}
+                    onPress={() =>
+                      menu.open({
+                        title: "Sort",
+                        items: INVOICE_SORTS.map((x) => ({
+                          label: x.label,
+                          checked: x.key === sort,
+                          onPress: () => setSort(x.key),
+                        })),
+                      })
+                    }
+                    style={({ pressed }) => [styles.sort, pressed && { opacity: 0.5 }]}
                   >
-                    {sortLabel}
-                  </Text>
-                  <WebIcon name="updown" size={16} color={color.link} strokeWidth={2} />
-                </Pressable>
+                    <Text
+                      style={[type.secondary, face.semiBold, { color: color.link }]}
+                      maxFontSizeMultiplier={MAX_TEXT_SCALE}
+                    >
+                      {sortLabel}
+                    </Text>
+                    <WebIcon name="updown" size={16} color={color.link} strokeWidth={2} />
+                  </Pressable>
+                </View>
               </View>
-            </View>
-          ) : null}
-          {menu.element}
-        </View>
-      }
-      ListEmptyComponent={
-        invoices.length ? (
-          <Empty>
-            {q ? `No invoices match “${q}”.` : "No invoices here."}{" "}
-            <Text
-              accessibilityRole="button"
-              onPress={() => {
-                setFilter("all");
-                setSearch("");
-              }}
-              style={[face.semiBold, { color: color.link }]}
-            >
-              Show All
-            </Text>
-          </Empty>
-        ) : (
-          <Empty>No invoices yet. Create one from a job once the work is done.</Empty>
-        )
-      }
-      renderItem={({ item: i, index }) => (
-        <FlatGroupedRow
-          first={index === 0}
-          last={index === shown.length - 1}
-          onPress={() => router.push(`/jobs/${i.job_id}?section=wrapup`)}
-          value={
-            <T variant="bodyEmphasis" style={tabular}>
-              {formatCents(i.total_cents)}
-            </T>
-          }
-        >
-          <T variant="bodyEmphasis">{i.customer ?? "Customer"}</T>
-          <T variant="secondary" muted>
-            #{i.number}
-            {i.period_month
-              ? ` · Maintenance, ${monthLabel(i.period_month)}`
-              : i.jobNumber
-                ? ` · Job #${i.jobNumber}`
-                : ""}
-          </T>
-          <T variant="secondary" muted>
-            {invoiceOverdue(i, today) ? (
-              <T variant="secondary" style={{ color: color.fail }}>
-                Overdue
+            ) : null}
+            {menu.element}
+          </View>
+        }
+        ListEmptyComponent={
+          invoices.length ? (
+            <Empty>
+              {q ? `No invoices match “${q}”.` : "No invoices here."}{" "}
+              <Text
+                accessibilityRole="button"
+                onPress={() => {
+                  setFilter("all");
+                  setSearch("");
+                }}
+                style={[face.semiBold, { color: color.link }]}
+              >
+                Show All
+              </Text>
+            </Empty>
+          ) : (
+            <Empty>No invoices yet. Create one from a job once the work is done.</Empty>
+          )
+        }
+        renderItem={({ item: i, index }) => (
+          <FlatGroupedRow
+            first={index === 0}
+            last={index === shown.length - 1}
+            onPress={() => router.push(`/jobs/${i.job_id}?section=wrapup`)}
+            gestures={gesturesFor(i)}
+            value={
+              <T variant="bodyEmphasis" style={tabular}>
+                {formatCents(i.total_cents)}
               </T>
-            ) : (
-              INVOICE_STATUS_LABELS[i.status]
-            )}
-            {i.sent_at ? ` · sent ${day(i.sent_at)}` : ""}
-            {i.status === "sent" || i.status === "partially_paid"
-              ? ` · ${formatCents(invoiceBalance(i))} due`
-              : ""}
-          </T>
-        </FlatGroupedRow>
-      )}
-    />
+            }
+          >
+            <T variant="bodyEmphasis">{i.customer ?? "Customer"}</T>
+            <T variant="secondary" muted>
+              #{i.number}
+              {i.period_month
+                ? ` · Maintenance, ${monthLabel(i.period_month)}`
+                : i.jobNumber
+                  ? ` · Job #${i.jobNumber}`
+                  : ""}
+            </T>
+            <T variant="secondary" muted>
+              {invoiceOverdue(i, today) ? (
+                <T variant="secondary" style={{ color: color.fail }}>
+                  Overdue
+                </T>
+              ) : (
+                INVOICE_STATUS_LABELS[i.status]
+              )}
+              {i.sent_at ? ` · sent ${day(i.sent_at)}` : ""}
+              {i.status === "sent" || i.status === "partially_paid"
+                ? ` · ${formatCents(invoiceBalance(i))} due`
+                : ""}
+            </T>
+          </FlatGroupedRow>
+        )}
+      />
+      {rowMenu.element}
+      <ModalSheet
+        visible={paying != null}
+        onClose={() => setPaying(null)}
+        title={`Record Payment${paying?.number ? ` · #${paying.number}` : ""}`}
+      >
+        {paying ? (
+          <RecordPayment
+            invoice={paying}
+            balance={invoiceBalance(paying)}
+            onRecorded={(text) => {
+              setPaying(null);
+              banner.show({ tone: "success", message: `Invoice #${paying.number ?? ""}: ${text}` });
+            }}
+          />
+        ) : null}
+      </ModalSheet>
+      {banner.element}
+    </View>
   );
 }
 

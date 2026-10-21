@@ -1,4 +1,4 @@
-import { directionsHref, type LatLng } from "@leakbook/core";
+import { MAPS_LABELS, dayMapsLabel, directionsHref, type LatLng } from "@leakbook/core";
 import { buttonClass, cx } from "./ui";
 
 // Directions links. Plain links (no browser code): /maps picks Apple Maps or Google Maps on
@@ -57,7 +57,7 @@ export function AddressLink({
 
 /**
  * A day's directions in the device's maps app: the whole route in Google Maps; in Apple Maps
- * (whose links take one stop) the next stop. The button names the app.
+ * (whose links take one stop) the next stop. The button says "Maps", never the company.
  */
 export function OpenRouteInMaps({
   href,
@@ -72,7 +72,8 @@ export function OpenRouteInMaps({
   /** Just the app's name, to sit beside another button on a phone. */
   compact?: boolean;
 }) {
-  const full = app === "google" ? "Open Route in Google Maps" : "Next Stop in Apple Maps";
+  // The button never names the maps company (owner, 2026-10-20).
+  const full = dayMapsLabel(app);
   return (
     <a
       href={href}
@@ -85,7 +86,7 @@ export function OpenRouteInMaps({
       )}
     >
       {PIN}
-      {compact ? (app === "google" ? "Google Maps" : "Apple Maps") : full}
+      {compact ? MAPS_LABELS.maps : full}
     </a>
   );
 }

@@ -22,7 +22,7 @@
 
     /// A stop in Reorder: its number, time and customer, the drive to it, and Move Up and Move
     /// Down (the visible alternative to the drag handle), or a lock with why it stays ("Started",
-    /// "Promised for 9:00 AM").
+    /// "Locked", "Time locked").
     struct TodayReorderRow: View {
         var number: Int
         var job: ScheduleJob

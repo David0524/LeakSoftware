@@ -3,7 +3,7 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import { signedInClient } from "./backend";
 import { OWNER, RUN, signIn } from "./helpers";
 
-// Routing (owner request, 2026-10-13): Plan Route orders a tech's day for the least driving
+// Routing (owner request, 2026-10-13): Optimize orders a tech's day for the least driving
 // and keeps a promised time; jobs move between the tray and a tech's day by Move… and by
 // dragging; Suggest Times fits a job into the routes already planned; addresses link to
 // directions; Today shows a tech's route. No routing key in CI: drive times
@@ -151,17 +151,23 @@ test("plan a tech's day, move jobs, suggest times, and give directions", async (
   ]);
   await expect(route.getByText(/^3 stops · .* driving · back by /)).toBeVisible();
 
-  // 1. Plan Route: Goodyear no longer sits between the east-side stops, and the promised
-  //    2:00 PM stays.
-  await route.getByRole("button", { name: "Plan Route" }).click();
-  await expect(page.getByText(/^Planned: .* less than before/)).toBeVisible();
+  // 1. Optimize (owner, 2026-10-20: was Plan Route): Goodyear no longer sits between the
+  //    east-side stops, and the promised 2:00 PM stays. The result is a banner at the top of
+  //    the screen.
+  await route.getByRole("button", { name: "Optimize" }).click();
+  const banner = page.getByTestId("top-banner");
+  await expect(banner).toContainText(/^Optimized · .* (less driving|driving)/);
+  await expect(page.getByRole("status").filter({ has: banner })).toHaveCount(1);
+  // A tap puts it away.
+  await banner.click();
+  await expect(banner).toHaveCount(0);
   await expect(
     route.getByRole("article", { name: `2:00 PM, ${name("scottsdale")}` }),
   ).toBeVisible();
   const planned = await routeNames(page, "Priya Shah");
   expect(planned).toHaveLength(3);
   expect(planned.indexOf(name("goodyear"))).not.toBe(1);
-  await expect(route.getByRole("link", { name: "Open Route in Google Maps" })).toHaveAttribute(
+  await expect(route.getByRole("link", { name: "Open Route in Maps" })).toHaveAttribute(
     "href",
     /^https:\/\/www\.google\.com\/maps\/dir\/\?api=1/,
   );
@@ -180,13 +186,16 @@ test("plan a tech's day, move jobs, suggest times, and give directions", async (
   await sheet.getByLabel("Day").fill(day);
   await sheet.getByLabel("Place in the route").selectOption({ label: "First stop" });
   await sheet.getByRole("button", { name: "Move", exact: true }).click();
-  await expect(page.getByText(/^Moved to \d/)).toBeVisible();
+  await expect(page.getByText("Moved.", { exact: true })).toBeVisible();
   await expect(route.getByTestId("stop")).toHaveCount(4);
   expect((await routeNames(page, "Priya Shah"))[0]).toBe(name("tempe"));
   await expect(tray.getByTestId("tray-job").filter({ hasText: name("tempe") })).toHaveCount(0);
 
   // 3. Drag it back to the tray: off the schedule.
   const grip = route.getByRole("button", { name: `Drag ${name("tempe")}` });
+  // The techs sit side by side in a row that slides sideways (owner, 2026-10-21): bring
+  // Priya's column into view first, as a person would.
+  await grip.scrollIntoViewIfNeeded();
   const box = (await grip.boundingBox())!;
   const target = (await tray.getByRole("heading", { name: /^Needs a Time/ }).boundingBox())!;
   await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2);
@@ -199,10 +208,12 @@ test("plan a tech's day, move jobs, suggest times, and give directions", async (
   await expect(tray.getByTestId("tray-job").filter({ hasText: name("tempe") })).toHaveCount(1);
 
   // 3b. Taking a job away from its tech puts it in Needs a Time, keeping its booked time.
+  // On a computer the stop is a one-line card (owner, 2026-10-20): Move… is in its menu.
   await route
     .getByRole("article", { name: new RegExp(name("zoo")) })
-    .getByRole("button", { name: "Move…" })
-    .click();
+    .getByTestId("stop-line")
+    .click({ button: "right" });
+  await page.getByRole("menu").getByRole("menuitem", { name: "Move…" }).click();
   const zooSheet = page.getByRole("dialog", { name: `Move ${name("zoo")}` });
   await zooSheet.getByLabel("Tech").selectOption({ label: "Nobody yet (waits in Needs a Time)" });
   await zooSheet.getByRole("button", { name: "Move", exact: true }).click();
@@ -228,18 +239,15 @@ test("plan a tech's day, move jobs, suggest times, and give directions", async (
     .getByRole("button", { name: /^Schedule / })
     .first()
     .click();
-  await expect(page.getByText(/^Moved to \d/)).toBeVisible();
+  await expect(page.getByText("Moved.", { exact: true })).toBeVisible();
   await expect(tray.getByTestId("tray-job").filter({ hasText: name("tempe") })).toHaveCount(0);
 
-  // 5. The job's address links to directions to the pool's spot (Google Maps off Apple
-  //    devices).
+  // 5. The job's pool has directions to its spot (Google Maps off Apple devices).
   await page.goto(`/jobs/${zoo}`);
-  await expect(
-    page.getByRole("link", { name: /^455 N Galvin Pkwy.*directions in Maps$/ }),
-  ).toHaveAttribute("href", /^\/maps\?to=455\+N\+Galvin/);
-  const href = (await page
-    .getByRole("link", { name: /^455 N Galvin Pkwy.*directions in Maps$/ })
-    .getAttribute("href"))!;
+  // The address opens the pool's details; the pin beside it opens Maps (owner, 2026-10-20).
+  const pin = page.getByTestId("pool-row").getByRole("link", { name: "Open in Maps" });
+  await expect(pin).toHaveAttribute("href", /^\/maps\?to=455\+N\+Galvin/);
+  const href = (await pin.getAttribute("href"))!;
   expect(await mapsTarget(page, href)).toMatch(
     /^https:\/\/www\.google\.com\/maps\/dir\/\?api=1&destination=33\.45006%2C-111\.94886/,
   );
@@ -251,6 +259,24 @@ test("plan a tech's day, move jobs, suggest times, and give directions", async (
   expect(await mapsTarget(page, href, { "user-agent": IPHONE, cookie: "lb_maps=google" })).toMatch(
     /^https:\/\/www\.google\.com\/maps\//,
   );
+
+  // 6. The access notes are edited right under the address (owner, 2026-10-20), and only they
+  //    change.
+  const access = page.getByTestId("access-notes-row");
+  await access.getByRole("button").click();
+  const notes = page.getByRole("dialog", { name: "Access Notes" });
+  const field = notes.getByLabel("Access notes");
+  const was = await field.inputValue();
+  await field.fill("Gate code 4321. Dog in the yard.");
+  await notes.getByRole("button", { name: "Save" }).click();
+  await expect(notes).toHaveCount(0);
+  await expect(access).toContainText("Gate code 4321. Dog in the yard.");
+  await expect(page.getByTestId("pool-row")).toContainText("455 N Galvin");
+  // Put it back as it was.
+  await access.getByRole("button").click();
+  await notes.getByLabel("Access notes").fill(was);
+  await notes.getByRole("button", { name: "Save" }).click();
+  await expect(access).toContainText(was || "Add Access Notes");
 });
 
 test("on a phone, a stop drags by its grip to another place in the day", async ({ browser }) => {
@@ -327,7 +353,7 @@ test("on a phone, a stop drags by its grip to another place in the day", async (
     await page.waitForTimeout(16);
   }
   await touch("touchEnd");
-  await expect(page.getByText(/^Moved to \d/)).toBeVisible();
+  await expect(page.getByText("Moved.", { exact: true })).toBeVisible();
   expect((await routeNames(page, "Priya Shah"))[0]).toBe(name("tempe"));
   // A drag from the grip isn't a swipe to the next day.
   expect(new URL(page.url()).searchParams.get("date")).toBe(day);
@@ -362,12 +388,35 @@ test("Today shows a tech's route with directions", async ({ page }) => {
   await expect(page.getByRole("heading", { name: "Today · Priya Shah" })).toBeVisible();
   await expect(page.getByTestId("today-summary")).toContainText(/stops? · .* driving/);
   // The card at the top for the stop she's on (owner, 2026-10-20): the Live Activity's words and
-  // a segment per stop. On My Way and Start Job are hers to press, so an owner doesn't get them.
+  // a segment per stop. On My Way and Start are hers to press, so an owner doesn't get them.
   const hero = page.getByTestId("today-hero");
   await expect(hero).toBeVisible();
-  await expect(hero).toContainText(/Stop \d+ of \d+/);
+  await expect(hero).toContainText(/\d+ of \d+/);
+  // No clock times on the card (owner, 2026-10-20; gestures.md section 10).
+  await expect(hero).not.toContainText(/\d{1,2}:\d{2}\s?(AM|PM)/);
   await expect(hero.getByTestId("hero-progress")).toHaveAttribute("aria-label", /\d+ of \d+/);
-  await expect(hero.getByRole("button", { name: /On My Way|Start Job/ })).toHaveCount(0);
+  await expect(hero.getByRole("button", { name: /^(On My Way|Start)$/ })).toHaveCount(0);
+  // One text button: no car, and an owner's Message is a blank text (gestures.md section 2).
+  await expect(hero.getByRole("button", { name: /On My Way/ })).toHaveCount(0);
+  await expect(hero.getByRole("link", { name: /On My Way/ })).toHaveCount(0);
+  // Each segment of the bar goes to its stop; Back to Now returns (section 1).
+  const segments = hero.getByTestId("hero-progress").getByRole("button");
+  const count = await segments.count();
+  expect(count).toBeGreaterThan(0);
+  const current = await segments.evaluateAll((b) =>
+    b.findIndex((x) => x.getAttribute("aria-current") === "step"),
+  );
+  if (count > 1 && current >= 0) {
+    const other = current === 0 ? 1 : 0;
+    await segments.nth(other).click();
+    await expect(hero.getByRole("button", { name: "Back to Now" })).toBeVisible();
+    await expect(segments.nth(other)).toHaveAttribute("aria-current", "step");
+    // The Left and Right arrow keys move it while the card has focus.
+    await hero.focus();
+    await page.keyboard.press(other > current ? "ArrowLeft" : "ArrowRight");
+    await expect(hero.getByRole("button", { name: "Back to Now" })).toHaveCount(0);
+  }
+  await expect(hero.getByTestId("hero-start-row")).toHaveCount(0);
   // In the list, that stop is one row marked Now.
   await expect(
     page.getByTestId("today-stop").filter({ has: page.getByText("Now", { exact: true }) }),
@@ -379,5 +428,6 @@ test("Today shows a tech's route with directions", async ({ page }) => {
   await expect(stop.getByRole("button", { name: /^Mark Complete for/ })).toBeVisible();
   const href = (await stop.getByTestId("address-link").getAttribute("href"))!;
   expect(await mapsTarget(page, href)).toMatch(/destination=33\.4919%2C-111\.9236/);
-  await expect(page.getByRole("link", { name: "Open Route in Google Maps" })).toBeVisible();
+  // The card's Directions replaces the day's route button (owner, 2026-10-20).
+  await expect(hero.getByRole("link", { name: /^Directions to / })).toBeVisible();
 });

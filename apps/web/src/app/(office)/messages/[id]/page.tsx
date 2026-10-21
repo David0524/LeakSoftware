@@ -83,6 +83,7 @@ export default async function ConversationPage({ params }: PageProps<"/messages/
               conversations={conversations}
               current={c.id}
               timeZone={office.company.timezone}
+              canCall={active}
             />
           </div>
         </div>

@@ -26,10 +26,22 @@
         @State private var turningOff: Set<String> = []
         @State private var turnedOff: Set<String> = []
         @State private var linkError: String?
+        /// The job's pool, open in Pool Details (owner, 2026-10-20: the address opens it to edit).
+        @State private var editingPool = false
+        /// The pool's access notes, open in their own sheet (owner, 2026-10-20).
+        @State private var editingAccess = false
         @FocusState private var focus: Field?
         @Environment(\.dynamicTypeSize) private var typeSize
 
         enum Field { case fee, gallons, notes }
+
+        /// A tech's name as a row's value, with their dot before it.
+        private func techValue(_ name: String, _ color: TechColor?) -> some View {
+            HStack(spacing: 8) {
+                if let color { TechDot(color: color) }
+                Text(name).textRole(.body).foregroundStyle(Color.textMuted)
+            }
+        }
 
         var body: some View {
             let _ = sync.revision
@@ -44,8 +56,14 @@
                 if !links.isEmpty { linksGroup(links) }
                 if details.address != nil { pool(details) }
                 Grouped(label: "Assigned to") {
-                    ListRow("Tech", value: details.tech)
-                    if let with = details.with { ListRow("With", value: with) }
+                    // Each tech's color as a dot before their name (owner, 2026-10-20).
+                    let colors = company.map { teamColors(sync.store, companyId: $0.id) } ?? [:]
+                    ListRow("Tech") {
+                        techValue(details.tech, colors[job.job["assigned_user_id"]?.string ?? ""])
+                    }
+                    if let with = details.with {
+                        ListRow("With") { techValue(with, colors[job.job["second_tech_id"]?.string ?? ""]) }
+                    }
                     if let fee = details.fee { ListRow(details.feeLabel, value: fee) }
                 }
                 if !details.intake.isEmpty {
@@ -85,6 +103,20 @@
                 saveNotes()
             }
             .sensoryFeedback(.success, trigger: saves)
+            .sheet(isPresented: $editingPool) {
+                // The customer page's Pool Details: address suggestions, saved through sync, and
+                // the map lookup after an address change.
+                if let property = job.property {
+                    PoolSheet(propertyId: property.id, row: property) { saves += 1 }
+                }
+            }
+            .sheet(isPresented: $editingAccess) {
+                if let property = job.property {
+                    AccessNotesSheet(propertyId: property.id, notes: property["access_notes"]?.string ?? "") {
+                        saves += 1
+                    }
+                }
+            }
             .confirmationDialog("Cancel this job?", isPresented: $confirmCancel, titleVisibility: .visible) {
                 Button("Cancel Job", role: .destructive) { save(jobStatusValues(.canceled, job: job.job)) }
             }
@@ -242,32 +274,44 @@
         }
 
         private func pool(_ details: JobDetails) -> some View {
-            Grouped(label: "Pool") {
-                Button {
-                    let place = MapPlace(address: job.address, location: propertyLocation(job.decodedProperty))
-                    if let url = URL(string: nativeMapsUrl(place, "ios")) { openURL(url) }
-                } label: {
-                    VStack(alignment: .leading, spacing: 2) {
-                        Text(details.address ?? "").textRole(.body).foregroundStyle(Color.link)
-                        if let detail = details.poolDetail {
-                            Text(detail).textRole(.secondary).foregroundStyle(Color.textMuted)
-                        }
+            let missing =
+                propertyMapStatus(job.property, routing: MapLookups.on(sync, companyId: session.company?.id))
+                == .missing
+            return Grouped(label: "Pool") {
+                // The address opens the pool's details to edit; the pin opens Maps (owner,
+                // 2026-10-20; the website's Pool group).
+                HStack(spacing: 0) {
+                    Button {
+                        editingPool = true
+                    } label: {
+                        ListRow(
+                            title: details.address ?? "", detail: details.poolDetail, emphasized: true,
+                            titleMark: missing ? NotOnMapTag.text() : nil
+                        ) { EmptyView() }
                     }
-                    .multilineTextAlignment(.leading)
-                    .padding(.horizontal, CGFloat(Spacing.rowHorizontal))
-                    .padding(.vertical, CGFloat(Spacing.rowVertical))
-                    .frame(maxWidth: .infinity, minHeight: minTarget, alignment: .leading)
-                    .contentShape(Rectangle())
+                    .buttonStyle(.row)
+                    .disabled(job.property == nil)
+                    .accessibilityHint("Opens Pool Details")
+                    RoundIconButton(systemImage: "mappin", label: "Open in Maps") {
+                        let place = MapPlace(address: job.address, location: propertyLocation(job.decodedProperty))
+                        if let url = URL(string: nativeMapsUrl(place, "ios")) { openURL(url) }
+                    }
+                    .help("Open in Maps")
+                    .padding(.trailing, CGFloat(Spacing.rowHorizontal))
                 }
-                .buttonStyle(.row)
-                .accessibilityHint("Opens directions")
-                if propertyMapStatus(job.property, routing: MapLookups.on(sync, companyId: session.company?.id))
-                    == .missing
-                {
+                if missing {
                     NotOnMapRow()
                 }
-                if let access = details.accessNotes {
-                    StackedRow(caption: "Access", value: access)
+                // Right under the address, editable here (owner, 2026-10-20: "You should be able
+                // to edit access notes on the job screen underneath the address").
+                if job.property != nil {
+                    Button {
+                        editingAccess = true
+                    } label: {
+                        AccessNotesRow(notes: details.accessNotes)
+                    }
+                    .buttonStyle(.row)
+                    .accessibilityHint("Opens Access Notes")
                 }
             }
         }
@@ -437,6 +481,118 @@
                     linkError = "Couldn’t turn the link off. Try again."
                 }
                 turningOff.remove(link.id)
+            }
+        }
+    }
+
+    /// The Pool group's Access Notes row: the notes under a caption, or "Add Access Notes" in
+    /// `link` when there are none, with a chevron since it opens a sheet.
+    struct AccessNotesRow: View {
+        var notes: String?
+
+        var body: some View {
+            HStack(spacing: CGFloat(Spacing.rowItems)) {
+                if let notes {
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text("Access Notes").textRole(.secondary).foregroundStyle(Color.textMuted)
+                        Text(notes).textRole(.body).foregroundStyle(Color.text).multilineTextAlignment(.leading)
+                    }
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                } else {
+                    Text("Add Access Notes")
+                        .textRole(.body)
+                        .foregroundStyle(Color.link)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                }
+                Chevron()
+            }
+            .padding(.horizontal, CGFloat(Spacing.rowHorizontal))
+            .padding(.vertical, CGFloat(Spacing.rowVertical))
+            .frame(maxWidth: .infinity, minHeight: minTarget, alignment: .leading)
+            .contentShape(Rectangle())
+            .accessibilityElement(children: .combine)
+        }
+    }
+
+    /// Access Notes, as a sheet from the job page: one growing field, Cancel and Save in the
+    /// navigation bar, saved on the pool (property.access_notes) through the sync layer; blank
+    /// clears them. Today's card and the Lock Screen pick them up from the same row.
+    struct AccessNotesSheet: View {
+        var propertyId: String
+        var notes: String
+        var saved: () -> Void
+        @Environment(Session.self) private var session
+        @Environment(SyncService.self) private var sync
+        @Environment(\.dismiss) private var dismiss
+        @State private var text = ""
+        @State private var loaded = false
+        @State private var error: String?
+        @State private var confirm = false
+        @FocusState private var focused: Bool
+
+        private var dirty: Bool { loaded && text != notes }
+
+        var body: some View {
+            NavigationStack {
+                ScrollView {
+                    VStack(alignment: .leading, spacing: 16) {
+                        Grouped {
+                            TextField(
+                                "Access Notes", text: $text,
+                                prompt: Text("Gate code, dog, where to park.").foregroundStyle(Color.placeholder),
+                                axis: .vertical
+                            )
+                            .lineLimit(3...10)
+                            .textRole(.body)
+                            .foregroundStyle(Color.text)
+                            .focused($focused)
+                            .padding(.horizontal, CGFloat(Spacing.rowHorizontal))
+                            .padding(.vertical, CGFloat(Spacing.rowVertical))
+                            .frame(minHeight: minTarget)
+                            .accessibilityLabel("Access Notes")
+                        }
+                        if let error { Notice(kind: .error, text: error) }
+                    }
+                    .padding(.horizontal, CGFloat(Spacing.pageMargin))
+                    .padding(.top, 8)
+                    .padding(.bottom, 24)
+                }
+                .scrollDismissesKeyboard(.interactively)
+                .background(Color.bg)
+                .navigationTitle("Access Notes")
+                .navigationBarTitleDisplayMode(.inline)
+                .toolbar {
+                    ToolbarItem(placement: .cancellationAction) {
+                        Button("Cancel") { if dirty { confirm = true } else { dismiss() } }
+                    }
+                    ToolbarItem(placement: .confirmationAction) {
+                        Button("Save") { save() }.disabled(!dirty)
+                    }
+                }
+                .confirmationDialog("Discard changes?", isPresented: $confirm, titleVisibility: .visible) {
+                    Button("Discard Changes", role: .destructive) { dismiss() }
+                }
+            }
+            .sheetPresentation(dirty: dirty, detents: [.medium, .large])
+            .onAppear {
+                guard !loaded else { return }
+                text = notes
+                loaded = true
+                focused = true
+            }
+        }
+
+        private func save() {
+            guard let companyId = session.company?.id else { return }
+            let trimmed = text.trimmingCharacters(in: .whitespacesAndNewlines)
+            do {
+                try sync.write(
+                    "property", id: propertyId, companyId: companyId,
+                    ["access_notes": trimmed.isEmpty ? .null : .string(trimmed)])
+                saved()
+                dismiss()
+            } catch {
+                self.error = String(describing: error)
             }
         }
     }

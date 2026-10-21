@@ -21,7 +21,7 @@ function Tap({ show, className }: { show: boolean; className: string }) {
 }
 
 // ---------------------------------------------------------------------------
-// Plan Route
+// Optimize
 // ---------------------------------------------------------------------------
 
 const STOPS = {
@@ -83,7 +83,7 @@ export function PlanRouteDemo() {
               step === 1 && "scale-95",
             )}
           >
-            Plan Route
+            Optimize
           </span>
           <Tap show={step === 1} className="-top-1 left-6" />
         </span>
@@ -113,14 +113,27 @@ export function PlanRouteDemo() {
           );
         })}
       </div>
+      {/* The result, as the app shows it: a short banner at the top. */}
       <div
         className={cx(
-          "mt-3 rounded-2xl bg-status-pass/10 py-2.5 pr-3 pl-5 text-[0.85rem] transition-all duration-500 relative before:absolute before:inset-y-2.5 before:left-2 before:w-1 before:rounded-full before:bg-status-pass",
-          after ? "translate-y-0 opacity-100" : "translate-y-2 opacity-0",
+          "glass absolute inset-x-6 top-3 z-10 flex items-center gap-2.5 rounded-full py-1.5 pr-4 pl-1.5 text-[0.8rem] font-semibold transition-all duration-500",
+          after ? "translate-y-0 opacity-100" : "-translate-y-3 opacity-0",
         )}
       >
-        Planned: 2 hr 18 min of driving, <b>38 min less than before</b>, back at the shop by 4:34
-        PM.
+        <span className="grid size-6 shrink-0 place-items-center rounded-full bg-status-pass text-white">
+          <svg
+            viewBox="0 0 24 24"
+            className="size-3.5"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="3"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          >
+            <path d="M5 12.5l4.5 4.5L19 7.5" />
+          </svg>
+        </span>
+        <span className="min-w-0 truncate">Optimized · 38 min less driving · Back by 4:34 PM</span>
       </div>
     </div>
   );

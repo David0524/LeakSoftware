@@ -284,7 +284,7 @@ import Testing
             ["scheduled_start": "2026-10-20T15:30:00Z", "scheduled_end": "2026-10-20T16:30:00Z"])
         let (updates, message) = try planRoute(
             techId: Self.me, date: ctx.today, jobs: jobs, ctx: ctx, team: team, drive: DriveTimes())
-        #expect(message.hasPrefix("Planned: "))
+        #expect(message.hasPrefix("Optimized · "))
         #expect(updates.map(\.id) == [id(1), id(2)])
         #expect(updates.map { $0["route_order"] } == [1, 2])
         let pending = sync.status.pending
@@ -300,11 +300,44 @@ import Testing
         }
     }
 
+    @Test func optimizeSavesWhatPlanRouteSavesAndSaysItInOneLine() throws {
+        try sync.write(
+            "job", id: id(1), companyId: Self.company,
+            ["scheduled_start": "2026-10-20T15:30:00Z", "scheduled_end": "2026-10-20T16:30:00Z"])
+        let planned = try planRoute(
+            techId: Self.me, date: ctx.today, jobs: jobs, ctx: ctx, team: team, drive: DriveTimes())
+        let optimized = try optimizeDay(
+            techId: Self.me, date: ctx.today, jobs: jobs, ctx: ctx, team: team, drive: DriveTimes())
+        #expect(optimized.updates == planned.updates)
+        // The same loop either way: no driving saved, so it says how much there is.
+        let parts = optimized.summary.title.components(separatedBy: " · ")
+        #expect(parts.count == 2 && parts[0] == "Optimized")
+        #expect(parts[1].hasSuffix(" driving"))
+        #expect(optimized.summary.warning == nil)
+        #expect(throws: ScheduleProblem("Past days can’t be planned.")) {
+            try optimizeDay(techId: Self.me, date: "2026-10-19", jobs: jobs, ctx: ctx, team: team, drive: DriveTimes())
+        }
+    }
+
+    @Test func poolsNeverLookedUpAreAskedForOnce() throws {
+        MissingPins.reset()
+        // Sam's pool has an address and no map location, and was never looked up.
+        let pool = "00000000-0000-4000-8000-000000000403"
+        #expect(jobs.filter(\.needsLocate).map(\.propertyId) == [pool])
+        #expect(MissingPins.toAsk(jobs) == [pool])
+        // Looked up for this address and not found: "Not on map", not asked again.
+        let row = try #require(try sync.store.get("property", pool))
+        let address = formatAddress(try #require(decodeProperty(row)))
+        try sync.write("property", id: pool, companyId: Self.company, ["geocoded_address": .string(address)])
+        #expect(jobs.filter(\.needsLocate).isEmpty)
+        #expect(MissingPins.toAsk(jobs).isEmpty)
+    }
+
     @Test func movingAJobOntoADayAndOffTheSchedule() throws {
         // Diana (Needs a Time) onto Sam's day tomorrow, first.
         var (updates, message) = try moveJob(
             id(4), tech: Self.sam, date: "2026-10-21", index: 0, jobs: jobs, ctx: ctx, team: team, drive: DriveTimes())
-        #expect(message.hasPrefix("Moved to "))
+        #expect(message == "Moved.")
         let mine = try #require(updates.first)
         #expect(mine.id == id(4))
         #expect(mine["assigned_user_id"] == .string(Self.sam))
@@ -340,7 +373,7 @@ import Testing
         }
         // Today's route is Grace (first) then Riley. Riley onto Grace's place goes first.
         let first = try #require(try drop(1, .route(tech: Self.me, date: "2026-10-20", index: 0)))
-        #expect(first.message.hasPrefix("Moved to "))
+        #expect(first.message == "Moved.")
         #expect(first.updates[0].id == id(1) && first.updates[0]["route_order"] == 1)
         // Dropped where it already is: nothing to do.
         #expect(try drop(2, .route(tech: Self.me, date: "2026-10-20", index: 0)) == nil)

@@ -1,7 +1,9 @@
 import { useState } from "react";
-import { ActivityIndicator, View } from "react-native";
+import { View } from "react-native";
 import { Block, Button, FieldGroup, FieldRow, Notice, Screen, T } from "../ui/components";
 import { AuthTitle, BrandHeader } from "../ui/BrandHeader";
+import { GettingReady } from "../features/setup/GettingReady";
+import { useFirstDownloadOpen } from "../state/firstDownload";
 import { useSession, useSyncStatus } from "../state/session";
 import { color, ios } from "../ui/theme";
 
@@ -17,6 +19,8 @@ export default function Setup() {
   const [inviteCode, setInviteCode] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  // The finished check shows for 0.6 s before the app opens (gestures spec section 11).
+  const { finishing } = useFirstDownloadOpen(status.initialSyncDone);
 
   async function join() {
     setError(null);
@@ -36,8 +40,8 @@ export default function Setup() {
     await services.sync.syncNow();
     setBusy(false);
   }
-  if (!status.initialSyncDone) {
-    const offline = status.phase === "offline";
+  if (!status.initialSyncDone || finishing) {
+    const offline = status.phase === "offline" && !finishing;
     return (
       <View style={{ flex: 1, backgroundColor: color.bg }}>
         {ios ? null : <BrandHeader />}
@@ -49,14 +53,20 @@ export default function Setup() {
               works without signal.
             </Notice>
           ) : (
-            <View style={{ alignItems: "center", gap: 12, paddingVertical: 32 }}>
-              <ActivityIndicator size="large" color={color.water} />
-              <T variant="strong">Downloading your company…</T>
-            </View>
+            // Getting Ready: a pool that fills to the real progress.
+            <GettingReady download={status.download} finishing={finishing} />
           )}
           {status.error ? <Notice tone="error">{status.error}</Notice> : null}
-          <Button title="Try Again" kind="secondary" onPress={() => void services.sync.syncNow()} />
-          <Button title="Sign Out" kind="quiet" onPress={() => void signOut()} />
+          {finishing ? null : (
+            <>
+              <Button
+                title="Try Again"
+                kind="secondary"
+                onPress={() => void services.sync.syncNow()}
+              />
+              <Button title="Sign Out" kind="quiet" onPress={() => void signOut()} />
+            </>
+          )}
         </Screen>
       </View>
     );

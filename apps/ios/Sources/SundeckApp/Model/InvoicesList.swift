@@ -66,6 +66,42 @@ public func invoiceList(_ store: LocalStore, companyId: String) -> [InvoiceListI
         }
 }
 
+/// What an invoice's row in Invoices can do (gestures spec section 12): its customer's payment
+/// link, and Record Payment and Void Invoice as its card has them.
+public struct InvoiceRowActions: Equatable, Sendable {
+    public var link: URL?
+    public var rules: InvoiceActionRules
+    /// The balance, prefilled in Record Payment's amount.
+    public var balanceText: String
+}
+
+/// Every invoice's row actions, read once for the list (payments and links in one pass each).
+public func invoiceRowActions(
+    _ store: LocalStore, companyId: String, list: [InvoiceListItem], manager: Bool,
+    webURL: URL? = AppConfig.webURL
+) -> [String: InvoiceRowActions] {
+    let payments = Dictionary(
+        grouping: decodeRows(store, "payment", companyId, as: PaymentRecord.self), by: { $0.invoiceId ?? "" })
+    var tokens: [String: String] = [:]
+    for link in (try? store.list("share_link", companyId: companyId)) ?? [] {
+        guard let id = link["invoice_id"]?.string, let token = link["token"]?.string,
+            link["revoked_at"]?.string == nil
+        else { continue }
+        tokens[id] = token
+    }
+    return Dictionary(
+        list.map { item in
+            let i = item.invoice
+            return (
+                i.id,
+                InvoiceRowActions(
+                    link: i.status == .void ? nil : tokens[i.id].flatMap { t in webURL.map { invoiceURL($0, t) } },
+                    rules: InvoiceActionRules(invoice: i, payments: payments[i.id] ?? [], manager: manager),
+                    balanceText: centsFieldText(i.balanceCents))
+            )
+        }, uniquingKeysWith: { a, _ in a })
+}
+
 /// "2 open · $750.00 owed", or "Nothing owed right now."
 public func invoicesSubtitle(_ list: [InvoiceListItem]) -> String {
     let open = list.filter(\.open)

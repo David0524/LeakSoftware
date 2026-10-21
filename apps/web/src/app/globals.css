@@ -119,6 +119,46 @@ header:not(.glass-bar) :focus-visible {
     opacity: 0;
   }
 }
+/* The result banner at the top of the screen (top-banner.tsx): it slides down from under the
+   navigation bar and back up when it goes; with Reduce Motion it only fades. */
+@keyframes banner-in {
+  from {
+    opacity: 0;
+    transform: translateY(-1.25rem) scale(0.96);
+  }
+}
+@keyframes banner-out {
+  to {
+    opacity: 0;
+    transform: translateY(-1.25rem) scale(0.96);
+  }
+}
+.banner-in {
+  animation: banner-in 0.32s cubic-bezier(0.2, 0.9, 0.3, 1.15) both;
+}
+.banner-out {
+  animation: banner-out 0.22s ease-in both;
+}
+@media (prefers-reduced-motion: reduce) {
+  @keyframes banner-in {
+    from {
+      opacity: 0;
+    }
+  }
+  @keyframes banner-out {
+    to {
+      opacity: 0;
+    }
+  }
+}
+/* Phones: day maps folded on this device stay folded from the first frame (day-map.tsx). */
+@media (width < 40rem) {
+  html[data-maps-folded] .day-map-box {
+    grid-template-rows: 0fr;
+    opacity: 0;
+    visibility: hidden;
+  }
+}
 /* The phone navigation bar once the large title has scrolled under it. */
 /* iOS's bar material: content passes under it as a soft tint. More see-through or a strong
    saturation boost turned a blue pill scrolling under it into a bright smear (2026-10-15). */
@@ -187,6 +227,8 @@ body:has(.nav-accessory) .nav-main.glass-bar {
     right: 0;
     border-top: 0.5px solid var(--lb-separator);
     pointer-events: none;
+    /* Over a row that swipes (its moving part has its own fill). */
+    z-index: 1;
   }
 
   /* iOS switch: 51 x 31, green when on. It is a checkbox underneath. */
@@ -415,5 +457,16 @@ input[type="time"]::-webkit-date-and-time-value {
 @media (prefers-reduced-motion: reduce) {
   .lp-wipe {
     animation: none;
+  }
+}
+/* Today's card: the finished stop's checkmark draws on (0.6 s), before the next stop slides in. */
+.hero-check {
+  stroke-dasharray: 1;
+  stroke-dashoffset: 0;
+  animation: hero-check-draw 0.6s cubic-bezier(0.22, 1, 0.36, 1);
+}
+@keyframes hero-check-draw {
+  from {
+    stroke-dashoffset: 1;
   }
 }

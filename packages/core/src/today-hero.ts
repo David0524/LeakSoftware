@@ -6,7 +6,12 @@
  */
 import { localDate } from "./job-list";
 import { stopDone } from "./models";
-import { liveStopContent, type LiveStopContent, type LiveStopPhase } from "./notifications";
+import {
+  liveStopContent,
+  type LiveStopContent,
+  type LiveStopPhase,
+  type StopCleaning,
+} from "./notifications";
 import { formatTime } from "./office";
 
 export interface HeroStop {
@@ -21,6 +26,8 @@ export interface HeroStop {
   customer: string;
   address: string | null;
   access?: string | null;
+  /** The plan's cleanings on this visit, with how soon each is due. */
+  cleanings?: StopCleaning[];
   checklistDone: number;
   checklistTotal: number;
 }
@@ -39,6 +46,13 @@ export interface TodayHero {
   /** One segment per stop, in route order. */
   segments: ("done" | "current" | "todo")[];
   doneCount: number;
+  /**
+   * The stop the day is on (what the card shows unless the tech swiped to another), for Back to
+   * Now. Null when the day is done.
+   */
+  currentId: string | null;
+  /** Whether the card shows a stop the tech picked, not the one the day is on. */
+  browsing: boolean;
 }
 
 /** Whether On My Way was sent for this stop today (in the shop's time zone). */
@@ -58,6 +72,70 @@ export function onTheWay(s: HeroStop, today: string, timeZone: string): boolean 
  * phones pass it; the website shows the next stop at once). Null when there are no stops.
  */
 export function todayHero(input: {
+  stops: HeroStop[];
+  today: string;
+  timeZone: string;
+  justDone?: string | null;
+  /**
+   * A stop the tech swiped or tapped to (owner, 2026-10-20: "a better way to move the hero tile
+   * back to a previous job"): the card shows it, done or not, until they go Back to Now.
+   */
+  viewing?: string | null;
+}): TodayHero | null {
+  const hero = dayHero(input);
+  if (!hero) return null;
+  const viewed = input.viewing ? input.stops.find((s) => s.id === input.viewing) : null;
+  if (!viewed || viewed.id === hero.stopId) return hero;
+  return { ...stopHero(input, viewed), currentId: hero.currentId, browsing: true };
+}
+
+/** The card for one stop the tech picked: done, at the pool, on the way, or still ahead. */
+function stopHero(
+  input: { stops: HeroStop[]; today: string; timeZone: string },
+  s: HeroStop,
+): Omit<TodayHero, "currentId" | "browsing"> {
+  const { stops, today, timeZone } = input;
+  const done = (x: HeroStop) => stopDone(x, today);
+  const at = stops.indexOf(s);
+  const left = stops.filter((x) => !done(x));
+  const next = left.find((x) => stops.indexOf(x) > at);
+  const phase: LiveStopPhase = done(s)
+    ? "done"
+    : s.status === "in_progress"
+      ? "on_site"
+      : onTheWay(s, today, timeZone)
+        ? "driving"
+        : "ahead";
+  return {
+    moment: phase,
+    stopId: s.id,
+    stop: at + 1,
+    stops: stops.length,
+    content: liveStopContent({
+      phase,
+      customer: s.customer,
+      address: s.address,
+      stop: at + 1,
+      stops: stops.length,
+      eta: phase === "driving" && s.arrive_at ? formatTime(s.arrive_at, timeZone) : null,
+      scheduled: s.scheduled_start ? formatTime(s.scheduled_start, timeZone) : null,
+      checklistDone: s.checklistDone,
+      checklistTotal: s.checklistTotal,
+      next: next
+        ? {
+            customer: next.customer,
+            time: next.scheduled_start ? formatTime(next.scheduled_start, timeZone) : null,
+          }
+        : null,
+      access: s.access ?? null,
+      cleanings: s.cleanings ?? [],
+    }),
+    segments: stops.map((x) => (x === s ? "current" : done(x) ? "done" : "todo")),
+    doneCount: stops.length - left.length,
+  };
+}
+
+function dayHero(input: {
   stops: HeroStop[];
   today: string;
   timeZone: string;
@@ -103,9 +181,12 @@ export function todayHero(input: {
           compact: "✓",
           spoken: `All ${n} ${n === 1 ? "stop" : "stops"} done today.`,
           access: null,
+          cleanings: [],
         },
         segments: stops.map(() => "done"),
         doneCount,
+        currentId: null,
+        browsing: false,
       };
     }
     const s = justDone!;
@@ -133,6 +214,8 @@ export function todayHero(input: {
       }),
       segments: stops.map((x) => segment(x, null)),
       doneCount,
+      currentId: s.id,
+      browsing: false,
     };
   }
 
@@ -160,31 +243,47 @@ export function todayHero(input: {
       checklistTotal: target.checklistTotal,
       next: nextAfter(at),
       access: target.access ?? null,
+      cleanings: target.cleanings ?? [],
     }),
     segments: stops.map((x) => segment(x, target)),
     doneCount,
+    currentId: target.id,
+    browsing: false,
   };
 }
 
 /**
- * The card's buttons for its moment: the main one, and whether Mark Complete shows beside it.
- * Someone looking at another tech's day (owners and admins, "Whose day") gets no On My Way or
- * Start Job: those are the tech's to press (decision 4).
+ * The card's buttons for its moment: the main one, whether Mark Complete shows beside it,
+ * whether Message starts as the On My Way text, and whether a finished stop offers its undo
+ * (Reopen Visit or Mark Not Complete). Start is the main button from the start, so a tech who
+ * doesn't send On My Way never has to (owner, 2026-10-20: "not every tech is going to use every
+ * function all the time"). A finished stop's card is only about that stop: no Start for another
+ * one (owner, 2026-10-20: "I don't understand when a job goes from marked completed to when it
+ * starts the next job"). Someone looking at another tech's day (owners and admins, "Whose
+ * day") gets no On My Way, Start or undo: those are the tech's to press (decision 4).
  */
 export function heroActions(
   moment: HeroMoment,
   mine: boolean,
-): { primary: "on_my_way" | "start_job" | "open_checklist" | null; complete: boolean } {
-  if (moment === "ahead" || moment === "done")
-    return { primary: mine ? "on_my_way" : null, complete: false };
-  if (moment === "driving") return { primary: mine ? "start_job" : null, complete: false };
-  if (moment === "on_site") return { primary: "open_checklist", complete: true };
-  return { primary: null, complete: false };
+): {
+  primary: "start_job" | "open_checklist" | null;
+  complete: boolean;
+  onMyWay: boolean;
+  undo: boolean;
+} {
+  if (moment === "ahead")
+    return { primary: mine ? "start_job" : null, complete: false, onMyWay: mine, undo: false };
+  if (moment === "driving")
+    return { primary: mine ? "start_job" : null, complete: false, onMyWay: false, undo: false };
+  if (moment === "on_site")
+    return { primary: "open_checklist", complete: true, onMyWay: false, undo: false };
+  if (moment === "done") return { primary: null, complete: false, onMyWay: false, undo: mine };
+  return { primary: null, complete: false, onMyWay: false, undo: false };
 }
 
 export const HERO_ACTION_LABELS = {
   on_my_way: "On My Way",
-  start_job: "Start Job",
+  start_job: "Start",
   open_checklist: "Open Checklist",
 } as const;
 
@@ -225,4 +324,14 @@ export function heroHeadline(h: Pick<TodayHero, "moment" | "content">): string {
     default:
       return h.content.headline;
   }
+}
+
+/**
+ * The card's top line: the moment, then the stop's place in the day unless the figure already
+ * shows it (before arriving, the figure is "2 of 3"): "Up next", "At the pool · Stop 2 of 3".
+ */
+export function heroTopLine(h: Pick<TodayHero, "moment" | "content" | "stop" | "stops">): string {
+  const head = heroHeadline(h);
+  if (h.moment === "day_done" || h.content.figureLabel === "Stop") return head;
+  return `${head} · Stop ${h.stop} of ${h.stops}`;
 }

@@ -4,8 +4,11 @@ import { GestureDetector } from "react-native-gesture-handler";
 import Svg, { Circle } from "react-native-svg";
 import { Card, T } from "../../ui/components";
 import { NotOnMapTag } from "../../ui/NotOnMap";
+import type { RowGestures } from "../../ui/RowMenu";
 import { useMenu } from "../../ui/Select";
 import { color, face, gutter, MAX_TEXT_SCALE, space, type } from "../../ui/theme";
+import { Grip } from "../../ui/Grip";
+import { LockTag } from "../../ui/LockTag";
 import { GhostCard, type Stop } from "./RouteCard";
 import { dropTint, useDragHover, useDragSource, useDropZones } from "./ScheduleDrag";
 
@@ -15,16 +18,21 @@ export const TRAY = "tray";
 /**
  * Needs a Time (spec 5.6, managers): jobs without a time or a tech, in one row that scrolls
  * sideways. Each card's "…" offers Suggest Times and Move…; touch and hold one to drag it onto
- * a tech's day, and drop an unstarted stop here to take it off the schedule.
+ * a tech's day, and drop an unstarted stop here to take it off the schedule. Held and let go
+ * without moving, a card shows its menu (gestures spec section 12), the same one as "…". The
+ * cards aren't swiped: the row scrolls sideways.
  */
 export function NeedsATime({
   jobs,
   onSuggest,
   onMove,
+  gesturesFor,
 }: {
   jobs: Stop[];
   onSuggest: (s: Stop) => void;
   onMove: (s: Stop) => void;
+  /** A card's touch-and-hold menu and accessibility actions. */
+  gesturesFor?: (s: Stop) => RowGestures;
 }) {
   const { width } = useWindowDimensions();
   const menu = useMenu();
@@ -51,22 +59,28 @@ export function NeedsATime({
             style={{ marginHorizontal: -space["4"] }}
             contentContainerStyle={{ paddingHorizontal: space["4"], gap: space["3"] }}
           >
-            {jobs.map((j) => (
-              <TrayCard
-                key={j.id}
-                stop={j}
-                width={cardWidth}
-                onActions={() =>
-                  menu.open({
-                    title: j.customer,
-                    items: [
-                      { label: "Suggest Times", onPress: () => onSuggest(j) },
-                      { label: "Move…", onPress: () => onMove(j) },
-                    ],
-                  })
-                }
-              />
-            ))}
+            {jobs.map((j) => {
+              const g = gesturesFor?.(j);
+              return (
+                <TrayCard
+                  key={j.id}
+                  stop={j}
+                  width={cardWidth}
+                  gestures={g}
+                  onActions={
+                    g?.onLongPress ??
+                    (() =>
+                      menu.open({
+                        title: j.customer,
+                        items: [
+                          { label: "Suggest Times", onPress: () => onSuggest(j) },
+                          { label: "Move…", onPress: () => onMove(j) },
+                        ],
+                      }))
+                  }
+                />
+              );
+            })}
           </ScrollView>
         )}
         {menu.element}
@@ -79,15 +93,18 @@ function TrayCard({
   stop: j,
   width,
   onActions,
+  gestures,
 }: {
   stop: Stop;
   width: number;
   onActions: () => void;
+  gestures?: RowGestures;
 }) {
   const hover = useDragHover();
   const { gesture, ref } = useDragSource(
     j.movable ? { id: j.id, status: j.status, from: { kind: "tray" } } : null,
     () => <GhostCard stop={j} />,
+    onActions,
   );
   return (
     <GestureDetector gesture={gesture}>
@@ -103,7 +120,10 @@ function TrayCard({
         <Pressable
           accessibilityRole="link"
           accessibilityLabel={`${j.customer}${j.number ? `, #${j.number}` : ""}`}
+          accessibilityActions={gestures?.accessibilityActions}
+          onAccessibilityAction={gestures?.onAccessibilityAction}
           onPress={() => router.push(`/jobs/${j.id}`)}
+          onLongPress={j.movable ? undefined : onActions}
           style={({ pressed }) => [{ flex: 1, paddingVertical: 4 }, pressed && { opacity: 0.6 }]}
         >
           <Text
@@ -128,6 +148,7 @@ function TrayCard({
               </T>
             ) : null}
           </View>
+          {j.lock ? <LockTag lock={j.lock} /> : null}
         </Pressable>
         <Pressable
           accessibilityRole="button"
@@ -141,6 +162,8 @@ function TrayCard({
             <Circle cx={18} cy={12} r={1.8} />
           </Svg>
         </Pressable>
+        {/* The drag grip at the trailing edge (owner, 2026-10-20). */}
+        {j.movable ? <Grip width={24} /> : null}
       </View>
     </GestureDetector>
   );

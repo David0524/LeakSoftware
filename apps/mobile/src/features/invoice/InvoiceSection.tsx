@@ -469,8 +469,20 @@ function DraftParts({ invoice, customer }: { invoice: JobInvoice; customer?: Cus
   );
 }
 
-/** Managers: a check, cash, or anything paid outside Sundeck Pro. */
-function RecordPayment({ invoice, balance }: { invoice: JobInvoice; balance: number }) {
+/**
+ * Managers: a check, cash, or anything paid outside Sundeck Pro. The Invoices list's Record
+ * Payment opens this same form in a sheet (gestures spec section 12).
+ */
+export function RecordPayment({
+  invoice,
+  balance,
+  onRecorded,
+}: {
+  invoice: Pick<JobInvoice, "id">;
+  balance: number;
+  /** Called with the result once the payment is saved. */
+  onRecorded?: (text: string) => void;
+}) {
   const [amount, setAmount] = useState<string | null>(null);
   // An amount typed but not recorded asks before leaving (owner, 2026-10-20).
   useUnsavedChanges(Boolean(amount?.trim()));
@@ -492,14 +504,13 @@ function RecordPayment({ invoice, balance }: { invoice: JobInvoice; balance: num
       if (error) throw new Error(error.message);
       await sync.syncNow();
       setAmount(null);
-      setMessage({
-        tone: "success",
-        text:
-          (data as { status?: string } | null)?.status === "paid"
-            ? "Paid in full."
-            : "Payment recorded.",
-      });
+      const text =
+        (data as { status?: string } | null)?.status === "paid"
+          ? "Paid in full."
+          : "Payment recorded.";
+      setMessage({ tone: "success", text });
       haptics.success();
+      onRecorded?.(text);
     } catch (e) {
       setMessage({ tone: "error", text: e instanceof Error ? e.message : String(e) });
     } finally {
@@ -527,6 +538,14 @@ function RecordPayment({ invoice, balance }: { invoice: JobInvoice; balance: num
   );
 }
 
+/** The server voids the invoice (or deletes a draft); it syncs down. */
+export async function voidInvoice(invoiceId: string) {
+  const { supabase, sync } = getServices();
+  const { error } = await supabase.rpc("void_invoice", { target_invoice: invoiceId });
+  if (error) throw new Error(error.message);
+  await sync.syncNow();
+}
+
 /** Void Invoice (sent) or Delete Draft: the server voids it, after asking. */
 function VoidButton({
   invoiceId,
@@ -552,12 +571,7 @@ function VoidButton({
             onConfirm: () => {
               setBusy(true);
               setError(null);
-              const { supabase, sync } = getServices();
-              void Promise.resolve(supabase.rpc("void_invoice", { target_invoice: invoiceId }))
-                .then(async ({ error: e }) => {
-                  if (e) throw new Error(e.message);
-                  await sync.syncNow();
-                })
+              voidInvoice(invoiceId)
                 .catch((e: unknown) => setError(e instanceof Error ? e.message : String(e)))
                 .finally(() => setBusy(false));
             },

@@ -19,6 +19,9 @@ import {
   type NewJobInput,
   intakeQuestionsFor,
   parseGallons,
+  JOB_LOCKS,
+  lockColumns,
+  type JobLock,
 } from "@leakbook/core";
 import { getOffice } from "@/lib/auth";
 import { getCompany, mayMakeJobs } from "@/lib/data";
@@ -68,6 +71,9 @@ export async function scheduleJob(_: FormState, form: FormData): Promise<FormSta
     scheduled_start: string | null;
     assigned_user_id: string | null;
   } | null;
+  const lock: JobLock = (JOB_LOCKS as string[]).includes(text(form, "lock"))
+    ? (text(form, "lock") as JobLock)
+    : "none";
   const status = before?.status;
   const { data: updated, error } = await supabase
     .from("job")
@@ -75,7 +81,8 @@ export async function scheduleJob(_: FormState, form: FormData): Promise<FormSta
       assigned_user_id: text(form, "tech") || null,
       scheduled_start: start,
       scheduled_end: end,
-      arrival_fixed: form.get("fixed") === "on",
+      // The lock picker (owner, 2026-10-20): day, time, both, or none.
+      ...lockColumns(lock),
       ...(status === "unscheduled" ? { status: "scheduled" } : {}),
     })
     .eq("id", id)
@@ -201,6 +208,32 @@ export async function savePool(_: FormState, form: FormData): Promise<FormState>
   revalidatePath(`/customers/${before.customer_id}`);
   revalidatePath("/jobs", "layout");
   revalidatePath("/schedule");
+  return { message: "Saved." };
+}
+
+/**
+ * A pool's access notes alone, from the job page's Access Notes row (owner, 2026-10-20: "edit
+ * access notes on the job screen underneath the address"). Nothing else on the pool changes.
+ */
+export async function saveAccessNotes(_: FormState, form: FormData): Promise<FormState> {
+  const office = await getOffice();
+  const id = text(form, "property");
+  const notes = text(form, "access_notes");
+  if (notes.length > 2000) return { fields: { access_notes: "Keep it under 2,000 characters." } };
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from("property")
+    .update({ access_notes: notes || null })
+    .eq("id", id)
+    .eq("company_id", office.company.id)
+    .select("customer_id")
+    .maybeSingle();
+  if (error) return { error: error.message };
+  if (!data) return { error: "This pool is gone. Refresh the page." };
+  revalidatePath(`/customers/${data.customer_id}`);
+  revalidatePath("/jobs", "layout");
+  revalidatePath("/schedule");
+  revalidatePath("/today");
   return { message: "Saved." };
 }
 

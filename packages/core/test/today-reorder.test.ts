@@ -52,7 +52,11 @@ describe("todayStopLock", () => {
     expect(todayStopLock(job({ id: "a", status: "in_progress" }), TZ)).toBe("Started");
     expect(
       todayStopLock(job({ id: "a", arrival_fixed: true, scheduled_start: at("09:00") }), TZ),
-    ).toBe("Promised for 9:00 AM");
+    ).toBe("Locked");
+    expect(todayStopLock(job({ id: "a", lock_day: true, lock_time: true }), TZ)).toBe("Locked");
+    expect(todayStopLock(job({ id: "a", lock_time: true }), TZ)).toBe("Time locked");
+    // A day lock stays on its day but may change its place in it.
+    expect(todayStopLock(job({ id: "a", lock_day: true }), TZ)).toBeNull();
     expect(todayStopLock(job({ id: "a", second_tech_id: "sam" }), TZ)).toBe("Two techs");
   });
 });
@@ -84,7 +88,7 @@ describe("todayMoveIndex", () => {
   });
 
   it("never moves a locked stop, but others pass it", () => {
-    const d = [stop("a"), stop("p", { lock: "Promised for 9:00 AM" }), stop("c")];
+    const d = [stop("a"), stop("p", { lock: "Locked" }), stop("c")];
     expect(todayMoveIndex(d, "p", "down")).toBeNull();
     expect(todayMoveIndex(d, "a", "down")).toBe(1);
     expect(todayMoves(d).get("c")).toEqual({ up: true, down: false, later: false });
@@ -118,7 +122,7 @@ describe("changeWithUndo", () => {
       estimateDriveMinutes,
     );
     expect(move.error).toBeUndefined();
-    expect(move.message).toMatch(/^Moved to \d+:\d\d PM/);
+    expect(move.message).toBe("Moved.");
     const { updates, undo } = changeWithUndo(move.updates, jobs);
     // b and c keep their times; only their places change.
     expect(updates.find((u) => u.id === "b")).toEqual({ id: "b", route_order: 1 });

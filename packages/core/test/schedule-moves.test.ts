@@ -57,7 +57,7 @@ describe("planDay", () => {
     expect(r.updates).toHaveLength(3);
     expect(r.updates.map((u) => u.route_order)).toEqual([1, 2, 3]);
     expect(r.updates.every((u) => u.scheduled_start && u.scheduled_end)).toBe(true);
-    expect(r.message).toMatch(/^Planned: .* of driving/);
+    expect(r.message).toMatch(/^Optimized · .+ (less driving|driving)$/);
   });
 
   it("refuses past days and empty days", () => {
@@ -99,7 +99,7 @@ describe("moveJobChange", () => {
     expect(r.error).toBeUndefined();
     expect(r.updates[0]).toMatchObject({ id: "w", assigned_user_id: "tony", status: "scheduled" });
     expect(localMinutes(r.updates[0]!.scheduled_start!, TZ)).toBeGreaterThan(9 * 60);
-    expect(r.message).toMatch(/^Moved to /);
+    expect(r.message).toBe("Moved.");
   });
 
   it("takes a job off the schedule and closes up the day it left", () => {
@@ -168,6 +168,21 @@ describe("moveJobChange", () => {
       estimateDriveMinutes,
     );
     expect(r.updates[0]!.scheduled_start).toBe(at("2026-10-22", "13:00"));
+  });
+
+  it("a time lock keeps its time on the new day; a day lock alone doesn't", () => {
+    const timed = {
+      scheduled_start: at("2026-10-20", "13:00"),
+      scheduled_end: at("2026-10-20", "14:00"),
+    };
+    const move = (j: Parameters<typeof job>[0]) =>
+      moveJobChange(
+        ctx,
+        { ...base, job: job(j), tech: "tony", date: "2026-10-22", index: 0 },
+        estimateDriveMinutes,
+      ).updates[0]!.scheduled_start;
+    expect(move({ id: "t", lock_time: true, ...timed })).toBe(at("2026-10-22", "13:00"));
+    expect(move({ id: "d", lock_day: true, ...timed })).not.toBe(at("2026-10-22", "13:00"));
   });
 });
 

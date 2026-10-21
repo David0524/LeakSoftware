@@ -23,6 +23,8 @@
         @State private var loaded = false
         @Environment(\.openRoute) private var openRoute
         @State private var browser: BrowserPage?
+        /// What a row's Call or menu did, at the top.
+        @State private var banner: ResultBanner?
 
         var body: some View {
             let company = session.company
@@ -62,16 +64,19 @@
                             .surfaceRow()
                             .listRowInsets(EdgeInsets(top: 10, leading: 16, bottom: 10, trailing: 16))
                             .alignmentGuide(.listRowSeparatorLeading) { _ in 18 }
-                            // As in iOS Messages: swipe right for Unread (or Read), for the team.
-                            .swipeActions(edge: .leading, allowsFullSwipe: true) {
+                            // Swipe left for Read or Unread (for the team), right to call from
+                            // the company number; touch and hold for the menu (gestures spec 12).
+                            .swipeActions(edge: .trailing, allowsFullSwipe: true) {
                                 Button(conversation.unread ? "Read" : "Unread") { toggle(conversation) }
                                     .tint(Color.link)
                             }
-                            .contextMenu {
-                                Button(conversation.unread ? "Mark as Read" : "Mark as Unread") {
-                                    toggle(conversation)
+                            .swipeActions(edge: .leading, allowsFullSwipe: false) {
+                                if working {
+                                    Button("Call", systemImage: "phone.fill") { Task { await call(conversation) } }
+                                        .tint(Color.pass)
                                 }
                             }
+                            .rowMenu(conversation.name, menu(conversation, working: working))
                         }
                     }
                 }
@@ -93,6 +98,7 @@
                 }
             }
             .browserSheet($browser)
+            .resultBanner($banner)
             .task(id: "\(sync.revision)|\(company?.id ?? "")") { reload() }
             // Refreshes on open and every 20 seconds while showing (until push notifications exist).
             .task {
@@ -109,6 +115,41 @@
             list = conversations(sync.store, companyId: company.id)
             line = companyLine(sync.store, companyId: company.id)
             loaded = true
+        }
+
+        /// Open, Call, Mark Read or Mark Unread, Open Customer.
+        private func menu(_ c: Conversation, working: Bool) -> [SwipeAction] {
+            var list = [
+                SwipeAction(title: "Open", systemImage: "arrow.up.right", tint: Color.link) {
+                    openRoute(.messages(.conversation(c.id)))
+                }
+            ]
+            if working {
+                list.append(
+                    SwipeAction(title: "Call", systemImage: "phone", tint: Color.pass) { Task { await call(c) } })
+            }
+            list.append(
+                SwipeAction(
+                    title: c.unread ? "Mark Read" : "Mark Unread",
+                    systemImage: c.unread ? "envelope.open" : "envelope.badge", tint: Color.link
+                ) { toggle(c) })
+            if let customerId = c.customerId {
+                list.append(
+                    SwipeAction(title: "Open Customer", systemImage: "person.crop.circle", tint: Color.link) {
+                        openRoute(.messages(.customer(customerId)))
+                    })
+            }
+            return list
+        }
+
+        /// The conversation's Call: the company number rings this person, then connects them.
+        private func call(_ c: Conversation) async {
+            do {
+                let result = try await TextingServer(sync: sync, api: app.api).call(conversationId: c.id)
+                banner = ResultBanner(kind: .success, title: callResultText(calling: result.calling, demo: result.demo))
+            } catch {
+                banner = ResultBanner(kind: .error, title: String(describing: error))
+            }
         }
 
         private func toggle(_ conversation: Conversation) {

@@ -22,6 +22,7 @@ import {
 } from "../../ui/components";
 import { haptics } from "../../ui/haptics";
 import { Select } from "../../ui/Select";
+import { useRowMenu } from "../../ui/RowMenu";
 import { EditSheet, FormActions, ManagersOnly, SettingsList, useEditSheet } from "./SettingsList";
 import { formChanged } from "../../lib/discard";
 import { useUnsavedChanges } from "../../ui/ModalSheet";
@@ -62,6 +63,8 @@ function ComponentsPage() {
   const company = useCompany();
   const types = useConfig<ComponentType>("component_type", company.id);
   const sheet = useEditSheet<ComponentType>();
+  // Touch and hold a row for Edit and its delete (gestures spec section 12).
+  const menu = useRowMenu();
   const services = companyServices(company.settings);
   const kinds: Kind[] =
     services === "both"
@@ -145,12 +148,14 @@ function ComponentsPage() {
                   }
                   detail={t.active ? undefined : "Off"}
                   onPress={() => sheet.open(t)}
+                  editMenu={{ menu, title: t.name }}
                 />
               ))}
             </Group>
           </Section>
         ))}
       </SettingsList>
+      {menu.element}
       <EditSheet
         open={sheet.editing != null}
         title={sheet.editing === "new" ? "Add Component" : (sheet.editing?.name ?? "")}

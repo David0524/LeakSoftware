@@ -25,7 +25,12 @@ import {
   checklistTally,
   cleaningKind,
   inspectionProgress,
+  jobSort,
+  sortJobs,
   type CleaningKind,
+  type JobSort,
+  techColor,
+  type TechColor,
 } from "@leakbook/core";
 import type { Office } from "./auth";
 import { createClient } from "./supabase/server";
@@ -52,6 +57,10 @@ export interface TeamMember {
   membership_id: string;
   name: string;
   email: string | null;
+  /** Their color (Settings › Team), a palette key: a dot before their name everywhere. */
+  color: TechColor;
+  /** When they were turned off, for Team's order. */
+  disabled_at: string | null;
 }
 
 /** Cached per request: several parts of a page ask for the team. */
@@ -62,7 +71,7 @@ export const getTeam = cache(async (office: Office): Promise<TeamMember[]> => {
     await supabase
       .from("membership")
       .select(
-        "id, user_id, role, status, profile:profile!membership_user_profile_fkey(id, full_name, email)",
+        "id, user_id, role, status, color, disabled_at, profile:profile!membership_user_profile_fkey(id, full_name, email)",
       )
       .eq("company_id", office.company.id)
       .is("deleted_at", null),
@@ -71,6 +80,8 @@ export const getTeam = cache(async (office: Office): Promise<TeamMember[]> => {
     user_id: string;
     role: "owner" | "admin" | "tech";
     status: "active" | "disabled";
+    color: string | null;
+    disabled_at: string | null;
     profile: { id: string; full_name: string | null; email: string | null } | null;
   }[];
   const profiles = members.flatMap((m) => (m.profile ? [m.profile] : []));
@@ -85,6 +96,8 @@ export const getTeam = cache(async (office: Office): Promise<TeamMember[]> => {
         status: m.status,
         name: p?.full_name || p?.email || "Teammate",
         email: p?.email ?? null,
+        color: techColor(m.color),
+        disabled_at: m.disabled_at ?? null,
       };
     })
     .sort((a, b) => a.name.localeCompare(b.name));
@@ -99,6 +112,8 @@ export interface JobRow extends Job {
   customer: Customer | null;
   techName: string | null;
   secondTechName: string | null;
+  /** The tech's color, for the dot before their name. */
+  techColor: TechColor | null;
 }
 
 /**
@@ -123,6 +138,7 @@ async function attach(office: Office, jobs: EmbeddedJob[]): Promise<JobRow[]> {
   if (jobs.every((j) => j.property !== undefined)) {
     const team = await getTeam(office);
     const techById = new Map(team.map((t) => [t.user_id, t.name]));
+    const colorById = new Map(team.map((t) => [t.user_id, t.color]));
     return jobs.map(({ property: embedded, bill_to, ...j }) => {
       const { owner, ...property } = embedded ?? ({} as Property & { owner?: Customer | null });
       return {
@@ -131,6 +147,7 @@ async function attach(office: Office, jobs: EmbeddedJob[]): Promise<JobRow[]> {
         customer: bill_to ?? owner ?? null,
         techName: j.assigned_user_id ? (techById.get(j.assigned_user_id) ?? "Teammate") : null,
         secondTechName: j.second_tech_id ? (techById.get(j.second_tech_id) ?? "Teammate") : null,
+        techColor: j.assigned_user_id ? (colorById.get(j.assigned_user_id) ?? null) : null,
       };
     });
   }
@@ -158,6 +175,7 @@ async function attach(office: Office, jobs: EmbeddedJob[]): Promise<JobRow[]> {
   const propById = new Map(properties.map((p) => [p.id, p]));
   const custById = new Map(customers.map((c) => [c.id, c]));
   const techById = new Map(team.map((t) => [t.user_id, t.name]));
+  const colorById = new Map(team.map((t) => [t.user_id, t.color]));
   return jobs.map((j) => {
     const property = propById.get(j.property_id) ?? null;
     return {
@@ -168,6 +186,7 @@ async function attach(office: Office, jobs: EmbeddedJob[]): Promise<JobRow[]> {
         (property ? (custById.get(property.customer_id) ?? null) : null),
       techName: j.assigned_user_id ? (techById.get(j.assigned_user_id) ?? "Teammate") : null,
       secondTechName: j.second_tech_id ? (techById.get(j.second_tech_id) ?? "Teammate") : null,
+      techColor: j.assigned_user_id ? (colorById.get(j.assigned_user_id) ?? null) : null,
     };
   });
 }
@@ -189,20 +208,14 @@ export const OPEN_STATUSES: JobStatus[] = [
 export async function listJobs(
   office: Office,
   statuses: JobStatus[] | null,
-  opts: { limit?: number; search?: string } = {},
+  opts: { limit?: number; search?: string; sort?: JobSort } = {},
 ): Promise<JobRow[]> {
   const supabase = await db();
   preloadTeam(office);
   const limit = Math.min(opts.limit ?? 50, 500);
-  let q = supabase
-    .from("job")
-    .select(JOB_SELECT)
-    .eq("company_id", office.company.id)
-    .is("deleted_at", null)
-    .order("scheduled_start", { ascending: true, nullsFirst: false })
-    .order("number", { ascending: false })
-    .limit(limit + 1);
-  if (statuses) q = q.in("status", statuses);
+  const sort = jobSort(opts.sort);
+  // The search, as filters on job (customers by name, their pools, or a job number).
+  let terms: string[] | null = null;
   const search = opts.search?.trim();
   if (search) {
     const number = /^#?\d+$/.test(search) ? Number(search.replace("#", "")) : null;
@@ -217,15 +230,96 @@ export async function listJobs(
     const { data: pools } = ids.length
       ? await supabase.from("property").select("id").in("customer_id", ids)
       : { data: [] };
-    const terms = [
+    terms = [
       ids.length ? `bill_to_customer_id.in.(${ids.join(",")})` : null,
       pools?.length ? `property_id.in.(${pools.map((p) => p.id).join(",")})` : null,
       number ? `number.eq.${number}` : null,
-    ].filter(Boolean);
+    ].filter((t): t is string => !!t);
     if (terms.length === 0) return [];
-    q = q.or(terms.join(","));
   }
-  return attach(office, must(await q) as EmbeddedJob[]);
+  const filtered = <Q>(q: Q): Q => {
+    // Typed loosely: the same filters on two selects.
+    let r = (q as unknown as JobQuery).eq("company_id", office.company.id).is("deleted_at", null);
+    if (statuses) r = r.in("status", statuses);
+    if (terms) r = r.or(terms.join(","));
+    return r as unknown as Q;
+  };
+
+  // Jobs sort in the database, so Show More pages stay in order (owner, 2026-10-20: "Add
+  // sorting on the jobs page just like invoices"); ties go to the highest job number.
+  if (sort === "customer") {
+    // A job's customer is its bill-to, else its pool's owner: two embeds the database can't
+    // order by together. The matching jobs' names come first (small rows), sorted here, then
+    // that page's jobs in full.
+    const names = must(
+      await filtered(
+        supabase
+          .from("job")
+          .select(
+            "id, number, bill_to:customer!job_bill_to_customer_id_company_id_fkey(name), property:property!job_property_id_company_id_fkey(owner:customer!property_customer_id_company_id_fkey(name))",
+          ),
+      ).limit(5000),
+    ) as unknown as {
+      id: string;
+      number: number | null;
+      bill_to: { name: string } | null;
+      property: { owner: { name: string } | null } | null;
+    }[];
+    const page = sortJobs(
+      names.map((n) => ({
+        id: n.id,
+        number: n.number,
+        customer: n.bill_to?.name ?? n.property?.owner?.name ?? null,
+      })),
+      "customer",
+    ).slice(0, limit + 1);
+    if (!page.length) return [];
+    const rows = must(
+      await supabase
+        .from("job")
+        .select(JOB_SELECT)
+        .eq("company_id", office.company.id)
+        .in(
+          "id",
+          page.map((p) => p.id),
+        ),
+    ) as EmbeddedJob[];
+    const at = new Map(page.map((p, i) => [p.id, i]));
+    return attach(
+      office,
+      rows.sort((a, b) => (at.get(a.id) ?? 0) - (at.get(b.id) ?? 0)),
+    );
+  }
+  let q = filtered(supabase.from("job").select(JOB_SELECT));
+  q =
+    sort === "newest"
+      ? q.order("created_at", { ascending: false })
+      : sort === "oldest"
+        ? q.order("created_at", { ascending: true })
+        : sort === "number"
+          ? q
+          : q.order("scheduled_start", { ascending: true, nullsFirst: false });
+  q = q.order("number", { ascending: false }).limit(limit + 1);
+  const jobs = await attach(office, must(await q) as EmbeddedJob[]);
+  // The same order with the apps' tie-breaking (core sortJobs).
+  return sortJobs(
+    jobs.map((job) => ({
+      job,
+      number: job.number,
+      scheduled_start: job.scheduled_start,
+      created_at: job.created_at,
+      customer: job.customer?.name ?? null,
+    })),
+    sort,
+  ).map((k) => k.job);
+}
+
+/** The filters listJobs puts on its selects. */
+interface JobQuery {
+  eq(column: string, value: unknown): JobQuery;
+  is(column: string, value: null): JobQuery;
+  in(column: string, values: readonly unknown[]): JobQuery;
+  or(filters: string): JobQuery;
 }
 
 export async function jobsBetween(office: Office, fromIso: string, toIso: string) {
@@ -914,6 +1008,8 @@ export interface InvoiceListRow {
   period_month: string | null;
   jobNumber: number | null;
   customer: string | null;
+  /** The customer's link (/i/<token>) once sent, for Copy Payment Link. */
+  token: string | null;
 }
 
 /** Every invoice in the company, newest first, with its job number and customer. */
@@ -929,22 +1025,35 @@ export async function listInvoices(office: Office): Promise<InvoiceListRow[]> {
       .is("deleted_at", null)
       .order("created_at", { ascending: false })
       .limit(500),
-  ) as Omit<InvoiceListRow, "jobNumber" | "customer">[];
+  ) as Omit<InvoiceListRow, "jobNumber" | "customer" | "token">[];
   const jobIds = [...new Set(invoices.map((i) => i.job_id))];
-  const jobs = jobIds.length
-    ? (must(
-        await supabase
+  const [jobs, links] = await Promise.all([
+    jobIds.length
+      ? supabase
           .from("job")
           .select("id, number, property_id, bill_to_customer_id, status")
-          .in("id", jobIds),
-      ) as Job[])
-    : [];
+          .in("id", jobIds)
+          .then((r) => must(r) as Job[])
+      : ([] as Job[]),
+    // Each sent invoice's customer link, for the list's Copy Payment Link.
+    invoices.length
+      ? supabase
+          .from("share_link")
+          .select("token, invoice_id")
+          .eq("company_id", office.company.id)
+          .not("invoice_id", "is", null)
+          .is("revoked_at", null)
+          .then((r) => (r.data ?? []) as { token: string; invoice_id: string }[])
+      : [],
+  ]);
   const rows = await attach(office, jobs);
   const byId = new Map(rows.map((j) => [j.id, j]));
+  const tokenOf = new Map(links.map((l) => [l.invoice_id, l.token]));
   return invoices.map((i) => ({
     ...i,
     jobNumber: byId.get(i.job_id)?.number ?? null,
     customer: byId.get(i.job_id)?.customer?.name ?? null,
+    token: tokenOf.get(i.id) ?? null,
   }));
 }
 
@@ -1015,9 +1124,11 @@ export interface ReportListRow {
   job: {
     number: number | null;
     type?: string;
-    bill_to: { name: string } | null;
+    bill_to: { name: string; email?: string | null } | null;
     property: { address_line1: string | null } | null;
   } | null;
+  /** The customer's link (/r/<token>) once sent, for Copy Customer Link. */
+  token?: string | null;
 }
 
 /** The shop's reports, newest first: current versions only (a resent report replaces its last). */
@@ -1030,7 +1141,7 @@ export async function listReports(
   let q = supabase
     .from("report")
     .select(
-      "id, job_id, template_key, version, status, sent_at, updated_at, job:job!report_job_id_company_id_fkey(number, type, bill_to:customer!job_bill_to_customer_id_company_id_fkey(name), property:property!job_property_id_company_id_fkey(address_line1))",
+      "id, job_id, template_key, version, status, sent_at, updated_at, job:job!report_job_id_company_id_fkey(number, type, bill_to:customer!job_bill_to_customer_id_company_id_fkey(name, email), property:property!job_property_id_company_id_fkey(address_line1))",
     )
     .eq("company_id", office.company.id)
     .is("deleted_at", null)
@@ -1038,7 +1149,21 @@ export async function listReports(
     .order("updated_at", { ascending: false })
     .limit(limit);
   if (status !== "all") q = q.eq("status", status);
-  return must(await q) as unknown as ReportListRow[];
+  const reports = must(await q) as unknown as ReportListRow[];
+  // Sent reports' customer links, for the list's Copy Customer Link.
+  const sent = reports.filter((r) => r.status === "sent").map((r) => r.id);
+  const links = sent.length
+    ? (((
+        await supabase
+          .from("share_link")
+          .select("token, report_id")
+          .eq("company_id", office.company.id)
+          .not("report_id", "is", null)
+          .is("revoked_at", null)
+      ).data ?? []) as { token: string; report_id: string }[])
+    : [];
+  const tokenOf = new Map(links.map((l) => [l.report_id, l.token]));
+  return reports.map((r) => ({ ...r, token: tokenOf.get(r.id) ?? null }));
 }
 
 /** A pool's chemical log, newest first (owner, 2026-10-19). */

@@ -37,6 +37,9 @@ import { color, face, MAX_TEXT_SCALE, shape, space, tint, type } from "../../ui/
 /** How long a finger rests on a stop before it lifts, as iOS's drag and drop. */
 const HOLD_MS = 350;
 
+/** How far a held finger may drift and still count as "held, not dragged" (it opens the menu). */
+export const HOLD_SLOP = 10;
+
 /** The navigation bar under the status bar (the page scrolls under it). */
 const BAR = 44;
 
@@ -372,9 +375,29 @@ class SourceBox {
   item: DragItem | null = null;
   ghost: () => ReactNode = () => null;
   node: View | null = null;
-  set(item: DragItem | null, ghost: () => ReactNode) {
+  /** The card's touch-and-hold menu, opened by a hold let go without moving. */
+  hold: (() => void) | undefined = undefined;
+  private at = { x: 0, y: 0 };
+  private moved = false;
+  set(item: DragItem | null, ghost: () => ReactNode, hold?: () => void) {
     this.item = item;
     this.ghost = ghost;
+    this.hold = hold;
+  }
+  /** Where the finger lifted the card; it hasn't moved yet. */
+  lift(x: number, y: number) {
+    this.at = { x, y };
+    this.moved = false;
+  }
+  /** The finger moved; past HOLD_SLOP it's a drag, not a hold. */
+  track(x: number, y: number) {
+    if (Math.hypot(x - this.at.x, y - this.at.y) > HOLD_SLOP) this.moved = true;
+  }
+  /** Let go: the menu when it was only held (and there is one), else the drop. */
+  release(api: DragApi) {
+    if (this.moved || !this.hold) return api.end();
+    api.cancel();
+    this.hold();
   }
   attach = (node: View | null) => {
     this.node = node;
@@ -386,16 +409,19 @@ class SourceBox {
 
 /**
  * Touch and hold to drag: the gesture and the ref callback for a stop's card. `item` null: it
- * can't be dragged (a canceled job). `ghost` draws the card under the finger.
+ * can't be dragged (a canceled job). `ghost` draws the card under the finger. `onHold` is the
+ * card's touch-and-hold menu (gestures spec section 12): a card held and let go without moving
+ * opens it, as iOS lifts an item and shows its menu; moved, it's dragged as before.
  */
 export function useDragSource(
   item: DragItem | null,
   ghost: () => ReactNode,
+  onHold?: () => void,
 ): { gesture: PanGesture; ref: (node: View | null) => void } {
   const api = useContext(Api);
   const [box] = useState(() => new SourceBox());
   useEffect(() => {
-    box.set(item, ghost);
+    box.set(item, ghost, onHold);
   });
   const enabled = api.enabled && item != null;
   const gesture = useMemo(
@@ -404,9 +430,15 @@ export function useDragSource(
         .runOnJS(true)
         .enabled(enabled)
         .activateAfterLongPress(HOLD_MS)
-        .onStart((e) => box.start(api, e.absoluteX, e.absoluteY))
-        .onUpdate((e) => api.move(e.absoluteX, e.absoluteY))
-        .onEnd(() => api.end())
+        .onStart((e) => {
+          box.lift(e.absoluteX, e.absoluteY);
+          box.start(api, e.absoluteX, e.absoluteY);
+        })
+        .onUpdate((e) => {
+          box.track(e.absoluteX, e.absoluteY);
+          api.move(e.absoluteX, e.absoluteY);
+        })
+        .onEnd(() => box.release(api))
         .onFinalize(() => api.cancel()),
     [api, enabled, box],
   );

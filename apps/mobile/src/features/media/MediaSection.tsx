@@ -43,7 +43,10 @@ import { Button, Card, Empty, RoundButton, T } from "../../ui/components";
 import { Icon } from "../../ui/Icon";
 import { MarkupLayer } from "../../ui/MarkupLayer";
 import { Select, useMenu } from "../../ui/Select";
+import { mediaRowActions } from "../../lib/rowActions";
+import { useRowMenu, type RowMenu } from "../../ui/RowMenu";
 import { useInSheet } from "../../ui/sheet";
+import { SwipeToDelete } from "../../ui/SwipeRow";
 import { color, face, MAX_TEXT_SCALE, shape, space, tabular } from "../../ui/theme";
 import { WebIcon, type WebIconName } from "../../ui/WebIcon";
 import { confirmDeleteMedia } from "./remove";
@@ -391,12 +394,27 @@ function MediaCard({ media }: { media: Media }) {
   ]
     .filter(Boolean)
     .join(" · ");
+  // Touch and hold for Mark Up and Delete; swipe left to delete (gestures spec section 12).
+  // The card's Mark Up and More buttons stay the visible way.
+  const hold = useRowMenu();
+  const actions = mediaRowActions({
+    kind: media.kind,
+    kindLabel: kind,
+    hasMarkup: shapes.length > 0,
+    ready: source.state === "ready",
+  });
+  const remove = () => confirmDeleteMedia(services.sync, media.company_id, media);
+  const openMenu = () =>
+    hold.open(`${kind} · ${attached}`, actions.menu, (id) =>
+      id === "markup" ? open(true) : remove(),
+    );
 
-  return (
+  const card = (
     <Card padding={0} style={styles.mediaCard}>
       {source.state !== "ready" ? (
         <Pressable
           onPress={() => open()}
+          onLongPress={openMenu}
           accessibilityRole="button"
           accessibilityLabel={`Open ${kind.toLowerCase()}`}
           style={[styles.missing, { backgroundColor: color.bg }]}
@@ -412,10 +430,18 @@ function MediaCard({ media }: { media: Media }) {
           )}
         </Pressable>
       ) : media.kind === "photo" ? (
-        <CardPhoto media={media} uri={source.uri!} shapes={shapes} onPress={() => open()} />
+        <CardPhoto
+          media={media}
+          uri={source.uri!}
+          shapes={shapes}
+          onPress={() => open()}
+          onLongPress={openMenu}
+          onDelete={remove}
+        />
       ) : media.kind === "video" ? (
         <Pressable
           onPress={() => open()}
+          onLongPress={openMenu}
           accessibilityRole="button"
           accessibilityLabel={`Play video${media.duration_ms ? `, ${formatDuration(media.duration_ms)}` : ""}`}
           style={[styles.video, { backgroundColor: color.navy }]}
@@ -471,8 +497,17 @@ function MediaCard({ media }: { media: Media }) {
           </View>
         </View>
         {more.element}
+        {hold.element}
       </View>
     </Card>
+  );
+  // A voice note's card holds its player, so it isn't swiped; its More button deletes it.
+  return media.kind === "audio" ? (
+    card
+  ) : (
+    <SwipeToDelete label="Delete" onDelete={remove}>
+      {card}
+    </SwipeToDelete>
   );
 }
 
@@ -482,11 +517,17 @@ function CardPhoto({
   uri,
   shapes,
   onPress,
+  onLongPress,
+  onDelete,
 }: {
   media: Media;
   uri: string;
   shapes: ReturnType<typeof parseMarkup>["shapes"];
   onPress: () => void;
+  /** Touch and hold: Mark Up and Delete. */
+  onLongPress: () => void;
+  /** The card's swipe Delete, for TalkBack and VoiceOver. */
+  onDelete: () => void;
 }) {
   const [width, setWidth] = useState(0);
   const ratio = media.width && media.height ? media.height / media.width : 0.75;
@@ -494,6 +535,15 @@ function CardPhoto({
   return (
     <Pressable
       onPress={onPress}
+      onLongPress={onLongPress}
+      accessibilityActions={[
+        { name: "delete", label: "Delete" },
+        { name: "menu", label: "Show Actions" },
+      ]}
+      onAccessibilityAction={(e) => {
+        if (e.nativeEvent.actionName === "delete") onDelete();
+        if (e.nativeEvent.actionName === "menu") onLongPress();
+      }}
       accessibilityRole="imagebutton"
       accessibilityLabel={media.caption ?? (shapes.length ? "Photo with markup" : "Photo")}
       accessibilityHint="Opens the photo"
@@ -551,17 +601,20 @@ const PER_ROW = 4;
 /** Small thumbnails for the sheets and the checklist item: four to a row. */
 function Thumbs({ media }: { media: Media[] }) {
   const [width, setWidth] = useState(0);
+  // Touch and hold a thumbnail for Mark Up and Delete (gestures spec section 12).
+  const hold = useRowMenu();
   const { fontScale } = useWindowDimensions();
   const perRow = fontScale >= 1.6 ? 3 : PER_ROW;
   const size = width > 0 ? Math.floor((width - space["2"] * (perRow - 1)) / perRow) : 0;
   return (
     <View style={styles.grid} onLayout={(e) => setWidth(e.nativeEvent.layout.width)}>
-      {size > 0 ? media.map((m) => <Thumb key={m.id} media={m} size={size} />) : null}
+      {size > 0 ? media.map((m) => <Thumb key={m.id} media={m} size={size} menu={hold} />) : null}
+      {hold.element}
     </View>
   );
 }
 
-function Thumb({ media, size }: { media: Media; size: number }) {
+function Thumb({ media, size, menu }: { media: Media; size: number; menu: RowMenu }) {
   const { services } = useSession();
   // Inside the Test or Finding sheet, the capture opens in the sheet's own stack.
   const inSheet = useInSheet();
@@ -569,18 +622,32 @@ function Thumb({ media, size }: { media: Media; size: number }) {
   const uri = source.uri;
   const markup = parseMarkup(media.markup);
   const label = `${MEDIA_KIND_LABELS[media.kind]}${media.duration_ms ? `, ${formatDuration(media.duration_ms)}` : ""}${media.upload_state === "pending" ? ", waiting to upload" : ""}`;
+  const where = `/jobs/${media.job_id}/${inSheet ? "capture" : "media"}/${media.id}`;
+  const remove = () => confirmDeleteMedia(services.sync, media.company_id, media);
+  const actions = mediaRowActions({
+    kind: media.kind,
+    kindLabel: MEDIA_KIND_LABELS[media.kind],
+    hasMarkup: markup.shapes.length > 0,
+    ready: Boolean(uri),
+  });
+  const openMenu = () =>
+    menu.open(MEDIA_KIND_LABELS[media.kind], actions.menu, (id) =>
+      id === "markup" ? router.push(`${where}?markup=1`) : remove(),
+    );
   return (
     <Pressable
       accessibilityRole="button"
       accessibilityLabel={label}
-      accessibilityActions={[{ name: "delete", label: "Delete" }]}
+      accessibilityActions={[
+        { name: "delete", label: "Delete" },
+        { name: "menu", label: "Show Actions" },
+      ]}
       onAccessibilityAction={(e) => {
-        if (e.nativeEvent.actionName === "delete")
-          confirmDeleteMedia(services.sync, media.company_id, media);
+        if (e.nativeEvent.actionName === "delete") remove();
+        if (e.nativeEvent.actionName === "menu") openMenu();
       }}
-      onPress={() =>
-        router.push(`/jobs/${media.job_id}/${inSheet ? "capture" : "media"}/${media.id}`)
-      }
+      onPress={() => router.push(where)}
+      onLongPress={openMenu}
       style={({ pressed }) => [
         styles.thumb,
         { width: size, height: size, backgroundColor: color.navy },

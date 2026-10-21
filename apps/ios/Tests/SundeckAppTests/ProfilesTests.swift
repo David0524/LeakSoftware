@@ -213,19 +213,19 @@ import Testing
         #expect(propertyMapStatus(nil, routing: true) == nil)
     }
 
-    @Test func scheduleNotesSayNotOnMap() {
+    /// Not on the map is a symbol after the address now, not words in the note (owner, 2026-10-20).
+    @Test func scheduleNotesLeaveNotOnMapToTheSymbol() {
         let view = JobView(
             id: "j1", job: ["id": "j1", "type": "repair", "status": "scheduled"],
             property: ["id": "p1", "address_line1": "1 Main St"], customer: nil)
         let job = ScheduleJob(view)
         #expect(job.mapMissing)
         #expect(stopNote(job, routeTech: nil, names: [:]) == "Repair")
-        #expect(stopNote(job, routeTech: nil, names: [:], routing: true) == "Repair · Not on map")
         let leak = ScheduleJob(
             JobView(
                 id: "j2", job: ["id": "j2", "type": "detection", "status": "scheduled"],
                 property: ["id": "p2", "address_line1": "2 Main St"], customer: nil))
-        #expect(stopNote(leak, routeTech: nil, names: [:], routing: true) == "Leak detection · Not on map")
+        #expect(leak.mapMissing)
         #expect(stopNote(leak, routeTech: nil, names: [:]) == "Leak detection")
     }
 }

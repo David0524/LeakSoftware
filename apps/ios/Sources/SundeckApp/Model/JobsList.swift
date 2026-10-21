@@ -45,6 +45,17 @@ public func jobViews(_ store: LocalStore, companyId: String) throws -> [JobView]
     }
 }
 
+/// One job with its pool and customer, read by id (the job page): three row reads, not every job
+/// on the phone (gestures spec section 6). Nil when it isn't on the phone or is another shop's.
+public func jobView(_ store: LocalStore, companyId: String, jobId: String) throws -> JobView? {
+    guard let job = try store.getLive("job", jobId), job["company_id"]?.string.map({ $0 == companyId }) ?? true
+    else { return nil }
+    let property = try job["property_id"]?.string.flatMap { try store.getLive("property", $0) }
+    let customerId = job["bill_to_customer_id"]?.string ?? property?["customer_id"]?.string
+    let customer = try customerId.flatMap { try store.getLive("customer", $0) }
+    return JobView(id: job.id, job: job, property: property, customer: customer)
+}
+
 /// A section of the jobs list, in the Expo app's order: Today, Upcoming, Not scheduled, Recent.
 public struct JobSection: Identifiable, Equatable, Sendable {
     public var id: String { title }
@@ -123,14 +134,20 @@ public struct JobListRow: Identifiable, Equatable, Sendable {
     /// For the row's Call and Text swipe actions.
     public var customerId: String? = nil
     public var phone: String? = nil
+    /// For the row's swipes and menu (gestures spec section 12): the job number, the pool for
+    /// Directions, whether its page offers Complete Job, and whether it can be moved (Move…).
+    public var number: Int? = nil
+    public var place: MapPlace? = nil
+    public var completable = false
+    public var movable = false
 }
 
-/// The Jobs list for a filter and search: deleted jobs left out, a limited tech's own jobs only,
-/// soonest scheduled first (jobs without a time last), then the newest number. The search matches
-/// the customer's name or the job number ("1040", "#1040").
+/// The Jobs list for a filter, search and sort: deleted jobs left out, a limited tech's own jobs
+/// only, in the sort's order (Scheduled Date: soonest first, jobs without a time last, then the
+/// newest number). The search matches the customer's name or the job number ("1040", "#1040").
 public func jobList(
     _ views: [JobView], filter: JobFilter, search: String, now: Date, timeZone: String, userId: String,
-    seesAll: Bool, names: [String: String]
+    seesAll: Bool, names: [String: String], sort: JobSort = .scheduled
 ) -> [JobListRow] {
     let q = search.trimmingCharacters(in: .whitespaces)
     let number = q.wholeMatch(of: /#?(\d+)/).flatMap { Int($0.1) }
@@ -145,18 +162,12 @@ public func jobList(
         if let number, v.number == number { return true }
         return v.customerName.localizedCaseInsensitiveContains(q)
     }
-    // Parsed once per job, not once per comparison.
-    let starts = Dictionary(
-        picked.map { ($0.id, parseInstant($0.job["scheduled_start"]?.string)?.timeIntervalSince1970) },
-        uniquingKeysWith: { a, _ in a })
-    let start = { (v: JobView) in starts[v.id] ?? nil }
-    let sorted = picked.sorted { a, b in
-        switch (start(a), start(b)) {
-        case (let x?, let y?) where x != y: return x < y
-        case (.some, nil): return true
-        case (nil, .some): return false
-        default: return (a.number ?? .max) > (b.number ?? .max)
-        }
+    // The sort the page chose (owner, 2026-10-20: "Add sorting on the jobs page just like
+    // invoices"; core `sortJobs`): Scheduled Date by default, soonest first, no date last.
+    let sorted = sortJobs(picked, sort: sort) { v in
+        JobSortItem(
+            number: v.number, scheduledStart: v.job["scheduled_start"]?.string,
+            createdAt: v.job["created_at"]?.string, customer: v.customerName)
     }
     return sorted.map { v in
         let tech = v.job["assigned_user_id"]?.string.map { names[$0] ?? "Teammate" } ?? "Unassigned"
@@ -169,7 +180,17 @@ public func jobList(
             id: v.id, customer: v.customerName,
             kind: "\(v.number.map { "#\($0)" } ?? "New job") · \(jobTypeLabel(v.type))", address: address,
             when: "\(when) · \(tech)", status: v.status, customerId: v.customer?.id,
-            phone: v.customer?["phone"]?.string.flatMap { $0.isEmpty ? nil : $0 })
+            phone: v.customer?["phone"]?.string.flatMap { $0.isEmpty ? nil : $0 }, number: v.number,
+            place: address.map { a in
+                MapPlace(
+                    address: a,
+                    location: v.property.flatMap { p in
+                        guard let lat = p["latitude"]?.number, let lng = p["longitude"]?.number else { return nil }
+                        return LatLng(lat: lat, lng: lng)
+                    })
+            },
+            completable: jobHeaderPhoneActions(v.status, type: v.type).contains(.done) || checklistShowsCompleteJob(v),
+            movable: canMoveJob(v.status) && jobReschedulable(type: v.type.rawValue, status: v.status.rawValue))
     }
 }
 
@@ -205,10 +226,15 @@ public struct ReportListRow: Identifiable, Equatable, Sendable {
     public var detail: String
     /// "Sent Oct 15, 2026" or "Draft".
     public var value: String
+    /// A sent version (Resend), and its customer link (Copy Customer Link).
+    public var sent = false
+    public var link: URL? = nil
 }
 
 /// Every job's current report, newest first (superseded versions left out).
-public func reportList(_ store: LocalStore, companyId: String, filter: ReportFilter, timeZone: String)
+public func reportList(
+    _ store: LocalStore, companyId: String, filter: ReportFilter, timeZone: String, webURL: URL? = AppConfig.webURL
+)
     -> [ReportListRow]
 {
     let views = Dictionary(
@@ -219,6 +245,14 @@ public func reportList(_ store: LocalStore, companyId: String, filter: ReportFil
         let status = r["status"]?.string ?? "draft"
         guard r["deleted_at"]?.string == nil, status != "superseded" else { return false }
         return filter == .all || status == filter.rawValue
+    }
+    // Each report's customer link that still works (as the Wrap-Up's View version reads it).
+    var tokens: [String: String] = [:]
+    for link in (try? store.list("share_link", companyId: companyId)) ?? [] {
+        guard let id = link["report_id"]?.string, let token = link["token"]?.string,
+            link["revoked_at"]?.string == nil, link["deleted_at"]?.string == nil
+        else { continue }
+        tokens[id] = token
     }
     return
         reports
@@ -235,6 +269,8 @@ public func reportList(_ store: LocalStore, companyId: String, filter: ReportFil
             return ReportListRow(
                 id: r.id, jobId: jobId, customer: view?.customerName ?? "Customer",
                 job: view?.number.map { "Job #\($0)" } ?? "New job", detail: detail,
-                value: sent.map { "Sent \(formatShortDate($0, timeZone: timeZone))" } ?? "Draft")
+                value: sent.map { "Sent \(formatShortDate($0, timeZone: timeZone))" } ?? "Draft",
+                sent: r["status"]?.string == "sent",
+                link: tokens[r.id].flatMap { token in webURL.map { reportURL($0, token) } })
         }
 }

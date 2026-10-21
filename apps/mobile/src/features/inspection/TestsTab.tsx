@@ -4,6 +4,7 @@ import { calculate, formatSchedule, type Job } from "@leakbook/core";
 import { useInspectionConfig, useJobInspection } from "../../data/inspection";
 import { useCompany, useSession } from "../../state/session";
 import { Group, ListRow, T } from "../../ui/components";
+import { useRowMenu } from "../../ui/RowMenu";
 import { space } from "../../ui/theme";
 import { OutcomeChip } from "./OutcomeChip";
 import { confirmDeleteTest } from "./remove";
@@ -19,6 +20,8 @@ export function TestsTab({ job }: { job: Job }) {
   const config = useInspectionConfig(job.company_id);
   const insp = useJobInspection(job.company_id, job.id);
   const now = new Date();
+  // Touch and hold a row for Edit and Delete (gestures spec section 12).
+  const menu = useRowMenu();
 
   return (
     <View style={{ gap: space["4"] }}>
@@ -51,6 +54,7 @@ export function TestsTab({ job }: { job: Job }) {
                 accessibilityLabel={`Edit ${name}`}
                 onPress={() => router.push(`/jobs/${job.id}/test/${t.id}`)}
                 onDelete={() => confirmDeleteTest(services.sync, job.company_id, t.id, name)}
+                editMenu={{ menu, title: name }}
                 trailing={<OutcomeChip outcome={t.outcome} />}
               >
                 <T variant="bodyEmphasis">{name}</T>
@@ -83,6 +87,7 @@ export function TestsTab({ job }: { job: Job }) {
         </Group>
       )}
       {/* Add Test is in the job page's Next Step bar (owner, 2026-10-20). */}
+      {menu.element}
     </View>
   );
 }

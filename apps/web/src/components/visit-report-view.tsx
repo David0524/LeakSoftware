@@ -65,7 +65,6 @@ export function VisitReportView({
   const reading = s.chemicals?.[0];
   const water = reading ? waterTestRows(reading) : [];
   const done = s.components.filter((c) => c.status === "inspected");
-  const skipped = s.components.filter((c) => c.status === "excluded");
   const photos = s.media.filter((m) => m.kind === "photo" && urls.has(m.storage_path));
   const techs = [s.job.tech_name, s.job.second_tech_name].filter(Boolean).join(" and ");
 
@@ -163,7 +162,9 @@ export function VisitReportView({
         </Card>
       ) : null}
 
-      {done.length || skipped.length ? (
+      {/* Only what was done (owner, 2026-10-20: "do not list/include items that were not
+          completed"). */}
+      {done.length ? (
         <Card title="What We Did">
           <ul className="space-y-2">
             {done.map((c) => (
@@ -176,14 +177,6 @@ export function VisitReportView({
                   {c.notes ? (
                     <span className="block text-[0.9375rem] text-text-muted">{c.notes}</span>
                   ) : null}
-                </span>
-              </li>
-            ))}
-            {skipped.map((c) => (
-              <li key={c.id} className="flex gap-2 text-text-muted">
-                <span aria-hidden="true">–</span>
-                <span>
-                  {c.label}: not done{c.exclusion_reason ? ` (${c.exclusion_reason})` : ""}
                 </span>
               </li>
             ))}

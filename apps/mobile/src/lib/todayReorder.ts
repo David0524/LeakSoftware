@@ -49,7 +49,7 @@ export type ReorderAction = "later" | "up" | "down";
 
 export interface ReorderRow {
   id: string;
-  /** Why it can't move ("Started", "Promised for 9:00 AM", "Two techs", "Done"), or null. */
+  /** Why it can't move ("Started", "Locked", "Time locked", "Two techs", "Done"), or null. */
   lock: string | null;
   canUp: boolean;
   canDown: boolean;

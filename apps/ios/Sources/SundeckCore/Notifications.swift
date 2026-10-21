@@ -6,7 +6,7 @@ import Foundation
 // same thing.
 
 public enum NotificationKind: String, Codable, CaseIterable, Sendable {
-    case text, job, quote, payment, report
+    case text, job, quote, payment, report, live
 }
 
 /// Each kind a person can turn off in More › Notifications (`NOTIFICATION_KINDS`).
@@ -16,6 +16,7 @@ public let notificationKinds: [(key: NotificationKind, label: String, hint: Stri
     (.quote, "Accepted quotes", "A customer accepts a quote."),
     (.payment, "Payments", "A customer pays a deposit or an invoice."),
     (.report, "Signed reports", "A customer signs a report."),
+    (.live, "Live Activity", "Your current stop on the Lock Screen during the workday."),
 ]
 
 /// Whether a person gets a kind: on unless their notification prefs turn it off.
@@ -116,11 +117,14 @@ public struct LiveStopInput: Codable, Hashable, Sendable {
     public var next: LiveStopNext?
     /// The pool's access notes: gate code, which gate, dogs (property.access_notes).
     public var access: String?
+    /// The plan's cleanings on this visit (filter, salt cell), with how soon each is due. Optional
+    /// so a Live Activity state saved before it existed still decodes.
+    public var cleanings: [StopCleaning]?
 
     public init(
         phase: LiveStopPhase, customer: String, address: String?, stop: Int, stops: Int, eta: String?,
         scheduled: String? = nil, checklistDone: Int, checklistTotal: Int, next: LiveStopNext?,
-        access: String? = nil
+        access: String? = nil, cleanings: [StopCleaning]? = nil
     ) {
         self.phase = phase
         self.customer = customer
@@ -133,20 +137,65 @@ public struct LiveStopInput: Codable, Hashable, Sendable {
         self.checklistTotal = checklistTotal
         self.next = next
         self.access = access
+        self.cleanings = cleanings
     }
+}
+
+/// A cleaning on a stop's visit (`StopCleaning`): its name, its kind (for the icon) and how soon
+/// it's due.
+public struct StopCleaning: Codable, Hashable, Sendable {
+    public var name: String
+    public var kind: CleaningKind
+    public var days: Int
+    public var weeks: Int
+
+    public init(name: String, kind: CleaningKind, days: Int, weeks: Int) {
+        self.name = name
+        self.kind = kind
+        self.days = days
+        self.weeks = weeks
+    }
+}
+
+/// A cleaning as the card and the Live Activity show it (`CleaningBadge`): its icon, a few words
+/// ("Overdue", "Today", "3 days", "2 weeks"), and aloud ("Clean filter due in 3 days").
+public struct CleaningBadge: Codable, Hashable, Sendable {
+    public var kind: CleaningKind
+    public var label: String
+    public var spoken: String
+    public var overdue: Bool
+
+    public init(kind: CleaningKind, label: String, spoken: String, overdue: Bool) {
+        self.kind = kind
+        self.label = label
+        self.spoken = spoken
+        self.overdue = overdue
+    }
+}
+
+/// A visit's cleanings as badges, soonest first (`cleaningBadges`).
+public func cleaningBadges(_ list: [StopCleaning]?) -> [CleaningBadge] {
+    // A stable sort by days, as JavaScript's.
+    (list ?? []).enumerated()
+        .sorted { $0.element.days != $1.element.days ? $0.element.days < $1.element.days : $0.offset < $1.offset }
+        .map { _, c in
+            CleaningBadge(
+                kind: c.kind, label: cleaningShortLabel(days: c.days, weeks: c.weeks),
+                spoken: cleaningDueSpoken(c.name, days: c.days, weeks: c.weeks), overdue: c.days < 0)
+        }
 }
 
 /// What the Live Activity shows for a stop (`LiveStopContent`).
 public struct LiveStopContent: Codable, Equatable, Sendable {
     /// "On the way to Smith", "At Smith", "Smith done".
     public var headline: String
-    /// The one large figure: "9:42 AM", "4 of 9", or the check.
+    /// The one large figure: "2 of 5" (the stop), "4 of 9" (the checklist), or the check.
     public var figure: String
-    /// Under the figure: "Arriving", "Checklist", "Next stop".
+    /// Under the figure: "Stop", "Checklist", "Next stop".
     public var figureLabel: String
     /// "Stop 3 of 7 · 123 Palm Ln"
     public var detail: String
-    /// "Next: Jones at 10:30 AM", or nil when this is the last stop.
+    /// "Next: Jones", or nil when this is the last stop.
     public var next: String?
     /// 0..1 along the day's stops (done ones and this one), for the progress bar.
     public var progress: Double
@@ -157,6 +206,9 @@ public struct LiveStopContent: Codable, Equatable, Sendable {
     /// The stop's access notes on one line, with a key on the Lock Screen, until the stop is
     /// done (owner, 2026-10-20); nil when there are none.
     public var access: String? = nil
+    /// The cleanings on this visit (owner, 2026-10-20: "The filter/salt cell cleaning alert needs
+    /// to be on the new Today tile and the live activity"), soonest first, until the stop is done.
+    public var cleanings: [CleaningBadge] = []
 }
 
 /// Access notes as one short line: spaces and line breaks collapsed, at most 90 characters.
@@ -173,35 +225,39 @@ public func accessLine(_ notes: String?) -> String? {
 public func liveStopContent(_ s: LiveStopInput) -> LiveStopContent {
     var content = liveStopBase(s)
     content.access = s.phase == .done ? nil : accessLine(s.access)
+    content.cleanings = s.phase == .done ? [] : cleaningBadges(s.cleanings)
     if let access = content.access { content.spoken += " Access: \(access)" }
+    if !content.cleanings.isEmpty {
+        content.spoken += " " + content.cleanings.map(\.spoken).joined(separator: ", ") + "."
+    }
     return content
 }
 
 private func liveStopBase(_ s: LiveStopInput) -> LiveStopContent {
+    // No clock times (owner, 2026-10-20: "I don't like times in the live activity. Pool Jobs
+    // aren't really scheduled for a certain time"): before arriving, the figure is the stop's
+    // place in the day, and the next stop is named without a time. `eta` and `scheduled` are
+    // ignored.
     let of = "Stop \(s.stop) of \(s.stops)"
     let detail = [of, s.address].compactMap { $0 }.filter { !$0.isEmpty }.joined(separator: " · ")
-    let next = s.next.map { n in "Next: \(n.customer)\((n.time?.isEmpty == false) ? " at \(n.time!)" : "")" }
+    let next = s.next.map { "Next: \($0.customer)" }
     let doneStops = s.phase == .done ? s.stop : s.stop - 1
     let progress =
         s.stops > 0
         ? min(1, max(0, (Double(doneStops) + (s.phase == .onSite ? 0.5 : 0)) / Double(s.stops))) : 0
+    let place = s.stops > 0 ? "\(s.stop) of \(s.stops)" : ""
+    let compactPlace = place.isEmpty ? "…" : "\(s.stop)/\(s.stops)"
     switch s.phase {
     case .ahead:
-        let at = s.scheduled ?? ""
-        let compact = at.replacing(/\s?[AaPp][Mm]$/, with: "")
         return LiveStopContent(
-            headline: "Up next: \(s.customer)", figure: at.isEmpty ? "Today" : at,
-            figureLabel: at.isEmpty ? "" : "Scheduled", detail: detail, next: next, progress: progress,
-            compact: compact.isEmpty ? "…" : compact,
-            spoken: "Up next: \(s.customer)\(at.isEmpty ? "" : " at \(at)"). \(of).")
+            headline: "Up next: \(s.customer)", figure: place.isEmpty ? "Today" : place,
+            figureLabel: place.isEmpty ? "" : "Stop", detail: detail, next: next, progress: progress,
+            compact: compactPlace, spoken: "Up next: \(s.customer). \(of).")
     case .driving:
-        let eta = s.eta ?? ""
-        let compact = eta.replacing(/\s?[AaPp][Mm]$/, with: "")
         return LiveStopContent(
-            headline: "On the way to \(s.customer)", figure: eta.isEmpty ? "On the way" : eta,
-            figureLabel: eta.isEmpty ? "" : "Arriving", detail: detail, next: next, progress: progress,
-            compact: compact.isEmpty ? "…" : compact,
-            spoken: "On the way to \(s.customer)\(eta.isEmpty ? "" : ", arriving at \(eta)"). \(of).")
+            headline: "On the way to \(s.customer)", figure: place.isEmpty ? "On the way" : place,
+            figureLabel: place.isEmpty ? "" : "Stop", detail: detail, next: next, progress: progress,
+            compact: compactPlace, spoken: "On the way to \(s.customer). \(of).")
     case .onSite:
         let list = s.checklistTotal > 0 ? "\(s.checklistDone) of \(s.checklistTotal)" : ""
         return LiveStopContent(

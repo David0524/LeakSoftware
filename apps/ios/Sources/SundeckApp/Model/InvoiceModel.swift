@@ -140,7 +140,7 @@ public struct InvoiceSectionModel: Equatable, Sendable {
                     strong: true))
         }
         let live = invoice.status != .void
-        let paidSomething = inv.payments.contains { $0.status == "succeeded" || $0.status == "pending" }
+        let rules = InvoiceActionRules(invoice: invoice, payments: inv.payments, manager: manager)
         return InvoiceCardModel(
             invoice: inv,
             title: "Invoice" + (invoice.number.map { " #\($0)" } ?? "") + " · " + invoice.status.label,
@@ -159,12 +159,27 @@ public struct InvoiceSectionModel: Equatable, Sendable {
                 ].joined(separator: " · ") + (p.paidAt.map { " · " + mediumDate($0, timeZone: timeZone) } ?? "")
             },
             link: live ? inv.token.flatMap { token in webURL.map { invoiceURL($0, token) } } : nil,
-            canRecordPayment: manager && !draft && live && invoice.balanceCents > 0,
+            canRecordPayment: rules.canRecordPayment,
             balanceText: centsFieldText(invoice.balanceCents),
-            canVoid: manager && !draft && live && !paidSomething,
+            canVoid: rules.canVoid,
             customerEmail: customerEmail ?? "",
             discountText: invoice.discountCents > 0 ? centsFieldText(invoice.discountCents) : "",
             dueDate: invoice.dueDate, notes: invoice.notes ?? "")
+    }
+}
+
+/// Who may record a payment on an invoice or void it, the same on its card and its row in
+/// Invoices: managers, on a sent invoice still live, while something is owed (Record Payment) or
+/// nothing is paid (Void Invoice).
+public struct InvoiceActionRules: Equatable, Sendable {
+    public var canRecordPayment: Bool
+    public var canVoid: Bool
+
+    public init(invoice: InvoiceRecord, payments: [PaymentRecord], manager: Bool) {
+        let open = manager && invoice.status != .draft && invoice.status != .void
+        let paidSomething = payments.contains { $0.status == "succeeded" || $0.status == "pending" }
+        canRecordPayment = open && invoice.balanceCents > 0
+        canVoid = open && !paidSomething
     }
 }
 

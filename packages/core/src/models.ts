@@ -271,6 +271,10 @@ export interface Membership extends Base {
   user_id: string;
   role: Role;
   status: "active" | "disabled";
+  /** The tech's color, a TECH_COLORS key (read with techColor; owner, 2026-10-20). */
+  color?: string | null;
+  /** When they were turned off (set by the server), for Team's order. */
+  disabled_at?: string | null;
 }
 
 export type CustomerKind =
@@ -337,11 +341,16 @@ export interface Job extends Base {
   diagram_markup?: unknown;
   /** Place in the tech's route that day, 1 = first stop (routing). */
   route_order?: number | null;
-  /** The customer was told this time: planning never moves it. */
+  /** The customer was told this time: planning never moves it (both locks; kept for old builds). */
   arrival_fixed?: boolean;
+  /** Locks (owner, 2026-10-20): stays on its day / keeps its clock time. Both = arrival_fixed. */
+  lock_day?: boolean;
+  lock_time?: boolean;
   /** A maintenance visit's plan, and the plan's date for it. */
   service_plan_id?: string | null;
   plan_date?: string | null;
+  /** Moved by Just This Visit: remaking the plan's visits leaves it where it is. */
+  plan_moved?: boolean;
   /** A maintenance visit's monthly invoice (set by the server). */
   billed_invoice_id?: string | null;
   /** On My Way: when it was sent, and the arrival it promised (owner, 2026-10-20). */

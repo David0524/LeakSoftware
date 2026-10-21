@@ -1,10 +1,12 @@
 "use client";
 
-import { createContext, use, useCallback, useState, type ReactNode } from "react";
+import { createContext, use, useCallback, useState, useTransition, type ReactNode } from "react";
+import { removeConfigRow } from "@/app/actions/settings";
 import { Banner } from "./doc-ui";
 import { NavPlus } from "./nav-bar";
+import { RowActions, bannerFor, formOf, type MenuEntry, type SwipeAction } from "./row-actions";
 import { SheetDone } from "./settings-forms";
-import { Sheet } from "./sheet";
+import { Sheet, useConfirm } from "./sheet";
 import { Button, PageHeader } from "./ui";
 
 // Settings pages that hold a list of rows (price book items, components, severities…), as iOS
@@ -133,18 +135,29 @@ export function SheetRow({
   value,
   title,
   testId,
+  accessory,
+  remove,
   children,
 }: {
   label: ReactNode;
   detail?: ReactNode;
   value?: ReactNode;
+  /** A control at the row's end, beside the row's button (a round icon button). */
+  accessory?: ReactNode;
   /** The sheet's title, usually the item's name. */
   title: string;
   testId?: string;
+  /**
+   * A settings list's row (gestures.md section 12): its menu has Edit and Delete…, and it
+   * swipes left for Delete…, both asking first and removing it as the sheet's Remove does.
+   */
+  remove?: { table: string; id: string; path: string; confirm: string; confirmLabel: string };
   children?: ReactNode;
 }) {
   const notify = use(Notify);
   const [open, setOpen] = useState(false);
+  const [removing, startRemove] = useTransition();
+  const [confirm, confirmSheet] = useConfirm();
   const close = useCallback(() => setOpen(false), []);
   const done = useCallback(
     (message: string) => {
@@ -167,17 +180,49 @@ export function SheetRow({
     </>
   );
   const row = "flex min-h-11 w-full items-center gap-3 px-4 py-2.5 text-left";
-  return (
-    <li data-testid={testId}>
-      {children ? (
-        <>
+  const edit = () => {
+    notify("");
+    setOpen(true);
+  };
+  if (remove && children && !accessory) {
+    const del = async () => {
+      if (
+        !(await confirm({
+          title: remove.confirm,
+          confirmLabel: remove.confirmLabel,
+          destructive: true,
+        }))
+      )
+        return;
+      startRemove(async () => {
+        const r = await removeConfigRow(
+          {},
+          formOf({ table: remove.table, id: remove.id, path: remove.path }),
+        );
+        bannerFor(r, "Removed.");
+      });
+    };
+    const swipe: SwipeAction = { label: "Delete…", tone: "red", onSelect: () => void del() };
+    const menu: MenuEntry[] = [
+      { label: "Edit", onSelect: edit },
+      "separator",
+      { label: "Delete…", destructive: true, onSelect: () => void del() },
+    ];
+    // The sheets sit beside the row, not in it: a click in a sheet isn't a click on the row.
+    return (
+      <>
+        <RowActions
+          as="li"
+          title={title}
+          menu={menu}
+          trailing={[swipe]}
+          disabled={removing}
+          data-testid={testId}
+        >
           <button
             type="button"
             aria-haspopup="dialog"
-            onClick={() => {
-              notify("");
-              setOpen(true);
-            }}
+            onClick={edit}
             className={`${row} transition-colors hover:bg-text/[0.03] focus-visible:outline-3 focus-visible:-outline-offset-3 focus-visible:outline-focus active:bg-text/[0.06]`}
           >
             {inner}
@@ -185,6 +230,30 @@ export function SheetRow({
               ›
             </span>
           </button>
+        </RowActions>
+        <Sheet open={open} onClose={close} title={title}>
+          <SheetDone value={done}>{children}</SheetDone>
+        </Sheet>
+        {confirmSheet}
+      </>
+    );
+  }
+  return (
+    <li data-testid={testId} className={accessory ? "flex items-center pr-3" : undefined}>
+      {children ? (
+        <>
+          <button
+            type="button"
+            aria-haspopup="dialog"
+            onClick={edit}
+            className={`${row} ${accessory ? "min-w-0 flex-1" : ""} transition-colors hover:bg-text/[0.03] focus-visible:outline-3 focus-visible:-outline-offset-3 focus-visible:outline-focus active:bg-text/[0.06]`}
+          >
+            {inner}
+            <span aria-hidden="true" className="shrink-0 text-xl leading-none text-text-muted/70">
+              ›
+            </span>
+          </button>
+          {accessory}
           <Sheet open={open} onClose={close} title={title}>
             <SheetDone value={done}>{children}</SheetDone>
           </Sheet>

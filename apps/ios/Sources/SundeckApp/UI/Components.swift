@@ -37,7 +37,7 @@
     ///     PageHeader {
     ///         Text("Monday, October 19 · 72°")
     ///     } actions: {
-    ///         Button("Open Route in Google Maps") { … }.buttonStyle(.secondary)
+    ///         Button("Open Route in Maps") { … }.buttonStyle(.secondary)
     ///     }
     struct PageHeader<Subtitle: View, Actions: View>: View {
         @ViewBuilder var subtitle: Subtitle
@@ -392,7 +392,7 @@
         }
     }
 
-    /// A lock label on a schedule stop ("Fixed time", "Two techs"): `fill` with `text`.
+    /// A lock label on a schedule stop ("Locked", "Time locked", "Two techs"): `fill` with `text`.
     struct LockLabel: View {
         var text: String
 

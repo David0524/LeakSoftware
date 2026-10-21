@@ -1,9 +1,12 @@
 import { router, useLocalSearchParams } from "expo-router";
 import { useRoute } from "expo-router/react-navigation";
 import { useEffect, useRef, useState } from "react";
+import { pageFits } from "../../../../../../lib/pageScroll";
 import { Animated, Linking, StyleSheet, TextInput, View } from "react-native";
+import Reanimated, { FadeIn, FadeInLeft, FadeInRight } from "react-native-reanimated";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import {
+  MAPS_LABELS,
   JOB_TYPE_LABELS,
   POOL_TYPE_LABELS,
   intakeQuestionsFor,
@@ -56,6 +59,7 @@ import {
   StatusChip,
   T,
   Toggle,
+  useReduceMotion,
   useScreenChrome,
 } from "../../../../../../ui/components";
 import { BAR_HEIGHT, barState } from "../../../../../../ui/Bar";
@@ -74,8 +78,12 @@ import {
 import { KeyboardAvoider } from "../../../../../../ui/keyboard";
 import { SwipeNav, useNoSwipe } from "../../../../../../ui/SwipeNav";
 import { usePinnedSyncBar } from "../../../../../../ui/SyncBar";
-import { useUnsavedChanges } from "../../../../../../ui/ModalSheet";
-import { NotOnMapRow } from "../../../../../../ui/NotOnMap";
+import { AddressLine, NotOnMapRow } from "../../../../../../ui/NotOnMap";
+import { ModalSheet, useUnsavedChanges } from "../../../../../../ui/ModalSheet";
+import { useTeam } from "../../../../../../data/schedule";
+import { TechValue } from "../../../../../../ui/TechDot";
+import { PoolForm } from "../../../../../../features/pool/PoolForm";
+import { AccessNotesRow } from "../../../../../../features/pool/AccessNotes";
 import { useRoutingOn } from "../../../../../../lib/routing";
 import { ScreenTip } from "../../../../../../ui/Tip";
 import {
@@ -87,6 +95,7 @@ import {
   shape,
   space,
   tabular,
+  type,
 } from "../../../../../../ui/theme";
 import { ChecklistTab } from "../../../../../../features/inspection/ChecklistTab";
 import { DiagramPanel } from "../../../../../../features/inspection/DiagramPanel";
@@ -167,14 +176,50 @@ export default function JobDetail() {
     topInset: sync.height,
   });
   const barY = barState(useRoute().key).y;
+  const reduceMotion = useReduceMotion();
+  // Each section keeps its scroll position (gestures spec section 4): where the page was when
+  // the tech left it, put back when they come back to it.
+  const scrollY = useRef(0);
+  const positions = useRef(new Map<JobSection, number>());
+  const restoreTo = useRef<number | null>(null);
+  useEffect(() => {
+    const listener = barY.addListener(({ value }) => {
+      scrollY.current = value;
+    });
+    return () => barY.removeListener(listener);
+  }, [barY]);
+  // A page that fits on the screen doesn't scroll, so its large title never shrinks on a bounce
+  // (owner, 2026-10-20: "it doesn't make sense for the nav bar to shrink on scroll" on a short
+  // Findings tile). Sizes from the scroll view itself.
+  const [viewHeight, setViewHeight] = useState(0);
+  const [contentHeight, setContentHeight] = useState(0);
+  const fits = pageFits(contentHeight, viewHeight);
+  // Which way the section changed, for the slide in (none on the first draw).
+  const [enterFrom, setEnterFrom] = useState<1 | -1 | null>(null);
 
-  function setSection(next: JobSection) {
-    lastSection.set(id, next);
-    setSectionState(next);
-    // Changing section starts at the top of the page.
+  const sectionRef = useRef(section);
+  useEffect(() => {
+    sectionRef.current = section;
+  });
+
+  function scrollTo(y: number) {
     (
       scroll.current as unknown as { scrollTo?: (o: { y: number; animated: boolean }) => void }
-    )?.scrollTo?.({ y: 0, animated: false });
+    )?.scrollTo?.({ y, animated: false });
+  }
+
+  function setSection(next: JobSection, dir?: 1 | -1) {
+    if (next === sectionRef.current) return;
+    positions.current.set(sectionRef.current, scrollY.current);
+    lastSection.set(id, next);
+    setEnterFrom(dir ?? null);
+    setSectionState(next);
+    // Back where it was, once the section has drawn (onContentSizeChange), else the top.
+    restoreTo.current = positions.current.get(next) ?? 0;
+    if (restoreTo.current === 0) {
+      scrollTo(0);
+      barY.setValue(0);
+    }
   }
 
   if (!job) {
@@ -257,7 +302,10 @@ export default function JobDetail() {
       accessibilityLabel="Job sections"
       options={sections}
       value={shown}
-      onChange={setSection}
+      onChange={(v) => {
+        const to = sections.findIndex((x) => x.value === v);
+        setSection(v, to > shownAt ? 1 : -1);
+      }}
     />
   );
 
@@ -291,6 +339,17 @@ export default function JobDetail() {
           },
         ]}
         stickyHeaderIndices={drawnChrome ? undefined : [1]}
+        scrollEnabled={!fits}
+        alwaysBounceVertical={false}
+        overScrollMode={fits ? "never" : "auto"}
+        onLayout={(e) => setViewHeight(e.nativeEvent.layout.height)}
+        onContentSizeChange={(_w, h) => {
+          setContentHeight(h);
+          if (restoreTo.current != null && restoreTo.current > 0) {
+            scrollTo(Math.min(restoreTo.current, Math.max(0, h - viewHeight)));
+            restoreTo.current = null;
+          }
+        }}
       >
         <View style={styles.header}>
           {titleBlock}
@@ -332,127 +391,141 @@ export default function JobDetail() {
           style={styles.content}
           onPrevious={() => {
             const to = sections[shownAt - 1];
-            if (to) setSection(to.value);
+            if (to) setSection(to.value, -1);
             return Boolean(to);
           }}
           onNext={() => {
             const to = sections[shownAt + 1];
-            if (to) setSection(to.value);
+            if (to) setSection(to.value, 1);
             return Boolean(to);
           }}
         >
           {sync.inline}
-          {shown === "details" ? (
-            <Details
-              job={job}
-              property={property}
-              customer={customer}
-              update={update}
-              onCancel={
-                jobMoves(job.status, job.type).includes("canceled")
-                  ? () =>
-                      confirmDestructive({
-                        title: "Cancel this job?",
-                        confirm: "Cancel Job",
-                        cancel: "Keep Job",
-                        onConfirm: () => changeStatus("canceled"),
-                      })
-                  : undefined
-              }
-            />
-          ) : null}
-          {shown === "checklist" ? (
-            <View style={styles.part}>
-              {/* Chemical first, at the top of the checklist (owner, 2026-10-19), as the website. */}
-              {maintenance && property ? (
-                <ChemicalInline pool={property} jobId={job.id} name={customer?.name ?? null} />
-              ) : null}
-              {/* Its filter and salt cell cleanings (owner, 2026-10-19), as the website. */}
-              {maintenance ? <VisitCleanings job={job} /> : null}
-              <View style={styles.heading}>
-                <T variant="sectionHeading">Checklist</T>
-                <T muted>
-                  {insp.components.length === 0
-                    ? "No checklist yet."
-                    : inspection
-                      ? `${inspection.answered} of ${inspection.total} answered · ${inspection.attention} need attention · ${inspection.leaking} leaking`
-                      : maintenance
-                        ? `${tally.pass} done · ${tally.attention} need attention · ${tally.notApplicable} skipped · ${tally.pending} to do`
-                        : `${tally.pass} not leaking · ${tally.attention} attention · ${tally.leaking} leaking · ${tally.notApplicable} not applicable · ${tally.pending} to do`}
-                </T>
-              </View>
-              {job.type === "repair" ? null : (
-                <ScreenTip screen="job" pkg={maintenance ? "pool" : "leak"} />
-              )}
-              <ChecklistTab job={job} property={property} />
-              {/* Complete Job is in the Next Step bar (owner, 2026-10-20); what stops it shows
-                  here, under the list. */}
-              {completeAsked === "checklist" && blocker ? (
-                <CompleteBlockedNotice jobId={job.id} message={blocker} />
-              ) : null}
-            </View>
-          ) : null}
-          {shown === "findings" ? (
-            <View style={styles.parts}>
-              {property ? (
-                <View style={styles.part}>
-                  <T variant="sectionHeading">Pool Diagram</T>
-                  <DiagramPanel job={job} property={property} />
-                </View>
-              ) : null}
-              <View style={styles.part}>
-                <T variant="sectionHeading">Tests</T>
-                <TestsTab job={job} />
-              </View>
-              <View style={styles.part}>
-                <T variant="sectionHeading">Findings</T>
-                <FindingsTab job={job} />
-              </View>
-            </View>
-          ) : null}
-          {shown === "photos" ? (
-            <View style={styles.part}>
-              <T variant="sectionHeading">Photos and Recordings</T>
-              <MediaSection
-                target={{ jobId: job.id }}
-                layout="cards"
-                controls={mediaControls}
-                targets={[
-                  ...[...insp.findings]
-                    .sort((a, b) => a.id.localeCompare(b.id))
-                    .map((f) => ({ value: `finding:${f.id}`, label: `Finding: ${f.title}` })),
-                  ...insp.components.map((c) => ({ value: `component:${c.id}`, label: c.label })),
-                ]}
+          {/* The new section slides in from the side it came from; with Reduce Motion it
+              cross-fades (gestures spec section 4). */}
+          <Reanimated.View
+            key={shown}
+            style={styles.pageBody}
+            entering={
+              enterFrom == null
+                ? undefined
+                : reduceMotion
+                  ? FadeIn.duration(200)
+                  : (enterFrom === 1 ? FadeInRight : FadeInLeft).duration(220)
+            }
+          >
+            {shown === "details" ? (
+              <Details
+                job={job}
+                property={property}
+                customer={customer}
+                update={update}
+                onCancel={
+                  jobMoves(job.status, job.type).includes("canceled")
+                    ? () =>
+                        confirmDestructive({
+                          title: "Cancel this job?",
+                          confirm: "Cancel Job",
+                          cancel: "Keep Job",
+                          onConfirm: () => changeStatus("canceled"),
+                        })
+                    : undefined
+                }
               />
-            </View>
-          ) : null}
-          {shown === "wrapup" ? (
-            <View style={styles.parts}>
+            ) : null}
+            {shown === "checklist" ? (
               <View style={styles.part}>
-                <T variant="sectionHeading">Report and Sign-Off</T>
-                <T variant="secondary" muted>
-                  Write Draft fills in the report from this job’s checklist, tests, and findings.
-                  Read and edit it before sending.
-                </T>
-                {job.type === "detection" ? <ScreenTip screen="report" pkg="leak" /> : null}
-                <ReportTab job={job} customer={customer} controls={reportControls} />
-              </View>
-              <View style={styles.part}>
-                <T variant="sectionHeading">Signatures</T>
-                <Signatures job={job} />
-              </View>
-              {job.type !== "repair" ? (
-                <View style={styles.part}>
-                  <T variant="sectionHeading">Quotes</T>
-                  <QuoteTab job={job} />
+                {/* Chemical first, at the top of the checklist (owner, 2026-10-19), as the website. */}
+                {maintenance && property ? (
+                  <ChemicalInline pool={property} jobId={job.id} name={customer?.name ?? null} />
+                ) : null}
+                {/* Its filter and salt cell cleanings (owner, 2026-10-19), as the website. */}
+                {maintenance ? <VisitCleanings job={job} /> : null}
+                <View style={styles.heading}>
+                  <T variant="sectionHeading">Checklist</T>
+                  <T muted>
+                    {insp.components.length === 0
+                      ? "No checklist yet."
+                      : inspection
+                        ? `${inspection.answered} of ${inspection.total} answered · ${inspection.attention} need attention · ${inspection.leaking} leaking`
+                        : maintenance
+                          ? `${tally.pass} done · ${tally.attention} need attention · ${tally.notApplicable} skipped · ${tally.pending} to do`
+                          : `${tally.pass} not leaking · ${tally.attention} attention · ${tally.leaking} leaking · ${tally.notApplicable} not applicable · ${tally.pending} to do`}
+                  </T>
                 </View>
-              ) : null}
-              <View style={styles.part}>
-                <T variant="sectionHeading">Invoice</T>
-                <InvoiceSection job={job} customer={customer} />
+                {job.type === "repair" ? null : (
+                  <ScreenTip screen="job" pkg={maintenance ? "pool" : "leak"} />
+                )}
+                <ChecklistTab job={job} property={property} />
+                {/* Complete Job is in the Next Step bar (owner, 2026-10-20); what stops it shows
+                  here, under the list. */}
+                {completeAsked === "checklist" && blocker ? (
+                  <CompleteBlockedNotice jobId={job.id} message={blocker} />
+                ) : null}
               </View>
-            </View>
-          ) : null}
+            ) : null}
+            {shown === "findings" ? (
+              <View style={styles.parts}>
+                {property ? (
+                  <View style={styles.part}>
+                    <T variant="sectionHeading">Pool Diagram</T>
+                    <DiagramPanel job={job} property={property} />
+                  </View>
+                ) : null}
+                <View style={styles.part}>
+                  <T variant="sectionHeading">Tests</T>
+                  <TestsTab job={job} />
+                </View>
+                <View style={styles.part}>
+                  <T variant="sectionHeading">Findings</T>
+                  <FindingsTab job={job} />
+                </View>
+              </View>
+            ) : null}
+            {shown === "photos" ? (
+              <View style={styles.part}>
+                <T variant="sectionHeading">Photos and Recordings</T>
+                <MediaSection
+                  target={{ jobId: job.id }}
+                  layout="cards"
+                  controls={mediaControls}
+                  targets={[
+                    ...[...insp.findings]
+                      .sort((a, b) => a.id.localeCompare(b.id))
+                      .map((f) => ({ value: `finding:${f.id}`, label: `Finding: ${f.title}` })),
+                    ...insp.components.map((c) => ({ value: `component:${c.id}`, label: c.label })),
+                  ]}
+                />
+              </View>
+            ) : null}
+            {shown === "wrapup" ? (
+              <View style={styles.parts}>
+                <View style={styles.part}>
+                  <T variant="sectionHeading">Report and Sign-Off</T>
+                  <T variant="secondary" muted>
+                    Write Draft fills in the report from this job’s checklist, tests, and findings.
+                    Read and edit it before sending.
+                  </T>
+                  {job.type === "detection" ? <ScreenTip screen="report" pkg="leak" /> : null}
+                  <ReportTab job={job} customer={customer} controls={reportControls} />
+                </View>
+                <View style={styles.part}>
+                  <T variant="sectionHeading">Signatures</T>
+                  <Signatures job={job} />
+                </View>
+                {job.type !== "repair" ? (
+                  <View style={styles.part}>
+                    <T variant="sectionHeading">Quotes</T>
+                    <QuoteTab job={job} />
+                  </View>
+                ) : null}
+                <View style={styles.part}>
+                  <T variant="sectionHeading">Invoice</T>
+                  <InvoiceSection job={job} customer={customer} />
+                </View>
+              </View>
+            ) : null}
+          </Reanimated.View>
         </SwipeNav>
       </Animated.ScrollView>
       {sync.overlay}
@@ -497,6 +570,7 @@ function Details({
   const [fee, setFee] = useState<string | null>(null);
   const [gallons, setGallons] = useState<string | null>(null);
   const [saved, setSaved] = useState(false);
+  const [editingPool, setEditingPool] = useState(false);
   // Notes save shortly after typing stops and when leaving the screen: leaving the field
   // often doesn't blur it on iPhone.
   const notesTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -514,6 +588,8 @@ function Details({
   useEffect(() => () => flush.current(), []);
 
   const team = services.sync.team();
+  const members = useTeam(company.id);
+  const colorOf = (uid: string) => members.find((m) => m.user_id === uid)?.color ?? null;
   const nameOf = (uid: string | null | undefined) => {
     if (!uid) return null;
     const p = team.find((t) => t.id === uid);
@@ -645,47 +721,88 @@ function Details({
       <Section title="Pool">
         <Group>
           {property ? (
-            <ListRow
-              accessibilityRole="link"
-              accessibilityHint="Directions"
-              chevron={false}
-              onPress={() =>
-                openDirections({ address, location: propertyLocation(property) }, choice)
-              }
-            >
-              <T style={{ color: color.link }}>{address}</T>
-              <T variant="secondary" muted>
-                {[
-                  property.pool_type ? POOL_TYPE_LABELS[property.pool_type] : null,
-                  property.has_spa ? "Pool and spa" : "Pool",
-                  property.approx_gallons
-                    ? `${property.approx_gallons.toLocaleString("en-US")} gallons`
-                    : null,
-                ]
-                  .filter(Boolean)
-                  .join(" · ")}
-              </T>
-            </ListRow>
+            // The address opens the pool's details to edit; the pin opens Maps (owner,
+            // 2026-10-20), as the website's Pool group.
+            <View style={styles.poolRow}>
+              <View style={{ flex: 1 }}>
+                <ListRow
+                  chevron={false}
+                  accessibilityLabel={`${address}, Pool Details`}
+                  accessibilityHint="Edits the pool’s address and details"
+                  onPress={() => setEditingPool(true)}
+                >
+                  <AddressLine
+                    notOnMap={mapStatus(property, routing) === "missing"}
+                    lineHeight={type.body.lineHeight!}
+                    size={17}
+                  >
+                    <T variant="bodyEmphasis">{address}</T>
+                  </AddressLine>
+                  <T variant="secondary" muted>
+                    {[
+                      property.pool_type ? POOL_TYPE_LABELS[property.pool_type] : null,
+                      property.has_spa ? "Pool and spa" : "Pool",
+                      property.approx_gallons
+                        ? `${property.approx_gallons.toLocaleString("en-US")} gallons`
+                        : null,
+                    ]
+                      .filter(Boolean)
+                      .join(" · ")}
+                  </T>
+                </ListRow>
+              </View>
+              <RoundButton
+                icon="pin"
+                label={MAPS_LABELS.openInMaps}
+                onPress={() =>
+                  openDirections({ address, location: propertyLocation(property) }, choice)
+                }
+              />
+            </View>
           ) : (
             <ListRow subtitle="Address not on this phone yet." />
           )}
+          {/* Right under the address, editable here (owner, 2026-10-20). */}
+          {property ? <AccessNotesRow property={property} /> : null}
           {mapStatus(property, routing) === "missing" ? <NotOnMapRow /> : null}
-          {property?.access_notes ? (
-            <ListRow>
-              <T variant="secondary" muted>
-                Access
-              </T>
-              <T>{property.access_notes}</T>
-            </ListRow>
-          ) : null}
         </Group>
       </Section>
+      <ModalSheet
+        visible={editingPool && property != null}
+        onClose={() => setEditingPool(false)}
+        title="Pool Details"
+      >
+        {editingPool && property ? (
+          <PoolForm pool={property} onSaved={() => setEditingPool(false)} />
+        ) : null}
+      </ModalSheet>
 
       <Section title="Assigned to">
         <Group>
-          <ListRow title="Tech" detail={nameOf(job.assigned_user_id) ?? "Nobody yet"} />
+          {/* Each tech with their color dot (team and week spec section 3). */}
+          <ListRow
+            title="Tech"
+            detail={
+              job.assigned_user_id ? (
+                <TechValue
+                  name={nameOf(job.assigned_user_id) ?? "Teammate"}
+                  tech={colorOf(job.assigned_user_id)}
+                />
+              ) : (
+                "Nobody yet"
+              )
+            }
+          />
           {job.second_tech_id ? (
-            <ListRow title="With" detail={nameOf(job.second_tech_id) ?? "Teammate"} />
+            <ListRow
+              title="With"
+              detail={
+                <TechValue
+                  name={nameOf(job.second_tech_id) ?? "Teammate"}
+                  tech={colorOf(job.second_tech_id)}
+                />
+              }
+            />
           ) : null}
           {job.fee_cents != null ? (
             <ListRow
@@ -855,6 +972,8 @@ function Details({
 
 const styles = StyleSheet.create({
   header: { gap: space["1"] },
+  // The address row with the round Open in Maps button at its trailing edge.
+  poolRow: { flexDirection: "row", alignItems: "center", paddingRight: space["4"] },
   subtitle: { flexDirection: "row", flexWrap: "wrap", alignItems: "center", gap: space["3"] },
   actions: { flexDirection: "row", flexWrap: "wrap", gap: space["3"], marginTop: space["3"] },
   switcher: {
@@ -864,6 +983,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: gutter,
   },
   content: { gap: space["5"], marginTop: space["2"] },
+  pageBody: { gap: space["5"] },
   part: { gap: space["3"] },
   // Parts of a section are 32 apart (spec 3.5).
   parts: { gap: space["6"] },

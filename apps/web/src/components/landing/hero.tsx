@@ -307,7 +307,7 @@ function LeakToday() {
       <ScreenTitle title="Today" sub="Thursday, October 15 · 62° Sunny" />
       <div className="px-3">
         <span className="lp-rise inline-flex rounded-full bg-link/12 px-3 py-1.5 text-[0.72rem] font-semibold text-link">
-          Next Stop in Apple Maps
+          Next Stop in Maps
         </span>
         <p className="mt-2 text-[0.7rem] text-text-muted">
           4 stops · 1 hr 52 min driving · back by 4:40 PM
@@ -619,7 +619,7 @@ function CleanToday() {
       <ScreenTitle title="Today" sub="Thursday, October 15 · 62° Sunny" />
       <div className="px-3">
         <span className="lp-rise inline-flex rounded-full bg-link/12 px-3 py-1.5 text-[0.72rem] font-semibold text-link">
-          Next Stop in Apple Maps
+          Next Stop in Maps
         </span>
         <p className="mt-2 text-[0.7rem] text-text-muted">
           9 stops · 1 hr 34 min driving · back by 3:10 PM

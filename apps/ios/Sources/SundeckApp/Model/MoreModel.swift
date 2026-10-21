@@ -42,9 +42,11 @@ public enum DirectionsChoice: String, CaseIterable, Hashable, Sendable {
 
     public var label: String {
         switch self {
-        case .automatic: "Automatic"
-        case .apple: "Apple Maps"
-        case .google: "Google Maps"
+        case .automatic: MapsLabels.automatic
+        // Only here is the maps company named (owner, 2026-10-20: "Change 'Google Maps' and
+        // 'Apple Maps' to just 'Maps'"): it's where someone picks one.
+        case .apple: MapsLabels.apple
+        case .google: MapsLabels.google
         }
     }
 

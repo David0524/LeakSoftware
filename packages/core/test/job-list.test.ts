@@ -1,5 +1,13 @@
 import { describe, expect, it } from "vitest";
-import { formatSchedule, groupJobs, localDate, type Job } from "../src";
+import {
+  JOB_SORTS,
+  formatSchedule,
+  groupJobs,
+  jobSort,
+  localDate,
+  sortJobs,
+  type Job,
+} from "../src";
 
 const TZ = "America/Phoenix"; // UTC-7, no daylight saving
 const now = new Date("2026-10-12T17:00:00Z"); // 10:00 AM in Phoenix
@@ -38,5 +46,50 @@ describe("groupJobs", () => {
     expect(formatSchedule("2026-10-12T16:00:00Z", now, TZ)).toBe("9:00 AM");
     expect(formatSchedule("2026-10-14T16:00:00Z", now, TZ)).toBe("Wed, Oct 14, 9:00 AM");
     expect(formatSchedule(null, now, TZ)).toBe("Not scheduled");
+  });
+});
+
+describe("sortJobs (owner, 2026-10-20)", () => {
+  const jobs = [
+    {
+      id: "a",
+      number: 3,
+      scheduled_start: "2026-10-22T16:00:00Z",
+      created_at: "2026-10-01T00:00:00Z",
+      customer: "lee",
+    },
+    {
+      id: "b",
+      number: 7,
+      scheduled_start: null,
+      created_at: "2026-10-05T00:00:00Z",
+      customer: "Adams",
+    },
+    {
+      id: "c",
+      number: 5,
+      scheduled_start: "2026-10-21T16:00:00Z",
+      created_at: "2026-10-03T00:00:00Z",
+      customer: null,
+    },
+  ];
+  const ids = (sort: string) => sortJobs(jobs, sort).map((j) => j.id);
+
+  it("sorts by each key in the menu, Scheduled Date by default", () => {
+    expect(JOB_SORTS.map((s) => s.label)).toEqual([
+      "Scheduled Date",
+      "Newest",
+      "Oldest",
+      "Customer",
+      "Job Number",
+    ]);
+    expect(ids("scheduled")).toEqual(["c", "a", "b"]);
+    expect(ids("nonsense")).toEqual(["c", "a", "b"]);
+    expect(ids("newest")).toEqual(["b", "c", "a"]);
+    expect(ids("oldest")).toEqual(["a", "c", "b"]);
+    expect(ids("customer")).toEqual(["b", "a", "c"]);
+    expect(ids("number")).toEqual(["b", "c", "a"]);
+    expect(jobSort("customer")).toBe("customer");
+    expect(jobSort(undefined)).toBe("scheduled");
   });
 });

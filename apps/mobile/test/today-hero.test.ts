@@ -1,8 +1,12 @@
+import { dismissalAfter, liveStopPhase } from "../src/lib/liveStopRule";
 import { describe, expect, it } from "vitest";
 import { heroActions, todayHero } from "@leakbook/core";
 import {
   checklistCount,
+  cleaningWord,
+  cleaningsLine,
   heroStops,
+  liveStopBody,
   onMyWayValues,
   startJobValues,
   todayList,
@@ -44,6 +48,97 @@ describe("heroStops", () => {
   });
 });
 
+describe("cleanings on the card and the notification", () => {
+  const cleanings = new Map([
+    [
+      "a",
+      [
+        { name: "Clean salt cell", kind: "salt_cell" as const, days: 14, weeks: 2 },
+        { name: "Clean filter", kind: "filter" as const, days: -3, weeks: 0 },
+      ],
+    ],
+  ]);
+
+  it("carries each stop's cleanings to the card, soonest first, read aloud", () => {
+    const h = todayHero({
+      stops: heroStops([job("a", { status: "in_progress" }), job("b")], new Map(), cleanings),
+      today,
+      timeZone: TZ,
+    })!;
+    expect(h.content.cleanings.map((c) => [c.kind, c.label, c.overdue])).toEqual([
+      ["filter", "Overdue", true],
+      ["salt_cell", "2 weeks", false],
+    ]);
+    expect(h.content.cleanings.map((c) => c.spoken)).toEqual([
+      "Clean filter overdue",
+      "Clean salt cell due in 2 weeks",
+    ]);
+    expect(h.content.spoken).toMatch(/Clean filter overdue, Clean salt cell due in 2 weeks\.$/);
+    // A stop without cleanings has none.
+    expect(heroStops([job("b")], new Map(), cleanings)[0]!.cleanings).toEqual([]);
+  });
+
+  it("hides them once the stop is done", () => {
+    const stops = [job("a", { stop_done_on: today }), job("b")];
+    const done = todayHero({
+      stops: heroStops(stops, new Map(), cleanings),
+      today,
+      timeZone: TZ,
+      // Swiped back to it: the phones no longer hold a just-done stop (gestures spec 9).
+      viewing: "a",
+    })!;
+    expect(done.moment).toBe("done");
+    expect(done.content.cleanings).toEqual([]);
+    expect(liveStopBody(done.content, cleanings.get("a"))).not.toMatch(/Filter|Salt cell/);
+  });
+
+  it("names each kind in a word or two", () => {
+    expect(cleaningWord({ kind: "filter", name: "Clean filter" })).toBe("Filter");
+    expect(cleaningWord({ kind: "filter_replace", name: "Replace filter" })).toBe("New filter");
+    expect(cleaningWord({ kind: "salt_cell", name: "Clean salt cell" })).toBe("Salt cell");
+    expect(cleaningWord({ kind: "other", name: "Clean pump basket" })).toBe("Clean pump basket");
+  });
+
+  it("puts them on one line after the access notes in the expanded notification", () => {
+    const h = todayHero({
+      stops: heroStops(
+        [
+          job("a", {
+            status: "in_progress",
+            property: { address_line1: "1 Palm Ln", access_notes: "Gate 4821" },
+          }),
+          job("b"),
+        ],
+        new Map([["a", { done: 4, total: 9 }]]),
+        cleanings,
+      ),
+      today,
+      timeZone: TZ,
+    })!;
+    const lines = liveStopBody(h.content, cleanings.get("a")).split("\n");
+    // The collapsed line is still the figure.
+    expect(lines[0]).toBe(`${h.content.figureLabel} ${h.content.figure}`);
+    expect(lines[1]).toBe("Access: Gate 4821");
+    expect(lines[2]).toBe("Filter overdue · Salt cell 2 weeks");
+    expect(lines[3]).toBe(h.content.detail);
+    expect(cleaningsLine([], cleanings.get("a")!)).toBeNull();
+    // Without cleanings the text is as before.
+    const plain = todayHero({
+      stops: heroStops([job("a", { status: "in_progress" })]),
+      today,
+      timeZone: TZ,
+    })!;
+    expect(liveStopBody(plain.content)).toBe(
+      [
+        [plain.content.figureLabel, plain.content.figure].filter(Boolean).join(" "),
+        plain.content.detail,
+      ]
+        .filter(Boolean)
+        .join("\n"),
+    );
+  });
+});
+
 describe("On My Way on the job", () => {
   it("keeps when it was sent and the arrival, at least 5 minutes out", () => {
     const now = new Date("2026-10-20T16:00:00Z");
@@ -60,7 +155,8 @@ describe("On My Way on the job", () => {
     const h = todayHero({ stops: heroStops(stops), today, timeZone: TZ })!;
     expect(h.moment).toBe("driving");
     expect(h.stopId).toBe("b");
-    expect([h.content.figure, h.content.figureLabel]).toEqual(["9:42 AM", "Arriving"]);
+    // No clock time on the card or the notification (gestures spec section 10).
+    expect([h.content.figure, h.content.figureLabel]).toEqual(["2 of 2", "Stop"]);
     expect(heroActions(h.moment, true).primary).toBe("start_job");
     // Someone looking at the tech's day doesn't get Start Job.
     expect(heroActions(h.moment, false).primary).toBeNull();
@@ -113,14 +209,56 @@ describe("the list under the card", () => {
     expect(h!.moment).toBe("on_site");
   });
 
-  it("marks nothing Now while a stop just done shows, or once the day is done", () => {
+  it("keeps Now on the day's stop while the card shows a done one, and none once the day is done", () => {
     const stops = [job("a", { stop_done_on: today }), job("b")];
-    const done = todayHero({ stops: heroStops(stops), today, timeZone: TZ, justDone: "a" });
+    const done = todayHero({ stops: heroStops(stops), today, timeZone: TZ, viewing: "a" });
     expect(done!.moment).toBe("done");
-    expect(todayList(stops, today, done).nowId).toBeNull();
+    expect(done!.browsing).toBe(true);
+    expect(todayList(stops, today, done).nowId).toBe("b");
     const all = [job("a", { stop_done_on: today })];
     const end = todayHero({ stops: heroStops(all), today, timeZone: TZ });
     expect(end!.moment).toBe("day_done");
     expect(todayList(all, today, end).nowId).toBeNull();
+  });
+});
+
+describe("the ongoing stop notification", () => {
+  const day = "2026-10-20";
+  it("shows whenever the app is open during the working day, not only at its start", () => {
+    expect(liveStopPhase({ moment: "ahead", runs: true, dismissedOn: null, today: day })).toBe(
+      "ahead",
+    );
+    // Before the day starts only a stop on the way shows; a done stop shows its minute.
+    expect(liveStopPhase({ moment: "ahead", runs: false, dismissedOn: null, today: day })).toBe(
+      null,
+    );
+    expect(liveStopPhase({ moment: "driving", runs: false, dismissedOn: null, today: day })).toBe(
+      "driving",
+    );
+    expect(liveStopPhase({ moment: "done", runs: false, dismissedOn: null, today: day })).toBe(
+      "done",
+    );
+    expect(liveStopPhase({ moment: "day_done", runs: true, dismissedOn: null, today: day })).toBe(
+      null,
+    );
+  });
+
+  it("stays away after a swipe only while the app stays in the background", () => {
+    const swiped = dismissalAfter(null, { kind: "swiped", day });
+    expect(swiped).toBe(day);
+    expect(liveStopPhase({ moment: "on_site", runs: true, dismissedOn: swiped, today: day })).toBe(
+      null,
+    );
+    // Opening the app (or bringing it to the front) brings it back the same day.
+    const back = dismissalAfter(swiped, { kind: "foreground" });
+    expect(back).toBeNull();
+    expect(liveStopPhase({ moment: "on_site", runs: true, dismissedOn: back, today: day })).toBe(
+      "on_site",
+    );
+    expect(dismissalAfter(swiped, { kind: "on_my_way" })).toBeNull();
+    // Yesterday's swipe never holds today.
+    expect(
+      liveStopPhase({ moment: "ahead", runs: true, dismissedOn: "2026-10-19", today: day }),
+    ).toBe("ahead");
   });
 });

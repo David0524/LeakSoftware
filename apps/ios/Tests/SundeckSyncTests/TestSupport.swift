@@ -76,6 +76,10 @@ final class FakeServer: SyncTransport, @unchecked Sendable {
         var failPullAt = -1
         /// Holds each pull this long, so overlapping syncs can be seen.
         var pullDelay: Duration = .zero
+        /// public.sync_pull_count's answer (nil: an older server).
+        var counts: [String: Int]? = nil
+        var failCount = false
+        var pageSizes: [Int] = []
     }
 
     let state = Locked(State())
@@ -86,6 +90,11 @@ final class FakeServer: SyncTransport, @unchecked Sendable {
     func set(_ change: (inout State) -> Void) { state.withLock(change) }
 
     func scope() async throws -> String? { state.current.scopeValue }
+
+    func pullCount() async throws -> [String: Int]? {
+        if state.current.failCount { throw TestError("no such function") }
+        return state.current.counts
+    }
 
     func push(_ mutations: [Mutation], deviceId: String) async throws -> PushResponse {
         try state.withLock { s in
@@ -114,6 +123,7 @@ final class FakeServer: SyncTransport, @unchecked Sendable {
         if delay > .zero { try await Task.sleep(for: delay) }
         return try state.withLock { s in
             s.cursors.append(cursor)
+            s.pageSizes.append(pageSize)
             if s.cursors.count - 1 == s.failPullAt { throw TestError("network down") }
             if !s.pages.isEmpty { return s.pages.removeFirst() }
             return PullPage(rows: [], done: true, cursor: .object(["from": .string("1")]), serverHLC: fakeServerHLC)

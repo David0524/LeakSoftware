@@ -1,25 +1,55 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef } from "react";
 import { AccessibilityInfo, Linking, Share } from "react-native";
-import { HERO_ACTION_LABELS, localMinutes, onMyWayText, type OnMyWayVia } from "@leakbook/core";
+import { localMinutes, onMyWayText, type OnMyWayVia } from "@leakbook/core";
 import { sendCompanyText } from "../../data/texting";
-import { Button } from "../../ui/components";
 import { chooseAction } from "../../ui/confirm";
 import { startLiveStop, takeStopAction } from "../../lib/liveStop";
 import { getServices } from "../../lib/services";
 import { onMyWayValues } from "../../lib/todayHero";
+import { smsUrl } from "../../lib/heroMessage";
 import { useCompany } from "../../state/session";
 import { haptics } from "../../ui/haptics";
 
+/** The On My Way text for a stop: the customer, the tech, the shop and the arrival (now plus the
+ *  drive, at least 5 minutes). */
+export function onMyWayMessage(input: {
+  customer: string | null;
+  tech: string;
+  shop: string;
+  driveMin: number;
+  windowMin: number;
+  timeZone: string;
+}): string {
+  const arriveMin =
+    localMinutes(new Date().toISOString(), input.timeZone) + Math.max(5, input.driveMin);
+  return onMyWayText({
+    customer: input.customer,
+    tech: input.tech,
+    shop: input.shop,
+    arriveMin,
+    windowMin: input.windowMin,
+  });
+}
+
 /**
- * On My Way (spec 5.1, the website's components/on-my-way.tsx): a text to the customer with an
- * arrival time (now plus the drive). By default it goes from the company number, into the
- * shared Messages; without a working number it asks before using the phone's own Messages.
- * Shops can choose the phone instead: Messages when the customer has a number, else the share
- * sheet. The label says what happened for 3 seconds (no toast). Once the text is on its way,
- * the job keeps when it was sent and the arrival it promised (owner, 2026-10-20: Today's card),
- * through the sync layer, so the website, the office and a second phone show "On the way".
+ * On My Way kept on the job once the text is on its way (row and outbox together), which also
+ * puts the stop on the way on Today's card and the current-stop notification (2026-10-19).
  */
-export function OnMyWay({
+export function recordOnMyWay(jobId: string, companyId: string, driveMin: number) {
+  getServices().sync.write("job", jobId, companyId, onMyWayValues(new Date(), driveMin));
+  startLiveStop();
+}
+
+/**
+ * The current-stop notification's On My Way (spec 5.1, the website's components/on-my-way.tsx):
+ * a text to the customer with an arrival time. On Today the car is gone (owner, 2026-10-20: On My
+ * Way lives in Message, docs/design/2026-10-20-gestures.md section 2), so this draws nothing: it
+ * sends when the notification asks for this stop. By default it goes from the company number,
+ * into the shared Messages; without a working number it asks before using the phone's own
+ * Messages. Shops can choose the phone instead: Messages when the customer has a number, else
+ * the share sheet. What happened is read aloud.
+ */
+export function OnMyWayTrigger({
   phone,
   customer,
   customerId,
@@ -33,7 +63,6 @@ export function OnMyWay({
   isManager,
   jobId,
   trigger,
-  onWater = false,
 }: {
   phone: string | null;
   customer: string | null;
@@ -49,30 +78,20 @@ export function OnMyWay({
   jobId: string;
   /** Changes when the current-stop notification's On My Way asks for this stop. */
   trigger?: number;
-  /** The main button on Today's water-blue card: white with water-blue text. */
-  onWater?: boolean;
 }) {
   const company = useCompany();
-  const [done, setDone] = useState<string | null>(null);
-  useEffect(() => {
-    if (!done || done === "Sending…") return;
-    const t = setTimeout(() => setDone(null), 3000);
-    return () => clearTimeout(t);
-  }, [done]);
+  const sending = useRef(false);
 
-  function say(label: string, spoken: string) {
-    setDone(label);
+  function say(spoken: string) {
     if (spoken) AccessibilityInfo.announceForAccessibility(spoken);
   }
 
   async function fromPhone(text: string, record: () => void) {
     if (phone) {
-      // "?&body=" works in both iPhone and Android Messages.
-      const url = `sms:${phone.replace(/[^\d+]/g, "")}?&body=${encodeURIComponent(text)}`;
       try {
-        await Linking.openURL(url);
+        await Linking.openURL(smsUrl(phone, text));
         record();
-        say("Texted ✓", `Opened Messages with the text: ${text}`);
+        say(`Opened Messages with the text: ${text}`);
         return;
       } catch {
         // No Messages app: share instead.
@@ -82,23 +101,17 @@ export function OnMyWay({
       const r = await Share.share({ message: text });
       if (r.action === Share.dismissedAction) return;
       record();
-      say("Shared ✓", "Shared the text.");
+      say("Shared the text.");
     } catch {
-      say("Not Sent", "The text couldn’t be shared.");
+      say("The text couldn’t be shared.");
     }
   }
 
   async function send() {
+    if (sending.current) return;
     haptics.light();
-    const arriveMin = localMinutes(new Date().toISOString(), timeZone) + Math.max(5, driveMin);
-    const text = onMyWayText({ customer, tech, shop, arriveMin, windowMin });
-    // Kept on the job once the text is on its way (row and outbox together), which also puts
-    // the stop on the way on Today's card and the current-stop notification (2026-10-19).
-    const values = onMyWayValues(new Date(), driveMin);
-    const record = () => {
-      getServices().sync.write("job", jobId, company.id, values);
-      startLiveStop();
-    };
+    const text = onMyWayMessage({ customer, tech, shop, driveMin, windowMin, timeZone });
+    const record = () => recordOnMyWay(jobId, company.id, driveMin);
     if (phone && via === "messages" && !lineActive) {
       chooseAction({
         title: "On My Way goes out from your company number, which isn’t working yet.",
@@ -110,13 +123,15 @@ export function OnMyWay({
       return;
     }
     if (phone && via === "messages" && lineActive && customerId) {
-      setDone("Sending…");
+      sending.current = true;
       try {
         await sendCompanyText({ customerId, body: text, jobId });
         record();
-        say("Texted ✓", `Texted from the company number: ${text}`);
+        say(`Texted from the company number: ${text}`);
       } catch (e) {
-        say("Not Sent", e instanceof Error ? e.message : "Not sent.");
+        say(e instanceof Error ? e.message : "Not sent.");
+      } finally {
+        sending.current = false;
       }
       return;
     }
@@ -132,13 +147,5 @@ export function OnMyWay({
     if (trigger && takeStopAction(trigger)) void latest.current();
   }, [trigger]);
 
-  return (
-    <Button
-      kind={onWater ? "onWater" : "secondary"}
-      title={done ?? HERO_ACTION_LABELS.on_my_way}
-      onPress={() => void send()}
-      disabled={done === "Sending…"}
-      style={onWater ? undefined : { paddingHorizontal: 12 }}
-    />
-  );
+  return null;
 }

@@ -1,5 +1,5 @@
-import { PageSkeleton } from "@/components/page-skeleton";
+import { ScheduleSkeleton } from "@/components/page-skeleton";
 
 export default function Loading() {
-  return <PageSkeleton />;
+  return <ScheduleSkeleton />;
 }

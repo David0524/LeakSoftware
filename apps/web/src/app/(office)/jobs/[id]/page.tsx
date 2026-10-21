@@ -1,9 +1,11 @@
 import { RememberRecent } from "@/components/remember-recent";
 import type { Metadata } from "next";
+import { TechDot } from "@/components/tech-dot";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { Suspense } from "react";
 import {
+  directionsHref,
   visitReportMode,
   JOB_TYPE_LABELS,
   MEDIA_KIND_LABELS,
@@ -41,14 +43,15 @@ import {
   jobFeeLabel,
   jobHasWrapUp,
   readingSummary,
+  jobLock,
 } from "@leakbook/core";
 import { CustomerLinks } from "@/components/customer-links";
 import { DiagramPanel } from "@/components/diagram-work";
 import { GalleryImage } from "@/components/gallery-image";
 import { Thread } from "@/components/inbox";
-import { CleaningIcon, MailIcon, MessageIcon, PhoneIcon } from "@/components/icons";
+import { CleaningIcon, MailIcon, MessageIcon, PhoneIcon, PinIcon } from "@/components/icons";
 import { JobSections } from "@/components/job-sections";
-import { MediaActions, MediaCapture, SignatureForm } from "@/components/media-work";
+import { MediaCapture, MediaCard, SignatureForm } from "@/components/media-work";
 import {
   ChecklistEditor,
   FindingsEditor,
@@ -97,12 +100,13 @@ import { QuotePanel } from "@/components/quote-panel";
 import { RemoveSignature } from "@/components/remove-signature";
 import { ReportPanel } from "@/components/report-panel";
 import { VisitReportPanel } from "@/components/visit-report-panel";
-import { AddressLink } from "@/components/open-in-maps";
 import { ChemicalDropdown } from "@/components/chem-dropdown";
 import { JobSchedule } from "@/components/schedule-form";
 import { emailConfigured } from "@/server/email";
 import { routingConfigured } from "@/server/routing";
-import { NotOnMapRow } from "@/components/not-on-map";
+import { NotOnMapRow, NotOnMapTag } from "@/components/not-on-map";
+import { AccessNotesForm, PoolDetailsForm } from "@/components/pool-details";
+import { SheetRow } from "@/components/settings-list";
 
 export const metadata: Metadata = { title: "Job · Sundeck Pro" };
 
@@ -212,7 +216,7 @@ export default async function JobPage({ params }: PageProps<"/jobs/[id]">) {
               <>
                 {/* iOS Settings-style groups: customer, pool, and who's on it (two columns
                     on wide screens), then the On Site form. */}
-                <div className="grid grid-cols-1 items-start gap-x-6 gap-y-6 lg:grid-cols-2">
+                <div className="grid grid-cols-[minmax(0,1fr)] items-start gap-x-6 gap-y-6 lg:grid-cols-2">
                   <div className="space-y-6">
                     <Grouped title="Customer">
                       {job.customer ? (
@@ -252,12 +256,18 @@ export default async function JobPage({ params }: PageProps<"/jobs/[id]">) {
 
                     {job.property ? (
                       <Grouped title="Pool">
-                        <Row
+                        {/* The address opens the pool's details to edit; the pin opens Maps
+                            (owner, 2026-10-20). */}
+                        <SheetRow
+                          title="Pool Details"
+                          testId="pool-row"
                           label={
-                            <AddressLink
-                              address={formatAddress(job.property)}
-                              location={propertyLocation(job.property)}
-                            />
+                            <>
+                              <span className="font-semibold">{formatAddress(job.property)}</span>
+                              {mapStatus(job.property, routingConfigured()) === "missing" ? (
+                                <NotOnMapTag className="ml-1.5" />
+                              ) : null}
+                            </>
                           }
                           detail={[
                             job.property.pool_type
@@ -270,23 +280,66 @@ export default async function JobPage({ params }: PageProps<"/jobs/[id]">) {
                           ]
                             .filter(Boolean)
                             .join(" · ")}
-                        />
+                          accessory={
+                            <a
+                              href={directionsHref({
+                                address: formatAddress(job.property),
+                                location: propertyLocation(job.property),
+                              })}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              aria-label="Open in Maps"
+                              title="Open in Maps"
+                              className={iconButtonClass()}
+                            >
+                              <PinIcon className="size-5" />
+                            </a>
+                          }
+                        >
+                          <PoolDetailsForm pool={job.property} />
+                        </SheetRow>
+                        {/* Under the address: the access notes, edited here (owner,
+                            2026-10-20). */}
+                        <SheetRow
+                          title="Access Notes"
+                          testId="access-notes-row"
+                          label={
+                            job.property.access_notes ? (
+                              <>
+                                <span className="block text-[0.9375rem] text-text-muted">
+                                  Access Notes
+                                </span>
+                                <span className="block whitespace-pre-line">
+                                  {job.property.access_notes}
+                                </span>
+                              </>
+                            ) : (
+                              <span className="text-link">Add Access Notes</span>
+                            )
+                          }
+                        >
+                          <AccessNotesForm pool={job.property} />
+                        </SheetRow>
                         {mapStatus(job.property, routingConfigured()) === "missing" ? (
                           <NotOnMapRow />
-                        ) : null}
-                        {job.property.access_notes ? (
-                          <Row>
-                            <span className="min-w-0 flex-1">
-                              <span className="block text-[0.9375rem] text-text-muted">Access</span>
-                              <span className="block">{job.property.access_notes}</span>
-                            </span>
-                          </Row>
                         ) : null}
                       </Grouped>
                     ) : null}
 
                     <Grouped title="Assigned to">
-                      <Row label="Tech" value={job.techName ?? "Nobody yet"} />
+                      <Row
+                        label="Tech"
+                        value={
+                          job.techName ? (
+                            <span className="inline-flex items-center gap-2">
+                              <TechDot color={job.techColor} />
+                              {job.techName}
+                            </span>
+                          ) : (
+                            "Nobody yet"
+                          )
+                        }
+                      />
                       {job.secondTechName ? <Row label="With" value={job.secondTechName} /> : null}
                       {job.fee_cents != null ? (
                         <Row
@@ -742,62 +795,62 @@ async function Gallery({ detail, tz }: { detail: JobDetail; tz: string }) {
             const h = m.height ?? 3;
             const label = `${MEDIA_KIND_LABELS[m.kind]} · ${attached(m)}`;
             return (
-              <li key={m.id} className="overflow-hidden card">
-                {!url ? (
-                  <div className="flex aspect-[4/3] items-center justify-center bg-bg p-4 text-center text-text-muted">
-                    {MEDIA_KIND_LABELS[m.kind]} still uploading from the phone
-                  </div>
-                ) : m.kind === "photo" ? (
-                  <GalleryImage
-                    url={url}
-                    alt={
-                      m.caption ??
-                      `Photo of ${attached(m)}${m.captured_at ? `, ${formatSchedule(m.captured_at, new Date(), tz)}` : ""}`
-                    }
-                    width={w}
-                    height={h}
-                    shapes={markup}
-                  />
-                ) : m.kind === "video" ? (
-                  <video
-                    src={url}
-                    controls
-                    preload="metadata"
-                    className="aspect-video w-full bg-navy"
-                  />
-                ) : (
-                  <div className="p-4">
-                    <audio src={url} controls preload="metadata" className="w-full" />
-                  </div>
-                )}
-                <div className="p-3 text-[0.9375rem]">
-                  <p className="font-medium">
-                    {label}
-                    {m.duration_ms ? ` · ${formatDuration(m.duration_ms)}` : ""}
-                  </p>
-                  {m.caption ? <p>{m.caption}</p> : null}
-                  {m.kind === "audio" && m.transcript ? (
-                    <p className="mt-1 italic">“{m.transcript}”</p>
-                  ) : null}
-                  <p className="text-text-muted">
-                    {m.captured_at ? formatSchedule(m.captured_at, new Date(), tz) : ""}
-                    {m.latitude != null ? " · location recorded" : ""}
-                  </p>
-                  <MediaActions
-                    jobId={detail.job.id}
-                    media={{
-                      id: m.id,
-                      kind: m.kind,
-                      url: url ?? null,
-                      width: w,
-                      height: h,
-                      shapes: markup,
-                      caption: m.caption,
-                      label,
-                    }}
-                  />
-                </div>
-              </li>
+              <MediaCard
+                key={m.id}
+                jobId={detail.job.id}
+                media={{
+                  id: m.id,
+                  kind: m.kind,
+                  url: url ?? null,
+                  width: w,
+                  height: h,
+                  shapes: markup,
+                  caption: m.caption,
+                  label,
+                }}
+                preview={
+                  !url ? (
+                    <div className="flex aspect-[4/3] items-center justify-center bg-bg p-4 text-center text-text-muted">
+                      {MEDIA_KIND_LABELS[m.kind]} still uploading from the phone
+                    </div>
+                  ) : m.kind === "photo" ? (
+                    <GalleryImage
+                      url={url}
+                      alt={
+                        m.caption ??
+                        `Photo of ${attached(m)}${m.captured_at ? `, ${formatSchedule(m.captured_at, new Date(), tz)}` : ""}`
+                      }
+                      width={w}
+                      height={h}
+                      shapes={markup}
+                    />
+                  ) : m.kind === "video" ? (
+                    <video
+                      src={url}
+                      controls
+                      preload="metadata"
+                      className="aspect-video w-full bg-navy"
+                    />
+                  ) : (
+                    <div className="p-4">
+                      <audio src={url} controls preload="metadata" className="w-full" />
+                    </div>
+                  )
+                }
+              >
+                <p className="font-medium">
+                  {label}
+                  {m.duration_ms ? ` · ${formatDuration(m.duration_ms)}` : ""}
+                </p>
+                {m.caption ? <p>{m.caption}</p> : null}
+                {m.kind === "audio" && m.transcript ? (
+                  <p className="mt-1 italic">“{m.transcript}”</p>
+                ) : null}
+                <p className="text-text-muted">
+                  {m.captured_at ? formatSchedule(m.captured_at, new Date(), tz) : ""}
+                  {m.latitude != null ? " · location recorded" : ""}
+                </p>
+              </MediaCard>
             );
           })}
         </ul>
@@ -934,7 +987,7 @@ async function Schedule({ detail, tz }: { detail: JobDetail; tz: string }) {
     <JobSchedule
       tech={job.techName ?? "Nobody yet"}
       when={job.scheduled_start ? formatSchedule(job.scheduled_start, new Date(), tz) : null}
-      fixed={job.arrival_fixed ?? false}
+      lock={jobLock(job)}
       jobId={job.id}
       techs={team
         .filter((m) => m.status === "active" && (seesAll || m.user_id === office.user.id))
@@ -945,7 +998,7 @@ async function Schedule({ detail, tz }: { detail: JobDetail; tz: string }) {
         date: start.date,
         time: start.time,
         hours,
-        fixed: job.arrival_fixed ?? false,
+        lock: jobLock(job),
       }}
       canSuggest={job.status === "scheduled" || job.status === "unscheduled"}
     />
@@ -1289,8 +1342,9 @@ function ContactRow({
   if (!phone && !email) return null;
   return (
     <Row
-      label={phone ?? email}
-      detail={phone && email ? email : undefined}
+      label={phone ?? <span className="block truncate">{email}</span>}
+      // A long address ends in "…" rather than running under the buttons (Email has it whole).
+      detail={phone && email ? <span className="block truncate">{email}</span> : undefined}
       value={
         <span className="flex gap-2">
           {phone ? (

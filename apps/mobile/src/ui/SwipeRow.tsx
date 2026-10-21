@@ -161,6 +161,8 @@ const styles = StyleSheet.create({
   leading: { backgroundColor: color.link },
   // The label stays at the row's leading edge while the blue area grows.
   leadingHit: { flex: 1, alignItems: "flex-start", justifyContent: "center", paddingLeft: 20 },
+  actionRow: { flexDirection: "row" },
+  multi: { width: ACTION_WIDTH, justifyContent: "center", paddingHorizontal: 14 },
 });
 
 /**
@@ -260,5 +262,85 @@ function LeadingAction({
         </Text>
       </Pressable>
     </Animated.View>
+  );
+}
+
+/** One button a row reveals when swiped. */
+export interface SwipeAction {
+  label: string;
+  /** Its fill: the action's color (green Complete, blue Directions). */
+  tint: string;
+  onPress: () => void;
+}
+
+/**
+ * Swipe a row either way to reveal its buttons (owner, 2026-10-20: Today's stops, leading
+ * Complete, trailing Call and Directions; docs/design/2026-10-20-gestures.md section 5). A tap
+ * on a button acts and closes the row; nothing acts on a full swipe, so a long drag never does
+ * anything by itself. The swipe is never the only way: the row keeps its own visible buttons
+ * and offers the same actions to TalkBack and VoiceOver (accessibilityActions on the row).
+ * Trailing actions are listed most used first, which is drawn on the outer edge (section 12).
+ */
+export function SwipeActions({
+  leading,
+  trailing = [],
+  children,
+}: {
+  leading?: SwipeAction | null;
+  trailing?: SwipeAction[];
+  children: ReactNode;
+}) {
+  const ref = useRef<SwipeableMethods>(null);
+  // A row that swipes by itself never changes the page under it (owner, 2026-10-20).
+  const noSwipe = useNoSwipe();
+  const button = (a: SwipeAction, align: "flex-start" | "flex-end") => (
+    <Pressable
+      key={a.label}
+      accessibilityElementsHidden
+      importantForAccessibility="no-hide-descendants"
+      onPress={() => {
+        ref.current?.close();
+        haptics.light();
+        a.onPress();
+      }}
+      style={({ pressed }) => [
+        styles.multi,
+        { backgroundColor: a.tint, alignItems: align },
+        pressed && { opacity: 0.8 },
+      ]}
+    >
+      <Text style={styles.actionText} numberOfLines={1} maxFontSizeMultiplier={1.6}>
+        {a.label}
+      </Text>
+    </Pressable>
+  );
+  return (
+    <View {...noSwipe}>
+      <ReanimatedSwipeable
+        ref={ref}
+        friction={1.4}
+        leftThreshold={ACTION_WIDTH / 2}
+        rightThreshold={ACTION_WIDTH / 2}
+        dragOffsetFromLeftEdge={12}
+        dragOffsetFromRightEdge={12}
+        renderLeftActions={
+          leading
+            ? () => <View style={styles.actionRow}>{button(leading, "flex-start")}</View>
+            : undefined
+        }
+        renderRightActions={
+          trailing.length
+            ? () => (
+                // The first action sits on the outer (trailing) edge, as iOS draws them.
+                <View style={styles.actionRow}>
+                  {[...trailing].reverse().map((a) => button(a, "flex-end"))}
+                </View>
+              )
+            : undefined
+        }
+      >
+        {children}
+      </ReanimatedSwipeable>
+    </View>
   );
 }

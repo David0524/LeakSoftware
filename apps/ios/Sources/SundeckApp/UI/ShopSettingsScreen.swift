@@ -74,12 +74,19 @@
         /// Settings › Team › Profiles (owners and admins).
         @State private var profiles: [ProfileListRow] = []
         @State private var editingProfile: ProfileSheetTarget?
+        /// The team member whose profile is open.
+        @State private var editingMember: SettingsTeamMember?
+        /// Turning someone off from their row's switch, asked first.
+        @State private var turningOff: SettingsTeamMember?
         /// Which checklist Checklist Components shows (pool visits, leak or pool inspections).
         @State private var list: ChecklistList = .leak
         @State private var editing: ConfigSheetTarget?
         @State private var notice: String?
         @State private var browser: BrowserPage?
         @State private var loaded = false
+        /// Delete from a row's swipe or menu, asked first.
+        @State private var removing: ConfigItem?
+        @State private var banner: ResultBanner?
 
         var body: some View {
             let company = session.company
@@ -102,17 +109,7 @@
                     .plainListRow()
                 }
                 if page == .team {
-                    Section {
-                        ForEach(team) { m in
-                            ListRow(m.isMe ? "\(m.name) (you)" : m.name, detail: m.email, value: m.value).surfaceRow()
-                                .listRowInsets(EdgeInsets())
-                        }
-                    } header: {
-                        SectionLabel("People")
-                    } footer: {
-                        Text("Invite people, change roles, and turn people off on the website.")
-                            .textRole(.footnote).foregroundStyle(Color.textMuted)
-                    }
+                    teamGroups(manager: manager, owner: company?.role == "owner")
                     if manager { profilesGroup }
                     if manager, let company { completingAJob(company) }
                     Section {
@@ -140,6 +137,14 @@
                                 .disabled(!manager)
                                 .surfaceRow()
                                 .listRowInsets(EdgeInsets())
+                                // Swipe left for Delete; touch and hold for Edit and Delete… (gestures
+                                // spec section 12). Both ask first, as the item's sheet does.
+                                .swipeActions(edge: .trailing, allowsFullSwipe: false) {
+                                    if manager {
+                                        Button("Delete", systemImage: "trash") { removing = item }.tint(Color.fail)
+                                    }
+                                }
+                                .rowMenu(item.name, manager ? menu(item) : [])
                             }
                         } header: {
                             if let title = group.title { SectionLabel(title) }
@@ -172,16 +177,115 @@
             .sheet(item: $editingProfile) { target in
                 PersonProfileSheet(target: target) { notice = $0 }
             }
+            .sheet(item: $editingMember) { member in
+                TeamMemberSheet(
+                    member: member, profile: profiles.first { $0.userId == member.userId },
+                    owner: company?.role == "owner"
+                ) { notice = $0 }
+            }
+            .confirmationDialog(
+                TeamText.turnOffQuestion(turningOff?.name ?? ""),
+                isPresented: Binding(get: { turningOff != nil }, set: { if !$0 { turningOff = nil } }),
+                titleVisibility: .visible, presenting: turningOff
+            ) { member in
+                Button(TeamText.turnOff, role: .destructive) { setActive(member, false) }
+                Button("Cancel", role: .cancel) {}
+            }
             .browserSheet($browser)
+            .resultBanner($banner)
+            .confirmationDialog(
+                removeWords.confirm, isPresented: Binding(get: { removing != nil }, set: { if !$0 { removing = nil } }),
+                titleVisibility: .visible, presenting: removing
+            ) { item in
+                Button(removeWords.button, role: .destructive) { remove(item) }
+                Button("Cancel", role: .cancel) {}
+            }
             .task(id: "\(sync.revision)|\(company?.id ?? "")|\(list.rawValue)") { reload() }
             .onAppear { if !loaded { list = ChecklistList.lists(services).first ?? .leak } }
         }
 
-        /// Profiles (owner, 2026-10-20): one row per team member, then people without the app, and
-        /// Add Person. Each opens the profile in a sheet.
+        /// Settings › Team (owner, 2026-10-20: "Mix the tech profiles with the role/on and off
+        /// switch"): one list, the active people A to Z, then those turned off, the most recent
+        /// first. Each row is the tech's dot, their name over their role, and the switch (owners
+        /// and admins; not for yourself); the row opens their profile.
+        @ViewBuilder private func teamGroups(manager: Bool, owner: Bool) -> some View {
+            let sections = teamSections(team)
+            Section {
+                ForEach(sections.active) { teamRow($0, manager: manager) }
+            } header: {
+                SectionLabel(TeamText.active)
+            } footer: {
+                if sections.off.isEmpty {
+                    Text(TeamText.footer).textRole(.footnote).foregroundStyle(Color.textMuted)
+                }
+            }
+            if !sections.off.isEmpty {
+                Section {
+                    ForEach(sections.off) { teamRow($0, manager: manager) }
+                } header: {
+                    SectionLabel(TeamText.off)
+                } footer: {
+                    Text(TeamText.footer).textRole(.footnote).foregroundStyle(Color.textMuted)
+                }
+            }
+        }
+
+        private func teamRow(_ m: SettingsTeamMember, manager: Bool) -> some View {
+            HStack(spacing: 0) {
+                Button {
+                    if manager { editingMember = m }
+                } label: {
+                    HStack(spacing: CGFloat(Spacing.rowItems)) {
+                        TechDot(color: m.color)
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text(m.isMe ? "\(m.name) (you)" : m.name).textRole(.body).foregroundStyle(Color.text)
+                            Text(roleLabel(m.role)).textRole(.secondary).foregroundStyle(Color.textMuted)
+                        }
+                        Spacer(minLength: 0)
+                    }
+                    .padding(.leading, CGFloat(Spacing.rowHorizontal))
+                    .padding(.vertical, CGFloat(Spacing.rowVertical))
+                    .frame(maxWidth: .infinity, minHeight: minTarget, alignment: .leading)
+                    .contentShape(Rectangle())
+                }
+                .buttonStyle(.row)
+                .disabled(!manager)
+                .accessibilityHint(manager ? "Opens their profile" : "")
+                if manager {
+                    Toggle(
+                        TeamText.on,
+                        isOn: Binding(
+                            get: { m.active },
+                            set: { on in if on { setActive(m, true) } else { turningOff = m } })
+                    )
+                    .labelsHidden()
+                    .tint(Color.pass)
+                    .disabled(m.isMe)
+                    .padding(.horizontal, CGFloat(Spacing.rowHorizontal))
+                    .accessibilityLabel("\(m.name) on")
+                    .accessibilityHint(m.isMe ? TeamText.yourself : "")
+                }
+            }
+            .surfaceRow()
+            .listRowInsets(EdgeInsets())
+        }
+
+        private func setActive(_ m: SettingsTeamMember, _ on: Bool) {
+            turningOff = nil
+            guard let company = session.company else { return }
+            do {
+                try TeamWrites.setActive(sync, companyId: company.id, membershipId: m.id, on)
+                banner = ResultBanner(kind: .success, title: on ? "\(m.name) is on." : "\(m.name) is turned off.")
+            } catch {
+                banner = ResultBanner(kind: .error, title: String(describing: error))
+            }
+        }
+
+        /// People without the app (owner, 2026-10-20), and Add Person; team members' profiles open
+        /// from their rows above.
         private var profilesGroup: some View {
             Section {
-                ForEach(profiles) { row in
+                ForEach(profiles.filter { $0.userId == nil }) { row in
                     Button {
                         editingProfile = .row(row)
                     } label: {
@@ -194,7 +298,7 @@
                 ActionRow(ProfileText.addPerson) { editingProfile = .addPerson }
                     .surfaceRow().listRowInsets(EdgeInsets())
             } header: {
-                SectionLabel(ProfileText.title)
+                SectionLabel(TeamText.without)
             } footer: {
                 Text(ProfileText.footer).textRole(.footnote).foregroundStyle(Color.textMuted)
             }
@@ -223,6 +327,44 @@
                 }
             } header: {
                 SectionLabel(CompleteJobSetting.title)
+            }
+        }
+
+        /// Edit and Delete… (Duplicate, Move Up and Move Down aren't on the phone: order is the
+        /// Order field in Edit).
+        private func menu(_ item: ConfigItem) -> [SwipeAction] {
+            [
+                SwipeAction(title: "Edit", systemImage: "pencil", tint: Color.link) { editing = .edit(item) },
+                SwipeAction(title: "Delete…", systemImage: "trash", tint: Color.fail, role: .destructive) {
+                    removing = item
+                },
+            ]
+        }
+
+        /// The item sheet's question and button for this page.
+        private var removeWords: (confirm: String, button: String) {
+            switch page {
+            case .priceBook: ("Remove this item from the price book?", "Remove Item")
+            case .components:
+                switch list {
+                case .inspection: ("Remove this question from new checklists?", "Remove Component")
+                case .pool: ("Remove this component from new visits?", "Remove Component")
+                default: ("Remove this component from new checklists?", "Remove Component")
+                }
+            case .tests: ("Remove this test type?", "Remove Test Type")
+            case .severities: ("Remove this severity?", "Remove Severity")
+            default: ("Remove this reason?", "Remove")
+            }
+        }
+
+        /// The sheet's Remove, through the same write.
+        private func remove(_ item: ConfigItem) {
+            removing = nil
+            do {
+                try ConfigWrites.remove(sync, page: page, id: item.id)
+                banner = ResultBanner(kind: .success, title: "Removed \(item.name).")
+            } catch {
+                banner = ResultBanner(kind: .error, title: String(describing: error))
             }
         }
 
@@ -337,6 +479,156 @@
             do {
                 try ProfileWrites.delete(sync, id: profile.id)
                 done("Removed.")
+                dismiss()
+            } catch {
+                self.error = String(describing: error)
+            }
+        }
+    }
+
+    /// A team member's profile (owner, 2026-10-20: "Mix the tech profiles with the role/on and
+    /// off switch"): their contact details, emergency contact and notes, then Role (owners
+    /// only), Color, and the On switch (not for yourself; turning off asks first). Save writes
+    /// the profile and the membership through the sync layer; the switch acts at once, as the
+    /// list's does.
+    struct TeamMemberSheet: View {
+        var member: SettingsTeamMember
+        var profile: ProfileListRow?
+        var owner: Bool
+        var done: (String) -> Void
+        @Environment(Session.self) private var session
+        @Environment(SyncService.self) private var sync
+        @Environment(\.dismiss) private var dismiss
+        @State private var form = PersonProfileForm()
+        @State private var original = PersonProfileForm()
+        @State private var role = "tech"
+        @State private var color = TechColor.blue
+        @State private var active = true
+        @State private var confirmOff = false
+        @State private var error: String?
+        @State private var loaded = false
+
+        private var dirty: Bool { form != original || role != member.role || color != member.color }
+
+        var body: some View {
+            FormSheet(title: member.name, dirty: dirty) {
+                Grouped {
+                    LabeledFieldRow(label: "Name", text: $form.name, labelWidth: 96)
+                    LabeledFieldRow(label: "Phone", text: $form.phone, keyboard: .phonePad, labelWidth: 96)
+                    LabeledFieldRow(label: "Email", text: $form.email, keyboard: .emailAddress, labelWidth: 96)
+                    LabeledFieldRow(label: "Address", text: $form.address, labelWidth: 96)
+                }
+                Grouped(label: ProfileText.emergency) {
+                    LabeledFieldRow(label: "Name", text: $form.emergencyName, labelWidth: 96)
+                    LabeledFieldRow(label: "Phone", text: $form.emergencyPhone, keyboard: .phonePad, labelWidth: 96)
+                }
+                Grouped {
+                    LabeledFieldRow(label: "Notes", text: $form.notes, labelWidth: 96, multiline: true)
+                }
+                VStack(alignment: .leading, spacing: 8) {
+                    Grouped {
+                        ListRow(TeamText.role) {
+                            if owner {
+                                Menu {
+                                    Picker(TeamText.role, selection: $role) {
+                                        ForEach(Role.allCases, id: \.self) { Text($0.label).tag($0.rawValue) }
+                                    }
+                                    .pickerStyle(.inline)
+                                } label: {
+                                    MenuValue(text: roleLabel(role))
+                                }
+                                .accessibilityLabel(TeamText.role)
+                                .accessibilityValue(roleLabel(role))
+                            } else {
+                                Text(roleLabel(role)).textRole(.body).foregroundStyle(Color.textMuted)
+                            }
+                        }
+                        ListRow(TeamText.color) {
+                            Menu {
+                                Picker(TeamText.color, selection: $color) {
+                                    ForEach(TechColor.allCases, id: \.self) { c in
+                                        Label {
+                                            Text(c.label)
+                                        } icon: {
+                                            c.menuImage
+                                        }.tag(c)
+                                    }
+                                }
+                                .pickerStyle(.inline)
+                            } label: {
+                                HStack(spacing: 8) {
+                                    TechDot(color: color)
+                                    MenuValue(text: color.label)
+                                }
+                            }
+                            .accessibilityLabel(TeamText.color)
+                            .accessibilityValue(color.label)
+                        }
+                        SwitchRow(
+                            TeamText.on, detail: member.isMe ? TeamText.yourself : nil,
+                            isOn: Binding(
+                                get: { active },
+                                set: { on in if on { setActive(true) } else { confirmOff = true } })
+                        )
+                        .disabled(member.isMe)
+                    }
+                    if !owner {
+                        Text(TeamText.ownerOnly).textRole(.footnote).foregroundStyle(Color.textMuted)
+                            .padding(.horizontal, 16)
+                    }
+                }
+                if let error { Notice(kind: .error, text: error) }
+                Button(ProfileText.save) { save() }
+                    .buttonStyle(.primary(fullWidth: true, size: .field))
+            }
+            .confirmationDialog(
+                TeamText.turnOffQuestion(member.name), isPresented: $confirmOff, titleVisibility: .visible
+            ) {
+                Button(TeamText.turnOff, role: .destructive) { setActive(false) }
+                Button("Cancel", role: .cancel) {}
+            }
+            .onAppear {
+                guard !loaded else { return }
+                loaded = true
+                form = PersonProfileForm(
+                    profile: profile?.profile, name: profile?.memberName ?? member.name,
+                    email: profile?.memberEmail ?? member.email)
+                original = form
+                role = member.role
+                color = member.color
+                active = member.active
+            }
+        }
+
+        private func setActive(_ on: Bool) {
+            guard let company = session.company else { return }
+            do {
+                try TeamWrites.setActive(sync, companyId: company.id, membershipId: member.id, on)
+                active = on
+            } catch {
+                self.error = String(describing: error)
+            }
+        }
+
+        private func save() {
+            guard let company = session.company else { return }
+            if form != original, let problem = form.error {
+                error = problem
+                return
+            }
+            do {
+                try sync.batch {
+                    if form != original {
+                        try ProfileWrites.save(
+                            sync, companyId: company.id, id: profile?.profile?.id,
+                            userId: profile?.profile == nil ? member.userId : nil, form)
+                    }
+                    try TeamWrites.save(
+                        sync, companyId: company.id, membershipId: member.id,
+                        role: owner && role != member.role ? role : nil,
+                        color: color != member.color ? color : nil)
+                }
+                done("Saved.")
                 dismiss()
             } catch {
                 self.error = String(describing: error)

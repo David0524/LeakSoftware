@@ -1,0 +1,601 @@
+{
+  "TECH_COLORS": [
+    {
+      "args": [],
+      "result": [
+        {
+          "key": "blue",
+          "label": "Blue"
+        },
+        {
+          "key": "green",
+          "label": "Green"
+        },
+        {
+          "key": "orange",
+          "label": "Orange"
+        },
+        {
+          "key": "purple",
+          "label": "Purple"
+        },
+        {
+          "key": "pink",
+          "label": "Pink"
+        },
+        {
+          "key": "teal",
+          "label": "Teal"
+        },
+        {
+          "key": "red",
+          "label": "Red"
+        },
+        {
+          "key": "olive",
+          "label": "Olive"
+        },
+        {
+          "key": "brown",
+          "label": "Brown"
+        },
+        {
+          "key": "slate",
+          "label": "Slate"
+        }
+      ]
+    }
+  ],
+  "techColor": [
+    {
+      "args": [
+        "blue"
+      ],
+      "result": "blue"
+    },
+    {
+      "args": [
+        "slate"
+      ],
+      "result": "slate"
+    },
+    {
+      "args": [
+        "olive"
+      ],
+      "result": "olive"
+    },
+    {
+      "args": [
+        "Blue"
+      ],
+      "result": "slate"
+    },
+    {
+      "args": [
+        "navy"
+      ],
+      "result": "slate"
+    },
+    {
+      "args": [
+        ""
+      ],
+      "result": "slate"
+    },
+    {
+      "args": [
+        null
+      ],
+      "result": "slate"
+    },
+    {
+      "args": [
+        7
+      ],
+      "result": "slate"
+    }
+  ],
+  "nextTechColor": [
+    {
+      "args": [
+        []
+      ],
+      "result": "blue"
+    },
+    {
+      "args": [
+        [
+          "blue",
+          "green"
+        ]
+      ],
+      "result": "orange"
+    },
+    {
+      "args": [
+        [
+          "green",
+          null,
+          "nope"
+        ]
+      ],
+      "result": "blue"
+    },
+    {
+      "args": [
+        [
+          "blue",
+          "blue",
+          "orange"
+        ]
+      ],
+      "result": "green"
+    },
+    {
+      "args": [
+        [
+          "blue",
+          "green",
+          "orange",
+          "purple",
+          "pink",
+          "teal",
+          "red",
+          "olive",
+          "brown",
+          "slate"
+        ]
+      ],
+      "result": "blue"
+    },
+    {
+      "args": [
+        [
+          "blue",
+          "green",
+          "orange",
+          "purple",
+          "pink",
+          "teal",
+          "red",
+          "olive",
+          "brown",
+          "slate",
+          "blue",
+          "green"
+        ]
+      ],
+      "result": "orange"
+    },
+    {
+      "args": [
+        [
+          "blue",
+          "green",
+          "orange",
+          "purple",
+          "pink",
+          "teal",
+          "red",
+          "olive",
+          "brown",
+          "slate",
+          "blue",
+          "green",
+          "orange",
+          "purple",
+          "pink",
+          "teal",
+          "olive",
+          "brown",
+          "slate"
+        ]
+      ],
+      "result": "red"
+    }
+  ],
+  "teamOrder": [
+    {
+      "args": [
+        [
+          {
+            "name": "tony",
+            "status": "active"
+          },
+          {
+            "name": null,
+            "status": "active"
+          },
+          {
+            "name": "Ángela",
+            "status": "active"
+          },
+          {
+            "name": "Priya",
+            "status": "active"
+          },
+          {
+            "name": "  ",
+            "status": "active"
+          },
+          {
+            "name": "Dana",
+            "status": "active",
+            "disabled_at": null
+          }
+        ]
+      ],
+      "result": {
+        "active": [
+          {
+            "name": "Ángela",
+            "status": "active"
+          },
+          {
+            "name": "Dana",
+            "status": "active",
+            "disabled_at": null
+          },
+          {
+            "name": "Priya",
+            "status": "active"
+          },
+          {
+            "name": "tony",
+            "status": "active"
+          },
+          {
+            "name": null,
+            "status": "active"
+          },
+          {
+            "name": "  ",
+            "status": "active"
+          }
+        ],
+        "off": []
+      }
+    },
+    {
+      "args": [
+        [
+          {
+            "name": "Old",
+            "status": "disabled",
+            "disabled_at": "2026-01-01T00:00:00Z"
+          },
+          {
+            "name": "Zed",
+            "status": "disabled",
+            "disabled_at": null
+          },
+          {
+            "name": "Amy",
+            "status": "disabled"
+          },
+          {
+            "name": "Recent",
+            "status": "disabled",
+            "disabled_at": "2026-10-01T00:00:00.000Z"
+          },
+          {
+            "name": "Same B",
+            "status": "disabled",
+            "disabled_at": "2026-05-01T00:00:00Z"
+          },
+          {
+            "name": "same a",
+            "status": "disabled",
+            "disabled_at": "2026-05-01T00:00:00Z"
+          },
+          {
+            "name": "Here",
+            "status": "active"
+          },
+          {
+            "name": "émile",
+            "status": "active"
+          }
+        ]
+      ],
+      "result": {
+        "active": [
+          {
+            "name": "émile",
+            "status": "active"
+          },
+          {
+            "name": "Here",
+            "status": "active"
+          }
+        ],
+        "off": [
+          {
+            "name": "Recent",
+            "status": "disabled",
+            "disabled_at": "2026-10-01T00:00:00.000Z"
+          },
+          {
+            "name": "same a",
+            "status": "disabled",
+            "disabled_at": "2026-05-01T00:00:00Z"
+          },
+          {
+            "name": "Same B",
+            "status": "disabled",
+            "disabled_at": "2026-05-01T00:00:00Z"
+          },
+          {
+            "name": "Old",
+            "status": "disabled",
+            "disabled_at": "2026-01-01T00:00:00Z"
+          },
+          {
+            "name": "Amy",
+            "status": "disabled"
+          },
+          {
+            "name": "Zed",
+            "status": "disabled",
+            "disabled_at": null
+          }
+        ]
+      }
+    },
+    {
+      "args": [
+        []
+      ],
+      "result": {
+        "active": [],
+        "off": []
+      }
+    }
+  ],
+  "asksPlanMove": [
+    {
+      "args": [
+        {
+          "service_plan_id": "p1",
+          "status": "scheduled"
+        }
+      ],
+      "result": true
+    },
+    {
+      "args": [
+        {
+          "service_plan_id": null,
+          "status": "scheduled"
+        }
+      ],
+      "result": false
+    },
+    {
+      "args": [
+        {
+          "status": "scheduled"
+        }
+      ],
+      "result": false
+    },
+    {
+      "args": [
+        {
+          "service_plan_id": "p1",
+          "status": "unscheduled"
+        }
+      ],
+      "result": false
+    },
+    {
+      "args": [
+        {
+          "service_plan_id": "p1",
+          "status": "in_progress"
+        }
+      ],
+      "result": false
+    },
+    {
+      "args": [
+        {
+          "service_plan_id": "p1",
+          "status": "done"
+        }
+      ],
+      "result": false
+    },
+    {
+      "args": [
+        {
+          "service_plan_id": "p1",
+          "status": "canceled"
+        }
+      ],
+      "result": false
+    },
+    {
+      "args": [
+        {
+          "service_plan_id": "p1",
+          "status": "scheduled"
+        },
+        {
+          "from": {
+            "date": "2026-10-21",
+            "techId": "luis"
+          },
+          "to": {
+            "date": "2026-10-21",
+            "techId": "luis"
+          }
+        }
+      ],
+      "result": false
+    },
+    {
+      "args": [
+        {
+          "service_plan_id": "p1",
+          "status": "scheduled"
+        },
+        {
+          "from": {
+            "date": "2026-10-21",
+            "techId": "luis"
+          },
+          "to": {
+            "date": "2026-10-22",
+            "techId": "luis"
+          }
+        }
+      ],
+      "result": true
+    },
+    {
+      "args": [
+        {
+          "service_plan_id": "p1",
+          "status": "scheduled"
+        },
+        {
+          "from": {
+            "date": "2026-10-21",
+            "techId": "luis"
+          },
+          "to": {
+            "date": "2026-10-21",
+            "techId": "priya"
+          }
+        }
+      ],
+      "result": true
+    },
+    {
+      "args": [
+        {
+          "service_plan_id": "p1",
+          "status": "scheduled"
+        },
+        {
+          "from": {
+            "date": "2026-10-21",
+            "techId": "luis"
+          },
+          "to": {
+            "date": "2026-10-21",
+            "techId": null
+          }
+        }
+      ],
+      "result": true
+    },
+    {
+      "args": [
+        {
+          "service_plan_id": "p1",
+          "status": "done"
+        },
+        {
+          "from": {
+            "date": "2026-10-21",
+            "techId": "luis"
+          },
+          "to": {
+            "date": "2026-10-22",
+            "techId": "luis"
+          }
+        }
+      ],
+      "result": false
+    }
+  ],
+  "PLAN_MOVE_CHOICES": [
+    {
+      "args": [
+        "Rivera"
+      ],
+      "result": {
+        "title": "Move Rivera’s visits?",
+        "changeSchedule": "Change Schedule",
+        "justThisVisit": "Just This Visit",
+        "cancel": "Cancel"
+      }
+    },
+    {
+      "args": [
+        "O'Neil Pools"
+      ],
+      "result": {
+        "title": "Move O'Neil Pools’s visits?",
+        "changeSchedule": "Change Schedule",
+        "justThisVisit": "Just This Visit",
+        "cancel": "Cancel"
+      }
+    }
+  ],
+  "planMovedBanner": [
+    {
+      "args": [
+        "Rivera",
+        "Tuesday",
+        "Luis"
+      ],
+      "result": "Rivera is now on Tuesdays with Luis"
+    },
+    {
+      "args": [
+        "Rivera",
+        "Friday",
+        ""
+      ],
+      "result": "Rivera is now on Fridays"
+    },
+    {
+      "args": [
+        "Rivera",
+        "Monday",
+        "  Priya Shah "
+      ],
+      "result": "Rivera is now on Mondays with Priya Shah"
+    }
+  ],
+  "visitMovedBanner": [
+    {
+      "args": [],
+      "result": "Moved this visit only"
+    }
+  ],
+  "MAPS_LABELS": [
+    {
+      "args": [],
+      "result": {
+        "openInMaps": "Open in Maps",
+        "directions": "Directions",
+        "nextStop": "Next Stop in Maps",
+        "openRoute": "Open Route in Maps",
+        "maps": "Maps",
+        "setting": "Directions open in",
+        "automatic": "Automatic",
+        "apple": "Maps (Apple)",
+        "google": "Maps (Google)"
+      }
+    }
+  ],
+  "dayMapsLabel": [
+    {
+      "args": [
+        "apple"
+      ],
+      "result": "Next Stop in Maps"
+    },
+    {
+      "args": [
+        "google"
+      ],
+      "result": "Open Route in Maps"
+    }
+  ]
+}

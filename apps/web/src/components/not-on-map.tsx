@@ -17,18 +17,20 @@ export function NotOnMapRow() {
   );
 }
 
-/** The short form beside a stop or a pool: an icon and "Not on map". */
+/**
+ * The short form, right after a stop's or a pool's address: just the warning symbol (owner,
+ * 2026-10-20: "just put a little error symbol next to the address. Don't waste space with
+ * text"). Screen readers and the pointer's tooltip say "Not found on the map".
+ */
 export function NotOnMapTag({ className }: { className?: string }) {
   return (
     <span
-      className={cx(
-        "inline-flex items-center gap-1 text-[0.8125rem] font-semibold text-status-warning",
-        className,
-      )}
+      className={cx("relative inline-flex shrink-0 align-[-0.15em] text-status-warning", className)}
       title={NOT_ON_MAP.title}
+      data-testid="not-on-map-tag"
     >
-      <WarningIcon className="size-4 shrink-0" />
-      {NOT_ON_MAP.short}
+      <WarningIcon className="size-[1em]" />
+      <span className="sr-only">{NOT_ON_MAP.title}</span>
     </span>
   );
 }

@@ -13,7 +13,8 @@ import Testing
             "arrivalText", "onMyWayText", "mapsLinks", "routeLink", "dayDirections", "ROUTING_DEFAULTS",
             "ARRIVAL_WINDOWS", "routingSettings", "workDay", "weekday", "localMinutes", "LOCK_LABELS", "canMoveJob",
             "canUnschedule", "lockReason", "inRouteOrder", "jobMinutes", "stopFor", "zonedMinutesToIso",
-            "routeUpdates", "daySummary", "NOT_ON_MAP", "mapStatus",
+            "routeUpdates", "daySummary", "NOT_ON_MAP", "mapStatus", "JOB_LOCKS", "JOB_LOCK_LABELS", "JOB_LOCK_HELP",
+            "jobLock", "lockColumns",
         ]
         #expect(Fixtures.rules(module) == checked)
     }
@@ -121,6 +122,23 @@ import Testing
         let nowMin: Int?
     }
 
+    struct LockLabels: Encodable {
+        let segment: String
+        let tag: String?
+    }
+
+    struct Locks: Decodable {
+        let lockDay: Bool?
+        let lockTime: Bool?
+        let arrivalFixed: Bool?
+
+        enum CodingKeys: String, CodingKey {
+            case lockDay = "lock_day"
+            case lockTime = "lock_time"
+            case arrivalFixed = "arrival_fixed"
+        }
+    }
+
     @Test func routePlan() {
         checkRule(module, "ROUTING_DEFAULTS") { _ in routingDefaults }
         checkRule(module, "ARRIVAL_WINDOWS") { _ in arrivalWindows }
@@ -132,6 +150,20 @@ import Testing
         checkRule(module, "canMoveJob") { c in canMoveJob(try c.arg(0)) }
         checkRule(module, "canUnschedule") { c in canUnschedule(try c.arg(0)) }
         checkRule(module, "lockReason") { c in lockReason(try c.arg(0, as: PlanJob.self)) }
+        checkRule(module, "JOB_LOCKS") { _ in jobLocks }
+        checkRule(module, "JOB_LOCK_LABELS") { _ in
+            Dictionary(
+                uniqueKeysWithValues: JobLock.allCases.map {
+                    ($0.rawValue, LockLabels(segment: $0.segment, tag: $0.tag))
+                })
+        }
+        checkRule(module, "JOB_LOCK_HELP") { _ in labelTable(\JobLock.help) }
+        checkRule(module, "jobLock") { c in
+            let j = try c.arg(0, as: Locks.self)
+            return jobLock(
+                lockDay: j.lockDay ?? false, lockTime: j.lockTime ?? false, arrivalFixed: j.arrivalFixed ?? false)
+        }
+        checkRule(module, "lockColumns") { c in lockColumns(try c.arg(0)) }
         checkRule(module, "inRouteOrder") { c in inRouteOrder(try c.arg(0, as: [PlanJob].self)).map(\.id) }
         checkRule(module, "jobMinutes") { c in jobMinutes(try c.arg(0, as: PlanJob.self), try c.arg(1)) }
         checkRule(module, "stopFor") { c in

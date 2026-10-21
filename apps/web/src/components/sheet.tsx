@@ -25,12 +25,15 @@ export function Sheet({
   title,
   children,
   cancelLabel = "Cancel",
+  wide = false,
 }: {
   open: boolean;
   onClose: () => void;
   title: string;
   children: ReactNode;
   cancelLabel?: string;
+  /** Wider screens: a large dialog (a map beside its list) instead of the narrow one. */
+  wide?: boolean;
 }) {
   const titleId = useId();
   const panel = useRef<HTMLDivElement>(null);
@@ -147,7 +150,8 @@ export function Sheet({
         style={drag ? { transform: `translateY(${drag}px)` } : undefined}
         className={cx(
           "relative flex max-h-[92dvh] w-full flex-col overflow-hidden rounded-t-[1.25rem] bg-bg pb-[env(safe-area-inset-bottom)] shadow-2xl outline-none",
-          "motion-safe:animate-[sheet-up_0.28s_cubic-bezier(0.32,0.72,0,1)] sm:max-w-lg sm:rounded-[1.25rem] sm:pb-0",
+          "motion-safe:animate-[sheet-up_0.28s_cubic-bezier(0.32,0.72,0,1)] sm:rounded-[1.25rem] sm:pb-0",
+          wide ? "sm:max-w-4xl" : "sm:max-w-lg",
         )}
       >
         <div
@@ -369,6 +373,112 @@ function Alert({
             {confirmLabel}
           </button>
         </div>
+      </div>
+    </div>,
+    document.body,
+  );
+}
+
+export interface ChoiceOptions<K extends string> {
+  /** The question, as a short title ("Move Ana Ruiz's visits?"). */
+  title: string;
+  message?: string;
+  /** The buttons, top to bottom; Cancel is added under them. */
+  choices: readonly { key: K; label: string; destructive?: boolean }[];
+}
+
+/**
+ * An iOS action sheet with several choices and Cancel (action-sheets.md): resolves with the
+ * chosen key, or null for Cancel, Escape, or a tap outside. Use:
+ *   const [choose, chooseSheet] = useChoice<"plan" | "visit">();
+ *   const pick = await choose({ title, choices: [...] });
+ *   ... render {chooseSheet} somewhere in the component.
+ */
+export function useChoice<K extends string>(): [
+  (o: ChoiceOptions<K>) => Promise<K | null>,
+  ReactNode,
+] {
+  const [pending, setPending] = useState<
+    (ChoiceOptions<K> & { resolve: (k: K | null) => void }) | null
+  >(null);
+  const choose = useCallback(
+    (o: ChoiceOptions<K>) => new Promise<K | null>((resolve) => setPending({ ...o, resolve })),
+    [],
+  );
+  const finish = useCallback(
+    (k: K | null) => {
+      pending?.resolve(k);
+      setPending(null);
+    },
+    [pending],
+  );
+  return [choose, pending ? <ChoiceSheet {...pending} onDone={finish} /> : null];
+}
+
+function ChoiceSheet<K extends string>({
+  title,
+  message,
+  choices,
+  onDone,
+}: ChoiceOptions<K> & { onDone: (k: K | null) => void }) {
+  const titleId = useId();
+  const first = useRef<HTMLButtonElement>(null);
+  useEffect(() => {
+    const before = document.activeElement as HTMLElement | null;
+    first.current?.focus();
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") onDone(null);
+    };
+    document.addEventListener("keydown", onKey);
+    return () => {
+      document.removeEventListener("keydown", onKey);
+      before?.focus?.();
+    };
+  }, [onDone]);
+  if (typeof document === "undefined") return null;
+  return createPortal(
+    <div className="fixed inset-0 z-50 flex items-end justify-center p-2 pb-[max(0.5rem,env(safe-area-inset-bottom))] sm:items-center">
+      <div
+        aria-hidden="true"
+        className="absolute inset-0 bg-black/40"
+        onClick={() => onDone(null)}
+      />
+      <div
+        role="alertdialog"
+        aria-modal="true"
+        aria-labelledby={titleId}
+        data-testid="choice-sheet"
+        className="relative w-full max-w-md space-y-2 motion-safe:animate-[sheet-up_0.25s_cubic-bezier(0.32,0.72,0,1)]"
+      >
+        <div className="glass-sheet overflow-hidden rounded-[0.875rem] text-center">
+          <div className="px-4 py-3">
+            <p id={titleId} className="text-[0.8125rem] font-semibold text-text-muted">
+              {title}
+            </p>
+            {message ? <p className="mt-1 text-[0.8125rem] text-text-muted">{message}</p> : null}
+          </div>
+          {choices.map((c, i) => (
+            <button
+              key={c.key}
+              ref={i === 0 ? first : undefined}
+              type="button"
+              onClick={() => onDone(c.key)}
+              className={cx(
+                "block min-h-14 w-full border-t-[0.5px] border-separator text-[1.25rem]",
+                c.destructive ? "text-status-fail" : "text-link",
+              )}
+            >
+              {c.label}
+            </button>
+          ))}
+        </div>
+        <button
+          type="button"
+          onClick={() => onDone(null)}
+          className="glass-sheet block min-h-14 w-full rounded-[0.875rem] text-[1.25rem] font-semibold text-link"
+        >
+          Cancel
+        </button>
       </div>
     </div>,
     document.body,

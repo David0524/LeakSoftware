@@ -24662,6 +24662,475 @@
       "throws": "Invalid time zone specified: Nowhere/Zone"
     }
   ],
+  "JOB_SORTS": [
+    {
+      "args": [],
+      "result": [
+        {
+          "key": "scheduled",
+          "label": "Scheduled Date"
+        },
+        {
+          "key": "newest",
+          "label": "Newest"
+        },
+        {
+          "key": "oldest",
+          "label": "Oldest"
+        },
+        {
+          "key": "customer",
+          "label": "Customer"
+        },
+        {
+          "key": "number",
+          "label": "Job Number"
+        }
+      ]
+    }
+  ],
+  "jobSort": [
+    {
+      "args": [
+        "customer"
+      ],
+      "result": "customer"
+    },
+    {
+      "args": [
+        "newest"
+      ],
+      "result": "newest"
+    },
+    {
+      "args": [
+        "bad"
+      ],
+      "result": "scheduled"
+    },
+    {
+      "args": [
+        null
+      ],
+      "result": "scheduled"
+    }
+  ],
+  "sortJobs": [
+    {
+      "args": [
+        [
+          {
+            "number": 3,
+            "scheduled_start": "2026-10-22T16:00:00Z",
+            "created_at": "2026-10-01T00:00:00Z",
+            "customer": "lee"
+          },
+          {
+            "number": 7,
+            "scheduled_start": null,
+            "created_at": "2026-10-05T00:00:00Z",
+            "customer": "Adams"
+          },
+          {
+            "number": 5,
+            "scheduled_start": "2026-10-21T16:00:00Z",
+            "created_at": "2026-10-03T00:00:00Z",
+            "customer": null
+          },
+          {
+            "number": null,
+            "scheduled_start": "2026-10-21T16:00:00Z",
+            "created_at": null,
+            "customer": "  "
+          },
+          {
+            "number": 9,
+            "scheduled_start": "2026-10-21T16:00:00Z",
+            "created_at": "2026-10-03T00:00:00Z",
+            "customer": "Émile"
+          }
+        ],
+        "scheduled"
+      ],
+      "result": [
+        {
+          "number": 9,
+          "scheduled_start": "2026-10-21T16:00:00Z",
+          "created_at": "2026-10-03T00:00:00Z",
+          "customer": "Émile"
+        },
+        {
+          "number": 5,
+          "scheduled_start": "2026-10-21T16:00:00Z",
+          "created_at": "2026-10-03T00:00:00Z",
+          "customer": null
+        },
+        {
+          "number": null,
+          "scheduled_start": "2026-10-21T16:00:00Z",
+          "created_at": null,
+          "customer": "  "
+        },
+        {
+          "number": 3,
+          "scheduled_start": "2026-10-22T16:00:00Z",
+          "created_at": "2026-10-01T00:00:00Z",
+          "customer": "lee"
+        },
+        {
+          "number": 7,
+          "scheduled_start": null,
+          "created_at": "2026-10-05T00:00:00Z",
+          "customer": "Adams"
+        }
+      ]
+    },
+    {
+      "args": [
+        [
+          {
+            "number": 3,
+            "scheduled_start": "2026-10-22T16:00:00Z",
+            "created_at": "2026-10-01T00:00:00Z",
+            "customer": "lee"
+          },
+          {
+            "number": 7,
+            "scheduled_start": null,
+            "created_at": "2026-10-05T00:00:00Z",
+            "customer": "Adams"
+          },
+          {
+            "number": 5,
+            "scheduled_start": "2026-10-21T16:00:00Z",
+            "created_at": "2026-10-03T00:00:00Z",
+            "customer": null
+          },
+          {
+            "number": null,
+            "scheduled_start": "2026-10-21T16:00:00Z",
+            "created_at": null,
+            "customer": "  "
+          },
+          {
+            "number": 9,
+            "scheduled_start": "2026-10-21T16:00:00Z",
+            "created_at": "2026-10-03T00:00:00Z",
+            "customer": "Émile"
+          }
+        ],
+        "newest"
+      ],
+      "result": [
+        {
+          "number": 7,
+          "scheduled_start": null,
+          "created_at": "2026-10-05T00:00:00Z",
+          "customer": "Adams"
+        },
+        {
+          "number": 9,
+          "scheduled_start": "2026-10-21T16:00:00Z",
+          "created_at": "2026-10-03T00:00:00Z",
+          "customer": "Émile"
+        },
+        {
+          "number": 5,
+          "scheduled_start": "2026-10-21T16:00:00Z",
+          "created_at": "2026-10-03T00:00:00Z",
+          "customer": null
+        },
+        {
+          "number": 3,
+          "scheduled_start": "2026-10-22T16:00:00Z",
+          "created_at": "2026-10-01T00:00:00Z",
+          "customer": "lee"
+        },
+        {
+          "number": null,
+          "scheduled_start": "2026-10-21T16:00:00Z",
+          "created_at": null,
+          "customer": "  "
+        }
+      ]
+    },
+    {
+      "args": [
+        [
+          {
+            "number": 3,
+            "scheduled_start": "2026-10-22T16:00:00Z",
+            "created_at": "2026-10-01T00:00:00Z",
+            "customer": "lee"
+          },
+          {
+            "number": 7,
+            "scheduled_start": null,
+            "created_at": "2026-10-05T00:00:00Z",
+            "customer": "Adams"
+          },
+          {
+            "number": 5,
+            "scheduled_start": "2026-10-21T16:00:00Z",
+            "created_at": "2026-10-03T00:00:00Z",
+            "customer": null
+          },
+          {
+            "number": null,
+            "scheduled_start": "2026-10-21T16:00:00Z",
+            "created_at": null,
+            "customer": "  "
+          },
+          {
+            "number": 9,
+            "scheduled_start": "2026-10-21T16:00:00Z",
+            "created_at": "2026-10-03T00:00:00Z",
+            "customer": "Émile"
+          }
+        ],
+        "oldest"
+      ],
+      "result": [
+        {
+          "number": null,
+          "scheduled_start": "2026-10-21T16:00:00Z",
+          "created_at": null,
+          "customer": "  "
+        },
+        {
+          "number": 3,
+          "scheduled_start": "2026-10-22T16:00:00Z",
+          "created_at": "2026-10-01T00:00:00Z",
+          "customer": "lee"
+        },
+        {
+          "number": 9,
+          "scheduled_start": "2026-10-21T16:00:00Z",
+          "created_at": "2026-10-03T00:00:00Z",
+          "customer": "Émile"
+        },
+        {
+          "number": 5,
+          "scheduled_start": "2026-10-21T16:00:00Z",
+          "created_at": "2026-10-03T00:00:00Z",
+          "customer": null
+        },
+        {
+          "number": 7,
+          "scheduled_start": null,
+          "created_at": "2026-10-05T00:00:00Z",
+          "customer": "Adams"
+        }
+      ]
+    },
+    {
+      "args": [
+        [
+          {
+            "number": 3,
+            "scheduled_start": "2026-10-22T16:00:00Z",
+            "created_at": "2026-10-01T00:00:00Z",
+            "customer": "lee"
+          },
+          {
+            "number": 7,
+            "scheduled_start": null,
+            "created_at": "2026-10-05T00:00:00Z",
+            "customer": "Adams"
+          },
+          {
+            "number": 5,
+            "scheduled_start": "2026-10-21T16:00:00Z",
+            "created_at": "2026-10-03T00:00:00Z",
+            "customer": null
+          },
+          {
+            "number": null,
+            "scheduled_start": "2026-10-21T16:00:00Z",
+            "created_at": null,
+            "customer": "  "
+          },
+          {
+            "number": 9,
+            "scheduled_start": "2026-10-21T16:00:00Z",
+            "created_at": "2026-10-03T00:00:00Z",
+            "customer": "Émile"
+          }
+        ],
+        "customer"
+      ],
+      "result": [
+        {
+          "number": 7,
+          "scheduled_start": null,
+          "created_at": "2026-10-05T00:00:00Z",
+          "customer": "Adams"
+        },
+        {
+          "number": 9,
+          "scheduled_start": "2026-10-21T16:00:00Z",
+          "created_at": "2026-10-03T00:00:00Z",
+          "customer": "Émile"
+        },
+        {
+          "number": 3,
+          "scheduled_start": "2026-10-22T16:00:00Z",
+          "created_at": "2026-10-01T00:00:00Z",
+          "customer": "lee"
+        },
+        {
+          "number": 5,
+          "scheduled_start": "2026-10-21T16:00:00Z",
+          "created_at": "2026-10-03T00:00:00Z",
+          "customer": null
+        },
+        {
+          "number": null,
+          "scheduled_start": "2026-10-21T16:00:00Z",
+          "created_at": null,
+          "customer": "  "
+        }
+      ]
+    },
+    {
+      "args": [
+        [
+          {
+            "number": 3,
+            "scheduled_start": "2026-10-22T16:00:00Z",
+            "created_at": "2026-10-01T00:00:00Z",
+            "customer": "lee"
+          },
+          {
+            "number": 7,
+            "scheduled_start": null,
+            "created_at": "2026-10-05T00:00:00Z",
+            "customer": "Adams"
+          },
+          {
+            "number": 5,
+            "scheduled_start": "2026-10-21T16:00:00Z",
+            "created_at": "2026-10-03T00:00:00Z",
+            "customer": null
+          },
+          {
+            "number": null,
+            "scheduled_start": "2026-10-21T16:00:00Z",
+            "created_at": null,
+            "customer": "  "
+          },
+          {
+            "number": 9,
+            "scheduled_start": "2026-10-21T16:00:00Z",
+            "created_at": "2026-10-03T00:00:00Z",
+            "customer": "Émile"
+          }
+        ],
+        "number"
+      ],
+      "result": [
+        {
+          "number": 9,
+          "scheduled_start": "2026-10-21T16:00:00Z",
+          "created_at": "2026-10-03T00:00:00Z",
+          "customer": "Émile"
+        },
+        {
+          "number": 7,
+          "scheduled_start": null,
+          "created_at": "2026-10-05T00:00:00Z",
+          "customer": "Adams"
+        },
+        {
+          "number": 5,
+          "scheduled_start": "2026-10-21T16:00:00Z",
+          "created_at": "2026-10-03T00:00:00Z",
+          "customer": null
+        },
+        {
+          "number": 3,
+          "scheduled_start": "2026-10-22T16:00:00Z",
+          "created_at": "2026-10-01T00:00:00Z",
+          "customer": "lee"
+        },
+        {
+          "number": null,
+          "scheduled_start": "2026-10-21T16:00:00Z",
+          "created_at": null,
+          "customer": "  "
+        }
+      ]
+    },
+    {
+      "args": [
+        [
+          {
+            "number": 3,
+            "scheduled_start": "2026-10-22T16:00:00Z",
+            "created_at": "2026-10-01T00:00:00Z",
+            "customer": "lee"
+          },
+          {
+            "number": 7,
+            "scheduled_start": null,
+            "created_at": "2026-10-05T00:00:00Z",
+            "customer": "Adams"
+          },
+          {
+            "number": 5,
+            "scheduled_start": "2026-10-21T16:00:00Z",
+            "created_at": "2026-10-03T00:00:00Z",
+            "customer": null
+          },
+          {
+            "number": null,
+            "scheduled_start": "2026-10-21T16:00:00Z",
+            "created_at": null,
+            "customer": "  "
+          },
+          {
+            "number": 9,
+            "scheduled_start": "2026-10-21T16:00:00Z",
+            "created_at": "2026-10-03T00:00:00Z",
+            "customer": "Émile"
+          }
+        ],
+        "bad"
+      ],
+      "result": [
+        {
+          "number": 9,
+          "scheduled_start": "2026-10-21T16:00:00Z",
+          "created_at": "2026-10-03T00:00:00Z",
+          "customer": "Émile"
+        },
+        {
+          "number": 5,
+          "scheduled_start": "2026-10-21T16:00:00Z",
+          "created_at": "2026-10-03T00:00:00Z",
+          "customer": null
+        },
+        {
+          "number": null,
+          "scheduled_start": "2026-10-21T16:00:00Z",
+          "created_at": null,
+          "customer": "  "
+        },
+        {
+          "number": 3,
+          "scheduled_start": "2026-10-22T16:00:00Z",
+          "created_at": "2026-10-01T00:00:00Z",
+          "customer": "lee"
+        },
+        {
+          "number": 7,
+          "scheduled_start": null,
+          "created_at": "2026-10-05T00:00:00Z",
+          "customer": "Adams"
+        }
+      ]
+    }
+  ],
   "formatSchedule": [
     {
       "args": [

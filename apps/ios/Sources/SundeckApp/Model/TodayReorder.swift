@@ -18,9 +18,6 @@ public enum TodayReorderText {
     public static let undo = UndoText.undo
     public static let started = "Started"
 
-    /// "Promised for 9:00 AM", beside the lock in Reorder.
-    public static func promised(_ time: String) -> String { "Promised for \(time)" }
-
     /// "Moved to 2:15 PM", when the move gave no message of its own.
     public static func moved(_ time: String) -> String { "Moved to \(time)" }
 }
@@ -31,28 +28,34 @@ public enum StopLock: Equatable, Sendable {
     case done
     /// In progress.
     case started
-    /// The customer was told this time ("9:00 AM").
-    case promised(String)
+    /// Locked to its day and time (Both, or a time the customer was told before locks).
+    case locked
+    /// Keeps its clock time (a time lock). A day lock alone may change its place in the day.
+    case timeLocked
     /// On two techs' routes: moving it in one would move the other's (move it on the Schedule).
     case twoTechs
 
-    /// Beside the lock: "Started", "Promised for 9:00 AM".
+    /// Beside the lock, in the lock icons' words (no clock time; owner, 2026-10-21): "Started",
+    /// "Locked", "Time locked".
     public var text: String {
         switch self {
         case .done: "Done"
         case .started: TodayReorderText.started
-        case .promised(let time): time.isEmpty ? "Promised time" : TodayReorderText.promised(time)
+        case .locked: LockReason.fixed.label
+        case .timeLocked: LockReason.time.label
         case .twoTechs: LockReason.twoTechs.label
         }
     }
 }
 
-/// Why this stop on `routeTech`'s day can't move from Today, or nil when it can.
+/// Why this stop on `routeTech`'s day can't move from Today, or nil when it can. Core
+/// `todayStopLock` (`timeZone` is kept for callers; the words carry no clock time).
 public func todayStopLock(_ job: ScheduleJob, routeTech: String, today: String, timeZone: String) -> StopLock? {
     if job.doneOn(today) { return .done }
     switch job.lock {
     case .started: return .started
-    case .fixed: return .promised(formatTime(job.scheduledStart, timeZone: timeZone))
+    case .fixed: return .locked
+    case .time: return .timeLocked
     case .twoTechs: return .twoTechs
     case nil: return job.assignedUserId == routeTech ? nil : .twoTechs
     }

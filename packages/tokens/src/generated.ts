@@ -96,6 +96,32 @@ export const tokens = {
         "placeholder": "#EBEBF54C",
         "thumb": "#636366"
       }
+    },
+    "tech": {
+      "light": {
+        "blue": "#1F6FAE",
+        "green": "#2E8B57",
+        "orange": "#D07B27",
+        "purple": "#7B5CC4",
+        "pink": "#C2477E",
+        "teal": "#15899A",
+        "red": "#C8463D",
+        "olive": "#7A8B2E",
+        "brown": "#9A6B3F",
+        "slate": "#5A6875"
+      },
+      "dark": {
+        "blue": "#4A93D0",
+        "green": "#4CB07A",
+        "orange": "#E89A4F",
+        "purple": "#9D83DB",
+        "pink": "#DB6E9F",
+        "teal": "#3AAFC0",
+        "red": "#E56A60",
+        "olive": "#9DB04A",
+        "brown": "#C08E5E",
+        "slate": "#8A97A4"
+      }
     }
   },
   "font": {

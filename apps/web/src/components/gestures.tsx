@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState, type PointerEvent, type ReactNode } from "react";
 import { useRouter } from "next/navigation";
 import { cx, segmentClass } from "./ui";
+import { useSwipe } from "./use-swipe";
 
 /**
  * Hold the chosen segment and drag it along the track, as iOS 26's segmented controls do
@@ -90,61 +91,50 @@ export function useTrackOverflow<T extends HTMLElement>(selected?: number) {
 /**
  * Swipe left or right across the content to go to the next or previous page (owner,
  * 2026-10-20: "Add gestures throughout. I want to navigate the different job pages with
- * gestures"), as a paging view does on iPhone. Only a mostly sideways swipe counts, so scrolling
- * stays scrolling; a swipe that starts on something that drags (a drawing, a slider, a map, a
- * sideways scroller, or anything marked `data-no-swipe`) is left to it.
+ * gestures"), as a paging view does on iPhone: the page follows the finger and settles with a
+ * spring (use-swipe.ts). Only a sideways drag counts, so scrolling stays scrolling; a swipe that
+ * starts on something that drags (a drawing, a slider, a map, a sideways scroller, or anything
+ * marked `data-no-swipe`) is left to it. Touch only: a mouse selects text as usual.
  */
 export function SwipePages({
+  page,
+  canPrev = true,
+  canNext = true,
   onPrev,
   onNext,
+  enabled = true,
+  navigate,
   className,
   children,
 }: {
-  onPrev?: () => void;
-  onNext?: () => void;
+  /** Names the page shown; when it changes after a swipe, the new page slides in. */
+  page: string | number;
+  canPrev?: boolean;
+  canNext?: boolean;
+  onPrev: () => void;
+  onNext: () => void;
+  enabled?: boolean;
+  /** Turning a page loads another address (see useSwipe). */
+  navigate?: { scope: string };
   className?: string;
   children: ReactNode;
 }) {
-  const start = useRef<{ x: number; y: number } | null>(null);
+  const { area, content } = useSwipe({
+    page,
+    canPrev,
+    canNext,
+    onPrev,
+    onNext,
+    enabled,
+    navigate,
+  });
   return (
-    <div
-      className={className}
-      onTouchStart={(e) => {
-        const t = e.touches[0];
-        // Touches in a sheet or alert reach here through React's portal bubbling: a swipe in
-        // the Add Test sheet must not change the section behind it.
-        const inside = e.currentTarget.contains(e.target as Node);
-        if (e.touches.length !== 1 || !t || !inside || skips(e.target as Element)) {
-          start.current = null;
-          return;
-        }
-        start.current = { x: t.clientX, y: t.clientY };
-      }}
-      onTouchEnd={(e) => {
-        const from = start.current;
-        start.current = null;
-        const t = e.changedTouches[0];
-        if (!from || !t) return;
-        const dx = t.clientX - from.x;
-        const dy = t.clientY - from.y;
-        if (Math.abs(dx) < 70 || Math.abs(dx) < Math.abs(dy) * 1.8) return;
-        if (dx < 0) onNext?.();
-        else onPrev?.();
-      }}
-    >
-      {children}
+    <div ref={area} className={cx("touch-pan-y overflow-x-clip", className)}>
+      <div ref={content} className="will-change-auto">
+        {children}
+      </div>
     </div>
   );
-}
-
-function skips(el: Element | null): boolean {
-  for (let n = el; n; n = n.parentElement) {
-    if (n.matches("[data-no-swipe], canvas, svg, input, textarea, select, [role=slider]"))
-      return true;
-    const style = getComputedStyle(n);
-    if (/(auto|scroll)/.test(style.overflowX) && n.scrollWidth > n.clientWidth) return true;
-  }
-  return false;
 }
 
 /** Links shown as a segmented control (Day | Week | Month), whose thumb can be dragged too. */
@@ -198,19 +188,37 @@ export function SegmentedLinks({
   );
 }
 
-/** SwipePages to two pages by address (the previous and next day on Schedule). */
+/**
+ * SwipePages to two pages by address (the day before and after on Schedule). Both are fetched
+ * ahead, so the swipe lands without waiting; the old page slides away and the new one slides in.
+ */
 export function SwipeHrefs({
+  page,
   prev,
   next,
+  scope,
   children,
 }: {
+  /** The page shown (its address), so the new one slides in when it arrives. */
+  page: string;
   prev: string;
   next: string;
+  /** Names this pager: the page remounts when its address changes. */
+  scope: string;
   children: ReactNode;
 }) {
   const router = useRouter();
+  useEffect(() => {
+    router.prefetch(prev);
+    router.prefetch(next);
+  }, [router, prev, next]);
   return (
-    <SwipePages onPrev={() => router.push(prev)} onNext={() => router.push(next)}>
+    <SwipePages
+      page={page}
+      navigate={{ scope }}
+      onPrev={() => router.push(prev, { scroll: false })}
+      onNext={() => router.push(next, { scroll: false })}
+    >
       {children}
     </SwipePages>
   );

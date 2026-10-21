@@ -82,6 +82,30 @@ public enum Tokens {
         public static let outline = TokenColor(0x00, 0x00, 0x00, 0xFF)
     }
 
+    /// Tech colors (Settings › Team), for both appearances; keys match core `TECH_COLORS`.
+    public enum Tech {
+        public static let blue = TokenRole(
+            light: TokenColor(0x1F, 0x6F, 0xAE, 0xFF), dark: TokenColor(0x4A, 0x93, 0xD0, 0xFF))
+        public static let green = TokenRole(
+            light: TokenColor(0x2E, 0x8B, 0x57, 0xFF), dark: TokenColor(0x4C, 0xB0, 0x7A, 0xFF))
+        public static let orange = TokenRole(
+            light: TokenColor(0xD0, 0x7B, 0x27, 0xFF), dark: TokenColor(0xE8, 0x9A, 0x4F, 0xFF))
+        public static let purple = TokenRole(
+            light: TokenColor(0x7B, 0x5C, 0xC4, 0xFF), dark: TokenColor(0x9D, 0x83, 0xDB, 0xFF))
+        public static let pink = TokenRole(
+            light: TokenColor(0xC2, 0x47, 0x7E, 0xFF), dark: TokenColor(0xDB, 0x6E, 0x9F, 0xFF))
+        public static let teal = TokenRole(
+            light: TokenColor(0x15, 0x89, 0x9A, 0xFF), dark: TokenColor(0x3A, 0xAF, 0xC0, 0xFF))
+        public static let red = TokenRole(
+            light: TokenColor(0xC8, 0x46, 0x3D, 0xFF), dark: TokenColor(0xE5, 0x6A, 0x60, 0xFF))
+        public static let olive = TokenRole(
+            light: TokenColor(0x7A, 0x8B, 0x2E, 0xFF), dark: TokenColor(0x9D, 0xB0, 0x4A, 0xFF))
+        public static let brown = TokenRole(
+            light: TokenColor(0x9A, 0x6B, 0x3F, 0xFF), dark: TokenColor(0xC0, 0x8E, 0x5E, 0xFF))
+        public static let slate = TokenRole(
+            light: TokenColor(0x5A, 0x68, 0x75, 0xFF), dark: TokenColor(0x8A, 0x97, 0xA4, 0xFF))
+    }
+
     /// Colors by role, for both appearances.
     public enum Role {
         public static let bg = TokenRole(

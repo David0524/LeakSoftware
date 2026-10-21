@@ -13,6 +13,7 @@ import {
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { T } from "./components";
 import { Glass } from "./Glass";
+import { TechDot } from "./TechDot";
 import { haptics } from "./haptics";
 import { color, face, ios, MAX_TEXT_SCALE, minTap, shape, space, type } from "./theme";
 import { WebIcon } from "./WebIcon";
@@ -28,6 +29,8 @@ export interface MenuItem {
   destructive?: boolean;
   /** The current choice: a check beside it. */
   checked?: boolean;
+  /** A tech's color key: their dot before the name (team and week spec section 3). */
+  dot?: string | null;
 }
 
 export interface MenuConfig {
@@ -117,6 +120,7 @@ function MenuSheet({ config, onClose }: { config: MenuConfig | null; onClose: ()
                   pressed && { backgroundColor: color.rowPressed },
                 ]}
               >
+                {item.dot !== undefined ? <TechDot tech={item.dot} /> : null}
                 <Text
                   style={[styles.actionText, { color: item.destructive ? color.fail : color.link }]}
                   maxFontSizeMultiplier={1.6}

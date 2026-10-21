@@ -73,6 +73,48 @@ public final class LocateQueue {
     }
 }
 
+/// Pools on the day's stops that were never looked up on the map (owner, 2026-10-20: pools not
+/// on the map): when Today or Schedule shows them, up to 10 at a time are asked for, each at most
+/// once while the app runs, through the same queue as an address change (POST /api/locate, in
+/// the background; offline, after the next sync). The pins come down with the sync after.
+@MainActor
+public enum MissingPins {
+    private static var asked: Set<String> = []
+    public static let batch = 10
+
+    /// The pools to ask for now: on `jobs`, never looked up, not asked for yet; at most `batch`.
+    public static func toAsk(_ jobs: [ScheduleJob]) -> [String] {
+        var ids: [String] = []
+        for j in jobs where j.needsLocate {
+            guard let id = j.propertyId, !asked.contains(id), !ids.contains(id) else { continue }
+            ids.append(id)
+            if ids.count == batch { break }
+        }
+        return ids
+    }
+
+    /// Queues them and, when nothing is waiting to sync, asks the server now.
+    public static func find(
+        _ jobs: [ScheduleJob], companyId: String, queue: LocateQueue, api: WebAPI, sync: SyncService
+    ) {
+        // Lookups aren't set up on the server (it answered 503): nothing to ask.
+        if sync.kv.get(MapLookups.key) == "off" { return }
+        let ids = toAsk(jobs)
+        guard !ids.isEmpty else { return }
+        asked.formUnion(ids)
+        for id in ids { queue.add(LocateRequest(companyId: companyId, propertyId: id)) }
+        guard sync.status.pending == 0 else { return }  // the next sync's flush sends them
+        Task {
+            let waiting = queue.pending.count
+            await queue.flush(api)
+            if queue.pending.count < waiting { sync.syncSoon(2) }  // bring the new pins down
+        }
+    }
+
+    /// Forgets what was asked (tests).
+    public static func reset() { asked = [] }
+}
+
 extension CustomerWrites {
     /// Saves Pool Details; a new address clears the old pin and queues finding the new one.
     @MainActor

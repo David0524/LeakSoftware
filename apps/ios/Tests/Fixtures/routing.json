@@ -3415,7 +3415,8 @@
     {
       "args": [],
       "result": {
-        "fixed": "Fixed time",
+        "fixed": "Locked",
+        "time": "Time locked",
         "started": "Started",
         "two_techs": "Two techs"
       }
@@ -3609,6 +3610,248 @@
         }
       ],
       "result": null
+    },
+    {
+      "args": [
+        {
+          "id": "a",
+          "status": "scheduled",
+          "assigned_user_id": "t1",
+          "second_tech_id": null,
+          "scheduled_start": null,
+          "scheduled_end": null,
+          "route_order": null,
+          "arrival_fixed": false,
+          "property": null,
+          "lock_day": true
+        }
+      ],
+      "result": null
+    },
+    {
+      "args": [
+        {
+          "id": "a",
+          "status": "scheduled",
+          "assigned_user_id": "t1",
+          "second_tech_id": "t2",
+          "scheduled_start": null,
+          "scheduled_end": null,
+          "route_order": null,
+          "arrival_fixed": false,
+          "property": null,
+          "lock_day": true
+        }
+      ],
+      "result": "two_techs"
+    },
+    {
+      "args": [
+        {
+          "id": "a",
+          "status": "scheduled",
+          "assigned_user_id": "t1",
+          "second_tech_id": "t2",
+          "scheduled_start": null,
+          "scheduled_end": null,
+          "route_order": null,
+          "arrival_fixed": false,
+          "property": null,
+          "lock_time": true
+        }
+      ],
+      "result": "time"
+    },
+    {
+      "args": [
+        {
+          "id": "a",
+          "status": "unscheduled",
+          "assigned_user_id": "t1",
+          "second_tech_id": null,
+          "scheduled_start": null,
+          "scheduled_end": null,
+          "route_order": null,
+          "arrival_fixed": false,
+          "property": null,
+          "lock_day": true,
+          "lock_time": true
+        }
+      ],
+      "result": "fixed"
+    },
+    {
+      "args": [
+        {
+          "id": "a",
+          "status": "done",
+          "assigned_user_id": "t1",
+          "second_tech_id": null,
+          "scheduled_start": null,
+          "scheduled_end": null,
+          "route_order": null,
+          "arrival_fixed": false,
+          "property": null,
+          "lock_time": true
+        }
+      ],
+      "result": "started"
+    }
+  ],
+  "JOB_LOCKS": [
+    {
+      "args": [],
+      "result": [
+        "none",
+        "day",
+        "time",
+        "both"
+      ]
+    }
+  ],
+  "JOB_LOCK_LABELS": [
+    {
+      "args": [],
+      "result": {
+        "none": {
+          "segment": "None",
+          "tag": null
+        },
+        "day": {
+          "segment": "Day",
+          "tag": "Day locked"
+        },
+        "time": {
+          "segment": "Time",
+          "tag": "Time locked"
+        },
+        "both": {
+          "segment": "Both",
+          "tag": "Locked"
+        }
+      }
+    }
+  ],
+  "JOB_LOCK_HELP": [
+    {
+      "args": [],
+      "result": {
+        "none": "Planning may move it to another day and time.",
+        "day": "Stays on its day. Planning may change its time that day.",
+        "time": "Keeps its time. Planning may move it to another day at that time.",
+        "both": "Stays on its day and time."
+      }
+    }
+  ],
+  "jobLock": [
+    {
+      "args": [
+        {}
+      ],
+      "result": "none"
+    },
+    {
+      "args": [
+        {
+          "lock_day": true
+        }
+      ],
+      "result": "day"
+    },
+    {
+      "args": [
+        {
+          "lock_time": true
+        }
+      ],
+      "result": "time"
+    },
+    {
+      "args": [
+        {
+          "lock_day": true,
+          "lock_time": true
+        }
+      ],
+      "result": "both"
+    },
+    {
+      "args": [
+        {
+          "arrival_fixed": true
+        }
+      ],
+      "result": "both"
+    },
+    {
+      "args": [
+        {
+          "arrival_fixed": true,
+          "lock_day": false,
+          "lock_time": false
+        }
+      ],
+      "result": "both"
+    },
+    {
+      "args": [
+        {
+          "arrival_fixed": false,
+          "lock_day": true
+        }
+      ],
+      "result": "day"
+    },
+    {
+      "args": [
+        {
+          "arrival_fixed": true,
+          "lock_time": true
+        }
+      ],
+      "result": "both"
+    }
+  ],
+  "lockColumns": [
+    {
+      "args": [
+        "none"
+      ],
+      "result": {
+        "lock_day": false,
+        "lock_time": false,
+        "arrival_fixed": false
+      }
+    },
+    {
+      "args": [
+        "day"
+      ],
+      "result": {
+        "lock_day": true,
+        "lock_time": false,
+        "arrival_fixed": false
+      }
+    },
+    {
+      "args": [
+        "time"
+      ],
+      "result": {
+        "lock_day": false,
+        "lock_time": true,
+        "arrival_fixed": false
+      }
+    },
+    {
+      "args": [
+        "both"
+      ],
+      "result": {
+        "lock_day": true,
+        "lock_time": true,
+        "arrival_fixed": true
+      }
     }
   ],
   "inRouteOrder": [
@@ -4141,6 +4384,104 @@
         "earliestMin": null,
         "movable": false,
         "own": false
+      }
+    },
+    {
+      "args": [
+        {
+          "id": "a",
+          "status": "scheduled",
+          "assigned_user_id": "t1",
+          "second_tech_id": null,
+          "scheduled_start": "2026-10-20T16:00:00Z",
+          "scheduled_end": null,
+          "route_order": null,
+          "arrival_fixed": false,
+          "property": {
+            "latitude": 33.4252,
+            "longitude": -111.8315
+          },
+          "lock_time": true
+        },
+        {
+          "timeZone": "America/Phoenix",
+          "settings": {
+            "dayStart": "08:00",
+            "dayEnd": "17:00",
+            "windowMin": 0,
+            "jobMinutes": 150,
+            "workDays": [
+              1,
+              2,
+              3,
+              4,
+              5
+            ]
+          },
+          "techId": "t1",
+          "nowMin": 540
+        }
+      ],
+      "result": {
+        "id": "a",
+        "location": {
+          "lat": 33.4252,
+          "lng": -111.8315
+        },
+        "durationMin": 150,
+        "fixedStartMin": 540,
+        "earliestMin": null,
+        "movable": false,
+        "own": true
+      }
+    },
+    {
+      "args": [
+        {
+          "id": "a",
+          "status": "scheduled",
+          "assigned_user_id": "t1",
+          "second_tech_id": null,
+          "scheduled_start": "2026-10-20T16:00:00Z",
+          "scheduled_end": null,
+          "route_order": null,
+          "arrival_fixed": false,
+          "property": {
+            "latitude": 33.4252,
+            "longitude": -111.8315
+          },
+          "lock_day": true
+        },
+        {
+          "timeZone": "America/Phoenix",
+          "settings": {
+            "dayStart": "08:00",
+            "dayEnd": "17:00",
+            "windowMin": 0,
+            "jobMinutes": 150,
+            "workDays": [
+              1,
+              2,
+              3,
+              4,
+              5
+            ]
+          },
+          "techId": "t1",
+          "nowMin": 540
+        }
+      ],
+      "result": {
+        "id": "a",
+        "location": {
+          "lat": 33.4252,
+          "lng": -111.8315
+        },
+        "durationMin": 150,
+        "fixedStartMin": null,
+        "earliestMin": 540,
+        "movable": true,
+        "own": true
       }
     }
   ],

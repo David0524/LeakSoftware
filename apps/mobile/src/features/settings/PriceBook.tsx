@@ -8,6 +8,7 @@ import { Empty, FieldGroup, FieldRow, Group, ListRow, Section, Toggle } from "..
 import { haptics } from "../../ui/haptics";
 import { Select } from "../../ui/Select";
 import { color, MAX_TEXT_SCALE, tabular, type } from "../../ui/theme";
+import { useRowMenu } from "../../ui/RowMenu";
 import { EditSheet, FormActions, ManagersOnly, SettingsList, useEditSheet } from "./SettingsList";
 import { formChanged } from "../../lib/discard";
 import { priceItemErrors } from "../../lib/limits";
@@ -40,6 +41,8 @@ function PriceBookPage() {
   const items = useConfig<PriceItem>("price_book_item", company.id);
   const types = useConfig<ComponentType>("component_type", company.id);
   const sheet = useEditSheet<PriceItem>();
+  // Touch and hold a row for Edit and its delete (gestures spec section 12).
+  const menu = useRowMenu();
   const what = {
     pool: "Cleanings, chemicals, and repairs techs pick from when quoting extra work.",
     leak: "Detection fees and repairs techs pick from when building a quote.",
@@ -72,6 +75,7 @@ function PriceBookPage() {
                   title={item.name}
                   subtitle={item.active ? undefined : "Hidden"}
                   onPress={() => sheet.open(item)}
+                  editMenu={{ menu, title: item.name }}
                   // Swipe to remove; the row's sheet keeps its visible Remove button.
                   deleteLabel="Remove Item"
                   onDelete={() =>
@@ -96,6 +100,7 @@ function PriceBookPage() {
           </Section>
         ))}
       </SettingsList>
+      {menu.element}
       <EditSheet
         open={sheet.editing != null}
         title={sheet.editing === "new" ? "Add Item" : (sheet.editing?.name ?? "")}

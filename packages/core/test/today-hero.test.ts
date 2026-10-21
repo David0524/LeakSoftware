@@ -5,6 +5,7 @@ import {
   heroDrive,
   heroSegmentsSpoken,
   heroSubtitle,
+  heroTopLine,
   todayHero,
   type HeroStop,
 } from "../src";
@@ -24,7 +25,7 @@ const stop = (id: string, over: Partial<HeroStop> = {}): HeroStop => ({
 });
 
 describe("todayHero (owner, 2026-10-20)", () => {
-  it("shows the first stop not done, up next, with its scheduled time", () => {
+  it("shows the first stop not done, up next", () => {
     const h = todayHero({
       stops: [stop("a", { stop_done_on: today }), stop("b", { access: "Gate 4821" }), stop("c")],
       today,
@@ -35,12 +36,12 @@ describe("todayHero (owner, 2026-10-20)", () => {
     expect([h.stop, h.stops, h.doneCount]).toEqual([2, 3, 1]);
     expect(h.segments).toEqual(["done", "current", "todo"]);
     expect(h.content.headline).toBe("Up next: Customer b");
-    expect([h.content.figure, h.content.figureLabel]).toEqual(["9:00 AM", "Scheduled"]);
-    expect(h.content.next).toBe("Next: Customer c at 9:00 AM");
+    expect([h.content.figure, h.content.figureLabel]).toEqual(["2 of 3", "Stop"]);
+    expect(h.content.next).toBe("Next: Customer c");
     expect(h.content.access).toBe("Gate 4821");
   });
 
-  it("is on the way after On My Way today, with the arrival time", () => {
+  it("is on the way after On My Way today", () => {
     const h = todayHero({
       stops: [
         stop("a"),
@@ -51,7 +52,7 @@ describe("todayHero (owner, 2026-10-20)", () => {
     })!;
     expect(h.moment).toBe("driving");
     expect(h.stopId).toBe("b");
-    expect([h.content.figure, h.content.figureLabel]).toEqual(["9:52 AM", "Arriving"]);
+    expect([h.content.figure, h.content.figureLabel]).toEqual(["2 of 2", "Stop"]);
   });
 
   it("ignores an On My Way from another day", () => {
@@ -83,7 +84,7 @@ describe("todayHero (owner, 2026-10-20)", () => {
     })!;
     expect(h.moment).toBe("done");
     expect(h.content.headline).toBe("Customer a done");
-    expect(h.content.next).toBe("Next: Customer b at 9:00 AM");
+    expect(h.content.next).toBe("Next: Customer b");
     expect(h.segments).toEqual(["done", "todo"]);
   });
 
@@ -103,10 +104,34 @@ describe("todayHero (owner, 2026-10-20)", () => {
 
 describe("the card's buttons and lines", () => {
   it("gives each moment its main button, and none of the tech's to someone else", () => {
-    expect(heroActions("ahead", true)).toEqual({ primary: "on_my_way", complete: false });
-    expect(heroActions("driving", true)).toEqual({ primary: "start_job", complete: false });
-    expect(heroActions("on_site", true)).toEqual({ primary: "open_checklist", complete: true });
-    expect(heroActions("done", true).primary).toBe("on_my_way");
+    // Start Job from the start; On My Way is an icon until it's sent.
+    expect(heroActions("ahead", true)).toEqual({
+      primary: "start_job",
+      complete: false,
+      onMyWay: true,
+      undo: false,
+    });
+    expect(heroActions("driving", true)).toEqual({
+      primary: "start_job",
+      complete: false,
+      onMyWay: false,
+      undo: false,
+    });
+    expect(heroActions("on_site", true)).toEqual({
+      primary: "open_checklist",
+      complete: true,
+      onMyWay: false,
+      undo: false,
+    });
+    // A finished stop's card is only about it: its undo, never Start for the next one.
+    expect(heroActions("done", true)).toEqual({
+      primary: null,
+      complete: false,
+      onMyWay: false,
+      undo: true,
+    });
+    expect(heroActions("done", false).undo).toBe(false);
+    expect(heroActions("ahead", false).onMyWay).toBe(false);
     expect(heroActions("day_done", true).primary).toBeNull();
     expect(heroActions("ahead", false).primary).toBeNull();
     expect(heroActions("driving", false).primary).toBeNull();
@@ -133,5 +158,50 @@ describe("heroHeadline", () => {
     expect(heroHeadline({ moment: "on_site", content })).toBe("At the pool");
     expect(heroHeadline({ moment: "done", content })).toBe("Done");
     expect(heroHeadline({ moment: "day_done", content })).toBe("All 3 stops done");
+  });
+});
+
+describe("browsing the day's stops (owner, 2026-10-20)", () => {
+  const day = [stop("a", { stop_done_on: today }), stop("b"), stop("c")];
+
+  it("shows a finished stop as done, with Back to Now pointing at the stop the day is on", () => {
+    const h = todayHero({ stops: day, today, timeZone: TZ, viewing: "a" })!;
+    expect(h.stopId).toBe("a");
+    expect(h.moment).toBe("done");
+    expect(h.browsing).toBe(true);
+    expect(h.currentId).toBe("b");
+    expect(h.segments).toEqual(["current", "todo", "todo"]);
+    expect(h.doneCount).toBe(1);
+    expect(h.content.next).toBe("Next: Customer b");
+  });
+
+  it("shows a later stop as still ahead, with its own next stop", () => {
+    const h = todayHero({ stops: day, today, timeZone: TZ, viewing: "c" })!;
+    expect(h.moment).toBe("ahead");
+    expect(h.stop).toBe(3);
+    expect(h.content.next).toBeNull();
+  });
+
+  it("is the usual card when the stop is the current one or isn't in the day", () => {
+    const usual = todayHero({ stops: day, today, timeZone: TZ })!;
+    expect(usual.browsing).toBe(false);
+    expect(usual.currentId).toBe("b");
+    expect(todayHero({ stops: day, today, timeZone: TZ, viewing: "b" })).toEqual(usual);
+    expect(todayHero({ stops: day, today, timeZone: TZ, viewing: "zzz" })).toEqual(usual);
+  });
+});
+
+describe("heroTopLine", () => {
+  it("names the stop's place once: in the figure before arriving, on the top line after", () => {
+    const ahead = todayHero({ stops: [stop("a"), stop("b")], today, timeZone: TZ })!;
+    expect(heroTopLine(ahead)).toBe("Up next");
+    const at = todayHero({
+      stops: [stop("a", { status: "in_progress" }), stop("b")],
+      today,
+      timeZone: TZ,
+    })!;
+    expect(heroTopLine(at)).toBe("At the pool · Stop 1 of 2");
+    const done = todayHero({ stops: [stop("a", { stop_done_on: today })], today, timeZone: TZ })!;
+    expect(heroTopLine(done)).toBe("The stop is done");
   });
 });

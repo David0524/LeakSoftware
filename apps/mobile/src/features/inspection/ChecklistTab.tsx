@@ -32,6 +32,9 @@ import { haptics } from "../../ui/haptics";
 import { Select } from "../../ui/Select";
 import { useNoSwipe } from "../../ui/SwipeNav";
 import { marksToUndo } from "../../lib/undo";
+import { checklistRowActions } from "../../lib/rowActions";
+import { rowGestures, useRowMenu, type RowMenu } from "../../ui/RowMenu";
+import { SwipeActions } from "../../ui/SwipeRow";
 import { UndoRow, useUndoWindow } from "../../ui/Undo";
 import { useAutosaveText } from "../../ui/useAutosave";
 import { color, face, font, MAX_TEXT_SCALE, minTap, shape, space } from "../../ui/theme";
@@ -259,6 +262,8 @@ function ChecklistGroup({
   const toDo = rows.filter((r) => currentVerdict(r.result) === null);
   // Mark Remaining's Undo (owner, 2026-10-20): "Marked N" and Undo for 5 seconds, in its place.
   const undo = useUndoWindow();
+  // Touch and hold an item for its answers (gestures spec section 12).
+  const hold = useRowMenu();
   const results = useRef(insp.resultByComponent);
   useEffect(() => {
     results.current = insp.resultByComponent;
@@ -339,6 +344,7 @@ function ChecklistGroup({
                 type={r.type}
                 photos={photos.get(r.component.id) ?? 0}
                 editing={editing}
+                menu={hold}
               />
             </View>
           ))}
@@ -365,6 +371,7 @@ function ChecklistGroup({
           ) : null}
         </>
       ) : null}
+      {hold.element}
     </View>
   );
 }
@@ -388,12 +395,14 @@ function ChecklistItem({
   type: itemType,
   photos,
   editing,
+  menu,
 }: {
   job: Job;
   component: JobComponent;
   type: ComponentType;
   photos: number;
   editing: boolean;
+  menu: RowMenu;
 }) {
   const { services, user } = useSession();
   const insp = useJobInspection(job.company_id, job.id);
@@ -443,13 +452,26 @@ function ChecklistItem({
   }
 
   const sub = [photoText, result?.method, result?.notes].filter(Boolean).join(" · ");
+  // Swipe right for its first answer (Done, Not Leaking, No); touch and hold for every answer
+  // and Not Done (gestures spec section 12). The answers under the name stay the visible way.
+  const actions = checklistRowActions(options, verdict);
+  const answer = (id: string) => {
+    haptics.selection();
+    choose(id === "clear" ? null : (id.slice("answer:".length) as Verdict));
+  };
+  const g = rowGestures(actions, answer, () => menu.open(component.label, actions.menu, answer));
 
-  return (
-    <View style={styles.item}>
+  const itemView = (
+    <View
+      style={[styles.item, g.leading && { backgroundColor: color.surface }]}
+      accessibilityActions={g.accessibilityActions}
+      onAccessibilityAction={g.onAccessibilityAction}
+    >
       <Pressable
         accessibilityRole="button"
         accessibilityHint="Opens the item: method, notes, and photos"
         onPress={open}
+        onLongPress={g.onLongPress}
         style={styles.name}
       >
         <Text
@@ -491,6 +513,7 @@ function ChecklistItem({
       ) : null}
     </View>
   );
+  return g.leading ? <SwipeActions leading={g.leading}>{itemView}</SwipeActions> : itemView;
 }
 
 /**

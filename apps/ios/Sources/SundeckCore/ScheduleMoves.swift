@@ -2,9 +2,9 @@ import Foundation
 
 // Planning a day, moving a job, and suggesting times, worked out on the phone (spec 5.6 and 6.3:
 // the native apps plan from their own database and save through the sync layer). Port of
-// schedule-moves.ts: promised times never move, started jobs stay on the schedule, and stops
-// after a moved job move later only when they must. Pure: callers load the jobs and drive times
-// and save the rows.
+// schedule-moves.ts: time-locked jobs keep their clock time (`jobLock`, as the website's moveJob
+// does), started jobs stay on the schedule, and stops after a moved job move later only when
+// they must. Pure: callers load the jobs and drive times and save the rows.
 
 public struct PlanContext: Codable, Sendable {
     public var timeZone: String
@@ -26,11 +26,20 @@ public struct PlanContext: Codable, Sendable {
 
 public struct ScheduleChange: Encodable, Equatable, Sendable {
     public var updates: [JobChange]
-    /// What happened, for the status line ("Moved to 9:15 AM.").
+    /// What happened, one short line for the banner ("Moved to 9:15 AM.").
     public var message: String?
+    /// What to watch for, a second smaller line (owner, 2026-10-20: the banner at the top).
+    public var detail: String?
     public var error: String?
 
     static func fail(_ error: String) -> ScheduleChange { ScheduleChange(updates: [], error: error) }
+}
+
+/// "Runs 20 min past the end of the day. A fixed time can’t be met." from notes, or nil.
+public func noteSentences(_ notes: [String?]) -> String? {
+    let list = notes.compactMap { $0 }.filter { !$0.isEmpty }
+    guard !list.isEmpty else { return nil }
+    return list.map { "\($0.prefix(1).uppercased())\($0.dropFirst())." }.joined(separator: " ")
 }
 
 private func dayStops<J: PlanJobFields>(_ ctx: PlanContext, _ techId: String, _ date: String, _ jobs: [J]) throws
@@ -43,8 +52,8 @@ private func dayStops<J: PlanJobFields>(_ ctx: PlanContext, _ techId: String, _ 
     }
 }
 
-/// Plan Route: order a tech's day (its jobs in route order) for the least driving, keep promised
-/// times, and say what changed.
+/// Optimize (once Plan Route): order a tech's day (its jobs in route order) for the least
+/// driving, keep promised times, and say what changed.
 public func planDay<J: PlanJobFields>(
     _ ctx: PlanContext, _ techId: String, _ date: String, _ jobs: [J], drive: DriveFn
 ) throws -> ScheduleChange {
@@ -57,22 +66,17 @@ public func planDay<J: PlanJobFields>(
     let planned = order.map { stops[$0] }
     let updates = try routeUpdates(date, ctx.timeZone, planned, route)
     let saved = before.driveMin - route.driveMin
-    let parts = [
-        "Planned: \(durationLabel(route.driveMin)) of driving",
-        saved > 0 ? "\(durationLabel(saved)) less than before" : nil,
-        "back at the shop by \(minutesLabel(route.backMin))",
-    ].compactMap { $0 }
-    let warnings = [
-        route.overtimeMin != 0 ? "runs \(durationLabel(route.overtimeMin)) past the end of the day" : nil,
-        route.lateMin != 0 ? "a fixed time can’t be met (\(durationLabel(route.lateMin)) late)" : nil,
-        stops.contains { $0.location == nil } ? "some pools have no location, so driving to them isn’t counted" : nil,
+    // One short line for the banner at the top of the screen (owner, 2026-10-20: the note under
+    // the button "looks horrible"), and what to watch for as a second line.
+    let message = [
+        "Optimized",
+        saved > 0 ? "\(durationLabel(saved)) less driving" : "\(durationLabel(route.driveMin)) driving",
+    ].joined(separator: " · ")
+    let detail = noteSentences([
+        stops.contains { $0.location == nil } ? "driving to pools not on the map isn’t counted" : nil,
         ctx.depot == nil ? "the shop has no location (Settings › Scheduling)" : nil,
-    ].compactMap { $0 }
-    return ScheduleChange(
-        updates: updates,
-        message: "\(parts.joined(separator: ", "))."
-            + (warnings.isEmpty ? "" : " Note: \(warnings.joined(separator: "; ")).")
-    )
+    ])
+    return ScheduleChange(updates: updates, message: message, detail: detail)
 }
 
 /// Close up the order numbers of the day a job left (times stay as they are).
@@ -157,8 +161,10 @@ public func moveJobChange<J: PlanJobFields>(_ ctx: PlanContext, _ input: MoveInp
     }
 
     let duration = jobMinutes(job, ctx.settings)
+    // A time lock keeps its clock time on the new day (owner, 2026-10-20).
     let fixedMin =
-        job.arrivalFixed && present(job.scheduledStart) ? try localMinutes(job.scheduledStart!, ctx.timeZone) : nil
+        jobLock(job).keepsTime && present(job.scheduledStart)
+        ? try localMinutes(job.scheduledStart!, ctx.timeZone) : nil
 
     guard let tech else {
         let startMin =
@@ -198,17 +204,8 @@ public func moveJobChange<J: PlanJobFields>(_ ctx: PlanContext, _ input: MoveInp
         mine.scheduledEnd = .some(try isoPlusMinutes(start, duration))
     }
     let stayed = from?.tech == tech && from?.date == date
-    let t = route.stops[index]
-    let notes = [
-        t.lateMin != 0 ? "it can’t make its fixed time (\(durationLabel(t.lateMin)) late)" : nil,
-        route.overtimeMin != 0 ? "the day runs \(durationLabel(route.overtimeMin)) late" : nil,
-        route.lateMin - t.lateMin > 0 ? "a fixed time after it can’t be met" : nil,
-    ].compactMap { $0 }
-    return ScheduleChange(
-        updates: [mine] + updates + leaving(stayed),
-        message: "Moved to \(minutesLabel(t.startMin))."
-            + (notes.isEmpty ? "" : " Note: \(notes.joined(separator: "; ")).")
-    )
+    // No times and no lateness (owner, 2026-10-21: "times are pretty irrelevant").
+    return ScheduleChange(updates: [mine] + updates + leaving(stayed), message: "Moved.")
 }
 
 /// The next 7 working days for suggestions, today included while there's time left in it.

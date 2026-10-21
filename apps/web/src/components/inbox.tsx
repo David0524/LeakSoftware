@@ -23,10 +23,13 @@ export function ConversationList({
   conversations,
   current,
   timeZone,
+  canCall = false,
 }: {
   conversations: ConversationRow[];
   current?: string;
   timeZone: string;
+  /** The company number can place calls (the thread's Call button shows). */
+  canCall?: boolean;
 }) {
   if (conversations.length === 0) {
     return <Empty>No messages yet. Texts and calls to the company number show up here.</Empty>;
@@ -42,6 +45,8 @@ export function ConversationList({
           preview={c.last_preview ?? ""}
           unread={c.unread}
           current={c.id === current}
+          customerId={c.customer_id}
+          canCall={canCall}
         />
       ))}
     </ul>

@@ -84,7 +84,7 @@ function useBarVersion() {
 }
 
 /** Large title block height before the small title shows (title 42 + top margin). */
-const TITLE_HANDOFF: [number, number] = [30, 46];
+export const TITLE_HANDOFF: [number, number] = [30, 46];
 /** In the bar's row: once about half of the title has scrolled off the top. */
 export const INLINE_TITLE_HANDOFF: [number, number] = [14, 30];
 
@@ -149,7 +149,7 @@ export function DrawnHeader({ back, options, route, navigation }: NativeStackHea
         </View>
         <Animated.View pointerEvents="none" style={[styles.titleBox, { opacity: titleOpacity }]}>
           <Text
-            style={[type.navTitle, { color: color.text }]}
+            style={[type.barTitle, { color: color.text }]}
             numberOfLines={1}
             maxFontSizeMultiplier={1.6}
             accessibilityRole="header"

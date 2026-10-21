@@ -61,13 +61,24 @@ import {
   tint,
   type,
 } from "./theme";
-import { BAR_HEIGHT, setBarRight, setLargeTitle, smallTitleOpacity, useBar } from "./Bar";
+import {
+  BAR_HEIGHT,
+  barState,
+  setBarRight,
+  setLargeTitle,
+  smallTitleOpacity,
+  TITLE_HANDOFF,
+  useBar,
+} from "./Bar";
 import { liquidGlass } from "./navigation";
 import { haptics } from "./haptics";
 import { Icon, type IconName } from "./Icon";
 import { WebIcon, type WebIconName } from "./WebIcon";
-import { SwipeLeading, SwipeToDelete } from "./SwipeRow";
+import { SwipeActions, SwipeLeading, SwipeToDelete } from "./SwipeRow";
+import { editRowMenu, type RowMenu } from "./editMenu";
+import type { RowGestures } from "./RowMenu";
 import { useNoSwipe } from "./SwipeNav";
+import { TechDot } from "./TechDot";
 import { FormKeyboardBar, KEYBOARD_BAR_HEIGHT, KeyboardAvoider, useKeyboardOpen } from "./keyboard";
 import { chooseAction } from "./confirm";
 import { phoneEdit } from "../lib/phoneTyping";
@@ -408,6 +419,21 @@ export function Screen({
 }) {
   const { header, ref, scrollProps, contentContainerStyle } = useScreenChrome(chrome);
   const headerHeight = useHeaderHeightSafe();
+  // Once the large title has gone under the bar, the page keeps room to stay scrolled past it,
+  // so folding something away (Schedule's map) never snaps the page to the top and flips the
+  // title back to large (owner, 2026-10-20).
+  const routeKey = useRoute().key;
+  const holdTitle = drawnChrome && scroll && Boolean(chrome.title);
+  const [collapsed, setCollapsed] = useState(false);
+  const [viewHeight, setViewHeight] = useState(0);
+  useEffect(() => {
+    if (!holdTitle) return;
+    const y = barState(routeKey).y;
+    const id = y.addListener(({ value }) => setCollapsed(value >= TITLE_HANDOFF[1]));
+    return () => y.removeListener(id);
+  }, [holdTitle, routeKey]);
+  const hold =
+    holdTitle && collapsed && viewHeight > 0 ? { minHeight: viewHeight + TITLE_HANDOFF[1] } : null;
   useEffect(() => {
     if (scrollRef) scrollRef.current = ref.current;
   });
@@ -427,11 +453,13 @@ export function Screen({
               });
             },
             onContentSizeChange: (_w: number, h: number) => onScrollMetrics({ contentHeight: h }),
-            onLayout: (e: { nativeEvent: { layout: LayoutRectangle } }) =>
-              onScrollMetrics({ viewHeight: e.nativeEvent.layout.height }),
           }
         : null)}
-      contentContainerStyle={[contentContainerStyle, styles.stack]}
+      onLayout={(e: { nativeEvent: { layout: LayoutRectangle } }) => {
+        setViewHeight(e.nativeEvent.layout.height);
+        onScrollMetrics?.({ viewHeight: e.nativeEvent.layout.height });
+      }}
+      contentContainerStyle={[contentContainerStyle, styles.stack, hold]}
       scrollEnabled={scrollEnabled}
       refreshControl={refreshControl}
     >
@@ -764,7 +792,8 @@ export function FilterPills<V extends string>({
   onChange,
   label,
 }: {
-  options: { value: V; label: string }[];
+  /** `dot`: a tech's color key, drawn as their dot before the name (team and week spec 3). */
+  options: { value: V; label: string; dot?: string | null }[];
   value: V;
   onChange: (v: V) => void;
   /** For screen readers ("Status", "Whose day"). */
@@ -782,6 +811,7 @@ export function FilterPills<V extends string>({
         <PillButton
           key={o.value}
           label={o.label}
+          dot={o.dot}
           selected={o.value === value}
           onPress={() => {
             if (o.value === value) return;
@@ -796,10 +826,12 @@ export function FilterPills<V extends string>({
 
 function PillButton({
   label,
+  dot,
   selected,
   onPress,
 }: {
   label: string;
+  dot?: string | null;
   selected: boolean;
   onPress: () => void;
 }) {
@@ -811,10 +843,14 @@ function PillButton({
       android_ripple={{ color: color.ripple }}
       style={({ pressed }) => [
         styles.pill,
+        dot !== undefined && styles.pillDot,
         { backgroundColor: selected ? color.primary : color.fill },
         pressed && !selected && { opacity: 0.7 },
       ]}
     >
+      {dot !== undefined ? (
+        <TechDot tech={dot} ring={selected ? color.onPrimary : undefined} />
+      ) : null}
       <Text
         style={[type.bodyMedium, { color: selected ? color.onPrimary : color.text }]}
         maxFontSizeMultiplier={MAX_TEXT_SCALE}
@@ -1239,10 +1275,13 @@ export function SwitchControl({
   value,
   onValueChange,
   label,
+  disabled = false,
 }: {
   value: boolean;
   onValueChange: (v: boolean) => void;
   label: string;
+  /** Shown but can't be changed (Team: your own switch). */
+  disabled?: boolean;
 }) {
   const [pos] = useState(() => new Animated.Value(value ? 1 : 0));
   useEffect(() => {
@@ -1253,17 +1292,19 @@ export function SwitchControl({
     return (
       <Switch
         value={value}
+        disabled={disabled}
         onValueChange={onValueChange}
         accessibilityLabel={label}
         accessibilityRole="switch"
-        accessibilityState={{ checked: value }}
+        accessibilityState={{ checked: value, disabled }}
       />
     );
   return (
     <Pressable
       accessibilityRole="switch"
       accessibilityLabel={label}
-      accessibilityState={{ checked: value }}
+      accessibilityState={{ checked: value, disabled }}
+      disabled={disabled}
       onPress={() => {
         haptics.selection();
         onValueChange(!value);
@@ -1395,6 +1436,9 @@ export function ListRow({
   onDelete,
   deleteLabel = "Delete",
   leadingAction,
+  onLongPress: holdProp,
+  gestures,
+  editMenu,
   children,
 }: {
   title?: string;
@@ -1423,9 +1467,26 @@ export function ListRow({
    * Not for rows that also delete.
    */
   leadingAction?: { label: string; onPress: () => void };
+  /** Touch and hold: the row's menu (gestures spec section 12), with a light tap. */
+  onLongPress?: () => void;
+  /**
+   * Swipe actions both ways, their accessibility actions and the menu (ui/RowMenu
+   * rowGestures), in place of onDelete and leadingAction.
+   */
+  gestures?: RowGestures;
+  /**
+   * Touch and hold for Edit (the row's tap) and its delete (onDelete, which asks first), titled
+   * with the row's name: settings lists and findings (gestures spec section 12).
+   */
+  editMenu?: { menu: RowMenu; title: string };
   /** Free-form content in place of title and subtitle. */
   children?: ReactNode;
 }) {
+  const onLongPress =
+    holdProp ??
+    (editMenu && onPress
+      ? editRowMenu(editMenu.menu, editMenu.title, { onEdit: onPress, onDelete, deleteLabel })
+      : undefined);
   const action = tone !== "default";
   const showChevron = Boolean(onPress) && (chevron ?? !action);
   const body = (
@@ -1465,24 +1526,46 @@ export function ListRow({
       {showChevron ? <Chevron /> : null}
     </>
   );
-  const a11yAction = onDelete
+  const menuAction = onLongPress ? [{ name: "menu", label: "Show Actions" }] : [];
+  const a11yAction = gestures
     ? {
-        accessibilityActions: [{ name: "delete", label: deleteLabel }],
-        onAccessibilityAction: (e: { nativeEvent: { actionName: string } }) => {
-          if (e.nativeEvent.actionName === "delete") onDelete();
-        },
+        accessibilityActions: gestures.accessibilityActions,
+        onAccessibilityAction: gestures.onAccessibilityAction,
       }
-    : leadingAction
+    : onDelete
       ? {
-          accessibilityActions: [{ name: "leading", label: leadingAction.label }],
+          accessibilityActions: [{ name: "delete", label: deleteLabel }, ...menuAction],
           onAccessibilityAction: (e: { nativeEvent: { actionName: string } }) => {
-            if (e.nativeEvent.actionName === "leading") leadingAction.onPress();
+            if (e.nativeEvent.actionName === "delete") onDelete();
+            if (e.nativeEvent.actionName === "menu") onLongPress?.();
           },
         }
-      : null;
-  const swipeable = Boolean(onDelete || leadingAction);
+      : leadingAction
+        ? {
+            accessibilityActions: [{ name: "leading", label: leadingAction.label }, ...menuAction],
+            onAccessibilityAction: (e: { nativeEvent: { actionName: string } }) => {
+              if (e.nativeEvent.actionName === "leading") leadingAction.onPress();
+              if (e.nativeEvent.actionName === "menu") onLongPress?.();
+            },
+          }
+        : onLongPress
+          ? {
+              accessibilityActions: menuAction,
+              onAccessibilityAction: (e: { nativeEvent: { actionName: string } }) => {
+                if (e.nativeEvent.actionName === "menu") onLongPress();
+              },
+            }
+          : null;
+  const longPress = gestures ? gestures.onLongPress : onLongPress;
+  const swipeable = Boolean(
+    onDelete || leadingAction || gestures?.leading || gestures?.trailing.length,
+  );
   const swipe = (row: ReactNode) =>
-    onDelete ? (
+    gestures && (gestures.leading || gestures.trailing.length) ? (
+      <SwipeActions leading={gestures.leading} trailing={gestures.trailing}>
+        {row}
+      </SwipeActions>
+    ) : onDelete ? (
       <SwipeToDelete label={deleteLabel} onDelete={onDelete}>
         {row}
       </SwipeToDelete>
@@ -1493,7 +1576,7 @@ export function ListRow({
     ) : (
       row
     );
-  if (!onPress)
+  if (!onPress && !longPress)
     return swipe(
       <View
         style={[
@@ -1515,6 +1598,7 @@ export function ListRow({
       accessibilityHint={accessibilityHint}
       {...a11yAction}
       onPress={onPress}
+      onLongPress={longPress}
       android_ripple={{ color: color.ripple }}
       style={({ pressed }) => [
         styles.listRow,
@@ -2031,6 +2115,7 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     overflow: "hidden",
   },
+  pillDot: { flexDirection: "row", alignItems: "center", gap: space["2"] },
   field: { gap: space["1"] },
   input: {
     minHeight: minTap,

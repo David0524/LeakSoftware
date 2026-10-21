@@ -43,6 +43,7 @@ const base: SyncStatus = {
   error: null,
   uploads: { waiting: 0, allPhotos: true, lastError: null },
   storageLow: false,
+  download: null,
   waitingSince: null,
 };
 

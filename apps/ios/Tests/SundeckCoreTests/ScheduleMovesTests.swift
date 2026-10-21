@@ -9,7 +9,7 @@ import Testing
     @Test func everyRuleIsChecked() {
         let checked: Set<String> = [
             "isDateString", "addDays", "addMonths", "monthGrid", "scheduleDays", "formatDay", "formatTime", "planDay",
-            "renumberDay", "moveJobChange", "suggestionDates", "suggestTimes", "timeline",
+            "noteSentences", "renumberDay", "moveJobChange", "suggestionDates", "suggestTimes", "timeline",
         ]
         #expect(Fixtures.rules(module) == checked)
     }
@@ -49,6 +49,10 @@ import Testing
     }
 
     @Test func moves() {
+        checkRule(module, "noteSentences") { c in
+            // null, false and undefined all arrive as nothing to say.
+            noteSentences(try c.arg(0, as: [JSONValue].self).map(\.string))
+        }
         checkRule(module, "planDay") { c in
             try planDay(c.arg(0), c.arg(1), c.arg(2), c.arg(3, as: [PlanJob].self), drive: RoutingTests.drive(c, 4))
         }

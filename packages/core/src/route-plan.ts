@@ -160,21 +160,60 @@ export type PlanJob = Pick<
   | "scheduled_end"
   | "route_order"
   | "arrival_fixed"
+  | "lock_day"
+  | "lock_time"
 > & { property: Located | null };
 
-export type LockReason = "fixed" | "started" | "two_techs";
+export type LockReason = "fixed" | "time" | "started" | "two_techs";
 
 export const LOCK_LABELS: Record<LockReason, string> = {
-  fixed: "Fixed time",
+  fixed: "Locked",
+  time: "Time locked",
   started: "Started",
   two_techs: "Two techs",
 };
 
-/**
- * Why planning keeps this job where it is, or null when it may move. A started or finished
- * job has happened; a fixed time was promised; a two-tech job is in two routes, so moving it
- * in one would strand the other tech (move it by hand to change both).
- */
+/** A job's locks (owner, 2026-10-20: "locks for jobs whether that's day, time, or both"). */
+export type JobLock = "none" | "day" | "time" | "both";
+
+export const JOB_LOCKS: JobLock[] = ["none", "day", "time", "both"];
+
+/** The lock picker's segments, and what a locked card says. */
+export const JOB_LOCK_LABELS: Record<JobLock, { segment: string; tag: string | null }> = {
+  none: { segment: "None", tag: null },
+  day: { segment: "Day", tag: "Day locked" },
+  time: { segment: "Time", tag: "Time locked" },
+  both: { segment: "Both", tag: "Locked" },
+};
+
+/** What each lock keeps, for the picker's footnote. */
+export const JOB_LOCK_HELP: Record<JobLock, string> = {
+  none: "Planning may move it to another day and time.",
+  day: "Stays on its day. Planning may change its time that day.",
+  time: "Keeps its time. Planning may move it to another day at that time.",
+  both: "Stays on its day and time.",
+};
+
+/** Which lock a job has. A job saved before locks with a fixed time is locked both ways. */
+export function jobLock(
+  job: Partial<Pick<Job, "lock_day" | "lock_time" | "arrival_fixed">>,
+): JobLock {
+  const day = !!job.lock_day || !!job.arrival_fixed;
+  const time = !!job.lock_time || !!job.arrival_fixed;
+  return day && time ? "both" : day ? "day" : time ? "time" : "none";
+}
+
+/** The columns a lock sets. */
+export function lockColumns(lock: JobLock): {
+  lock_day: boolean;
+  lock_time: boolean;
+  arrival_fixed: boolean;
+} {
+  const lock_day = lock === "day" || lock === "both";
+  const lock_time = lock === "time" || lock === "both";
+  return { lock_day, lock_time, arrival_fixed: lock_day && lock_time };
+}
+
 /**
  * Whether someone may drag this job to another day or tech by hand: any job but a canceled
  * one (owner, 2026-10-18: "Any job with a date already set cannot be dragged around"). Plan
@@ -189,9 +228,17 @@ export function canUnschedule(status: string): boolean {
   return status === "scheduled" || status === "unscheduled";
 }
 
+/**
+ * Why planning a day keeps this job's time, or null when it may move. A started or finished job
+ * has happened; a time lock was promised; a two-tech job is in two routes, so moving it in one
+ * would strand the other tech (move it by hand to change both). A day lock alone doesn't hold a
+ * time within the day, so it's not a reason here (Plan Week keeps it on its day).
+ */
 export function lockReason(job: PlanJob): LockReason | null {
   if (job.status !== "scheduled" && job.status !== "unscheduled") return "started";
-  if (job.arrival_fixed) return "fixed";
+  const lock = jobLock(job);
+  if (lock === "both") return "fixed";
+  if (lock === "time") return "time";
   if (job.second_tech_id) return "two_techs";
   return null;
 }

@@ -8,8 +8,9 @@ import Testing
 
     @Test func everyRuleIsChecked() {
         let checked: Set<String> = [
-            "todayHero", "onTheWay", "heroActions", "HERO_ACTION_LABELS", "heroSubtitle", "heroDrive",
-            "heroSegmentsSpoken",
+            "todayHero", "todayHeroViewing", "onTheWay", "heroActions", "HERO_ACTION_LABELS", "heroSubtitle",
+            "heroDrive",
+            "heroSegmentsSpoken", "heroHeadline", "heroTopLine",
         ]
         #expect(Fixtures.rules(module) == checked)
     }
@@ -19,12 +20,20 @@ import Testing
             try todayHero(
                 stops: c.arg(0), today: c.arg(1), timeZone: c.arg(2), justDone: c.arg(3, as: String?.self))
         }
+        checkRule(module, "todayHeroViewing") { c in
+            try todayHero(
+                stops: c.arg(0), today: c.arg(1), timeZone: c.arg(2), viewing: c.arg(3, as: String?.self))
+        }
         checkRule(module, "onTheWay") { c in
             try onTheWay(c.arg(0), today: c.arg(1), timeZone: c.arg(2))
         }
     }
 
     @Test func buttonsAndLines() {
+        checkRule(module, "heroHeadline") { c in
+            guard let moment = HeroMoment(rawValue: try c.arg(0)) else { throw NotRepresentable() }
+            return heroHeadline(moment, headline: try c.arg(1))
+        }
         checkRule(module, "heroActions") { c in
             guard let moment = HeroMoment(rawValue: try c.arg(0)) else { throw NotRepresentable() }
             return heroActions(moment, mine: try c.arg(1))
@@ -37,6 +46,13 @@ import Testing
         checkRule(module, "heroDrive") { c in
             guard let moment = HeroMoment(rawValue: try c.arg(0)) else { throw NotRepresentable() }
             return heroDrive(moment, try c.arg(1, as: Int?.self))
+        }
+        checkRule(module, "heroTopLine") { c in
+            guard
+                let hero = try todayHero(
+                    stops: c.arg(0), today: c.arg(1), timeZone: c.arg(2), viewing: c.arg(3, as: String?.self))
+            else { throw NotRepresentable() }
+            return heroTopLine(hero)
         }
         checkRule(module, "heroSegmentsSpoken") { c in
             heroSegmentsSpoken(doneCount: try c.arg(0), stops: try c.arg(1))

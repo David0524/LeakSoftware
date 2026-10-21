@@ -164,6 +164,13 @@ export default async function ReportTemplatesPage() {
           {saved.map((r) => (
             <SheetRow
               key={r.id}
+              remove={{
+                table: "saved_report",
+                id: r.id,
+                path: "/settings/reports",
+                confirm: "Delete this saved report?",
+                confirmLabel: "Delete",
+              }}
               title={r.name}
               label={r.name}
               detail={SAVED_REPORT_SECTIONS.filter((s) => savedReportSections(r.sections)[s.key])

@@ -4,6 +4,7 @@ import { FINDING_STATUS_LABELS, type Job } from "@leakbook/core";
 import { useInspectionConfig, useJobInspection } from "../../data/inspection";
 import { useSession } from "../../state/session";
 import { Group, ListRow, T } from "../../ui/components";
+import { useRowMenu } from "../../ui/RowMenu";
 import { color, face, space } from "../../ui/theme";
 import { confirmDeleteFinding } from "./remove";
 
@@ -20,6 +21,8 @@ export function FindingsTab({ job }: { job: Job }) {
   const config = useInspectionConfig(job.company_id);
   const insp = useJobInspection(job.company_id, job.id);
   const ordered = [...insp.findings].sort((a, b) => a.id.localeCompare(b.id));
+  // Touch and hold a row for Edit and Delete (gestures spec section 12).
+  const menu = useRowMenu();
 
   return (
     <View style={{ gap: space["4"] }}>
@@ -42,6 +45,7 @@ export function FindingsTab({ job }: { job: Job }) {
                   onDelete={() =>
                     confirmDeleteFinding(services.sync, job.company_id, f.id, f.title)
                   }
+                  editMenu={{ menu, title: f.title }}
                   leading={
                     <View style={[styles.num, { backgroundColor: sev?.color ?? color.fail }]}>
                       <Text
@@ -77,6 +81,7 @@ export function FindingsTab({ job }: { job: Job }) {
         </View>
       )}
       {/* Add Finding is in the job page's Next Step bar (owner, 2026-10-20). */}
+      {menu.element}
     </View>
   );
 }

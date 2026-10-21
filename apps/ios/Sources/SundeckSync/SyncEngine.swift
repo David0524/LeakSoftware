@@ -31,6 +31,14 @@ public actor SyncEngine {
     private let pullPage: Int
     private let now: @Sendable () -> Date
     private var running: Task<SyncSummary, Never>?
+    /// Told as each page of a first download is applied (`PullProgress`).
+    private var onProgress: (@Sendable (PullProgress) -> Void)?
+
+    /// Rows per page on a first download: the most sync_pull allows.
+    public static let firstPullPage = 2000
+
+    /// Follows a first download's progress, page by page.
+    public func setProgressHandler(_ handler: (@Sendable (PullProgress) -> Void)?) { onProgress = handler }
 
     /// `pushBatch` is mutations per sync_push call (server limit 500); `pullPage` rows per page;
     /// `now` is the clock for which jobs have aged off phones (tests set it).
@@ -121,14 +129,38 @@ public actor SyncEngine {
         let last = try store.scope()
         let restart = scope != nil && last != nil && scope != last
         var seen: Set<String>? = restart ? [] : nil
-        var cursor: PullCursor = restart ? .object([:]) : try store.cursor()
+        let cursor: PullCursor = restart ? .object([:]) : try store.cursor()
+        // A first download (no cursor yet) or a restart: ask how much there is, for the
+        // progress screen (never fails the sync), and take the biggest pages.
+        let first = restart || cursor == .object([:])
+        var progress: PullProgress? = nil
+        if first {
+            progress = PullProgress(totals: (try? await transport.pullCount()) ?? nil)
+            if let progress { onProgress?(progress) }
+        }
+        let size = first ? max(pullPage, Self.firstPullPage) : pullPage
+        let transport = self.transport
+        var page = try await transport.pull(cursor: cursor, pageSize: size)
         while true {
-            let page = try await transport.pull(cursor: cursor, pageSize: pullPage)
-            try store.applyPage(page)
+            // The next page is already on its way while this one is saved.
+            let next: Task<PullPage, Error>? =
+                page.done
+                ? nil : Task { [cursor = page.cursor] in try await transport.pull(cursor: cursor, pageSize: size) }
+            do {
+                try store.applyPage(page)
+            } catch {
+                next?.cancel()
+                throw error
+            }
             if seen != nil { for r in page.rows { seen!.insert("\(r.table):\(r.row.id)") } }
             summary.pulled += page.rows.count
-            cursor = page.cursor
-            if page.done { break }
+            if progress != nil {
+                for r in page.rows { progress!.pulled[r.table, default: 0] += 1 }
+                progress!.finished = page.done
+                onProgress?(progress!)
+            }
+            guard let next else { break }
+            page = try await next.value
         }
         // Only after a complete pull: an interrupted one starts over next time.
         if let seen { try store.keepOnly(seen) }

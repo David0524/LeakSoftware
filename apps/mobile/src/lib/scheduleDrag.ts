@@ -26,9 +26,15 @@ export interface Slot {
   rect: Rect;
 }
 
-/** Where the picked-up stop came from. */
+/**
+ * Where the picked-up stop came from. `plan`: a maintenance plan from Customers to Add (its id
+ * is the plan's), which a drop onto a tech's day puts on that weekday with that tech (team and
+ * week spec sections 6 and 8).
+ */
 export type DragFrom =
-  { kind: "route"; route: string; tech: string; date: string; index: number } | { kind: "tray" };
+  | { kind: "route"; route: string; tech: string; date: string; index: number }
+  | { kind: "tray" }
+  | { kind: "plan" };
 
 export interface DragItem {
   id: string;
@@ -41,6 +47,8 @@ export type DropPlan =
   | { kind: "move"; tech: string | null; date: string; index: number }
   /** Take it off the schedule (back to Needs a Time). */
   | { kind: "tray" }
+  /** A plan from Customers to Add: serviced on this date's weekday, by this tech. */
+  | { kind: "plan"; tech: string; date: string }
   | { kind: "refuse"; error: string }
   /** Dropped where it already is, or nowhere. */
   | { kind: "none" };
@@ -102,6 +110,11 @@ export function planDrop(input: {
 }): DropPlan {
   const { item, zone, index, today } = input;
   if (!zone) return { kind: "none" };
+  // A plan's day is a weekday, so any tech's day takes it, past ones too; nothing else does.
+  if (item.from.kind === "plan")
+    return zone.kind === "route"
+      ? { kind: "plan", tech: zone.tech, date: zone.date }
+      : { kind: "none" };
   if (!canMoveJob(item.status)) return { kind: "refuse", error: CANCELED };
   const from = item.from;
   if (zone.kind === "tray") {

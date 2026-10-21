@@ -2,7 +2,6 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { SegmentedLinks, SwipeHrefs } from "@/components/gestures";
 import {
-  LOCK_LABELS,
   addDays,
   canMoveJob,
   formatAddress,
@@ -11,7 +10,6 @@ import {
   addMonths,
   isDateString,
   localDate,
-  lockReason,
   minutesLabel,
   propertyLocation,
   dayDirections,
@@ -20,10 +18,15 @@ import {
   type ScheduleView,
   dateFormat,
   type CleaningKind,
-  NOT_ON_MAP,
   JOB_TYPE_LABELS,
   mapStatus,
+  weekday,
+  jobLock,
+  asksPlanMove,
 } from "@leakbook/core";
+import { lockTag } from "@/lib/day-map";
+import { PlanWeek } from "@/components/plan-week";
+import { NotOnMapTag } from "@/components/not-on-map";
 import { routingConfigured } from "@/server/routing";
 import {
   RouteBoard,
@@ -46,6 +49,8 @@ import {
 } from "@/components/ui";
 import { getOffice } from "@/lib/auth";
 import { mapsAppForRequest } from "@/lib/maps";
+import { mapsConfigured, resolveMapProvider } from "@/lib/map-provider";
+import { MapProviderScope } from "@/components/map-provider-scope";
 import { mayMakeJobs, visitCleanings, type JobRow } from "@/lib/data";
 import { CleaningIcon } from "@/components/icons";
 import {
@@ -61,11 +66,43 @@ import { NavPlus } from "@/components/nav-bar";
 import { Suspense } from "react";
 import { ScreenTip } from "@/components/screen-tip";
 import { scheduleDate } from "@/lib/limits";
+import { redirect } from "next/navigation";
+import { loadRouteCustomers } from "@/app/actions/service-days";
+import { CustomersToAdd } from "@/components/customers-to-add";
+import { TechDot } from "@/components/tech-dot";
 
 export const metadata: Metadata = { title: "Schedule · Sundeck Pro" };
 
+/**
+ * The job's schedule as the job page's Schedule form holds it, so Lock Day and Lock Time from a
+ * card save through the same form action (gestures.md section 12). null: no time yet.
+ */
+function scheduleOf(j: JobRow, timeZone: string): BoardStop["schedule"] {
+  if (!j.scheduled_start) return null;
+  const parts = dateFormat("en-CA", {
+    timeZone,
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+    hourCycle: "h23",
+  }).formatToParts(new Date(j.scheduled_start));
+  const get = (t: string) => parts.find((p) => p.type === t)?.value ?? "";
+  return {
+    date: `${get("year")}-${get("month")}-${get("day")}`,
+    time: `${get("hour")}:${get("minute")}`,
+    hours: j.scheduled_end
+      ? String(
+          (new Date(j.scheduled_end).getTime() - new Date(j.scheduled_start).getTime()) / 3_600_000,
+        )
+      : "2",
+    tech: j.assigned_user_id ?? "",
+    lock: jobLock(j),
+  };
+}
+
 function toStop(j: JobRow, ctx: RouteContext, route?: DayRoute, i = 0): BoardStop {
-  const lock = lockReason(j);
   const onSecond = route && j.assigned_user_id !== route.techId;
   // The kind of visit, or whose stop it is on the second tech's route: a pill on the card.
   const tag = onSecond
@@ -83,7 +120,7 @@ function toStop(j: JobRow, ctx: RouteContext, route?: DayRoute, i = 0): BoardSto
     location: propertyLocation(j.property),
     time: j.scheduled_start ? formatTime(j.scheduled_start, ctx.timeZone) : null,
     status: j.status,
-    lock: lock && lock !== "started" ? LOCK_LABELS[lock] : null,
+    lock: lockTag(j),
     draggable: canMoveJob(j.status),
     legMin: route ? (route.summary.legs[i] ?? null) : null,
     shortMin: route ? (route.summary.short[i] ?? 0) : 0,
@@ -91,7 +128,14 @@ function toStop(j: JobRow, ctx: RouteContext, route?: DayRoute, i = 0): BoardSto
     notOnMap,
     access: j.property?.access_notes?.trim() || null,
     // One line for Needs a Time's compact cards.
-    note: [tag, notOnMap ? NOT_ON_MAP.short : null].filter(Boolean).join(" · "),
+    note: tag,
+    schedule: scheduleOf(j, ctx.timeZone),
+    // A maintenance plan's visit: moving it to another day or tech asks first (owner,
+    // 2026-10-20). Only Scheduled visits ask; core decides.
+    plan:
+      j.service_plan_id && asksPlanMove(j)
+        ? { id: j.service_plan_id, status: j.status, moved: !!j.plan_moved }
+        : null,
   };
 }
 
@@ -108,6 +152,7 @@ function column(
   ctx: RouteContext,
   techId: string,
   title: string,
+  color: string,
   date: string,
   route: DayRoute | undefined,
   app: MapsApp,
@@ -131,6 +176,7 @@ function column(
     key: routeKey(techId, date),
     techId,
     title,
+    color,
     date,
     stops,
     driveMin: route?.summary.driveMin ?? 0,
@@ -147,20 +193,42 @@ export default async function SchedulePage({ searchParams }: PageProps<"/schedul
   const office = await getOffice();
   const canAdd = await mayMakeJobs(office);
   const params = await searchParams;
+  const today = shopToday(office);
+  // Day, Week and Month. Routes went into Week (owner, 2026-10-20: "it's actually a pretty
+  // useless tab. Let's just build that all into Week"); its old links open Week.
+  const views = ["day", "week", "month"] as const;
+  if (params.view === "routes") {
+    const q = new URLSearchParams({ view: "week" });
+    if (isDateString(params.date)) q.set("date", params.date);
+    if (typeof params.tech === "string") q.set("tech", params.tech);
+    redirect(`/schedule?${q}`);
+  }
+  const viewLinks = (current: string, d: string, t: string) => (
+    <SegmentedLinks
+      label="View"
+      className={cx(SEGMENT_TRACK, "ml-auto")}
+      items={views.map((v) => ({
+        href: `/schedule?view=${v}&date=${d}&tech=${t}`,
+        label: VIEW_NAMES[v],
+        active: v === current,
+      }))}
+    />
+  );
   const view: ScheduleView =
     params.view === "week" ? "week" : params.view === "month" ? "month" : "day";
-  const today = shopToday(office);
   // A bad date in the link (9999-99-99, Feb 31) shows today, not an error page.
   const date = isDateString(params.date) && scheduleDate(params.date) ? params.date : today;
   const days = scheduleDays(view, date);
   // Settings, routes, and Needs a Time all load at once.
   const ctxP = routeContext(office);
-  const [ctx, app, { routes, unassigned, team }, tray] = await Promise.all([
+  const [ctx, app, { routes, unassigned, team }, tray, routePlans] = await Promise.all([
     ctxP,
     mapsAppForRequest(),
     loadRoutes(office, ctxP, days),
     // Needs a Time is the office's list: techs don't see it (owner, 2026-10-18).
     office.isManager ? needsScheduling(office) : null,
+    // Week's Customers to Add (maintenance plans with no day yet): owners and admins.
+    view === "week" && office.isManager ? loadRouteCustomers() : null,
   ]);
   const trayJobs = tray ? tray.map((j) => trayStop(j, ctx)) : null;
 
@@ -196,7 +264,7 @@ export default async function SchedulePage({ searchParams }: PageProps<"/schedul
   for (const t of techs)
     for (const d of days)
       columns.push({
-        ...column(ctx, t.user_id, t.name, d, routes.get(routeKey(t.user_id, d)), app),
+        ...column(ctx, t.user_id, t.name, t.color, d, routes.get(routeKey(t.user_id, d)), app),
         phoneHidden: !onPhone(t.user_id),
       });
   // The plan's cleanings on each visit, on the date they're due (owner, 2026-10-20).
@@ -207,6 +275,21 @@ export default async function SchedulePage({ searchParams }: PageProps<"/schedul
   for (const c of columns) for (const s of c.stops) s.cleanings = due.get(s.id);
   const phoneColumns = columns.filter((c) => !c.phoneHidden);
   const unlocated = columns.some((c) => c.stops.some((s) => !s.location));
+  // Day maps, when the shop's maps are set up (owner, 2026-10-20, docs/plans/route-maps.md).
+  // Apple Maps once its keys are set, else Mapbox (docs/plans/apple-maps.md).
+  const maps = mapsConfigured() ? { company: office.company.id, depot: ctx.depot } : null;
+  // Plan Week: owners and admins, for the days of the week still to come.
+  const planDates = view === "week" && office.isManager ? days.filter((d) => d >= ctx.today) : [];
+  // Needs a Time jobs with nobody on them that Plan Week may place this week.
+  const planWaiting = (tray ?? []).filter(
+    (j) =>
+      !j.assigned_user_id &&
+      (!j.scheduled_start ||
+        planDates.includes(localDate(new Date(j.scheduled_start), ctx.timeZone))),
+  ).length;
+  const planTechs = movers.map((t) => ({ id: t.user_id, name: t.name, color: t.color }));
+  // Customers to Add: the plans, and the techs (you first, as on the rest of Schedule).
+  const plans = routePlans ? { list: routePlans, workDays: ctx.settings.workDays } : null;
 
   const move = (n: number) =>
     view === "month" ? addMonths(date, n) : addDays(date, view === "week" ? 7 * n : n);
@@ -243,7 +326,7 @@ export default async function SchedulePage({ searchParams }: PageProps<"/schedul
     );
 
   return (
-    <>
+    <MapProviderScope provider={resolveMapProvider()}>
       <PageHeader
         title="Schedule"
         navAction={canAdd ? <NavPlus href="/jobs/new" label="New Job" /> : undefined}
@@ -269,7 +352,7 @@ export default async function SchedulePage({ searchParams }: PageProps<"/schedul
         <ScreenTip screen="schedule" />
       </Suspense>
       {/* Swipe sideways for the previous or next day, week, or month (owner, 2026-10-20). */}
-      <SwipeHrefs prev={href(move(-1))} next={href(move(1))}>
+      <SwipeHrefs page={href(date)} scope="schedule" prev={href(move(-1))} next={href(move(1))}>
         {/* One row: previous, the date, next, and Day / Week / Month at the far right. With
             large text Day / Week / Month moves to its own row instead of off the screen. */}
         <div className="mb-3 flex flex-wrap items-center gap-2">
@@ -288,15 +371,7 @@ export default async function SchedulePage({ searchParams }: PageProps<"/schedul
           >
             ›
           </Link>
-          <SegmentedLinks
-            label="View"
-            className={cx(SEGMENT_TRACK, "ml-auto")}
-            items={(["day", "week", "month"] as const).map((v) => ({
-              href: href(date, v),
-              label: VIEW_NAMES[v],
-              active: v === view,
-            }))}
-          />
+          {viewLinks(view, date, tech)}
         </div>
 
         {view === "day" ? <WeekStrip date={date} today={today} tech={tech} /> : null}
@@ -311,15 +386,22 @@ export default async function SchedulePage({ searchParams }: PageProps<"/schedul
               ...techs.map((t) => ({
                 id: t.user_id,
                 name: t.user_id === office.user.id ? "Me" : t.name,
+                color: t.color as string | null,
               })),
-              { id: "all", name: "Everyone" },
+              { id: "all", name: "Everyone", color: null },
             ].map((t) => (
               <Link
                 key={t.id}
                 href={href(date, view, t.id)}
                 aria-current={t.id === tech ? "page" : undefined}
-                className={pillClass(t.id === tech)}
+                className={pillClass(t.id === tech, "gap-2")}
               >
+                {t.color ? (
+                  <TechDot
+                    color={t.color}
+                    className={cx(t.id === tech && "ring-2 ring-white/90")}
+                  />
+                ) : null}
                 {t.name}
               </Link>
             ))}
@@ -342,7 +424,7 @@ export default async function SchedulePage({ searchParams }: PageProps<"/schedul
         ) : null}
         {unlocated ? (
           <p className="mb-4 text-[0.9375rem] text-text-muted">
-            Pools marked “No map location” aren’t counted in drive times: their address wasn’t found
+            Stops marked <NotOnMapTag /> aren’t counted in drive times: their address wasn’t found
             on the map. Check the address on the customer’s pool.
           </p>
         ) : null}
@@ -372,18 +454,35 @@ export default async function SchedulePage({ searchParams }: PageProps<"/schedul
           <>
             {/* Phones: the week as an agenda, day by day. Moving is done from the day view. */}
             <div className="space-y-5 sm:hidden">
+              {planDates.length ? (
+                <PlanWeek
+                  dates={planDates}
+                  waiting={planWaiting}
+                  techs={planTechs}
+                  defaultTech={tech === "all" ? null : tech}
+                  buttonClassName="w-full"
+                />
+              ) : null}
+              {plans ? (
+                <CustomersToAdd
+                  variant="phone"
+                  plans={plans.list}
+                  techs={planTechs}
+                  workDays={plans.workDays}
+                />
+              ) : null}
               {days.map((d) => {
                 const list = phoneColumns
                   .filter((c) => c.date === d)
                   .flatMap((c) =>
                     c.stops
                       .filter((s) => !s.tag.startsWith("Second tech"))
-                      .map((s) => ({ s, tech: c.title })),
+                      .map((s) => ({ s, tech: { name: c.title, color: c.color ?? null } })),
                   )
                   .concat(
                     (tech === "all" ? (unassigned.get(d) ?? []) : []).map((j) => ({
                       s: toStop(j, ctx),
-                      tech: "No tech yet",
+                      tech: { name: "No tech yet", color: null },
                     })),
                   );
                 return (
@@ -422,7 +521,11 @@ export default async function SchedulePage({ searchParams }: PageProps<"/schedul
                             }
                             detail={
                               <>
-                                <span className="text-text">{s.customer}</span> · {tech}
+                                <span className="text-text">{s.customer}</span> ·{" "}
+                                {tech.color ? (
+                                  <TechDot color={tech.color} className="mr-1" />
+                                ) : null}
+                                {tech.name}
                               </>
                             }
                             value={<StatusBadge status={s.status} />}
@@ -439,9 +542,14 @@ export default async function SchedulePage({ searchParams }: PageProps<"/schedul
                 mode="week"
                 columns={columns}
                 tray={trayJobs}
-                techs={movers.map((t) => ({ id: t.user_id, name: t.name }))}
+                techs={planTechs}
+                plans={plans}
                 today={today}
                 weekDays={days.map((d) => [d, formatDay(d)])}
+                maps={maps}
+                workDates={days.filter((d) => ctx.settings.workDays.includes(weekday(d)))}
+                planDates={planDates.length ? planDates : null}
+                planWaiting={planWaiting}
               />
             </div>
           </>
@@ -450,8 +558,9 @@ export default async function SchedulePage({ searchParams }: PageProps<"/schedul
             mode="day"
             columns={columns}
             tray={trayJobs}
-            techs={movers.map((t) => ({ id: t.user_id, name: t.name }))}
+            techs={planTechs}
             today={today}
+            maps={maps}
           />
         )}
         {jobsOnPhone === 0 || jobsShown === 0 ? (
@@ -461,7 +570,7 @@ export default async function SchedulePage({ searchParams }: PageProps<"/schedul
           </p>
         ) : null}
       </SwipeHrefs>
-    </>
+    </MapProviderScope>
   );
 }
 

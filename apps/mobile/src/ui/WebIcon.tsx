@@ -87,6 +87,10 @@ const SHAPES = {
   close: { line: "M6 6l12 12M18 6L6 18" },
   // A done stop on Today (the website's TodayStop check).
   check: { line: "M5 12.5l4.5 4.5L19 7.5" },
+  // A car (the website's CarIcon): On My Way as a round button (owner, 2026-10-20).
+  car: {
+    line: "M5 16V11.5L7 6.5a1.5 1.5 0 0 1 1.4-1h7.2a1.5 1.5 0 0 1 1.4 1l2 5V16M3.5 11.5h17v4.5a1 1 0 0 1-1 1h-15a1 1 0 0 1-1-1zM6 20v-3M18 20v-3M7.5 14h1.5M15 14h1.5",
+  },
   lightbulb: {
     line: "M9 18h6M10 21h4M12 3a6 6 0 0 0-3.5 10.9c.6.5 1 1.2 1 2V16h5v-.1c0-.8.4-1.5 1-2A6 6 0 0 0 12 3z",
   },
@@ -121,12 +125,23 @@ const SHAPES = {
   directions: { line: "M3 11l18-8-8 18-2-8z" },
   // The website's not-on-map warning (not-on-map.tsx).
   warning: { line: "M12 3l9.5 17h-19zM12 10v4.5M12 17.5v.01" },
-  // Today's Reorder (docs/plans/today-reorder.md): the drag handle, as iOS's reorder control,
-  // and the lock on a stop that can't move.
+  // Today's Reorder (docs/plans/today-reorder.md): the drag handle, as iOS's reorder control.
   grip: { line: "M5 8h14M5 12h14M5 16h14" },
+  // A padlock (the website's LockIcon): a job locked to its day, time, or both, and the lock on
+  // a stop that can't move in Today's Reorder.
   lock: {
-    line: "M8 11V8a4 4 0 0 1 8 0v3M7 11h10a1 1 0 0 1 1 1v7a1 1 0 0 1-1 1H7a1 1 0 0 1-1-1v-7a1 1 0 0 1 1-1z",
+    line: "M7.5 11h9a2.5 2.5 0 0 1 2.5 2.5v5a2.5 2.5 0 0 1-2.5 2.5h-9A2.5 2.5 0 0 1 5 18.5v-5A2.5 2.5 0 0 1 7.5 11zM8 11V8a4 4 0 0 1 8 0v3",
   },
+  // A calendar with a small padlock (the website's DayLockIcon): a job locked to its day.
+  dayLock: {
+    line: "M13 20H5a1 1 0 0 1-1-1V6a1 1 0 0 1 1-1h13a1 1 0 0 1 1 1v6M4 9.5h15M8.5 3v4M14.5 3v4M15.7 17h4.6a1.2 1.2 0 0 1 1.2 1.2v2.6a1.2 1.2 0 0 1-1.2 1.2h-4.6a1.2 1.2 0 0 1-1.2-1.2v-2.6a1.2 1.2 0 0 1 1.2-1.2zM16 17v-1.5a2 2 0 0 1 4 0V17",
+  },
+  // A clock with a small padlock (the website's TimeLockIcon): a job locked to its time.
+  timeLock: {
+    line: "M12.5 20.5a8.5 8.5 0 1 1 8-11.5M12 7.5V12l2.5 1.5M15.7 17h4.6a1.2 1.2 0 0 1 1.2 1.2v2.6a1.2 1.2 0 0 1-1.2 1.2h-4.6a1.2 1.2 0 0 1-1.2-1.2v-2.6a1.2 1.2 0 0 1 1.2-1.2zM16 17v-1.5a2 2 0 0 1 4 0V17",
+  },
+  // Two corner arrows pointing out (the website's ExpandIcon): Enlarge a day map.
+  expand: { line: "M14 4h6v6M10 20H4v-6M20 4l-7 7M4 20l7-7" },
 } satisfies Record<string, Shape>;
 
 export type WebIconName = keyof typeof SHAPES;

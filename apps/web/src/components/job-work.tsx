@@ -1,14 +1,6 @@
 "use client";
 
-import {
-  useCallback,
-  useOptimistic,
-  useRef,
-  useState,
-  useTransition,
-  type PointerEvent,
-  type ReactNode,
-} from "react";
+import { useCallback, useOptimistic, useState, useTransition, type ReactNode } from "react";
 import {
   CHECKLIST_SECTION_LABELS,
   FINDING_STATUS_LABELS,
@@ -59,6 +51,7 @@ import { DiagramShapes } from "./pool-diagram";
 import { Segmented } from "./segmented";
 import { ShapePicker } from "./shape-picker";
 import { FieldError, SField, STextArea, SettingsForm } from "./settings-forms";
+import { RowActions, type MenuEntry } from "./row-actions";
 import { Sheet, useConfirm } from "./sheet";
 import { Button, Checkbox, Chip, Select, buttonClass, cx } from "./ui";
 import { SavedNote, UndoNotice, useAutosave, useUndoWindow } from "./undo";
@@ -649,32 +642,58 @@ function ChecklistItem({
   }
 
   const note = [row.result?.method, row.result?.notes].filter(Boolean).join(" · ");
+  // Swipe right for the first answer (Done, No, Not Leaking); touch and hold, right-click, or
+  // "⋯" for every answer and Not Done (gestures.md section 12), the same as the segments.
+  const first = options[0]!;
+  const menu: MenuEntry[] = [
+    ...options.map((o) => ({
+      label: o.label,
+      checked: shown === o.value,
+      onSelect: () => void choose(o.value),
+    })),
+    shown != null && "separator",
+    shown != null && { label: "Not Done", onSelect: () => void choose("todo") },
+  ];
   return (
-    <div className="px-4 py-2">
-      <Segmented<Verdict | "">
-        label={row.label}
-        name={`verdict-${row.id}`}
-        value={shown ?? ""}
-        options={options}
-        description={note || undefined}
-        fit
-        segmentClassName="min-h-11!"
-        onChange={(v) => void choose(v === shown ? "todo" : v)}
-      />
-      {needsWhere && row.result ? (
-        <WhereField
-          jobId={jobId}
-          resultId={row.result.id}
-          item={row.label}
-          value={row.result.location_text}
-        />
-      ) : null}
-      {row.result?.status === "excluded" && row.result.exclusion_reason ? (
-        <p className="pt-1 text-[0.9375rem] text-text-muted">{row.result.exclusion_reason}</p>
-      ) : null}
-      <ErrorText error={error} />
+    <>
+      <RowActions
+        title={row.label}
+        menu={menu}
+        leading={
+          shown === first.value
+            ? []
+            : [{ label: first.label, tone: "green", onSelect: () => void choose(first.value) }]
+        }
+        buttonClassName="absolute top-1.5 right-2"
+        data-no-swipe=""
+      >
+        <div className="px-4 py-2">
+          <Segmented<Verdict | "">
+            label={row.label}
+            name={`verdict-${row.id}`}
+            value={shown ?? ""}
+            options={options}
+            description={note || undefined}
+            fit
+            segmentClassName="min-h-11!"
+            onChange={(v) => void choose(v === shown ? "todo" : v)}
+          />
+          {needsWhere && row.result ? (
+            <WhereField
+              jobId={jobId}
+              resultId={row.result.id}
+              item={row.label}
+              value={row.result.location_text}
+            />
+          ) : null}
+          {row.result?.status === "excluded" && row.result.exclusion_reason ? (
+            <p className="pt-1 text-[0.9375rem] text-text-muted">{row.result.exclusion_reason}</p>
+          ) : null}
+          <ErrorText error={error} />
+        </div>
+      </RowActions>
       {confirmSheet}
-    </div>
+    </>
   );
 }
 
@@ -719,74 +738,47 @@ function WhereField({
 // List rows that swipe (Tests and Findings)
 // ---------------------------------------------------------------------------
 
-const SWIPE_WIDTH = 88;
-
 /**
- * An iOS list row that slides left on touch to show a red Delete button (lists-and-tables.md:
- * swipe actions). Mouse, keyboard, and VoiceOver users delete from the row's edit sheet
- * instead, so the hidden button stays out of the tab order and the accessibility tree until
- * it shows. `inset` is where the separator above the row starts (where the text does).
+ * An iOS list row with Edit and Delete… (gestures.md section 12): it swipes left on touch to
+ * show a red Delete…, and touch and hold, right-click, or its "⋯" button opens a menu with
+ * Edit and Delete…. Delete always asks first (the caller's `onDelete`). The row's edit sheet
+ * has Delete too, so the gesture is never the only way. `inset` is where the separator above
+ * the row starts (where the text does).
  */
 function SwipeRow({
   children,
+  title,
+  onEdit,
   onDelete,
-  deleteLabel,
   disabled = false,
   first = false,
   inset = "1rem",
 }: {
   children: ReactNode;
+  /** The menu's title: the row's name. */
+  title: string;
+  onEdit?: () => void;
   onDelete: () => void;
-  deleteLabel: string;
   disabled?: boolean;
   first?: boolean;
   inset?: string;
 }) {
-  const [open, setOpen] = useState(false);
-  const [dx, setDx] = useState<number | null>(null);
-  const live = useRef(0);
-  const drag = useRef<{ x0: number; y0: number; base: number; axis: "x" | "y" | null } | null>(
-    null,
-  );
-  // A swipe ends with a click on the row; that click must not open the editor.
-  const swallow = useRef(false);
-  const offset = dx ?? (open ? -SWIPE_WIDTH : 0);
-
-  function down(e: PointerEvent<HTMLDivElement>) {
-    swallow.current = false;
-    if (e.pointerType === "mouse" || disabled) return;
-    drag.current = { x0: e.clientX, y0: e.clientY, base: open ? -SWIPE_WIDTH : 0, axis: null };
-  }
-  function move(e: PointerEvent<HTMLDivElement>) {
-    const d = drag.current;
-    if (!d) return;
-    const mx = e.clientX - d.x0;
-    const my = e.clientY - d.y0;
-    if (d.axis === null) {
-      if (Math.abs(mx) < 8 && Math.abs(my) < 8) return;
-      d.axis = Math.abs(mx) > Math.abs(my) ? "x" : "y";
-      if (d.axis === "x") e.currentTarget.setPointerCapture?.(e.pointerId);
-    }
-    if (d.axis !== "x") return;
-    live.current = Math.min(0, Math.max(-SWIPE_WIDTH * 1.4, d.base + mx));
-    setDx(live.current);
-  }
-  function up() {
-    const d = drag.current;
-    drag.current = null;
-    if (!d || d.axis !== "x") return;
-    swallow.current = true;
-    setOpen(live.current < -SWIPE_WIDTH / 2);
-    setDx(null);
-  }
-  function cancel() {
-    drag.current = null;
-    setDx(null);
-  }
-
+  const menu: MenuEntry[] = [
+    onEdit && { label: "Edit", onSelect: onEdit },
+    "separator",
+    { label: "Delete…", destructive: true, onSelect: onDelete },
+  ];
   return (
     // A row that swipes by itself never swipes to the next job section (owner, 2026-10-20).
-    <li className="relative overflow-hidden" data-no-swipe>
+    <RowActions
+      as="li"
+      title={title}
+      menu={menu}
+      trailing={[{ label: "Delete…", tone: "red", onSelect: onDelete }]}
+      disabled={disabled}
+      className="overflow-hidden"
+      data-no-swipe=""
+    >
       {first ? null : (
         <span
           aria-hidden="true"
@@ -794,42 +786,8 @@ function SwipeRow({
           className="pointer-events-none absolute top-0 right-0 z-10 border-t-[0.5px] border-separator"
         />
       )}
-      {offset < 0 ? (
-        <button
-          type="button"
-          tabIndex={open ? 0 : -1}
-          aria-hidden={!open}
-          aria-label={deleteLabel}
-          disabled={disabled}
-          onClick={() => {
-            setOpen(false);
-            onDelete();
-          }}
-          style={{ width: Math.max(SWIPE_WIDTH, -offset) }}
-          className="absolute inset-y-0 right-0 flex items-center justify-center bg-status-fail text-[1.0625rem] font-semibold text-on-status"
-        >
-          Delete
-        </button>
-      ) : null}
-      <div
-        style={offset ? { transform: `translateX(${offset}px)` } : undefined}
-        className={cx("relative touch-pan-y bg-surface", dx === null && "transition-transform")}
-        onPointerDown={down}
-        onPointerMove={move}
-        onPointerUp={up}
-        onPointerCancel={cancel}
-        onClickCapture={(e) => {
-          if (swallow.current || open) {
-            swallow.current = false;
-            e.preventDefault();
-            e.stopPropagation();
-            setOpen(false);
-          }
-        }}
-      >
-        {children}
-      </div>
-    </li>
+      {children}
+    </RowActions>
   );
 }
 
@@ -910,6 +868,17 @@ export function TestsEditor({
   const current = editing && editing !== "new" ? tests.find((t) => t.id === editing) : undefined;
   const currentType = current ? typeOf.get(current.typeId) : undefined;
   const remove = (t: TestRow) => run(deleteTest, { job: jobId, test: t.id }, close);
+  // Delete… from the row's swipe or menu asks first, as the sheet's Delete Test does.
+  const askRemove = async (t: TestRow, name: string) => {
+    if (
+      await confirm({
+        title: `Delete this ${name.toLowerCase()}?`,
+        confirmLabel: "Delete Test",
+        destructive: true,
+      })
+    )
+      remove(t);
+  };
   useNextStep("add-test", () => {
     if (types.length) setEditing("new");
   });
@@ -938,9 +907,10 @@ export function TestsEditor({
               <SwipeRow
                 key={t.id}
                 first={i === 0}
-                deleteLabel={`Delete ${name}`}
+                title={name}
                 disabled={pending}
-                onDelete={() => remove(t)}
+                onEdit={type ? () => setEditing(t.id) : undefined}
+                onDelete={() => void askRemove(t, name)}
               >
                 <button
                   type="button"
@@ -1203,6 +1173,17 @@ export function FindingsEditor({
   const componentLabel = new Map(components.map((c) => [c.id, c.label]));
   const current = editing && editing !== "new" ? findings.find((f) => f.id === editing) : undefined;
   const remove = (f: FindingRow) => run(deleteFinding, { job: jobId, finding: f.id }, close);
+  // Delete… from the row's swipe or menu asks first, as the sheet's Delete Finding does.
+  const askRemove = async (f: FindingRow) => {
+    if (
+      await confirm({
+        title: `Delete “${f.title}”?`,
+        confirmLabel: "Delete Finding",
+        destructive: true,
+      })
+    )
+      remove(f);
+  };
   useNextStep("add-finding", () => setEditing("new"));
   return (
     <div className="space-y-4">
@@ -1217,9 +1198,10 @@ export function FindingsEditor({
                 key={f.id}
                 first={i === 0}
                 inset="3.75rem"
-                deleteLabel={`Delete ${f.title}`}
+                title={f.title}
                 disabled={pending}
-                onDelete={() => remove(f)}
+                onEdit={() => setEditing(f.id)}
+                onDelete={() => void askRemove(f)}
               >
                 <button
                   type="button"

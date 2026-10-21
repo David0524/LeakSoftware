@@ -542,6 +542,7 @@
         // Glass can't be drawn off screen, so screenshots show the flat look of iOS 18 to 25.
         let content = view.environment(\.dynamicTypeSize, largeText ? .accessibility2 : .large)
             .environment(\.drawsGlass, false)
+            .environment(\.drawsLiveMaps, false)
         window.rootViewController = UIHostingController(rootView: content)
         window.makeKeyAndVisible()
         // Let SwiftUI load data (.task) and settle, then lay out once more.
@@ -995,7 +996,8 @@
                 customerDetail(
                     env.session.sync.store, companyId: "c1", customerId: maria, timeZone: "America/Phoenix"))
             let pool = try #require(detail.pools.first)
-            try await snapshot("45-pool-details", height: 1400, PoolSheet(pool: pool, saved: {}).app(env))
+            try await snapshot(
+                "45-pool-details", height: 1400, PoolSheet(propertyId: pool.id, row: pool.row, saved: {}).app(env))
         }
 
         /// Maintenance plans (spec 5.5 and 5.9): a customer's plan on their page, the plan sheet,

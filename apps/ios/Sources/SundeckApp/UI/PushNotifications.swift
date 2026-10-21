@@ -128,7 +128,14 @@
                                 kind.label, detail: kind.hint,
                                 isOn: Binding(
                                     get: { form.isOn(kind.key) },
-                                    set: { on in Task { await form.set(kind.key, on, api: app.api) } }))
+                                    set: { on in
+                                        Task {
+                                            await form.set(kind.key, on, api: app.api)
+                                            // Live Activity: ends it, or starts it at once during
+                                            // the workday.
+                                            if kind.key == .live { app.liveStop.check() }
+                                        }
+                                    }))
                         }
                     }
                     if let error = form.error { Notice(kind: .error, text: error) }
@@ -141,6 +148,7 @@
                 self.form = form
                 await checkSystem()
                 await form.load(app.api)
+                app.liveStop.check()
             }
             .onChange(of: scenePhase) { _, phase in
                 if phase == .active { Task { await checkSystem() } }

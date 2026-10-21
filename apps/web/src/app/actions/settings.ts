@@ -19,6 +19,7 @@ import {
   INSPECTION_SECTIONS,
   optionsFromText,
   type ChecklistSection,
+  TECH_COLORS,
 } from "@leakbook/core";
 import { OWNER_ONLY, requireManager, requireOwner } from "@/lib/auth";
 import { friendlyDbError, isWebUrl } from "@/lib/limits";
@@ -400,6 +401,24 @@ export async function updateMember(_: FormState, form: FormData): Promise<FormSt
   // Turning a teammate off or on changes the people billed.
   after(() => syncSubscriptionPrice(office.company.id).catch(logPriceSyncError));
   return done("/settings/team");
+}
+
+/**
+ * A teammate's color (Settings › Team, owner 2026-10-20): one of the palette's keys. Owners and
+ * admins.
+ */
+export async function setMemberColor(input: { id: string; color: string }): Promise<FormState> {
+  const { office, supabase } = await owner();
+  if (!TECH_COLORS.some((c) => c.key === input.color)) return { error: "Pick one of the colors." };
+  const { error } = await supabase
+    .from("membership")
+    .update({ color: input.color })
+    .eq("company_id", office.company.id)
+    .eq("id", input.id);
+  if (error) return failed(error);
+  // Every screen that names a tech shows their dot.
+  revalidatePath("/", "layout");
+  return { message: "Color changed." };
 }
 
 // ---------------------------------------------------------------------------

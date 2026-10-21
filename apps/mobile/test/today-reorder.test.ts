@@ -96,7 +96,10 @@ describe("which stops can move (the shared rule, core todayStopLock and todayMov
     const lock = (over: Partial<ReorderStop>) =>
       reorderRows([stop("a", "09:00", over)], today, TZ)[0]!.lock;
     expect(lock({ status: "in_progress" })).toBe("Started");
-    expect(lock({ arrival_fixed: true })).toMatch(/^Promised for 9:00\sAM$/u);
+    expect(lock({ arrival_fixed: true })).toBe("Locked");
+    expect(lock({ lock_time: true })).toBe("Time locked");
+    // A day lock stays on its day but may change its place in it.
+    expect(lock({ lock_day: true })).toBeNull();
     expect(lock({ stop_done_on: today })).toBe("Done");
     expect(lock({ status: "done" })).toBe("Done");
     // The main tech's day too, not only the second tech's.
@@ -127,7 +130,7 @@ describe("which stops can move (the shared rule, core todayStopLock and todayMov
     expect(by.s).toMatchObject({ canUp: false, canDown: false, canLater: false });
     // Right after the started stop: nowhere to go up to.
     expect(by.a).toMatchObject({ lock: null, canUp: false, canDown: true, canLater: true });
-    expect(by.p?.lock).toMatch(/^Promised for/u);
+    expect(by.p?.lock).toBe("Locked");
     expect(by.p).toMatchObject({ canUp: false, canDown: false });
     // The last stop still to do: up only (it can go above a promised one), no Do Later.
     expect(by.b).toMatchObject({ canUp: true, canDown: false, canLater: false });
@@ -160,11 +163,12 @@ describe("dragging", () => {
 });
 
 describe("the move", () => {
-  it("Do Later puts the stop after every stop still to do and says when", () => {
+  it("Do Later puts the stop after every stop still to do and says so", () => {
     const stops = day();
     const change = move(stops, "a", "later");
     expect(change.error).toBeUndefined();
-    expect(change.message).toMatch(/^Moved to \d{1,2}:\d{2}\sPM\./u);
+    // No clock times (owner, 2026-10-21).
+    expect(change.message).toBe("Moved.");
     expect(orderAfter(stops, change.updates)).toEqual(["b", "c", "d", "a"]);
     // Same tech, same day.
     expect(change.updates.find((u) => u.id === "a")?.scheduled_start?.startsWith(today)).toBe(true);
@@ -190,7 +194,7 @@ describe("the move", () => {
     expect(change.updates.find((u) => u.id === "p")?.scheduled_start).toBeUndefined();
     expect(orderAfter(stops, change.updates)).toEqual(["s", "p", "b", "a"]);
     expect(move(stops, "s", "later").error).toBe("Started, so it stays where it is.");
-    expect(move(stops, "p", "later").error).toMatch(/^Promised for 11:00\sAM, so it stays/u);
+    expect(move(stops, "p", "later").error).toBe("Locked, so it stays where it is.");
     expect(move(stops, "b", 0).updates.length).toBeGreaterThan(0);
     // Nothing goes above the started stop: place 0 is right after it.
     expect(orderAfter(stops, move(stops, "b", 0).updates)[0]).toBe("s");

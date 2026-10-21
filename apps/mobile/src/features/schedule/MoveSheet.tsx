@@ -5,6 +5,7 @@ import { Button, Group, Notice, T } from "../../ui/components";
 import { ModalSheet, useUnsavedChanges } from "../../ui/ModalSheet";
 import { useMenu } from "../../ui/Select";
 import { color, MAX_TEXT_SCALE, minTap, space, type } from "../../ui/theme";
+import { TechDot } from "../../ui/TechDot";
 import { WebIcon } from "../../ui/WebIcon";
 import { DatePicker } from "./Calendar";
 import { formChanged } from "../../lib/discard";
@@ -17,10 +18,13 @@ import { jobDateError } from "../../lib/limits";
 function ValueRow({
   label,
   value,
+  dot,
   onPress,
 }: {
   label: string;
   value: string;
+  /** A tech's color key, as their dot before the name. */
+  dot?: string | null;
   onPress: () => void;
 }) {
   return (
@@ -31,10 +35,13 @@ function ValueRow({
       android_ripple={{ color: color.ripple }}
       style={({ pressed }) => [styles.row, pressed && { backgroundColor: color.rowPressed }]}
     >
-      <T>{label}</T>
+      <T style={styles.label}>{label}</T>
+      {/* A long value ("After Lebron James (8:00 AM)", a long name, large text) wraps to two
+          lines and the row grows to fit it, never clipped (owner, 2026-10-20). */}
       <View style={styles.value}>
+        {dot !== undefined ? <TechDot tech={dot} /> : null}
         <Text
-          numberOfLines={1}
+          numberOfLines={2}
           style={[type.body, { color: color.link, flexShrink: 1, textAlign: "right" }]}
           maxFontSizeMultiplier={MAX_TEXT_SCALE}
         >
@@ -66,7 +73,7 @@ export function MoveSheet({
   onMove,
 }: {
   job: MoveTarget | null;
-  techs: { id: string; name: string }[];
+  techs: { id: string; name: string; color?: string | null }[];
   /** Managers may leave a job with nobody (it waits in Needs a Time). */
   manager: boolean;
   today: string;
@@ -110,7 +117,7 @@ function MoveForm({
   onMove,
 }: {
   job: MoveTarget;
-  techs: { id: string; name: string }[];
+  techs: { id: string; name: string; color?: string | null }[];
   manager: boolean;
   today: string;
   placesFor: (
@@ -150,6 +157,7 @@ function MoveForm({
         <ValueRow
           label="Tech"
           value={techName}
+          dot={tech ? (techs.find((t) => t.id === tech)?.color ?? null) : undefined}
           onPress={() =>
             menu.open({
               title: "Tech",
@@ -159,6 +167,7 @@ function MoveForm({
                   : []),
                 ...techs.map((t) => ({
                   label: t.name,
+                  dot: t.color ?? null,
                   checked: t.id === tech,
                   onPress: () => {
                     setTech(t.id);
@@ -283,8 +292,10 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
     gap: space["3"],
     paddingHorizontal: space["4"],
-    paddingVertical: 6,
+    // A grouped row's own padding, so a two-line value has room above and below.
+    paddingVertical: 11,
   },
+  label: { flexShrink: 1 },
   value: {
     flexDirection: "row",
     alignItems: "center",

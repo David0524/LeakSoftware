@@ -234,27 +234,95 @@ public func exclusionItems(_ store: LocalStore, companyId: String) -> [ConfigIte
 
 /// A person on the team: name (or email), email, role, and whether they're turned off.
 public struct SettingsTeamMember: Identifiable, Equatable, Sendable {
+    /// The membership row.
     public var id: String
     public var userId: String
     public var name: String
     public var email: String?
+    /// "Tech", or "Admin · Turned off".
     public var value: String
     public var isMe: Bool
+    /// "owner", "admin" or "tech".
+    public var role: String = "tech"
+    public var active: Bool = true
+    /// When they were turned off (`membership.disabled_at`).
+    public var disabledAt: String?
+    public var color: TechColor = .slate
+}
+
+extension SettingsTeamMember: TeamOrdered {
+    public var orderName: String? { name }
+    public var orderStatus: String { active ? "active" : "disabled" }
+    public var orderDisabledAt: String? { disabledAt }
 }
 
 public func teamMembers(_ store: LocalStore, kv: KeyValue, companyId: String, me: String?) -> [SettingsTeamMember] {
     let profiles = Dictionary(kv.team.map { ($0.id, $0) }, uniquingKeysWith: { a, _ in a })
-    return ((try? store.list("membership", companyId: companyId)) ?? [])
-        .filter { $0["status"]?.string != "removed" }
+    let rows = ((try? store.list("membership", companyId: companyId)) ?? []).filter {
+        $0["status"]?.string != "removed"
+    }
+    let colors = memberColors(rows)
+    return
+        rows
         .map { m in
             let user = m["user_id"]?.string ?? ""
             let profile = profiles[user]
+            let off = m["status"]?.string == "disabled"
             return SettingsTeamMember(
                 id: m.id, userId: user, name: profile?.displayName ?? "Teammate", email: profile?.email,
-                value: roleLabel(m["role"]?.string) + (m["status"]?.string == "disabled" ? " · Turned off" : ""),
-                isMe: user == me)
+                value: roleLabel(m["role"]?.string) + (off ? " · Turned off" : ""),
+                isMe: user == me, role: m["role"]?.string ?? "tech", active: !off,
+                disabledAt: m["disabled_at"]?.string, color: colors[user] ?? .slate)
         }
         .sorted { $0.name.localizedCaseInsensitiveCompare($1.name) == .orderedAscending }
+}
+
+/// Settings › Team as one list (owner, 2026-10-20: "Put the active techs on top - alphabetical
+/// and the inactive beneath them - in order of departure"; core `teamOrder`).
+public func teamSections(_ members: [SettingsTeamMember]) -> (active: [SettingsTeamMember], off: [SettingsTeamMember]) {
+    teamOrder(members)
+}
+
+/// Settings › Team's words (the website's).
+public enum TeamText {
+    public static let active = "Active"
+    public static let off = "Turned Off"
+    public static let without = "Without the App"
+    public static let on = "On"
+    public static let role = "Role"
+    public static let color = "Color"
+    public static let turnOff = "Turn Off"
+    public static let ownerOnly = "Only the shop owner can change roles."
+    public static let yourself = "You can’t turn yourself off."
+    public static let footer =
+        "Turned-off people can’t sign in. Invite people from the website."
+
+    /// "Turn off Tony Tech? They can't sign in, and their coming jobs stay as they are."
+    public static func turnOffQuestion(_ name: String) -> String {
+        "Turn off \(name)? They can’t sign in, and their coming jobs stay as they are."
+    }
+}
+
+/// Settings › Team's writes on a membership, through the sync layer (owners and admins; only
+/// owners change roles, and the database checks both again).
+@MainActor
+public enum TeamWrites {
+    /// The On/Off switch: "active" or "disabled" (the database sets `disabled_at`).
+    public static func setActive(_ sync: SyncService, companyId: String, membershipId: String, _ on: Bool) throws {
+        try sync.write(
+            "membership", id: membershipId, companyId: companyId, ["status": .string(on ? "active" : "disabled")])
+    }
+
+    /// Role and Color from a member's profile; nil leaves that one as it is.
+    public static func save(
+        _ sync: SyncService, companyId: String, membershipId: String, role: String?, color: TechColor?
+    ) throws {
+        var values: Row = [:]
+        if let role { values["role"] = .string(role) }
+        if let color { values["color"] = .string(color.rawValue) }
+        guard !values.isEmpty else { return }
+        try sync.write("membership", id: membershipId, companyId: companyId, values)
+    }
 }
 
 /// The list pages' subtitles, as the website's.

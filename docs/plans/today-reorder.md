@@ -13,7 +13,7 @@ and behavior.
      trailing swipe action on phones (the button is the visible alternative to the swipe).
    - On the Today card for the stop you're on, in the Up next and On the way moments, as a
      secondary button beside Call and Directions.
-   - Afterwards, where the button was, for 5 seconds: "Moved to {time}" and an **Undo** pill (the
+   - Afterwards, where the button was, for 5 seconds: "Moved" and an **Undo** pill (the
      same inline undo as Mark Remaining; not a toast).
 2. **Reorder** for the whole day: a **Reorder** button at the end of the day's summary line
    ("6 stops · 1 hr 15 min driving · back by 3:14 PM · Reorder").
@@ -28,7 +28,7 @@ and behavior.
 - Both use the Schedule's existing move (`moveJobChange` in packages/core/src/schedule-moves.ts,
   ported in apps/ios/Sources/SundeckCore/ScheduleMoves.swift): same tech, same day, a new place in
   the route. Do Later is the place after the last stop; Move Up and Move Down are one place up or
-  down. Its rules apply unchanged: promised times never move, started jobs stay on the schedule,
+  down. Its rules apply unchanged: time-locked stops (Time or Both) never move, started jobs stay on the schedule,
   stops after a moved one move later only when they must, and techs move only their own jobs.
   Its messages are shown as they are.
 - Can't move: done stops (folded away already) and started jobs (in progress). Owners and admins
@@ -43,5 +43,6 @@ and behavior.
 ## Words
 
 - Do Later, Reorder, Done, Move Up, Move Down, Undo (Title Case buttons).
-- After Do Later: "Moved to 2:15 PM" (the move's own message when it has one).
-- A stop that can't move, in Reorder: "Started" or "Promised for 9:00 AM" beside the lock.
+- After Do Later: "Moved" (the move's own message; no clock times since the owner's 2026-10-21
+  decision).
+- A stop that can't move, in Reorder: "Started", "Locked", "Time locked" or "Two techs" beside the lock (the lock icons' words, no clock time; a Day lock alone can move within its day).

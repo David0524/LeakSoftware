@@ -4,14 +4,16 @@
 // times never move, started jobs stay on the schedule, and stops after a moved job move later
 // only when they must. Pure: callers load the jobs and drive times and save the rows.
 
-import { addDays, formatTime } from "./office";
+import { addDays } from "./office";
 import { dateFormat } from "./intl";
 import {
   canMoveJob,
   canUnschedule,
+  jobLock,
   jobMinutes,
   localMinutes,
   lockReason,
+  LOCK_LABELS,
   propertyLocation,
   routeUpdates,
   stopFor,
@@ -53,13 +55,25 @@ export interface JobChange {
   status?: string;
   assigned_user_id?: string | null;
   arrival_fixed?: boolean;
+  lock_day?: boolean;
+  lock_time?: boolean;
 }
 
 export interface ScheduleChange {
   updates: JobChange[];
-  /** What happened, for the status line ("Moved to 9:15 AM."). */
+  /** What happened, one short line for the banner ("Moved to 9:15 AM."). */
   message?: string;
+  /** What to watch for, a second smaller line (owner, 2026-10-20: the banner at the top). */
+  detail?: string;
   error?: string;
+}
+
+/** "Driving to pools not on the map isn’t counted." from notes, or undefined. */
+export function noteSentences(notes: (string | null | false | undefined)[]): string | undefined {
+  const list = notes.filter((n): n is string => !!n);
+  return list.length
+    ? list.map((n) => `${n.charAt(0).toUpperCase()}${n.slice(1)}.`).join(" ")
+    : undefined;
 }
 
 function dayStops(ctx: PlanContext, techId: string, date: string, jobs: PlanJob[]) {
@@ -74,7 +88,7 @@ function dayStops(ctx: PlanContext, techId: string, date: string, jobs: PlanJob[
 }
 
 /**
- * Plan Route: order a tech's day (its jobs in route order) for the least driving, keep
+ * Optimize (once Plan Route): order a tech's day (its jobs in route order) for the least driving, keep
  * promised times, and say what changed.
  */
 export function planDay(
@@ -93,23 +107,17 @@ export function planDay(
   const planned = order.map((i) => stops[i]!);
   const updates = routeUpdates(date, ctx.timeZone, planned, route);
   const saved = before.driveMin - route.driveMin;
-  const parts = [
-    `Planned: ${durationLabel(route.driveMin)} of driving`,
-    saved > 0 ? `${durationLabel(saved)} less than before` : null,
-    `back at the shop by ${minutesLabel(route.backMin)}`,
-  ].filter(Boolean);
-  const warnings = [
-    route.overtimeMin ? `runs ${durationLabel(route.overtimeMin)} past the end of the day` : null,
-    route.lateMin ? `a fixed time can’t be met (${durationLabel(route.lateMin)} late)` : null,
-    stops.some((s) => !s.location)
-      ? "some pools have no location, so driving to them isn’t counted"
-      : null,
+  // One short line for the banner at the top of the screen (owner, 2026-10-20: the note under
+  // the button "looks horrible"), and what to watch for as a second line, as the website says.
+  const message = [
+    "Optimized",
+    saved > 0 ? `${durationLabel(saved)} less driving` : `${durationLabel(route.driveMin)} driving`,
+  ].join(" · ");
+  const detail = noteSentences([
+    stops.some((s) => !s.location) ? "driving to pools not on the map isn’t counted" : null,
     !ctx.depot ? "the shop has no location (Settings › Scheduling)" : null,
-  ].filter(Boolean);
-  return {
-    updates,
-    message: `${parts.join(", ")}.${warnings.length ? ` Note: ${warnings.join("; ")}.` : ""}`,
-  };
+  ]);
+  return detail ? { updates, message, detail } : { updates, message };
 }
 
 /** Close up the order numbers of the day a job left (times stay as they are). */
@@ -183,8 +191,11 @@ export function moveJobChange(ctx: PlanContext, input: MoveInput, drive: DriveFn
   }
 
   const duration = jobMinutes(job, ctx.settings);
+  // A time lock keeps its clock time on the new day (owner, 2026-10-20), as moveJob on the
+  // website does.
+  const lock = jobLock(job);
   const fixedMin =
-    job.arrival_fixed && job.scheduled_start
+    (lock === "time" || lock === "both") && job.scheduled_start
       ? localMinutes(job.scheduled_start, ctx.timeZone)
       : null;
 
@@ -243,15 +254,11 @@ export function moveJobChange(ctx: PlanContext, input: MoveInput, drive: DriveFn
     ).toISOString();
   }
   const stayed = from?.tech === tech && from?.date === date;
-  const t = route.stops[index]!;
-  const notes = [
-    t.lateMin ? `it can’t make its fixed time (${durationLabel(t.lateMin)} late)` : null,
-    route.overtimeMin ? `the day runs ${durationLabel(route.overtimeMin)} late` : null,
-    route.lateMin - t.lateMin > 0 ? "a fixed time after it can’t be met" : null,
-  ].filter(Boolean);
+  // No times and no lateness (owner, 2026-10-21: "I don't care about days running late …
+  // times are pretty irrelevant in this business").
   return {
     updates: [mine, ...updates.filter((u) => u !== mine), ...leaving(stayed)],
-    message: `Moved to ${minutesLabel(t.startMin)}.${notes.length ? ` Note: ${notes.join("; ")}.` : ""}`,
+    message: "Moved.",
   };
 }
 
@@ -264,7 +271,7 @@ export interface TodayMoveStop {
   id: string;
   /** Done for the day (folded away): stays where it is, and nothing moves above it. */
   done: boolean;
-  /** Why it can't move ("Started", "Promised for 9:00 AM"), or null. */
+  /** Why it can't move ("Started", "Locked", "Time locked"), or null. */
   lock: string | null;
   /** In progress: nothing moves above it. */
   started: boolean;
@@ -272,17 +279,14 @@ export interface TodayMoveStop {
 
 /**
  * Why a stop on Today can't move, in Reorder's words, or null when it can: a started job is in
- * progress, a promised time never moves, and a two-tech job is in two routes.
+ * progress, a time lock (Time or Both) keeps its clock time, and a two-tech job is in two routes.
+ * A day lock alone stays on its day but may change its place in it (owner, 2026-10-20: locks by
+ * day, time, or both), so it can move here. The words are the lock icons' ("Locked", "Time
+ * locked"), with no clock time (owner, 2026-10-21).
  */
-export function todayStopLock(job: PlanJob, timeZone: string): string | null {
+export function todayStopLock(job: PlanJob, _timeZone?: string): string | null {
   const lock = lockReason(job);
-  if (lock === "started") return "Started";
-  if (lock === "fixed")
-    return job.scheduled_start
-      ? `Promised for ${formatTime(job.scheduled_start, timeZone)}`
-      : "Promised time";
-  if (lock === "two_techs") return "Two techs";
-  return null;
+  return lock ? LOCK_LABELS[lock] : null;
 }
 
 /** Do Later (last of the stops still to do), Move Up, Move Down, or a place (0 = first to do). */
@@ -334,6 +338,8 @@ const CHANGE_FIELDS = [
   "status",
   "assigned_user_id",
   "arrival_fixed",
+  "lock_day",
+  "lock_time",
 ] as const;
 
 const sameValue = (key: string, a: unknown, b: unknown) =>

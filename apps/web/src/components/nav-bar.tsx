@@ -1,10 +1,35 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useRef, useState, type ReactNode } from "react";
+import { useEffect, useRef, useState, useSyncExternalStore, type ReactNode } from "react";
 
 // Local helper: ui.tsx renders NavBar, so importing from it here would be circular.
 const cx = (...parts: (string | false | null | undefined)[]) => parts.filter(Boolean).join(" ");
+
+/** Pages that keep the large-title bar as it is (no collapse while they're shown). */
+let stills = 0;
+const listeners = new Set<() => void>();
+const subscribe = (f: () => void) => {
+  listeners.add(f);
+  return () => void listeners.delete(f);
+};
+
+/**
+ * Keep the navigation bar from collapsing to its small title while `on` (owner, 2026-10-20:
+ * "When on the findings page, it doesn't make sense for the nav bar to shrink on scroll since
+ * it's sitting on a tile").
+ */
+export function useStillNavBar(on: boolean) {
+  useEffect(() => {
+    if (!on) return;
+    stills += 1;
+    listeners.forEach((f) => f());
+    return () => {
+      stills -= 1;
+      listeners.forEach((f) => f());
+    };
+  }, [on]);
+}
 
 /**
  * Phones: the iOS navigation bar (toolbars.md › large titles). The page's large title sits in
@@ -29,7 +54,12 @@ export function NavBar({
   back?: { href: string; label: string };
   action?: ReactNode;
 }) {
-  const [collapsed, setCollapsed] = useState(false);
+  const [past, setPast] = useState(false);
+  const still = useSyncExternalStore(
+    subscribe,
+    () => stills > 0,
+    () => false,
+  );
   const actionRef = useRef<HTMLDivElement>(null);
   // Beside the action, unless a word of the title can't fit there (very large text): then it
   // takes its own row under the bar, as with Back.
@@ -39,14 +69,21 @@ export function NavBar({
     const el = document.getElementById(titleId);
     if (!el) return;
     // Under the bar, the title has gone once it passes under it; in the bar's row, once half
-    // of it has scrolled off the top.
+    // of it has scrolled off the top. A page whose content fits (it can't scroll the title
+    // away) never collapses; only a real scroll past the large title does.
     const io = new IntersectionObserver(
-      ([e]) => setCollapsed(inline ? e!.intersectionRatio < 0.5 : !e!.isIntersecting),
+      ([e]) =>
+        setPast(
+          (inline ? e!.intersectionRatio < 0.5 : !e!.isIntersecting) &&
+            document.documentElement.scrollHeight - window.innerHeight >
+              el.getBoundingClientRect().height + (inline ? 0 : 52),
+        ),
       inline ? { threshold: [0, 0.5, 1] } : { rootMargin: "-52px 0px 0px 0px" },
     );
     io.observe(el);
     return () => io.disconnect();
   }, [titleId, inline]);
+  const collapsed = past && !still;
   useEffect(() => {
     const el = document.getElementById(titleId);
     const row = el?.closest<HTMLElement>("[data-page-header]");
@@ -113,7 +150,10 @@ export function NavBar({
         <p
           aria-hidden={!collapsed}
           className={cx(
-            "truncate text-[1.0625rem] font-semibold transition-opacity",
+            // The large title's face at 17 pt, so the title reads the same scrolled or not
+            // (owner, 2026-10-20: "'Schedule' has different fonts depending on if the map is
+            // hidden or not").
+            "truncate font-display text-[1.0625rem] font-bold transition-opacity",
             // Hidden, it takes no room, so "‹ Jobs" shows in full above the large title.
             collapsed ? "max-w-[55vw] opacity-100" : "max-w-0 opacity-0",
           )}

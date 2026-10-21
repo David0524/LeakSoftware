@@ -15,6 +15,7 @@ import {
   Toggle,
 } from "../../ui/components";
 import { haptics } from "../../ui/haptics";
+import { useRowMenu } from "../../ui/RowMenu";
 import { EditSheet, FormActions, ManagersOnly, SettingsList, useEditSheet } from "./SettingsList";
 import { formChanged } from "../../lib/discard";
 import { useUnsavedChanges } from "../../ui/ModalSheet";
@@ -52,6 +53,8 @@ function TestTypesPage() {
   const company = useCompany();
   const types = useConfig<TestType>("test_type", company.id);
   const sheet = useEditSheet<TestType>();
+  // Touch and hold a row for Edit and its delete (gestures spec section 12).
+  const menu = useRowMenu();
   return (
     <>
       <SettingsList
@@ -69,6 +72,7 @@ function TestTypesPage() {
               subtitle={t.calculator ? "Calculates the result" : undefined}
               detail={t.active ? undefined : "Off"}
               onPress={() => sheet.open(t)}
+              editMenu={{ menu, title: t.name }}
               // Swipe to remove; the row's sheet keeps its visible Remove button.
               deleteLabel="Remove Test Type"
               onDelete={() =>
@@ -82,6 +86,7 @@ function TestTypesPage() {
           ))}
         </Group>
       </SettingsList>
+      {menu.element}
       <EditSheet
         open={sheet.editing != null}
         title={sheet.editing === "new" ? "Add Test Type" : (sheet.editing?.name ?? "")}

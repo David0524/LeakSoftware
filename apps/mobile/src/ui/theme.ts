@@ -85,6 +85,9 @@ function palette(scheme: Scheme) {
     placeholder: role.placeholder,
     thumb: role.thumb,
     ...status,
+    // Tech colors (Settings › Team; team and week spec section 3), by palette key, each at
+    // least 3:1 on the surface in its mode.
+    tech: dark ? tokens.color.tech.dark : tokens.color.tech.light,
     // Brand colors used directly (pool outline, logo dot, app icon, video letterbox).
     navy: tokens.color.brand.navy,
     water: tokens.color.brand.water,
@@ -215,6 +218,9 @@ export const type = {
     textTransform: "uppercase",
   },
   navTitle: { ...face.semiBold, fontSize: 17, lineHeight: 22 },
+  /** A screen's title once it collapses into the bar: the large title's own face, so the
+   *  title never changes typeface between its two states (owner, 2026-10-20). */
+  barTitle: { fontFamily: font.displayBold, fontSize: 18, lineHeight: 22 },
   body: { ...face.regular, fontSize: 17, lineHeight: 25.5 },
   bodyEmphasis: { ...face.semiBold, fontSize: 17, lineHeight: 25.5 },
   bodyMedium: { ...face.medium, fontSize: 17, lineHeight: 25.5 },

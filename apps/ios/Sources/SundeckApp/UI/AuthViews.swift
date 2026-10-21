@@ -397,11 +397,8 @@
                         "Connect to the internet once so this phone can download your company. After that, it works without signal."
                 )
             } else {
-                HStack(spacing: 12) {
-                    ProgressView()
-                    Text("Downloading your company…").textRole(.body).foregroundStyle(Color.text)
-                }
-                .frame(maxWidth: .infinity, minHeight: minTarget)
+                // A pool that fills to the real progress (owner, 2026-10-20; gestures section 11).
+                DownloadProgressView(download: sync.status.download)
             }
             if let message = sync.status.error { Notice(kind: .error, text: message) }
             Button("Try Again") { Task { await sync.syncNow() } }

@@ -150,8 +150,8 @@ test.describe("Today: change the order of stops", () => {
 
     await a.getByRole("button", { name: `Show ${stopName("A")}` }).click();
     await a.getByRole("button", { name: `Do Later for ${stopName("A")}` }).click();
-    // In its place for five seconds: where it went, and Undo.
-    const notice = a.getByRole("status").filter({ hasText: /Moved to \d{1,2}:\d\d\s?[AP]M/ });
+    // In its place for five seconds: "Moved" (no clock times, owner 2026-10-21), and Undo.
+    const notice = a.getByRole("status").filter({ hasText: /^Moved/ });
     await expect(notice).toBeVisible();
     await expect.poll(() => order(page)).toBe("BCA");
     expect(await lastStop(page)).toContain(stopName("A"));

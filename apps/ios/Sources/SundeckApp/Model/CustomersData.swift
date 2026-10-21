@@ -76,6 +76,8 @@ public struct CustomerListItem: Identifiable, Equatable, Sendable {
     /// The last visit's time (finished, else scheduled), not in the future.
     public var lastVisit: String?
     public var createdAt: String?
+    /// The first pool with an address, for the row's Directions.
+    public var place: MapPlace? = nil
 
     /// The phone, else the email, else "No contact details" (phones show one line).
     public var contactLine: String { phone ?? email ?? "No contact details" }
@@ -119,7 +121,12 @@ public func customerList(
             kind: c["kind"]?.string, phone: trimmed(c["phone"]), email: trimmed(c["email"]),
             addresses: pools.compactMap(decodeProperty).map(formatAddress).filter { !$0.isEmpty },
             city: pools.compactMap { trimmed($0["city"]) }.first, hasPlan: plans.contains(c.id),
-            lastVisit: lastVisit[c.id], createdAt: c["created_at"]?.string)
+            lastVisit: lastVisit[c.id], createdAt: c["created_at"]?.string,
+            place: pools.lazy.compactMap { p -> MapPlace? in
+                guard let decoded = decodeProperty(p) else { return nil }
+                let address = formatAddress(decoded)
+                return address.isEmpty ? nil : MapPlace(address: address, location: propertyLocation(decoded))
+            }.first)
     }
     if !term.isEmpty {
         rows = rows.filter { c in

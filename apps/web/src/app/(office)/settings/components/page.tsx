@@ -326,6 +326,13 @@ export default async function ComponentsPage({ searchParams }: PageProps<"/setti
           {g.rows.map((t) => (
             <SheetRow
               key={t.id}
+              remove={{
+                table: "component_type",
+                id: t.id,
+                path: "/settings/components",
+                confirm: `Remove this ${kind === "inspection" ? "question" : "component"} from new ${kind === "pool" ? "visits" : "checklists"}?`,
+                confirmLabel: "Remove Component",
+              }}
               title={t.name}
               label={t.name}
               detail={

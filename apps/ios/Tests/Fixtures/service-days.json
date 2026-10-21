@@ -1,0 +1,690 @@
+{
+  "serviceDays": [
+    {
+      "args": [
+        {
+          "starts_on": "2026-10-05",
+          "interval_weeks": 1,
+          "weekdays": null,
+          "monthly": false,
+          "ends_on": null,
+          "paused": false
+        }
+      ],
+      "result": [
+        1
+      ]
+    },
+    {
+      "args": [
+        {
+          "starts_on": "2026-10-05",
+          "interval_weeks": 1,
+          "weekdays": [
+            4,
+            1
+          ],
+          "monthly": false,
+          "ends_on": null,
+          "paused": false
+        }
+      ],
+      "result": [
+        1,
+        4
+      ]
+    },
+    {
+      "args": [
+        {
+          "starts_on": "2026-10-05",
+          "interval_weeks": 1,
+          "weekdays": [],
+          "monthly": false,
+          "ends_on": null,
+          "paused": false
+        }
+      ],
+      "result": [
+        1
+      ]
+    },
+    {
+      "args": [
+        {
+          "starts_on": "2026-10-11",
+          "interval_weeks": 1,
+          "weekdays": [
+            6,
+            0,
+            3
+          ],
+          "monthly": false,
+          "ends_on": null,
+          "paused": false
+        }
+      ],
+      "result": [
+        0,
+        3,
+        6
+      ]
+    }
+  ],
+  "moveServiceDay": [
+    {
+      "args": [
+        {
+          "starts_on": "2026-10-05",
+          "interval_weeks": 1,
+          "weekdays": null,
+          "monthly": false,
+          "ends_on": null,
+          "paused": false
+        },
+        1,
+        4,
+        "2026-10-21"
+      ],
+      "result": {
+        "starts_on": "2026-10-22",
+        "weekdays": null
+      }
+    },
+    {
+      "args": [
+        {
+          "starts_on": "2026-10-05",
+          "interval_weeks": 1,
+          "weekdays": null,
+          "monthly": false,
+          "ends_on": null,
+          "paused": false
+        },
+        1,
+        3,
+        "2026-10-21"
+      ],
+      "result": {
+        "starts_on": "2026-10-21",
+        "weekdays": null
+      }
+    },
+    {
+      "args": [
+        {
+          "starts_on": "2026-10-05",
+          "interval_weeks": 1,
+          "weekdays": null,
+          "monthly": false,
+          "ends_on": null,
+          "paused": false
+        },
+        1,
+        1,
+        "2026-10-21"
+      ],
+      "result": {
+        "starts_on": "2026-10-26",
+        "weekdays": null
+      }
+    },
+    {
+      "args": [
+        {
+          "starts_on": "2026-10-05",
+          "interval_weeks": 2,
+          "weekdays": null,
+          "monthly": false,
+          "ends_on": null,
+          "paused": false
+        },
+        1,
+        2,
+        "2026-10-19"
+      ],
+      "result": {
+        "starts_on": "2026-10-20",
+        "weekdays": null
+      }
+    },
+    {
+      "args": [
+        {
+          "starts_on": "2026-10-05",
+          "interval_weeks": 2,
+          "weekdays": null,
+          "monthly": false,
+          "ends_on": null,
+          "paused": false
+        },
+        1,
+        5,
+        "2026-10-21"
+      ],
+      "result": {
+        "starts_on": "2026-10-30",
+        "weekdays": null
+      }
+    },
+    {
+      "args": [
+        {
+          "starts_on": "2026-10-05",
+          "interval_weeks": 2,
+          "weekdays": null,
+          "monthly": false,
+          "ends_on": null,
+          "paused": false
+        },
+        1,
+        0,
+        "2026-10-21"
+      ],
+      "result": {
+        "starts_on": "2026-11-01",
+        "weekdays": null
+      }
+    },
+    {
+      "args": [
+        {
+          "starts_on": "2026-10-05",
+          "interval_weeks": 2,
+          "weekdays": null,
+          "monthly": false,
+          "ends_on": null,
+          "paused": false
+        },
+        2,
+        1,
+        "2026-10-21"
+      ],
+      "result": {
+        "starts_on": "2026-11-02",
+        "weekdays": null
+      }
+    },
+    {
+      "args": [
+        {
+          "starts_on": "2026-10-05",
+          "interval_weeks": 1,
+          "weekdays": null,
+          "monthly": true,
+          "ends_on": null,
+          "paused": false
+        },
+        1,
+        5,
+        "2026-10-21"
+      ],
+      "result": {
+        "starts_on": "2026-11-06",
+        "weekdays": null
+      }
+    },
+    {
+      "args": [
+        {
+          "starts_on": "2026-10-05",
+          "interval_weeks": 1,
+          "weekdays": null,
+          "monthly": true,
+          "ends_on": null,
+          "paused": false
+        },
+        1,
+        0,
+        "2026-10-21"
+      ],
+      "result": {
+        "starts_on": "2026-11-01",
+        "weekdays": null
+      }
+    },
+    {
+      "args": [
+        {
+          "starts_on": "2026-10-29",
+          "interval_weeks": 1,
+          "weekdays": null,
+          "monthly": true,
+          "ends_on": null,
+          "paused": false
+        },
+        4,
+        1,
+        "2026-10-21"
+      ],
+      "result": {
+        "starts_on": "2026-11-23",
+        "weekdays": null
+      }
+    },
+    {
+      "args": [
+        {
+          "starts_on": "2026-10-26",
+          "interval_weeks": 4,
+          "weekdays": null,
+          "monthly": false,
+          "ends_on": null,
+          "paused": false
+        },
+        1,
+        6,
+        "2026-10-21"
+      ],
+      "result": {
+        "starts_on": "2026-10-24",
+        "weekdays": null
+      }
+    },
+    {
+      "args": [
+        {
+          "starts_on": "2026-10-05",
+          "interval_weeks": 2,
+          "weekdays": null,
+          "monthly": false,
+          "ends_on": null,
+          "paused": true
+        },
+        1,
+        3,
+        "2026-10-21"
+      ],
+      "result": {
+        "starts_on": "2026-11-04",
+        "weekdays": null
+      }
+    },
+    {
+      "args": [
+        {
+          "starts_on": "2026-10-05",
+          "interval_weeks": 2,
+          "weekdays": null,
+          "monthly": false,
+          "ends_on": "2026-10-10",
+          "paused": false
+        },
+        1,
+        3,
+        "2026-10-21"
+      ],
+      "result": {
+        "starts_on": "2026-10-21",
+        "weekdays": null
+      }
+    },
+    {
+      "args": [
+        {
+          "starts_on": "2026-10-05",
+          "interval_weeks": 1,
+          "weekdays": [
+            1,
+            4
+          ],
+          "monthly": false,
+          "ends_on": null,
+          "paused": false
+        },
+        4,
+        3,
+        "2026-10-21"
+      ],
+      "result": {
+        "starts_on": "2026-10-05",
+        "weekdays": [
+          1,
+          3
+        ]
+      }
+    },
+    {
+      "args": [
+        {
+          "starts_on": "2026-10-05",
+          "interval_weeks": 1,
+          "weekdays": [
+            1,
+            4
+          ],
+          "monthly": false,
+          "ends_on": null,
+          "paused": false
+        },
+        4,
+        1,
+        "2026-10-21"
+      ],
+      "result": {
+        "starts_on": "2026-10-05",
+        "weekdays": [
+          1
+        ]
+      }
+    },
+    {
+      "args": [
+        {
+          "starts_on": "2026-10-05",
+          "interval_weeks": 1,
+          "weekdays": [
+            5,
+            1,
+            3
+          ],
+          "monthly": false,
+          "ends_on": null,
+          "paused": false
+        },
+        3,
+        0,
+        "2026-10-21"
+      ],
+      "result": {
+        "starts_on": "2026-10-05",
+        "weekdays": [
+          0,
+          1,
+          5
+        ]
+      }
+    }
+  ],
+  "suggestServiceDays": [
+    {
+      "args": [
+        {
+          "place": [],
+          "keep": [],
+          "techs": [],
+          "workDays": [],
+          "depot": {
+            "lat": 33.45,
+            "lng": -112.07
+          },
+          "day": {
+            "startMin": 480,
+            "endMin": 1020
+          }
+        }
+      ],
+      "result": {
+        "suggestions": [],
+        "left": []
+      }
+    },
+    {
+      "args": [
+        {
+          "place": [
+            {
+              "id": "n0",
+              "techId": null,
+              "days": [],
+              "location": {
+                "lat": 33.65,
+                "lng": -112.07
+              },
+              "durationMin": 120
+            },
+            {
+              "id": "n1",
+              "techId": null,
+              "days": [],
+              "location": {
+                "lat": 33.652,
+                "lng": -112.07
+              },
+              "durationMin": 120
+            },
+            {
+              "id": "n2",
+              "techId": null,
+              "days": [],
+              "location": {
+                "lat": 33.653999999999996,
+                "lng": -112.07
+              },
+              "durationMin": 120
+            },
+            {
+              "id": "s0",
+              "techId": null,
+              "days": [],
+              "location": {
+                "lat": 33.25,
+                "lng": -112.07
+              },
+              "durationMin": 120
+            },
+            {
+              "id": "s1",
+              "techId": null,
+              "days": [],
+              "location": {
+                "lat": 33.248,
+                "lng": -112.07
+              },
+              "durationMin": 120
+            },
+            {
+              "id": "s2",
+              "techId": null,
+              "days": [],
+              "location": {
+                "lat": 33.246,
+                "lng": -112.07
+              },
+              "durationMin": 120
+            },
+            {
+              "id": "nomap",
+              "techId": null,
+              "days": [],
+              "location": null,
+              "durationMin": 30
+            },
+            {
+              "id": "twice",
+              "techId": "t1",
+              "days": [
+                1,
+                4
+              ],
+              "location": {
+                "lat": 33.5,
+                "lng": -112.07
+              },
+              "durationMin": 30
+            }
+          ],
+          "keep": [],
+          "techs": [
+            "t1"
+          ],
+          "workDays": [
+            1,
+            2
+          ],
+          "depot": {
+            "lat": 33.45,
+            "lng": -112.07
+          },
+          "day": {
+            "startMin": 480,
+            "endMin": 1020
+          }
+        }
+      ],
+      "result": {
+        "suggestions": [
+          {
+            "id": "n0",
+            "techId": "t1",
+            "day": 1
+          },
+          {
+            "id": "n1",
+            "techId": "t1",
+            "day": 1
+          },
+          {
+            "id": "n2",
+            "techId": "t1",
+            "day": 1
+          },
+          {
+            "id": "s0",
+            "techId": "t1",
+            "day": 2
+          },
+          {
+            "id": "s1",
+            "techId": "t1",
+            "day": 2
+          },
+          {
+            "id": "s2",
+            "techId": "t1",
+            "day": 2
+          }
+        ],
+        "left": [
+          "nomap",
+          "twice"
+        ]
+      }
+    },
+    {
+      "args": [
+        {
+          "place": [
+            {
+              "id": "a",
+              "techId": "t2",
+              "days": [
+                3
+              ],
+              "location": {
+                "lat": 33.6,
+                "lng": -112.07
+              },
+              "durationMin": 30
+            },
+            {
+              "id": "b",
+              "techId": null,
+              "days": [],
+              "location": {
+                "lat": 33.3,
+                "lng": -111.9
+              },
+              "durationMin": 30
+            },
+            {
+              "id": "c",
+              "techId": "gone",
+              "days": [],
+              "location": {
+                "lat": 33.61,
+                "lng": -112.07
+              },
+              "durationMin": 30
+            },
+            {
+              "id": "d",
+              "techId": null,
+              "days": [],
+              "location": {
+                "lat": 33.62,
+                "lng": -112.07
+              },
+              "durationMin": 600
+            }
+          ],
+          "keep": [
+            {
+              "id": "k1",
+              "techId": "t1",
+              "days": [
+                1
+              ],
+              "location": {
+                "lat": 33.6,
+                "lng": -112.07
+              },
+              "durationMin": 60
+            },
+            {
+              "id": "k2",
+              "techId": "t2",
+              "days": [
+                1,
+                3
+              ],
+              "location": {
+                "lat": 33.3,
+                "lng": -111.9
+              },
+              "durationMin": 60
+            },
+            {
+              "id": "k3",
+              "techId": "t3",
+              "days": [
+                1
+              ],
+              "location": {
+                "lat": 33,
+                "lng": -112.07
+              },
+              "durationMin": 30
+            }
+          ],
+          "techs": [
+            "t1",
+            "t2"
+          ],
+          "workDays": [
+            1,
+            3,
+            5
+          ],
+          "depot": null,
+          "day": {
+            "startMin": 480,
+            "endMin": 1020
+          }
+        }
+      ],
+      "result": {
+        "suggestions": [
+          {
+            "id": "a",
+            "techId": "t2",
+            "day": 5
+          },
+          {
+            "id": "b",
+            "techId": "t1",
+            "day": 3
+          },
+          {
+            "id": "c",
+            "techId": "t1",
+            "day": 5
+          }
+        ],
+        "left": [
+          "d"
+        ]
+      }
+    }
+  ]
+}

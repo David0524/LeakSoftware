@@ -39,6 +39,9 @@ select is(routing_use((select ca from ids), 'matrix', 1, 5), false, 'past the ca
 -- Address suggestions have their own allowance (2026-10-20): typing never uses up routes'.
 select is(routing_use((select ca from ids), 'suggest', 4, 5), true, 'suggestions are counted apart');
 select is(routing_use((select ca from ids), 'suggest', 2, 5), false, 'and stop at their own cap');
+-- Map images too (2026-10-20): maps never use up routes' or suggestions' allowance.
+select is(routing_use((select ca from ids), 'map', 5, 5), true, 'map images are counted apart');
+select is(routing_use((select ca from ids), 'map', 1, 5), false, 'and stop at their own cap');
 select throws_ok(format('select routing_use(%L, ''matrix'', 1, 5)', (select cb from ids)), '42501',
   null, 'only for your own shop');
 

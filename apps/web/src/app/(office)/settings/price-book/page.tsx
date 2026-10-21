@@ -151,6 +151,13 @@ export default async function PriceBookPage() {
             <SheetRow
               key={item.id}
               testId="price-item"
+              remove={{
+                table: "price_book_item",
+                id: item.id,
+                path: "/settings/price-book",
+                confirm: "Remove this item from the price book?",
+                confirmLabel: "Remove Item",
+              }}
               title={item.name}
               label={item.name}
               detail={

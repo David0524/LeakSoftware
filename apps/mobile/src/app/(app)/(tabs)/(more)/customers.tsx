@@ -1,14 +1,19 @@
 import { router } from "expo-router";
-import { formatAddress, offersPool } from "@leakbook/core";
+import { formatAddress, offersPool, propertyLocation } from "@leakbook/core";
 import { useMemo, useState } from "react";
 import { useSyncRefresh } from "../../../../data/hooks";
-import { Animated, RefreshControl, StyleSheet, Text, View } from "react-native";
+import { Animated, Linking, RefreshControl, StyleSheet, Text, View } from "react-native";
 import {
   CUSTOMER_SORTS,
   KIND_PLURALS,
   useCustomerList,
+  type CustomerListRow,
   type CustomerSort,
 } from "../../../../data/customers";
+import { useLine } from "../../../../data/texting";
+import { customerRowActions, menuTitle, type CustomerActionId } from "../../../../lib/rowActions";
+import { openDirections, useDirectionsChoice } from "../../../../state/directions";
+import { rowGestures, useRowMenu } from "../../../../ui/RowMenu";
 import { FlatGroupedRow } from "../../../../features/more/FlatGroupedRow";
 import { useCompany } from "../../../../state/session";
 import { Empty, SearchField, T, useScreenChrome } from "../../../../ui/components";
@@ -18,7 +23,9 @@ import { color, MAX_TEXT_SCALE, space, type } from "../../../../ui/theme";
 
 /**
  * Customers (spec 5.9): search (filters as you type), Sort and Show, then one grouped list,
- * loading as it scrolls. A row opens the customer.
+ * loading as it scrolls. A row opens the customer. Swipe left to Call or Message; touch and
+ * hold for Open, Call, Message and Directions (gestures spec section 12), each as the
+ * customer's page does it.
  */
 export default function Customers() {
   const company = useCompany();
@@ -26,6 +33,26 @@ export default function Customers() {
   const [sort, setSort] = useState<CustomerSort>("name");
   const [show, setShow] = useState("all");
   const rows = useCustomerList(company.id, search, sort, show);
+  const line = useLine(company.id);
+  const [choice] = useDirectionsChoice();
+  const menu = useRowMenu();
+
+  /** The customer page's own Call, Text and Get Directions. */
+  function gesturesFor(c: CustomerListRow) {
+    const pool = c.properties.find((p) => p.address_line1);
+    const actions = customerRowActions({ phone: c.phone, hasPoolAddress: Boolean(pool) });
+    const run = (id: CustomerActionId) => {
+      if (id === "open") router.push(`/customers/${c.id}`);
+      if (id === "call" && c.phone) void Linking.openURL(`tel:${c.phone}`);
+      if (id === "message" && c.phone) {
+        if (line?.status === "active") router.push(`/messages/new?customer=${c.id}`);
+        else void Linking.openURL(`sms:${c.phone.replace(/[^\d+]/g, "")}`);
+      }
+      if (id === "directions" && pool)
+        openDirections({ address: formatAddress(pool), location: propertyLocation(pool) }, choice);
+    };
+    return rowGestures(actions, run, () => menu.open(menuTitle(c.name), actions.menu, run));
+  }
   const shows = useMemo(
     () => [
       { value: "all", label: "All Customers" },
@@ -56,6 +83,7 @@ export default function Customers() {
     <View style={styles.top}>
       {header}
       <ScreenTip screen="customers" />
+      {menu.element}
       <SearchField
         value={search}
         onChangeText={setSearch}
@@ -114,6 +142,7 @@ export default function Customers() {
             last={index === rows.length - 1}
             onPress={() => router.push(`/customers/${c.id}`)}
             value={value ? <T muted>{value}</T> : undefined}
+            gestures={gesturesFor(c)}
           >
             <Text
               numberOfLines={2}

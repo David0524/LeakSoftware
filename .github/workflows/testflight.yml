@@ -7,6 +7,8 @@ name: TestFlight
 #
 # Signing is automatic, with the App Store Connect API key in the repository secrets (ASC_KEY_ID,
 # ASC_ISSUER_ID, ASC_KEY_P8, APPLE_TEAM_ID); no certificates or profiles are kept in the repo.
+# Development certificates that runs make are revoked before and after each run (owner,
+# 2026-10-21), so the account's certificate limit never stops an upload.
 # Build numbers: 1000 + this workflow's run number, clear of the Expo app's (it counts from 1 on
 # the same App Store Connect record, com.sundeckpro.app).
 
@@ -64,6 +66,16 @@ jobs:
           umask 077
           printf '%s\n' "$ASC_KEY_P8" > "$dir/AuthKey_$ASC_KEY_ID.p8"
           echo "ASC_KEY_PATH=$dir/AuthKey_$ASC_KEY_ID.p8" >> "$GITHUB_ENV"
+
+      - name: Clear development certificates left by earlier runs
+        # Automatic signing makes a development certificate on each fresh runner; its private key
+        # leaves with the runner, and the account's limit then stops the next upload. Only
+        # certificates Apple lists as "Created via API" are revoked (scripts/asc-revoke-ci-certs.mjs);
+        # never fails the run.
+        env:
+          ASC_KEY_ID: ${{ secrets.ASC_KEY_ID }}
+          ASC_ISSUER_ID: ${{ secrets.ASC_ISSUER_ID }}
+        run: node scripts/asc-revoke-ci-certs.mjs
 
       - name: Archive (Release)
         working-directory: apps/ios/AppHost
@@ -125,6 +137,15 @@ jobs:
             echo
             echo "[App Store Connect › TestFlight](https://appstoreconnect.apple.com/apps/$APP_STORE_APP_ID/testflight/ios)"
           } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Clear this run's development certificate
+        # The archive's development certificate is no use after this run (the upload is signed
+        # for distribution), so it doesn't count against the limit next time.
+        if: always()
+        env:
+          ASC_KEY_ID: ${{ secrets.ASC_KEY_ID }}
+          ASC_ISSUER_ID: ${{ secrets.ASC_ISSUER_ID }}
+        run: node scripts/asc-revoke-ci-certs.mjs
 
       - name: Delete the key
         if: always()

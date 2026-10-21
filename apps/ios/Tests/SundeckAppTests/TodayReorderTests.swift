@@ -71,7 +71,8 @@ import Testing
         #expect(index(5, .later) == nil)
         let pending = sync.status.pending
         let undo = try #require(try move(2, .later))
-        #expect(undo.text.hasPrefix("Moved to ") && undo.text.contains("PM"))
+        // No clock times (owner, 2026-10-21): the move's own message.
+        #expect(undo.text == "Moved.")
         #expect(undo.jobId == id(2) && undo.source == .row)
         #expect(names(Self.me) == ["Riley Rivera", "Noah Tech", "Grace Holloway"])
         // Saved through the sync layer: each changed row in the outbox.
@@ -106,7 +107,7 @@ import Testing
             }
         }
         #expect(lock(2) == .started && lock(2)?.text == "Started")
-        #expect(lock(1) == .promised("11:00 AM") && lock(1)?.text == "Promised for 11:00 AM")
+        #expect(lock(1) == .locked && lock(1)?.text == "Locked")
         #expect(lock(5) == nil)
         #expect(index(2, .later) == nil && index(1, .down) == nil)
         // Noah can't go in front of the started stop, only after it.
@@ -117,6 +118,17 @@ import Testing
         try sync.write("job", id: id(2), companyId: Self.company, ["status": "done"])
         let done = try #require(day(Self.me).first { $0.id == id(2) })
         #expect(todayStopLock(done, routeTech: Self.me, today: "2026-10-20", timeZone: "America/Phoenix") == .done)
+
+        // A day lock may change its place in the day; a time lock keeps its clock time.
+        let noahLock = {
+            self.day(Self.me).first { $0.id == self.id(5) }.flatMap {
+                todayStopLock($0, routeTech: Self.me, today: "2026-10-20", timeZone: "America/Phoenix")
+            }
+        }
+        try sync.write("job", id: id(5), companyId: Self.company, ["lock_day": true])
+        #expect(noahLock() == nil)
+        try sync.write("job", id: id(5), companyId: Self.company, ["lock_day": false, "lock_time": true])
+        #expect(noahLock() == .timeLocked)
     }
 
     @Test func placesCountTheStopsStillToDo() throws {
@@ -172,6 +184,6 @@ import Testing
                 TodayReorderText.moveDown, TodayReorderText.undo,
             ] == ["Do Later", "Reorder", "Done", "Move Up", "Move Down", "Undo"])
         #expect(TodayReorderText.moved("2:15 PM") == "Moved to 2:15 PM")
-        #expect(StopLock.promised("9:00 AM").text == "Promised for 9:00 AM")
+        #expect(StopLock.locked.text == "Locked" && StopLock.timeLocked.text == "Time locked")
     }
 }

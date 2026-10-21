@@ -2,7 +2,6 @@ import { RememberRecent } from "@/components/remember-recent";
 import { mapStatus, offersLeak, offersPool } from "@leakbook/core";
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
-import { AddressField } from "@/components/address-field";
 import { NotOnMapTag } from "@/components/not-on-map";
 import { routingConfigured } from "@/server/routing";
 import { isUuid } from "@/lib/uuid";
@@ -18,9 +17,9 @@ import {
   cleaningKind,
   readingSummary,
   type ChemicalReading,
-  type PoolType,
 } from "@leakbook/core";
-import { saveCustomer, savePool } from "@/app/actions/jobs";
+import { saveCustomer } from "@/app/actions/jobs";
+import { PoolDetailsForm } from "@/components/pool-details";
 import { DeleteCustomerForm } from "@/components/delete-customer";
 import { MaintenancePlans, type CleaningType } from "@/components/maintenance-plans";
 import {
@@ -113,13 +112,6 @@ export default async function CustomerPage({ params }: PageProps<"/customers/[id
       doneCounts[j.service_plan_id] = (doneCounts[j.service_plan_id] ?? 0) + 1;
 
   const kindOptions = Object.entries(KIND).map(([value, label]) => ({ value, label }));
-  const poolOptions = [
-    { value: "", label: "Not sure" },
-    ...(Object.keys(POOL_TYPE_LABELS) as PoolType[]).map((k) => ({
-      value: k,
-      label: POOL_TYPE_LABELS[k],
-    })),
-  ];
   const cc = customer.cc_emails ?? [];
 
   // Laid out like a contact card in iOS (owner, 2026-10-15: "this page doesn't look very
@@ -255,70 +247,7 @@ export default async function CustomerPage({ params }: PageProps<"/customers/[id
                       .join(" · ")}
                     value={<span className="text-link">Edit</span>}
                   >
-                    <SettingsForm action={savePool} primary full>
-                      <input type="hidden" name="property" value={p.id} />
-                      <SettingsFields labelWidth="6.5rem">
-                        <AddressField
-                          label="Street"
-                          name="address_line1"
-                          defaultValue={p.address_line1 ?? ""}
-                          autoComplete="off"
-                          required
-                        />
-                        <SField
-                          label="Unit"
-                          name="address_line2"
-                          defaultValue={p.address_line2 ?? ""}
-                          placeholder="Optional"
-                          autoComplete="off"
-                        />
-                        <SField
-                          label="City"
-                          name="city"
-                          defaultValue={p.city ?? ""}
-                          autoComplete="off"
-                        />
-                        <SField
-                          label="State"
-                          name="state"
-                          defaultValue={p.state ?? ""}
-                          maxLength={2}
-                          autoComplete="off"
-                        />
-                        <SField
-                          label="ZIP"
-                          name="postal_code"
-                          defaultValue={p.postal_code ?? ""}
-                          inputMode="numeric"
-                          autoComplete="off"
-                        />
-                      </SettingsFields>
-                      <SettingsFields labelWidth="6.5rem">
-                        <SSelect
-                          label="Pool type"
-                          name="pool_type"
-                          defaultValue={p.pool_type ?? ""}
-                          options={poolOptions}
-                        />
-                        <SField
-                          label="Gallons"
-                          name="approx_gallons"
-                          defaultValue={
-                            p.approx_gallons ? p.approx_gallons.toLocaleString("en-US") : ""
-                          }
-                          inputMode="numeric"
-                          placeholder="20,000"
-                          autoComplete="off"
-                        />
-                        <SSwitch name="has_spa" label="Has a spa" defaultChecked={p.has_spa} />
-                        <STextArea
-                          label="Access notes"
-                          name="access_notes"
-                          defaultValue={p.access_notes ?? ""}
-                          hint="Gate code, dog, where to park."
-                        />
-                      </SettingsFields>
-                    </SettingsForm>
+                    <PoolDetailsForm pool={p} />
                   </SheetRow>
                   {p.access_notes ? <Row label="Access notes" detail={p.access_notes} /> : null}
                   {offersPool(company.settings) ? (

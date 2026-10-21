@@ -7,6 +7,7 @@ import {
   type LockReason,
   type Property,
 } from "@leakbook/core";
+import { lockTag, type LockTagKind } from "../lib/dayMap";
 import { useRows } from "./hooks";
 
 export interface JobView extends Job {
@@ -41,7 +42,15 @@ export function inRouteOrderViews(jobs: JobView[]): JobView[] {
   );
 }
 
-/** Why a stop can't be moved ("Fixed time", "Two techs"), if it can't. */
-export function jobLock(job: JobView): LockReason | null {
+/**
+ * Why planning keeps a stop's time ("started", a lock, "two_techs"), if it does. Named apart
+ * from core's jobLock, which says which lock a job has (none, day, time, both).
+ */
+export function stopLockReason(job: JobView): LockReason | null {
   return lockReason({ ...job, property: job.property ?? null });
+}
+
+/** What keeps a stop in place (a lock icon, or "Two techs"), if anything. */
+export function stopLockTag(job: JobView): { label: string; kind: LockTagKind } | null {
+  return lockTag({ ...job, property: job.property ?? null });
 }

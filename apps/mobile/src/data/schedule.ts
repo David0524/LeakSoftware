@@ -3,14 +3,18 @@ import {
   estimateDriveMinutes,
   localDate,
   localMinutes,
+  lockColumns,
   pointKey,
   propertyLocation,
   routingSettings,
+  techColor,
   type Company,
   type DriveFn,
   type JobChange,
+  type JobLock,
   type LatLng,
   type PlanContext,
+  type TechColor,
 } from "@leakbook/core";
 import type { JsonValue } from "@leakbook/sync";
 import { getServices } from "../lib/services";
@@ -40,6 +44,10 @@ export interface TeamMember {
   membership_id: string;
   name: string;
   email: string | null;
+  /** Their tech color's palette key (core techColor: Slate when unset). */
+  color: TechColor;
+  /** When they were turned off (Team's second list, most recent first). */
+  disabled_at: string | null;
 }
 
 /** The shop's people (memberships with their names), by name, as the website lists them. */
@@ -49,6 +57,8 @@ export function useTeam(companyId: string): TeamMember[] {
     user_id: string;
     role: TeamMember["role"];
     status: TeamMember["status"];
+    color?: string | null;
+    disabled_at?: string | null;
     deleted_at?: string | null;
   }>("membership", companyId);
   const profiles = getServices().sync.team();
@@ -65,6 +75,8 @@ export function useTeam(companyId: string): TeamMember[] {
           status: m.status,
           name: p?.full_name || p?.email || "Teammate",
           email: p?.email ?? null,
+          color: techColor(m.color),
+          disabled_at: m.disabled_at ?? null,
         };
       })
       .sort((a, b) => a.name.localeCompare(b.name));
@@ -119,6 +131,12 @@ export function needsATime(jobs: JobView[], today: string, timeZone: string): Jo
   return [...waiting, ...untech];
 }
 
+/** Save a job's lock (core lockColumns: lock_day, lock_time, arrival_fixed) through sync. */
+export function saveJobLock(companyId: string, jobId: string, lock: JobLock) {
+  const { sync } = getServices();
+  sync.batch(() => sync.write("job", jobId, companyId, { ...lockColumns(lock) }));
+}
+
 /** Save schedule changes through the sync layer, all or none. */
 export function saveJobChanges(companyId: string, updates: JobChange[]) {
   const { sync } = getServices();
@@ -150,7 +168,7 @@ export function useDriveTimes(
     .join(";");
   const keys = useMemo(() => (pointsKey ? pointsKey.split(";") : []), [pointsKey]);
   const id = `${companyId}:${keys.join(";")}`;
-  const [, setVersion] = useState(0);
+  const [version, setVersion] = useState(0);
   const [live, setLive] = useState(() => asked.has(id));
 
   useEffect(() => {
@@ -174,9 +192,15 @@ export function useDriveTimes(
     };
   }, [companyId, id, keys]);
 
-  const drive: DriveFn = (a, b) => {
-    if (!a || !b) return 0;
-    return known.get(`${pointKey(a)}>${pointKey(b)}`) ?? estimateDriveMinutes(a, b);
-  };
+  // The same function until new drive times arrive, so what's worked out from it (each route's
+  // summary) is kept between renders (owner, 2026-10-20: a smooth schedule).
+  const drive = useMemo<DriveFn>(
+    () => (a, b) => {
+      if (!a || !b) return 0;
+      return known.get(`${pointKey(a)}>${pointKey(b)}`) ?? estimateDriveMinutes(a, b);
+    },
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- version marks new drive times
+    [version],
+  );
   return { drive, live };
 }

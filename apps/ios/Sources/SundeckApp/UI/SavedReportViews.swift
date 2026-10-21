@@ -108,6 +108,17 @@
                             }
                             .buttonStyle(.row)
                         }
+                        // Touch and hold: Edit, Delete… (gestures spec section 12).
+                        .rowMenu(
+                            saved.name,
+                            [
+                                SwipeAction(title: "Edit", systemImage: "pencil", tint: Color.link) {
+                                    editing = .edit(saved)
+                                },
+                                SwipeAction(
+                                    title: "Delete…", systemImage: "trash", tint: Color.fail, role: .destructive
+                                ) { deleting = saved },
+                            ])
                     }
                     ActionRow(SavedReportText.add) { editing = .add }
                 }

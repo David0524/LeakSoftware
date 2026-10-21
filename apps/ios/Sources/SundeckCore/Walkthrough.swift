@@ -43,7 +43,7 @@ public let tips: [Tip] = [
         message: "Today lists the stops in order, with directions. On My Way texts the customer that you’re coming."),
     Tip(
         id: "web-schedule", platform: .web, screen: "schedule", roles: owners, title: "Day, week, or month",
-        message: "Switch views at the top. Plan Route puts a tech’s stops for the day in driving order."),
+        message: "Switch views at the top. Optimize puts a tech’s stops for the day in driving order."),
     Tip(
         id: "web-messages", platform: .web, screen: "messages", roles: everyone, title: "One inbox for the whole shop",
         message:

@@ -4,6 +4,7 @@ import { createContext, useContext, useRef, useState, useTransition, type ReactN
 import type { JobChange, TodayMove } from "@leakbook/core";
 import { moveTodayStop, undoTodayMove, type TodayMoveResult } from "@/app/actions/routes";
 import { NO_CONNECTION, whenOffline } from "@/lib/offline";
+import { SWIPE_ACTION } from "./swipe-row";
 import { useUndoWindow } from "./undo";
 import { buttonClass, cx } from "./ui";
 
@@ -16,7 +17,7 @@ import { buttonClass, cx } from "./ui";
 export interface StopMoves {
   jobId: string;
   customer: string;
-  /** "Started", "Promised for 9:00 AM", or null when it can move. */
+  /** "Started", "Locked", "Time locked", or null when it can move. */
   lock: string | null;
   up: boolean;
   down: boolean;
@@ -108,7 +109,7 @@ export function HideWhileReordering({ children }: { children: ReactNode }) {
 
 /** "Moved to 2:15 PM." reads as "Moved to 2:15 PM" beside Undo; a longer message stays whole. */
 export const movedText = (message: string | undefined) =>
-  !message ? "Moved" : /^Moved to [^.]*\.$/.test(message) ? message.slice(0, -1) : message;
+  !message ? "Moved" : /^Moved( to [^.]*)?\.$/.test(message) ? message.slice(0, -1) : message;
 
 export interface DoLater {
   run: () => void;
@@ -230,105 +231,23 @@ function DoLaterError({ error, onWater }: { error: string; onWater: boolean }) {
   );
 }
 
-const SWIPE_WIDTH = 104;
-
 /**
- * A stop row that slides left on touch to show Do Later (a trailing swipe action, as in Mail
- * and Reminders). The row's own Do Later button is the visible alternative, so the swipe
- * button stays out of the tab order until it shows.
+ * Do Later as one of a row's swipe actions (beside Call and Directions), sharing the row's Do
+ * Later (its Undo shows on the row).
  */
-export function SwipeDoLater({
-  enabled,
-  customer,
-  children,
-}: {
-  enabled: boolean;
-  customer: string;
-  children: ReactNode;
-}) {
+export function DoLaterSwipeAction({ customer }: { customer: string }) {
   const d = useContext(RowContext);
-  const [open, setOpen] = useState(false);
-  const [dx, setDx] = useState<number | null>(null);
-  const live = useRef(0);
-  const drag = useRef<{ x0: number; y0: number; base: number; axis: "x" | "y" | null } | null>(
-    null,
-  );
-  const swallow = useRef(false);
-  if (!enabled || !d) return <>{children}</>;
-  const offset = dx ?? (open ? -SWIPE_WIDTH : 0);
+  if (!d) return null;
   return (
-    <div className="relative overflow-hidden rounded-[inherit]" data-no-swipe>
-      {offset < 0 ? (
-        <button
-          type="button"
-          tabIndex={open ? 0 : -1}
-          aria-hidden={!open}
-          aria-label={`Do Later for ${customer}`}
-          disabled={d.pending}
-          onClick={() => {
-            setOpen(false);
-            d.run();
-          }}
-          style={{ width: Math.max(SWIPE_WIDTH, -offset) }}
-          className="absolute inset-y-0 right-0 flex items-center justify-center rounded-r-[1rem] bg-link text-[1.0625rem] font-semibold text-white"
-        >
-          Do Later
-        </button>
-      ) : null}
-      <div
-        style={offset ? { transform: `translateX(${offset}px)` } : undefined}
-        className={cx(
-          "relative touch-pan-y",
-          dx === null && "transition-transform motion-reduce:transition-none",
-        )}
-        onPointerDown={(e) => {
-          swallow.current = false;
-          if (e.pointerType === "mouse" || d.pending) return;
-          drag.current = {
-            x0: e.clientX,
-            y0: e.clientY,
-            base: open ? -SWIPE_WIDTH : 0,
-            axis: null,
-          };
-        }}
-        onPointerMove={(e) => {
-          const g = drag.current;
-          if (!g) return;
-          const mx = e.clientX - g.x0;
-          const my = e.clientY - g.y0;
-          if (g.axis === null) {
-            if (Math.abs(mx) < 8 && Math.abs(my) < 8) return;
-            g.axis = Math.abs(mx) > Math.abs(my) ? "x" : "y";
-            if (g.axis === "x") e.currentTarget.setPointerCapture?.(e.pointerId);
-          }
-          if (g.axis !== "x") return;
-          live.current = Math.min(0, Math.max(-SWIPE_WIDTH * 1.4, g.base + mx));
-          setDx(live.current);
-        }}
-        onPointerUp={() => {
-          const g = drag.current;
-          drag.current = null;
-          if (!g || g.axis !== "x") return;
-          swallow.current = true;
-          setOpen(live.current < -SWIPE_WIDTH / 2);
-          setDx(null);
-        }}
-        onPointerCancel={() => {
-          drag.current = null;
-          setDx(null);
-        }}
-        onClickCapture={(e) => {
-          if (swallow.current || open) {
-            swallow.current = false;
-            e.preventDefault();
-            e.stopPropagation();
-            setOpen(false);
-          }
-        }}
-      >
-        {children}
-      </div>
-    </div>
+    <button
+      type="button"
+      disabled={d.pending}
+      onClick={d.run}
+      aria-label={`Do Later for ${customer}`}
+      className={cx(SWIPE_ACTION, "bg-water")}
+    >
+      Do Later
+    </button>
   );
 }
 

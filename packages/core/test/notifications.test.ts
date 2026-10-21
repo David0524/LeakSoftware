@@ -18,6 +18,7 @@ describe("notifications", () => {
       "quote",
       "payment",
       "report",
+      "live",
     ]);
     expect(notificationOn({}, "text")).toBe(true);
     expect(notificationOn(null, "job")).toBe(true);
@@ -67,17 +68,18 @@ describe("liveStopContent", () => {
     next: { customer: "Jones", time: "10:30 AM" },
   };
 
-  it("on the way: the arrival time, no countdown", () => {
+  it("on the way: the stop's place in the day, no clock times", () => {
     expect(liveStopContent({ ...base, phase: "driving" })).toEqual({
       headline: "On the way to Smith",
-      figure: "9:42 AM",
-      figureLabel: "Arriving",
+      figure: "3 of 7",
+      figureLabel: "Stop",
       detail: "Stop 3 of 7 · 123 Palm Ln",
-      next: "Next: Jones at 10:30 AM",
+      next: "Next: Jones",
       progress: 2 / 7,
-      compact: "9:42",
-      spoken: "On the way to Smith, arriving at 9:42 AM. Stop 3 of 7.",
+      compact: "3/7",
+      spoken: "On the way to Smith. Stop 3 of 7.",
       access: null,
+      cleanings: [],
     });
   });
 
@@ -88,7 +90,7 @@ describe("liveStopContent", () => {
     expect(c.figureLabel).toBe("Checklist");
     expect(c.compact).toBe("4/9");
     expect(c.progress).toBeCloseTo(2.5 / 7);
-    expect(c.spoken).toBe("At Smith. Checklist 4 of 9. Stop 3 of 7. Next: Jones at 10:30 AM.");
+    expect(c.spoken).toBe("At Smith. Checklist 4 of 9. Stop 3 of 7. Next: Jones.");
   });
 
   it("done: the next stop, or the end of the day", () => {
@@ -97,7 +99,7 @@ describe("liveStopContent", () => {
       "Smith done",
       "✓",
       "Next stop",
-      "Next: Jones at 10:30 AM",
+      "Next: Jones",
       3 / 7,
     ]);
     const last = liveStopContent({ ...base, phase: "done", stop: 7, next: null });
@@ -106,7 +108,7 @@ describe("liveStopContent", () => {
       "That was the last stop today.",
       1,
     ]);
-    expect(liveStopContent({ ...base, phase: "driving", eta: null }).figure).toBe("On the way");
+    expect(liveStopContent({ ...base, phase: "driving", stops: 0 }).figure).toBe("On the way");
   });
 });
 
@@ -123,20 +125,21 @@ describe("the workday's Live Activity", () => {
     next: { customer: "Jones", time: "10:30 AM" },
   };
 
-  it("shows the first stop ahead, with its time and no countdown", async () => {
+  it("shows the first stop ahead, without a clock time", async () => {
     const { liveStopContent } = await import("../src");
     expect(liveStopContent({ ...base, phase: "ahead" })).toEqual({
       headline: "Up next: Smith",
-      figure: "9:00 AM",
-      figureLabel: "Scheduled",
+      figure: "1 of 5",
+      figureLabel: "Stop",
       detail: "Stop 1 of 5 · 123 Palm Ln",
-      next: "Next: Jones at 10:30 AM",
+      next: "Next: Jones",
       progress: 0,
-      compact: "9:00",
-      spoken: "Up next: Smith at 9:00 AM. Stop 1 of 5.",
+      compact: "1/5",
+      spoken: "Up next: Smith. Stop 1 of 5.",
       access: null,
+      cleanings: [],
     });
-    expect(liveStopContent({ ...base, phase: "ahead", scheduled: null }).figure).toBe("Today");
+    expect(liveStopContent({ ...base, phase: "ahead", stops: 0 }).figure).toBe("Today");
   });
 
   it("starts at the shop's working day, on its work days, while stops are left", async () => {
@@ -187,5 +190,39 @@ describe("access notes on the Live Activity", () => {
     const long = accessLine("x".repeat(120))!;
     expect(long).toHaveLength(90);
     expect(long.endsWith("…")).toBe(true);
+  });
+});
+
+describe("cleanings on the Live Activity", () => {
+  const base = {
+    customer: "Smith",
+    address: "123 Palm Ln",
+    stop: 1,
+    stops: 3,
+    eta: null,
+    checklistDone: 0,
+    checklistTotal: 9,
+    next: null,
+  };
+  const cleanings = [
+    { name: "Clean salt cell", kind: "salt_cell" as const, days: 14, weeks: 2 },
+    { name: "Clean filter", kind: "filter" as const, days: -2, weeks: 0 },
+  ];
+
+  it("show each cleaning's icon and how soon, soonest first, until the stop is done", async () => {
+    const { liveStopContent } = await import("../src");
+    const c = liveStopContent({ ...base, phase: "ahead", cleanings });
+    expect(c.cleanings).toEqual([
+      { kind: "filter", label: "Overdue", spoken: "Clean filter overdue", overdue: true },
+      {
+        kind: "salt_cell",
+        label: "2 weeks",
+        spoken: "Clean salt cell due in 2 weeks",
+        overdue: false,
+      },
+    ]);
+    expect(c.spoken).toMatch(/Clean filter overdue, Clean salt cell due in 2 weeks\.$/);
+    expect(liveStopContent({ ...base, phase: "done", cleanings }).cleanings).toEqual([]);
+    expect(liveStopContent({ ...base, phase: "on_site" }).cleanings).toEqual([]);
   });
 });

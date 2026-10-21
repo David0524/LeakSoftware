@@ -10,6 +10,7 @@ import {
   durationLabel,
   formatAddress,
   isDateString,
+  jobLock,
   jobMinutes,
   localDate,
   localMinutes,
@@ -46,13 +47,24 @@ import { loadRoutes, routeContext, routeKey, type RouteContext } from "@/server/
 import { geocodeAddress, routingConfigured } from "@/server/routing";
 import type { FormState } from "./auth";
 
-// Planning routes from the schedule (routing, owner request 2026-10-13). Plan Route orders
+// Planning routes from the schedule (routing, owner request 2026-10-13). Optimize orders
 // one tech's day; moving a job puts it on a tech's day at a place in the order; suggestions
 // fit a job into routes already planned. Times customers were promised never move.
 
 export interface RouteResult {
   error?: string;
+  /** One short line for the banner: "Optimized · 1 hr 6 min less driving · Back by 4:28 PM". */
   message?: string;
+  /** What to watch for, as a second, smaller line: "Runs 20 min past the end of the day." */
+  detail?: string;
+}
+
+/** Notes as sentences: "Runs 20 min late. A fixed time can’t be met." */
+function sentences(notes: (string | null)[]): string | undefined {
+  const list = notes.filter((n): n is string => !!n);
+  return list.length
+    ? list.map((n) => `${n.charAt(0).toUpperCase()}${n.slice(1)}.`).join(" ")
+    : undefined;
 }
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -90,7 +102,7 @@ function dayStops(ctx: RouteContext, techId: string, date: string, jobs: PlanJob
 }
 
 // ---------------------------------------------------------------------------
-// Plan Route
+// Optimize (owner, 2026-10-20: "Change 'plan route' to 'optimize'")
 // ---------------------------------------------------------------------------
 
 /** Order a tech's day for the least driving, keep promised times, and save the times. */
@@ -116,23 +128,18 @@ export async function planRoute(techId: string, date: string): Promise<RouteResu
   if (error) return { error };
   refresh();
 
+  // One short line for the banner at the top of the screen (owner, 2026-10-20: the note under
+  // the button "looks horrible"), and what to watch for as a second line.
   const saved = before.driveMin - route.driveMin;
-  const parts = [
-    `Planned: ${durationLabel(route.driveMin)} of driving`,
-    saved > 0 ? `${durationLabel(saved)} less than before` : null,
-    `back at the shop by ${minutesLabel(route.backMin)}`,
-  ].filter(Boolean);
-  const warnings = [
-    route.overtimeMin ? `runs ${durationLabel(route.overtimeMin)} past the end of the day` : null,
-    route.lateMin ? `a fixed time can’t be met (${durationLabel(route.lateMin)} late)` : null,
-    stops.some((s) => !s.location)
-      ? "some pools have no location, so driving to them isn’t counted"
-      : null,
+  const message = [
+    "Optimized",
+    saved > 0 ? `${durationLabel(saved)} less driving` : `${durationLabel(route.driveMin)} driving`,
+  ].join(" · ");
+  const detail = sentences([
+    stops.some((s) => !s.location) ? "driving to pools not on the map isn’t counted" : null,
     !ctx.depot ? "the shop has no location (Settings › Scheduling)" : null,
-  ].filter(Boolean);
-  return {
-    message: `${parts.join(", ")}.${warnings.length ? ` Note: ${warnings.join("; ")}.` : ""}`,
-  };
+  ]);
+  return { message, detail };
 }
 
 // ---------------------------------------------------------------------------
@@ -149,7 +156,7 @@ async function loadJob(db: Db, office: Office, id: string): Promise<MovedJob | n
   const { data } = await db
     .from("job")
     .select(
-      "id, status, property_id, assigned_user_id, second_tech_id, scheduled_start, scheduled_end, route_order, arrival_fixed",
+      "id, status, property_id, assigned_user_id, second_tech_id, scheduled_start, scheduled_end, route_order, arrival_fixed, lock_day, lock_time",
     )
     .eq("id", id)
     .eq("company_id", office.company.id)
@@ -173,6 +180,11 @@ export interface MoveInput {
   date: string | null;
   /** Place in the tech's route that day (0 = first). Past the end: last. */
   index: number;
+  /**
+   * A plan visit's Just This Visit (owner, 2026-10-20): true marks it moved, so remaking the
+   * plan's visits leaves it where it is; Undo passes its old value back. Left out: unchanged.
+   */
+  planMoved?: boolean;
 }
 
 /**
@@ -182,6 +194,7 @@ export interface MoveInput {
  */
 export async function moveJob(input: MoveInput): Promise<RouteResult> {
   const { job: jobId, tech, date } = input;
+  const marked = typeof input.planMoved === "boolean" ? { plan_moved: input.planMoved } : {};
   if (
     !UUID.test(jobId) ||
     (tech !== null && !UUID.test(tech)) ||
@@ -225,6 +238,7 @@ export async function moveJob(input: MoveInput): Promise<RouteResult> {
         scheduled_start: null,
         scheduled_end: null,
         arrival_fixed: false,
+        ...marked,
       },
     ]);
     if (error) return { error };
@@ -234,8 +248,10 @@ export async function moveJob(input: MoveInput): Promise<RouteResult> {
   }
 
   const duration = jobMinutes(job, ctx.settings);
+  // A time lock keeps its clock time on the new day (owner, 2026-10-20).
+  const lock = jobLock(job);
   const fixedMin =
-    job.arrival_fixed && job.scheduled_start
+    (lock === "time" || lock === "both") && job.scheduled_start
       ? localMinutes(job.scheduled_start, ctx.timeZone)
       : null;
 
@@ -253,6 +269,7 @@ export async function moveJob(input: MoveInput): Promise<RouteResult> {
         status,
         scheduled_start: start,
         scheduled_end: new Date(Date.parse(start) + duration * 60_000).toISOString(),
+        ...marked,
       },
     ]);
     if (error) return { error };
@@ -289,11 +306,14 @@ export async function moveJob(input: MoveInput): Promise<RouteResult> {
   stops.splice(index, 0, moved);
   const route = timeRoute(stops, ctx.depot, workDay(ctx.settings), drive);
   const updates = routeUpdates(date, ctx.timeZone, stops, route);
-  const mine: JobUpdate & { assigned_user_id?: string; status?: string } = updates.find(
-    (u) => u.id === jobId,
-  )!;
+  const mine: JobUpdate & {
+    assigned_user_id?: string;
+    status?: string;
+    plan_moved?: boolean;
+  } = updates.find((u) => u.id === jobId)!;
   mine.assigned_user_id = tech;
   mine.status = status;
+  Object.assign(mine, marked);
   if (fixedMin != null) {
     mine.scheduled_start = zonedMinutesToIso(date, fixedMin, ctx.timeZone);
     mine.scheduled_end = new Date(
@@ -318,15 +338,8 @@ export async function moveJob(input: MoveInput): Promise<RouteResult> {
       });
   }
 
-  const t = route.stops[index]!;
-  const notes = [
-    t.lateMin ? `it can’t make its fixed time (${durationLabel(t.lateMin)} late)` : null,
-    route.overtimeMin ? `the day runs ${durationLabel(route.overtimeMin)} late` : null,
-    route.lateMin - t.lateMin > 0 ? "a fixed time after it can’t be met" : null,
-  ].filter(Boolean);
-  return {
-    message: `Moved to ${minutesLabel(t.startMin)}.${notes.length ? ` Note: ${notes.join("; ")}.` : ""}`,
-  };
+  // No times and no lateness (owner, 2026-10-21: "times are pretty irrelevant").
+  return { message: "Moved." };
 }
 
 /** After a job leaves a day, close up the order numbers (times stay as they are). */
@@ -456,6 +469,8 @@ const UNDO_KEYS = new Set([
   "status",
   "assigned_user_id",
   "arrival_fixed",
+  "lock_day",
+  "lock_time",
 ]);
 
 /**
@@ -486,7 +501,9 @@ export async function undoTodayMove(tech: string, rows: JobChange[]): Promise<Ro
       (r.scheduled_end === undefined || (movable && onToday(r.scheduled_end))) &&
       (r.status === undefined || (movable && r.status === "scheduled")) &&
       (r.assigned_user_id === undefined || (movable && r.assigned_user_id === tech)) &&
-      (r.arrival_fixed === undefined || (movable && r.arrival_fixed === false));
+      (r.arrival_fixed === undefined || (movable && r.arrival_fixed === false)) &&
+      (r.lock_day === undefined || (movable && r.lock_day === false)) &&
+      (r.lock_time === undefined || (movable && r.lock_time === false));
     if (!ok) return { error: "That can’t be undone." };
   }
   const error = await save(await createClient(), office, rows);

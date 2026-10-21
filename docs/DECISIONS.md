@@ -2,8 +2,127 @@
 
 Newest first. Each entry: date, decision, reason.
 
+## 2026-10-21 (owner: "Remove the 'Runs 28 min past the end of the day.'"; "I don't care about days running late. … times are pretty irrelevant in this business"; "make the techs slide horizontally"; "Yes, start clearing out going forward")
+
+- **No lateness warnings or clock times on all four platforms:**
+  - "Runs … past the end of the day", "· … late" between stops, the fixed-time notes and
+    Android's "+28 min" are gone.
+  - Moving a stop says "Moved.", and Optimize says "Optimized · 1 hr less driving", with no
+    "Back by".
+  - The planner still prefers days that fit, but it doesn't say so.
+- **Desktop Schedule's Day view:** techs sit side by side in one row that slides sideways
+  (22 rem each), not wrapped into rows. Phones stack them.
+- **TestFlight clears signing certificates:** each run revokes the development certificates
+  that earlier runs made through the API ("Created via API"), before and after the upload
+  (`scripts/asc-revoke-ci-certs.mjs`). Certificates made on a Mac, and distribution
+  certificates, stay.
+
 ## 2026-10-20 (owner, from a screenshot of the iPhone app's Today: "The page titles sit a little low. Let's push up towards where the plus button is.")
 - **Tab roots put the large title in the bar's row**, left of the bar's buttons (the "+"), as in the App Store and Music; the page rises with it. Screens with Back keep the title under the Back row. Scrolled, the small centered title shows in the bar as before. With very large text the title wraps before the buttons, and when a word can't fit beside them it takes its own row under the bar. All four platforms (spec 3.1).
+
+## 2026-10-20 (owner: "Yes do your suggestion"; Apple Maps on the website)
+
+Plan: `docs/plans/apple-maps.md`.
+- **Apple for maps, map images, address search and desktop directions; Mapbox for drive times
+  only.** The website's live maps use MapKit JS, day-map images come from Apple Snapshots (days
+  with 10 or more stops stay on Mapbox, since an Apple pin's number is one character), address
+  suggestions come from Apple's autocomplete, and "Open in Maps" on a computer opens
+  maps.apple.com. Drive times for Plan Route, Plan Week and Routes stay on the Mapbox matrix.
+- **Apple's free allowance is guarded in `app.mapbox_budget`** for every shop together:
+  `apple_snapshot` 22,500 a month, `apple_service` 600,000 a month and 22,500 a day,
+  `apple_map_view` 6,000,000 a month and 225,000 a day (a new `daily_limit`, counted in
+  `app.mapbox_usage_daily`). Apple never bills; past its limit it refuses, and Mapbox takes over.
+- **`MAP_PROVIDER`:** `apple` by default once `APPLE_MAPS_TEAM_ID`, `APPLE_MAPS_KEY_ID` and
+  `APPLE_MAPS_PRIVATE_KEY` are set, `mapbox` without them; `MAP_PROVIDER=mapbox` forces Mapbox.
+  Until the keys exist nothing changes, desktop directions links included.
+
+## 2026-10-20: owner list g (team colors, Week with routes, the demo)
+
+Spec: `docs/design/2026-10-20-team-week.md`.
+- **Today's card:** the name opens the job only on a clean tap, and the address is plain text
+  (Directions is the round button).
+- **Team:** one list. Active members are A to Z; turned-off members follow, the most recent
+  first ("2. Is perfect"). The On/Off switch is on each row, and the profile holds Role and
+  Color.
+- **Tech colors:** ten palette colors (`color.tech`), one per member (`membership.color`),
+  shown as a dot by the name and a 4 pt stripe on schedule cards.
+- **Maps wording:** buttons say "Maps". The setting reads "Maps (Apple)" and "Maps (Google)".
+- **Moving a weekly visit** to another day or tech asks Change Schedule or Just This Visit
+  (`job.plan_moved`). Taking one off the schedule, or choosing Nobody yet, is a one-off and
+  doesn't ask.
+- **Routes is gone:** its work moved into Week, with a left sidebar on desktop (Needs a Time,
+  then Customers to Add). Desktop cards are one line.
+- **Demo:** `pnpm demo:reset` rebuilds the demo company on the dev project.
+
+## 2026-10-20: owner list f (after TestFlight 1010)
+
+Spec: `docs/design/2026-10-20-gestures.md`.
+- **Cleaning alerts:** filter and salt-cell cleanings due show on Today's card and the Live
+  Activity / Android ongoing notification.
+- **Today's card:**
+  - It swipes between the day's stops, its segments are tappable, and Back to Now returns to the
+    current stop.
+  - A finished stop's card offers only its undo.
+  - Mark Complete moves straight to the next stop, with an Undo banner. There is no 60 s hold.
+- **On My Way** lives in Message: on the tech's own stop before arriving, Message starts as the
+  On My Way text, and the tech can edit it. There's no car button.
+- **No clock times** on the Live Activity or the card.
+- **Live Activity switch** in Notifications, on unless turned off.
+- **Gestures:**
+  - swipe between a job's pages, an owner's techs on Today, and Schedule's days;
+  - pull to refresh;
+  - swipe actions on Today's rows;
+  - the Findings title doesn't collapse when the page fits.
+- **Plan Week** takes several techs and splits the open jobs evenly by minutes of work.
+- **Jobs** sort like Invoices.
+- **The first download** shows real progress (`sync_pull_count`) as a pool that fills, and uses
+  bigger, overlapping pages.
+
+## 2026-10-20 (owner: "Go with option 1, cap at 100")
+- **Addresses the free lookups miss get one try with Mapbox's paid permanent geocoding**, at most 100 a month for every shop together (`app.mapbox_budget` `geocode_paid`; $5 per 1,000, so at most $0.50 a month). Free lookups (Census, then OpenStreetMap) always come first and aren't counted.
+
+## 2026-10-20 (owner, TestFlight 1010: "Place 'Start Job' to the left of the three icons"; "Change 'plan route' to 'optimize'. Change 'start job' to 'start'"; the planner's note "looks horrible. Display it on a banner on the top of the screen"; "Smooth out the scheduling screen"; "The Liquid Glass literally freezes up when I press 'plan route'"; "the whole app can honestly be smoother"; "Schedule dragging should be on the right side of the card"; "edit access notes on the job screen underneath the address"; "still getting address not found on real addresses")
+- **Today's card:** Start sits left of the round buttons on one row before leaving and while driving; the button says "Start".
+- **"Plan Route" is "Optimize"**, and its result ("Optimized · 1 hr 6 min less driving · Back by 4:28 PM") and the Schedule's other results show as a short banner at the top of the screen that goes away by itself, not a block in the page.
+- **Smoothness:** planning runs off the main thread on the iPhone and after the tap's frame on Android; buttons show their progress at once; Schedule and Today show placeholders while loading; pool lookups run after the page is sent, never before it.
+- **Drag grips are on the right of every card.**
+- **Access notes are edited from the job page**, under the address.
+- **Pool lookups:** a miss is remembered with its address, so it isn't retried on every load (only a changed address tries again), and the apps ask for lookups of their unplaced stops as the website does. All existing unplaced pools were looked up once.
+
+## 2026-10-20 (owner: "I think the live activity only starts when you have the app open at the day start time. It should run anytime you have the app open during the work day")
+- **The Live Activity (iPhone) and the ongoing stop notification (Android) start whenever the app is opened during the work day**: a work day, after the working day's start, with a stop not done, and nothing showing. A tech who removes it keeps it off only while the app stays in the background; opening the app brings it back. Before, a removal (or what looked like one after the app was closed) kept it off until the next work day.
+
+## 2026-10-20 (owner: "In the regular maintenance report, do not list/include items that were not completed"; "make the 'on my way' text to just be an icon and make 'Start Job' stay there from the beginning. You have to remember, not every tech is going to use every function all the time"; the job's address "should open up the screen to edit it. You can put a little pin icon to open in maps"; a picked suggestion still said "not found")
+- **The maintenance visit report lists only what was done**; skipped items are left out (the report page is shared by every platform).
+- **Today: Start Job is the main button from the start**, so a tech never has to send On My Way. On My Way is a round car icon, first among the card's round buttons and on Today's rows, until it's sent.
+- **The job's Pool row opens the pool's details to edit** (the customer page's editor, with suggestions); a round pin at its end opens Maps.
+- **Pool lookups no longer count against the shop's daily Mapbox allowance**: they're free (Census, OpenStreetMap), and a day that used the allowance up on drive times had left newly picked addresses unfound.
+
+## 2026-10-20 (owner on the route-maps build: "1. Can move 2. Great! 3. Include")
+- **Plan Week with Everyone may move a tech's scheduled jobs to another tech**, as planned; a waiting job already given to a tech stays theirs.
+- **The iPhone's small day map stays a preview** that doesn't take drags; tapping it opens the map you can pan and zoom.
+- **Locks are icons, not messages** (owner, then: "Don't do lock messages. Do icons"): saving a lock shows no message, and cards show the lock as an icon only, a calendar with a padlock (day), a clock with a padlock (time) or a padlock (both), read aloud and shown on hover as "Day locked", "Time locked" or "Locked". The job's own Lock row keeps its words; "Two techs" stays words.
+
+## 2026-10-20 (route maps built: day maps, Plan Week, locks, Routes)
+- **Day maps:** the small map is a preview (an image on the website and Android, a muted Apple map on the iPhone that doesn't take drags, so the Schedule still scrolls); tapping it or Enlarge opens a map you can pan and zoom (Mapbox GL on the website, Apple Maps on the iPhone; Android shows a larger image until an interactive one is added). On phones the selected tech's map leads the day, under the tech chips. Dark mode gets Mapbox's dark map.
+- **Plan Week's sheet has "Place Jobs from Needs a Time"** (on by default, with the count waiting), so one tap never silently fills the week with every waiting job. A waiting job given to a tech stays theirs; unassigned ones are placed only with the switch on. Scheduled jobs come first, then the oldest waiting, up to 150.
+- **Locks are set on the job's schedule** with None · Day · Time · Both; cards show the lock's icon. Moving a time-locked job by hand keeps its clock time on every platform.
+- **Routes** is a fourth Schedule segment for owners and admins (Day · Week · Month · Routes), as designed in `docs/plans/route-maps.md`. Its drive times are estimates (no Mapbox calls), said as "about … driving".
+
+## 2026-10-20 (owner: "For the address error, just put a little error symbol next to the address. Don't waste space with text"; "On the today hero, you have to have customer notes there")
+- **"Not on map" is a warning symbol right after the address** on Today's card and rows and on Schedule's cards, every platform, read aloud as "Not found on the map". The job page keeps its full explanation, where it's fixed.
+- **Today's card shows the customer's notes**, then the pool's, two lines at most, with a note symbol.
+
+## 2026-10-20 (owner: "I added a payment method to Mapbox. Please ensure I do not surpass the free tier")
+- **One monthly Mapbox budget for every shop together** (`app.mapbox_budget`, `public.mapbox_take`), at about 90% of each free tier (mapbox.com/pricing, checked 2026-10-20): map images 45,000 of 50,000; address suggestions 90,000 of 100,000; drive times 90,000 of 100,000 matrix elements (Mapbox bills origins × destinations, so a 25-stop day is 625); interactive map loads 45,000 of 50,000. Past it, each falls back as it does without a key: estimated drive times, no map image, typed addresses, the map image instead of the interactive map. The per-shop daily limits stay as well.
+- **Pools are looked up for free, not with Mapbox.** Mapbox's permanent geocoding (the kind that may be stored) has no free tier: $5 per 1,000 from the first. Lookups use the US Census Bureau's geocoder, then OpenStreetMap's Nominatim (at most one a second, per its policy), and a match counts only when its house number and street direction are the ones typed (Census offered 1000 E Charleston for 1000 W). Suggestions as you type stay Mapbox's temporary geocoding, shown and never stored.
+- The iPhone draws its maps with Apple Maps (free).
+
+## 2026-10-20 (owner, Today's card from TestFlight: "get rid of this button now. It exists on the card"; "find a better place for the call/direction icon … so we can shorten the card"; "Add a text icon too"; "consider iOS and Swift principles. As if designed by Apple")
+- **Today's card follows `docs/design/2026-10-20-today-card.md`** on every platform, reviewed against Apple's guidelines: the top line names the moment and the stop ("At the pool · Stop 2 of 3"), the name leads, the figure is smaller, the address is plain text that opens directions, details line up behind their symbols, and the two buttons share the row at equal widths. Secondary text is white at 92% (4.8:1; 85% was 4.3:1, under the 4.5:1 text needs). Numbers roll and text cross-fades when the moment changes, without motion under Reduce Motion.
+- **Message, Call and Directions** are round buttons on the card's Next line. Message opens the company number's conversation when there is one, else the phone's own texts.
+- **"Next Stop in Apple Maps" / "Open Route in Maps" is gone from Today**: the card's Directions does it. Schedule keeps its route buttons.
+- **The Now row in Today's list** shows only "Now", not the job's state, so the name has room.
 
 ## 2026-10-20 (owner, route maps plan `docs/plans/route-maps.md`: "1. Cool by me. 2. Ok 3. Yeah. There needs to be locks for jobs whether that's day, time, or both. 4. Yes. 5. Yes")
 - **Maps by Mapbox** on the website and Android, Apple Maps on the iPhone: a map for each day on Schedule with numbered pins, Enlarge, and Plan Route.

@@ -164,7 +164,7 @@ export function useRowPlaces() {
 /**
  * A stop in Reorder's edit mode: its number, time and customer, then the drag handle (≡) at the
  * trailing edge with Move Up and Move Down under the name, or a lock and why it can't move
- * ("Started", "Promised for 9:00 AM"). `leg` is the drive into it, which moves with it.
+ * ("Started", "Locked", "Time locked"). `leg` is the drive into it, which moves with it.
  */
 export function ReorderStopRow({
   job,

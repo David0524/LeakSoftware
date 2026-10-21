@@ -11,7 +11,10 @@ export async function signIn(page: Page, who: { email: string; password: string 
   await page.getByLabel("Email").fill(who.email);
   await page.getByLabel("Password").fill(who.password);
   await page.getByRole("button", { name: "Sign In", exact: true }).click();
-  await page.waitForURL((url) => url.pathname === next);
+  // `next` may carry a query ("/jobs?status=all"): compare what it names.
+  await page.waitForURL(
+    (url) => (next.includes("?") ? url.pathname + url.search : url.pathname) === next,
+  );
 }
 
 export async function signOut(page: Page) {

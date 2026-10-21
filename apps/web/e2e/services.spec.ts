@@ -114,13 +114,14 @@ test("a pool visit item added in settings lands on pool visits", async ({ page }
   await add.getByLabel("Name").fill(name);
   await add.getByRole("button", { name: "Add Component" }).click();
   await expect(add).toHaveCount(0);
-  await expect(page.getByRole("button", { name: new RegExp(name) })).toBeVisible();
+  // Names that start with it: the row, not its "⋯" More button (gestures.md section 12).
+  await expect(page.getByRole("button", { name: new RegExp(`^${name}`) })).toBeVisible();
   await page.getByRole("link", { name: "Leak Inspections" }).click();
-  await expect(page.getByRole("button", { name: new RegExp(name) })).toHaveCount(0);
+  await expect(page.getByRole("button", { name: new RegExp(`^${name}`) })).toHaveCount(0);
 
   // Clean up: remove it from new visits.
   await page.getByRole("link", { name: "Pool Visits" }).click();
-  await page.getByRole("button", { name: new RegExp(name) }).click();
+  await page.getByRole("button", { name: new RegExp(`^${name}`) }).click();
   await page
     .getByRole("dialog", { name })
     .getByRole("button", { name: "Remove Component" })
@@ -129,5 +130,5 @@ test("a pool visit item added in settings lands on pool visits", async ({ page }
     .getByRole("alertdialog", { name: "Remove this component from new visits?" })
     .getByRole("button", { name: "Remove Component" })
     .click();
-  await expect(page.getByRole("button", { name: new RegExp(name) })).toHaveCount(0);
+  await expect(page.getByRole("button", { name: new RegExp(`^${name}`) })).toHaveCount(0);
 });

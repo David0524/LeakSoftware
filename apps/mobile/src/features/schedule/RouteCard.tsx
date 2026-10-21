@@ -1,15 +1,18 @@
 import { router } from "expo-router";
-import { useRef, type ReactNode } from "react";
+import type { ReactNode } from "react";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 import { GestureDetector } from "react-native-gesture-handler";
-import ReanimatedSwipeable, {
-  type SwipeableMethods,
-} from "react-native-gesture-handler/ReanimatedSwipeable";
 import { durationLabel, type CleaningKind, type JobStatus, type LatLng } from "@leakbook/core";
+import type { LockTagKind } from "../../lib/dayMap";
 import type { DragItem } from "../../lib/scheduleDrag";
 import { CleaningNames } from "../maintenance/Cleanings";
 import { Button, Card, StatusChip, T } from "../../ui/components";
+import { LockTag } from "../../ui/LockTag";
+import type { RowGestures } from "../../ui/RowMenu";
+import { SwipeActions } from "../../ui/SwipeRow";
 import { AddressLine } from "../../ui/NotOnMap";
+import { Grip } from "../../ui/Grip";
+import { TechDot, TechStripe } from "../../ui/TechDot";
 import { WebIcon } from "../../ui/WebIcon";
 import {
   cardShadow,
@@ -25,7 +28,7 @@ import {
 import { dropTint, useDragHover, useDragSource, useDropZones } from "./ScheduleDrag";
 
 // Schedule › Day: one card per person's route (spec 5.6; the website's route-board.tsx
-// DayColumn and StopCard): the summary, Plan Route and the maps button, then the stops with
+// DayColumn and StopCard): the summary, Optimize and the maps button, then the stops with
 // the driving between them, drawn as Today's stops (owner, 2026-10-20: "make the schedule cards
 // a little more appealing. Refer to what the today page looks like"): a soft card with the
 // stop's number in a round badge, the time, the customer, the kind of stop as a pill, the
@@ -39,8 +42,8 @@ export interface Stop {
   location: LatLng | null;
   time: string | null;
   status: JobStatus;
-  /** "Fixed time", "Two techs" (not "Started"). */
-  lock: string | null;
+  /** A day, time or both lock (shown as an icon), or "Two techs"; never "Started". */
+  lock: { label: string; kind: LockTagKind } | null;
   movable: boolean;
   legMin: number | null;
   shortMin: number;
@@ -64,6 +67,8 @@ export interface Route {
   key: string;
   techId: string;
   title: string;
+  /** The tech's color key (team and week spec section 3). */
+  color?: string | null;
   date: string;
   stops: Stop[];
   driveMin: number;
@@ -75,7 +80,7 @@ export interface Route {
 }
 
 /** The drive into a stop: Today's dotted line and the minutes ("14 min drive"). */
-export function Leg({ text, late }: { text: string; late?: number }) {
+export function Leg({ text }: { text: string }) {
   return (
     <View style={styles.leg}>
       <View style={[styles.dots, { borderColor: color.textMuted }]} />
@@ -84,35 +89,27 @@ export function Leg({ text, late }: { text: string; late?: number }) {
         maxFontSizeMultiplier={MAX_TEXT_SCALE}
       >
         {text}
-        {late ? (
-          <Text style={[face.semiBold, { color: color.warning }]}>
-            {" "}
-            · {durationLabel(late)} late
-          </Text>
-        ) : null}
       </Text>
     </View>
   );
 }
 
-export function RouteCard({
+/**
+ * A route's summary line, the overtime warning, then Optimize and the maps button: in the
+ * route's card, or under the day's map when one tech's day leads the screen (the website's
+ * DayFacts and DayButtons).
+ */
+export function RouteFacts({
   route: c,
   busy,
   mapsButton,
   onPlan,
-  onMove,
-  onDirections,
 }: {
   route: Route;
   busy: boolean;
-  /** The secondary maps button ("Apple Maps" / "Google Maps"), when the day has directions. */
   mapsButton: ReactNode;
   onPlan: () => void;
-  onMove: (s: Stop) => void;
-  onDirections: (s: Stop) => void;
 }) {
-  const { zoneRef } = useDropZones();
-  const hover = useDragHover();
   const summary = c.stops.length
     ? [
         `${c.stops.length} ${c.stops.length === 1 ? "stop" : "stops"}`,
@@ -123,42 +120,75 @@ export function RouteCard({
         .join(" · ")
     : null;
   return (
+    <>
+      {summary ? (
+        <T variant="secondary" muted>
+          {summary}
+        </T>
+      ) : null}
+      {c.stops.length && (c.open || mapsButton) ? (
+        <View style={styles.buttons}>
+          {c.open ? (
+            <View style={styles.half}>
+              {/* "Optimize" (owner, 2026-10-20: "Change 'plan route' to 'optimize'"), with its
+                  progress shown first while the day is worked out. */}
+              <Button
+                kind="secondary"
+                title={busy ? "Optimizing…" : "Optimize"}
+                accessibilityLabel={busy ? "Optimizing" : `Optimize ${c.title}’s route`}
+                onPress={onPlan}
+                loading={busy}
+                wide
+                style={{ paddingHorizontal: 8 }}
+              />
+            </View>
+          ) : null}
+          {mapsButton ? <View style={styles.half}>{mapsButton}</View> : null}
+        </View>
+      ) : null}
+    </>
+  );
+}
+
+export function RouteCard({
+  route: c,
+  busy,
+  mapsButton,
+  lead = false,
+  onPlan,
+  onMove,
+  onDirections,
+  gesturesFor,
+}: {
+  route: Route;
+  busy: boolean;
+  /** The secondary maps button ("Apple Maps" / "Google Maps"), when the day has directions. */
+  mapsButton: ReactNode;
+  /** The day's map, summary and buttons lead the screen above Needs a Time: just the name here. */
+  lead?: boolean;
+  onPlan: () => void;
+  onMove: (s: Stop) => void;
+  onDirections: (s: Stop) => void;
+  /** A stop's swipe actions (Move…, Lock…) and touch-and-hold menu (gestures spec section 12). */
+  gesturesFor?: (s: Stop) => RowGestures;
+}) {
+  const { zoneRef } = useDropZones();
+  const hover = useDragHover();
+  return (
     // The whole route takes a drop: between two stops, or last.
     <View
       ref={zoneRef({ kind: "route", id: c.key, tech: c.techId, date: c.date, open: c.open })}
       collapsable={false}
       style={[styles.route, { backgroundColor: dropTint(hover, c.key) }]}
     >
-      <Card padding={space["4"]}>
-        <T variant="cardTitle">{c.title}</T>
-        {summary ? (
-          <T variant="secondary" muted>
-            {summary}
-          </T>
-        ) : null}
-        {c.overtimeMin > 0 ? (
-          <T variant="secondary" style={[face.semiBold, { color: color.warning, marginTop: 4 }]}>
-            Runs {durationLabel(c.overtimeMin)} past the end of the day.
-          </T>
-        ) : null}
-        {c.stops.length && (c.open || mapsButton) ? (
-          <View style={styles.buttons}>
-            {c.open ? (
-              <View style={styles.half}>
-                <Button
-                  kind="secondary"
-                  title="Plan Route"
-                  onPress={onPlan}
-                  disabled={busy}
-                  wide
-                  style={{ paddingHorizontal: 8 }}
-                />
-              </View>
-            ) : null}
-            {mapsButton ? <View style={styles.half}>{mapsButton}</View> : null}
-          </View>
-        ) : null}
-      </Card>
+      {lead ? (
+        <TechTitle route={c} />
+      ) : (
+        <Card padding={space["4"]}>
+          <TechTitle route={c} />
+          <RouteFacts route={c} busy={busy} mapsButton={mapsButton} onPlan={onPlan} />
+        </Card>
+      )}
       <View style={styles.stops}>
         {c.stops.length === 0 ? (
           <View style={[styles.empty, { backgroundColor: color.well }]}>
@@ -170,10 +200,7 @@ export function RouteCard({
         {c.stops.map((s, i) => (
           <View key={s.id} style={styles.stopWrap}>
             {s.legMin != null ? (
-              <Leg
-                text={`${durationLabel(s.legMin)} ${i === 0 ? "from the shop" : "drive"}`}
-                late={s.shortMin}
-              />
+              <Leg text={`${durationLabel(s.legMin)} ${i === 0 ? "from the shop" : "drive"}`} />
             ) : null}
             <StopCard
               stop={s}
@@ -194,8 +221,10 @@ export function RouteCard({
                   : null
               }
               route={c.key}
+              tech={c.color ?? null}
               onMove={onMove}
               onDirections={onDirections}
+              gestures={gesturesFor?.(s)}
             />
           </View>
         ))}
@@ -203,6 +232,18 @@ export function RouteCard({
           <Leg text={`${durationLabel(c.backLegMin)} back to the shop`} />
         ) : null}
       </View>
+    </View>
+  );
+}
+
+/** The tech's name with their color dot before it (team and week spec section 3). */
+function TechTitle({ route: c }: { route: Route }) {
+  return (
+    <View style={styles.techTitle}>
+      <TechDot tech={c.color} />
+      <T variant="cardTitle" style={{ flexShrink: 1 }}>
+        {c.title}
+      </T>
     </View>
   );
 }
@@ -240,20 +281,29 @@ function StopFace({
   ghost = false,
   onMove,
   onDirections,
+  gestures,
 }: {
   stop: Stop;
   n: number;
   ghost?: boolean;
   onMove?: (s: Stop) => void;
   onDirections?: (s: Stop) => void;
+  /** Its swipe actions and menu, for TalkBack and VoiceOver too. */
+  gestures?: RowGestures;
 }) {
   const kind = s.tag;
   return (
     <View
       style={[styles.face, { backgroundColor: color.surface }]}
       accessible={false}
-      accessibilityActions={s.movable && onMove ? [{ name: "move", label: "Move" }] : undefined}
-      onAccessibilityAction={() => onMove?.(s)}
+      accessibilityActions={
+        gestures
+          ? gestures.accessibilityActions
+          : s.movable && onMove
+            ? [{ name: "move", label: "Move" }]
+            : undefined
+      }
+      onAccessibilityAction={(e) => (gestures ? gestures.onAccessibilityAction(e) : onMove?.(s))}
     >
       <View style={styles.top}>
         <Badge n={n} status={s.status} done={s.done} />
@@ -265,6 +315,7 @@ function StopFace({
           accessibilityHint="Opens the job"
           disabled={ghost}
           onPress={() => router.push(`/jobs/${s.id}`)}
+          onLongPress={s.movable ? undefined : gestures?.onLongPress}
           style={({ pressed }) => [styles.open, pressed && { opacity: 0.6 }]}
         >
           <Text
@@ -290,9 +341,11 @@ function StopFace({
             title="Move…"
             accessibilityLabel={`Move ${s.customer}`}
             onPress={() => onMove(s)}
-            style={{ paddingHorizontal: 8, marginRight: -4 }}
+            style={{ paddingHorizontal: 8 }}
           />
         ) : null}
+        {/* The drag grip at the trailing edge (owner, 2026-10-20); shown under the finger too. */}
+        {s.movable ? <Grip width={28} /> : null}
       </View>
       <View style={styles.body}>
         <View style={styles.chips}>
@@ -305,16 +358,7 @@ function StopFace({
             </Text>
           </View>
           {s.status !== "scheduled" ? <StatusChip status={s.status} /> : null}
-          {s.lock ? (
-            <View style={[styles.pill, { backgroundColor: color.fill }]}>
-              <Text
-                style={[type.footnote, face.semiBold, { color: color.textMuted }]}
-                maxFontSizeMultiplier={MAX_TEXT_SCALE}
-              >
-                {s.lock}
-              </Text>
-            </View>
-          ) : null}
+          {s.lock ? <LockTag lock={s.lock} /> : null}
           {/* Not found on the map: a symbol after the address (below). */}
           {!s.notOnMap && !s.location ? (
             <Text
@@ -365,27 +409,49 @@ function StopCard({
   n,
   item,
   route,
+  tech,
   onMove,
   onDirections,
+  gestures,
 }: {
   stop: Stop;
   n: number;
   /** What a drag picks up; null for a stop that can't move (a canceled job). */
   item: DragItem | null;
   route: string;
+  /** The route's tech color: a 4 pt stripe on the card's leading edge. */
+  tech: string | null;
   onMove: (s: Stop) => void;
   onDirections: (s: Stop) => void;
+  gestures?: RowGestures;
 }) {
-  const swipe = useRef<SwipeableMethods>(null);
   const hover = useDragHover();
   const { slotRef } = useDropZones();
-  const { gesture, ref } = useDragSource(item, () => (
-    <View style={styles.clip}>
-      <StopFace stop={s} n={n} ghost />
-    </View>
-  ));
+  // Held and let go without moving: the stop's menu; held and moved: dragged (section 12).
+  const { gesture, ref } = useDragSource(
+    item,
+    () => (
+      <View style={styles.clip}>
+        <StopFace stop={s} n={n} ghost />
+        <TechStripe tech={tech} />
+      </View>
+    ),
+    gestures?.onLongPress,
+  );
   const slot = slotRef(s.id, route);
-  const content = <StopFace stop={s} n={n} onMove={onMove} onDirections={onDirections} />;
+  const content = (
+    <View>
+      <StopFace stop={s} n={n} onMove={onMove} onDirections={onDirections} gestures={gestures} />
+      <TechStripe tech={tech} />
+    </View>
+  );
+  // Swipe left for Move…, right for Lock… (a stop that can't move has neither).
+  const leading = gestures ? gestures.leading : null;
+  const trailing = gestures
+    ? gestures.trailing
+    : s.movable
+      ? [{ label: "Move", tint: color.link, onPress: () => onMove(s) }]
+      : [];
   return (
     <GestureDetector gesture={gesture}>
       <View
@@ -397,42 +463,23 @@ function StopCard({
         // Left in place, faded, while it's held.
         style={[styles.card, cardShadow(), hover.id === s.id && { opacity: 0.35 }]}
       >
-        {s.movable ? (
-          <View style={styles.clip}>
-            <ReanimatedSwipeable
-              ref={swipe}
-              friction={1.5}
-              rightThreshold={44}
-              overshootRight={false}
-              renderRightActions={() => (
-                <Pressable
-                  accessibilityElementsHidden
-                  importantForAccessibility="no-hide-descendants"
-                  onPress={() => {
-                    swipe.current?.close();
-                    onMove(s);
-                  }}
-                  style={[styles.swipeAction, { backgroundColor: color.link }]}
-                >
-                  <Text style={[type.bodyEmphasis, { color: color.onPrimary }]}>Move</Text>
-                </Pressable>
-              )}
-            >
+        <View style={styles.clip}>
+          {leading || trailing.length ? (
+            <SwipeActions leading={leading} trailing={trailing}>
               {content}
-            </ReanimatedSwipeable>
-          </View>
-        ) : (
-          <View style={styles.clip}>{content}</View>
-        )}
+            </SwipeActions>
+          ) : (
+            content
+          )}
+        </View>
       </View>
     </GestureDetector>
   );
 }
 
-/** Needs a Time's card under the finger while it's dragged. */
 export function GhostCard({ stop: s }: { stop: Stop }) {
   return (
-    <View style={[styles.face, styles.clip, { backgroundColor: color.surface }]}>
+    <View style={[styles.face, styles.clip, { backgroundColor: color.surface, paddingRight: 36 }]}>
       <Text
         numberOfLines={1}
         style={[type.bodyEmphasis, { color: color.text }]}
@@ -456,6 +503,9 @@ export function GhostCard({ stop: s }: { stop: Stop }) {
           {s.address}
         </T>
       ) : null}
+      <View style={styles.ghostGrip}>
+        <Grip width={28} />
+      </View>
     </View>
   );
 }
@@ -469,6 +519,7 @@ const styles = StyleSheet.create({
     borderRadius: shape.card + space["2"],
   },
   stops: { gap: 0 },
+  techTitle: { flexDirection: "row", alignItems: "center", gap: space["2"] },
   stopWrap: { gap: space["1"], marginBottom: space["1"] },
   leg: {
     flexDirection: "row",
@@ -513,5 +564,5 @@ const styles = StyleSheet.create({
   },
   pill: { borderRadius: shape.pill, paddingHorizontal: 10, paddingVertical: 2 },
   access: { flexDirection: "row", alignItems: "flex-start", gap: 6 },
-  swipeAction: { width: 88, alignItems: "center", justifyContent: "center" },
+  ghostGrip: { position: "absolute", right: 4, top: 0, bottom: 0, justifyContent: "center" },
 });

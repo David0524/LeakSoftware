@@ -11,11 +11,20 @@
         @Environment(Session.self) private var session
         @Environment(SyncService.self) private var sync
         @Environment(AppEnvironment.self) private var app
+        @Environment(\.openURL) private var openURL
+
+        static func telURL(_ phone: String) -> URL? {
+            let digits = phone.filter { $0.isNumber || $0 == "+" }
+            return digits.isEmpty ? nil : URL(string: "tel:\(digits)")
+        }
         @State private var search = ""
         @State private var sort = CustomerSort.name
         @State private var show = "all"
         @State private var rows: [CustomerListItem] = []
         @State private var loaded = false
+        /// The company number works: Message opens New Message, as the customer's page does.
+        @State private var lineWorking = false
+        @Environment(\.openRoute) private var openRoute
 
         var body: some View {
             let company = session.company
@@ -55,6 +64,16 @@
                                         c, sort: sort, timeZone: company?.timeZone ?? "America/Phoenix"))
                             }
                             .surfaceRow()
+                            // Swipe left for Call and Message where there's a phone; touch and
+                            // hold for the menu. The customer's page has each (gestures spec 12).
+                            .swipeActions(edge: .trailing, allowsFullSwipe: false) {
+                                if let phone = c.phone, let url = Self.telURL(phone) {
+                                    Button("Call", systemImage: "phone.fill") { openURL(url) }.tint(Color.pass)
+                                    Button("Message", systemImage: "message.fill") { message(c.id, phone) }
+                                        .tint(Color.link)
+                                }
+                            }
+                            .rowMenu(c.name, menu(c))
                         }
                     }
                 }
@@ -69,7 +88,38 @@
         private func reload() {
             guard let company = session.company else { return }
             rows = customerList(sync.store, companyId: company.id, search: search, sort: sort, show: show)
+            lineWorking = companyLine(sync.store, companyId: company.id)?.status == "active"
             loaded = true
+        }
+
+        /// Open, Call, Message, Directions (their pool). New Job for a customer isn't on the phone.
+        private func menu(_ c: CustomerListItem) -> [SwipeAction] {
+            var list = [
+                SwipeAction(title: "Open", systemImage: "arrow.up.right", tint: Color.link) {
+                    openRoute(.more(.customer(c.id)))
+                }
+            ]
+            if let phone = c.phone, let url = Self.telURL(phone) {
+                list.append(SwipeAction(title: "Call", systemImage: "phone", tint: Color.pass) { openURL(url) })
+                list.append(
+                    SwipeAction(title: "Message", systemImage: "message", tint: Color.link) { message(c.id, phone) })
+            }
+            if let place = c.place {
+                list.append(
+                    SwipeAction(title: "Directions", systemImage: "location", tint: Color.link) {
+                        if let url = directionsURL(place, choice: sync.kv.directionsChoice) { openURL(url) }
+                    })
+            }
+            return list
+        }
+
+        /// The customer page's Text: New Message on the company number, else Messages.
+        private func message(_ customerId: String, _ phone: String) {
+            if lineWorking {
+                openRoute(.messages(.newMessage(customerId: customerId)))
+            } else if let url = URL(string: "sms:\(phone.filter { $0.isNumber || $0 == "+" })") {
+                openURL(url)
+            }
         }
     }
 
@@ -196,7 +246,7 @@
                 ContactSheet(customer: c) { saved = "Saved." }
             }
             .sheet(item: $editingPool) { pool in
-                PoolSheet(pool: pool) { saved = "Saved." }
+                PoolSheet(propertyId: pool.id, row: pool.row) { saved = "Saved." }
             }
             .confirmationDialog("Delete \(c.name)?", isPresented: $confirmDelete, titleVisibility: .visible) {
                 Button("Delete Customer", role: .destructive) { Task { await delete(c) } }
@@ -239,22 +289,15 @@
                 Button {
                     editingPool = pool
                 } label: {
-                    VStack(alignment: .leading, spacing: 0) {
-                        ListRow(
-                            title: pool.address.isEmpty ? "Address" : pool.address, detail: pool.detail,
-                            emphasized: true
-                        ) {
-                            Text("Edit").textRole(.body).foregroundStyle(Color.link)
-                        }
-                        // Its address wasn't found on the map (owner, 2026-10-20).
-                        if propertyMapStatus(pool.row, routing: MapLookups.on(sync, companyId: session.company?.id))
-                            == .missing
-                        {
-                            NotOnMapTag()
-                                .padding(.horizontal, CGFloat(Spacing.rowHorizontal))
-                                .padding(.top, -4)
-                                .padding(.bottom, CGFloat(Spacing.rowVertical))
-                        }
+                    // Its address wasn't found on the map: the symbol right after it (owner, 2026-10-20).
+                    let missing =
+                        propertyMapStatus(pool.row, routing: MapLookups.on(sync, companyId: session.company?.id))
+                        == .missing
+                    ListRow(
+                        title: pool.address.isEmpty ? "Address" : pool.address, detail: pool.detail,
+                        emphasized: true, titleMark: missing ? NotOnMapTag.text() : nil
+                    ) {
+                        Text("Edit").textRole(.body).foregroundStyle(Color.link)
                     }
                 }
                 .buttonStyle(.row)
@@ -418,7 +461,8 @@
 
     /// Pool Details: the address, the pool type, gallons, the spa, and access notes.
     struct PoolSheet: View {
-        var pool: CustomerPool
+        var propertyId: String
+        var row: Row
         var saved: () -> Void
         @Environment(Session.self) private var session
         @Environment(SyncService.self) private var sync
@@ -477,7 +521,7 @@
             }
             .onAppear {
                 guard original.isEmpty else { return }
-                let r = pool.row
+                let r = row
                 street = r["address_line1"]?.string ?? ""
                 unit = r["address_line2"]?.string ?? ""
                 city = r["city"]?.string ?? ""
@@ -510,7 +554,7 @@
             }
             do {
                 try CustomerWrites.savePool(
-                    sync, companyId: companyId, propertyId: pool.id,
+                    sync, companyId: companyId, propertyId: propertyId,
                     [
                         "address_line1": .string(street.trimmingCharacters(in: .whitespaces)),
                         "address_line2": opt(unit), "city": opt(city), "state": opt(state.uppercased()),

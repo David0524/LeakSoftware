@@ -1,5 +1,8 @@
 import {
   ARRIVAL_WINDOWS,
+  JOB_LOCK_HELP,
+  JOB_LOCK_LABELS,
+  JOB_LOCKS,
   LOCK_LABELS,
   NOT_ON_MAP,
   mapStatus,
@@ -15,8 +18,10 @@ import {
   estimateDriveMinutes,
   haversineMeters,
   inRouteOrder,
+  jobLock,
   jobMinutes,
   localMinutes,
+  lockColumns,
   lockReason,
   mapsLinks,
   minutesLabel,
@@ -35,6 +40,7 @@ import {
   workDay,
   zonedMinutesToIso,
   type DriveFn,
+  type JobLock,
   type LatLng,
   type MapPlace,
   type MapsApp,
@@ -575,7 +581,33 @@ export const routing: ModuleCases = {
       [planJob("a", { arrival_fixed: true, second_tech_id: "t2" })],
       [planJob("a", { second_tech_id: "t2" })],
       [planJob("a", { second_tech_id: "" })],
+      // Locks: a day lock alone isn't a reason; a time lock is; both is "fixed".
+      [planJob("a", { lock_day: true })],
+      [planJob("a", { lock_day: true, second_tech_id: "t2" })],
+      [planJob("a", { lock_time: true, second_tech_id: "t2" })],
+      [planJob("a", { status: "unscheduled", lock_day: true, lock_time: true })],
+      [planJob("a", { status: "done", lock_time: true })],
     ],
+  ),
+  JOB_LOCKS: rule(() => JOB_LOCKS, [[]]),
+  JOB_LOCK_LABELS: rule(() => JOB_LOCK_LABELS, [[]]),
+  JOB_LOCK_HELP: rule(() => JOB_LOCK_HELP, [[]]),
+  jobLock: rule(
+    (j: Parameters<typeof jobLock>[0]) => jobLock(j),
+    [
+      [{}],
+      [{ lock_day: true }],
+      [{ lock_time: true }],
+      [{ lock_day: true, lock_time: true }],
+      [{ arrival_fixed: true }],
+      [{ arrival_fixed: true, lock_day: false, lock_time: false }],
+      [{ arrival_fixed: false, lock_day: true }],
+      [{ arrival_fixed: true, lock_time: true }],
+    ],
+  ),
+  lockColumns: rule(
+    (l: JobLock) => lockColumns(l),
+    (["none", "day", "time", "both"] as JobLock[]).map((l) => [l]),
   ),
   inRouteOrder: rule(
     (jobs: PlanJob[]) => inRouteOrder(jobs).map((j) => j.id),
@@ -670,6 +702,23 @@ export const routing: ModuleCases = {
       [
         planJob("a", { second_tech_id: "t2", scheduled_start: "2026-11-01T06:30:00Z" }),
         { timeZone: "America/New_York", settings: settings(), techId: "t2", nowMin: null },
+      ],
+      // A time lock keeps its time; a day lock alone may move.
+      [
+        planJob("a", {
+          property: at(NEAR),
+          lock_time: true,
+          scheduled_start: "2026-10-20T16:00:00Z",
+        }),
+        { timeZone: "America/Phoenix", settings: settings(), techId: "t1", nowMin: 540 },
+      ],
+      [
+        planJob("a", {
+          property: at(NEAR),
+          lock_day: true,
+          scheduled_start: "2026-10-20T16:00:00Z",
+        }),
+        { timeZone: "America/Phoenix", settings: settings(), techId: "t1", nowMin: 540 },
       ],
     ],
   ),

@@ -34,19 +34,22 @@
         "stops": 1,
         "content": {
           "headline": "Up next: Customer a",
-          "figure": "9:00 AM",
-          "figureLabel": "Scheduled",
+          "figure": "1 of 1",
+          "figureLabel": "Stop",
           "detail": "Stop 1 of 1 · a Palm Ln",
           "next": null,
           "progress": 0,
-          "compact": "9:00",
-          "spoken": "Up next: Customer a at 9:00 AM. Stop 1 of 1.",
-          "access": null
+          "compact": "1/1",
+          "spoken": "Up next: Customer a. Stop 1 of 1.",
+          "access": null,
+          "cleanings": []
         },
         "segments": [
           "current"
         ],
-        "doneCount": 0
+        "doneCount": 0,
+        "currentId": "a",
+        "browsing": false
       }
     },
     {
@@ -96,21 +99,24 @@
         "stops": 3,
         "content": {
           "headline": "Up next: Customer b",
-          "figure": "9:00 AM",
-          "figureLabel": "Scheduled",
+          "figure": "2 of 3",
+          "figureLabel": "Stop",
           "detail": "Stop 2 of 3 · b Palm Ln",
-          "next": "Next: Customer c at 9:00 AM",
+          "next": "Next: Customer c",
           "progress": 0.3333333333333333,
-          "compact": "9:00",
-          "spoken": "Up next: Customer b at 9:00 AM. Stop 2 of 3. Access: Gate 4821",
-          "access": "Gate 4821"
+          "compact": "2/3",
+          "spoken": "Up next: Customer b. Stop 2 of 3. Access: Gate 4821",
+          "access": "Gate 4821",
+          "cleanings": []
         },
         "segments": [
           "done",
           "current",
           "todo"
         ],
-        "doneCount": 1
+        "doneCount": 1,
+        "currentId": "b",
+        "browsing": false
       }
     },
     {
@@ -150,20 +156,23 @@
         "stops": 2,
         "content": {
           "headline": "On the way to Customer b",
-          "figure": "9:52 AM",
-          "figureLabel": "Arriving",
+          "figure": "2 of 2",
+          "figureLabel": "Stop",
           "detail": "Stop 2 of 2 · b Palm Ln",
           "next": null,
           "progress": 0.5,
-          "compact": "9:52",
-          "spoken": "On the way to Customer b, arriving at 9:52 AM. Stop 2 of 2.",
-          "access": null
+          "compact": "2/2",
+          "spoken": "On the way to Customer b. Stop 2 of 2.",
+          "access": null,
+          "cleanings": []
         },
         "segments": [
           "todo",
           "current"
         ],
-        "doneCount": 0
+        "doneCount": 0,
+        "currentId": "b",
+        "browsing": false
       }
     },
     {
@@ -205,20 +214,23 @@
         "stops": 2,
         "content": {
           "headline": "On the way to Customer a",
-          "figure": "9:52 AM",
-          "figureLabel": "Arriving",
+          "figure": "1 of 2",
+          "figureLabel": "Stop",
           "detail": "Stop 1 of 2 · a Palm Ln",
-          "next": "Next: Customer b at 9:00 AM",
+          "next": "Next: Customer b",
           "progress": 0,
-          "compact": "9:52",
-          "spoken": "On the way to Customer a, arriving at 9:52 AM. Stop 1 of 2.",
-          "access": null
+          "compact": "1/2",
+          "spoken": "On the way to Customer a. Stop 1 of 2.",
+          "access": null,
+          "cleanings": []
         },
         "segments": [
           "current",
           "todo"
         ],
-        "doneCount": 0
+        "doneCount": 0,
+        "currentId": "a",
+        "browsing": false
       }
     },
     {
@@ -258,20 +270,23 @@
         "stops": 2,
         "content": {
           "headline": "On the way to Customer b",
-          "figure": "On the way",
-          "figureLabel": "",
+          "figure": "2 of 2",
+          "figureLabel": "Stop",
           "detail": "Stop 2 of 2 · b Palm Ln",
           "next": null,
           "progress": 0.5,
-          "compact": "…",
+          "compact": "2/2",
           "spoken": "On the way to Customer b. Stop 2 of 2.",
-          "access": null
+          "access": null,
+          "cleanings": []
         },
         "segments": [
           "todo",
           "current"
         ],
-        "doneCount": 0
+        "doneCount": 0,
+        "currentId": "b",
+        "browsing": false
       }
     },
     {
@@ -311,20 +326,23 @@
         "stops": 2,
         "content": {
           "headline": "On the way to Customer b",
-          "figure": "On the way",
-          "figureLabel": "",
+          "figure": "2 of 2",
+          "figureLabel": "Stop",
           "detail": "Stop 2 of 2 · b Palm Ln",
           "next": null,
           "progress": 0.5,
-          "compact": "…",
+          "compact": "2/2",
           "spoken": "On the way to Customer b. Stop 2 of 2.",
-          "access": null
+          "access": null,
+          "cleanings": []
         },
         "segments": [
           "todo",
           "current"
         ],
-        "doneCount": 0
+        "doneCount": 0,
+        "currentId": "b",
+        "browsing": false
       }
     },
     {
@@ -353,19 +371,22 @@
         "stops": 1,
         "content": {
           "headline": "Up next: Customer a",
-          "figure": "9:00 AM",
-          "figureLabel": "Scheduled",
+          "figure": "1 of 1",
+          "figureLabel": "Stop",
           "detail": "Stop 1 of 1 · a Palm Ln",
           "next": null,
           "progress": 0,
-          "compact": "9:00",
-          "spoken": "Up next: Customer a at 9:00 AM. Stop 1 of 1.",
-          "access": null
+          "compact": "1/1",
+          "spoken": "Up next: Customer a. Stop 1 of 1.",
+          "access": null,
+          "cleanings": []
         },
         "segments": [
           "current"
         ],
-        "doneCount": 0
+        "doneCount": 0,
+        "currentId": "a",
+        "browsing": false
       }
     },
     {
@@ -394,19 +415,22 @@
         "stops": 1,
         "content": {
           "headline": "Up next: Customer a",
-          "figure": "9:00 AM",
-          "figureLabel": "Scheduled",
+          "figure": "1 of 1",
+          "figureLabel": "Stop",
           "detail": "Stop 1 of 1 · a Palm Ln",
           "next": null,
           "progress": 0,
-          "compact": "9:00",
-          "spoken": "Up next: Customer a at 9:00 AM. Stop 1 of 1.",
-          "access": null
+          "compact": "1/1",
+          "spoken": "Up next: Customer a. Stop 1 of 1.",
+          "access": null,
+          "cleanings": []
         },
         "segments": [
           "current"
         ],
-        "doneCount": 0
+        "doneCount": 0,
+        "currentId": "a",
+        "browsing": false
       }
     },
     {
@@ -435,19 +459,22 @@
         "stops": 1,
         "content": {
           "headline": "Up next: Customer a",
-          "figure": "9:00 AM",
-          "figureLabel": "Scheduled",
+          "figure": "1 of 1",
+          "figureLabel": "Stop",
           "detail": "Stop 1 of 1 · a Palm Ln",
           "next": null,
           "progress": 0,
-          "compact": "9:00",
-          "spoken": "Up next: Customer a at 9:00 AM. Stop 1 of 1.",
-          "access": null
+          "compact": "1/1",
+          "spoken": "Up next: Customer a. Stop 1 of 1.",
+          "access": null,
+          "cleanings": []
         },
         "segments": [
           "current"
         ],
-        "doneCount": 0
+        "doneCount": 0,
+        "currentId": "a",
+        "browsing": false
       }
     },
     {
@@ -476,19 +503,22 @@
         "stops": 1,
         "content": {
           "headline": "On the way to Customer a",
-          "figure": "On the way",
-          "figureLabel": "",
+          "figure": "1 of 1",
+          "figureLabel": "Stop",
           "detail": "Stop 1 of 1 · a Palm Ln",
           "next": null,
           "progress": 0,
-          "compact": "…",
+          "compact": "1/1",
           "spoken": "On the way to Customer a. Stop 1 of 1.",
-          "access": null
+          "access": null,
+          "cleanings": []
         },
         "segments": [
           "current"
         ],
-        "doneCount": 0
+        "doneCount": 0,
+        "currentId": "a",
+        "browsing": false
       }
     },
     {
@@ -533,13 +563,16 @@
           "progress": 0.75,
           "compact": "4/9",
           "spoken": "At Customer b. Checklist 4 of 9. Stop 2 of 2.",
-          "access": null
+          "access": null,
+          "cleanings": []
         },
         "segments": [
           "todo",
           "current"
         ],
-        "doneCount": 0
+        "doneCount": 0,
+        "currentId": "b",
+        "browsing": false
       }
     },
     {
@@ -579,20 +612,23 @@
         "stops": 2,
         "content": {
           "headline": "On the way to Customer b",
-          "figure": "9:52 AM",
-          "figureLabel": "Arriving",
+          "figure": "2 of 2",
+          "figureLabel": "Stop",
           "detail": "Stop 2 of 2 · b Palm Ln",
           "next": null,
           "progress": 0.5,
-          "compact": "9:52",
-          "spoken": "On the way to Customer b, arriving at 9:52 AM. Stop 2 of 2.",
-          "access": null
+          "compact": "2/2",
+          "spoken": "On the way to Customer b. Stop 2 of 2.",
+          "access": null,
+          "cleanings": []
         },
         "segments": [
           "todo",
           "current"
         ],
-        "doneCount": 0
+        "doneCount": 0,
+        "currentId": "b",
+        "browsing": false
       }
     },
     {
@@ -629,12 +665,15 @@
           "progress": 0.5,
           "compact": "•",
           "spoken": "At Customer a. Stop 1 of 1.",
-          "access": null
+          "access": null,
+          "cleanings": []
         },
         "segments": [
           "current"
         ],
-        "doneCount": 0
+        "doneCount": 0,
+        "currentId": "a",
+        "browsing": false
       }
     },
     {
@@ -675,20 +714,23 @@
         "stops": 2,
         "content": {
           "headline": "Up next: Customer b",
-          "figure": "9:00 AM",
-          "figureLabel": "Scheduled",
+          "figure": "2 of 2",
+          "figureLabel": "Stop",
           "detail": "Stop 2 of 2 · b Palm Ln",
           "next": null,
           "progress": 0.5,
-          "compact": "9:00",
-          "spoken": "Up next: Customer b at 9:00 AM. Stop 2 of 2.",
-          "access": null
+          "compact": "2/2",
+          "spoken": "Up next: Customer b. Stop 2 of 2.",
+          "access": null,
+          "cleanings": []
         },
         "segments": [
           "done",
           "current"
         ],
-        "doneCount": 1
+        "doneCount": 1,
+        "currentId": "b",
+        "browsing": false
       }
     },
     {
@@ -729,17 +771,20 @@
           "figure": "✓",
           "figureLabel": "Next stop",
           "detail": "Stop 1 of 2",
-          "next": "Next: Customer b at 9:00 AM",
+          "next": "Next: Customer b",
           "progress": 0.5,
           "compact": "✓",
-          "spoken": "Customer a done. Next: Customer b at 9:00 AM.",
-          "access": null
+          "spoken": "Customer a done. Next: Customer b.",
+          "access": null,
+          "cleanings": []
         },
         "segments": [
           "done",
           "todo"
         ],
-        "doneCount": 1
+        "doneCount": 1,
+        "currentId": "a",
+        "browsing": false
       }
     },
     {
@@ -777,20 +822,23 @@
         "stops": 2,
         "content": {
           "headline": "Up next: Customer b",
-          "figure": "9:00 AM",
-          "figureLabel": "Scheduled",
+          "figure": "2 of 2",
+          "figureLabel": "Stop",
           "detail": "Stop 2 of 2 · b Palm Ln",
           "next": null,
           "progress": 0.5,
-          "compact": "9:00",
-          "spoken": "Up next: Customer b at 9:00 AM. Stop 2 of 2.",
-          "access": null
+          "compact": "2/2",
+          "spoken": "Up next: Customer b. Stop 2 of 2.",
+          "access": null,
+          "cleanings": []
         },
         "segments": [
           "done",
           "current"
         ],
-        "doneCount": 1
+        "doneCount": 1,
+        "currentId": "b",
+        "browsing": false
       }
     },
     {
@@ -828,20 +876,23 @@
         "stops": 2,
         "content": {
           "headline": "Up next: Customer a",
-          "figure": "9:00 AM",
-          "figureLabel": "Scheduled",
+          "figure": "1 of 2",
+          "figureLabel": "Stop",
           "detail": "Stop 1 of 2 · a Palm Ln",
-          "next": "Next: Customer b at 9:00 AM",
+          "next": "Next: Customer b",
           "progress": 0,
-          "compact": "9:00",
-          "spoken": "Up next: Customer a at 9:00 AM. Stop 1 of 2.",
-          "access": null
+          "compact": "1/2",
+          "spoken": "Up next: Customer a. Stop 1 of 2.",
+          "access": null,
+          "cleanings": []
         },
         "segments": [
           "current",
           "todo"
         ],
-        "doneCount": 0
+        "doneCount": 0,
+        "currentId": "a",
+        "browsing": false
       }
     },
     {
@@ -877,12 +928,15 @@
           "progress": 1,
           "compact": "✓",
           "spoken": "Customer a done. That was the last stop today.",
-          "access": null
+          "access": null,
+          "cleanings": []
         },
         "segments": [
           "done"
         ],
-        "doneCount": 1
+        "doneCount": 1,
+        "currentId": "a",
+        "browsing": false
       }
     },
     {
@@ -928,13 +982,16 @@
           "progress": 1,
           "compact": "✓",
           "spoken": "All 2 stops done today.",
-          "access": null
+          "access": null,
+          "cleanings": []
         },
         "segments": [
           "done",
           "done"
         ],
-        "doneCount": 2
+        "doneCount": 2,
+        "currentId": null,
+        "browsing": false
       }
     },
     {
@@ -969,12 +1026,15 @@
           "progress": 1,
           "compact": "✓",
           "spoken": "All 1 stop done today.",
-          "access": null
+          "access": null,
+          "cleanings": []
         },
         "segments": [
           "done"
         ],
-        "doneCount": 1
+        "doneCount": 1,
+        "currentId": null,
+        "browsing": false
       }
     },
     {
@@ -1013,20 +1073,23 @@
         "stops": 2,
         "content": {
           "headline": "Up next: Customer a",
-          "figure": "9:00 AM",
-          "figureLabel": "Scheduled",
+          "figure": "1 of 2",
+          "figureLabel": "Stop",
           "detail": "Stop 1 of 2 · a Palm Ln",
-          "next": "Next: Customer b at 9:00 AM",
+          "next": "Next: Customer b",
           "progress": 0,
-          "compact": "9:00",
-          "spoken": "Up next: Customer a at 9:00 AM. Stop 1 of 2.",
-          "access": null
+          "compact": "1/2",
+          "spoken": "Up next: Customer a. Stop 1 of 2.",
+          "access": null,
+          "cleanings": []
         },
         "segments": [
           "current",
           "todo"
         ],
-        "doneCount": 0
+        "doneCount": 0,
+        "currentId": "a",
+        "browsing": false
       }
     },
     {
@@ -1084,14 +1147,15 @@
         "stops": 4,
         "content": {
           "headline": "Up next: Customer b",
-          "figure": "Today",
-          "figureLabel": "",
+          "figure": "2 of 4",
+          "figureLabel": "Stop",
           "detail": "Stop 2 of 4 · b Palm Ln",
           "next": "Next: Customer c",
           "progress": 0.25,
-          "compact": "…",
+          "compact": "2/4",
           "spoken": "Up next: Customer b. Stop 2 of 4.",
-          "access": null
+          "access": null,
+          "cleanings": []
         },
         "segments": [
           "done",
@@ -1099,7 +1163,9 @@
           "todo",
           "todo"
         ],
-        "doneCount": 1
+        "doneCount": 1,
+        "currentId": "b",
+        "browsing": false
       }
     },
     {
@@ -1137,20 +1203,23 @@
         "stops": 2,
         "content": {
           "headline": "Up next: Customer a",
-          "figure": "Today",
-          "figureLabel": "",
+          "figure": "1 of 2",
+          "figureLabel": "Stop",
           "detail": "Stop 1 of 2 · a Palm Ln",
-          "next": "Next: Customer b at 9:00 AM",
+          "next": "Next: Customer b",
           "progress": 0,
-          "compact": "…",
+          "compact": "1/2",
           "spoken": "Up next: Customer a. Stop 1 of 2.",
-          "access": null
+          "access": null,
+          "cleanings": []
         },
         "segments": [
           "current",
           "todo"
         ],
-        "doneCount": 0
+        "doneCount": 0,
+        "currentId": "a",
+        "browsing": false
       }
     },
     {
@@ -1189,20 +1258,23 @@
         "stops": 2,
         "content": {
           "headline": "Up next: Customer a",
-          "figure": "9:00 AM",
-          "figureLabel": "Scheduled",
+          "figure": "1 of 2",
+          "figureLabel": "Stop",
           "detail": "Stop 1 of 2",
-          "next": "Next: Customer b at 9:00 AM",
+          "next": "Next: Customer b",
           "progress": 0,
-          "compact": "9:00",
-          "spoken": "Up next: Customer a at 9:00 AM. Stop 1 of 2.",
-          "access": null
+          "compact": "1/2",
+          "spoken": "Up next: Customer a. Stop 1 of 2.",
+          "access": null,
+          "cleanings": []
         },
         "segments": [
           "current",
           "todo"
         ],
-        "doneCount": 0
+        "doneCount": 0,
+        "currentId": "a",
+        "browsing": false
       }
     },
     {
@@ -1231,19 +1303,22 @@
         "stops": 1,
         "content": {
           "headline": "Up next: Customer a",
-          "figure": "9:00 AM",
-          "figureLabel": "Scheduled",
+          "figure": "1 of 1",
+          "figureLabel": "Stop",
           "detail": "Stop 1 of 1 · a Palm Ln",
           "next": null,
           "progress": 0,
-          "compact": "9:00",
-          "spoken": "Up next: Customer a at 9:00 AM. Stop 1 of 1. Access: xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx…",
-          "access": "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx…"
+          "compact": "1/1",
+          "spoken": "Up next: Customer a. Stop 1 of 1. Access: xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx…",
+          "access": "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx…",
+          "cleanings": []
         },
         "segments": [
           "current"
         ],
-        "doneCount": 0
+        "doneCount": 0,
+        "currentId": "a",
+        "browsing": false
       }
     },
     {
@@ -1286,17 +1361,20 @@
           "figure": "✓",
           "figureLabel": "Next stop",
           "detail": "Stop 1 of 2",
-          "next": "Next: Customer b at 9:00 AM",
+          "next": "Next: Customer b",
           "progress": 0.5,
           "compact": "✓",
-          "spoken": "Customer a done. Next: Customer b at 9:00 AM.",
-          "access": null
+          "spoken": "Customer a done. Next: Customer b.",
+          "access": null,
+          "cleanings": []
         },
         "segments": [
           "done",
           "todo"
         ],
-        "doneCount": 1
+        "doneCount": 1,
+        "currentId": "a",
+        "browsing": false
       }
     },
     {
@@ -1332,12 +1410,143 @@
           "progress": 0.5,
           "compact": "•",
           "spoken": "At Customer a. Stop 1 of 1. Access: Gate",
-          "access": "Gate"
+          "access": "Gate",
+          "cleanings": []
         },
         "segments": [
           "current"
         ],
-        "doneCount": 0
+        "doneCount": 0,
+        "currentId": "a",
+        "browsing": false
+      }
+    },
+    {
+      "args": [
+        [
+          {
+            "id": "a",
+            "type": "detection",
+            "status": "scheduled",
+            "customer": "Customer a",
+            "address": "a Palm Ln",
+            "scheduled_start": "2026-10-20T16:00:00Z",
+            "checklistDone": 0,
+            "checklistTotal": 0,
+            "cleanings": [
+              {
+                "name": "Clean salt cell",
+                "kind": "salt_cell",
+                "days": 3,
+                "weeks": 0
+              }
+            ]
+          },
+          {
+            "id": "b",
+            "type": "detection",
+            "status": "scheduled",
+            "customer": "Customer b",
+            "address": "b Palm Ln",
+            "scheduled_start": "2026-10-20T16:00:00Z",
+            "checklistDone": 0,
+            "checklistTotal": 0,
+            "cleanings": [
+              {
+                "name": "Clean filter",
+                "kind": "filter",
+                "days": 21,
+                "weeks": 3
+              }
+            ]
+          }
+        ],
+        "2026-10-20",
+        "America/Phoenix",
+        null
+      ],
+      "result": {
+        "moment": "ahead",
+        "stopId": "a",
+        "stop": 1,
+        "stops": 2,
+        "content": {
+          "headline": "Up next: Customer a",
+          "figure": "1 of 2",
+          "figureLabel": "Stop",
+          "detail": "Stop 1 of 2 · a Palm Ln",
+          "next": "Next: Customer b",
+          "progress": 0,
+          "compact": "1/2",
+          "spoken": "Up next: Customer a. Stop 1 of 2. Clean salt cell due in 3 days.",
+          "access": null,
+          "cleanings": [
+            {
+              "kind": "salt_cell",
+              "label": "3 days",
+              "spoken": "Clean salt cell due in 3 days",
+              "overdue": false
+            }
+          ]
+        },
+        "segments": [
+          "current",
+          "todo"
+        ],
+        "doneCount": 0,
+        "currentId": "a",
+        "browsing": false
+      }
+    },
+    {
+      "args": [
+        [
+          {
+            "id": "a",
+            "type": "detection",
+            "status": "done",
+            "customer": "Customer a",
+            "address": "a Palm Ln",
+            "scheduled_start": "2026-10-20T16:00:00Z",
+            "checklistDone": 0,
+            "checklistTotal": 0,
+            "cleanings": [
+              {
+                "name": "Clean filter",
+                "kind": "filter",
+                "days": 0,
+                "weeks": 0
+              }
+            ]
+          }
+        ],
+        "2026-10-20",
+        "America/Phoenix",
+        "a"
+      ],
+      "result": {
+        "moment": "done",
+        "stopId": "a",
+        "stop": 1,
+        "stops": 1,
+        "content": {
+          "headline": "Customer a done",
+          "figure": "✓",
+          "figureLabel": "Last stop",
+          "detail": "Stop 1 of 1",
+          "next": "That was the last stop today.",
+          "progress": 1,
+          "compact": "✓",
+          "spoken": "Customer a done. That was the last stop today.",
+          "access": null,
+          "cleanings": []
+        },
+        "segments": [
+          "done"
+        ],
+        "doneCount": 1,
+        "currentId": "a",
+        "browsing": false
       }
     },
     {
@@ -1428,21 +1637,24 @@
         "stops": 3,
         "content": {
           "headline": "On the way to Customer b",
-          "figure": "9:52 AM",
-          "figureLabel": "Arriving",
+          "figure": "2 of 3",
+          "figureLabel": "Stop",
           "detail": "Stop 2 of 3 · b Palm Ln",
-          "next": "Next: Customer c at 6:30 PM",
+          "next": "Next: Customer c",
           "progress": 0.3333333333333333,
-          "compact": "9:52",
-          "spoken": "On the way to Customer b, arriving at 9:52 AM. Stop 2 of 3.",
-          "access": null
+          "compact": "2/3",
+          "spoken": "On the way to Customer b. Stop 2 of 3.",
+          "access": null,
+          "cleanings": []
         },
         "segments": [
           "todo",
           "current",
           "todo"
         ],
-        "doneCount": 0
+        "doneCount": 0,
+        "currentId": "b",
+        "browsing": false
       }
     },
     {
@@ -1490,21 +1702,511 @@
         "stops": 3,
         "content": {
           "headline": "Up next: Customer a",
-          "figure": "12:00 PM",
-          "figureLabel": "Scheduled",
+          "figure": "1 of 3",
+          "figureLabel": "Stop",
           "detail": "Stop 1 of 3 · a Palm Ln",
-          "next": "Next: Customer b at 12:00 PM",
+          "next": "Next: Customer b",
           "progress": 0,
-          "compact": "12:00",
-          "spoken": "Up next: Customer a at 12:00 PM. Stop 1 of 3.",
-          "access": null
+          "compact": "1/3",
+          "spoken": "Up next: Customer a. Stop 1 of 3.",
+          "access": null,
+          "cleanings": []
         },
         "segments": [
           "current",
           "todo",
           "todo"
         ],
-        "doneCount": 0
+        "doneCount": 0,
+        "currentId": "a",
+        "browsing": false
+      }
+    }
+  ],
+  "todayHeroViewing": [
+    {
+      "args": [
+        [
+          {
+            "id": "a",
+            "type": "detection",
+            "status": "scheduled",
+            "customer": "Customer a",
+            "address": "a Palm Ln",
+            "scheduled_start": "2026-10-20T16:00:00Z",
+            "checklistDone": 0,
+            "checklistTotal": 0,
+            "stop_done_on": "2026-10-20"
+          },
+          {
+            "id": "b",
+            "type": "detection",
+            "status": "scheduled",
+            "customer": "Customer b",
+            "address": "b Palm Ln",
+            "scheduled_start": "2026-10-20T16:00:00Z",
+            "checklistDone": 0,
+            "checklistTotal": 0
+          },
+          {
+            "id": "c",
+            "type": "detection",
+            "status": "scheduled",
+            "customer": "Customer c",
+            "address": "c Palm Ln",
+            "scheduled_start": "2026-10-20T16:00:00Z",
+            "checklistDone": 0,
+            "checklistTotal": 0
+          }
+        ],
+        "2026-10-20",
+        "America/Phoenix",
+        "a"
+      ],
+      "result": {
+        "moment": "done",
+        "stopId": "a",
+        "stop": 1,
+        "stops": 3,
+        "content": {
+          "headline": "Customer a done",
+          "figure": "✓",
+          "figureLabel": "Next stop",
+          "detail": "Stop 1 of 3",
+          "next": "Next: Customer b",
+          "progress": 0.3333333333333333,
+          "compact": "✓",
+          "spoken": "Customer a done. Next: Customer b.",
+          "access": null,
+          "cleanings": []
+        },
+        "segments": [
+          "current",
+          "todo",
+          "todo"
+        ],
+        "doneCount": 1,
+        "currentId": "b",
+        "browsing": true
+      }
+    },
+    {
+      "args": [
+        [
+          {
+            "id": "a",
+            "type": "detection",
+            "status": "scheduled",
+            "customer": "Customer a",
+            "address": "a Palm Ln",
+            "scheduled_start": "2026-10-20T16:00:00Z",
+            "checklistDone": 0,
+            "checklistTotal": 0,
+            "stop_done_on": "2026-10-20"
+          },
+          {
+            "id": "b",
+            "type": "detection",
+            "status": "scheduled",
+            "customer": "Customer b",
+            "address": "b Palm Ln",
+            "scheduled_start": "2026-10-20T16:00:00Z",
+            "checklistDone": 0,
+            "checklistTotal": 0
+          },
+          {
+            "id": "c",
+            "type": "detection",
+            "status": "scheduled",
+            "customer": "Customer c",
+            "address": "c Palm Ln",
+            "scheduled_start": "2026-10-20T16:00:00Z",
+            "checklistDone": 0,
+            "checklistTotal": 0
+          }
+        ],
+        "2026-10-20",
+        "America/Phoenix",
+        "b"
+      ],
+      "result": {
+        "moment": "ahead",
+        "stopId": "b",
+        "stop": 2,
+        "stops": 3,
+        "content": {
+          "headline": "Up next: Customer b",
+          "figure": "2 of 3",
+          "figureLabel": "Stop",
+          "detail": "Stop 2 of 3 · b Palm Ln",
+          "next": "Next: Customer c",
+          "progress": 0.3333333333333333,
+          "compact": "2/3",
+          "spoken": "Up next: Customer b. Stop 2 of 3.",
+          "access": null,
+          "cleanings": []
+        },
+        "segments": [
+          "done",
+          "current",
+          "todo"
+        ],
+        "doneCount": 1,
+        "currentId": "b",
+        "browsing": false
+      }
+    },
+    {
+      "args": [
+        [
+          {
+            "id": "a",
+            "type": "detection",
+            "status": "scheduled",
+            "customer": "Customer a",
+            "address": "a Palm Ln",
+            "scheduled_start": "2026-10-20T16:00:00Z",
+            "checklistDone": 0,
+            "checklistTotal": 0,
+            "stop_done_on": "2026-10-20"
+          },
+          {
+            "id": "b",
+            "type": "detection",
+            "status": "scheduled",
+            "customer": "Customer b",
+            "address": "b Palm Ln",
+            "scheduled_start": "2026-10-20T16:00:00Z",
+            "checklistDone": 0,
+            "checklistTotal": 0
+          },
+          {
+            "id": "c",
+            "type": "detection",
+            "status": "scheduled",
+            "customer": "Customer c",
+            "address": "c Palm Ln",
+            "scheduled_start": "2026-10-20T16:00:00Z",
+            "checklistDone": 0,
+            "checklistTotal": 0,
+            "access": "Gate"
+          }
+        ],
+        "2026-10-20",
+        "America/Phoenix",
+        "c"
+      ],
+      "result": {
+        "moment": "ahead",
+        "stopId": "c",
+        "stop": 3,
+        "stops": 3,
+        "content": {
+          "headline": "Up next: Customer c",
+          "figure": "3 of 3",
+          "figureLabel": "Stop",
+          "detail": "Stop 3 of 3 · c Palm Ln",
+          "next": null,
+          "progress": 0.6666666666666666,
+          "compact": "3/3",
+          "spoken": "Up next: Customer c. Stop 3 of 3. Access: Gate",
+          "access": "Gate",
+          "cleanings": []
+        },
+        "segments": [
+          "done",
+          "todo",
+          "current"
+        ],
+        "doneCount": 1,
+        "currentId": "b",
+        "browsing": true
+      }
+    },
+    {
+      "args": [
+        [
+          {
+            "id": "a",
+            "type": "detection",
+            "status": "scheduled",
+            "customer": "Customer a",
+            "address": "a Palm Ln",
+            "scheduled_start": "2026-10-20T16:00:00Z",
+            "checklistDone": 0,
+            "checklistTotal": 0,
+            "stop_done_on": "2026-10-20"
+          },
+          {
+            "id": "b",
+            "type": "detection",
+            "status": "scheduled",
+            "customer": "Customer b",
+            "address": "b Palm Ln",
+            "scheduled_start": "2026-10-20T16:00:00Z",
+            "checklistDone": 0,
+            "checklistTotal": 0,
+            "on_my_way_at": "2026-10-20T16:30:00Z",
+            "arrive_at": "2026-10-20T16:52:00Z"
+          },
+          {
+            "id": "c",
+            "type": "detection",
+            "status": "scheduled",
+            "customer": "Customer c",
+            "address": "c Palm Ln",
+            "scheduled_start": "2026-10-20T16:00:00Z",
+            "checklistDone": 0,
+            "checklistTotal": 0
+          }
+        ],
+        "2026-10-20",
+        "America/Phoenix",
+        "c"
+      ],
+      "result": {
+        "moment": "ahead",
+        "stopId": "c",
+        "stop": 3,
+        "stops": 3,
+        "content": {
+          "headline": "Up next: Customer c",
+          "figure": "3 of 3",
+          "figureLabel": "Stop",
+          "detail": "Stop 3 of 3 · c Palm Ln",
+          "next": null,
+          "progress": 0.6666666666666666,
+          "compact": "3/3",
+          "spoken": "Up next: Customer c. Stop 3 of 3.",
+          "access": null,
+          "cleanings": []
+        },
+        "segments": [
+          "done",
+          "todo",
+          "current"
+        ],
+        "doneCount": 1,
+        "currentId": "b",
+        "browsing": true
+      }
+    },
+    {
+      "args": [
+        [
+          {
+            "id": "a",
+            "type": "detection",
+            "status": "in_progress",
+            "customer": "Customer a",
+            "address": "a Palm Ln",
+            "scheduled_start": "2026-10-20T16:00:00Z",
+            "checklistDone": 0,
+            "checklistTotal": 0
+          },
+          {
+            "id": "b",
+            "type": "detection",
+            "status": "scheduled",
+            "customer": "Customer b",
+            "address": "b Palm Ln",
+            "scheduled_start": "2026-10-20T16:00:00Z",
+            "checklistDone": 0,
+            "checklistTotal": 0,
+            "on_my_way_at": "2026-10-20T16:30:00Z",
+            "arrive_at": "2026-10-20T16:52:00Z"
+          }
+        ],
+        "2026-10-20",
+        "America/Phoenix",
+        "b"
+      ],
+      "result": {
+        "moment": "driving",
+        "stopId": "b",
+        "stop": 2,
+        "stops": 2,
+        "content": {
+          "headline": "On the way to Customer b",
+          "figure": "2 of 2",
+          "figureLabel": "Stop",
+          "detail": "Stop 2 of 2 · b Palm Ln",
+          "next": null,
+          "progress": 0.5,
+          "compact": "2/2",
+          "spoken": "On the way to Customer b. Stop 2 of 2.",
+          "access": null,
+          "cleanings": []
+        },
+        "segments": [
+          "todo",
+          "current"
+        ],
+        "doneCount": 0,
+        "currentId": "b",
+        "browsing": false
+      }
+    },
+    {
+      "args": [
+        [
+          {
+            "id": "a",
+            "type": "detection",
+            "status": "done",
+            "customer": "Customer a",
+            "address": "a Palm Ln",
+            "scheduled_start": "2026-10-20T16:00:00Z",
+            "checklistDone": 0,
+            "checklistTotal": 0
+          },
+          {
+            "id": "b",
+            "type": "detection",
+            "status": "done",
+            "customer": "Customer b",
+            "address": "b Palm Ln",
+            "scheduled_start": "2026-10-20T16:00:00Z",
+            "checklistDone": 0,
+            "checklistTotal": 0
+          }
+        ],
+        "2026-10-20",
+        "America/Phoenix",
+        "a"
+      ],
+      "result": {
+        "moment": "done",
+        "stopId": "a",
+        "stop": 1,
+        "stops": 2,
+        "content": {
+          "headline": "Customer a done",
+          "figure": "✓",
+          "figureLabel": "Last stop",
+          "detail": "Stop 1 of 2",
+          "next": "That was the last stop today.",
+          "progress": 0.5,
+          "compact": "✓",
+          "spoken": "Customer a done. That was the last stop today.",
+          "access": null,
+          "cleanings": []
+        },
+        "segments": [
+          "current",
+          "done"
+        ],
+        "doneCount": 2,
+        "currentId": null,
+        "browsing": true
+      }
+    },
+    {
+      "args": [
+        [
+          {
+            "id": "a",
+            "type": "detection",
+            "status": "scheduled",
+            "customer": "Customer a",
+            "address": "a Palm Ln",
+            "scheduled_start": "2026-10-20T16:00:00Z",
+            "checklistDone": 0,
+            "checklistTotal": 0
+          },
+          {
+            "id": "b",
+            "type": "detection",
+            "status": "scheduled",
+            "customer": "Customer b",
+            "address": "b Palm Ln",
+            "scheduled_start": "2026-10-20T16:00:00Z",
+            "checklistDone": 0,
+            "checklistTotal": 0
+          }
+        ],
+        "2026-10-20",
+        "America/Phoenix",
+        "missing"
+      ],
+      "result": {
+        "moment": "ahead",
+        "stopId": "a",
+        "stop": 1,
+        "stops": 2,
+        "content": {
+          "headline": "Up next: Customer a",
+          "figure": "1 of 2",
+          "figureLabel": "Stop",
+          "detail": "Stop 1 of 2 · a Palm Ln",
+          "next": "Next: Customer b",
+          "progress": 0,
+          "compact": "1/2",
+          "spoken": "Up next: Customer a. Stop 1 of 2.",
+          "access": null,
+          "cleanings": []
+        },
+        "segments": [
+          "current",
+          "todo"
+        ],
+        "doneCount": 0,
+        "currentId": "a",
+        "browsing": false
+      }
+    },
+    {
+      "args": [
+        [
+          {
+            "id": "a",
+            "type": "detection",
+            "status": "scheduled",
+            "customer": "Customer a",
+            "address": "a Palm Ln",
+            "scheduled_start": "2026-10-20T16:00:00Z",
+            "checklistDone": 0,
+            "checklistTotal": 0
+          },
+          {
+            "id": "b",
+            "type": "detection",
+            "status": "scheduled",
+            "customer": "Customer b",
+            "address": "b Palm Ln",
+            "scheduled_start": "2026-10-20T16:00:00Z",
+            "checklistDone": 0,
+            "checklistTotal": 0
+          }
+        ],
+        "2026-10-20",
+        "America/Phoenix",
+        null
+      ],
+      "result": {
+        "moment": "ahead",
+        "stopId": "a",
+        "stop": 1,
+        "stops": 2,
+        "content": {
+          "headline": "Up next: Customer a",
+          "figure": "1 of 2",
+          "figureLabel": "Stop",
+          "detail": "Stop 1 of 2 · a Palm Ln",
+          "next": "Next: Customer b",
+          "progress": 0,
+          "compact": "1/2",
+          "spoken": "Up next: Customer a. Stop 1 of 2.",
+          "access": null,
+          "cleanings": []
+        },
+        "segments": [
+          "current",
+          "todo"
+        ],
+        "doneCount": 0,
+        "currentId": "a",
+        "browsing": false
       }
     }
   ],
@@ -1702,8 +2404,10 @@
         true
       ],
       "result": {
-        "primary": "on_my_way",
-        "complete": false
+        "primary": "start_job",
+        "complete": false,
+        "onMyWay": true,
+        "undo": false
       }
     },
     {
@@ -1713,7 +2417,9 @@
       ],
       "result": {
         "primary": null,
-        "complete": false
+        "complete": false,
+        "onMyWay": false,
+        "undo": false
       }
     },
     {
@@ -1723,7 +2429,9 @@
       ],
       "result": {
         "primary": "start_job",
-        "complete": false
+        "complete": false,
+        "onMyWay": false,
+        "undo": false
       }
     },
     {
@@ -1733,7 +2441,9 @@
       ],
       "result": {
         "primary": null,
-        "complete": false
+        "complete": false,
+        "onMyWay": false,
+        "undo": false
       }
     },
     {
@@ -1743,7 +2453,9 @@
       ],
       "result": {
         "primary": "open_checklist",
-        "complete": true
+        "complete": true,
+        "onMyWay": false,
+        "undo": false
       }
     },
     {
@@ -1753,7 +2465,9 @@
       ],
       "result": {
         "primary": "open_checklist",
-        "complete": true
+        "complete": true,
+        "onMyWay": false,
+        "undo": false
       }
     },
     {
@@ -1762,8 +2476,10 @@
         true
       ],
       "result": {
-        "primary": "on_my_way",
-        "complete": false
+        "primary": null,
+        "complete": false,
+        "onMyWay": false,
+        "undo": true
       }
     },
     {
@@ -1773,7 +2489,9 @@
       ],
       "result": {
         "primary": null,
-        "complete": false
+        "complete": false,
+        "onMyWay": false,
+        "undo": false
       }
     },
     {
@@ -1783,7 +2501,9 @@
       ],
       "result": {
         "primary": null,
-        "complete": false
+        "complete": false,
+        "onMyWay": false,
+        "undo": false
       }
     },
     {
@@ -1793,7 +2513,9 @@
       ],
       "result": {
         "primary": null,
-        "complete": false
+        "complete": false,
+        "onMyWay": false,
+        "undo": false
       }
     }
   ],
@@ -1802,7 +2524,7 @@
       "args": [],
       "result": {
         "on_my_way": "On My Way",
-        "start_job": "Start Job",
+        "start_job": "Start",
         "open_checklist": "Open Checklist"
       }
     }
@@ -1952,6 +2674,189 @@
         14
       ],
       "result": null
+    }
+  ],
+  "heroHeadline": [
+    {
+      "args": [
+        "ahead",
+        "All 6 stops done"
+      ],
+      "result": "Up next"
+    },
+    {
+      "args": [
+        "driving",
+        "All 6 stops done"
+      ],
+      "result": "On the way"
+    },
+    {
+      "args": [
+        "on_site",
+        "All 6 stops done"
+      ],
+      "result": "At the pool"
+    },
+    {
+      "args": [
+        "done",
+        "All 6 stops done"
+      ],
+      "result": "Done"
+    },
+    {
+      "args": [
+        "day_done",
+        "All 6 stops done"
+      ],
+      "result": "All 6 stops done"
+    }
+  ],
+  "heroTopLine": [
+    {
+      "args": [
+        [
+          {
+            "id": "a",
+            "type": "detection",
+            "status": "scheduled",
+            "customer": "Customer a",
+            "address": "a Palm Ln",
+            "scheduled_start": "2026-10-20T16:00:00Z",
+            "checklistDone": 0,
+            "checklistTotal": 0
+          },
+          {
+            "id": "b",
+            "type": "detection",
+            "status": "scheduled",
+            "customer": "Customer b",
+            "address": "b Palm Ln",
+            "scheduled_start": "2026-10-20T16:00:00Z",
+            "checklistDone": 0,
+            "checklistTotal": 0
+          }
+        ],
+        "2026-10-20",
+        "America/Phoenix",
+        null
+      ],
+      "result": "Up next"
+    },
+    {
+      "args": [
+        [
+          {
+            "id": "a",
+            "type": "detection",
+            "status": "scheduled",
+            "customer": "Customer a",
+            "address": "a Palm Ln",
+            "scheduled_start": "2026-10-20T16:00:00Z",
+            "checklistDone": 0,
+            "checklistTotal": 0,
+            "on_my_way_at": "2026-10-20T16:30:00Z",
+            "arrive_at": "2026-10-20T16:52:00Z"
+          },
+          {
+            "id": "b",
+            "type": "detection",
+            "status": "scheduled",
+            "customer": "Customer b",
+            "address": "b Palm Ln",
+            "scheduled_start": "2026-10-20T16:00:00Z",
+            "checklistDone": 0,
+            "checklistTotal": 0
+          }
+        ],
+        "2026-10-20",
+        "America/Phoenix",
+        null
+      ],
+      "result": "On the way"
+    },
+    {
+      "args": [
+        [
+          {
+            "id": "a",
+            "type": "detection",
+            "status": "in_progress",
+            "customer": "Customer a",
+            "address": "a Palm Ln",
+            "scheduled_start": "2026-10-20T16:00:00Z",
+            "checklistDone": 0,
+            "checklistTotal": 0
+          },
+          {
+            "id": "b",
+            "type": "detection",
+            "status": "scheduled",
+            "customer": "Customer b",
+            "address": "b Palm Ln",
+            "scheduled_start": "2026-10-20T16:00:00Z",
+            "checklistDone": 0,
+            "checklistTotal": 0
+          }
+        ],
+        "2026-10-20",
+        "America/Phoenix",
+        null
+      ],
+      "result": "At the pool · Stop 1 of 2"
+    },
+    {
+      "args": [
+        [
+          {
+            "id": "a",
+            "type": "detection",
+            "status": "scheduled",
+            "customer": "Customer a",
+            "address": "a Palm Ln",
+            "scheduled_start": "2026-10-20T16:00:00Z",
+            "checklistDone": 0,
+            "checklistTotal": 0,
+            "stop_done_on": "2026-10-20"
+          },
+          {
+            "id": "b",
+            "type": "detection",
+            "status": "scheduled",
+            "customer": "Customer b",
+            "address": "b Palm Ln",
+            "scheduled_start": "2026-10-20T16:00:00Z",
+            "checklistDone": 0,
+            "checklistTotal": 0
+          }
+        ],
+        "2026-10-20",
+        "America/Phoenix",
+        "a"
+      ],
+      "result": "Done · Stop 1 of 2"
+    },
+    {
+      "args": [
+        [
+          {
+            "id": "a",
+            "type": "detection",
+            "status": "scheduled",
+            "customer": "Customer a",
+            "address": "a Palm Ln",
+            "scheduled_start": "2026-10-20T16:00:00Z",
+            "checklistDone": 0,
+            "checklistTotal": 0,
+            "stop_done_on": "2026-10-20"
+          }
+        ],
+        "2026-10-20",
+        "America/Phoenix",
+        null
+      ],
+      "result": "The stop is done"
     }
   ],
   "heroSegmentsSpoken": [

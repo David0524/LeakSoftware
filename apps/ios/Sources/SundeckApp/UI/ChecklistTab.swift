@@ -367,8 +367,18 @@
                 if editing {
                     editRow
                 } else {
-                    // Swipe left to Remove; Edit over the checklist is the visible way.
-                    SwipeDeleteRow(name: item.component.label, title: "Remove", delete: { confirmRemove = true }) {
+                    // Swipe right for Done, left to Remove (Edit over the checklist is the visible
+                    // way); touch and hold for Done, Not Done and N/A, the item's own answers
+                    // (gestures spec section 12).
+                    SwipeActionsRow(
+                        actions: [
+                            SwipeAction(title: "Remove", systemImage: "minus.circle", tint: Color.fail) {
+                                confirmRemove = true
+                            }
+                        ],
+                        leading: doneAction.map { [$0] } ?? [], menuTitle: item.component.label,
+                        menuItems: answerActions
+                    ) {
                         verdictRow
                     }
                 }
@@ -378,6 +388,28 @@
             } message: {
                 if let message = ask.message { Text(message) }
             }
+        }
+
+        /// Done: the item's first answer ("Done", "Not Leaking", "No"), until it has it.
+        private var doneAction: SwipeAction? {
+            guard let ok = item.options.first(where: { $0.value == .ok }), item.verdict != .ok else { return nil }
+            return SwipeAction(title: ok.label, systemImage: "checkmark", tint: Color.pass) { choose(.ok) }
+        }
+
+        /// Done, Not Done (back to To do, as tapping the chosen answer again does), N/A.
+        private var answerActions: [SwipeAction] {
+            var list = doneAction.map { [$0] } ?? []
+            if item.verdict != nil {
+                list.append(
+                    SwipeAction(title: "Not Done", systemImage: "arrow.uturn.backward", tint: Color.link) {
+                        choose(nil)
+                    })
+            }
+            if let na = item.options.first(where: { $0.value == .na }), item.verdict != .na {
+                list.append(
+                    SwipeAction(title: na.label, systemImage: "minus.circle", tint: Color.excluded) { choose(.na) })
+            }
+            return list
         }
 
         /// In Edit: the name and a red Remove (website: the same row with a danger button).

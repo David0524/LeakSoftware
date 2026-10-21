@@ -105,6 +105,53 @@
         @State private var deletes = 0
 
         var body: some View {
+            // Swipe left for Delete (it asks first); touch and hold for Edit (the markup) and
+            // Delete… (gestures spec section 12). Mark Up and More stay the visible way.
+            SwipeDeleteRow(name: text.heading, delete: { confirmDelete = true }) { content }
+                .card(padding: 0)
+                .clipShape(RoundedRectangle(cornerRadius: CGFloat(Radius.card), style: .continuous))
+                .rowMenu(text.heading, menu)
+                .task(id: "\(media.id)-\(media.uploadState.rawValue)") {
+                    source = await resolveMediaSource(media, files: sync.media, signer: signer)
+                    if media.kind == .photo, image == nil {
+                        image = await loadThumbnail(
+                            media, files: sync.media, signer: signer, pixels: Int(displayScale * 400))
+                    }
+                }
+                .sensoryFeedback(.warning, trigger: deletes)
+                .fullScreenCover(isPresented: $marking) {
+                    if case .ready(let url) = source { MarkupEditor(media: media, url: url) }
+                }
+                .confirmationDialog(
+                    MediaDetail.deleteTitle(media.kind), isPresented: $confirmDelete, titleVisibility: .visible
+                ) {
+                    Button(MediaDetail.deleteButton(media.kind), role: .destructive) {
+                        if (try? MediaWrites.delete(sync, media)) != nil { deletes += 1 }
+                    }
+                    Button("Cancel", role: .cancel) {}
+                } message: {
+                    Text(MediaDetail.deleteMessage)
+                }
+        }
+
+        /// Edit (Mark Up, on a photo whose file is here) and Delete…. Set as Pool Photo isn't on
+        /// the phone.
+        private var menu: [SwipeAction] {
+            var list: [SwipeAction] = []
+            if text.markupButton != nil, source.url != nil {
+                list.append(
+                    SwipeAction(title: "Edit", systemImage: "pencil.tip.crop.circle", tint: Color.link) {
+                        marking = true
+                    })
+            }
+            list.append(
+                SwipeAction(title: "Delete…", systemImage: "trash", tint: Color.fail, role: .destructive) {
+                    confirmDelete = true
+                })
+            return list
+        }
+
+        private var content: some View {
             VStack(alignment: .leading, spacing: 0) {
                 preview
                 VStack(alignment: .leading, spacing: 2) {
@@ -142,29 +189,6 @@
                     .padding(.top, 10)
                 }
                 .padding(12)
-            }
-            .card(padding: 0)
-            .clipShape(RoundedRectangle(cornerRadius: CGFloat(Radius.card), style: .continuous))
-            .task(id: "\(media.id)-\(media.uploadState.rawValue)") {
-                source = await resolveMediaSource(media, files: sync.media, signer: signer)
-                if media.kind == .photo, image == nil {
-                    image = await loadThumbnail(
-                        media, files: sync.media, signer: signer, pixels: Int(displayScale * 400))
-                }
-            }
-            .sensoryFeedback(.warning, trigger: deletes)
-            .fullScreenCover(isPresented: $marking) {
-                if case .ready(let url) = source { MarkupEditor(media: media, url: url) }
-            }
-            .confirmationDialog(
-                MediaDetail.deleteTitle(media.kind), isPresented: $confirmDelete, titleVisibility: .visible
-            ) {
-                Button(MediaDetail.deleteButton(media.kind), role: .destructive) {
-                    if (try? MediaWrites.delete(sync, media)) != nil { deletes += 1 }
-                }
-                Button("Cancel", role: .cancel) {}
-            } message: {
-                Text(MediaDetail.deleteMessage)
             }
         }
 

@@ -112,7 +112,7 @@
                     OutcomeChip(outcome: .pass)
                     OutcomeChip(outcome: .fail)
                     OutcomeChip(outcome: .inconclusive)
-                    LockLabel("Fixed time")
+                    LockLabel("Time locked")
                     CountBadge(text: "3")
                     CountBadge(text: "99+")
                     CountBadge(text: "2", tone: .warning)
@@ -137,8 +137,8 @@
                     Button("Report") {}.buttonStyle(.quiet)
                 }
                 HStack(spacing: 8) {
-                    Button("Plan Route") {}.buttonStyle(.secondary(fullWidth: true))
-                    Button("Apple Maps") {}.buttonStyle(.secondary(fullWidth: true))
+                    Button("Optimize") {}.buttonStyle(.secondary(fullWidth: true))
+                    Button("Maps") {}.buttonStyle(.secondary(fullWidth: true))
                 }
                 Button {
                 } label: {
@@ -219,7 +219,7 @@
                     ListRow("Directions open in") {
                         CompactSelect(
                             title: "Directions open in", selection: $directions,
-                            options: ["Automatic", "Apple Maps", "Google Maps"], optionLabel: { $0 })
+                            options: ["Automatic", "Maps (Apple)", "Maps (Google)"], optionLabel: { $0 })
                     }
                     SwitchRow("Text the customer", detail: "When you're on your way", isOn: $textCustomer)
                     SwitchRow("Reminders", isOn: $reminders)

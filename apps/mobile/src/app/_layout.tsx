@@ -7,7 +7,8 @@ import { StyleSheet, View } from "react-native";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { KeyboardProvider } from "react-native-keyboard-controller";
 import { initMonitoring, reportError } from "../lib/monitoring";
-import { SessionProvider, useSession } from "../state/session";
+import { useFirstDownloadOpen } from "../state/firstDownload";
+import { SessionProvider, useSession, useSyncStatus } from "../state/session";
 import { Button, T } from "../ui/components";
 import { appearance, color, space } from "../ui/theme";
 
@@ -91,6 +92,11 @@ function RootStack() {
   const { user, company, needsCode } = useSession();
   // Two-step sign-in: the code screen comes before anything else (owner, 2026-10-16).
   const signedIn = Boolean(user) && !needsCode;
+  // The first download stays on Getting Ready until it's finished and its check has shown
+  // (gestures spec section 11), even once the company's row has arrived.
+  const status = useSyncStatus();
+  const { open } = useFirstDownloadOpen(status.initialSyncDone);
+  const ready = Boolean(company) && (status.initialSyncDone ? open : status.download === null);
   return (
     <Stack screenOptions={{ headerShown: false }}>
       <Stack.Protected guard={!user && !needsCode}>
@@ -99,10 +105,10 @@ function RootStack() {
       <Stack.Protected guard={needsCode}>
         <Stack.Screen name="code" />
       </Stack.Protected>
-      <Stack.Protected guard={signedIn && !company}>
+      <Stack.Protected guard={signedIn && !ready}>
         <Stack.Screen name="setup" />
       </Stack.Protected>
-      <Stack.Protected guard={signedIn && Boolean(company)}>
+      <Stack.Protected guard={signedIn && ready}>
         <Stack.Screen name="(app)" />
       </Stack.Protected>
     </Stack>

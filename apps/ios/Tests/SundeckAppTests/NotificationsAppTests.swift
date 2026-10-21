@@ -129,7 +129,7 @@ import Testing
             Dictionary(uniqueKeysWithValues: NotificationKind.allCases.map { ($0.rawValue, .bool(false)) }))
         #expect(NotificationPrefsForm.summary(off) == "Off")
         #expect(NotificationPrefsForm.summary(nil) == "On")
-        #expect(NotificationPrefsForm.rowDetail == "Texts, new jobs, quotes, payments, and reports")
+        #expect(NotificationPrefsForm.rowDetail == "Texts, new jobs, quotes, payments, reports, and Live Activity")
         #expect(KVKey.signOutClears.contains(KVKey.notificationPrefs))
     }
 
@@ -164,7 +164,8 @@ import Testing
         #expect(driving.stop == 1 && driving.stops == 2 && driving.eta == "8:25 AM")
         #expect(driving.address?.hasPrefix("2 Palm Ct") == true)
         #expect(driving.next == LiveStopNext(customer: "Riley Rivera", time: "11:00 AM"))
-        #expect(liveStopContent(driving).figure == "8:25 AM")
+        // No clock times on the Live Activity (owner, 2026-10-20): the stop's place in the day.
+        #expect(liveStopContent(driving).figure == "1 of 2")
 
         try setStatus(s, first, "in_progress")
         let onSite = try #require(
@@ -173,13 +174,17 @@ import Testing
                 now: ScheduleDataTests.now))
         #expect(onSite.phase == .onSite && onSite.eta == nil)
 
+        // Done: the day has moved on (owner, 2026-10-20: no minute's hold), so the controller
+        // shows the next stop, with an alert.
         try setStatus(s, first, "completed")
-        let done = try #require(
+        #expect(
             liveStopInput(
                 s.sync.store, kv: s.sync.kv, company: s.company, userId: ScheduleDataTests.me, target: target,
-                now: ScheduleDataTests.now))
-        #expect(done.phase == .done)
-        #expect(liveStopContent(done).next == "Next: Riley Rivera at 11:00 AM")
+                now: ScheduleDataTests.now) == nil)
+        #expect(
+            liveStopDoneAlert(customer: "Grace Holloway", next: "Riley Rivera")
+                == "Grace Holloway done. Next: Riley Rivera")
+        #expect(liveStopDoneAlert(customer: "Grace Holloway", next: nil) == "Grace Holloway done.")
 
         // Before On My Way (no arrival time): ahead, at its scheduled time.
         let ahead = try #require(
@@ -199,7 +204,31 @@ import Testing
                 target: LiveStopTarget(jobId: "missing", eta: nil), now: ScheduleDataTests.now) == nil)
         #expect(liveStopETA(now: ScheduleDataTests.now, timeZone: "America/Phoenix", driveMinutes: 2) == "8:05 AM")
         #expect(liveStopETA(now: ScheduleDataTests.now, timeZone: "America/Phoenix", driveMinutes: 25) == "8:25 AM")
-        #expect(liveStopDoneLingerSeconds == 60)
+    }
+
+    /// The visit's cleanings ride on the card and the Live Activity (owner, 2026-10-20), and a
+    /// Live Activity state saved before they existed still decodes.
+    @Test func liveStopCarriesCleanings() throws {
+        let due = try #require(cleaningCountdown("2026-10-18", "2026-10-20"))
+        let stop = heroCleanings([VisitCleaning(id: "c1", name: "Clean filter", kind: .filter, due: due)])
+        #expect(stop == [StopCleaning(name: "Clean filter", kind: .filter, days: -2, weeks: 0)])
+        let input = LiveStopInput(
+            phase: .ahead, customer: "Grace", address: nil, stop: 1, stops: 2, eta: nil, checklistDone: 0,
+            checklistTotal: 0, next: nil, cleanings: stop)
+        let content = liveStopContent(input)
+        #expect(
+            content.cleanings == [
+                CleaningBadge(kind: .filter, label: "Overdue", spoken: "Clean filter overdue", overdue: true)
+            ])
+        #expect(content.spoken.hasSuffix(" Clean filter overdue."))
+        let state = LiveStopState(stop: input, jobId: "j1", phone: nil)
+        let again = try JSONDecoder().decode(LiveStopState.self, from: JSONEncoder().encode(state))
+        #expect(again == state)
+        let old = """
+            {"jobId":"j1","stop":{"phase":"ahead","customer":"Grace","stop":1,"stops":2,"checklistDone":0,"checklistTotal":0}}
+            """
+        let decoded = try JSONDecoder().decode(LiveStopState.self, from: Data(old.utf8))
+        #expect(decoded.stop.cleanings == nil && liveStopContent(decoded.stop).cleanings.isEmpty)
     }
 
     private func setStatus(_ s: ScheduleDataTests, _ id: String, _ status: String) throws {
@@ -211,9 +240,10 @@ import Testing
                 serverHLC: "1792508400001-0000-server"))
     }
 
-    /// The workday (owner, 2026-10-19: "Live Activity should begin at the beginning of the
-    /// workday"): it runs from the day's start on a work day while a stop isn't done, on the
-    /// first stop not done, and moves on from a done one.
+    /// The workday (owner, 2026-10-19 and 2026-10-20: "It should run anytime you have the app
+    /// open during the work day"): it runs from the day's start on a work day while a stop isn't
+    /// done, on the first stop not done, moves on from a done one, and a removal lasts only until
+    /// the app comes back.
     @Test func liveStopBeginsWithTheWorkday() throws {
         let s = try ScheduleDataTests()
         let me = ScheduleDataTests.me
@@ -223,29 +253,34 @@ import Testing
         #expect(day.stops.map(\.id) == [s.id(2), s.id(1)])
         #expect(day.open()?.id == s.id(2))
         #expect(day.hero()?.moment == .ahead && day.hero()?.stop == 1)
+        // Whenever the app is open during the work day (owner, 2026-10-20): it begins; removed
+        // today, it stays off only until the app comes back (which clears the removal).
+        #expect(liveStopBegins(day, dismissedOn: nil))
+        #expect(!liveStopBegins(day, dismissedOn: day.today))
+        #expect(liveStopBegins(day, dismissedOn: "2026-10-19"))
         // On My Way to the second stop: the day is on it (Today's card agrees: `todayHero`).
         try StopWrites.recordOnMyWay(
             s.sync, companyId: ScheduleDataTests.company, jobId: s.id(1), driveMinutes: 10, now: ScheduleDataTests.now)
         let driving = liveStopDay(
             s.sync.store, kv: s.sync.kv, company: s.company, userId: me, now: ScheduleDataTests.now)
         #expect(driving.open()?.id == s.id(1) && driving.hero()?.moment == .driving)
-        #expect(driving.hero()?.content.figure == "8:10 AM")
-        // The first stop done: shown done for its minute, then the next stop.
+        #expect(driving.hero()?.content.figure == "2 of 2")
+        // The first stop done: straight on to the next stop (owner, 2026-10-20).
         try setStatus(s, s.id(2), "completed")
         let moved = liveStopDay(s.sync.store, kv: s.sync.kv, company: s.company, userId: me, now: ScheduleDataTests.now)
-        #expect(moved.hero(justDone: s.id(2))?.moment == .done)
-        #expect(moved.hero(justDone: s.id(2))?.content.next == "Next: Riley Rivera at 11:00 AM")
+        #expect(moved.hero()?.stopId == s.id(1))
         #expect(moved.open()?.id == s.id(1))
         // Before the day starts: not yet.
         let early = liveStopDay(
             s.sync.store, kv: s.sync.kv, company: s.company, userId: me,
             now: ScheduleDataTests.now.addingTimeInterval(-60))
-        #expect(!early.runs)
+        #expect(!early.runs && !liveStopBegins(early, dismissedOn: nil))
         // Both stops done: it doesn't run, and there's nothing to move on to.
         try setStatus(s, s.id(2), "completed")
         try setStatus(s, s.id(1), "completed")
         let after = liveStopDay(s.sync.store, kv: s.sync.kv, company: s.company, userId: me, now: ScheduleDataTests.now)
         #expect(!after.runs && after.open() == nil && after.hero()?.moment == .dayDone)
+        #expect(!liveStopBegins(after, dismissedOn: nil))
         // Sam has no stops today.
         #expect(
             !liveStopDay(

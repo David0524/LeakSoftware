@@ -1,7 +1,9 @@
 import type { Metadata } from "next";
-import { formatAddress, offersPool } from "@leakbook/core";
+import { formatAddress, offersPool, propertyLocation } from "@leakbook/core";
+import { CustomerActions } from "@/components/list-actions";
+import { getLine } from "@/lib/messages";
 import { CustomerFilters } from "@/components/customer-filters";
-import { Empty, Grouped, PageHeader, Row } from "@/components/ui";
+import { Empty, Grouped, PageHeader, RowContent } from "@/components/ui";
 import { getOffice } from "@/lib/auth";
 import { CUSTOMER_SORTS, getCompany, listCustomers, type CustomerSort } from "@/lib/data";
 import { Suspense } from "react";
@@ -23,7 +25,7 @@ export default async function CustomersPage({ searchParams }: PageProps<"/custom
   const office = await getOffice();
   const { q, sort: sortParam, show: showParam } = await searchParams;
   const search = typeof q === "string" ? q : "";
-  const company = await getCompany(office);
+  const [company, line] = await Promise.all([getCompany(office), getLine(office)]);
   const shows = [
     { value: "all", label: "All Customers" },
     ...(offersPool(company.settings)
@@ -82,49 +84,60 @@ export default async function CustomersPage({ searchParams }: PageProps<"/custom
       ) : (
         <Grouped className="max-w-3xl">
           {customers.map((c) => (
-            <Row
+            <CustomerActions
               key={c.id}
-              href={`/customers/${c.id}`}
-              value={
-                sort === "last_visit"
-                  ? c.lastVisit
-                    ? day(c.lastVisit)
-                    : "No visits"
-                  : sort === "newest" || sort === "oldest"
-                    ? c.created_at
-                      ? `Added ${day(c.created_at)}`
+              customer={{
+                id: c.id,
+                name: c.name,
+                phone: c.phone ?? null,
+                inboxHref: line?.status === "active" ? `/messages/new?customer=${c.id}` : null,
+                address: c.properties[0] ? formatAddress(c.properties[0]) : null,
+                location: c.properties[0] ? propertyLocation(c.properties[0]) : null,
+              }}
+            >
+              <RowContent
+                href={`/customers/${c.id}`}
+                value={
+                  sort === "last_visit"
+                    ? c.lastVisit
+                      ? day(c.lastVisit)
+                      : "No visits"
+                    : sort === "newest" || sort === "oldest"
+                      ? c.created_at
+                        ? `Added ${day(c.created_at)}`
+                        : undefined
                       : undefined
-                    : undefined
-              }
-              label={
-                <>
-                  <span className="font-semibold">{c.name}</span>
-                  {c.company_name ? (
-                    <span className="text-text-muted"> · {c.company_name}</span>
-                  ) : null}
-                </>
-              }
-              detail={
-                <>
-                  {/* Phones show the number only (one line); the email joins it when wider. */}
-                  <span className="block truncate">
-                    {c.phone ?? null}
-                    {c.email ? (
-                      <span className={c.phone ? "hidden sm:inline" : undefined}>
-                        {c.phone ? " · " : ""}
-                        {c.email}
+                }
+                label={
+                  <>
+                    <span className="font-semibold">{c.name}</span>
+                    {c.company_name ? (
+                      <span className="text-text-muted"> · {c.company_name}</span>
+                    ) : null}
+                  </>
+                }
+                detail={
+                  <>
+                    {/* Phones show the number only (one line); the email joins it when wider. */}
+                    <span className="block truncate">
+                      {c.phone ?? null}
+                      {c.email ? (
+                        <span className={c.phone ? "hidden sm:inline" : undefined}>
+                          {c.phone ? " · " : ""}
+                          {c.email}
+                        </span>
+                      ) : null}
+                      {!c.phone && !c.email ? "No contact details" : null}
+                    </span>
+                    {c.properties.length > 0 ? (
+                      <span className="block text-text">
+                        {c.properties.map((p) => formatAddress(p)).join("; ")}
                       </span>
                     ) : null}
-                    {!c.phone && !c.email ? "No contact details" : null}
-                  </span>
-                  {c.properties.length > 0 ? (
-                    <span className="block text-text">
-                      {c.properties.map((p) => formatAddress(p)).join("; ")}
-                    </span>
-                  ) : null}
-                </>
-              }
-            />
+                  </>
+                }
+              />
+            </CustomerActions>
           ))}
         </Grouped>
       )}
