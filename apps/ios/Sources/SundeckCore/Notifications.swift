@@ -195,7 +195,7 @@ public struct LiveStopContent: Codable, Equatable, Sendable {
     public var figureLabel: String
     /// "Stop 3 of 7 · 123 Palm Ln"
     public var detail: String
-    /// "Next: Jones", or nil when this is the last stop.
+    /// "Then: Jones", or nil when this is the last stop.
     public var next: String?
     /// 0..1 along the day's stops (done ones and this one), for the progress bar.
     public var progress: Double
@@ -240,7 +240,7 @@ private func liveStopBase(_ s: LiveStopInput) -> LiveStopContent {
     // ignored.
     let of = "Stop \(s.stop) of \(s.stops)"
     let detail = [of, s.address].compactMap { $0 }.filter { !$0.isEmpty }.joined(separator: " · ")
-    let next = s.next.map { "Next: \($0.customer)" }
+    let next = s.next.map { "Then: \($0.customer)" }
     let doneStops = s.phase == .done ? s.stop : s.stop - 1
     let progress =
         s.stops > 0

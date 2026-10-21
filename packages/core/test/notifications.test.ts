@@ -74,7 +74,7 @@ describe("liveStopContent", () => {
       figure: "3 of 7",
       figureLabel: "Stop",
       detail: "Stop 3 of 7 · 123 Palm Ln",
-      next: "Next: Jones",
+      next: "Then: Jones",
       progress: 2 / 7,
       compact: "3/7",
       spoken: "On the way to Smith. Stop 3 of 7.",
@@ -90,7 +90,7 @@ describe("liveStopContent", () => {
     expect(c.figureLabel).toBe("Checklist");
     expect(c.compact).toBe("4/9");
     expect(c.progress).toBeCloseTo(2.5 / 7);
-    expect(c.spoken).toBe("At Smith. Checklist 4 of 9. Stop 3 of 7. Next: Jones.");
+    expect(c.spoken).toBe("At Smith. Checklist 4 of 9. Stop 3 of 7. Then: Jones.");
   });
 
   it("done: the next stop, or the end of the day", () => {
@@ -99,7 +99,7 @@ describe("liveStopContent", () => {
       "Smith done",
       "✓",
       "Next stop",
-      "Next: Jones",
+      "Then: Jones",
       3 / 7,
     ]);
     const last = liveStopContent({ ...base, phase: "done", stop: 7, next: null });
@@ -132,7 +132,7 @@ describe("the workday's Live Activity", () => {
       figure: "1 of 5",
       figureLabel: "Stop",
       detail: "Stop 1 of 5 · 123 Palm Ln",
-      next: "Next: Jones",
+      next: "Then: Jones",
       progress: 0,
       compact: "1/5",
       spoken: "Up next: Smith. Stop 1 of 5.",

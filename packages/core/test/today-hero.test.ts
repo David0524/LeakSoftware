@@ -37,7 +37,7 @@ describe("todayHero (owner, 2026-10-20)", () => {
     expect(h.segments).toEqual(["done", "current", "todo"]);
     expect(h.content.headline).toBe("Up next: Customer b");
     expect([h.content.figure, h.content.figureLabel]).toEqual(["2 of 3", "Stop"]);
-    expect(h.content.next).toBe("Next: Customer c");
+    expect(h.content.next).toBe("Then: Customer c");
     expect(h.content.access).toBe("Gate 4821");
   });
 
@@ -84,7 +84,7 @@ describe("todayHero (owner, 2026-10-20)", () => {
     })!;
     expect(h.moment).toBe("done");
     expect(h.content.headline).toBe("Customer a done");
-    expect(h.content.next).toBe("Next: Customer b");
+    expect(h.content.next).toBe("Then: Customer b");
     expect(h.segments).toEqual(["done", "todo"]);
   });
 
@@ -172,7 +172,7 @@ describe("browsing the day's stops (owner, 2026-10-20)", () => {
     expect(h.currentId).toBe("b");
     expect(h.segments).toEqual(["current", "todo", "todo"]);
     expect(h.doneCount).toBe(1);
-    expect(h.content.next).toBe("Next: Customer b");
+    expect(h.content.next).toBe("Then: Customer b");
   });
 
   it("shows a later stop as still ahead, with its own next stop", () => {

@@ -140,7 +140,7 @@ export interface LiveStopContent {
   figureLabel: string;
   /** "Stop 3 of 7 · 123 Palm Ln" */
   detail: string;
-  /** "Next: Jones at 10:30 AM", or null when this is the last stop. */
+  /** "Then: Jones at 10:30 AM", or null when this is the last stop. */
   next: string | null;
   /** 0..1 along the day's stops (done ones and this one), for the progress bar. */
   progress: number;
@@ -200,7 +200,7 @@ function liveStopBase(s: LiveStopInput): Omit<LiveStopContent, "access" | "clean
   // in the day, and the next stop is named without a time. `eta` and `scheduled` are ignored.
   const of = `Stop ${s.stop} of ${s.stops}`;
   const detail = [of, s.address].filter(Boolean).join(" · ");
-  const next = s.next ? `Next: ${s.next.customer}` : null;
+  const next = s.next ? `Then: ${s.next.customer}` : null;
   const doneStops = s.phase === "done" ? s.stop : s.stop - 1;
   const progress =
     s.stops > 0
