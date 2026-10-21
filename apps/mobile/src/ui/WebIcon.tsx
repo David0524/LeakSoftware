@@ -130,6 +130,8 @@ const SHAPES = {
   // Reorder Techs' Move Up and Move Down (the website's reorder-techs.tsx arrows).
   arrowUp: { line: "M12 19V5M6 11l6-6 6 6" },
   arrowDown: { line: "M12 5v14M6 13l6 6 6-6" },
+  // Reorder Techs' button on Schedule (the website's reorder-techs.tsx): up and down arrows.
+  reorder: { line: "M8 20V5M4 9l4-4 4 4M16 4v15M12 15l4 4 4-4" },
   // A padlock (the website's LockIcon): a job locked to its day, time, or both, and the lock on
   // a stop that can't move in Today's Reorder.
   lock: {

@@ -13,6 +13,9 @@ describe("lockDirection", () => {
     expect(lockDirection(-12, 5)).toBe("x");
     expect(lockDirection(8, 16)).toBe("y");
     expect(lockDirection(11, 11)).toBe("y");
+    // A little more sideways than down isn't a swipe: the page scrolls (owner, 2026-10-21).
+    expect(lockDirection(12, 9)).toBe("y");
+    expect(lockDirection(-15, 9)).toBe("x");
   });
 });
 

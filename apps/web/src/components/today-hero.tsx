@@ -209,7 +209,7 @@ export function TodayHeroCard({
       aria-label={c.spoken}
       aria-roledescription="stops"
       onKeyDown={onKeyDown}
-      className="relative mb-6 touch-pan-y overflow-hidden rounded-[22px] bg-water p-5 text-white outline-offset-2 focus-visible:outline-2 focus-visible:outline-link sm:p-6"
+      className="relative mb-6 touch-manipulation overflow-hidden rounded-[22px] bg-water p-5 text-white outline-offset-2 focus-visible:outline-2 focus-visible:outline-link sm:p-6"
       data-testid="today-hero"
       // Its own swipe changes the stop; Whose Day's swipe around it leaves the card alone.
       data-no-swipe

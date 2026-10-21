@@ -5,13 +5,12 @@ import { usePathname } from "next/navigation";
 import { useEffect, useRef, useState, useSyncExternalStore, type ReactNode } from "react";
 import { Logo } from "./logo";
 
-/** The phone tab bar's pages. Their bars carry the logo at the left; pushed pages keep Back. */
-const TAB_ROOTS = ["/today", "/jobs", "/schedule", "/messages", "/more"];
 /**
- * Room the large title leaves for the logo in the bar's row: the logo (24 tall, 102 wide) and
- * 8 px, both starting 16 from the edge. globals.css applies it before the page is interactive.
+ * The phone tab bar's pages. Their bars carry the logo at the leading edge, level with the
+ * "+", and the large title takes its own full-width row under the bar (owner, 2026-10-21: the
+ * logo beside the title squeezed it); pushed pages keep Back.
  */
-const BRAND_LEAD = 110;
+const TAB_ROOTS = ["/today", "/jobs", "/schedule", "/messages", "/more"];
 
 // Local helper: ui.tsx renders NavBar, so importing from it here would be circular.
 const cx = (...parts: (string | false | null | undefined)[]) => parts.filter(Boolean).join(" ");
@@ -48,9 +47,10 @@ export function useStillNavBar(on: boolean) {
  * own pages (Today, Jobs, Schedule, Messages, More) show the logo there instead (owner,
  * 2026-10-21: "Incorporate this logo with the text in the top left of each main page").
  *
- * Without Back (the tab roots), the large title sits in the bar's row, left of the action, as
- * in Apple's App Store and Music (owner, 2026-10-20: "push up towards where the plus button
- * is"), and right of the logo on the tab bar's pages. The bar sets `--nav-action` on the title
+ * Without Back and without the logo, the large title sits in the bar's row, left of the
+ * action, as in Apple's App Store and Music (owner, 2026-10-20: "push up towards where the
+ * plus button is"). On the tab bar's pages the logo has that row, and the title sits under it
+ * with the page's full width (owner, 2026-10-21). The bar sets `--nav-action` on the title
  * to the action's width, so a long or enlarged title wraps between words before it reaches the
  * "+"; when one of its words is wider than the room left (very large text), the title moves to
  * its own row under the bar instead.
@@ -77,7 +77,9 @@ export function NavBar({
   // Beside the action, unless a word of the title can't fit there (very large text): then it
   // takes its own row under the bar, as with Back.
   const [stacked, setStacked] = useState(false);
-  const inline = !back && !stacked;
+  const path = usePathname();
+  const brand = !back && TAB_ROOTS.includes(path);
+  const inline = !back && !brand && !stacked;
   useEffect(() => {
     const el = document.getElementById(titleId);
     if (!el) return;
@@ -97,19 +99,16 @@ export function NavBar({
     return () => io.disconnect();
   }, [titleId, inline]);
   const collapsed = past && !still;
-  const path = usePathname();
-  const brand = !back && TAB_ROOTS.includes(path);
   useEffect(() => {
     const el = document.getElementById(titleId);
     const row = el?.closest<HTMLElement>("[data-page-header]");
     const action = actionRef.current;
     if (back || !el || !row || !action) return;
-    const lead = brand ? BRAND_LEAD : 0;
     const measure = () => {
-      const room =
-        (el.parentElement ?? el).clientWidth - action.getBoundingClientRect().width - lead;
+      const room = (el.parentElement ?? el).clientWidth - action.getBoundingClientRect().width;
       const words = [...el.children].map((w) => w.getBoundingClientRect().width);
-      const stack = Math.max(0, ...words) > room;
+      // Under the logo's row, always its own row.
+      const stack = brand || Math.max(0, ...words) > room;
       setStacked(stack);
       row.toggleAttribute("data-stacked", stack);
       el.style.setProperty(
@@ -164,10 +163,10 @@ export function NavBar({
               <span className="truncate @max-[3.5em]:hidden">{back.label}</span>
             </Link>
           ) : brand ? (
-            // 24 pt tall like the leading brand in Apple's own apps; the light or reverse
-            // lockup follows the website's appearance. Read once as "Sundeck Pro".
+            // 28 pt tall, so the row stays 44; the light or reverse lockup follows the
+            // website's appearance. Read once as "Sundeck Pro".
             <span className="flex h-11 items-center pl-2">
-              <Logo height={24} />
+              <Logo height={28} />
             </span>
           ) : null}
         </div>
@@ -182,7 +181,7 @@ export function NavBar({
             // the logo, it leaves the logo its room.
             collapsed
               ? brand
-                ? "max-w-[calc(100vw-15rem)] opacity-100"
+                ? "max-w-[calc(100vw-17.5rem)] opacity-100"
                 : "max-w-[55vw] opacity-100"
               : "max-w-0 opacity-0",
           )}

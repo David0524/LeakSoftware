@@ -159,11 +159,14 @@ header:not(.glass-bar) :focus-visible {
     visibility: hidden;
   }
 }
-/* Phones, a tab's own page: the large title in the bar's row sits right of the logo (nav-bar.tsx
-   BRAND_LEAD), from the first frame. Stacked under the bar (very large text), it doesn't. */
+/* Phones, a tab's own page: the logo has the bar's row, and the large title its own full-width
+   row under it (owner, 2026-10-21), from the first frame. */
 @media (width < 40rem) {
-  body:has([data-nav-brand]) [data-page-header]:not([data-stacked]) h1 {
-    padding-left: 110px;
+  body:has([data-nav-brand]) [data-page-header] {
+    margin-top: 0;
+  }
+  body:has([data-nav-brand]) [data-page-header] h1 {
+    padding-right: 0;
   }
   /* Until NavBar has measured the title (before the page's script runs, as on a loading
      screen), a word too wide for the room beside the logo is clipped at the title's edge, not

@@ -31,13 +31,16 @@ import { CleaningsDue } from "../../../../features/maintenance/Cleanings";
 import { TodayComplete, undoStopDone } from "../../../../features/job/CompleteJob";
 import { OnMyWayTrigger } from "../../../../features/today/OnMyWay";
 import { useStopMessage } from "../../../../features/today/useStopMessage";
-import { ReorderStopRow, useRowPlaces, useTodayReorder } from "../../../../features/today/Reorder";
+import {
+  ReorderStopRow,
+  useRowDrag,
+  useRowPlaces,
+  useTodayReorder,
+} from "../../../../features/today/Reorder";
 import { TodayHeroCard, heroPlace } from "../../../../features/today/TodayHero";
 import { useHeroViewing, useTodayHero } from "../../../../features/today/useTodayHero";
 import { doneIds, newlyDone, viewingFor, viewingResetKey } from "../../../../lib/heroBrowse";
 import { useResultBanner } from "../../../../ui/ResultBanner";
-import { SwipeNav } from "../../../../ui/SwipeNav";
-import { SwipeActions } from "../../../../ui/SwipeRow";
 import { WeatherBadge } from "../../../../features/today/WeatherBadge";
 import {
   clearStopAction,
@@ -276,8 +279,23 @@ export default function Today() {
   // from this phone's jobs, saved through the sync layer.
   const reorder = useTodayReorder({ company, stops, techId: shownTech, me, manager, drive });
   const places = useRowPlaces();
+  const rowDrag = useRowDrag();
+  // Just after a drop the row settles where it was let go, so the list doesn't also glide.
+  const [settling, setSettling] = useState(false);
   const [dragging, setDragging] = useState(false);
+  // Stable callbacks for the memoized rows, so a render of Today (a swipe on the card, a sync)
+  // doesn't redraw every stop (owner, 2026-10-21: Today "freezes").
+  const latestReorder = useRef(reorder);
+  useEffect(() => {
+    latestReorder.current = reorder;
+  });
+  const [doLaterRow] = useState(
+    () => (jobId: string) => latestReorder.current.doLater(jobId, "row"),
+  );
+  const [undoRow] = useState(() => () => latestReorder.current.undo());
   const shownRows = [...(doneOpen ? doneStops : []), ...rest].map((j) => j.id);
+  // The rows in Reorder's edit mode, top first (where a dragged one lands among them).
+  const editRows = reorder.editing ? shownRows.filter((id) => reorder.row(id)) : [];
 
   function stopRow(j: JobView, withLeg: boolean) {
     const i = stops.indexOf(j);
@@ -301,7 +319,15 @@ export default function Today() {
           onLayout={places.onLayout(j.id)}
           onAct={(a) => reorder.act(j.id, a)}
           onDragging={setDragging}
-          onDrop={(dy) => reorder.drop(j.id, places.landsBefore(j.id, dy, shownRows))}
+          onDrop={(dy) => {
+            setSettling(true);
+            setTimeout(() => setSettling(false), 600);
+            reorder.drop(j.id, places.landsBefore(j.id, dy, shownRows));
+          }}
+          index={editRows.indexOf(j.id)}
+          rowDrag={rowDrag}
+          onSlots={() => rowDrag.slots.set(places.slots(editRows))}
+          glide={!settling}
         />
       );
     }
@@ -318,9 +344,10 @@ export default function Today() {
           mine={mine}
           onMessage={onMessage}
           onDirections={onDirections}
-          doLater={info?.canLater ? () => reorder.doLater(j.id, "row") : null}
+          canLater={Boolean(info?.canLater)}
+          onDoLater={doLaterRow}
           undoText={reorder.undoText(j.id, "row")}
-          onUndo={reorder.undo}
+          onUndo={undoRow}
         />
       </View>
     );
@@ -347,16 +374,6 @@ export default function Today() {
       trigger={asked!.nonce}
     />
   ) : null;
-
-  // Swipe sideways for the teammate before or after (owners and admins; gestures spec section
-  // 4), in the Whose Day order, stopping at either end. The pills stay the visible way.
-  const shownAt = people.findIndex((p) => p.value === shownTech);
-  const pickTech = (to: { value: string } | undefined) => {
-    if (!to) return false;
-    if (asked) clearStopAction(asked.nonce);
-    setTechId(to.value);
-    return true;
-  };
 
   async function refresh() {
     haptics.light();
@@ -408,11 +425,9 @@ export default function Today() {
       ) : null}
 
       {omwTrigger}
-      <SwipeNav
-        enabled={manager && people.length > 1 && !reorder.editing && !dragging}
-        onPrevious={() => pickTech(people[shownAt - 1])}
-        onNext={() => pickTech(people[shownAt + 1])}
-      >
+      {/* No page-wide swipe between techs' days: Whose Day is the way (owner, 2026-10-21:
+          Today had "too many gestures"). */}
+      <>
         {loading ? (
           // Placeholder cards while the first download fills the phone, not an empty day.
           <SkeletonCards />
@@ -521,7 +536,7 @@ export default function Today() {
             <Leg text={`${durationLabel(backLeg)} ${backLegLabel(start.label)}`} />
           </View>
         )}
-      </SwipeNav>
+      </>
       {/* After the stops, so the first stop's buttons are on screen at launch (2026-10-20). */}
       <ScreenTip screen="today" />
     </Screen>
@@ -556,7 +571,8 @@ const Stop = memo(function Stop({
   mine,
   onDirections,
   onMessage,
-  doLater,
+  canLater,
+  onDoLater,
   undoText,
   onUndo,
 }: {
@@ -572,17 +588,19 @@ const Stop = memo(function Stop({
   onDirections: (job: JobView) => void;
   /** The notification asked to do something on this stop: it opens and does it. */
   action: { action: StopAction; nonce: number } | null;
-  /** Do Later, when this stop can move (docs/plans/today-reorder.md). */
-  doLater: (() => void) | null;
+  /** This stop can move: Do Later (docs/plans/today-reorder.md). */
+  canLater: boolean;
+  onDoLater: (jobId: string) => void;
   /** "Moved." for 5 seconds after its Do Later, with Undo. */
   undoText: string | null;
   onUndo: () => void;
 }) {
   const done = stopDone(job, day);
+  const doLater = canLater ? () => onDoLater(job.id) : null;
   const routing = useRoutingOn();
   const [opened, setExpanded] = useState(false);
-  // The swipe's Complete: opens the row and presses its Mark Complete (same checks and
-  // questions as the button).
+  // TalkBack's Mark Complete action: opens the row and presses its Mark Complete (same checks
+  // and questions as the button).
   const [completeAsked, setCompleteAsked] = useState(0);
   // Asked from the notification: open, and its buttons act as they appear.
   const expanded = opened || action !== null || completeAsked > 0;
@@ -600,186 +618,176 @@ const Stop = memo(function Stop({
   const call = phone ? () => void Linking.openURL(`tel:${phone}`) : null;
   const directions = job.property ? () => onDirections(job) : null;
   const complete = done ? null : () => setCompleteAsked((n) => n + 1);
-  // Swipe right for Complete, left for Call and Directions (gestures spec section 5); the row's
-  // own buttons and address stay the visible way, and TalkBack gets the same actions.
-  const swipeActions = [
+  // No swipe actions on the row (owner, 2026-10-21: Today had "too many gestures"): the open
+  // row's buttons and address are the way, and TalkBack gets the same actions.
+  const rowActions = [
     complete ? { name: "complete", label: "Mark Complete", run: complete } : null,
     call ? { name: "call", label: "Call", run: call } : null,
     directions ? { name: "directions", label: "Directions", run: directions } : null,
     doLater ? { name: "doLater", label: "Do Later", run: doLater } : null,
   ].filter((a): a is { name: string; label: string; run: () => void } => a !== null);
   return (
-    <SwipeActions
-      leading={complete ? { label: "Complete", tint: color.pass, onPress: complete } : null}
-      trailing={[
-        ...(call ? [{ label: "Call", tint: color.link, onPress: call }] : []),
-        ...(directions ? [{ label: "Directions", tint: color.water, onPress: directions }] : []),
-        ...(doLater ? [{ label: "Do Later", tint: color.link, onPress: doLater }] : []),
+    <View
+      accessibilityLabel={`Stop ${n}: ${name}`}
+      accessibilityActions={rowActions.map((a) => ({ name: a.name, label: a.label }))}
+      onAccessibilityAction={(e) =>
+        rowActions.find((a) => a.name === e.nativeEvent.actionName)?.run()
+      }
+      style={[
+        styles.stop,
+        { backgroundColor: color.surface },
+        cardShadow(),
+        next && { borderWidth: 2, borderColor: color.link },
       ]}
     >
-      <View
-        accessibilityLabel={`Stop ${n}: ${name}`}
-        accessibilityActions={swipeActions.map((a) => ({ name: a.name, label: a.label }))}
-        onAccessibilityAction={(e) =>
-          swipeActions.find((a) => a.name === e.nativeEvent.actionName)?.run()
-        }
-        style={[
-          styles.stop,
-          { backgroundColor: color.surface },
-          cardShadow(),
-          next && { borderWidth: 2, borderColor: color.link },
-        ]}
+      <Pressable
+        accessibilityRole="button"
+        accessibilityLabel={`Stop ${n}: ${name}${done ? ", done" : ""}`}
+        accessibilityState={{ expanded }}
+        onPress={() => {
+          if (action) clearStopAction(action.nonce);
+          setExpanded(!expanded);
+        }}
+        style={({ pressed }) => [styles.stopTop, pressed && { opacity: 0.7 }]}
       >
-        <Pressable
-          accessibilityRole="button"
-          accessibilityLabel={`Stop ${n}: ${name}${done ? ", done" : ""}`}
-          accessibilityState={{ expanded }}
-          onPress={() => {
-            if (action) clearStopAction(action.nonce);
-            setExpanded(!expanded);
-          }}
-          style={({ pressed }) => [styles.stopTop, pressed && { opacity: 0.7 }]}
+        <View
+          style={[
+            styles.number,
+            { backgroundColor: done ? color.pass : next ? color.link : color.bg },
+          ]}
+          accessibilityElementsHidden
+          importantForAccessibility="no"
         >
-          <View
-            style={[
-              styles.number,
-              { backgroundColor: done ? color.pass : next ? color.link : color.bg },
-            ]}
-            accessibilityElementsHidden
-            importantForAccessibility="no"
-          >
-            {done ? (
-              <WebIcon name="check" size={16} color={color.onStatus} strokeWidth={3} />
-            ) : (
-              <Text style={[styles.numberText, { color: next ? color.bg : color.text }]}>{n}</Text>
-            )}
-          </View>
-          <View style={[styles.summary, done && { opacity: 0.7 }]}>
-            <Text style={[styles.time, tabular, { color: color.text }]}>
-              {job.scheduled_start ? formatTime(job.scheduled_start, timeZone) : ""}
-            </Text>
-            {/* The name is the link to the job, open or closed (owner, 2026-10-20); the rest of
+          {done ? (
+            <WebIcon name="check" size={16} color={color.onStatus} strokeWidth={3} />
+          ) : (
+            <Text style={[styles.numberText, { color: next ? color.bg : color.text }]}>{n}</Text>
+          )}
+        </View>
+        <View style={[styles.summary, done && { opacity: 0.7 }]}>
+          <Text style={[styles.time, tabular, { color: color.text }]}>
+            {job.scheduled_start ? formatTime(job.scheduled_start, timeZone) : ""}
+          </Text>
+          {/* The name is the link to the job, open or closed (owner, 2026-10-20); the rest of
               the row opens and closes the card. */}
-            <Pressable
-              accessibilityRole="link"
-              accessibilityLabel={`Open the job for ${name}`}
-              onPress={unlessSwiping(() => router.push(`/jobs/${job.id}`))}
-              hitSlop={8}
-              style={({ pressed }) => [styles.nameLink, pressed && { opacity: 0.5 }]}
-            >
-              <Text
-                numberOfLines={1}
-                style={[type.bodyEmphasis, { color: color.link, flexShrink: 1 }]}
-                maxFontSizeMultiplier={MAX_TEXT_SCALE}
-              >
-                {name}
-              </Text>
-              <WebIcon name="chevronRight" size={16} color={color.link} strokeWidth={2.4} />
-            </Pressable>
-            {next ? <Pill label="Now" color={color.water} /> : null}
-            {/* Most stops are scheduled; the chip shows other states. The Now row leaves it to the
-              card, which already says it, so the name isn't cut short (2026-10-20). */}
-            {job.status !== "scheduled" && !next ? <StatusChip status={job.status} /> : null}
-            {lock ? <LockTag lock={lock} /> : null}
-          </View>
-          <Animated.View
-            style={{
-              transform: [
-                {
-                  rotate: turn.interpolate({ inputRange: [0, 1], outputRange: ["0deg", "180deg"] }),
-                },
-              ],
-            }}
+          <Pressable
+            accessibilityRole="link"
+            accessibilityLabel={`Open the job for ${name}`}
+            onPress={unlessSwiping(() => router.push(`/jobs/${job.id}`))}
+            hitSlop={8}
+            style={({ pressed }) => [styles.nameLink, pressed && { opacity: 0.5 }]}
           >
-            <WebIcon name="chevronDown" size={20} color={color.textMuted} strokeWidth={2.2} />
-          </Animated.View>
-        </Pressable>
-        {/* Gate code, which gate, dogs: on the card open or closed (owner, 2026-10-20). */}
-        {job.property?.access_notes?.trim() && !done ? (
-          <View
-            accessible
-            accessibilityLabel={`Access: ${job.property.access_notes.trim()}`}
-            style={styles.access}
-          >
-            <View style={styles.accessIcon}>
-              <WebIcon name="key" size={18} color={color.warning} />
-            </View>
             <Text
-              numberOfLines={expanded ? undefined : 1}
-              style={[type.secondary, face.medium, { flex: 1, color: color.text }]}
+              numberOfLines={1}
+              style={[type.bodyEmphasis, { color: color.link, flexShrink: 1 }]}
               maxFontSizeMultiplier={MAX_TEXT_SCALE}
             >
-              {job.property.access_notes.trim()}
+              {name}
             </Text>
+            <WebIcon name="chevronRight" size={16} color={color.link} strokeWidth={2.4} />
+          </Pressable>
+          {next ? <Pill label="Now" color={color.water} /> : null}
+          {/* Most stops are scheduled; the chip shows other states. The Now row leaves it to the
+              card, which already says it, so the name isn't cut short (2026-10-20). */}
+          {job.status !== "scheduled" && !next ? <StatusChip status={job.status} /> : null}
+          {lock ? <LockTag lock={lock} /> : null}
+        </View>
+        <Animated.View
+          style={{
+            transform: [
+              {
+                rotate: turn.interpolate({ inputRange: [0, 1], outputRange: ["0deg", "180deg"] }),
+              },
+            ],
+          }}
+        >
+          <WebIcon name="chevronDown" size={20} color={color.textMuted} strokeWidth={2.2} />
+        </Animated.View>
+      </Pressable>
+      {/* Gate code, which gate, dogs: on the card open or closed (owner, 2026-10-20). */}
+      {job.property?.access_notes?.trim() && !done ? (
+        <View
+          accessible
+          accessibilityLabel={`Access: ${job.property.access_notes.trim()}`}
+          style={styles.access}
+        >
+          <View style={styles.accessIcon}>
+            <WebIcon name="key" size={18} color={color.warning} />
           </View>
-        ) : null}
-        {/* After Do Later, where its button was: "Moved." and Undo, open or closed (a swipe
-            moves a closed row). */}
-        {undoText ? (
-          <View style={styles.undo}>
-            <UndoRow text={undoText} onUndo={onUndo} />
-          </View>
-        ) : null}
-        {expanded ? (
-          <View style={styles.body}>
-            {job.property ? (
-              <AddressLine
-                notOnMap={mapStatus(job.property, routing) === "missing"}
-                lineHeight={type.secondary.lineHeight!}
+          <Text
+            numberOfLines={expanded ? undefined : 1}
+            style={[type.secondary, face.medium, { flex: 1, color: color.text }]}
+            maxFontSizeMultiplier={MAX_TEXT_SCALE}
+          >
+            {job.property.access_notes.trim()}
+          </Text>
+        </View>
+      ) : null}
+      {/* After Do Later, where its button was: "Moved." and Undo, open or closed. */}
+      {undoText ? (
+        <View style={styles.undo}>
+          <UndoRow text={undoText} onUndo={onUndo} />
+        </View>
+      ) : null}
+      {expanded ? (
+        <View style={styles.body}>
+          {job.property ? (
+            <AddressLine
+              notOnMap={mapStatus(job.property, routing) === "missing"}
+              lineHeight={type.secondary.lineHeight!}
+            >
+              <Text
+                accessibilityRole="link"
+                accessibilityHint="Directions"
+                onPress={unlessSwiping(() => onDirections(job))}
+                style={[type.secondary, { color: color.link, alignSelf: "flex-start" }]}
+                maxFontSizeMultiplier={MAX_TEXT_SCALE}
               >
-                <Text
-                  accessibilityRole="link"
-                  accessibilityHint="Directions"
-                  onPress={unlessSwiping(() => onDirections(job))}
-                  style={[type.secondary, { color: color.link, alignSelf: "flex-start" }]}
-                  maxFontSizeMultiplier={MAX_TEXT_SCALE}
-                >
-                  {formatAddress(job.property)}
-                </Text>
-              </AddressLine>
-            ) : null}
-            {/* Just the icon and how soon (owner, 2026-10-19), as the website. */}
-            {done ? null : <CleaningsDue job={job} />}
-            <View style={styles.buttons}>
-              {/* Every stop: done for the day without the full process (owner, 2026-10-19). */}
-              <TodayComplete
-                job={job}
-                customer={job.customer?.name ?? "this stop"}
-                day={day}
-                done={done}
-                customerName={job.customer?.name ?? null}
-                trigger={action?.action === "mark_complete" ? action.nonce : undefined}
-                pressNonce={completeAsked}
-                onPressHandled={() => setCompleteAsked(0)}
+                {formatAddress(job.property)}
+              </Text>
+            </AddressLine>
+          ) : null}
+          {/* Just the icon and how soon (owner, 2026-10-19), as the website. */}
+          {done ? null : <CleaningsDue job={job} />}
+          <View style={styles.buttons}>
+            {/* Every stop: done for the day without the full process (owner, 2026-10-19). */}
+            <TodayComplete
+              job={job}
+              customer={job.customer?.name ?? "this stop"}
+              day={day}
+              done={done}
+              customerName={job.customer?.name ?? null}
+              trigger={action?.action === "mark_complete" ? action.nonce : undefined}
+              pressNonce={completeAsked}
+              onPressHandled={() => setCompleteAsked(0)}
+            />
+            {doLater && !undoText ? (
+              <Button
+                kind="secondary"
+                title="Do Later"
+                accessibilityLabel={`Do Later, ${name}`}
+                onPress={doLater}
               />
-              {doLater && !undoText ? (
-                <Button
-                  kind="secondary"
-                  title="Do Later"
-                  accessibilityLabel={`Do Later, ${name}`}
-                  onPress={doLater}
-                />
-              ) : null}
-              {done ? null : (
-                <View style={styles.actions}>
-                  {/* One text button: On My Way lives in Message (gestures spec section 2). */}
-                  {phone ? (
-                    <RoundButton
-                      icon="message"
-                      label={`Text ${name}`}
-                      onPress={() => onMessage(job)}
-                    />
-                  ) : null}
-                  {call ? (
-                    <RoundButton icon="phone" label={`Call ${name}, ${phone}`} onPress={call} />
-                  ) : null}
-                </View>
-              )}
-            </View>
+            ) : null}
+            {done ? null : (
+              <View style={styles.actions}>
+                {/* One text button: On My Way lives in Message (gestures spec section 2). */}
+                {phone ? (
+                  <RoundButton
+                    icon="message"
+                    label={`Text ${name}`}
+                    onPress={() => onMessage(job)}
+                  />
+                ) : null}
+                {call ? (
+                  <RoundButton icon="phone" label={`Call ${name}, ${phone}`} onPress={call} />
+                ) : null}
+              </View>
+            )}
           </View>
-        ) : null}
-      </View>
-    </SwipeActions>
+        </View>
+      ) : null}
+    </View>
   );
 });
 

@@ -85,6 +85,13 @@ import { AddressLink, OpenRouteInMaps } from "./open-in-maps";
 import { Sheet, useChoice } from "./sheet";
 import { showBanner } from "./top-banner";
 import { useFlip } from "./use-flip";
+import { reducedMotion } from "./row-slide";
+
+// Reordering stops as smoothly as Reorder Techs (owner, 2026-10-21): the order changes at once
+// (useOptimistic), the stops in the way slide aside while one is dragged, and the dropped card
+// glides into its place. Reduce Motion: no slides.
+const SORT_SLIDE = { duration: 300, easing: "cubic-bezier(0.22, 1, 0.36, 1)" };
+const DROP_SLIDE = { duration: 250, easing: "cubic-bezier(0.22, 1, 0.36, 1)" };
 import { Button, StatusBadge, buttonClass, cx, pillClass } from "./ui";
 import { NO_CONNECTION, whenOffline } from "@/lib/offline";
 
@@ -786,7 +793,7 @@ export function RouteBoard({
         </PlanDrop>
       </BoardActions>
 
-      <DragOverlay dropAnimation={null}>
+      <DragOverlay dropAnimation={reducedMotion() ? null : DROP_SLIDE}>
         {draggingPlan ? (
           <div className="card max-w-72 px-4 py-2.5 shadow-xl ring-2 ring-link">
             <span className="block truncate font-semibold">{draggingPlan.customer}</span>
@@ -1192,7 +1199,11 @@ function StopCard({
     transform,
     transition,
     isDragging,
-  } = useSortable({ id: s.id, disabled: !s.draggable });
+  } = useSortable({
+    id: s.id,
+    disabled: !s.draggable,
+    transition: reducedMotion() ? null : SORT_SLIDE,
+  });
   const actions = use(BoardActions);
   return (
     <article
@@ -1831,6 +1842,7 @@ function WeekChip({
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
     id: s.id,
     disabled: !s.draggable,
+    transition: reducedMotion() ? null : SORT_SLIDE,
   });
   const actions = use(BoardActions);
   return (
@@ -2014,7 +2026,7 @@ function TrayCard({
     transform,
     transition,
     isDragging,
-  } = useSortable({ id: j.id });
+  } = useSortable({ id: j.id, transition: reducedMotion() ? null : SORT_SLIDE });
   const [sheetOpen, setActions] = useState(false);
   const closeActions = useCallback(() => setActions(false), []);
   const actions = use(BoardActions);

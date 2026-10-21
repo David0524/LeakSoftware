@@ -62,7 +62,7 @@ import {
   useReduceMotion,
   useScreenChrome,
 } from "../../../../../../ui/components";
-import { BAR_HEIGHT, barState } from "../../../../../../ui/Bar";
+import { BAR_HEIGHT, barState, setBarStill } from "../../../../../../ui/Bar";
 import { confirmDestructive } from "../../../../../../ui/confirm";
 import { Glass } from "../../../../../../ui/Glass";
 import {
@@ -175,7 +175,8 @@ export default function JobDetail() {
     title: job ? (customer?.name ?? (job.number ? `Job #${job.number}` : "New Job")) : "Job",
     topInset: sync.height,
   });
-  const barY = barState(useRoute().key).y;
+  const routeKey = useRoute().key;
+  const barY = barState(routeKey).y;
   const reduceMotion = useReduceMotion();
   // Each section keeps its scroll position (gestures spec section 4): where the page was when
   // the tech left it, put back when they come back to it.
@@ -201,6 +202,13 @@ export default function JobDetail() {
   useEffect(() => {
     sectionRef.current = section;
   });
+  // Every section sits on tiles: the bar keeps its large title on all of them, so switching
+  // sections never moves it, as on the website and the iPhone app (owner, 2026-10-21: on
+  // Findings and Wrap Up "the navigation bar should not shrink").
+  useEffect(() => {
+    setBarStill(routeKey, true);
+    return () => setBarStill(routeKey, false);
+  }, [routeKey]);
 
   function scrollTo(y: number) {
     (

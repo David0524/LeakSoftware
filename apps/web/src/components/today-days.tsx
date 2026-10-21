@@ -1,7 +1,6 @@
 "use client";
 
 import { useState, type ReactNode } from "react";
-import { SwipePages } from "./gestures";
 import { TechDot } from "./tech-dot";
 import { PageHeader, cx, pillClass } from "./ui";
 
@@ -20,9 +19,9 @@ export interface TodayDay {
 }
 
 /**
- * Today's days, one per tech, for owners and admins (gestures.md section 4: "swipe through the
- * different tech's views"). Every day comes with the page, so Whose Day and a swipe switch in
- * the browser without a trip to the server, in the control's order, stopping at either end. The
+ * Today's days, one per tech, for owners and admins. Every day comes with the page, so Whose
+ * Day switches in the browser without a trip to the server. There is no sideways swipe between
+ * days (owner, 2026-10-21: Today had "too many gestures"). The
  * address keeps ?tech= so a reload or a shared link opens the same day.
  *
  * On a computer (lg and up) the day takes the left half and a right column stays in view
@@ -89,16 +88,9 @@ export function TodayDays({
             ))}
           </nav>
         ) : null}
-        <SwipePages
-          page={day.id}
-          enabled={days.length > 1}
-          canPrev={at > 0}
-          canNext={at < days.length - 1}
-          onPrev={() => pick(at - 1)}
-          onNext={() => pick(at + 1)}
-        >
-          <div key={day.id}>{day.content}</div>
-        </SwipePages>
+        {/* No page-wide swipe between techs' days: Whose Day is the way (owner, 2026-10-21:
+            "too many gestures"). */}
+        <div key={day.id}>{day.content}</div>
         {footer}
       </div>
       {/* Under the desktop bar (3.5rem) and the page's top space, staying in view. */}

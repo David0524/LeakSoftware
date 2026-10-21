@@ -21,13 +21,11 @@ import {
   todayMoves,
   todayStopLock,
   JOB_TYPE_LABELS,
-  directionsHref,
   type HeroStop,
   scheduleOrder,
 } from "@leakbook/core";
 import { TodayHeroCard, type HeroJob } from "@/components/today-hero";
 import { TodayDays } from "@/components/today-days";
-import { SWIPE_ACTION } from "@/components/swipe-row";
 import { NotOnMapTag } from "@/components/not-on-map";
 import { LockTag } from "@/components/lock-tag";
 import { dayMap, lockTag, weekdayName } from "@/lib/day-map";
@@ -38,7 +36,7 @@ import { TodayActivity, TodayActivityLoading } from "./today-activity";
 import { routingConfigured } from "@/server/routing";
 import { completeSendPrompt } from "@/lib/next-step";
 import { Suspense } from "react";
-import { CleaningIcon, DirectionsIcon, PhoneIcon } from "@/components/icons";
+import { CleaningIcon, PhoneIcon } from "@/components/icons";
 import { OnMyWay } from "@/components/on-my-way";
 import { TodayComplete } from "@/components/today-complete";
 import { TodayStop } from "@/components/today-stop";
@@ -238,7 +236,7 @@ export default async function TodayPage({ searchParams }: PageProps<"/today">) {
       const done = stopDone(j, ctx.today);
       const moves = movesFor(j);
       return (
-        <li key={j.id}>
+        <li key={j.id} data-move-row={done ? undefined : j.id}>
           {withLeg ? (
             <p className="flex items-center gap-2 py-0.5 pl-4 text-[0.9375rem] text-text-muted">
               <span aria-hidden="true" className="h-4 border-l-2 border-dotted border-text-muted" />
@@ -257,55 +255,6 @@ export default async function TodayPage({ searchParams }: PageProps<"/today">) {
             href={`/jobs/${j.id}`}
             access={j.property?.access_notes ?? null}
             moves={moves}
-            swipe={
-              // Swipe actions when the page doesn't page between techs (a sideways swipe
-              // there changes the day shown).
-              dayIds.length === 1 && !done
-                ? {
-                    leading: (
-                      <TodayComplete
-                        jobId={j.id}
-                        customer={j.customer?.name ?? "this stop"}
-                        done={false}
-                        undo={null}
-                        prompt={completeSendPrompt({
-                          jobType: j.type,
-                          reportMode,
-                          customer: j.customer?.name,
-                        })}
-                        buttonClassName={cx(SWIPE_ACTION, "bg-status-pass")}
-                      />
-                    ),
-                    trailing: (
-                      <>
-                        {j.customer?.phone ? (
-                          <a
-                            href={`tel:${j.customer.phone}`}
-                            className={cx(SWIPE_ACTION, "bg-status-pass")}
-                          >
-                            <PhoneIcon />
-                            Call
-                          </a>
-                        ) : null}
-                        {address ? (
-                          <a
-                            href={directionsHref({
-                              address,
-                              location: propertyLocation(j.property),
-                            })}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className={cx(SWIPE_ACTION, "bg-link")}
-                          >
-                            <DirectionsIcon />
-                            Directions
-                          </a>
-                        ) : null}
-                      </>
-                    ),
-                  }
-                : undefined
-            }
             extra={
               <>
                 {isNext ? (

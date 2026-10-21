@@ -6,8 +6,10 @@ import { useEffect, useLayoutEffect, useRef } from "react";
  * Swipe between pages on touch screens (owner, 2026-10-20; docs/design/2026-10-20-gestures.md
  * sections 1 and 4), as a paging view does on iPhone: the page follows the finger, settles with
  * a spring, and gives like a rubber band past the first or last page. A drag decides its
- * direction after 10 px: up or down is the page's own scrolling (the area sets
- * `touch-action: pan-y`, so the browser keeps it), sideways is ours. A swipe never starts on
+ * direction after 10 px: only a clearly sideways drag is ours; anything else is the page's own
+ * scrolling. The area may set `touch-action: pan-y`, or leave the browser every pan (Today's
+ * card) so a drag that starts a little sideways still scrolls the page: a non-passive
+ * touchmove then stops the browser's scroll only once the drag is ours. A swipe never starts on
  * something that drags or scrolls sideways (a map, a drawing, a slider, a signature pad, a
  * sideways scroller, or anything marked `data-no-swipe`). With Reduce Motion the page doesn't
  * follow the finger, and the new page cross-fades in.
@@ -18,10 +20,17 @@ export const SWIPE_LOCK_PX = 10;
 /** The settle: a spring-like ease-out of 0.35 s (motion.md: quick, and interruptible). */
 export const SETTLE = "0.35s cubic-bezier(0.22, 1, 0.36, 1)";
 
-/** Which way a drag goes once it has moved far enough to tell; null until then. */
+/** How much more sideways than up or down a drag must be to be a swipe (about 34 degrees). */
+export const SWIPE_RATIO = 1.5;
+
+/**
+ * Which way a drag goes once it has moved far enough to tell; null until then. Sideways only
+ * when clearly sideways; anything else is the page's scrolling (owner, 2026-10-21: scrolling
+ * that started on Today's card was "sometimes blocked").
+ */
 export function lockDirection(dx: number, dy: number, at = SWIPE_LOCK_PX): "x" | "y" | null {
   if (Math.max(Math.abs(dx), Math.abs(dy)) < at) return null;
-  return Math.abs(dx) > Math.abs(dy) ? "x" : "y";
+  return Math.abs(dx) > SWIPE_RATIO * Math.abs(dy) ? "x" : "y";
 }
 
 /** Past the first or last page the content gives less and less, as iOS's rubber band does. */
@@ -248,12 +257,37 @@ export function useSwipe<
         e.stopPropagation();
       }
     };
+    // Touch: once a drag is clearly sideways, the browser doesn't scroll the page too. Until
+    // then (and for any other drag) it scrolls as usual.
+    let touch: { x: number; y: number } | null = null;
+    let touchLock: "x" | "y" | null = null;
+    const touchStart = (e: TouchEvent) => {
+      const t = e.touches[0];
+      touch =
+        e.touches.length === 1 &&
+        t &&
+        opts.current.enabled &&
+        !startsOnOwnGesture(e.target as Element, el)
+          ? { x: t.clientX, y: t.clientY }
+          : null;
+      touchLock = null;
+    };
+    const touchMove = (e: TouchEvent) => {
+      const t = e.touches[0];
+      if (!touch || !t) return;
+      touchLock ??= lockDirection(t.clientX - touch.x, t.clientY - touch.y);
+      if (touchLock === "x" && e.cancelable) e.preventDefault();
+    };
+    el.addEventListener("touchstart", touchStart, { passive: true });
+    el.addEventListener("touchmove", touchMove, { passive: false });
     el.addEventListener("pointerdown", down);
     el.addEventListener("pointermove", move);
     el.addEventListener("pointerup", up);
     el.addEventListener("pointercancel", cancel);
     el.addEventListener("click", click, true);
     return () => {
+      el.removeEventListener("touchstart", touchStart);
+      el.removeEventListener("touchmove", touchMove);
       el.removeEventListener("pointerdown", down);
       el.removeEventListener("pointermove", move);
       el.removeEventListener("pointerup", up);

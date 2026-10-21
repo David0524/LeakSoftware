@@ -2,6 +2,7 @@ import { router } from "expo-router";
 import type { ReactNode } from "react";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 import { GestureDetector } from "react-native-gesture-handler";
+import Reanimated, { LinearTransition } from "react-native-reanimated";
 import {
   backLegLabel,
   durationLabel,
@@ -14,7 +15,7 @@ import {
 import type { LockTagKind } from "../../lib/dayMap";
 import type { DragItem } from "../../lib/scheduleDrag";
 import { CleaningNames } from "../maintenance/Cleanings";
-import { Button, Card, StatusChip, T } from "../../ui/components";
+import { Button, Card, StatusChip, T, useReduceMotion } from "../../ui/components";
 import { LockTag } from "../../ui/LockTag";
 import type { RowGestures } from "../../ui/RowMenu";
 import { SwipeActions } from "../../ui/SwipeRow";
@@ -161,6 +162,9 @@ export function RouteFacts({
   );
 }
 
+/** How a moved stop glides to its place (none with Reduce Motion). */
+const ROW_SLIDE = LinearTransition.duration(300);
+
 export function RouteCard({
   route: c,
   busy,
@@ -185,6 +189,7 @@ export function RouteCard({
 }) {
   const { zoneRef } = useDropZones();
   const hover = useDragHover();
+  const slide = useReduceMotion() ? undefined : ROW_SLIDE;
   return (
     // The whole route takes a drop: between two stops, or last.
     <View
@@ -209,7 +214,9 @@ export function RouteCard({
           </View>
         ) : null}
         {c.stops.map((s, i) => (
-          <View key={s.id} style={styles.stopWrap}>
+          // A moved stop glides to its new place (owner, 2026-10-21: as smooth as Reorder
+          // Techs); the move is saved on the phone at once, so the list changes right away.
+          <Reanimated.View key={s.id} style={styles.stopWrap} layout={slide}>
             {s.legMin != null ? (
               <Leg
                 text={`${durationLabel(s.legMin)} ${i === 0 ? startLegLabel(c.startLabel ?? "shop") : "drive"}`}
@@ -239,7 +246,7 @@ export function RouteCard({
               onDirections={onDirections}
               gestures={gesturesFor?.(s)}
             />
-          </View>
+          </Reanimated.View>
         ))}
         {c.stops.length && c.backLegMin != null ? (
           <Leg text={`${durationLabel(c.backLegMin)} ${backLegLabel(c.startLabel ?? "shop")}`} />

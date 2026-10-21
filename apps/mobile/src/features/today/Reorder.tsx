@@ -1,7 +1,13 @@
-import { useMemo, useRef, useState, type ReactNode } from "react";
+import { useLayoutEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { StyleSheet, Text, View, type LayoutChangeEvent } from "react-native";
 import { Gesture, GestureDetector } from "react-native-gesture-handler";
-import Animated, { useAnimatedStyle, useSharedValue } from "react-native-reanimated";
+import Animated, {
+  LinearTransition,
+  useAnimatedStyle,
+  useSharedValue,
+  withTiming,
+} from "react-native-reanimated";
+import { scheduleOnRN } from "react-native-worklets";
 import { formatTime, type Company, type DriveFn, type TodayMove } from "@leakbook/core";
 import type { JobView } from "../../data/jobs";
 import { planContext } from "../../data/schedule";
@@ -16,7 +22,7 @@ import {
   type ReorderRow as RowInfo,
   type ReorderStop,
 } from "../../lib/todayReorder";
-import { Button, Pill } from "../../ui/components";
+import { Button, Pill, useReduceMotion } from "../../ui/components";
 import { haptics } from "../../ui/haptics";
 import { useUndoWindow } from "../../ui/Undo";
 import { WebIcon } from "../../ui/WebIcon";
@@ -140,10 +146,55 @@ export function useTodayReorder(input: {
 
 export type TodayReorder = ReturnType<typeof useTodayReorder>;
 
+/** A row's middle and height in the list (layout coordinates). */
+export interface RowSlot {
+  mid: number;
+  h: number;
+}
+/** The row being dragged (its index), where it would land, and the room it takes. */
+export interface RowDrag {
+  from: number;
+  place: number;
+  room: number;
+}
+const NO_DRAG: RowDrag = { from: -1, place: -1, room: 0 };
+/** Move Up, Move Down and Do Later: the rows glide to their new places. */
+const ROW_GLIDE = LinearTransition.duration(300);
+/** The gap under each row (styles.wrap). */
+const ROW_GAP = space["1"];
+
+/**
+ * Shared by the rows while one is dragged (owner, 2026-10-21: reordering jobs as smooth as
+ * Reorder Techs): the rows in the way slide aside on the UI thread, the dropped row settles
+ * into its place, and when the list comes back in its new order every row glides there.
+ */
+export function useRowDrag() {
+  const drag = useSharedValue<RowDrag>(NO_DRAG);
+  const slots = useSharedValue<RowSlot[]>([]);
+  return { drag, slots, reset: () => drag.set(NO_DRAG) };
+}
+export type RowDragState = ReturnType<typeof useRowDrag>;
+
+/** Where row `index` sits while `d` is dragged: its height up, down, or in place. */
+function roomShift(d: RowDrag, index: number) {
+  "worklet";
+  if (d.from < 0 || d.from === index) return 0;
+  if (d.from < d.place && index > d.from && index <= d.place) return -d.room;
+  if (d.from > d.place && index >= d.place && index < d.from) return d.room;
+  return 0;
+}
+
 /** Positions of the rows in the list while reordering, for where a dragged stop lands. */
 export function useRowPlaces() {
   const places = useRef(new Map<string, { y: number; height: number }>());
   return {
+    /** Each row's middle and height, in `order`, for the rows that make room during a drag. */
+    slots(order: string[]): RowSlot[] {
+      return order.map((id) => {
+        const p = places.current.get(id);
+        return p ? { mid: p.y + p.height / 2, h: p.height } : { mid: 0, h: 0 };
+      });
+    },
     onLayout: (id: string) => (e: LayoutChangeEvent) =>
       places.current.set(id, { y: e.nativeEvent.layout.y, height: e.nativeEvent.layout.height }),
     /** The row a stop dragged `dy` points lands before, among `order` (null: the end). */
@@ -177,7 +228,18 @@ export function ReorderStopRow({
   onAct,
   onDragging,
   onDrop,
+  index,
+  rowDrag,
+  onSlots,
+  glide,
 }: {
+  /** Glide to a new place when the order changes (not right after a drop, which settles). */
+  glide: boolean;
+  /** Its place among the rows in Reorder (top first). */
+  index: number;
+  rowDrag: RowDragState;
+  /** A drag started: the rows' slots, measured now. */
+  onSlots: () => void;
   job: JobView;
   n: number;
   timeZone: string;
@@ -195,41 +257,96 @@ export function ReorderStopRow({
   const name = job.customer?.name ?? "Customer";
   const time = job.scheduled_start ? formatTime(job.scheduled_start, timeZone) : "";
   const movable = !info.lock;
+  const reduceMotion = useReduceMotion();
+  const layout = glide && !reduceMotion ? ROW_GLIDE : undefined;
   const dy = useSharedValue(0);
   const lifted = useSharedValue(0);
-  const lift = useAnimatedStyle(() => ({
-    transform: [{ translateY: dy.value }, { scale: lifted.value ? 1.02 : 1 }],
-    zIndex: lifted.value ? 10 : 0,
-    elevation: lifted.value ? 8 : 0,
-  }));
+  const { drag, slots } = rowDrag;
+  // A new place in the list (the move was saved): the drag's offsets give way to the layout.
+  useLayoutEffect(() => {
+    dy.set(0);
+    rowDrag.reset();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [index]);
+  const lift = useAnimatedStyle(() => {
+    const room = roomShift(drag.value, index);
+    return {
+      transform: [
+        {
+          translateY:
+            drag.value.from === index
+              ? dy.value
+              : reduceMotion
+                ? room
+                : withTiming(room, { duration: 200 }),
+        },
+        { scale: lifted.value ? 1.02 : 1 },
+      ],
+      zIndex: lifted.value ? 10 : 0,
+      elevation: lifted.value ? 8 : 0,
+    };
+  });
+  const begin = () => {
+    haptics.light();
+    onDragging(true);
+    onSlots();
+  };
+  // Not let go in a new place (or the move was refused): everything slides back.
+  const dropped = (moved: number) => {
+    onDrop(moved);
+    setTimeout(() => {
+      dy.set(reduceMotion ? 0 : withTiming(0, { duration: 200 }));
+      rowDrag.reset();
+    }, 400);
+  };
+  // The drag runs on the UI thread (owner, 2026-10-21: Today "freezes"); only its start and
+  // its drop call into JavaScript.
   const gesture = useMemo(
     () =>
       Gesture.Pan()
-        .runOnJS(true)
         .enabled(movable)
         .minDistance(0)
         .onStart(() => {
           lifted.set(1);
-          haptics.light();
-          onDragging(true);
+          scheduleOnRN(begin);
         })
         .onUpdate((e) => {
           dy.set(e.translationY);
+          const s = slots.value;
+          const me = s[index];
+          if (!me) return;
+          const mid = me.mid + e.translationY;
+          let place = 0;
+          for (let k = 0; k < s.length; k++) if (k !== index && s[k]!.mid < mid) place++;
+          const d = drag.value;
+          if (d.from !== index || d.place !== place)
+            drag.set({ from: index, place, room: me.h + ROW_GAP });
         })
-        .onEnd((e) => onDrop(e.translationY))
+        .onEnd((e) => {
+          // The dropped row settles where the others made room for it.
+          const s = slots.value;
+          const d = drag.value;
+          let to = 0;
+          if (d.from === index && d.place !== index) {
+            if (d.place > index) for (let k = index + 1; k <= d.place; k++) to += s[k]!.h + ROW_GAP;
+            else for (let k = d.place; k < index; k++) to -= s[k]!.h + ROW_GAP;
+          }
+          dy.set(reduceMotion ? to : withTiming(to, { duration: 150 }));
+          scheduleOnRN(dropped, e.translationY);
+        })
         .onFinalize(() => {
-          dy.set(0);
           lifted.set(0);
-          onDragging(false);
+          scheduleOnRN(onDragging, false);
         }),
-    [movable, dy, lifted, onDragging, onDrop],
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [movable, index, reduceMotion, onDragging, onDrop],
   );
   const actions = [
     ...(info.canUp ? [{ name: "moveUp", label: "Move Up" }] : []),
     ...(info.canDown ? [{ name: "moveDown", label: "Move Down" }] : []),
   ];
   return (
-    <Animated.View onLayout={onLayout} style={[styles.wrap, lift]}>
+    <Animated.View onLayout={onLayout} style={[styles.wrap, lift]} layout={layout}>
       {leg}
       <View
         style={[

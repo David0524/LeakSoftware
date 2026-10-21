@@ -397,17 +397,15 @@ export default async function SchedulePage({ searchParams }: PageProps<"/schedul
             ›
           </Link>
           {viewLinks(view, date, tech)}
+          {/* Computers: Reorder Techs beside Day / Week / Month, not in a row of its own
+              (owner, 2026-10-21). Phones have it at the end of Whose schedule. */}
+          {reorder.length > 1 ? <ReorderTechs techs={reorder} className="max-sm:hidden" /> : null}
         </div>
 
         {view === "day" ? <WeekStrip date={date} today={today} tech={tech} /> : null}
 
         {/* Whose schedule: under the days of the week, with Reorder Techs at its end (owners
-            and admins). On a computer, where every tech shows, Reorder Techs stands alone. */}
-        {reorder.length > 1 ? (
-          <div className="mb-2 flex justify-end max-sm:hidden">
-            <ReorderTechs techs={reorder} />
-          </div>
-        ) : null}
+            and admins). */}
         {techs.length > 1 ? (
           <div className="mb-4 flex items-center gap-2 sm:hidden">
             <nav

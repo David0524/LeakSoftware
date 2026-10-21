@@ -56,8 +56,10 @@ export function JobSections({
     () => matchMedia(PHONE).matches,
     () => false,
   );
-  // Findings sits on its tile: the bar keeps its large title there (owner, 2026-10-20).
-  useStillNavBar(phone && active === "findings");
+  // Every section sits on tiles: the bar keeps its large title on all of them, so switching
+  // sections never moves it (owner, 2026-10-20 and 2026-10-21: on Findings and Wrap Up "the
+  // navigation bar should not shrink"; the same on every section, as the iPhone app).
+  useStillNavBar(phone);
   const go = (step: number) => {
     const next = sections[index + step];
     if (next) choose(next.id);

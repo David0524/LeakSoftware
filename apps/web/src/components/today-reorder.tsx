@@ -1,10 +1,18 @@
 "use client";
 
-import { createContext, useContext, useRef, useState, useTransition, type ReactNode } from "react";
+import {
+  createContext,
+  useContext,
+  useLayoutEffect,
+  useRef,
+  useState,
+  useTransition,
+  type ReactNode,
+} from "react";
 import type { JobChange, TodayMove } from "@leakbook/core";
 import { moveTodayStop, undoTodayMove, type TodayMoveResult } from "@/app/actions/routes";
 import { NO_CONNECTION, whenOffline } from "@/lib/offline";
-import { SWIPE_ACTION } from "./swipe-row";
+import { dropIndex, flip, makeRoom, shift, shownTops, slideTo } from "./row-slide";
 import { useUndoWindow } from "./undo";
 import { buttonClass, cx } from "./ui";
 
@@ -31,7 +39,18 @@ interface Reorder {
   pending: boolean;
   error: string | null;
   move: (jobId: string, to: TodayMove) => void;
+  /** Slides the rows to where a move puts them, before the server answers. */
+  slide: (jobId: string, to: TodayMove) => void;
+  /** A move failed: the rows slide back. */
+  unslide: () => void;
+  /** The stops still to do (`data-move-row`), in order. */
+  rows: () => HTMLElement[];
 }
+
+/** Stops still to do on Today, the rows that move (page.tsx marks each `<li>`). */
+const ROW = "[data-move-row]";
+const keyOf = (el: HTMLElement) => el.dataset.moveRow ?? "";
+const rowsIn = (root: HTMLElement | null) => [...(root?.querySelectorAll<HTMLElement>(ROW) ?? [])];
 
 const ReorderContext = createContext<Reorder | null>(null);
 
@@ -42,11 +61,39 @@ export function TodayReorderProvider({ tech, children }: { tech: string; childre
   const [editing, setEditing] = useState(false);
   const [pending, start] = useTransition();
   const [error, setError] = useState<string | null>(null);
-  const move = (jobId: string, to: TodayMove) =>
+  const root = useRef<HTMLDivElement>(null);
+  // Where each row was last shown: when the page comes back in its new order, rows slide from
+  // there to their new places (owner, 2026-10-21: as smooth as Reorder Techs).
+  const seen = useRef(new Map<string, number>());
+  const rows = () => rowsIn(root.current);
+  useLayoutEffect(() => {
+    const list = rowsIn(root.current);
+    flip(list, keyOf, seen.current);
+    seen.current = shownTops(list, keyOf);
+  }, [children]);
+  const slide = (jobId: string, to: TodayMove) => {
+    const list = rows();
+    const from = list.findIndex((el) => keyOf(el) === jobId);
+    if (from < 0) return;
+    const target =
+      to === "up" ? from - 1 : to === "down" ? from + 1 : to === "later" ? list.length - 1 : to;
+    slideTo(list, from, target);
+    seen.current = shownTops(list, keyOf);
+  };
+  const unslide = () => {
+    const list = rows();
+    for (const el of list) shift(el, 0);
+    seen.current = shownTops(list, keyOf);
+  };
+  // The row moves at once; the save follows, and a failed one slides it back with the error.
+  const move = (jobId: string, to: TodayMove) => {
+    slide(jobId, to);
     start(async () => {
       const r = await offline(moveTodayStop({ job: jobId, tech, to }));
       setError(r.error ?? null);
+      if (r.error) unslide();
     });
+  };
   return (
     <ReorderContext.Provider
       value={{
@@ -59,9 +106,14 @@ export function TodayReorderProvider({ tech, children }: { tech: string; childre
         pending,
         error,
         move,
+        slide,
+        unslide,
+        rows,
       }}
     >
-      <div data-editing={editing || undefined}>{children}</div>
+      <div ref={root} data-editing={editing || undefined}>
+        {children}
+      </div>
     </ReorderContext.Provider>
   );
 }
@@ -132,14 +184,20 @@ export function useDoLater(jobId: string): DoLater | null {
     pending,
     error,
     notice: timer.open && done ? done.text : null,
-    run: () =>
+    run: () => {
+      // The row slides to the end at once (owner, 2026-10-21); the save follows.
+      r.slide(jobId, "later");
       start(async () => {
         const res = await offline(moveTodayStop({ job: jobId, tech: r.tech, to: "later" }));
         setError(res.error ?? null);
-        if (res.error) return;
+        if (res.error) {
+          r.unslide();
+          return;
+        }
         setDone({ text: movedText(res.message), undo: res.undo ?? [] });
         timer.start();
-      }),
+      });
+    },
     undo: () =>
       start(async () => {
         if (!done) return;
@@ -232,26 +290,6 @@ function DoLaterError({ error, onWater }: { error: string; onWater: boolean }) {
 }
 
 /**
- * Do Later as one of a row's swipe actions (beside Call and Directions), sharing the row's Do
- * Later (its Undo shows on the row).
- */
-export function DoLaterSwipeAction({ customer }: { customer: string }) {
-  const d = useContext(RowContext);
-  if (!d) return null;
-  return (
-    <button
-      type="button"
-      disabled={d.pending}
-      onClick={d.run}
-      aria-label={`Do Later for ${customer}`}
-      className={cx(SWIPE_ACTION, "bg-water")}
-    >
-      Do Later
-    </button>
-  );
-}
-
-/**
  * A stop's controls in Reorder, under its row: a lock and the reason when it can't move;
  * otherwise Move Up and Move Down, the visible, accessible alternative to dragging the handle.
  */
@@ -301,16 +339,27 @@ export function ReorderControls({ moves }: { moves: StopMoves }) {
  */
 export function ReorderHandle({ moves }: { moves: StopMoves }) {
   const r = useTodayReorder();
-  const drag = useRef<{ y0: number; mid: number; row: HTMLElement; rows: HTMLElement[] } | null>(
-    null,
-  );
+  const drag = useRef<{
+    y0: number;
+    row: HTMLElement;
+    card: HTMLElement | null;
+    rows: HTMLElement[];
+    from: number;
+  } | null>(null);
   if (!r) return null;
   if (moves.lock) return <span aria-hidden="true" className="size-11 shrink-0" />;
-  const lift = (row: HTMLElement, on: boolean) => {
-    row.style.position = on ? "relative" : "";
-    row.style.zIndex = on ? "20" : "";
-    row.style.boxShadow = on ? "0 8px 24px rgb(0 0 0 / 0.18)" : "";
-    if (!on) row.style.transform = "";
+  // The card lifts (shadow); its whole row (with its drive line) follows the finger.
+  const lift = (g: NonNullable<typeof drag.current>, on: boolean) => {
+    g.row.style.position = on ? "relative" : "";
+    g.row.style.zIndex = on ? "20" : "";
+    if (g.card) g.card.style.boxShadow = on ? "0 8px 24px rgb(0 0 0 / 0.18)" : "";
+  };
+  const end = (g: NonNullable<typeof drag.current>, dy: number | null) => {
+    drag.current = null;
+    lift(g, false);
+    const place = dy == null ? g.from : dropIndex(g.rows, g.from, dy);
+    if (place !== g.from) r.move(moves.jobId, place);
+    else for (const el of g.rows) shift(el, 0);
   };
   return (
     <button
@@ -322,41 +371,35 @@ export function ReorderHandle({ moves }: { moves: StopMoves }) {
       data-testid="reorder-handle"
       className="-mr-2 grid size-11 shrink-0 cursor-grab touch-none place-items-center rounded-full text-text-muted active:cursor-grabbing"
       onPointerDown={(e) => {
-        const row = e.currentTarget.closest<HTMLElement>("[data-reorder-row]");
+        const row = e.currentTarget.closest<HTMLElement>(ROW);
         if (!row || r.pending) return;
         e.preventDefault();
-        const box = row.getBoundingClientRect();
+        const rows = r.rows();
         drag.current = {
           y0: e.clientY,
-          mid: box.top + box.height / 2,
           row,
-          rows: [...document.querySelectorAll<HTMLElement>("[data-reorder-row]")],
+          card: e.currentTarget.closest<HTMLElement>("[data-reorder-row]"),
+          rows,
+          from: rows.indexOf(row),
         };
         e.currentTarget.setPointerCapture(e.pointerId);
-        lift(row, true);
+        lift(drag.current, true);
       }}
       onPointerMove={(e) => {
         const g = drag.current;
-        if (g) g.row.style.transform = `translateY(${e.clientY - g.y0}px)`;
+        if (!g) return;
+        const dy = e.clientY - g.y0;
+        shift(g.row, dy, false);
+        // The other rows slide out of the way (owner, 2026-10-21).
+        makeRoom(g.rows, g.from, dropIndex(g.rows, g.from, dy));
       }}
       onPointerUp={(e) => {
         const g = drag.current;
-        if (!g) return;
-        drag.current = null;
-        const mid = g.mid + (e.clientY - g.y0);
-        const place = g.rows
-          .filter((x) => x !== g.row)
-          .filter((x) => {
-            const b = x.getBoundingClientRect();
-            return b.top + b.height / 2 < mid;
-          }).length;
-        lift(g.row, false);
-        if (place !== g.rows.indexOf(g.row)) r.move(moves.jobId, place);
+        if (g) end(g, e.clientY - g.y0);
       }}
       onPointerCancel={() => {
         const g = drag.current;
-        drag.current = null;
-        if (g) lift(g.row, false);
+        if (g) end(g, null);
       }}
     >
       <svg

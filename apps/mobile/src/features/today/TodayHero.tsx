@@ -255,9 +255,11 @@ export const TodayHeroCard = memo(function TodayHeroCard({
   const pan = useMemo(
     () =>
       Gesture.Pan()
-        // Sideways only: a drag that goes up or down first is left to the page's scroll.
-        .activeOffsetX([-10, 10])
-        .failOffsetY([-12, 12])
+        // Clearly sideways only (owner, 2026-10-21: scrolling that started on the card was
+        // "sometimes blocked"): the card takes the drag at 12 pt sideways, but a drag that moves
+        // 8 pt up or down first (anything steeper than about 34 degrees) is the page's scroll.
+        .activeOffsetX([-12, 12])
+        .failOffsetY([-8, 8])
         .onUpdate((e) => {
           if (reduceMotion) return;
           const dx = e.translationX;

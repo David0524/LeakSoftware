@@ -161,8 +161,7 @@ for (const [name, viewport, fontSize] of [
       await expect(page.locator("[aria-busy=true]")).toHaveCount(0);
       if (path === "/today") await expect(page.getByTestId("today-hero")).toBeVisible();
       expect(await sideways(page), `${path} scrolls sideways once loaded`).toBeLessThanOrEqual(0);
-      // No Back here, so the large title sits in the bar's row (owner, 2026-10-20): it wraps
-      // before it reaches the "+", or takes its own row under the bar when a word can't fit.
+      // The large title never runs into the "+" (on these pages it sits under the bar).
       const plus = page.locator(".nav-main").getByRole("link", { name: "New Job" });
       if (await plus.count()) {
         const plusBox = (await plus.boundingBox())!;
@@ -181,8 +180,8 @@ for (const [name, viewport, fontSize] of [
         };
         expect(intersects(plusEdges, text), `${path}: the title overlaps +`).toBe(false);
       }
-      // A tab's own page has the logo at the bar's left (owner, 2026-10-21): the title sits
-      // beside it, or under the bar, never over it.
+      // A tab's own page has the logo at the bar's left, level with the "+", and the title
+      // under it on its own row (owner, 2026-10-21), never over it.
       const logo = page.locator("[data-nav-brand] img:visible");
       await expect(logo).toHaveCount(1);
       const logoBox = (await logo.boundingBox())!;
@@ -199,6 +198,9 @@ for (const [name, viewport, fontSize] of [
         bottom: logoBox.y + logoBox.height,
       };
       expect(intersects(logoEdges, titleText), `${path}: the title overlaps the logo`).toBe(false);
+      expect(titleText.top, `${path}: the title is under the logo's row`).toBeGreaterThanOrEqual(
+        logoBox.y + logoBox.height,
+      );
     }
     await phone.close();
   });

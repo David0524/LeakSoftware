@@ -13,10 +13,8 @@ import { WebIcon } from "./WebIcon";
 // once the large one scrolls under the bar, and the bar turns to glass once anything does.
 // iPhone uses the native bar with large titles instead.
 //
-// Without Back (the tab roots), the large title sits in the bar's row, left of the screen's
-// action, as on the website (owner, 2026-10-20: "push up towards where the plus button is"),
-// and right of the logo the tab roots have where Back would be (owner, 2026-10-21).
-// The bar reports its action's width (`right`) so the title keeps clear of it.
+// The tab roots have the logo where Back would be, level with the action, and the large title
+// on its own full-width row under the bar (owner, 2026-10-21), as on the website.
 
 export const BAR_HEIGHT = 44;
 
@@ -28,6 +26,11 @@ interface BarState {
   inline: boolean;
   /** The width of the bar's right-hand content (the "+"), in points. */
   right: number;
+  /**
+   * The bar keeps its large-title look as the page scrolls: no small title, no glass (the
+   * job's Findings and Wrap-Up, which sit on a tile; owner, 2026-10-20 and 2026-10-21).
+   */
+  still: boolean;
 }
 const states = new Map<string, BarState>();
 const listeners = new Set<() => void>();
@@ -36,7 +39,7 @@ let version = 0;
 export function barState(key: string): BarState {
   let s = states.get(key);
   if (!s) {
-    s = { y: new Animated.Value(0), large: false, inline: false, right: 0 };
+    s = { y: new Animated.Value(0), large: false, inline: false, right: 0, still: false };
     states.set(key, s);
   }
   return s;
@@ -64,6 +67,14 @@ export function setBarRight(key: string, width: number) {
   const s = barState(key);
   if (Math.abs(s.right - width) < 0.5) return;
   s.right = width;
+  changed();
+}
+
+/** Keep the bar from collapsing to its small title while `still` (see BarState.still). */
+export function setBarStill(key: string, still: boolean) {
+  const s = barState(key);
+  if (s.still === still) return;
+  s.still = still;
   changed();
 }
 
@@ -106,15 +117,17 @@ export function DrawnHeader({ back, options, route, navigation }: NativeStackHea
   const s = barState(route.key);
   const title = typeof options.title === "string" ? options.title : "";
   const solid = options.headerTransparent === false;
-  const titleOpacity = s.large ? smallTitleOpacity(s) : 1;
+  const titleOpacity = s.still ? 0 : s.large ? smallTitleOpacity(s) : 1;
   const barOpacity = solid
     ? 1
-    : s.y.interpolate({
-        // A title in the bar's row stays clear of the glass until it has scrolled away.
-        inputRange: s.inline ? INLINE_TITLE_HANDOFF : [0, 8],
-        outputRange: [0, 1],
-        extrapolate: "clamp",
-      });
+    : s.still
+      ? 0
+      : s.y.interpolate({
+          // A title in the bar's row stays clear of the glass until it has scrolled away.
+          inputRange: s.inline ? INLINE_TITLE_HANDOFF : [0, 8],
+          outputRange: [0, 1],
+          extrapolate: "clamp",
+        });
   const right = options.headerRight?.({ tintColor: color.link, canGoBack: Boolean(back) });
   const left = options.headerLeft?.({ tintColor: color.link, canGoBack: Boolean(back) });
   return (
@@ -217,7 +230,7 @@ const styles = StyleSheet.create({
   right: { justifyContent: "flex-end" },
   rightContent: { flexDirection: "row", alignItems: "center" },
   titleBox: { maxWidth: "55%", alignItems: "center" },
-  titleBesideLogo: { maxWidth: "36%" },
+  titleBesideLogo: { maxWidth: "28%" },
   back: {
     minHeight: minTap,
     flexDirection: "row",

@@ -13,7 +13,7 @@ import { color, MAX_TEXT_SCALE, minTap, shape, space, type } from "../../ui/them
 
 // Reorder Techs (owner, 2026-10-21: "Make a way to reorder techs in the schedule";
 // docs/design/2026-10-21-tech-order.md), the website's reorder-techs.tsx on Android: owners and
-// admins get a "Reorder Techs" button under Whose schedule; its sheet lists the active techs as
+// admins get a round "Reorder Techs" button at the end of Whose schedule; its sheet lists the active techs as
 // an inset grouped list, each with their color dot, Move Up and Move Down, and the grip Today's
 // Reorder uses (drag it). Done saves (lib/techOrder: row and outbox), Cancel leaves it.
 
@@ -62,23 +62,20 @@ export function ReorderTechs({
   };
 
   return (
-    <View style={styles.actionRow}>
+    <View>
+      {/* A round icon button at the end of Whose schedule, not a row of its own (owner,
+          2026-10-21: "shouldn't take up so much space"). */}
       <Pressable
         accessibilityRole="button"
+        accessibilityLabel={REORDER_TECHS.action}
         onPress={() => {
           setList(techs);
           setError(null);
           setOpen(true);
         }}
-        hitSlop={4}
-        style={({ pressed }) => [styles.action, pressed && { opacity: 0.5 }]}
+        style={({ pressed }) => [styles.action, pressed && { backgroundColor: color.iconTint }]}
       >
-        <Text
-          style={[type.bodyEmphasis, { color: color.link }]}
-          maxFontSizeMultiplier={MAX_TEXT_SCALE}
-        >
-          {REORDER_TECHS.action}
-        </Text>
+        <WebIcon name="reorder" size={24} color={color.link} strokeWidth={2.2} />
       </Pressable>
       <ModalSheet
         visible={open}
@@ -244,8 +241,13 @@ function Arrow({
 }
 
 const styles = StyleSheet.create({
-  actionRow: { flexDirection: "row", justifyContent: "flex-end", marginTop: -space["2"] },
-  action: { minHeight: minTap, justifyContent: "center", paddingHorizontal: space["1"] },
+  action: {
+    width: minTap,
+    height: minTap,
+    borderRadius: minTap / 2,
+    alignItems: "center",
+    justifyContent: "center",
+  },
   group: { borderRadius: shape.card, overflow: "hidden" },
   row: {
     minHeight: 56,

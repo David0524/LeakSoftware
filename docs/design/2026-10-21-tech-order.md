@@ -27,11 +27,12 @@ app (apps/ios) and the Android app (apps/mobile).
 
 ## The control
 
-- **Reorder Techs**, a text button in the link color, owners and admins only, and only when the
-  shop has two or more active techs and the person sees everyone's jobs:
-  - Phones (mobile website, iPhone, Android): at the end of the Whose schedule row (website) or
-    right under it (apps).
-  - Desktop website: right-aligned above the board, where the Whose schedule pills sit on phones.
+- **Reorder Techs**, a round 44 pt icon button (up and down arrows) in the link color, named
+  "Reorder Techs" for screen readers (and as its tooltip on a computer), never a row of its own
+  (owner, 2026-10-21: "shouldn't take up so much space"); owners and admins only, and only when
+  the shop has two or more active techs and the person sees everyone's jobs:
+  - Phones (mobile website, iPhone, Android): at the end of the Whose schedule pills.
+  - Desktop website: in the date row, after Day / Week / Month.
 - It opens a sheet titled **Reorder Techs**: Cancel at the left, **Done** (bold) at the right, a
   one-line help ("Drag techs into the order the Schedule and Today show them."), and the active
   techs as an inset grouped list. Each row: the tech's color dot, their name, **Move Up** and

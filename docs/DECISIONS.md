@@ -2,6 +2,17 @@
 
 Newest first. Each entry: date, decision, reason.
 
+## 2026-10-21 (owner, TestFlight build 1016: logo "above the page title"; Findings and Wrap Up "the navigation bar should not shrink"; Today has "too many gestures" and freezes)
+- **The logo sits in the bar's top row, at the leading edge level with the round +** (28 pt), and the large title takes its own full-width row under it on Today, Jobs, Schedule, Messages and More.
+- **The job page keeps a fixed inline title that never collapses**, on every section (Details, Checklist, Findings, Photos, Wrap Up), since all of them sit on tiles and switching sections shouldn't move the bar.
+- **Today has no sideways swipe between techs' days**; the Whose Day pills switch.
+- **Today's stop rows have no swipe actions and no touch-and-hold menu**; the open row shows Mark Complete, Do Later, the address (directions), the customer's name (the job), and round Message and Call buttons.
+- **Today's hero card still swipes between stops**, but takes a drag only when it's clearly sideways (at least 10 pt, and 1.5 times the vertical); anything else scrolls the page.
+- **The Live Activity's On My Way and Mark Complete are round 44 pt icon buttons** (a car, a check) with their names for VoiceOver, with more room above them on the Lock Screen; the expanded Dynamic Island uses the same buttons.
+- **Reorder Techs is a round icon button (arrow.up.arrow.down) at the end of the Whose schedule pills**, not a row of its own (owner: "shouldn't take up so much space"); owners and admins only, as before.
+- **On a computer, Reorder Techs sits in the Schedule's date row, after Day / Week / Month**, with "Reorder Techs" as its tooltip.
+- **Reordering stops is as smooth as Reorder Techs** (owner: "Let's make reordering jobs just as smooth"): on Today's Reorder (Move Up, Move Down, the grip) and when dragging a stop within a day on the Schedule, the row moves to its new place at once with a spring, then saves through the sync layer; on the Schedule the stop under a drag slides down to open its place. Reduce Motion moves rows without the spring.
+
 ## 2026-10-21 (owner: "We need to speed up this process. It's taking hours to commit"; "Ok let's do all 6 changes")
 - **CI runs only the jobs a change can affect** ("What changed" in `ci.yml`): iPhone jobs for `apps/ios` and `packages/core`, the database for SQL, sync and Swift, the browser tests for the website and packages. Workflow, lockfile and script changes run everything. A branch is compared with the default branch, so a cancelled run never hides a change.
 - **The website goes live once its own CI jobs pass**; the iPhone jobs must pass before TestFlight.

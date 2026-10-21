@@ -65,16 +65,31 @@ export function ReorderTechs({
   if (techs.length < 2) return null;
   return (
     <>
+      {/* A round icon button, not a row of its own (owner, 2026-10-21: "shouldn't take up so
+          much space"), named for screen readers, its name as the tooltip. */}
       <button
         type="button"
         aria-haspopup="dialog"
+        aria-label={REORDER_TECHS.action}
+        title={REORDER_TECHS.action}
         onClick={openSheet}
         className={cx(
-          "inline-flex min-h-11 shrink-0 items-center px-1 font-semibold text-link",
+          "grid size-11 shrink-0 place-items-center rounded-full text-link active:bg-link/10",
           className,
         )}
       >
-        {REORDER_TECHS.action}
+        <svg
+          viewBox="0 0 24 24"
+          aria-hidden="true"
+          className="size-6"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="2.2"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        >
+          <path d="M8 20V5M4 9l4-4 4 4M16 4v15M12 15l4 4 4-4" />
+        </svg>
       </button>
       <Sheet
         open={open}
