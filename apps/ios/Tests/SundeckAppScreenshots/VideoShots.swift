@@ -297,6 +297,7 @@
             window.layoutIfNeeded()
             flattenBackdrops(window.layer)
             let fade = edgeFade()
+            if name.contains("pump-quote") { dumpLayers(window.layer, depth: 0) }
             let left = portals(window.layer)
             if !left.isEmpty { print("video portals in \(name): \(left)") }
             defer { fade?.removeFromSuperview() }
@@ -364,6 +365,21 @@
                 }
                 walk(window)
             }
+        }
+
+        /// The layer tree, for working out what the off-screen renderer can't draw.
+        private func dumpLayers(_ layer: CALayer, depth: Int) {
+            guard depth < 40 else { return }
+            let kind = String(describing: type(of: layer))
+            let frame = layer.convert(layer.bounds, to: window.layer)
+            if !["CGDrawingLayer", "CALayer", "ColorShapeLayer"].contains(kind) || depth < 12 {
+                print(
+                    "video layer " + String(repeating: ". ", count: depth) + kind
+                        + " \(Int(frame.minX)),\(Int(frame.minY)) \(Int(frame.width))x\(Int(frame.height))"
+                        + (layer.isHidden ? " hidden" : "") + (layer.opacity < 1 ? " opacity \(layer.opacity)" : "")
+                        + (layer.mask != nil ? " masked" : ""))
+            }
+            for sub in layer.sublayers ?? [] { dumpLayers(sub, depth: depth + 1) }
         }
 
         /// Portal layers left on screen (each draws black off screen), by their size.
@@ -500,14 +516,14 @@
     }
 
     /// Today as the Today tab shows it: the tab's own page, with the logo over its title, under
-    /// the bar. RootTitle places that block from geometry it reads as the screen settles, which
-    /// the test host never reports (it stays 0, and the block sat under the status bar): the
-    /// page starts under the status bar and the bar's row instead, where that block goes.
+    /// the bar. RootTitle places that block below the status bar, which it reads from the scene;
+    /// the test host has none (0, and the block sat under the status bar), so the page starts
+    /// under the status bar, as the block does on an iPhone.
     @MainActor
     func todayPage(_ env: AppEnvironment) -> some View {
         NavigationStack {
             TodayScreen().environment(\.brandInBar, true)
-                .padding(.top, videoSafeArea.top + 54)
+                .padding(.top, videoSafeArea.top)
                 .background(Color.bg.ignoresSafeArea())
         }
         .app(env)
@@ -1055,7 +1071,7 @@
             ["location_text": "Pump noise: bearings grinding"])
         try videoPhoto(
             sync, "equipment-pad.jpg", target: MediaTarget(jobId: stop.job, componentId: equipment),
-            caption: "Pump noise: motor bearings", at: 8 * 60 + 58)
+            caption: "Pump noise: motor bearings", at: 8 * 60 + 42)
     }
 
     /// The repair quote for the pump on the visit: a draft, or sent.
@@ -1366,7 +1382,7 @@
             let photos = Stage(NavigationStack { JobScreen(jobId: sofia.job, section: .photos) }.app(env))
             try await photos.wait(2.5)
             try await photos.shot("pool-16-photos")
-            try await photos.scrollToBottom()
+            try await photos.scroll(by: 420)
             try await photos.shot("pool-16-before-after-photos")
             photos.close()
 
