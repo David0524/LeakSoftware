@@ -22,6 +22,7 @@
         @Environment(AppEnvironment.self) private var app
         @Environment(\.openRoute) private var openRoute
         @Environment(\.openURL) private var openURL
+        @Environment(\.accessibilityReduceMotion) private var reduceMotion
         @State private var view = ScheduleView.day
         @State private var date: String?
         /// A tech's id, "all", or nil for the default (the first person with work in view).
@@ -84,22 +85,28 @@
                             onDrop: { day, id in drop(id, on: .day(day)) })
                     }
                     if board.techs.count > 1 {
-                        FilterPills(
-                            selection: Binding(get: { board.tech }, set: { tech = $0 }),
-                            options: board.techs.map(\.id) + ["all"],
-                            label: { id in id == "all" ? "Everyone" : id == board.ctx.userId ? "Me" : board.name(id) },
-                            canDrop: { $0 != "all" },
-                            // A stop dropped on a person goes last on their day (Day view).
-                            onDrop: view == .day
-                                ? { id, job in drop(job, on: .route(tech: id, date: board.date, index: nil)) } : nil,
-                            dot: { id in board.color(id) }
-                        )
-                        .padding(.horizontal, -16)
-                        .accessibilityLabel("Whose schedule")
-                    }
-                    // Reorder Techs: owners and admins, under Whose schedule (the website's place).
-                    if board.ctx.isManager && board.ctx.seesAll && board.reorderTechs.count > 1 {
-                        ReorderTechsButton { reorderingTechs = true }
+                        // Reorder Techs (owners and admins) as a round button at the row's end,
+                        // not a row of its own (owner, 2026-10-21).
+                        let reorder = board.ctx.isManager && board.ctx.seesAll && board.reorderTechs.count > 1
+                        HStack(spacing: 8) {
+                            FilterPills(
+                                selection: Binding(get: { board.tech }, set: { tech = $0 }),
+                                options: board.techs.map(\.id) + ["all"],
+                                label: { id in
+                                    id == "all" ? "Everyone" : id == board.ctx.userId ? "Me" : board.name(id)
+                                },
+                                canDrop: { $0 != "all" },
+                                // A stop dropped on a person goes last on their day (Day view).
+                                onDrop: view == .day
+                                    ? { id, job in drop(job, on: .route(tech: id, date: board.date, index: nil)) }
+                                    : nil,
+                                dot: { id in board.color(id) }
+                            )
+                            .padding(.leading, -16)
+                            .padding(.trailing, reorder ? 0 : -16)
+                            .accessibilityLabel("Whose schedule")
+                            if reorder { ReorderTechsButton { reorderingTechs = true } }
+                        }
                     }
                     if let route = board.leadRoute {
                         DayLead(route: route, board: board, busy: optimizing == route.id) {
@@ -618,9 +625,22 @@
                 case .day(let date): (job.assignedUserId, date)
                 case .needsATime: (nil, nil)
                 }
-            return move(job, tech: to.tech, date: to.date) {
+            let moved = move(job, tech: to.tech, date: to.date) {
                 try dropJob(item, on: target, jobs: board.jobs, ctx: board.ctx, team: board.team, drive: drive)
             }
+            // A stop moved within the day shown: it takes its new place at once, with a spring,
+            // before the board is read again (owner, 2026-10-21: "just as smooth").
+            if moved, planMove == nil, case .route(let tech, let date, let index) = target {
+                let key = routeKey(tech, date)
+                if var jobs = self.board?.loaded.routes[key]?.jobs, let at = jobs.firstIndex(where: { $0.id == item }) {
+                    let stop = jobs.remove(at: at)
+                    jobs.insert(stop, at: min(index ?? jobs.count, jobs.count))
+                    withAnimation(ReorderMotion.animation(reduceMotion: reduceMotion)) {
+                        self.board?.loaded.routes[key]?.jobs = jobs
+                    }
+                }
+            }
+            return moved
         }
 
         /// Any move of a job: a maintenance plan's visit going to another day or tech asks first
@@ -1388,7 +1408,7 @@
                             actions: actions(j, routeKey(tech.id, board.date)),
                             stripe: board.color(j.assignedUserId)
                         )
-                        .scheduleDropTarget(cornerRadius: CGFloat(Radius.card)) { onDrop($0, i) }
+                        .scheduleDropTarget(cornerRadius: CGFloat(Radius.card), gap: 64) { onDrop($0, i) }
                     }
                     LegLine(
                         minutes: route.summary.backLegMin, label: backLegLabel(board.ctx.start(for: tech.id).label),
@@ -1799,8 +1819,13 @@
     /// (true when it moved; false slides it back).
     private struct ScheduleDropTarget: ViewModifier {
         var cornerRadius: CGFloat
+        /// A stop in a day's route: while a stop is dragged over it, it slides down this far to
+        /// open the place the dragged stop will take (owner, 2026-10-21: "make reordering jobs
+        /// just as smooth" as Reorder Techs).
+        var gap: CGFloat = 0
         var onDrop: ((String) -> Bool)?
         @State private var targeted = false
+        @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
         @ViewBuilder func body(content: Content) -> some View {
             if let onDrop {
@@ -1812,10 +1837,13 @@
                                 .allowsHitTesting(false)
                         }
                     }
+                    // The gap is inside the drop area, so the finger stays over it.
+                    .padding(.top, targeted ? gap : 0)
+                    .contentShape(Rectangle())
                     .dropDestination(for: String.self) { items, _ in
                         items.first.map(onDrop) ?? false
-                    } isTargeted: {
-                        targeted = $0
+                    } isTargeted: { now in
+                        withAnimation(gap > 0 && !reduceMotion ? ReorderMotion.spring : nil) { targeted = now }
                     }
             } else {
                 content
@@ -1823,13 +1851,24 @@
         }
     }
 
+    /// The spring rows move with when they're reordered: Reorder Techs' feel, for stops on Today
+    /// and the Schedule (owner, 2026-10-21).
+    enum ReorderMotion {
+        static let spring = Animation.spring(duration: 0.35, bounce: 0.12)
+
+        /// The spring, or nothing with Reduce Motion.
+        static func animation(reduceMotion: Bool) -> Animation? { reduceMotion ? nil : spring }
+    }
+
     extension View {
         fileprivate func scheduleDragSource(_ job: ScheduleJob) -> some View {
             modifier(ScheduleDragSource(job: job))
         }
 
-        fileprivate func scheduleDropTarget(cornerRadius: CGFloat, _ onDrop: ((String) -> Bool)?) -> some View {
-            modifier(ScheduleDropTarget(cornerRadius: cornerRadius, onDrop: onDrop))
+        fileprivate func scheduleDropTarget(
+            cornerRadius: CGFloat, gap: CGFloat = 0, _ onDrop: ((String) -> Bool)?
+        ) -> some View {
+            modifier(ScheduleDropTarget(cornerRadius: cornerRadius, gap: gap, onDrop: onDrop))
         }
     }
 

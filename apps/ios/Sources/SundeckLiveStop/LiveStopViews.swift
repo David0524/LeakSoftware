@@ -264,11 +264,9 @@
                         Spacer(minLength: 8)
                     } else {
                         Spacer(minLength: 8)
+                        // Round icon buttons, 44 points (owner, 2026-10-21: the pills were cramped).
                         ForEach(actions) { link in
-                            Link(destination: link.url) {
-                                LiveStopButtonLabel(title: link.action.title, systemImage: link.action.systemImage)
-                            }
-                            .fixedSize(horizontal: true, vertical: false)
+                            Link(destination: link.url) { LiveStopRoundButton(action: link.action) }
                         }
                     }
                 }
@@ -297,7 +295,10 @@
                 }
                 LiveStopProgress(value: content.progress)
             }
-            .padding(16)
+            // More room above the top row's buttons (owner, 2026-10-21: "cramped at the top").
+            .padding(.horizontal, 16)
+            .padding(.top, 20)
+            .padding(.bottom, 16)
             .accessibilityElement(children: .contain)
             .accessibilityLabel(content.spoken)
         }
@@ -361,9 +362,7 @@
                         }
                     }
                     ForEach(actions) { link in
-                        Link(destination: link.url) {
-                            LiveStopButtonLabel(title: link.action.title, systemImage: link.action.systemImage)
-                        }
+                        Link(destination: link.url) { LiveStopRoundButton(action: link.action) }
                     }
                 }
             }
@@ -380,6 +379,23 @@
 
         /// Compact leading and minimal: the mark.
         public static func mark(logo: Image?) -> some View { LiveStopMark(logo: logo, height: 20) }
+    }
+
+    /// A Live Activity action as a round icon button, 44 points, white on a faint fill (owner,
+    /// 2026-10-21): a car for On My Way, a check for Mark Complete; VoiceOver reads the title.
+    public struct LiveStopRoundButton: View {
+        public var action: LiveStopAction
+
+        public init(action: LiveStopAction) { self.action = action }
+
+        public var body: some View {
+            Image(systemName: action.systemImage)
+                .font(.system(size: 18, weight: .semibold))
+                .foregroundStyle(LiveStopStyle.text)
+                .frame(width: 44, height: 44)
+                .background(Circle().fill(Color.white.opacity(0.16)))
+                .accessibilityLabel(action.title)
+        }
     }
 
     /// A pill button in the expanded island: white on a faint fill, 44 tall.

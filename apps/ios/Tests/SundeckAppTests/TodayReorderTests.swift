@@ -97,6 +97,22 @@ import Testing
         #expect(names(Self.me) == ["Noah Tech", "Grace Holloway", "Riley Rivera"])
     }
 
+    /// Reorder moves the row at once (owner, 2026-10-21): the order shown before the save comes
+    /// back is the order the move saves.
+    @Test func theRowMovesAtOnceToWhereTheMoveSavesIt() throws {
+        let order = { (n: Int, place: StopPlace) in
+            reorderedToDo(
+                self.day(Self.me), jobId: self.id(n), to: place, routeTech: Self.me, today: "2026-10-20",
+                timeZone: "America/Phoenix")
+        }
+        #expect(order(5, .up) == [id(2), id(5), id(1)])
+        #expect(order(2, .place(2)) == [id(1), id(5), id(2)])
+        #expect(order(2, .up) == nil)
+        let shown = try #require(order(5, .up))
+        _ = try #require(try move(5, .up))
+        #expect(day(Self.me).map(\.id) == shown)
+    }
+
     @Test func startedPromisedAndDoneStopsKeepTheirPlace() throws {
         try sync.write("job", id: id(2), companyId: Self.company, ["status": "in_progress"])
         try sync.write("job", id: id(1), companyId: Self.company, ["arrival_fixed": true])

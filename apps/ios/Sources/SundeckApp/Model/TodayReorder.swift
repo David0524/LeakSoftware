@@ -83,13 +83,40 @@ public enum StopPlace: Equatable, Sendable {
 public func reorderIndex(
     _ day: [ScheduleJob], jobId: String, to place: StopPlace, routeTech: String, today: String, timeZone: String
 ) -> Int? {
+    guard
+        let (rest, p) = reorderPlace(
+            day, jobId: jobId, to: place, routeTech: routeTech, today: today, timeZone: timeZone)
+    else { return nil }
+    let others = day.filter { $0.id != jobId }
+    let index = { (j: ScheduleJob) in others.firstIndex { $0.id == j.id } ?? others.count }
+    return p == 0 ? index(rest[0]) : index(rest[p - 1]) + 1
+}
+
+/// The stops still to do, in their order once the move is made, or nil when it can't be made
+/// (`reorderIndex`'s rule). Today's Reorder moves the row to this place at once, with a spring,
+/// before the save comes back (owner, 2026-10-21: "make reordering jobs just as smooth").
+public func reorderedToDo(
+    _ day: [ScheduleJob], jobId: String, to place: StopPlace, routeTech: String, today: String, timeZone: String
+) -> [String]? {
+    guard
+        let (rest, p) = reorderPlace(
+            day, jobId: jobId, to: place, routeTech: routeTech, today: today, timeZone: timeZone)
+    else { return nil }
+    var ids = rest.map(\.id)
+    ids.insert(jobId, at: p)
+    return ids
+}
+
+/// The other stops still to do and the moved stop's new place among them; nil when it can't go.
+private func reorderPlace(
+    _ day: [ScheduleJob], jobId: String, to place: StopPlace, routeTech: String, today: String, timeZone: String
+) -> (rest: [ScheduleJob], place: Int)? {
     guard let me = day.first(where: { $0.id == jobId }),
         todayStopLock(me, routeTech: routeTech, today: today, timeZone: timeZone) == nil
     else { return nil }
     let todo = day.filter { !$0.doneOn(today) }
     guard let at = todo.firstIndex(where: { $0.id == jobId }) else { return nil }
     let rest = todo.filter { $0.id != jobId }
-    let others = day.filter { $0.id != jobId }
     // Nothing goes above a stop that's under way.
     let floor = (rest.lastIndex { $0.status == .inProgress } ?? -1) + 1
     let p: Int
@@ -100,8 +127,7 @@ public func reorderIndex(
     case .place(let n): p = min(max(n, floor), rest.count)
     }
     if rest.isEmpty || p < 0 || p > rest.count || p == at { return nil }
-    let index = { (j: ScheduleJob) in others.firstIndex { $0.id == j.id } ?? others.count }
-    return p == 0 ? index(rest[0]) : index(rest[p - 1]) + 1
+    return (rest, p)
 }
 
 /// A move just saved from Today: for 5 seconds, Undo puts back every row it changed.

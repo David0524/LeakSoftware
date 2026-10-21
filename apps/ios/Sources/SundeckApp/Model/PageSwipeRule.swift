@@ -82,6 +82,25 @@ public enum PagerRule {
         return canPrevious ? -1 : 0
     }
 
+    /// Sideways must beat up-and-down by this much before Today's card takes a drag.
+    public static let heroMargin: CGFloat = 1.5
+
+    /// Whether Today's card takes a drag (owner, 2026-10-21: "Vertical scrolling that starts on
+    /// the hero card is sometimes blocked"): only a clearly sideways one, at least `lockDistance`
+    /// across and `heroMargin` times its vertical movement. Anything else is the page's scroll.
+    /// Before the finger has moved far enough, `velocity` decides by the same rule.
+    public static func heroClaims(_ translation: CGSize, velocity: CGSize? = nil) -> Bool {
+        let dx = abs(translation.width)
+        let dy = abs(translation.height)
+        guard dx.isFinite, dy.isFinite else { return false }
+        if max(dx, dy) >= lockDistance { return dx >= lockDistance && dx > heroMargin * dy }
+        guard let velocity else { return false }
+        let vx = abs(velocity.width)
+        let vy = abs(velocity.height)
+        guard vx.isFinite, vy.isFinite, vx > 0 else { return false }
+        return vx > heroMargin * vy
+    }
+
     /// The spring's starting speed for a release at `velocity` (points a second) from `from` to
     /// `to`, as SwiftUI's springs take it: a share of the distance left, a second; never
     /// backwards, so a page never jumps the wrong way.

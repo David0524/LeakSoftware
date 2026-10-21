@@ -687,6 +687,7 @@
 #if os(iOS)
     import SundeckCore
     import SwiftUI
+    import UIKit
 
     /// Today's card, browsable (owner, 2026-10-20: "a better way to move the hero tile on Today
     /// back to a previous job"; docs/design/2026-10-20-gestures.md section 1): swipe it left for the
@@ -713,8 +714,6 @@
         /// The stop drawn now: follows `flash ?? viewing` after the slide.
         @State private var shown: String?
         @State private var drag: CGFloat = 0
-        /// The drag's direction, decided by its first movement: sideways or not.
-        @State private var sideways: Bool?
         @State private var width: CGFloat = 360
         @State private var turns = 0
         /// A sideways drag is on: the card's buttons and its name don't take the lift of the
@@ -743,8 +742,13 @@
                     width = $0
                 }
                 .contentShape(Rectangle())
-                .simultaneousGesture(swipe(at: at))
-                .keepsHorizontalDrags()
+                // A UIKit pan that begins only on a clearly sideways drag, so a vertical drag
+                // that starts on the card always scrolls Today (owner, 2026-10-21).
+                .gesture(
+                    HeroPan(
+                        changed: { dragChanged($0, at: at) },
+                        ended: { dragEnded($0, velocity: $1, at: at) })
+                )
                 .sensoryFeedback(.selection, trigger: turns)
                 .onAppear { shown = flash ?? viewing }
                 .onChange(of: flash ?? viewing) { _, target in move(to: target) }
@@ -758,43 +762,44 @@
             viewing = id == day.hero()?.currentId ? nil : id
         }
 
-        private func swipe(at: Int?) -> some Gesture {
+        /// Where the card's next and previous stops are, from the stop at `at`.
+        private func neighbors(_ at: Int?) -> (index: Int, hasNext: Bool, hasPrevious: Bool) {
             // From the day-done card, the stop before is the last one.
             let index = at ?? ids.count
-            let hasNext = index + 1 < ids.count
-            let hasPrevious = index > 0
-            return DragGesture(minimumDistance: 10)
-                .onChanged { value in
-                    let dx = value.translation.width
-                    if sideways == nil { sideways = abs(dx) > abs(value.translation.height) }
-                    if sideways == true && !swiping { swiping = true }
-                    guard sideways == true, flash == nil else { return }
-                    let free = dx < 0 ? hasNext : hasPrevious
-                    // Past the first or last stop it resists.
-                    drag = free ? dx : dx / (1 + abs(dx) / 80) * 0.6
-                }
-                .onEnded { value in
-                    defer {
-                        sideways = nil
-                        // After the lift's tap would have landed.
-                        if swiping {
-                            Task {
-                                try? await Task.sleep(for: .milliseconds(300))
-                                swiping = false
-                            }
-                        }
-                    }
-                    guard sideways == true, flash == nil else { return }
-                    let dx = value.translation.width
-                    let flung = value.predictedEndTranslation.width
-                    if (dx < -60 || flung < -160) && hasNext {
-                        pick(index + 1)
-                    } else if (dx > 60 || flung > 160) && hasPrevious {
-                        pick(index - 1)
-                    } else {
-                        withAnimation(.spring(duration: 0.35)) { drag = 0 }
+            return (index, index + 1 < ids.count, index > 0)
+        }
+
+        private func dragChanged(_ translation: CGSize, at: Int?) {
+            if !swiping { swiping = true }
+            guard flash == nil else { return }
+            let n = neighbors(at)
+            let dx = translation.width
+            let free = dx < 0 ? n.hasNext : n.hasPrevious
+            // Past the first or last stop it resists.
+            drag = free ? dx : dx / (1 + abs(dx) / 80) * 0.6
+        }
+
+        private func dragEnded(_ translation: CGSize, velocity: CGSize, at: Int?) {
+            defer {
+                // After the lift's tap would have landed.
+                if swiping {
+                    Task {
+                        try? await Task.sleep(for: .milliseconds(300))
+                        swiping = false
                     }
                 }
+            }
+            guard flash == nil else { return }
+            let n = neighbors(at)
+            let dx = translation.width
+            let flick = abs(velocity.width) >= PagerRule.flickSpeed && abs(dx) >= PagerRule.flickDistance
+            if (dx < -60 || (flick && velocity.width < 0)) && n.hasNext {
+                pick(n.index + 1)
+            } else if (dx > 60 || (flick && velocity.width > 0)) && n.hasPrevious {
+                pick(n.index - 1)
+            } else {
+                withAnimation(.spring(duration: 0.35)) { drag = 0 }
+            }
         }
 
         /// Slides to `target`'s stop: the card leaves the way it's going and the new stop comes in
@@ -829,6 +834,54 @@
                     drag = -out
                 }
                 withAnimation(.spring(duration: 0.35, bounce: 0.12)) { drag = 0 }
+            }
+        }
+    }
+
+    /// Today's card's sideways drag as a UIKit pan (owner, 2026-10-21: vertical scrolling that
+    /// started on the card was sometimes blocked). It begins only when `PagerRule.heroClaims`
+    /// says the drag is clearly sideways; otherwise it fails at once and the scroll view has the
+    /// drag. A SwiftUI DragGesture on a scroll view's content can hold the scroll back.
+    struct HeroPan: UIGestureRecognizerRepresentable {
+        var changed: (CGSize) -> Void
+        var ended: (CGSize, CGSize) -> Void
+
+        func makeUIGestureRecognizer(context: Context) -> UIPanGestureRecognizer {
+            let pan = UIPanGestureRecognizer()
+            pan.delegate = context.coordinator
+            pan.maximumNumberOfTouches = 1
+            return pan
+        }
+
+        func makeCoordinator(converter: CoordinateSpaceConverter) -> Coordinator { Coordinator() }
+
+        func handleUIGestureRecognizerAction(_ recognizer: UIPanGestureRecognizer, context: Context) {
+            let t = recognizer.translation(in: recognizer.view)
+            let translation = CGSize(width: t.x, height: t.y)
+            switch recognizer.state {
+            case .began, .changed: changed(translation)
+            case .ended:
+                let v = recognizer.velocity(in: recognizer.view)
+                ended(translation, CGSize(width: v.x, height: v.y))
+            case .cancelled, .failed: ended(.zero, .zero)
+            default: break
+            }
+        }
+
+        @MainActor final class Coordinator: NSObject, UIGestureRecognizerDelegate {
+            func gestureRecognizerShouldBegin(_ recognizer: UIGestureRecognizer) -> Bool {
+                guard let pan = recognizer as? UIPanGestureRecognizer else { return false }
+                let t = pan.translation(in: pan.view)
+                let v = pan.velocity(in: pan.view)
+                return PagerRule.heroClaims(CGSize(width: t.x, height: t.y), velocity: CGSize(width: v.x, height: v.y))
+            }
+
+            /// The page's scroll keeps its own pan; a sideways drag barely moves it up or down.
+            func gestureRecognizer(
+                _ recognizer: UIGestureRecognizer,
+                shouldRecognizeSimultaneouslyWith other: UIGestureRecognizer
+            ) -> Bool {
+                true
             }
         }
     }

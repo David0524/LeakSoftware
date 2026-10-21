@@ -66,7 +66,11 @@
             .background(Color.bg)
             // The customer's name on top, the job number smaller below (owner, 2026-10-20).
             .navigationTitle(job.map(jobPageTitle) ?? "New Job")
-            .navigationBarTitleDisplayMode(.large)
+            // A fixed title in the bar that never collapses: every section sits on tiles, and a
+            // large title shrinking into the bar on scroll looked wrong there (owner, 2026-10-21:
+            // Findings and Wrap Up "the navigation bar should not shrink"). Same on every section,
+            // so switching sections never moves the bar.
+            .navigationBarTitleDisplayMode(.inline)
             // An invoice or quote line typed but not added: Back asks first (owner, 2026-10-20).
             .discardOnBack(dirty: app.unsavedEdits.any(under: "job:\(jobId)"))
             .task(id: sync.revision) { reload() }

@@ -68,7 +68,7 @@ public enum LiveStopAction: String, Codable, CaseIterable, Hashable, Sendable {
     public var systemImage: String {
         switch self {
         case .onMyWay: "car.fill"
-        case .markComplete: "checkmark.circle.fill"
+        case .markComplete: "checkmark"
         }
     }
 }

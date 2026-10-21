@@ -16,6 +16,20 @@ import Testing
         #expect(PagerRule.lock(CGSize(width: 12, height: 12)) == .vertical)
     }
 
+    /// Today's card takes only clearly sideways drags; the rest scroll the page (owner, 2026-10-21).
+    @Test func todaysCardTakesOnlyClearlySidewaysDrags() {
+        #expect(PagerRule.heroClaims(CGSize(width: -16, height: 4)))
+        #expect(PagerRule.heroClaims(CGSize(width: 12, height: 7)))
+        // Sideways but not by a clear margin: the page scrolls.
+        #expect(!PagerRule.heroClaims(CGSize(width: 14, height: 10)))
+        #expect(!PagerRule.heroClaims(CGSize(width: 4, height: 20)))
+        // Too short to tell: the velocity decides by the same rule.
+        #expect(PagerRule.heroClaims(CGSize(width: 2, height: 1), velocity: CGSize(width: 600, height: 100)))
+        #expect(!PagerRule.heroClaims(CGSize(width: 2, height: 1), velocity: CGSize(width: 300, height: 400)))
+        #expect(!PagerRule.heroClaims(.zero))
+        #expect(!PagerRule.heroClaims(CGSize(width: CGFloat.nan, height: 0)))
+    }
+
     @Test func thePageFollowsTheFingerAndGivesWhereThereIsNoPage() {
         #expect(PagerRule.follow(-120, width: 400, canPrevious: true, canNext: true) == -120)
         #expect(PagerRule.follow(80, width: 400, canPrevious: true, canNext: false) == 80)

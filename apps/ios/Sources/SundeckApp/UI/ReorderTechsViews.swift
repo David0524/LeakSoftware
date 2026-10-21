@@ -4,23 +4,18 @@
 
     // Reorder Techs (owner, 2026-10-21: "Make a way to reorder techs in the schedule";
     // docs/design/2026-10-21-tech-order.md), the website's reorder-techs.tsx: owners and admins
-    // get "Reorder Techs" under Whose schedule; its sheet lists the active techs as an inset
+    // get "Reorder Techs" as a round button at the end of Whose schedule; its sheet lists the active techs as an inset
     // grouped list in edit mode, each with their color dot, Move Up and Move Down (the visible
     // alternative to dragging) and the system's reorder grip. Done saves (TechOrderWrites, through
     // the sync layer); Cancel leaves the order as it was.
 
-    /// The text button under Whose schedule.
+    /// A round icon button at the end of the Whose schedule pills (owner, 2026-10-21: "shouldn't
+    /// take up so much space… so it's not in its own row").
     struct ReorderTechsButton: View {
         var action: () -> Void
 
         var body: some View {
-            HStack {
-                Spacer()
-                Button(ReorderTechs.action, action: action)
-                    .font(.role(.bodyEmphasis))
-                    .foregroundStyle(Color.link)
-                    .frame(minHeight: minTarget)
-            }
+            RoundIconButton(systemImage: "arrow.up.arrow.down", label: ReorderTechs.action, action: action)
         }
     }
 

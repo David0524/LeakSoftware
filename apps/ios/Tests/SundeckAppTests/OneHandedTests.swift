@@ -74,5 +74,8 @@ import Testing
         #expect(LiveStopLink.actions(.onSite) == [.markComplete])
         #expect(LiveStopLink.actions(.done).isEmpty)
         #expect(LiveStopAction.onMyWay.title == "On My Way" && LiveStopAction.markComplete.title == "Mark Complete")
+        // Round icon buttons on the Lock Screen and in the island (owner, 2026-10-21).
+        #expect(LiveStopAction.onMyWay.systemImage == "car.fill")
+        #expect(LiveStopAction.markComplete.systemImage == "checkmark")
     }
 }

@@ -38,6 +38,10 @@
         @State private var moved: StopMoveUndo?
         /// The last move's message, or why it wasn't made.
         @State private var moveNote: (text: String, error: Bool)?
+        /// Reorder's stops still to do, in the order just chosen: the rows move there at once,
+        /// with a spring, before the day is read again (owner, 2026-10-21: "make reordering jobs
+        /// just as smooth" as Reorder Techs).
+        @State private var pendingOrder: [String]?
         @Environment(\.scenePhase) private var scenePhase
         @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
@@ -128,14 +132,9 @@
                         .keepsHorizontalDrags()
                         .accessibilityLabel("Whose day")
                     }
+                    // No sideways swipe between teammates' days (owner, 2026-10-21): the Whose Day
+                    // pills above are the way to switch.
                     route(day)
-                        // Owners and admins: swipe sideways for the teammate before or after, in
-                        // the Whose Day order, stopping at either end (gestures spec section 4).
-                        .contentShape(Rectangle())
-                        .pageSwipe(
-                            enabled: day.ctx.isManager && day.techs.count > 1,
-                            previous: neighbor(day, -1).map { id in { pickTech(id) } },
-                            next: neighbor(day, 1).map { id in { pickTech(id) } })
                     // The tip comes after the stops, so the first stop's buttons are on screen at
                     // launch (owner, 2026-10-20).
                     if let tip = tipFor(
@@ -153,13 +152,6 @@
         private func pickTech(_ id: String) {
             viewing = nil
             techId = id
-        }
-
-        /// The teammate before (-1) or after (1) in the Whose Day order; nil at either end.
-        private func neighbor(_ day: TodayDay, _ step: Int) -> String? {
-            guard let at = day.techs.firstIndex(where: { $0.id == day.techId }) else { return nil }
-            let i = at + step
-            return day.techs.indices.contains(i) ? day.techs[i].id : nil
         }
 
         /// Undo on the "done" banner: the stop's Reopen Visit or Mark Not Complete.
@@ -271,7 +263,15 @@
         /// visible alternative to dragging); one that can't shows a lock and why. Each move saves at
         /// once, and the times and drives update as you go. Done ends it.
         private func reorderList(_ day: TodayDay, _ route: DayRoute) -> some View {
-            let stops = Array(route.jobs.enumerated()).filter { !$0.element.doneOn(day.ctx.today) }
+            let shown = shownJobs(day, route)
+            let stops = Array(shown.enumerated()).filter { !$0.element.doneOn(day.ctx.today) }
+            // Move Up and Move Down follow the order shown, before the save comes back.
+            let can = { (job: ScheduleJob, place: StopPlace) in
+                canReorderDay(day.ctx, techId: day.techId)
+                    && reorderIndex(
+                        shown, jobId: job.id, to: place, routeTech: day.techId, today: day.ctx.today,
+                        timeZone: day.ctx.timeZone) != nil
+            }
             return List {
                 Section {
                     summaryLine(day).plainListRow()
@@ -283,7 +283,7 @@
                             number: i + 1, job: job, timeZone: day.ctx.timeZone,
                             leg: route.summary.legs[routeIndex: i] ?? 0, first: i == 0, start: day.startLabel,
                             lock: lock,
-                            canUp: day.canPlace(job, .up), canDown: day.canPlace(job, .down)
+                            canUp: can(job, .up), canDown: can(job, .down)
                         ) { place in
                             moveStop(job, place, from: .reorder)
                         }
@@ -306,6 +306,19 @@
             .environment(\.editMode, .constant(.active))
         }
 
+        /// The day's stops with Reorder's just-chosen order applied to the ones still to do (done
+        /// stops keep their places).
+        private func shownJobs(_ day: TodayDay, _ route: DayRoute) -> [ScheduleJob] {
+            guard let pendingOrder else { return route.jobs }
+            let byId = Dictionary(route.jobs.map { ($0.id, $0) }, uniquingKeysWith: { a, _ in a })
+            let todo = route.jobs.filter { !$0.doneOn(day.ctx.today) }
+            guard Set(pendingOrder) == Set(todo.map(\.id)), pendingOrder.count == todo.count else { return route.jobs }
+            var next = pendingOrder.makeIterator()
+            return route.jobs.map { job in
+                job.doneOn(day.ctx.today) ? job : (next.next().flatMap { byId[$0] } ?? job)
+            }
+        }
+
         /// Do Later and Undo for the card and the stops.
         private var stopMoves: StopMoves {
             StopMoves(
@@ -316,12 +329,24 @@
         /// Moves a stop with the Schedule's move, saved through the sync layer (offline too).
         private func moveStop(_ job: ScheduleJob, _ place: StopPlace, from source: StopMoveUndo.Source) {
             guard let company = session.company, let day else { return }
+            // Reorder: the row goes to its new place now; the save follows.
+            if source == .reorder, let route = day.route,
+                let order = reorderedToDo(
+                    shownJobs(day, route), jobId: job.id, to: place, routeTech: day.techId, today: day.ctx.today,
+                    timeZone: day.ctx.timeZone)
+            {
+                withAnimation(ReorderMotion.animation(reduceMotion: reduceMotion)) { pendingOrder = order }
+            }
             do {
                 guard
                     let undo = try moveTodayStop(
                         sync, companyId: company.id, ctx: day.ctx, team: day.team, techId: day.techId, jobId: job.id,
                         to: place, source: source, drive: drive)
-                else { return }
+                else {
+                    // Not made: the row slides back.
+                    withAnimation(ReorderMotion.animation(reduceMotion: reduceMotion)) { pendingOrder = nil }
+                    return
+                }
                 if source == .reorder {
                     moveNote = (undo.text, false)
                     AccessibilityNotification.Announcement(undo.text).post()
@@ -330,6 +355,7 @@
                     withAnimation(Motion.smooth) { moved = undo }
                 }
             } catch {
+                withAnimation(ReorderMotion.animation(reduceMotion: reduceMotion)) { pendingOrder = nil }
                 moveNote = (String(describing: error), true)
                 AccessibilityNotification.Announcement(String(describing: error)).post()
             }
@@ -374,6 +400,8 @@
                 } ?? false
             withAnimation(before == nil ? nil : Motion.snappy) {
                 day = next
+                // The day read again has the saved order: Reorder's own order isn't needed.
+                pendingOrder = nil
                 if reset { viewing = nil }
                 if let completed, !reduceMotion { flash = completed.id }
             }
@@ -417,6 +445,10 @@
         var heroStops: [HeroStop] = []
         /// The card for the stop the day is on, worked out once (`hero(viewing:)`).
         private var restingHero: TodayHero?
+        /// The card for each other stop, worked out once off the main thread too, so swiping the
+        /// card never computes a stop's card while the finger moves (owner, 2026-10-21: Today
+        /// "freezes").
+        private var viewedHeroes: [String: TodayHero] = [:]
 
         init(
             store: LocalStore, kv: KeyValue, company: CompanyContext, userId: String, wanted: String?, drive: DriveTimes
@@ -440,6 +472,13 @@
             routing = MapLookups.on(kv, company: try? store.get("company", company.id))
             heroStops = dayHeroStops(store, companyId: company.id, stops: route?.jobs ?? [], cleanings: cleanings)
             restingHero = try? todayHero(stops: heroStops, today: ctx.today, timeZone: ctx.timeZone)
+            for stop in heroStops where stop.id != restingHero?.stopId {
+                if let hero = try? todayHero(
+                    stops: heroStops, today: ctx.today, timeZone: ctx.timeZone, viewing: stop.id)
+                {
+                    viewedHeroes[stop.id] = hero
+                }
+            }
         }
 
         static func == (a: TodayDay, b: TodayDay) -> Bool { a.token == b.token }
@@ -454,6 +493,7 @@
         /// the stop the day is on).
         func hero(viewing: String? = nil) -> TodayHero? {
             guard let viewing, viewing != restingHero?.stopId else { return restingHero }
+            if let hero = viewedHeroes[viewing] { return hero }
             return try? todayHero(stops: heroStops, today: ctx.today, timeZone: ctx.timeZone, viewing: viewing)
         }
 
@@ -548,85 +588,37 @@
             let shape = RoundedRectangle(cornerRadius: CGFloat(Radius.card), style: .continuous)
             let done = job.doneOn(day.ctx.today)
             let expanded = open ?? false
-            SwipeActionsRow(actions: trailingActions(done: done), leading: leadingActions(done: done), menu: false) {
-                rowContent(done: done, expanded: expanded)
-            }
-            .clipShape(shape)
-            .card(padding: 0)
-            .overlay { if isNext { shape.strokeBorder(Color.link, lineWidth: 2) } }
-            .background {
-                // The Live Activity's On My Way for this stop (nothing on screen; owner, 2026-10-20).
-                if day.mine && !done { OnMyWayTrigger(job: job, day: day, leg: leg) }
-            }
-            // Touch and hold: Call, Message, Directions, Open (gestures spec section 5).
-            .contextMenu { menu(done: done) }
-            .composeTextSheet($phoneText)
-            .onChange(of: app.stopRequest, initial: true) { _, request in
-                guard let request, request.jobId == job.id else { return }
-                open = true
-                // Its button does it; when it isn't there (done, or not my day), it's done with.
-                let done = job.doneOn(day.ctx.today)
-                let handled =
-                    request.action == .onMyWay
-                    ? !done && day.mine : !done && markStopTitle(job, day: day.ctx.today) != nil
-                if !handled { app.stopRequest = nil }
-            }
-            .zoomSource(job.id)
-            // Cards ease in as they scroll onto the screen.
-            .scrollTransition(.animated(.smooth)) { card, phase in
-                card.opacity(phase.isIdentity ? 1 : 0.6).scaleEffect(phase.isIdentity ? 1 : 0.96)
-            }
-        }
-
-        /// Swipe right: Complete, on my own day's stops not done (it opens the row and presses its
-        /// Mark Complete, with the same checks). The row's Mark Complete stays the visible way.
-        private func leadingActions(done: Bool) -> [SwipeAction] {
-            guard day.mine, !done, markStopTitle(job, day: day.ctx.today) != nil else { return [] }
-            return [
-                SwipeAction(title: "Complete", systemImage: "checkmark", tint: Color.pass) {
-                    app.stopRequest = StopRequest(jobId: job.id, action: .markComplete)
+            // No row swipes and no touch-and-hold menu (owner, 2026-10-21: Today had "too many
+            // gestures"): a tap opens the row, and its buttons (Mark Complete, Do Later, Call,
+            // Message, the address for directions, the name for the job) do the rest.
+            rowContent(done: done, expanded: expanded)
+                .clipShape(shape)
+                .card(padding: 0)
+                .overlay { if isNext { shape.strokeBorder(Color.link, lineWidth: 2) } }
+                .background {
+                    // The Live Activity's On My Way for this stop (nothing on screen; owner, 2026-10-20).
+                    if day.mine && !done { OnMyWayTrigger(job: job, day: day, leg: leg) }
                 }
-            ]
+                .composeTextSheet($phoneText)
+                .onChange(of: app.stopRequest, initial: true) { _, request in
+                    guard let request, request.jobId == job.id else { return }
+                    open = true
+                    // Its button does it; when it isn't there (done, or not my day), it's done with.
+                    let done = job.doneOn(day.ctx.today)
+                    let handled =
+                        request.action == .onMyWay
+                        ? !done && day.mine : !done && markStopTitle(job, day: day.ctx.today) != nil
+                    if !handled { app.stopRequest = nil }
+                }
+                .zoomSource(job.id)
+                // Cards ease in as they scroll onto the screen.
+                .scrollTransition(.animated(.smooth)) { card, phase in
+                    card.opacity(phase.isIdentity ? 1 : 0.6).scaleEffect(phase.isIdentity ? 1 : 0.96)
+                }
         }
 
         /// Whether Do Later can move this stop (it isn't done, and isn't last already).
         private func canDoLater(done: Bool) -> Bool { !done && day.canPlace(job, .later) }
-
-        /// Swipe left: Call and Directions, then Do Later when the stop can move (the row's call
-        /// button, address and Do Later button stay visible).
-        private func trailingActions(done: Bool) -> [SwipeAction] {
-            var list: [SwipeAction] = []
-            if let phone = job.customerPhone {
-                list.append(SwipeAction(title: "Call", systemImage: "phone.fill", tint: Color.pass) { call(phone) })
-            }
-            if !job.address.isEmpty {
-                list.append(
-                    SwipeAction(title: "Directions", systemImage: "location.fill", tint: Color.link) { directions() })
-            }
-            if canDoLater(done: done) {
-                list.append(
-                    SwipeAction(
-                        title: TodayReorderText.doLater, systemImage: "clock.arrow.circlepath", tint: Color.water
-                    ) {
-                        moves.doLater(job, .row)
-                    })
-            }
-            return list
-        }
-
-        @ViewBuilder private func menu(done: Bool) -> some View {
-            if let phone = job.customerPhone {
-                Button("Call", systemImage: "phone") { call(phone) }
-                Button("Message", systemImage: "message") { message(phone) }
-            }
-            if !job.address.isEmpty {
-                Button("Directions", systemImage: "location") { directions() }
-            }
-            if canDoLater(done: done) {
-                Button(TodayReorderText.doLater, systemImage: "clock.arrow.circlepath") { moves.doLater(job, .row) }
-            }
-            Button("Open Job", systemImage: "arrow.up.right") { openRoute(.job(job.id)) }
-        }
 
         /// A blank text to this stop's customer, as the card's Message (`StopTextRoute`): their
         /// conversation or New Message to them from the company number, else from the phone.
@@ -642,10 +634,6 @@
 
         private func call(_ phone: String) {
             if let url = URL(string: "tel:\(phone.filter { $0.isNumber || $0 == "+" })") { openURL(url) }
-        }
-
-        private func directions() {
-            if let url = directionsURL(job.place, app: MapsApp(sync.kv)) { openURL(url) }
         }
 
         private func rowContent(done: Bool, expanded: Bool) -> some View {
@@ -783,14 +771,15 @@
                     }
                 }
                 Spacer(minLength: 0)
-                if !done {
-                    // On My Way as a round car, first (owner, 2026-10-20: "just be an icon").
-
-                    if let phone = job.customerPhone {
+                if !done, let phone = job.customerPhone {
+                    // Call and Message as round buttons (contact actions), the row's only way to
+                    // reach them now that it has no swipes or menu (owner, 2026-10-21).
+                    HStack(spacing: 8) {
+                        RoundIconButton(systemImage: "message", label: "Message \(job.customerName)") {
+                            message(phone)
+                        }
                         RoundIconButton(systemImage: "phone", label: "Call \(job.customerName), \(phone)") {
-                            if let url = URL(string: "tel:\(phone.filter { $0.isNumber || $0 == "+" })") {
-                                openURL(url)
-                            }
+                            call(phone)
                         }
                     }
                 }
