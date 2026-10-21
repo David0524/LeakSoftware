@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { useRef, useState, type PointerEvent } from "react";
 import { addDays, dateFormat, formatDay, scheduleDays } from "@leakbook/core";
 import { cx } from "./ui";
+import { lockDirection } from "./use-swipe";
 
 const weekday = dateFormat("en-US", { weekday: "short", timeZone: "UTC" });
 
@@ -46,8 +47,11 @@ export function WeekStrip({ date, today, tech }: { date: string; today: string; 
     const dx = e.clientX - t.x;
     const dy = e.clientY - t.y;
     if (t.sideways === undefined) {
-      if (Math.abs(dx) < 6 && Math.abs(dy) < 6) return;
-      t.sideways = Math.abs(dx) > Math.abs(dy);
+      // Only a clearly sideways drag turns the week; anything else scrolls the page (owner,
+      // 2026-10-21, as on Today).
+      const lock = lockDirection(dx, dy);
+      if (!lock) return;
+      t.sideways = lock === "x";
       if (!t.sideways) {
         touch.current = null;
         return;

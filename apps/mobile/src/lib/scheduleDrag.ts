@@ -158,3 +158,40 @@ export function autoScrollStep(
 export function clampScroll(y: number, contentHeight: number, viewHeight: number): number {
   return Math.max(0, Math.min(y, Math.max(0, contentHeight - viewHeight)));
 }
+
+/** What a carried stop's slide needs to know (the Schedule's DragHover). */
+export interface SlideState {
+  /** The stop being carried. */
+  id: string | null;
+  /** Where it was picked up from, when that's a route: its place there. */
+  from: { route: string; index: number } | null;
+  /** Where it would land in a route: its place among the others there. */
+  target: { route: string; index: number } | null;
+  /** How far the stops after its old place move up to close it. */
+  closeGap: number;
+  /** How far the stops after its new place move down to open it. */
+  openGap: number;
+}
+
+/**
+ * How far the stop `id` at `position` on `route` moves while another is carried
+ * (docs/design/2026-10-21-schedule-card.md): the stops after the carried one's old place move
+ * up to close it, and the stops from its new place on move down to open the gap where it will
+ * land. Over nothing (or Needs a Time), nothing moves.
+ */
+export function slideFor(
+  state: SlideState,
+  id: string,
+  route: string | null,
+  position: number,
+): number {
+  if (state.id == null || state.id === id || !route || !state.target) return 0;
+  let shift = 0;
+  let others = position;
+  if (state.from?.route === route && position > state.from.index) {
+    shift -= state.closeGap;
+    others -= 1;
+  }
+  if (state.target.route === route && others >= state.target.index) shift += state.openGap;
+  return shift;
+}

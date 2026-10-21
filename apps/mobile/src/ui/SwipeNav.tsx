@@ -17,7 +17,7 @@ import Reanimated, {
   withTiming,
 } from "react-native-reanimated";
 import { scheduleOnRN } from "react-native-worklets";
-import { PAGER_LOCK, PAGER_SETTLE, pagerFollow, pagerStep } from "../lib/pager";
+import { PAGER_FAIL_Y, PAGER_LOCK, PAGER_SETTLE, pagerFollow, pagerStep } from "../lib/pager";
 import { useReduceMotion } from "./components";
 import { haptics } from "./haptics";
 import { swipeEnded, swipeStarted } from "./swipeQuiet";
@@ -142,6 +142,7 @@ export function SwipePager({
   canPrevious = true,
   canNext = true,
   enabled = true,
+  strict = false,
   style,
   children,
 }: {
@@ -152,6 +153,8 @@ export function SwipePager({
   canPrevious?: boolean;
   canNext?: boolean;
   enabled?: boolean;
+  /** Only a clearly sideways drag turns the page (PAGER_FAIL_Y): a page of cards (Schedule). */
+  strict?: boolean;
   style?: StyleProp<ViewStyle>;
   children: ReactNode;
 }) {
@@ -229,7 +232,7 @@ export function SwipePager({
         .enabled(enabled)
         // Sideways only: 10 pt across before it starts; up or down first is the scroll's.
         .activeOffsetX([-PAGER_LOCK, PAGER_LOCK])
-        .failOffsetY([-PAGER_LOCK, PAGER_LOCK])
+        .failOffsetY(strict ? [-PAGER_FAIL_Y, PAGER_FAIL_Y] : [-PAGER_LOCK, PAGER_LOCK])
         .onBegin(() => {
           began.set(clockNow());
         })
@@ -273,6 +276,7 @@ export function SwipePager({
         }),
     [
       enabled,
+      strict,
       reduceMotion,
       width,
       canPrevious,

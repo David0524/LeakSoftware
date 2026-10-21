@@ -104,6 +104,7 @@ export function SwipePages({
   onNext,
   enabled = true,
   navigate,
+  scrollFirst = false,
   className,
   children,
 }: {
@@ -116,6 +117,12 @@ export function SwipePages({
   enabled?: boolean;
   /** Turning a page loads another address (see useSwipe). */
   navigate?: { scope: string };
+  /**
+   * Leave the browser every pan, as Today's card does (owner, 2026-10-21: "I can't scroll on
+   * a Scheduling tile"): a drag that starts a little sideways still scrolls the page, and
+   * useSwipe stops the browser's scroll only once a drag is clearly sideways.
+   */
+  scrollFirst?: boolean;
   className?: string;
   children: ReactNode;
 }) {
@@ -129,7 +136,14 @@ export function SwipePages({
     navigate,
   });
   return (
-    <div ref={area} className={cx("touch-pan-y overflow-x-clip", className)}>
+    <div
+      ref={area}
+      className={cx(
+        scrollFirst ? "touch-manipulation" : "touch-pan-y",
+        "overflow-x-clip",
+        className,
+      )}
+    >
       <div ref={content} className="will-change-auto">
         {children}
       </div>
@@ -216,6 +230,7 @@ export function SwipeHrefs({
     <SwipePages
       page={page}
       navigate={{ scope }}
+      scrollFirst
       onPrev={() => router.push(prev, { scroll: false })}
       onNext={() => router.push(next, { scroll: false })}
     >

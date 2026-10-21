@@ -1,5 +1,6 @@
 #if os(iOS)
     import SwiftUI
+    import UIKit
 
     // Swiping between pages (owner, 2026-10-19: "Add gestures throughout. I want to navigate the
     // different job pages with gestures."): a horizontal swipe on the job page moves between its
@@ -91,13 +92,10 @@
         @State private var width: CGFloat = 390
         /// This drag's direction, once decided; nil before, and for a drag that isn't ours.
         @State private var axis: PagerRule.Axis?
-        @State private var ignored = false
         @State private var swiping = false
         /// A turn under way: which way, whether the old page is out, whether the new one is in.
         @State private var turn: Turn?
         @State private var turns = 0
-        /// False when the system takes the touch (a stop lifted to drag): the page goes back.
-        @GestureState private var held = false
 
         private struct Turn: Equatable {
             var direction: Int
@@ -118,62 +116,49 @@
                     width = max($0, 1)
                 }
                 .contentShape(Rectangle())
-                .simultaneousGesture(drag, including: enabled ? .all : .subviews)
+                // A UIKit pan that begins only on a clearly sideways drag (`SidewaysPan`), so a
+                // vertical drag that starts anywhere on the page, a stop's card included, always
+                // scrolls it (owner, 2026-10-21: "I can't scroll on a Scheduling tile").
+                .gesture(
+                    SidewaysPan(
+                        claims: { start in
+                            // Not from the screen's left edge (the system's swipe back), and not
+                            // on a control that drags sideways itself.
+                            enabled && turn == nil && start.x > PageSwipeRule.edge && !zones.contains(start)
+                        },
+                        changed: dragChanged,
+                        ended: dragEnded)
+                )
                 .sensoryFeedback(.impact(weight: .light), trigger: turns)
                 .onChange(of: page) { _, _ in arrived() }
-                .onChange(of: held) { _, now in
-                    guard !now else { return }
-                    // The drag was taken away without ending (a stop lifted for drag and drop):
-                    // once its end would have been handled, the page goes back home.
-                    Task {
-                        try? await Task.sleep(for: .milliseconds(60))
-                        guard !held else { return }
-                        ignored = false
-                        guard turn == nil, axis != nil else { return }
-                        axis = nil
-                        release()
-                        settleHome()
-                    }
-                }
         }
 
-        private var drag: some Gesture {
-            DragGesture(minimumDistance: PagerRule.lockDistance, coordinateSpace: .global)
-                .updating($held) { _, state, _ in state = true }
-                .onChanged { value in
-                    guard enabled, turn == nil, !ignored else { return }
-                    if axis == nil {
-                        guard let locked = PagerRule.lock(value.translation) else { return }
-                        // Not from the screen's left edge (the system's swipe back), and not on a
-                        // control that drags sideways itself.
-                        if locked == .vertical || value.startLocation.x <= PageSwipeRule.edge
-                            || zones.contains(value.startLocation)
-                        {
-                            ignored = true
-                            return
-                        }
-                        axis = .horizontal
-                        swiping = true
-                    }
-                    guard !reduceMotion else { return }
-                    offset = PagerRule.follow(
-                        value.translation.width, width: width, canPrevious: previous != nil, canNext: next != nil)
-                }
-                .onEnded { value in
-                    let wasOurs = axis == .horizontal
-                    axis = nil
-                    ignored = false
-                    guard wasOurs, turn == nil else { return }
-                    release()
-                    let way = PagerRule.outcome(
-                        value.translation.width, velocity: value.velocity.width, width: width,
-                        canPrevious: previous != nil, canNext: next != nil)
-                    guard way != 0, let go = way == 1 ? next : previous else {
-                        settleHome()
-                        return
-                    }
-                    turnPage(way, velocity: value.velocity.width, go: go)
-                }
+        private func dragChanged(_ translation: CGSize) {
+            guard turn == nil else { return }
+            if axis == nil {
+                axis = .horizontal
+                swiping = true
+            }
+            guard !reduceMotion else { return }
+            offset = PagerRule.follow(
+                translation.width, width: width, canPrevious: previous != nil, canNext: next != nil)
+        }
+
+        /// The lift, or the system taking the touch (a stop lifted for drag and drop: zero, so the
+        /// page goes back home).
+        private func dragEnded(_ translation: CGSize, velocity: CGSize) {
+            let wasOurs = axis == .horizontal
+            axis = nil
+            guard wasOurs, turn == nil else { return }
+            release()
+            let way = PagerRule.outcome(
+                translation.width, velocity: velocity.width, width: width, canPrevious: previous != nil,
+                canNext: next != nil)
+            guard way != 0, let go = way == 1 ? next : previous else {
+                settleHome()
+                return
+            }
+            turnPage(way, velocity: velocity.width, go: go)
         }
 
         private func release() { releaseSwipe($swiping) }
@@ -240,6 +225,70 @@
             instant.disablesAnimations = true
             withTransaction(instant) { offset = CGFloat(t.direction) * (width + 16) }
             withAnimation(.spring(duration: PagerRule.settle, bounce: 0)) { offset = 0 }
+        }
+    }
+
+    /// A sideways drag as a UIKit pan (owner, 2026-10-21: "I can't scroll on a Scheduling tile"):
+    /// it begins only when `PagerRule.heroClaims` says the drag is clearly sideways (10 points
+    /// across and 1.5 times its vertical movement) and `claims` agrees with where it started (in
+    /// window points, as `.global`); otherwise it fails at once and the scroll view has the drag.
+    /// A SwiftUI DragGesture on a scroll view's content can hold the scroll back. Today's card
+    /// uses the same rule (`HeroPan`). `ended` gets zero when the drag is canceled.
+    struct SidewaysPan: UIGestureRecognizerRepresentable {
+        var claims: (CGPoint) -> Bool = { _ in true }
+        var changed: (CGSize) -> Void
+        var ended: (CGSize, CGSize) -> Void
+
+        func makeUIGestureRecognizer(context: Context) -> UIPanGestureRecognizer {
+            let pan = UIPanGestureRecognizer()
+            pan.delegate = context.coordinator
+            pan.maximumNumberOfTouches = 1
+            return pan
+        }
+
+        func updateUIGestureRecognizer(_ recognizer: UIPanGestureRecognizer, context: Context) {
+            context.coordinator.claims = claims
+        }
+
+        func makeCoordinator(converter: CoordinateSpaceConverter) -> Coordinator { Coordinator(claims: claims) }
+
+        func handleUIGestureRecognizerAction(_ recognizer: UIPanGestureRecognizer, context: Context) {
+            let t = recognizer.translation(in: recognizer.view)
+            let translation = CGSize(width: t.x, height: t.y)
+            switch recognizer.state {
+            case .began, .changed: changed(translation)
+            case .ended:
+                let v = recognizer.velocity(in: recognizer.view)
+                ended(translation, CGSize(width: v.x, height: v.y))
+            case .cancelled, .failed: ended(.zero, .zero)
+            default: break
+            }
+        }
+
+        @MainActor final class Coordinator: NSObject, UIGestureRecognizerDelegate {
+            var claims: (CGPoint) -> Bool
+
+            init(claims: @escaping (CGPoint) -> Bool) { self.claims = claims }
+
+            func gestureRecognizerShouldBegin(_ recognizer: UIGestureRecognizer) -> Bool {
+                guard let pan = recognizer as? UIPanGestureRecognizer else { return false }
+                let t = pan.translation(in: pan.view)
+                let v = pan.velocity(in: pan.view)
+                guard PagerRule.heroClaims(CGSize(width: t.x, height: t.y), velocity: CGSize(width: v.x, height: v.y))
+                else { return false }
+                // Where the finger came down, in the window's points.
+                let now = pan.location(in: nil)
+                let start = CGPoint(x: now.x - t.x, y: now.y - t.y)
+                return claims(start)
+            }
+
+            /// The page's scroll keeps its own pan; a sideways drag barely moves it up or down.
+            func gestureRecognizer(
+                _ recognizer: UIGestureRecognizer,
+                shouldRecognizeSimultaneouslyWith other: UIGestureRecognizer
+            ) -> Bool {
+                true
+            }
         }
     }
 

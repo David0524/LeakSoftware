@@ -171,27 +171,70 @@ for (const [name, viewport, fontSize] of [
         };
         expect(intersects(plusEdges, text), `${path}: the title overlaps +`).toBe(false);
       }
-      // A tab's own page has the logo at the bar's left, level with the "+", and the title
-      // under it on its own row (owner, 2026-10-21), never over it.
-      const logo = page.locator("[data-nav-brand] img:visible");
+      // A tab's own page has the logo right above the title, in the page, left-aligned with
+      // it, and scrolling away with it (owner, 2026-10-21: "The logo needs to park over the
+      // title"); never in the bar, never over the title.
+      await expect(page.locator("[data-nav-brand] img:visible")).toHaveCount(0);
+      const logo = page.locator("[data-tab-logo] img:visible");
       await expect(logo).toHaveCount(1);
-      const logoBox = (await logo.boundingBox())!;
-      const titleText = await h1.evaluate((el) => {
-        const range = document.createRange();
-        range.selectNodeContents(el);
-        const r = range.getBoundingClientRect();
-        return { left: r.left, right: r.right, top: r.top, bottom: r.bottom };
+      const titleText = () =>
+        h1.evaluate((el) => {
+          const range = document.createRange();
+          range.selectNodeContents(el);
+          const r = range.getBoundingClientRect();
+          return { left: r.left, right: r.right, top: r.top, bottom: r.bottom };
+        });
+      const edges = (b: { x: number; y: number; width: number; height: number }) => ({
+        left: b.x,
+        right: b.x + b.width,
+        top: b.y,
+        bottom: b.y + b.height,
       });
-      const logoEdges = {
-        left: logoBox.x,
-        right: logoBox.x + logoBox.width,
-        top: logoBox.y,
-        bottom: logoBox.y + logoBox.height,
-      };
-      expect(intersects(logoEdges, titleText), `${path}: the title overlaps the logo`).toBe(false);
-      expect(titleText.top, `${path}: the title is under the logo's row`).toBeGreaterThanOrEqual(
+      const logoBox = (await logo.boundingBox())!;
+      const text = await titleText();
+      const h1Box = (await h1.boundingBox())!;
+      expect(intersects(edges(logoBox), text), `${path}: the title overlaps the logo`).toBe(false);
+      expect(text.top, `${path}: the logo sits right above the title`).toBeGreaterThanOrEqual(
         logoBox.y + logoBox.height,
       );
+      // 6 px apart; the title's line box adds its leading above the letters, which grows with
+      // the text size (about a third of the font size).
+      const titleSize = await h1.evaluate((el) => parseFloat(getComputedStyle(el).fontSize));
+      expect(
+        h1Box.y - (logoBox.y + logoBox.height),
+        `${path}: the logo parks on the title`,
+      ).toBeLessThanOrEqual(6 + titleSize * 0.35);
+      expect(
+        Math.abs(logoBox.x - h1Box.x),
+        `${path}: the logo lines up with the title`,
+      ).toBeLessThanOrEqual(2);
+      // Clear of the bar's row (the "+") at rest.
+      for (const button of await page
+        .locator(".nav-main a:visible, .nav-main button:visible")
+        .all()) {
+        const b = (await button.boundingBox())!;
+        expect(intersects(edges(logoBox), edges(b)), `${path}: the logo overlaps the bar`).toBe(
+          false,
+        );
+      }
+      // Scrolled a little, the logo moves with the title.
+      const scrollable = await page.evaluate(
+        () => document.documentElement.scrollHeight - window.innerHeight,
+      );
+      if (scrollable > 20) {
+        await page.evaluate(() => window.scrollBy(0, 20));
+        await expect
+          .poll(async () => (await logo.boundingBox())!.y - logoBox.y, {
+            message: `${path}: the logo scrolls with the title`,
+          })
+          .toBeLessThan(-10);
+        const moved = (await logo.boundingBox())!;
+        expect(
+          intersects(edges(moved), await titleText()),
+          `${path}: the title overlaps the logo when scrolled`,
+        ).toBe(false);
+        await page.evaluate(() => window.scrollTo(0, 0));
+      }
     }
     await phone.close();
   });

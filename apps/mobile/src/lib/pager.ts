@@ -11,6 +11,13 @@ export { rubberBand };
 
 /** How far a finger moves before the drag is sideways (ours) or up-and-down (the scroll). */
 export const PAGER_LOCK = 10;
+
+/**
+ * A pager that shares its page with cards (Schedule): it gives up once a drag moves this far up
+ * or down, so only a clearly sideways drag (about 1.5 times as far across as up or down) turns
+ * the page; anything else scrolls (owner, 2026-10-21: "I can't scroll on a Scheduling tile").
+ */
+export const PAGER_FAIL_Y = PAGER_LOCK / 1.5;
 /** The share of the width a slow drag must pass to turn the page. */
 export const PAGER_SHARE = 1 / 3;
 /** A flick: at least this fast (pt/s) and this far (pt), the same way as the drag. */

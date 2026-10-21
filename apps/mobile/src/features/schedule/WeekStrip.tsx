@@ -4,7 +4,7 @@ import { Pressable, StyleSheet, Text, View } from "react-native";
 import Reanimated, { useAnimatedStyle, useSharedValue, withSpring } from "react-native-reanimated";
 import { scheduleOnRN } from "react-native-worklets";
 import { addDays, dateFormat, formatDay, scheduleDays } from "@leakbook/core";
-import { PAGER_LOCK, PAGER_SETTLE, pagerStep } from "../../lib/pager";
+import { PAGER_FAIL_Y, PAGER_LOCK, PAGER_SETTLE, pagerStep } from "../../lib/pager";
 import { useReduceMotion } from "../../ui/components";
 import { haptics } from "../../ui/haptics";
 import { swipeEnded, swipeStarted, swipeTapBlocked } from "../../ui/swipeQuiet";
@@ -85,9 +85,10 @@ export function WeekStrip({
   const pan = useMemo(
     () =>
       Gesture.Pan()
-        // Sideways only: a drag that goes up or down first is left to the page's scroll.
+        // Clearly sideways only: a drag that goes a little up or down first is the page's
+        // scroll (owner, 2026-10-21, as on Today).
         .activeOffsetX([-PAGER_LOCK, PAGER_LOCK])
-        .failOffsetY([-PAGER_LOCK, PAGER_LOCK])
+        .failOffsetY([-PAGER_FAIL_Y, PAGER_FAIL_Y])
         .onStart(() => {
           scheduleOnRN(swipeStarted);
         })
