@@ -458,9 +458,11 @@
                 }
             }
 
+            // The provider calls back on its own queue, so its callback is `@Sendable` (not tied to
+            // the main thread, which crashed when it ran elsewhere).
             private static func jpeg(_ provider: NSItemProvider) async -> Data? {
                 await withCheckedContinuation { continuation in
-                    provider.loadObject(ofClass: UIImage.self) { object, _ in
+                    provider.loadObject(ofClass: UIImage.self) { @Sendable object, _ in
                         continuation.resume(returning: (object as? UIImage)?.jpegData(compressionQuality: 0.8))
                     }
                 }

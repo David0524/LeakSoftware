@@ -38,24 +38,30 @@
         @State private var turns = 0
         /// A sideways drag is on: the page's buttons and links don't take the lift as a tap.
         @State private var swiping = false
+        /// Where this drag came down, in window points.
+        @State private var began = CGPoint.zero
 
         func body(content: Content) -> some View {
             content
                 .environment(\.pageSwipeZones, zones)
                 .swipeQuiet(swiping)
-                .simultaneousGesture(
-                    DragGesture(minimumDistance: 24, coordinateSpace: .global)
-                        .onChanged { value in
-                            guard enabled, !swiping, value.startLocation.x > PageSwipeRule.edge,
-                                PagerRule.lock(value.translation) == .horizontal,
-                                !zones.contains(value.startLocation)
-                            else { return }
-                            swiping = true
-                        }
-                        .onEnded { value in
+                .contentShape(Rectangle())
+                // A UIKit pan that begins only on a clearly sideways drag (`SidewaysPan`), so a
+                // vertical drag anywhere on the page always scrolls it (owner, 2026-10-21:
+                // "There's the same issue scrolling on the jobs page").
+                .gesture(
+                    SidewaysPan(
+                        claims: { start in
+                            // Not from the screen's left edge (the system's swipe back), and not
+                            // on a control that drags sideways itself.
+                            guard enabled, start.x > PageSwipeRule.edge, !zones.contains(start) else { return false }
+                            began = start
+                            return true
+                        },
+                        changed: { _ in swiping = true },
+                        ended: { translation, _ in
                             releaseSwipe($swiping)
-                            guard enabled, !zones.contains(value.startLocation) else { return }
-                            switch PageSwipeRule.direction(start: value.startLocation, translation: value.translation) {
+                            switch PageSwipeRule.direction(start: began, translation: translation) {
                             case 1:
                                 guard let next else { return }
                                 next()
@@ -66,8 +72,7 @@
                                 turns += 1
                             default: break
                             }
-                        },
-                    including: enabled ? .all : .subviews
+                        })
                 )
                 .sensoryFeedback(.impact(weight: .light), trigger: turns)
         }

@@ -105,7 +105,8 @@
                 self.onDone = onDone
             }
 
-            private static func keep(_ url: URL, _ type: UTType) -> CameraPicker.Result? {
+            // Off the main thread: the provider calls back on its own queue.
+            nonisolated private static func keep(_ url: URL, _ type: UTType) -> CameraPicker.Result? {
                 guard type == .movie else { return (try? Data(contentsOf: url)).map { .photo($0) } }
                 let copy = CaptureRules.tempURL(url.pathExtension.isEmpty ? "mov" : url.pathExtension)
                 return (try? FileManager.default.copyItem(at: url, to: copy)) != nil ? .video(copy) : nil
@@ -116,7 +117,10 @@
                 let type: UTType = kind == .video ? .movie : .image
                 let done = onDone
                 // The provider's file is removed when this returns: keep a copy (or the bytes).
-                provider.loadFileRepresentation(forTypeIdentifier: type.identifier) { url, _ in
+                // @Sendable: the provider calls back on a background queue. Without it the closure
+                // is taken as main-actor code and Swift 6 stops the app there (picking any photo
+                // crashed, 2026-10-21).
+                provider.loadFileRepresentation(forTypeIdentifier: type.identifier) { @Sendable url, _ in
                     let result = url.flatMap { Self.keep($0, type) }
                     Task { @MainActor in done(result) }
                 }

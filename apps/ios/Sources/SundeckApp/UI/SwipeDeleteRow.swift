@@ -52,16 +52,17 @@
             }
             .clipped()
             .keepsHorizontalDrags()
-            .simultaneousGesture(
-                DragGesture(minimumDistance: 20)
-                    .onChanged { value in
-                        guard abs(value.translation.width) > abs(value.translation.height) else { return }
+            // Only a clearly sideways drag opens the row; anything else scrolls the page (owner,
+            // 2026-10-21: "There's the same issue scrolling on the jobs page").
+            .gesture(
+                SidewaysPan(
+                    changed: { translation in
                         swiping = true
-                        offset = min(0, start + value.translation.width)
-                    }
-                    .onEnded { value in
+                        offset = min(0, start + translation.width)
+                    },
+                    ended: { translation, _ in
                         releaseSwipe($swiping)
-                        let end = start + value.translation.width
+                        let end = start + translation.width
                         if end < -width * 2.5 {
                             close()
                             delete()
@@ -71,7 +72,7 @@
                             }
                             start = offset
                         }
-                    }
+                    })
             )
             .accessibilityAction(named: "\(title) \(name)", delete)
         }
@@ -152,7 +153,7 @@
         /// The trailing width where a swipe never starts: the Schedule's drag grip.
         var gripWidth: CGFloat = 0
         @ViewBuilder var content: Content
-        @State private var rowWidth: CGFloat = 0
+        @State private var rowEnd: CGFloat = 0
         @State private var offset: CGFloat = 0
         @State private var start: CGFloat = 0
         /// A sideways drag is on: the row's address, name and buttons don't take the lift as a
@@ -214,40 +215,40 @@
             }
             .clipped()
             .onGeometryChange(for: CGFloat.self) {
-                $0.size.width
+                $0.frame(in: .global).maxX
             } action: {
-                rowWidth = $0
+                rowEnd = $0
             }
             .keepsHorizontalDrags()
-            .simultaneousGesture(
-                DragGesture(minimumDistance: 20)
-                    .onChanged { value in
-                        guard abs(value.translation.width) > abs(value.translation.height), startsOffGrip(value)
-                        else { return }
+            // Only a clearly sideways drag off the grip opens the row; anything else scrolls the
+            // page (owner, 2026-10-21: "There's the same issue scrolling on the jobs page").
+            .gesture(
+                SidewaysPan(
+                    claims: startsOffGrip,
+                    changed: { translation in
                         swiping = true
                         let low = actions.isEmpty ? 0 : open * 1.3
                         let high = leading.isEmpty ? 0 : openLeading * 1.3
-                        offset = min(high, max(low, start + value.translation.width))
-                    }
-                    .onEnded { value in
+                        offset = min(high, max(low, start + translation.width))
+                    },
+                    ended: { translation, _ in
                         releaseSwipe($swiping)
-                        guard startsOffGrip(value) else { return }
-                        let end = start + value.translation.width
+                        let end = start + translation.width
                         withAnimation(reduceMotion ? nil : .easeOut(duration: 0.2)) {
                             offset =
                                 end < open / 2 && !actions.isEmpty
                                 ? open : end > openLeading / 2 && !leading.isEmpty ? openLeading : 0
                         }
                         start = offset
-                    }
+                    })
             )
             .modifier(ActionsMenu(title: menuTitle, actions: menuItems ?? leading + actions, on: menu))
             .swipeAccessibilityActions(leading + actions)
         }
 
         /// A drag that starts on the grip picks the card up; it never opens the swipe.
-        private func startsOffGrip(_ value: DragGesture.Value) -> Bool {
-            gripWidth == 0 || offset != 0 || value.startLocation.x < rowWidth - gripWidth
+        private func startsOffGrip(_ start: CGPoint) -> Bool {
+            gripWidth == 0 || offset != 0 || start.x < rowEnd - gripWidth
         }
 
         private func close() {
