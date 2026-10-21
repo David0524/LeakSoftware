@@ -275,11 +275,12 @@
                 .environment(\.drawsLiveMaps, false)
             let host = UIHostingController(rootView: AnyView(content))
             window.rootViewController = host
-            // Off screen there's no status bar or home indicator: leave their room, as an iPhone
-            // does, before the first layout (scroll views start at the top under the bar).
-            if scene == nil { host.additionalSafeAreaInsets = videoSafeArea }
             window.makeKeyAndVisible()
             window.layoutIfNeeded()
+            // The simulator's screen gives the window the status bar's and home indicator's room;
+            // if a runner's doesn't, leave it as an iPhone 17 Pro does.
+            if window.safeAreaInsets.top < 20 { host.additionalSafeAreaInsets = videoSafeArea }
+            print("video safe area \(window.safeAreaInsets)")
         }
 
         /// Lets SwiftUI load (.task) and animate, laying out as it goes.
@@ -315,6 +316,8 @@
         /// Bar materials are a backdrop the off-screen renderer can't draw (it leaves them clear,
         /// and the page shows through the bar): fill them with the light bar's flat color.
         private func flattenBackdrops(_ layer: CALayer) {
+            // The navigation bar's own background follows its appearance (clear at the top).
+            if all(UINavigationBar.self, in: window).contains(where: { $0.layer === layer }) { return }
             let kind = String(describing: type(of: layer))
             // Only the bars along the bottom: at the top, the scroll edge stays clear, as it is
             // over a page at rest.
@@ -765,6 +768,18 @@
             caption: "Dye drawn into the light niche conduit", at: 10 * 60 + 41)
     }
 
+    /// Every item still to do marked Not Leaking, as the tech does before the report.
+    @MainActor
+    func finishChecklist(_ env: AppEnvironment, _ job: String) throws {
+        let sync = env.session.sync
+        let inspection = JobInspection(sync.store, jobId: job)
+        for c in inspection.components where (inspection.resultByComponent[c.id]?.status ?? .pending) == .pending {
+            try InspectionWrites.setVerdict(
+                sync, companyId: "c1", jobId: job, componentId: c.id, existing: inspection.resultByComponent[c.id],
+                verdict: .ok, userId: "u1")
+        }
+    }
+
     /// The homeowner report as the server drafts it, and the repair quote with three lines.
     @MainActor
     func leakWrapUp(_ env: AppEnvironment, _ work: LeakWork, sent: Bool) throws {
@@ -839,6 +854,22 @@
             ]
         }
         try sync.store.applyPage(PullPage(rows: rows, done: true, cursor: [:], serverHLC: "1760000000004-0000-srv"))
+        if sent, let files = sync.media {
+            let svg = """
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 600 180">\
+                <path d="M40 120 C55 40 95 30 92 70 C90 100 60 110 70 90 C85 70 110 120 130 128 \
+                C140 132 150 100 160 96 C175 92 168 125 185 122 C200 118 205 95 220 100 C232 104 225 128 240 124 \
+                C255 120 262 98 275 104 C285 110 280 130 295 126"/>\
+                <path d="M330 80 C360 60 380 70 360 96 C345 116 390 120 410 108 C425 98 430 118 445 116 \
+                C460 114 462 96 476 100 C490 104 482 124 498 120 C512 116 520 104 540 100"/>\
+                <path d="M300 150 C380 140 470 138 560 146"/>\
+                </svg>
+                """
+            let url = files.url(SignatureDrawing.localPath("sg1"))
+            try FileManager.default.createDirectory(
+                at: url.deletingLastPathComponent(), withIntermediateDirectories: true)
+            try svg.write(to: url, atomically: true, encoding: .utf8)
+        }
     }
 
     // MARK: - Blue Mesa Pool Co.
@@ -982,7 +1013,7 @@
         try InspectionWrites.saveChecklistResult(
             sync, companyId: "c1", jobId: stop.job, componentId: equipment,
             existing: JobInspection(sync.store, jobId: stop.job).resultByComponent[equipment],
-            ["location_text": "Pump noise: motor bearings grinding at start-up"])
+            ["location_text": "Pump noise: bearings grinding"])
         try videoPhoto(
             sync, "equipment-pad.jpg", target: MediaTarget(jobId: stop.job, componentId: equipment),
             caption: "Pump noise: motor bearings", at: 8 * 60 + 58)
@@ -1126,7 +1157,7 @@
                 FindingEditor(jobId: work.job, findingId: work.findings[1], componentId: nil).app(env))
             try await editor.wait(2.5)
             try await editor.shot("leak-21-finding-light-niche")
-            try await editor.scroll(by: 700)
+            try await editor.scrollToBottom()
             try await editor.shot("leak-21-finding-light-niche-photo")
             editor.close()
             let photo = try #require(
@@ -1151,16 +1182,20 @@
                 var work = try leakChecklist(env, rebecca)
                 try leakTests(env, &work)
                 try leakFindings(env, &work)
+                try finishChecklist(env, work.job)
                 try leakWrapUp(env, work, sent: sent)
                 try await settleSync(env)
                 let tag = sent ? "sent" : "draft"
                 let wrapUp = Stage(NavigationStack { JobScreen(jobId: work.job, section: .wrapUp) }.app(env))
                 try await wrapUp.wait(2.5)
                 try await wrapUp.shot("leak-3\(sent ? 3 : 0)-wrap-up-report-\(tag)")
-                if let line = wrapUp.fields().first(where: { $0.text?.hasPrefix("Repair return line") == true }) {
-                    try await wrapUp.scroll(showing: line, at: 300)
+                let fields = wrapUp.fields()
+                if let line = fields.first(where: { $0.text?.hasPrefix("Repair return line") == true }) {
+                    try await wrapUp.scroll(showing: line, at: 420)
+                } else if let link = fields.first(where: { $0.text?.hasPrefix("https://") == true }) {
+                    try await wrapUp.scroll(showing: link, at: 520)
                 } else {
-                    try await wrapUp.scroll(by: sent ? 640 : 760)
+                    try await wrapUp.scrollToBottom()
                 }
                 try await wrapUp.shot("leak-3\(sent ? 4 : 1)-wrap-up-quote-\(tag)")
                 wrapUp.close()
@@ -1287,6 +1322,8 @@
             tallChecklist.close()
             let photos = Stage(NavigationStack { JobScreen(jobId: sofia.job, section: .photos) }.app(env))
             try await photos.wait(2.5)
+            try await photos.shot("pool-16-photos")
+            try await photos.scrollToBottom()
             try await photos.shot("pool-16-before-after-photos")
             photos.close()
 
@@ -1297,7 +1334,7 @@
                 let details = Stage(NavigationStack { JobScreen(jobId: sofia.job, section: .details) }.app(env))
                 try await details.wait(2.5)
                 if let line = details.fields().first(where: { $0.text?.hasPrefix("Replace pump motor") == true }) {
-                    try await details.scroll(showing: line, at: 300)
+                    try await details.scroll(showing: line, at: 420)
                 } else {
                     try await details.scrollToBottom()
                 }
