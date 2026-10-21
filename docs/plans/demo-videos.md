@@ -7,7 +7,7 @@ side … engaging but slow enough where the viewer can actually comprehend what'
 our colors, logos … modern SaaS launch video … Use screen recordings. Simplify screens if it
 makes a more convincing video. Smooth transitions."
 
-Status: plan, waiting on the owner's answers in section 6.
+Status: decided (section 6); building. The music comes first: `apps/video/audio/score.py`.
 
 ## 1. The look
 
@@ -92,16 +92,57 @@ Tagline: **Every pool. Every week. On autopilot.**
 3. Record the scenes (web and iPhone) and build the motion graphics.
 4. First cut of both videos, owner review, one round of changes, final render.
 
-## 6. Decisions for the owner
+## 6. Decisions (owner, 2026-10-21)
 
-1. **Voiceover:** captions only (recommended: most demos play muted), or a voice. A natural
-   voice needs a text-to-speech service: ElevenLabs is about $5 a month, and needs your
-   account key. The script would be the captions above, said a little fuller.
-2. **Music:** a licensed royalty-free track you pick (Artlist or Epidemic Sound, about
-   $10–20 a month; recommended), or a simple beat made in code (free, but it will sound basic).
-3. **Formats:** 16:9 only, or 16:9 plus 9:16 vertical cuts for social.
-4. **Where they'll be used** (website hero, App Store preview, social, sales emails). An App
-   Store preview has its own rules: 15–30 seconds, recorded on device, no frames. It would be a
-   separate short cut.
-5. **Demo names:** keep the demo company's names (Dana, Jake, Luis, Priya, Tony; Rebecca
-   Soto), or use a fictional shop name and logo on reports to show the white-label look.
+1. **No voiceover:** captions only.
+2. **Music made in code, first,** and the video cut to it (`apps/video/audio/score.py`, numpy
+   only). 128 BPM, so 45 s is 24 bars of 1.875 s: a 2-bar intro, six 3-bar scenes, a 4-bar end
+   card (the tables above are re-timed to these: 0, 3.75, 9.375, 15, 20.625, 26.25, 31.875 and
+   37.5 s). A whoosh into every scene, a hit into scene 1 and the end card. About -14 LUFS.
+   The script writes each track's `timing.json`, which the video reads.
+3. **Both formats from one edit:** 9:16 (1080×1920) to text to prospects, since it fills a
+   phone held upright; 16:9 (1920×1080) for demos on a call or a laptop. The vertical cut shows
+   the phone large and crops the desktop to the part that matters.
+4. **For prospects and sales demos.**
+5. **A real-sounding shop in each, never "demo":**
+   - **Canyon State Leak Detection** (Phoenix): owner Marcus Hale; techs Dana Ruiz and Jake
+     Turner riding together.
+   - **Blue Mesa Pool Co.** (Phoenix): owner Erin Cole; techs Luis Ramirez, Priya Shah and Tony
+     Alvarez.
+   - Each shop gets its own logo on reports, quotes and invoices (the white-label look), seeded
+     as two video-only companies on the dev project, so the shared demo company stays as it is.
+
+## 7. Images to make in ChatGPT
+
+All photorealistic, no people's faces, no text or watermarks, no brand names. Phoenix-style
+backyards: desert landscaping, block walls, palo verde trees, bright afternoon sun.
+
+1. **Canyon State Leak Detection logo:** "A flat vector logo for a pool leak detection company
+   called Canyon State Leak Detection. A simple mark of a water drop over a stylized desert mesa
+   and a level line, in terracotta and deep teal on white, with the name in a bold condensed sans
+   serif beside it. Clean, trustworthy, trade company look, no gradients, no shadows. Transparent
+   background, 2000 px wide."
+2. **Blue Mesa Pool Co. logo:** "A flat vector logo for a weekly pool cleaning company called
+   Blue Mesa Pool Co. A mark of a mesa silhouette with a wave line under it in bright pool blue
+   and sand, the name in a friendly rounded sans serif. Clean, modern, no gradients, no shadows.
+   Transparent background, 2000 px wide."
+3. **Leak finding: dye test.** "Close-up photo underwater in a residential swimming pool: a thin
+   stream of dark red dye being drawn into a hairline crack beside a pool light niche, white
+   plaster, clear blue water, sharp detail, natural light from above, as a leak detection tech
+   would photograph it."
+4. **Leak finding: skimmer.** "Close-up photo of a residential pool skimmer throat with a
+   visible crack between the skimmer and the pool wall tile, dye drifting into it, clear water,
+   bright daylight, documentary style."
+5. **Equipment pad.** "Photo of a residential pool equipment pad in Phoenix: pump, cartridge
+   filter, heater and PVC plumbing on a concrete pad beside a block wall, afternoon sun, tidy,
+   realistic, no brand logos."
+6. **Before cleaning.** "Photo of a residential backyard swimming pool in Phoenix with cloudy
+   light green water and leaves on the bottom, desert landscaping and a block wall, afternoon
+   light, slightly high angle."
+7. **After cleaning.** "The same backyard pool, now crystal clear bright blue water, clean
+   tile line, wet deck, same angle and light as the before photo."
+8. **Hero backyard (end cards and the stage).** "Wide photo of a beautiful Phoenix backyard pool
+   at golden hour, clear blue water, palo verde tree, desert landscaping, block wall, nobody in
+   the frame, room on the left for text."
+
+Send them as PNG or JPG; any of them can be swapped for real photos from a job.
