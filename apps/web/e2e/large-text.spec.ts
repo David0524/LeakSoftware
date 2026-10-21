@@ -51,22 +51,13 @@ async function checkJobPage(page: Page) {
       expect(intersects(s.box, next.box), `"${s.label}" overlaps "${next.label}"`).toBe(false);
   }
 
-  // Scrolled down, the small title shows in the navigation bar next to "‹ Jobs".
+  // Scrolled down, the bar stays as it is: the job's sections sit on tiles, so no small title
+  // fades in (owner, 2026-10-21: "The nav bar should not shrink"), and ‹ Jobs stays.
   await tabs.first().click();
   await page.evaluate(() => window.scrollTo(0, document.body.scrollHeight));
   const bar = page.locator(".nav-main");
-  const title = bar.locator("p");
-  await expect(title).toHaveCSS("opacity", "1");
-  const back = bar.getByRole("link", { name: "Jobs" });
-  await expect(back).toBeVisible();
-  const [backBox, titleBox] = await Promise.all([back.boundingBox(), title.boundingBox()]);
-  const box = (b: { x: number; y: number; width: number; height: number }) => ({
-    left: b.x,
-    right: b.x + b.width,
-    top: b.y,
-    bottom: b.y + b.height,
-  });
-  expect(intersects(box(backBox!), box(titleBox!)), "the title overlaps ‹ Jobs").toBe(false);
+  await expect(bar.locator("p")).toHaveCSS("opacity", "0");
+  await expect(bar.getByRole("link", { name: "Jobs" })).toBeVisible();
   expect(await sideways(page)).toBeLessThanOrEqual(0);
 }
 
