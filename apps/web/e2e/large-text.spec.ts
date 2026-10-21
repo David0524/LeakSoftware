@@ -197,10 +197,13 @@ for (const [name, viewport, fontSize] of [
       expect(text.top, `${path}: the logo sits right above the title`).toBeGreaterThanOrEqual(
         logoBox.y + logoBox.height,
       );
+      // 6 px apart; the title's line box adds its leading above the letters, which grows with
+      // the text size (about a third of the font size).
+      const titleSize = await h1.evaluate((el) => parseFloat(getComputedStyle(el).fontSize));
       expect(
         h1Box.y - (logoBox.y + logoBox.height),
         `${path}: the logo parks on the title`,
-      ).toBeLessThanOrEqual(12);
+      ).toBeLessThanOrEqual(6 + titleSize * 0.35);
       expect(
         Math.abs(logoBox.x - h1Box.x),
         `${path}: the logo lines up with the title`,
