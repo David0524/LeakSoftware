@@ -172,6 +172,11 @@ public struct RepairErrors: Codable, Equatable, Sendable {
     public var description: String?
     public var price: String?
 
+    public init(description: String? = nil, price: String? = nil) {
+        self.description = description
+        self.price = price
+    }
+
     public var isEmpty: Bool { description == nil && price == nil }
 }
 
