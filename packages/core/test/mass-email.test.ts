@@ -64,10 +64,13 @@ describe("mass email", () => {
     expect(massEmailHistoryText({ ...row, status: "sending" })).toBe("Sending to 42…");
     expect(massEmailHistoryText({ ...row, status: "failed", sent_count: 0 })).toBe("Didn’t go");
     expect(massEmailLimitText(258)).toBe(
-      "Your shop can send 258 more emails today. Narrow the list or send the rest tomorrow.",
+      "Your shop can email 258 more customers today. Narrow the list or send the rest tomorrow.",
+    );
+    expect(massEmailLimitText(1)).toBe(
+      "Your shop can email 1 more customer today. Narrow the list or send the rest tomorrow.",
     );
     expect(massEmailLimitText(0)).toBe(
-      "Your shop has reached today’s email limit. It resets tomorrow.",
+      "Your shop has reached today’s limit for emailing customers. It resets tomorrow.",
     );
   });
 

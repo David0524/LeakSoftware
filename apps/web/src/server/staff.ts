@@ -137,7 +137,9 @@ export interface ShopDetail {
     photos: number;
     storage_bytes: number;
   };
-  today: Partial<Record<"email" | "narrative" | "transcribe" | "text" | "call", number>>;
+  today: Partial<
+    Record<"email" | "mass_email" | "narrative" | "transcribe" | "text" | "call", number>
+  >;
   activity: {
     kind: string;
     created_at: string;

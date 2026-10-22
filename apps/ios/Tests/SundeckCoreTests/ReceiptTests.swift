@@ -11,8 +11,8 @@ import Testing
         #expect(
             Fixtures.rules(module) == [
                 "constants", "cleanCheckNumber", "checkNumberError", "paymentMethodLabel", "latestReceiptPayment",
-                "canSendReceipt", "receiptBalanceText", "receiptSummary", "receiptPrompt", "receiptRecipientError",
-                "receiptSentMessage", "receiptTextMessage",
+                "canSendReceipt", "canRecordPayment", "receiptBalanceText", "receiptSummary", "receiptPrompt",
+                "receiptRecipientError", "receiptSentMessage", "receiptTextMessage",
             ])
     }
 
@@ -58,6 +58,11 @@ import Testing
     @Test func payments() {
         checkRule(module, "latestReceiptPayment") { c in latestReceiptPayment(try c.arg(0))?.id }
         checkRule(module, "canSendReceipt") { c in canSendReceipt(status: try c.arg(0), payments: try c.arg(1)) }
+        checkRule(module, "canRecordPayment") { c in
+            canRecordPayment(
+                role: try c.arg(0, as: String?.self), status: try c.arg(1), totalCents: try c.arg(2),
+                amountPaidCents: try c.arg(3))
+        }
         checkRule(module, "receiptBalanceText") { c in
             receiptBalanceText(totalCents: try c.arg(0), amountPaidCents: try c.arg(1))
         }

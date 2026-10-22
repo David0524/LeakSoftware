@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   activityRow,
+  canRecordPayment,
   canSendReceipt,
   checkNumberError,
   cleanCheckNumber,
@@ -55,6 +56,18 @@ describe("receipts for cash and check", () => {
     expect(canSendReceipt(invoice, [check])).toBe(true);
     expect(canSendReceipt({ status: "void" }, [check])).toBe(false);
     expect(canSendReceipt(invoice, [pending])).toBe(false);
+  });
+
+  it("lets anyone on the team record a payment while something is owed (owner, 2026-10-22)", () => {
+    for (const role of ["owner", "admin", "tech"])
+      expect(canRecordPayment(role, invoice)).toBe(true);
+    expect(canRecordPayment(null, invoice)).toBe(false);
+    expect(canRecordPayment("viewer", invoice)).toBe(false);
+    expect(canRecordPayment("tech", { ...invoice, status: "draft" })).toBe(false);
+    expect(canRecordPayment("tech", { ...invoice, status: "void" })).toBe(false);
+    expect(canRecordPayment("tech", { ...invoice, amount_paid_cents: invoice.total_cents })).toBe(
+      false,
+    );
   });
 
   it("words the sheet, the text, and the email rows", () => {

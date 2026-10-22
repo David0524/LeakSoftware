@@ -4,6 +4,7 @@ import { useActionState, useState, useTransition } from "react";
 import {
   INVOICE_STATUS_LABELS,
   SEND_RECEIPT,
+  canRecordPayment,
   canSendReceipt,
   formatCents,
   latestReceiptPayment,
@@ -114,6 +115,7 @@ export function InvoicePanel({
   texting = false,
   emailReady,
   isOwner,
+  role,
 }: {
   invoice: InvoiceRow;
   jobId: string;
@@ -124,7 +126,10 @@ export function InvoicePanel({
   /** The shop has a working company number, so receipts can be texted. */
   texting?: boolean;
   emailReady: boolean;
+  /** Owners and admins: void and edit. */
   isOwner: boolean;
+  /** The person's role: anyone on the team records payments (owner, 2026-10-22). */
+  role: string;
 }) {
   const [sendState, sendAction, sending] = useActionState(orOffline(sendInvoiceAction), {});
   const draft = invoice.status === "draft";
@@ -289,7 +294,7 @@ export function InvoicePanel({
             invoice={invoice}
             jobId={jobId}
             balance={balance}
-            canRecord={isOwner && balance > 0 && invoice.status !== "void"}
+            canRecord={canRecordPayment(role, invoice)}
             contact={{ email: customerEmail, phone: customerPhone, texting }}
           />
           {isOwner && !hasPayments && invoice.status !== "void" ? (
@@ -310,7 +315,8 @@ export function InvoicePanel({
 }
 
 /**
- * Record Payment (managers, while something is owed) and Send Receipt (2026-10-22): recording
+ * Record Payment (anyone on the team, techs too, while something is owed; owner, 2026-10-22) and
+ * Send Receipt (2026-10-22): recording
  * opens Send Receipt for that payment; an invoice with a payment received can send one again.
  */
 function InvoiceReceipts({

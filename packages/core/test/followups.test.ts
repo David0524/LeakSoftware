@@ -26,7 +26,7 @@ describe("follow-up emails", () => {
     expect(e.text).toContain("A reminder about your quote #1042 for $850.00.");
     expect(e.text).toContain("Review your quote: https://app.test/q/tok");
     expect(e.text).toContain(
-      "Stop reminder and review emails from Demo Leak Co.: https://app.test/stop/tok",
+      "Stop reminder, review and shop emails from Demo Leak Co.: https://app.test/stop/tok",
     );
     expect(e.html).toContain('href="https://app.test/q/tok"');
   });

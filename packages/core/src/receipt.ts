@@ -92,6 +92,23 @@ export function latestReceiptPayment<P extends ReceiptPayment>(payments: readonl
   return best;
 }
 
+/**
+ * Record Payment shows to anyone on the team, techs too (owner, 2026-10-22: "Techs should be
+ * able to record payments"), on a sent invoice (not a draft, not void) while something is owed.
+ * The server also holds a tech to the jobs they can see; voiding and editing stay the managers'.
+ */
+export function canRecordPayment(
+  role: string | null | undefined,
+  invoice: Pick<ReceiptInvoice, "status" | "total_cents" | "amount_paid_cents">,
+): boolean {
+  return (
+    (role === "owner" || role === "admin" || role === "tech") &&
+    invoice.status !== "draft" &&
+    invoice.status !== "void" &&
+    invoice.total_cents - invoice.amount_paid_cents > 0
+  );
+}
+
 /** Send Receipt shows on a sent invoice (not void) with a payment received. */
 export function canSendReceipt(
   invoice: Pick<ReceiptInvoice, "status">,

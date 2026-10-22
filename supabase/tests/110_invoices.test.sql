@@ -115,8 +115,9 @@ reset role;
 
 -- A check the office records, then the rest by bank through Stripe.
 select tests.authenticate_as((select tech_a from ids));
-select throws_ok(format($$ select record_invoice_payment(%L, 20000) $$, (select v from st where k = 'inv')),
-  '42501', null, 'techs cannot record payments');
+-- Techs record payments too since 20261022001800 (730_tech_payments); the balance still holds.
+select throws_ok(format($$ select record_invoice_payment(%L, 99999999) $$, (select v from st where k = 'inv')),
+  '23514', null, 'a tech gets past the role check');
 reset role;
 select tests.authenticate_as((select owner_a from ids));
 select throws_ok(format($$ select record_invoice_payment(%L, 99999999) $$, (select v from st where k = 'inv')),

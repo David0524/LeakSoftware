@@ -105,7 +105,7 @@ export default function PrivacyPage() {
           <li>
             Team members can delete their account in the app (Settings) or on the website (More).
           </li>
-          <li>Customers can stop reminder and review emails with the link in any email.</li>
+          <li>Customers can stop reminder, review and shop emails with the link in any of them.</li>
           <li>
             To see, correct, or delete what a shop keeps about you, ask the shop or write to{" "}
             <a className="text-link underline" href={`mailto:${SUPPORT_EMAIL}`}>

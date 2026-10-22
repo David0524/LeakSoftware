@@ -966,7 +966,7 @@
                 "49-settings-components", height: 1400,
                 NavigationStack { SettingsListScreen(page: .components) }.app(env))
             // Company and Branding: one Save floating at the bottom (owner, 2026-10-22), and the
-            // accent's More colors without slate, kept first for a shop already on it.
+            // accent's More colors without slate or red (six), slate kept first for a shop on it.
             try env.session.sync.store.write(
                 "company", id: "c1", companyId: "c1", ["brand_primary": "#1D5FA8", "brand_secondary": "#3C4450"])
             // (68-settings-company has the whole page.)

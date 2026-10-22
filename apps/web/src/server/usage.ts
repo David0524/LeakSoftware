@@ -6,16 +6,23 @@ import { adminClient } from "./admin";
 // security audit (2026-10-17): a read-only (unpaid) shop starts none of it, and every shop has
 // a daily allowance that only the server counts.
 
-export type UsageKind = "email" | "transcribe" | "text" | "call";
+// Mass email (Email Customers) has its own allowance, counted apart from `email` (reports,
+// quotes, invoices, receipts), so one never uses up the other (owner, 2026-10-22: "Give mass
+// email its own limit"). DAILY_LIMIT_MASS_EMAIL overrides it.
+export type UsageKind = "email" | "mass_email" | "transcribe" | "text" | "call";
 
 const DEFAULT_LIMITS: Record<UsageKind, number> = {
   email: 300,
+  mass_email: 2000,
   transcribe: 200,
   text: 500,
   call: 100,
 };
 
-/** A shop's daily allowance; DAILY_LIMIT_<KIND> overrides it (e.g. DAILY_LIMIT_EMAIL=500). */
+/**
+ * A shop's daily allowance; DAILY_LIMIT_<KIND> overrides it (e.g. DAILY_LIMIT_EMAIL=500,
+ * DAILY_LIMIT_MASS_EMAIL=5000).
+ */
 export function dailyLimit(kind: UsageKind): number {
   const n = Number(process.env[`DAILY_LIMIT_${kind.toUpperCase()}`]);
   return Number.isInteger(n) && n > 0 ? n : DEFAULT_LIMITS[kind];

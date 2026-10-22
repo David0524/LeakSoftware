@@ -515,7 +515,7 @@ private func invoiceRows(status: String, paid: Int = 0) -> [(String, JSONValue)]
         #expect(card.totalRows[0].value == "$325.00")
     }
 
-    @Test func aSentInvoiceIsLockedAndManagersRecordPaymentsOrVoid() throws {
+    @Test func aSentInvoiceIsLockedAnyoneRecordsPaymentsAndManagersVoid() throws {
         let tech = try MoneyJob()
         try tech.pull(invoiceRows(status: "sent"))
         var card = try #require(tech.card)
@@ -525,7 +525,9 @@ private func invoiceRows(status: String, paid: Int = 0) -> [(String, JSONValue)]
         #expect(
             card.totalRows.suffix(2) == [MoneyRow("Paid", "$0.00"), MoneyRow("Balance due", "$456.00", strong: true)])
         #expect(card.link?.absoluteString == "https://sundeck.test/i/itok")
-        #expect(!card.canRecordPayment && !card.canVoid)
+        // Techs record payments too (owner, 2026-10-22), but never void.
+        #expect(card.canRecordPayment && card.balanceText == "456.00")
+        #expect(!card.canVoid)
         #expect(
             throws: InvoiceWrites.Problem(field: "", description: "This invoice has been sent and can’t be changed.")
         ) {

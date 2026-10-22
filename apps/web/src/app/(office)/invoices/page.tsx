@@ -53,6 +53,7 @@ export default async function InvoicesPage({ searchParams }: PageProps<"/invoice
     balance: invoiceBalance(i),
     link: i.token ? `${origin}/i/${i.token}` : null,
     canManage: office.isManager,
+    role: office.company.role,
     unpaid: i.amount_paid_cents === 0,
     total: i.total_cents,
     paid: i.amount_paid_cents,

@@ -67,14 +67,14 @@ export function followupEmail(f: Followup, origin: string): FollowupEmail {
     "Thank you!",
     signoff,
     "",
-    `Stop reminder and review emails from ${shop}: ${stop}`,
+    `Stop reminder, review and shop emails from ${shop}: ${stop}`,
   ].join("\n");
   const html = [
     `<p>${escape(greeting)}</p>`,
     ...lines.map((l) => `<p>${escape(l)}</p>`),
     `<p><a href="${escape(link.url)}">${escape(link.label)}</a></p>`,
     `<p>Thank you!<br>${escape(signoff)}</p>`,
-    `<p style="font-size:13px;color:#5B6B7A"><a href="${escape(stop)}">Stop reminder and review emails from ${escape(shop)}</a></p>`,
+    `<p style="font-size:13px;color:#5B6B7A"><a href="${escape(stop)}">Stop reminder, review and shop emails from ${escape(shop)}</a></p>`,
   ].join("");
   return { subject, text, html };
 }

@@ -10,12 +10,18 @@ import Testing
         #expect(
             Fixtures.rules(module) == [
                 "LAST_JOB_CHOICES", "massEmailCountText", "massEmailSendLabel", "massEmailConfirm",
-                "massEmailSentText", "massEmailHistoryText", "massEmailLimitText", "massEmailErrors",
+                "massEmailSentText", "massEmailHistoryText", "massEmailLimitText", "massEmailErrors", "customerEmails",
             ])
     }
 
     @Test func choices() {
         checkRule(module, "LAST_JOB_CHOICES") { _ in LastJobChoice.all }
+        checkRule(module, "customerEmails") { _ in
+            [
+                "CUSTOMER_EMAILS_LABEL": CustomerEmailsText.label,
+                "CUSTOMER_EMAILS_OFF_LABEL": CustomerEmailsText.offLabel,
+            ]
+        }
     }
 
     @Test func counts() {

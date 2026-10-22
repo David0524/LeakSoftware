@@ -320,7 +320,7 @@ export interface Customer extends Base {
   email?: string | null;
   /** Other addresses that also get reports (M8.5). */
   cc_emails?: string[];
-  /** No reminder or review emails (M10). */
+  /** No reminder, review or shop (mass) emails (M10, 2026-10-22). */
   marketing_opt_out?: boolean;
   phone?: string | null;
   notes?: string | null;

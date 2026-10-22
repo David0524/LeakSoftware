@@ -41,16 +41,16 @@ test("a quote reminder goes out once, and the customer can stop them", async ({
   expect(await forThisQuote()).toHaveLength(1);
 
   // The customer stops these emails from the link at the bottom.
-  const stop = /Stop reminder and review emails from Demo Leak Co\.: (\S+)/.exec(
+  const stop = /Stop reminder, review and shop emails from Demo Leak Co\.: (\S+)/.exec(
     emails[0]!.text,
   )![1]!;
   await page.context().clearCookies();
   await page.goto(stop);
   await expect(
-    page.getByRole("heading", { name: "Stop reminder and review emails?" }),
+    page.getByRole("heading", { name: "Stop reminder, review and shop emails?" }),
   ).toBeVisible();
   await page.getByRole("button", { name: "Stop These Emails" }).click();
-  await expect(page.getByText(/won’t send you reminder or review emails/)).toBeVisible();
+  await expect(page.getByText(/won’t send you reminder, review or shop emails/)).toBeVisible();
 
   // Eight days later the 7-day reminder would be due, but they opted out.
   await cron(daysFromNow(8));

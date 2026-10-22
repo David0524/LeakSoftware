@@ -177,7 +177,7 @@
             guard let company = session.company else { return }
             list = invoiceList(sync.store, companyId: company.id)
             rowActions = invoiceRowActions(
-                sync.store, companyId: company.id, list: list, manager: isManagerRole(company.role))
+                sync.store, companyId: company.id, list: list, role: company.role)
             loaded = true
         }
 

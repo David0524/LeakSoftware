@@ -93,7 +93,7 @@ public struct InvoiceSectionModel: Equatable, Sendable {
         if let current = invoices.first(where: { $0.invoice.status != .void }) {
             state = .invoice(
                 Self.card(
-                    current, settings: settings, manager: isManagerRole(role),
+                    current, settings: settings, role: role,
                     customerEmail: job.customer?["email"]?.string, customerPhone: job.customer?["phone"]?.string,
                     timeZone: timeZone, webURL: webURL))
         } else if job.type == .maintenance {
@@ -112,7 +112,7 @@ public struct InvoiceSectionModel: Equatable, Sendable {
     }
 
     static func card(
-        _ inv: JobInvoice, settings: JSONValue?, manager: Bool, customerEmail: String?, customerPhone: String? = nil,
+        _ inv: JobInvoice, settings: JSONValue?, role: String?, customerEmail: String?, customerPhone: String? = nil,
         timeZone: String, webURL: URL?
     ) -> InvoiceCardModel {
         let invoice = inv.invoice
@@ -145,7 +145,7 @@ public struct InvoiceSectionModel: Equatable, Sendable {
                     strong: true))
         }
         let live = invoice.status != .void
-        let rules = InvoiceActionRules(invoice: invoice, payments: inv.payments, manager: manager)
+        let rules = InvoiceActionRules(invoice: invoice, payments: inv.payments, role: role)
         return InvoiceCardModel(
             invoice: inv,
             title: "Invoice" + (invoice.number.map { " #\($0)" } ?? "") + " · " + invoice.status.label,
@@ -181,17 +181,20 @@ public struct InvoiceSectionModel: Equatable, Sendable {
 }
 
 /// Who may record a payment on an invoice or void it, the same on its card and its row in
-/// Invoices: managers, on a sent invoice still live, while something is owed (Record Payment) or
-/// nothing is paid (Void Invoice).
+/// Invoices: anyone on the team, techs too (owner, 2026-10-22), on a sent invoice still live while
+/// something is owed (Record Payment, core `canRecordPayment`); managers while nothing is paid
+/// (Void Invoice).
 public struct InvoiceActionRules: Equatable, Sendable {
     public var canRecordPayment: Bool
     public var canVoid: Bool
 
-    public init(invoice: InvoiceRecord, payments: [PaymentRecord], manager: Bool) {
-        let open = manager && invoice.status != .draft && invoice.status != .void
+    public init(invoice: InvoiceRecord, payments: [PaymentRecord], role: String?) {
+        let open = invoice.status != .draft && invoice.status != .void
         let paidSomething = payments.contains { $0.status == "succeeded" || $0.status == "pending" }
-        canRecordPayment = open && invoice.balanceCents > 0
-        canVoid = open && !paidSomething
+        canRecordPayment = SundeckCore.canRecordPayment(
+            role: role, status: invoice.status.rawValue, totalCents: invoice.totalCents,
+            amountPaidCents: invoice.amountPaidCents)
+        canVoid = isManagerRole(role) && open && !paidSomething
     }
 }
 

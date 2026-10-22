@@ -373,6 +373,80 @@
       "result": false
     }
   ],
+  "canRecordPayment": [
+    {
+      "args": [
+        "tech",
+        "sent",
+        64900,
+        0
+      ],
+      "result": true
+    },
+    {
+      "args": [
+        "owner",
+        "partially_paid",
+        64900,
+        20000
+      ],
+      "result": true
+    },
+    {
+      "args": [
+        "admin",
+        "sent",
+        64900,
+        0
+      ],
+      "result": true
+    },
+    {
+      "args": [
+        "tech",
+        "paid",
+        64900,
+        64900
+      ],
+      "result": false
+    },
+    {
+      "args": [
+        "tech",
+        "draft",
+        64900,
+        0
+      ],
+      "result": false
+    },
+    {
+      "args": [
+        "tech",
+        "void",
+        64900,
+        0
+      ],
+      "result": false
+    },
+    {
+      "args": [
+        null,
+        "sent",
+        64900,
+        0
+      ],
+      "result": false
+    },
+    {
+      "args": [
+        "viewer",
+        "sent",
+        64900,
+        0
+      ],
+      "result": false
+    }
+  ],
   "receiptBalanceText": [
     {
       "args": [

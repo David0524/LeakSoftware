@@ -109,11 +109,15 @@ export function massEmailHistoryText(c: {
   return `Sent to ${c.sent_count}${c.failed_count > 0 ? ` · ${c.failed_count} didn’t go` : ""}`;
 }
 
-/** When the list is bigger than what's left of today's email allowance. */
+/**
+ * When the list is bigger than what's left of today's mass email allowance. Mass email has its
+ * own daily allowance (owner, 2026-10-22: "Give mass email its own limit"), apart from reports,
+ * quotes, invoices and receipts, so the words say "email customers", not "send emails".
+ */
 export function massEmailLimitText(left: number): string {
   return left <= 0
-    ? "Your shop has reached today’s email limit. It resets tomorrow."
-    : `Your shop can send ${plural(left, "more email", "more emails")} today. Narrow the list or send the rest tomorrow.`;
+    ? "Your shop has reached today’s limit for emailing customers. It resets tomorrow."
+    : `Your shop can email ${plural(left, "more customer", "more customers")} today. Narrow the list or send the rest tomorrow.`;
 }
 
 /** Field errors before sending (empty when it can go). */
@@ -222,6 +226,14 @@ export function massEmailContent(input: {
   ].join("");
   return { subject, text, html };
 }
+
+/**
+ * The customer's one email setting (owner, 2026-10-22): one unsubscribe covers mass, reminder
+ * and review emails (customer.marketing_opt_out). Its row on the customer page (On or Off) and
+ * its switch in Contact Details. Reports, quotes, invoices and receipts always go.
+ */
+export const CUSTOMER_EMAILS_LABEL = "Reminder, review and shop emails";
+export const CUSTOMER_EMAILS_OFF_LABEL = "No reminder, review or shop emails";
 
 /** The unsubscribe page's words. */
 export const UNSUBSCRIBE_TEXT = {

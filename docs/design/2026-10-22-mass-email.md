@@ -52,9 +52,10 @@ to 40 customers. 2 didn't go.") and the history row appears. The form clears.
 - **No mailing address** in Settings › Company: a notice at the top, "Add your shop's mailing
   address in Settings › Company first. The law asks for it in every email like this."; both send
   buttons are disabled.
-- **Daily email limit** (`DAILY_LIMIT_EMAIL`, 300 a day per shop, shared with reports and
-  invoices): when the list is bigger than what's left today the footer says "Your shop can send
-  258 more emails today. Narrow the list or send the rest tomorrow." and Send is disabled.
+- **Daily mass email limit** (its own allowance since the owner's answer the same day:
+  `DAILY_LIMIT_MASS_EMAIL`, 2,000 a day per shop, apart from the 300 for reports and invoices):
+  when the list is bigger than what's left today the footer says "Your shop can email 258 more
+  customers today. Narrow the list or send the rest tomorrow." and Send is disabled.
 - **Read-only shop**: the usual "This shop is read-only until its Sundeck Pro subscription is
   paid."
 - Empty subject or message: under the field, "Add a subject." / "Write a message."
@@ -80,7 +81,8 @@ to 40 customers. 2 didn't go.") and the history row appears. The form clears.
   this again." One button rather than unsubscribing on open, so mail scanners that open links
   can't unsubscribe people; the header above is the true one-click.
 - It sets the customer's existing `marketing_opt_out` (the one switch that already stops
-  reminder and review emails, and that the office can turn back on in the customer's details).
+  reminder and review emails, and that the office can turn back on in the customer's details,
+  where it now reads "Reminder, review and shop emails").
   Unsubscribed customers are left out of every later mass email; reports, quotes, invoices and
   receipts still go.
 
@@ -108,8 +110,8 @@ token). Migration `20261022001500_mass_email.sql`.
 ## Open for the owner
 
 - One unsubscribe switch for mass emails, reminders and review requests (reuses
-  `marketing_opt_out`), rather than a second one just for mass emails.
-- Mass emails share the 300-a-day email allowance with reports and invoices. A shop with 800
-  customers can't email them all in one day; raising `DAILY_LIMIT_EMAIL` (or a separate
-  allowance for mass email) is a setting, not code.
+  `marketing_opt_out`), rather than a second one just for mass emails. *Answered: one switch,
+  labelled "Reminder, review and shop emails".*
+- Mass emails share the 300-a-day email allowance with reports and invoices. *Answered: mass
+  email has its own allowance, `DAILY_LIMIT_MASS_EMAIL` (2,000 a day).*
 - No scheduling, pictures, or formatting beyond paragraphs for now.

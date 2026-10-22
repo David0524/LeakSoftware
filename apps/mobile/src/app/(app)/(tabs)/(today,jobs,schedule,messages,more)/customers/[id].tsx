@@ -1,5 +1,7 @@
 import { router, useLocalSearchParams } from "expo-router";
 import {
+  CUSTOMER_EMAILS_LABEL,
+  CUSTOMER_EMAILS_OFF_LABEL,
   JOB_TYPE_LABELS,
   POOL_TYPE_LABELS,
   formatAddress,
@@ -171,7 +173,7 @@ export default function CustomerPage() {
             <ListRow title="Email" detail={customer.email ?? "None"} />
             {cc.length ? <ListRow title="Other emails" subtitle={cc.join(", ")} /> : null}
             <ListRow
-              title="Reminder and review emails"
+              title={CUSTOMER_EMAILS_LABEL}
               detail={customer.marketing_opt_out ? "Off" : "On"}
             />
             {customer.notes ? <ListRow title="Notes" subtitle={customer.notes} /> : null}
@@ -448,7 +450,7 @@ function ContactForm({ customer, onSaved }: { customer: CustomerFields; onSaved:
         <FieldRow label="Notes" value={f.notes} onChangeText={set("notes")} multiline />
         <Toggle
           inList
-          label="No reminder or review emails"
+          label={CUSTOMER_EMAILS_OFF_LABEL}
           value={f.optOut}
           onChange={(v) => setF({ ...f, optOut: v })}
         />

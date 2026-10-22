@@ -11,7 +11,14 @@
 //   finished job).
 // - Left out where the app has no such button yet (listed in each function's note).
 
-import { canMoveJob, canUnschedule, userTransitions, type JobLock } from "@leakbook/core";
+import {
+  canMoveJob,
+  canRecordPayment,
+  canUnschedule,
+  isManagerRole,
+  userTransitions,
+  type JobLock,
+} from "@leakbook/core";
 
 export interface RowAction<Id extends string = string> {
   id: Id;
@@ -219,7 +226,8 @@ export function customerRowActions(c: {
 export type InvoiceActionId = "open" | "share" | "record" | "receipt" | "void";
 
 /**
- * Invoices: swipe right Record Payment (unpaid, managers); hold for Open, Share Payment Link,
+ * Invoices: swipe right Record Payment (unpaid; anyone on the team, techs too since 2026-10-22,
+ * core canRecordPayment); hold for Open, Share Payment Link,
  * Record Payment, Send Receipt (a payment received, 2026-10-22) and Void…, each as the invoice's
  * own card offers it. Left out: Send Reminder
  * (the app sends no reminders by hand) and Copy Payment Link (no copy button; Share Link's
@@ -228,7 +236,8 @@ export type InvoiceActionId = "open" | "share" | "record" | "receipt" | "void";
 export function invoiceRowActions(i: {
   status: string;
   balanceCents: number;
-  manager: boolean;
+  /** The person's role: anyone records payments; only owners and admins void. */
+  role: string | null | undefined;
   /** A payment succeeded or is pending: no Void. */
   hasPayments: boolean;
   hasLink: boolean;
@@ -236,9 +245,13 @@ export function invoiceRowActions(i: {
   hasReceipt?: boolean;
 }): RowActions<InvoiceActionId> {
   const issued = i.status !== "draft" && i.status !== "void";
-  const record = i.manager &&
-    issued &&
-    i.balanceCents > 0 && { id: "record" as const, label: "Record Payment", short: "Payment" };
+  const manager = isManagerRole(i.role);
+  // The balance is what's owed, so it stands in for the total less what's paid.
+  const record = canRecordPayment(i.role, {
+    status: i.status,
+    total_cents: i.balanceCents,
+    amount_paid_cents: 0,
+  }) && { id: "record" as const, label: "Record Payment", short: "Payment" };
   return rowActions<InvoiceActionId>(
     record,
     [],
@@ -247,7 +260,7 @@ export function invoiceRowActions(i: {
       issued && i.hasLink && { id: "share", label: "Share Payment Link" },
       record,
       issued && i.hasReceipt && { id: "receipt", label: "Send Receipt" },
-      i.manager && issued && !i.hasPayments && { id: "void", label: "Void…", destructive: true },
+      manager && issued && !i.hasPayments && { id: "void", label: "Void…", destructive: true },
     ],
   );
 }

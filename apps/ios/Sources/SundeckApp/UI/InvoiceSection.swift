@@ -6,8 +6,8 @@
 
     /// Wrap-Up's "Invoice" (spec 5.4 Wrap-Up 4; milestone S7): create it from the job, edit a
     /// draft's lines and details, send it by email or without (a link to text), then payments,
-    /// the customer link, Record Payment and Void Invoice for managers. Content for the job page's
-    /// scroll view. Port of apps/mobile/src/features/invoice/InvoiceSection.tsx with the website's
+    /// the customer link, Record Payment (techs too, 2026-10-22) and Void Invoice for managers.
+    /// Content for the job page's scroll view. Port of apps/mobile/src/features/invoice/InvoiceSection.tsx with the website's
     /// look (apps/web/src/components/invoice-panel.tsx).
     struct InvoiceSection: View {
         var job: JobView

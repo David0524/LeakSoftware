@@ -13,6 +13,7 @@ import {
   invoiceBalance,
   invoiceShareText,
   invoiceTotals,
+  canRecordPayment,
   isManagerRole,
   lineTotal,
   type Customer,
@@ -57,8 +58,8 @@ type Message = { tone: "success" | "error"; text: string } | null;
 /**
  * Invoice (spec 5.4 Wrap-Up), as on the website: Create Invoice once the job has started (the
  * server builds it from the fee or the accepted quote); a draft's lines, Add a Line, Details
- * and Send; a sent invoice's payments, customer link, Record Payment and Void Invoice for
- * managers. Lines and details are saved through the sync layer; creating, sending, payments
+ * and Send; a sent invoice's payments, customer link, Record Payment (anyone on the team, techs
+ * too, 2026-10-22) and Void Invoice for managers. Lines and details are saved through the sync layer; creating, sending, payments
  * and void are the server's.
  */
 export function InvoiceSection({ job, customer }: { job: Job; customer: Customer | undefined }) {
@@ -251,7 +252,7 @@ function InvoiceCard({ invoice, customer }: { invoice: JobInvoice; customer?: Cu
           {link && invoice.status !== "void" ? (
             <LinkRow url={link} message={invoiceShareText(company.name, link)} />
           ) : null}
-          {manager && balance > 0 && invoice.status !== "void" ? (
+          {canRecordPayment(membership?.role, invoice) ? (
             <RecordPayment
               invoice={invoice}
               balance={balance}

@@ -56,8 +56,9 @@ export const logoColors: ModuleCases = {
       [["#AA3311"], "#aa3311"],
       [[], "#1d5fa8"],
       [[], "nope"],
-      // Slate left the presets (owner, 2026-10-22): a shop on it still sees it first.
+      // Slate, then red, left the presets (owner, 2026-10-22): a shop on one still sees it first.
       [[], "#3c4450"],
+      [[], "#b3261e"],
     ],
   ),
   // Documents' text on the shop's color: white, or navy on a light color.

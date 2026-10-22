@@ -41,7 +41,7 @@ export interface MassEmailSetup {
   /** The Show menu's choices (the Customers page's, without counts). */
   shows: { value: string; label: string }[];
   cities: string[];
-  /** Emails the shop can still send today (its daily allowance). */
+  /** Mass emails the shop can still send today (their own daily allowance, apart from reports). */
   left: number;
   /** Whether the server can send email at all. */
   configured: boolean;
@@ -93,7 +93,7 @@ export async function massEmailSetup(
     shop: { name: company.name, address: company.address },
     shows: customerShowOptions(offersPool(company.settings)),
     cities: data.cities ?? [],
-    left: Math.max(0, dailyLimit("email") - Number(data.used_today ?? 0)),
+    left: Math.max(0, dailyLimit("mass_email") - Number(data.used_today ?? 0)),
     configured: emailConfigured(),
     history,
   };
@@ -168,7 +168,8 @@ export async function sendMassEmailTest(
   const r = await ready(db, companyId);
   if (!("shop" in r)) return r;
   if (!me.email) return { ok: false, error: "Your account has no email address.", status: 400 };
-  if (!(await takeAllowance(companyId, "email", 1)))
+  // A test counts against mass email's own allowance, like the real send it previews.
+  if (!(await takeAllowance(companyId, "mass_email", 1)))
     return { ok: false, error: massEmailLimitText(0), status: 429 };
   const content = massEmailContent({
     subject: input.subject,
@@ -213,9 +214,9 @@ export async function sendMassEmail(
   const { data: setup } = await db.rpc("email_campaign_setup", { target_company: companyId });
   const left = Math.max(
     0,
-    dailyLimit("email") - Number((setup as { used_today?: number } | null)?.used_today ?? 0),
+    dailyLimit("mass_email") - Number((setup as { used_today?: number } | null)?.used_today ?? 0),
   );
-  if (count.recipients > left || !(await takeAllowance(companyId, "email", count.recipients)))
+  if (count.recipients > left || !(await takeAllowance(companyId, "mass_email", count.recipients)))
     return { ok: false, error: massEmailLimitText(left), status: 429 };
 
   const { data: started, error } = await db.rpc("start_email_campaign", {

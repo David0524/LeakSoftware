@@ -168,7 +168,7 @@ export default function Invoices() {
     const actions = invoiceRowActions({
       status: i.status,
       balanceCents: invoiceBalance(i),
-      manager,
+      role: membership?.role,
       hasPayments: payments.some(
         (p) =>
           p.invoice_id === i.id &&

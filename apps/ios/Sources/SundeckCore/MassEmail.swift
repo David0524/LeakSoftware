@@ -130,11 +130,21 @@ public func massEmailHistoryText(status: String, sent: Int, failed: Int, recipie
     return "Sent to \(sent)\(failed > 0 ? " · \(failed) didn’t go" : "")"
 }
 
-/// When the list is bigger than what's left of today's email allowance.
+/// When the list is bigger than what's left of today's mass email allowance (its own, apart from
+/// reports and invoices; owner, 2026-10-22: "Give mass email its own limit").
 public func massEmailLimitText(_ left: Int) -> String {
     left <= 0
-        ? "Your shop has reached today’s email limit. It resets tomorrow."
-        : "Your shop can send \(plural(left, "more email", "more emails")) today. Narrow the list or send the rest tomorrow."
+        ? "Your shop has reached today’s limit for emailing customers. It resets tomorrow."
+        : "Your shop can email \(plural(left, "more customer", "more customers")) today. Narrow the list or send the rest tomorrow."
+}
+
+/// The customer's one email setting: one unsubscribe covers mass, reminder and review emails
+/// (`CUSTOMER_EMAILS_LABEL`, `CUSTOMER_EMAILS_OFF_LABEL`; owner, 2026-10-22).
+public enum CustomerEmailsText {
+    /// Its row on the customer page, On or Off.
+    public static let label = "Reminder, review and shop emails"
+    /// Its switch in Contact Details.
+    public static let offLabel = "No reminder, review or shop emails"
 }
 
 /// Field errors before sending (empty when it can go), keyed "subject" and "body".

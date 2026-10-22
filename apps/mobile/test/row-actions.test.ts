@@ -176,7 +176,7 @@ describe("Customers", () => {
 });
 
 describe("Invoices", () => {
-  const sent = { status: "sent", balanceCents: 64900, manager: true, hasPayments: false };
+  const sent = { status: "sent", balanceCents: 64900, role: "owner", hasPayments: false };
 
   it("swipes right for Record Payment on an unpaid invoice, holds for the card's actions", () => {
     const a = invoiceRowActions({ ...sent, hasLink: true });
@@ -189,13 +189,17 @@ describe("Invoices", () => {
     followsRules(a);
   });
 
-  it("follows the card: no Void once paid, nothing for techs, nothing on a draft", () => {
+  it("follows the card: no Void once paid, techs record but never void, nothing on a draft", () => {
     expect(
       ids(invoiceRowActions({ ...sent, hasPayments: true, hasLink: false })).menu,
     ).not.toContain("void");
-    expect(ids(invoiceRowActions({ ...sent, manager: false, hasLink: false })).menu).toEqual([
-      "open",
-    ]);
+    // Techs record payments too (owner, 2026-10-22).
+    expect(ids(invoiceRowActions({ ...sent, role: "tech", hasLink: false }))).toEqual({
+      leading: "record",
+      trailing: [],
+      menu: ["open", "record"],
+    });
+    expect(ids(invoiceRowActions({ ...sent, role: null, hasLink: false })).menu).toEqual(["open"]);
     expect(ids(invoiceRowActions({ ...sent, status: "draft", hasLink: true })).menu).toEqual([
       "open",
     ]);
@@ -211,8 +215,9 @@ describe("Invoices", () => {
       "record",
       "receipt",
     ]);
-    expect(ids(invoiceRowActions({ ...partly, manager: false, hasLink: false })).menu).toEqual([
+    expect(ids(invoiceRowActions({ ...partly, role: "tech", hasLink: false })).menu).toEqual([
       "open",
+      "record",
       "receipt",
     ]);
     expect(

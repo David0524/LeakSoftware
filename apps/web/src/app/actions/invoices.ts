@@ -157,7 +157,8 @@ export interface RecordPaymentState extends FormState {
 }
 
 /**
- * Managers: cash, a check (with its number), or another payment outside Stripe. The office then
+ * Anyone on the team, techs too (owner, 2026-10-22; the database holds a tech to the jobs they
+ * can see): cash, a check (with its number), or another payment outside Stripe. The office then
  * offers Send Receipt (2026-10-22), so nothing is emailed by itself.
  */
 export async function recordPaymentAction(

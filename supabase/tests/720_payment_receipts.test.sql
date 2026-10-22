@@ -54,8 +54,10 @@ select is((select method from payment where id = (select (v::jsonb ->> 'payment_
 reset role;
 
 select tests.authenticate_as((select tech_a from ids));
-select throws_ok(format($$ select record_invoice_payment(%L, 100, 'cash') $$, (select v from st where k = 'inv')),
-  '42501', null, 'techs still cannot record payments');
+-- Techs record payments too since 20261022001800 (730_tech_payments): past the role check, the
+-- balance check still applies.
+select throws_ok(format($$ select record_invoice_payment(%L, 99999999, 'cash') $$, (select v from st where k = 'inv')),
+  '23514', 'Enter an amount up to the balance due', 'a tech gets past the role check');
 
 -- Receipts: any member who sees the invoice can log one; it shows in Activity.
 insert into st select 'msg', log_receipt((select (v::jsonb ->> 'payment_id')::uuid from st where k = 'check'),

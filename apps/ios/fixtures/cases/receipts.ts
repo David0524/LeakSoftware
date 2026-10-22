@@ -11,6 +11,7 @@ import {
   RECEIPT_PHONE_LABEL,
   RECEIPT_TEXT_HINT,
   SEND_RECEIPT,
+  canRecordPayment,
   canSendReceipt,
   checkNumberError,
   cleanCheckNumber,
@@ -113,6 +114,21 @@ export const receipts: ModuleCases = {
       ["draft", [check]],
       ["sent", [pending]],
       ["sent", []],
+    ],
+  ),
+  // Techs too (owner, 2026-10-22: "Techs should be able to record payments").
+  canRecordPayment: rule(
+    (role: string | null, status: string, total: number, paidCents: number) =>
+      canRecordPayment(role, { status, total_cents: total, amount_paid_cents: paidCents }),
+    [
+      ["tech", "sent", 64900, 0],
+      ["owner", "partially_paid", 64900, 20000],
+      ["admin", "sent", 64900, 0],
+      ["tech", "paid", 64900, 64900],
+      ["tech", "draft", 64900, 0],
+      ["tech", "void", 64900, 0],
+      [null, "sent", 64900, 0],
+      ["viewer", "sent", 64900, 0],
     ],
   ),
   receiptBalanceText: rule(

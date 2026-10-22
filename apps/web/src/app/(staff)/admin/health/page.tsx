@@ -11,12 +11,13 @@ export const metadata: Metadata = { title: "Health" };
 
 const KIND: Record<string, string> = {
   email: "Emails",
+  mass_email: "Mass emails",
   narrative: "AI drafts",
   transcribe: "Transcriptions",
   text: "Texts",
   call: "Calls",
 };
-const LIMITED = new Set<string>(["email", "transcribe", "text", "call"]);
+const LIMITED = new Set<string>(["email", "mass_email", "transcribe", "text", "call"]);
 
 /** For tech help across shops: services up, what failed, who's near a limit. */
 export default function HealthPage() {

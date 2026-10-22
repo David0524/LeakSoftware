@@ -108,6 +108,14 @@ public func latestReceiptPayment(_ payments: [ReceiptPayment]) -> ReceiptPayment
     return best
 }
 
+/// Record Payment shows to anyone on the team, techs too (owner, 2026-10-22: "Techs should be able
+/// to record payments"), on a sent invoice (not a draft, not void) while something is owed
+/// (`canRecordPayment`). The server also holds a tech to the jobs they can see.
+public func canRecordPayment(role: String?, status: String, totalCents: Cents, amountPaidCents: Cents) -> Bool {
+    ["owner", "admin", "tech"].contains(role ?? "") && status != "draft" && status != "void"
+        && totalCents - amountPaidCents > 0
+}
+
 /// Send Receipt shows on a sent invoice (not void) with a payment received.
 public func canSendReceipt(status: String, payments: [ReceiptPayment]) -> Bool {
     status != "draft" && status != "void" && payments.contains { $0.status == "succeeded" }

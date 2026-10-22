@@ -1,5 +1,11 @@
 import { RememberRecent } from "@/components/remember-recent";
-import { mapStatus, offersLeak, offersPool } from "@leakbook/core";
+import {
+  CUSTOMER_EMAILS_LABEL,
+  CUSTOMER_EMAILS_OFF_LABEL,
+  mapStatus,
+  offersLeak,
+  offersPool,
+} from "@leakbook/core";
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { NotOnMapTag } from "@/components/not-on-map";
@@ -154,10 +160,7 @@ export default async function CustomerPage({ params }: PageProps<"/customers/[id
           {cc.length ? (
             <Row label="Other emails" detail={<span className="break-all">{cc.join(", ")}</span>} />
           ) : null}
-          <Row
-            label="Reminder and review emails"
-            value={customer.marketing_opt_out ? "Off" : "On"}
-          />
+          <Row label={CUSTOMER_EMAILS_LABEL} value={customer.marketing_opt_out ? "Off" : "On"} />
           {customer.notes ? (
             <Row
               label="Notes"
@@ -210,7 +213,7 @@ export default async function CustomerPage({ params }: PageProps<"/customers/[id
                 <STextArea label="Notes" name="notes" defaultValue={customer.notes ?? ""} />
                 <SSwitch
                   name="no_followups"
-                  label="No reminder or review emails"
+                  label={CUSTOMER_EMAILS_OFF_LABEL}
                   defaultChecked={customer.marketing_opt_out ?? false}
                 />
               </SettingsFields>

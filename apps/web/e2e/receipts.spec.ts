@@ -1,20 +1,22 @@
 import { expect, test, type Page } from "@playwright/test";
 import { adminClient, signedInClient } from "./backend";
-import { OWNER, RUN, signIn, wrapUpStep } from "./helpers";
+import { OWNER, RUN, TECH, signIn, wrapUpStep } from "./helpers";
 import { lastEmailTo } from "./outbox";
 import { PHONE, SAMPLE_JOB } from "./money";
 
 // Receipts for cash and check (owner, 2026-10-22: "A receipt for cash or check"): a check
 // recorded with its number offers Send Receipt at once and the email lands with the payment, the
 // total, and what's left; the customer's page shows the check and the balance; cash pays the
-// rest, Not Now, then Send Receipt again from the invoice. Activity records each send.
+// rest, Not Now, then Send Receipt again from the invoice. Activity records each send. Techs
+// record payments too (owner, 2026-10-22: "Techs should be able to record payments"; needs
+// 20261022001800_tech_payments.sql).
 
 test.describe.configure({ mode: "serial" });
 
 const SCREENS = process.env.E2E_SCREENSHOTS;
 const TO = `receipt-${RUN}@example.com`;
 
-async function sentInvoiceJob() {
+async function sentInvoiceJob(assignedUserId: string | null = null) {
   const admin = adminClient()!;
   const { data: sample } = await admin
     .from("job")
@@ -30,6 +32,7 @@ async function sentInvoiceJob() {
       type: "detection",
       status: "in_progress",
       fee_cents: 64_900,
+      assigned_user_id: assignedUserId,
     })
     .select("id")
     .single();
@@ -159,5 +162,34 @@ test("Record Payment and Send Receipt on a phone", async ({ browser }) => {
   expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(390);
   await sheet.getByRole("button", { name: "Not Now" }).click();
   await expect(panel.getByRole("button", { name: "Send Receipt" })).toBeVisible();
+  await phone.close();
+});
+
+test("a tech records cash on their own job, then Send Receipt; no Void", async ({ browser }) => {
+  test.skip(
+    !adminClient(),
+    "Needs SUPABASE_SERVICE_ROLE_KEY (CI runs it against Supabase in Docker).",
+  );
+  const tech = await signedInClient(TECH.email, TECH.password);
+  const { data: me } = await tech.auth.getUser();
+  const { jobId } = await sentInvoiceJob(me.user!.id);
+  const phone = await browser.newContext(PHONE);
+  const page = await phone.newPage();
+  await signIn(page, TECH, `/jobs/${jobId}`);
+  const panel = await openInvoice(page, jobId);
+  await expect(panel.getByRole("button", { name: "Void Invoice" })).toHaveCount(0);
+  const form = panel.getByTestId("record-payment");
+  await form.getByLabel("Amount received ($)").fill("150");
+  await expect(form.getByRole("radio", { name: "Cash" })).toBeChecked();
+  if (SCREENS) await page.screenshot({ path: `${SCREENS}/record-payment-tech-phone.png` });
+  await form.getByRole("button", { name: "Record Payment" }).click();
+  const sheet = page.getByRole("dialog", { name: "Send Receipt" });
+  await expect(sheet).toContainText("Payment recorded. Send the customer a receipt?");
+  await expect(sheet).toContainText("$150.00 · Cash · Balance remaining $499.00");
+  if (SCREENS) await page.screenshot({ path: `${SCREENS}/receipt-sheet-tech-phone.png` });
+  await sheet.getByRole("button", { name: "Not Now" }).click();
+  await expect(panel).toContainText("Partly paid");
+  await expect(panel.getByRole("button", { name: "Send Receipt" })).toBeVisible();
+  await expect(panel.getByRole("button", { name: "Void Invoice" })).toHaveCount(0);
   await phone.close();
 });

@@ -11,8 +11,8 @@ export function StopForm({ token, shop }: { token: string; shop: string }) {
   if (state.message)
     return (
       <Banner tone="success">
-        Done. {shop} won’t send you reminder or review emails. You’ll still get reports, receipts,
-        and anything you ask for.
+        Done. {shop} won’t send you reminder, review or shop emails. You’ll still get reports,
+        quotes, invoices, receipts, and anything you ask for.
       </Banner>
     );
   return (

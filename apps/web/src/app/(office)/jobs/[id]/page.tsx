@@ -1302,6 +1302,7 @@ async function Invoices({ detail, only }: { detail: JobDetail; only?: string }) 
             texting={line?.status === "active"}
             emailReady={emailConfigured()}
             isOwner={office.isManager}
+            role={office.company.role}
           />
         </div>
       ) : job.type === "maintenance" ? (

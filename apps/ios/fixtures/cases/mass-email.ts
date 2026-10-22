@@ -1,4 +1,6 @@
 import {
+  CUSTOMER_EMAILS_LABEL,
+  CUSTOMER_EMAILS_OFF_LABEL,
   LAST_JOB_CHOICES,
   massEmailConfirm,
   massEmailCountText,
@@ -58,7 +60,7 @@ export const massEmail: ModuleCases = {
       ["failed", 0, 3, 3],
     ],
   ),
-  massEmailLimitText: rule((left: number) => massEmailLimitText(left), [[258], [1], [0]]),
+  massEmailLimitText: rule((left: number) => massEmailLimitText(left), [[2000], [258], [1], [0]]),
   massEmailErrors: rule(
     (subject: string, body: string) => massEmailErrors(subject, body),
     [
@@ -69,4 +71,6 @@ export const massEmail: ModuleCases = {
       ["Hi", "y".repeat(10_001)],
     ],
   ),
+  // The customer's one email setting (owner, 2026-10-22).
+  customerEmails: rule(() => ({ CUSTOMER_EMAILS_LABEL, CUSTOMER_EMAILS_OFF_LABEL }), [[]]),
 };

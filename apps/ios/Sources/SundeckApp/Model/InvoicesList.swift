@@ -79,7 +79,7 @@ public struct InvoiceRowActions: Equatable, Sendable {
 
 /// Every invoice's row actions, read once for the list (payments and links in one pass each).
 public func invoiceRowActions(
-    _ store: LocalStore, companyId: String, list: [InvoiceListItem], manager: Bool,
+    _ store: LocalStore, companyId: String, list: [InvoiceListItem], role: String?,
     webURL: URL? = AppConfig.webURL
 ) -> [String: InvoiceRowActions] {
     let payments = Dictionary(
@@ -98,7 +98,7 @@ public func invoiceRowActions(
                 i.id,
                 InvoiceRowActions(
                     link: i.status == .void ? nil : tokens[i.id].flatMap { t in webURL.map { invoiceURL($0, t) } },
-                    rules: InvoiceActionRules(invoice: i, payments: payments[i.id] ?? [], manager: manager),
+                    rules: InvoiceActionRules(invoice: i, payments: payments[i.id] ?? [], role: role),
                     balanceText: centsFieldText(i.balanceCents),
                     receiptSummary: receiptLine(i, payments[i.id] ?? []))
             )

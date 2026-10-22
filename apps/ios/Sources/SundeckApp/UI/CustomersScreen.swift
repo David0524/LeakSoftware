@@ -230,7 +230,7 @@
                     if !c.otherEmails.isEmpty {
                         ListRow("Other emails", detail: c.otherEmails.joined(separator: ", "))
                     }
-                    ListRow("Reminder and review emails", value: c.remindersOn ? "On" : "Off")
+                    ListRow(CustomerEmailsText.label, value: c.remindersOn ? "On" : "Off")
                     if let notes = c.notes { ListRow("Notes", detail: notes) }
                     ActionRow("Edit Contact Details") { editingContact = true }
                 }
@@ -398,7 +398,7 @@
     }
 
     /// Edit Contact Details: the customer's name, type, company, phone, email, notes, and the
-    /// reminder and review emails switch.
+    /// reminder, review and shop emails switch (one unsubscribe covers all three, 2026-10-22).
     struct ContactSheet: View {
         var customer: CustomerDetail
         var saved: () -> Void
@@ -439,7 +439,7 @@
                         : "Other emails: \(customer.otherEmails.joined(separator: ", ")). Change them on the website."
                 ) {
                     LabeledFieldRow(label: "Notes", text: $notes, multiline: true)
-                    SwitchRow("No reminder or review emails", isOn: $noReminders)
+                    SwitchRow(CustomerEmailsText.offLabel, isOn: $noReminders)
                 }
                 if let error { Notice(kind: .error, text: error) }
                 Button("Save") { save() }.buttonStyle(.primary(fullWidth: true, size: .field))

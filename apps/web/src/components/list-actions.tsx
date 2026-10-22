@@ -3,6 +3,7 @@
 import { useState, useTransition, type ReactNode } from "react";
 import {
   SEND_RECEIPT,
+  canRecordPayment,
   directionsHref,
   formatCents,
   parseDollars,
@@ -178,8 +179,10 @@ export interface InvoiceRowData {
   balance: number;
   /** The customer's link, once sent. */
   link: string | null;
-  /** Owners and admins record payments and void (as on the job page). */
+  /** Owners and admins void (as on the job page). */
   canManage: boolean;
+  /** The person's role: anyone on the team records payments (owner, 2026-10-22). */
+  role: string;
   /** Nothing paid yet, so it can be voided. */
   unpaid: boolean;
   /** The total and what's paid, in cents, for Send Receipt's line. */
@@ -212,7 +215,11 @@ export function InvoiceActions({
   } | null>(null);
   const title = `${i.customer}${i.number ? ` · Invoice #${i.number}` : ""}`;
   const live = i.status !== "draft" && i.status !== "void";
-  const canPay = i.canManage && live && i.balance > 0;
+  const canPay = canRecordPayment(i.role, {
+    status: i.status,
+    total_cents: i.total,
+    amount_paid_cents: i.paid,
+  });
   const canVoid = i.canManage && live && i.unpaid;
   const canReceipt = live && i.paid > 0;
 

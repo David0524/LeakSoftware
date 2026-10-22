@@ -6,7 +6,8 @@ import { PHONE } from "./money";
 // "Any time you leave the branding/compliance on iOS it says 'discard changes' even after
 // hitting save. Let's remove all the save buttons on that page and just have one floating one
 // on the bottom"). It's dimmed until something changes, says "Saved." after a save, and leaving
-// after a save doesn't ask. The accent's More colors are seven since slate went.
+// after a save doesn't ask. The accent's More colors are six since slate and red went (owner,
+// 2026-10-22: "Drop another color"), so None and six fit one row on a phone.
 
 const SCREENS = process.env.E2E_SCREENSHOTS;
 
@@ -23,9 +24,15 @@ test("one floating Save for the whole page; leaving after it doesn't ask", async
   await expect(save).toBeInViewport();
   if (SCREENS) await page.screenshot({ path: `${SCREENS}/company-save-top.png` });
 
-  // The accent's swatches: None and the seven presets, without slate.
+  // The accent's swatches: None and the six presets, without slate or red, on one row.
   const accent = page.getByRole("group", { name: /Accent color swatches|More colors/ }).last();
   await expect(accent.getByRole("button", { name: "#3C4450" })).toHaveCount(0);
+  await expect(accent.getByRole("button", { name: "#B3261E" })).toHaveCount(0);
+  // (A shop on a color outside the list sees it first, as an eighth swatch that may wrap.)
+  const tops = await accent
+    .getByRole("button")
+    .evaluateAll((els) => els.map((e) => Math.round(e.getBoundingClientRect().top)));
+  if (tops.length <= 7) expect(new Set(tops).size).toBe(1);
 
   // Keep the demo shop's own color: a suggestion from its logo means it's on the default.
   await page.waitForLoadState("networkidle");

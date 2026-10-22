@@ -7,17 +7,19 @@
 export const DEFAULT_BRAND_COLOR = "#12263A";
 
 /**
- * Swatches offered beside the logo's own colors: dark enough for white text. Seven (owner,
- * 2026-10-22: "Remove one color from Accent -> More Colors to save space"): slate #3C4450 went,
- * the closest to the default navy, so the Accent row's None and seven fill one row on a large
- * iPhone. A shop already on slate still sees it, first and selected (brandColorChoices).
+ * Swatches offered beside the logo's own colors: dark enough for white text. Six (owner,
+ * 2026-10-22: "Remove one color from Accent -> More Colors to save space", then "Drop another
+ * color"): slate #3C4450 went first, the closest to the default navy; then red #B3261E, the
+ * closest pair left (to orange #C2410C) and nearly the app's own red for problems and Delete
+ * (#C62F2B), so a red brand reads as an error. Accent's None and six, and Main color's six, fit
+ * one row of 44 pt swatches on a 6.1" or 6.3" iPhone. A shop already on slate or red still sees
+ * it, first and selected (brandColorChoices).
  */
 export const BRAND_COLOR_PRESETS: readonly string[] = [
   "#12263A",
   "#1D5FA8",
   "#0F7C80",
   "#2E7D32",
-  "#B3261E",
   "#C2410C",
   "#5B3A9B",
 ];

@@ -46,6 +46,7 @@ const ACTIVITY: Record<string, string> = {
 };
 const LIMITED = [
   ["email", "Emails"],
+  ["mass_email", "Mass emails"],
   ["transcribe", "Transcriptions"],
   ["text", "Texts"],
   ["call", "Calls"],
