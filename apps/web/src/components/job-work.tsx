@@ -283,28 +283,32 @@ export function JobDetailsForm({
   const detection = jobType === "detection";
   const [gallons, setGallons] = useState(pool?.gallons ? pool.gallons.toLocaleString("en-US") : "");
   return (
+  const repair = jobType === "repair";
     <SettingsForm action={saveJobDetails} submit="Save">
       <input type="hidden" name="job" value={jobId} />
       {detection ? <input type="hidden" name="detection" value="1" /> : null}
       <div>
         <ul className="grouped">
-          <li className="flex min-h-11 items-center gap-3 px-4 py-1.5">
-            <label htmlFor="job-fee" className="min-w-0 flex-1">
-              {jobFeeLabel(jobType)}
-            </label>
-            <span aria-hidden="true" className="text-text-muted">
-              $
-            </span>
-            <input
-              id="job-fee"
-              name="fee"
-              inputMode="decimal"
-              placeholder="0.00"
-              defaultValue={fee != null ? (fee / 100).toFixed(2) : ""}
-              aria-describedby="job-fee-note"
-              className={cx(ROW_INPUT, "min-h-11 w-28 text-right tabular-nums")}
-            />
-          </li>
+          {/* A repair job's price is its repairs' (Repairs, owner 2026-10-22). */}
+          {repair ? null : (
+            <li className="flex min-h-11 items-center gap-3 px-4 py-1.5">
+              <label htmlFor="job-fee" className="min-w-0 flex-1">
+                {jobFeeLabel(jobType)}
+              </label>
+              <span aria-hidden="true" className="text-text-muted">
+                $
+              </span>
+              <input
+                id="job-fee"
+                name="fee"
+                inputMode="decimal"
+                placeholder="0.00"
+                defaultValue={fee != null ? (fee / 100).toFixed(2) : ""}
+                aria-describedby="job-fee-note"
+                className={cx(ROW_INPUT, "min-h-11 w-28 text-right tabular-nums")}
+              />
+            </li>
+          )}
           {pool ? (
             <li className="flex min-h-11 items-center gap-3 px-4 py-1.5">
               <input type="hidden" name="property" value={pool.id} />
@@ -347,9 +351,11 @@ export function JobDetailsForm({
             />
           </li>
         </ul>
-        <p id="job-fee-note" className="mt-2 px-4 text-[0.8125rem] text-text-muted">
-          {detection ? "The detection fee is shown on the report." : "Billed on the invoice."}
-        </p>
+        {repair ? null : (
+          <p id="job-fee-note" className="mt-2 px-4 text-[0.8125rem] text-text-muted">
+            {detection ? "The detection fee is shown on the report." : "Billed on the invoice."}
+          </p>
+        )}
         <div className="px-4">
           <FieldError name="fee" />
           <FieldError name="approx_gallons" />

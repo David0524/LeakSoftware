@@ -47,6 +47,8 @@ import {
   jobLock,
   wrapUp,
   visitReportBar,
+  jobRepairLines,
+  type JobRepair,
 } from "@leakbook/core";
 import { CustomerLinks } from "@/components/customer-links";
 import { DiagramPanel } from "@/components/diagram-work";
@@ -112,6 +114,7 @@ import { NotOnMapRow, NotOnMapTag } from "@/components/not-on-map";
 import { AccessNotesForm, PoolDetailsForm } from "@/components/pool-details";
 import { SheetRow } from "@/components/settings-list";
 import { SampleJob } from "@/components/sample-job";
+import { JobRepairs } from "@/components/job-repairs";
 import { WrapUpList } from "@/components/wrap-up";
 import { wrapUpInput } from "@/lib/wrap-up";
 
@@ -156,8 +159,16 @@ export default async function JobPage({ params, searchParams }: PageProps<"/jobs
   // With a company number, texts go out from it (Messages), not this device.
   const texting = line?.status === "active";
   const answers = [
-    // From the Customer on a repair (owner, 2026-10-19): what the customer needs.
-    { q: { key: REPAIR_ITEM_KEY, label: REPAIR_ITEM_LABEL }, a: job.intake?.[REPAIR_ITEM_KEY] },
+    // From the Customer on a repair (owner, 2026-10-19): what the customer needs. A repair job
+    // lists them under Repairs instead (owner, 2026-10-22).
+    ...(job.type === "repair"
+      ? []
+      : [
+          {
+            q: { key: REPAIR_ITEM_KEY, label: REPAIR_ITEM_LABEL },
+            a: job.intake?.[REPAIR_ITEM_KEY],
+          },
+        ]),
     ...questions.map((q) => ({ q, a: job.intake?.[q.key] })),
   ].filter(({ a }) => (Array.isArray(a) ? a.length > 0 : !!a));
   // Completing a visit in an Automatic shop sends its report: ask first (owner, 2026-10-20).
@@ -363,13 +374,16 @@ export default async function JobPage({ params, searchParams }: PageProps<"/jobs
                         }
                       />
                       {job.secondTechName ? <Row label="With" value={job.secondTechName} /> : null}
-                      {job.fee_cents != null ? (
+                      {job.fee_cents != null && job.type !== "repair" ? (
                         <Row
                           label={jobFeeLabel(job.type)}
                           value={<span className="tabular-nums">{formatCents(job.fee_cents)}</span>}
                         />
                       ) : null}
                     </Grouped>
+
+                    {/* A repair job's repairs and its price (owner, 2026-10-22). */}
+                    {job.type === "repair" ? <Repairs office={office} job={job} /> : null}
 
                     {answers.length ? (
                       <Grouped title="From the Customer">
@@ -1488,6 +1502,33 @@ function ContactRow({
           ) : null}
         </span>
       }
+    />
+  );
+}
+
+/**
+ * A repair job's Repairs (owner, 2026-10-22: "add additional repair"): its repair rows, or the
+ * repair it was booked for, and Add Additional Repair with every active price book item.
+ */
+async function Repairs({ office, job }: { office: Office; job: JobDetail["job"] }) {
+  const supabase = await createClient();
+  const [{ data: rows }, priceBook] = await Promise.all([
+    supabase
+      .from("job_repair")
+      .select(
+        "id, job_id, price_book_item_id, description, price_cents, sort_order, created_at, deleted_at",
+      )
+      .eq("job_id", job.id),
+    listConfig<PriceBookItem>(office, "price_book_item"),
+  ]);
+  const items = priceBook
+    .filter((i) => i.active)
+    .map((i) => ({ id: i.id, name: i.name, cents: i.price_cents }));
+  return (
+    <JobRepairs
+      jobId={job.id}
+      lines={jobRepairLines(job, (rows ?? []) as JobRepair[])}
+      items={items}
     />
   );
 }

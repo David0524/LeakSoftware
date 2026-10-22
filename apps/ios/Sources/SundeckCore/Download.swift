@@ -19,7 +19,8 @@ public let downloadKinds: [DownloadKindInfo] = [
     DownloadKindInfo(
         key: "jobs", label: "Jobs",
         tables: [
-            "job", "job_component", "checklist_item_result", "test_result", "finding", "chemical_reading", "signature",
+            "job", "job_repair", "job_component", "checklist_item_result", "test_result", "finding",
+            "chemical_reading", "signature",
         ]),
     DownloadKindInfo(key: "photos", label: "Photos and Videos", tables: ["media"]),
     DownloadKindInfo(

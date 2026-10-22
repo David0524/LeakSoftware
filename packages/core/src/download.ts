@@ -13,6 +13,7 @@ export const DOWNLOAD_KINDS: { key: string; label: string; tables: string[] }[] 
     label: "Jobs",
     tables: [
       "job",
+      "job_repair",
       "job_component",
       "checklist_item_result",
       "test_result",

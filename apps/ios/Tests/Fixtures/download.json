@@ -24,6 +24,7 @@
           "label": "Jobs",
           "tables": [
             "job",
+            "job_repair",
             "job_component",
             "checklist_item_result",
             "test_result",
@@ -181,6 +182,7 @@
             "label": "Jobs",
             "tables": [
               "job",
+              "job_repair",
               "job_component",
               "checklist_item_result",
               "test_result",

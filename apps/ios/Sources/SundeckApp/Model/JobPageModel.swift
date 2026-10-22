@@ -180,6 +180,11 @@ public struct JobDetails: Equatable, Sendable {
     public var fee: String?
     /// "Detection fee" on leak detection, else "Price" (core `jobFeeLabel`).
     public var feeLabel: String
+    /// The price row and field: not on a repair job, whose price is its Repairs' total (owner,
+    /// 2026-10-22: "add additional repair").
+    public var showsFee: Bool
+    /// A repair job lists its repairs (Repairs, between Assigned to and From the Customer).
+    public var showsRepairs: Bool
     /// Only leak detection marks a leak's location (owner, 2026-10-19: no leak checkbox on
     /// visits); it's also what makes the price a detection fee.
     public var marksLeakLocation: Bool
@@ -211,11 +216,14 @@ public struct JobDetails: Equatable, Sendable {
         with = job.job["second_tech_id"]?.string.map { id in team.first { $0.id == id }?.displayName ?? "Teammate" }
         fee = job.job["fee_cents"]?.number.map { formatCents(Int($0)) }
         feeLabel = jobFeeLabel(job.type)
+        showsRepairs = job.type == .repair
+        showsFee = !showsRepairs
         marksLeakLocation = job.type == .detection
         feeFooter = marksLeakLocation ? "The detection fee is shown on the report." : "Billed on the invoice."
         intake = intakeAnswers(settings: settings, intake: job.job["intake"], jobType: job.type)
-        // From the Customer on a repair (owner, 2026-10-19): what the customer needs, first.
-        if let need = job.job["intake"]?[repairItemKey]?.string, !need.isEmpty {
+        // From the Customer on a repair (owner, 2026-10-19): what the customer needs, first. A
+        // repair job lists them under Repairs instead (owner, 2026-10-22).
+        if !showsRepairs, let need = job.job["intake"]?[repairItemKey]?.string, !need.isEmpty {
             intake.insert(IntakeAnswer(question: repairItemLabel, answer: need), at: 0)
         }
         intakeTitle = "From the Customer"

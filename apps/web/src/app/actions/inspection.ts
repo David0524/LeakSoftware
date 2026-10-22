@@ -179,7 +179,8 @@ export async function saveJobDetails(_: FormState, form: FormData): Promise<Form
   const { error } = await db
     .from("job")
     .update({
-      fee_cents: feeCents,
+      // A repair job has no price field here: its price is its repairs' (owner, 2026-10-22).
+      ...(form.has("fee") ? { fee_cents: feeCents } : {}),
       ...(form.get("detection") === "1"
         ? { location_marked: form.get("location_marked") === "on" }
         : {}),

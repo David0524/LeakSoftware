@@ -130,8 +130,17 @@ public final class NewJobForm {
     public var secondTech: String?
     /// Notes for the tech ("What they said" on a repair).
     public var notes = ""
-    /// From the Customer on a repair: the price book item they need, or nil for none picked.
-    public private(set) var repairItemId: String?
+    /// One repair being booked: its key in the list and what's typed.
+    public struct RepairEntry: Identifiable, Equatable, Sendable {
+        public let id: Int
+        public var draft: RepairDraft
+    }
+    /// From the Customer on a repair: what they need, then each repair added with Add
+    /// Additional Repair (owner, 2026-10-22). The job's price is their sum.
+    public private(set) var repairs: [RepairEntry] = [RepairEntry(id: 0, draft: RepairDraft())]
+    private var nextRepairKey = 1
+    /// Each repair's fields to fix, in `repairs` order (after Create Job).
+    public private(set) var repairErrors: [RepairErrors] = []
     /// "Tue, Oct 20 at 9:00 AM with Tony Tech." after a suggestion fills the visit fields.
     public private(set) var picked: String?
     /// Maintenance for owners and admins: nil is Just once (a single visit), else a plan that
@@ -330,12 +339,53 @@ public final class NewJobForm {
 
     /// From the Customer shows the repair menu on a repair.
     public var showsRepairCall: Bool { jobType == .repair }
-    public var repairItem: FeeItem? { repairItemId.flatMap { id in repairItems.first { $0.id == id } } }
+    /// The repair menu's items (website `repairItems`), as SundeckCore picks them.
+    public var repairChoices: [RepairItem] { repairItems.map { RepairItem(id: $0.id, name: $0.name, cents: $0.cents) } }
 
-    /// Picking what they need fills in the Price; "Pick from the price book…" keeps it.
-    public func pickRepairItem(_ item: FeeItem?) {
-        repairItemId = item?.id
-        if let item { fee = dollarsText(item.cents) }
+    /// "Pump motor ($450.00)", as the website's menu.
+    public func repairChoiceLabel(_ pick: String) -> String {
+        if pick == repairCustom { return RepairLabels.custom }
+        guard let item = repairItems.first(where: { $0.id == pick }) else { return RepairLabels.pick }
+        return "\(item.name) (\(formatCents(item.cents)))"
+    }
+
+    /// The menu's values: none, each item, then Something else.
+    public var repairPicks: [String] { [""] + repairItems.map(\.id) + [repairCustom] }
+
+    /// Picking from a repair's menu: an item fills in its price.
+    public func chooseRepair(_ key: Int, pick: String) {
+        updateRepair(key) { SundeckCore.pickRepair($0, pick, repairChoices) }
+    }
+
+    public func setRepairDescription(_ key: Int, _ text: String) { updateRepair(key) { d in withDescription(d, text) } }
+    public func setRepairPrice(_ key: Int, _ text: String) { updateRepair(key) { d in withPrice(d, text) } }
+
+    /// A repair's typed description shows for Something else, or when there's no price book.
+    public func repairIsTyped(_ entry: RepairEntry) -> Bool {
+        repairItems.isEmpty || entry.draft.pick == repairCustom
+    }
+
+    /// Add Additional Repair: another blank repair.
+    public func addAdditionalRepair() {
+        repairs.append(RepairEntry(id: nextRepairKey, draft: RepairDraft()))
+        nextRepairKey += 1
+    }
+
+    /// Removes an added repair (the first one stays).
+    public func removeAdditionalRepair(_ key: Int) {
+        guard repairs.first?.id != key else { return }
+        repairs.removeAll { $0.id == key }
+        repairErrors = []
+    }
+
+    /// The repairs' total as typed (prices that don't read count as nothing).
+    public var repairsTotalCents: Cents {
+        repairsTotal(repairs.map { max(parseDollars($0.draft.price) ?? 0, 0) })
+    }
+
+    private func updateRepair(_ key: Int, _ change: (RepairDraft) -> RepairDraft) {
+        guard let i = repairs.firstIndex(where: { $0.id == key }) else { return }
+        repairs[i].draft = change(repairs[i].draft)
     }
 
     /// The price field's label and hint.
@@ -354,7 +404,12 @@ public final class NewJobForm {
             input.customerName, input.customerPhone, input.customerEmail, input.addressLine1, input.city,
             input.state, input.postalCode, accessNotes, otherEmails, fee, notes,
         ]
-        return customerId != nil || shape != nil || !answers.isEmpty || repairItemId != nil
+        let repairTyped =
+            repairs.count > 1
+            || repairs.contains {
+                !$0.draft.pick.isEmpty || !trim($0.draft.description).isEmpty || !trim($0.draft.price).isEmpty
+            }
+        return customerId != nil || shape != nil || !answers.isEmpty || repairTyped
             || typed.contains { !trim($0).isEmpty } || gallonsTyped.values.contains { !$0.isEmpty }
             || input.scheduleDate != today || input.scheduleTime != "09:00" || repeatChoice != nil
     }
@@ -443,7 +498,9 @@ public final class NewJobForm {
         errors = e
         feeError = badFee ? "Enter a price like 649." : nil
         gallonsError = badGallons ? "Enter the gallons as a number, like 20,000." : nil
-        return e.isEmpty && planErrors.isEmpty && !badFee && !badGallons
+        let repairsChecked = jobType == .repair ? checkRepairDrafts(repairs.map(\.draft), repairChoices) : nil
+        repairErrors = repairsChecked?.errors ?? []
+        return e.isEmpty && planErrors.isEmpty && !badFee && !badGallons && (repairsChecked?.ok ?? true)
     }
 
     /// Starts a maintenance plan, with a new customer and pool if needed, in one step on the
@@ -561,7 +618,9 @@ public final class NewJobForm {
             NewJobDetails(
                 poolType: poolType, hasSpa: hasSpa, accessNotes: accessNotes, timing: timing,
                 assignedUserId: seesAll ? techId : userId, jobType: jobType))
-        let feeCents = trim(fee).isEmpty ? nil : parseDollars(fee)
+        // A repair's price is its repairs' (owner, 2026-10-22).
+        let booked = jobType == .repair ? checkRepairDrafts(repairs.map(\.draft), repairChoices).repairs : []
+        let feeCents = jobType == .repair ? repairsFee(booked) : trim(fee).isEmpty ? nil : parseDollars(fee)
         let componentTypes = rows("component_type").compactMap { try? JSONValue.object($0).decode(ComponentType.self) }
         let existingProperty = mode == .existing ? selectedProperty : nil
         let store = sync.store
@@ -577,7 +636,7 @@ public final class NewJobForm {
         let asked = showsBooking ? Set(questions.map(\.key)) : []
         // From the Customer: the item's name, kept with the job (website `intake.repair_item`).
         let gallons = gallonsValue
-        let repairName = jobType == .repair ? repairItem?.name : nil
+        let repairName = repairBookingName(booked)
         let end: String? = records.job.scheduledStart.flatMap(parseInstant).flatMap { start in
             hoursValue.map { isoString(start.addingTimeInterval($0 * 3600)) }
         }
@@ -610,6 +669,16 @@ public final class NewJobForm {
             }
             job["summary_notes"] = notes.isEmpty ? .null : .string(notes)
             let jobId = try store.insert("job", companyId: companyId, job)
+            // Each repair is its own row, with the job (offline too).
+            for (i, repair) in booked.enumerated() {
+                try store.insert(
+                    "job_repair", companyId: companyId,
+                    [
+                        "job_id": .string(jobId), "price_book_item_id": optional(repair.priceBookItemId),
+                        "description": .string(repair.description), "price_cents": .number(Double(repair.priceCents)),
+                        "sort_order": .number(Double(i)),
+                    ])
+            }
 
             // The checklist is ready the moment the job opens, even offline.
             let spa = existingProperty.map { $0["has_spa"]?.bool ?? false } ?? hasSpa
@@ -666,7 +735,7 @@ public final class NewJobForm {
     }
 
     private var badFee: Bool {
-        guard !trim(fee).isEmpty else { return false }
+        guard jobType != .repair, !trim(fee).isEmpty else { return false }
         guard let cents = parseDollars(fee) else { return true }
         return cents < 0
     }
@@ -680,6 +749,18 @@ public final class NewJobForm {
 
 /// `s.trim()`.
 private func trim(_ s: String) -> String { s.trimmingCharacters(in: .whitespacesAndNewlines) }
+
+private func withDescription(_ d: RepairDraft, _ text: String) -> RepairDraft {
+    var next = d
+    next.description = text
+    return next
+}
+
+private func withPrice(_ d: RepairDraft, _ text: String) -> RepairDraft {
+    var next = d
+    next.price = text
+    return next
+}
 
 /// `(cents / 100).toFixed(2)`: "375.00".
 private func dollarsText(_ cents: Cents) -> String {

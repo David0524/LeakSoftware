@@ -103,6 +103,9 @@ begin
             3, current_date);
   insert into chemical_reading (company_id, property_id, job_id, recorded_by, gallons, fc, ph)
     values (c, prop, j, t, 20000, 2.5, 7.6);
+  -- A repair on the job (on a leak detection job it doesn't change the price; 670_job_repairs).
+  insert into job_repair (company_id, job_id, description, price_cents)
+    values (c, j, 'Replace pump seal', 9500);
   insert into saved_report (company_id, name, sections)
     values (c, 'No leak found ' || label, '{"summary": "We found no leak."}');
   insert into team_profile (company_id, user_id, name, phone, emergency_name, emergency_phone)

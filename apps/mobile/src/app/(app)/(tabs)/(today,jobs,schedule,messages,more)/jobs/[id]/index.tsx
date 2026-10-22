@@ -28,6 +28,7 @@ import {
   type Job,
   type JobStatus,
   type Property,
+  type PriceBookItem,
   COMPLETE_READY_LINE,
   checklistReady,
   visitReportBar,
@@ -35,7 +36,8 @@ import {
 } from "@leakbook/core";
 import * as WebBrowser from "expo-web-browser";
 import type { JsonValue } from "@leakbook/sync";
-import { useRow } from "../../../../../../data/hooks";
+import { useRow, useRows } from "../../../../../../data/hooks";
+import { JobRepairs } from "../../../../../../features/job/Repairs";
 import { useJobReports } from "../../../../../../data/reports";
 import { API_URL } from "../../../../../../lib/config";
 import { WrapUpList, useWrapUp, type WrapUpOpen } from "../../../../../../features/job/WrapUp";
@@ -657,14 +659,24 @@ function Details({
   // Only leak detection marks a leak's location (owner, 2026-10-19: no leak checkbox on
   // maintenance visits) and calls its price a detection fee.
   const detection = job.type === "detection";
+  const repair = job.type === "repair";
+  const priceBook = useRows<PriceBookItem>("price_book_item", company.id);
   // Only this job type's questions (a pool inspection asks its own, 2026-10-20).
   const questions = intakeQuestionsFor(
     (company.settings as Partial<CompanySettings>).intake_questions ?? [],
     job.type,
   );
   const answers = [
-    // From the Customer on a repair (owner, 2026-10-19): what the customer needs.
-    { q: { key: REPAIR_ITEM_KEY, label: REPAIR_ITEM_LABEL }, a: job.intake?.[REPAIR_ITEM_KEY] },
+    // From the Customer on a repair (owner, 2026-10-19): what the customer needs. A repair job
+    // lists them under Repairs instead (owner, 2026-10-22).
+    ...(job.type === "repair"
+      ? []
+      : [
+          {
+            q: { key: REPAIR_ITEM_KEY, label: REPAIR_ITEM_LABEL },
+            a: job.intake?.[REPAIR_ITEM_KEY],
+          },
+        ]),
     ...questions.map((q) => ({ q, a: job.intake?.[q.key] })),
   ].filter(({ a }) => (Array.isArray(a) ? a.length > 0 : Boolean(a)));
   const textCustomer = () =>
@@ -859,7 +871,7 @@ function Details({
               }
             />
           ) : null}
-          {job.fee_cents != null ? (
+          {job.fee_cents != null && !repair ? (
             <ListRow
               title={jobFeeLabel(job.type)}
               detail={
@@ -871,6 +883,9 @@ function Details({
           ) : null}
         </Group>
       </Section>
+
+      {/* A repair job's repairs and its price (owner, 2026-10-22). */}
+      {repair ? <JobRepairs job={job} priceBook={priceBook} /> : null}
 
       {answers.length > 0 ? (
         <Section title="From the Customer">
@@ -889,34 +904,43 @@ function Details({
 
       <Section
         title="On site"
-        footer={detection ? "The detection fee is shown on the report." : "Billed on the invoice."}
+        footer={
+          repair
+            ? undefined
+            : detection
+              ? "The detection fee is shown on the report."
+              : "Billed on the invoice."
+        }
       >
         <Group>
-          <ListRow>
-            <View style={styles.feeRow}>
-              <T style={{ flex: 1 }}>{jobFeeLabel(job.type)}</T>
-              <T muted>$</T>
-              <TextInput
-                {...noSwipe}
-                accessibilityLabel={`${jobFeeLabel(job.type)} in dollars`}
-                value={fee ?? savedFee}
-                onChangeText={setFee}
-                onBlur={saveFee}
-                keyboardType="decimal-pad"
-                placeholder="0.00"
-                placeholderTextColor={color.placeholder}
-                style={[
-                  styles.feeInput,
-                  tabular,
-                  {
-                    color: color.text,
-                    borderColor: color.controlBorder,
-                    backgroundColor: color.surface,
-                  },
-                ]}
-              />
-            </View>
-          </ListRow>
+          {/* A repair job's price is its repairs' (Repairs, owner 2026-10-22). */}
+          {repair ? null : (
+            <ListRow>
+              <View style={styles.feeRow}>
+                <T style={{ flex: 1 }}>{jobFeeLabel(job.type)}</T>
+                <T muted>$</T>
+                <TextInput
+                  {...noSwipe}
+                  accessibilityLabel={`${jobFeeLabel(job.type)} in dollars`}
+                  value={fee ?? savedFee}
+                  onChangeText={setFee}
+                  onBlur={saveFee}
+                  keyboardType="decimal-pad"
+                  placeholder="0.00"
+                  placeholderTextColor={color.placeholder}
+                  style={[
+                    styles.feeInput,
+                    tabular,
+                    {
+                      color: color.text,
+                      borderColor: color.controlBorder,
+                      backgroundColor: color.surface,
+                    },
+                  ]}
+                />
+              </View>
+            </ListRow>
+          )}
           {property ? (
             <ListRow>
               <View style={styles.feeRow}>

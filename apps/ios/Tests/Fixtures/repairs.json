@@ -1,0 +1,1280 @@
+{
+  "REPAIR_LABELS": [
+    {
+      "args": [],
+      "result": {
+        "section": "Repairs",
+        "add": "Add Additional Repair",
+        "remove": "Remove",
+        "total": "Total",
+        "first": "What do they need?",
+        "additional": "Additional repair",
+        "item": "Repair",
+        "pick": "Pick from the price book…",
+        "custom": "Something else",
+        "description": "Describe the repair",
+        "price": "Price ($)",
+        "fallback": "Repair",
+        "empty": "No repairs yet.",
+        "save": "Add Repair",
+        "removeTitle": "Remove this repair?",
+        "removeMessage": "It comes off the job’s price. An invoice already made keeps it.",
+        "removeConfirm": "Remove Repair",
+        "footer": "Billed on the invoice, one line each.",
+        "custom_value": "custom"
+      }
+    }
+  ],
+  "jobRepairLines": [
+    {
+      "args": [
+        {
+          "id": "j1",
+          "type": "repair",
+          "fee_cents": 45000,
+          "intake": {
+            "repair_item": "Pump motor"
+          }
+        },
+        []
+      ],
+      "result": [
+        {
+          "id": "j1",
+          "description": "Pump motor",
+          "price_cents": 45000,
+          "price_book_item_id": null,
+          "booked": true
+        }
+      ]
+    },
+    {
+      "args": [
+        {
+          "id": "j1",
+          "type": "repair",
+          "fee_cents": 9900,
+          "intake": null
+        },
+        []
+      ],
+      "result": [
+        {
+          "id": "j1",
+          "description": "Repair",
+          "price_cents": 9900,
+          "price_book_item_id": null,
+          "booked": true
+        }
+      ]
+    },
+    {
+      "args": [
+        {
+          "id": "j1",
+          "type": "repair",
+          "fee_cents": null,
+          "intake": null
+        },
+        []
+      ],
+      "result": []
+    },
+    {
+      "args": [
+        {
+          "id": "j1",
+          "type": "repair",
+          "fee_cents": 45000,
+          "intake": {
+            "repair_item": "Pump motor"
+          }
+        },
+        [
+          {
+            "id": "b",
+            "job_id": "j1",
+            "price_book_item_id": "igniter",
+            "description": "Heater igniter",
+            "price_cents": 18500,
+            "sort_order": 1,
+            "created_at": "2026-10-22T15:00:00Z",
+            "deleted_at": null
+          },
+          {
+            "id": "a",
+            "job_id": "j1",
+            "price_book_item_id": null,
+            "description": "Pump motor",
+            "price_cents": 45000,
+            "sort_order": 0,
+            "created_at": "2026-10-22T15:00:00Z",
+            "deleted_at": null
+          },
+          {
+            "id": "c",
+            "job_id": "j1",
+            "price_book_item_id": null,
+            "description": "Skimmer lid",
+            "price_cents": 2500,
+            "sort_order": 1,
+            "created_at": "2026-10-22T14:00:00Z",
+            "deleted_at": null
+          },
+          {
+            "id": "gone",
+            "job_id": "j1",
+            "price_book_item_id": null,
+            "description": "Pump motor",
+            "price_cents": 45000,
+            "sort_order": 3,
+            "created_at": "2026-10-22T15:00:00Z",
+            "deleted_at": "2026-10-22T16:00:00Z"
+          },
+          {
+            "id": "other",
+            "job_id": "j2",
+            "price_book_item_id": null,
+            "description": "Pump motor",
+            "price_cents": 45000,
+            "sort_order": 0,
+            "created_at": "2026-10-22T15:00:00Z",
+            "deleted_at": null
+          }
+        ]
+      ],
+      "result": [
+        {
+          "id": "a",
+          "description": "Pump motor",
+          "price_cents": 45000,
+          "price_book_item_id": null,
+          "booked": false
+        },
+        {
+          "id": "c",
+          "description": "Skimmer lid",
+          "price_cents": 2500,
+          "price_book_item_id": null,
+          "booked": false
+        },
+        {
+          "id": "b",
+          "description": "Heater igniter",
+          "price_cents": 18500,
+          "price_book_item_id": "igniter",
+          "booked": false
+        }
+      ]
+    },
+    {
+      "args": [
+        {
+          "id": "j1",
+          "type": "detection",
+          "fee_cents": 45000,
+          "intake": {
+            "repair_item": "Pump motor"
+          }
+        },
+        [
+          {
+            "id": "b",
+            "job_id": "j1",
+            "price_book_item_id": "igniter",
+            "description": "Heater igniter",
+            "price_cents": 18500,
+            "sort_order": 1,
+            "created_at": "2026-10-22T15:00:00Z",
+            "deleted_at": null
+          },
+          {
+            "id": "a",
+            "job_id": "j1",
+            "price_book_item_id": null,
+            "description": "Pump motor",
+            "price_cents": 45000,
+            "sort_order": 0,
+            "created_at": "2026-10-22T15:00:00Z",
+            "deleted_at": null
+          },
+          {
+            "id": "c",
+            "job_id": "j1",
+            "price_book_item_id": null,
+            "description": "Skimmer lid",
+            "price_cents": 2500,
+            "sort_order": 1,
+            "created_at": "2026-10-22T14:00:00Z",
+            "deleted_at": null
+          },
+          {
+            "id": "gone",
+            "job_id": "j1",
+            "price_book_item_id": null,
+            "description": "Pump motor",
+            "price_cents": 45000,
+            "sort_order": 3,
+            "created_at": "2026-10-22T15:00:00Z",
+            "deleted_at": "2026-10-22T16:00:00Z"
+          },
+          {
+            "id": "other",
+            "job_id": "j2",
+            "price_book_item_id": null,
+            "description": "Pump motor",
+            "price_cents": 45000,
+            "sort_order": 0,
+            "created_at": "2026-10-22T15:00:00Z",
+            "deleted_at": null
+          }
+        ]
+      ],
+      "result": []
+    },
+    {
+      "args": [
+        {
+          "id": "j1",
+          "type": "repair",
+          "fee_cents": 45000,
+          "intake": {
+            "repair_item": "Pump motor"
+          }
+        },
+        [
+          {
+            "id": "a",
+            "job_id": "j1",
+            "price_book_item_id": null,
+            "description": "Pump motor",
+            "price_cents": 45000,
+            "sort_order": 0,
+            "created_at": "2026-10-22T15:00:00Z",
+            "deleted_at": "2026-10-22T16:00:00Z"
+          }
+        ]
+      ],
+      "result": []
+    }
+  ],
+  "checkRepairDraft": [
+    {
+      "args": [
+        {
+          "pick": "pump",
+          "description": "",
+          "price": "450.00"
+        },
+        [
+          {
+            "id": "pump",
+            "name": "Pump motor",
+            "cents": 45000
+          },
+          {
+            "id": "igniter",
+            "name": "Heater igniter",
+            "cents": 18500
+          }
+        ],
+        false
+      ],
+      "result": {
+        "repair": {
+          "price_book_item_id": "pump",
+          "description": "Pump motor",
+          "price_cents": 45000
+        },
+        "errors": {}
+      }
+    },
+    {
+      "args": [
+        {
+          "pick": "custom",
+          "description": " Skimmer lid ",
+          "price": "25"
+        },
+        [
+          {
+            "id": "pump",
+            "name": "Pump motor",
+            "cents": 45000
+          },
+          {
+            "id": "igniter",
+            "name": "Heater igniter",
+            "cents": 18500
+          }
+        ],
+        false
+      ],
+      "result": {
+        "repair": {
+          "price_book_item_id": null,
+          "description": "Skimmer lid",
+          "price_cents": 2500
+        },
+        "errors": {}
+      }
+    },
+    {
+      "args": [
+        {
+          "pick": "",
+          "description": "",
+          "price": "99"
+        },
+        [
+          {
+            "id": "pump",
+            "name": "Pump motor",
+            "cents": 45000
+          },
+          {
+            "id": "igniter",
+            "name": "Heater igniter",
+            "cents": 18500
+          }
+        ],
+        false
+      ],
+      "result": {
+        "repair": {
+          "price_book_item_id": null,
+          "description": "Repair",
+          "price_cents": 9900
+        },
+        "errors": {}
+      }
+    },
+    {
+      "args": [
+        {
+          "pick": "",
+          "description": "Light",
+          "price": "80"
+        },
+        [],
+        false
+      ],
+      "result": {
+        "repair": {
+          "price_book_item_id": null,
+          "description": "Light",
+          "price_cents": 8000
+        },
+        "errors": {}
+      }
+    },
+    {
+      "args": [
+        {
+          "pick": "",
+          "description": "",
+          "price": ""
+        },
+        [
+          {
+            "id": "pump",
+            "name": "Pump motor",
+            "cents": 45000
+          },
+          {
+            "id": "igniter",
+            "name": "Heater igniter",
+            "cents": 18500
+          }
+        ],
+        false
+      ],
+      "result": {
+        "repair": null,
+        "errors": {}
+      }
+    },
+    {
+      "args": [
+        {
+          "pick": "",
+          "description": "",
+          "price": ""
+        },
+        [
+          {
+            "id": "pump",
+            "name": "Pump motor",
+            "cents": 45000
+          },
+          {
+            "id": "igniter",
+            "name": "Heater igniter",
+            "cents": 18500
+          }
+        ],
+        true
+      ],
+      "result": {
+        "repair": null,
+        "errors": {
+          "description": "Pick a repair or describe it."
+        }
+      }
+    },
+    {
+      "args": [
+        {
+          "pick": "custom",
+          "description": "",
+          "price": "20"
+        },
+        [
+          {
+            "id": "pump",
+            "name": "Pump motor",
+            "cents": 45000
+          },
+          {
+            "id": "igniter",
+            "name": "Heater igniter",
+            "cents": 18500
+          }
+        ],
+        false
+      ],
+      "result": {
+        "repair": null,
+        "errors": {
+          "description": "Describe the repair."
+        }
+      }
+    },
+    {
+      "args": [
+        {
+          "pick": "custom",
+          "description": "",
+          "price": ""
+        },
+        [
+          {
+            "id": "pump",
+            "name": "Pump motor",
+            "cents": 45000
+          },
+          {
+            "id": "igniter",
+            "name": "Heater igniter",
+            "cents": 18500
+          }
+        ],
+        true
+      ],
+      "result": {
+        "repair": null,
+        "errors": {
+          "description": "Pick a repair or describe it."
+        }
+      }
+    },
+    {
+      "args": [
+        {
+          "pick": "pump",
+          "description": "",
+          "price": ""
+        },
+        [
+          {
+            "id": "pump",
+            "name": "Pump motor",
+            "cents": 45000
+          },
+          {
+            "id": "igniter",
+            "name": "Heater igniter",
+            "cents": 18500
+          }
+        ],
+        false
+      ],
+      "result": {
+        "repair": null,
+        "errors": {
+          "price": "Enter a price like 185."
+        }
+      }
+    },
+    {
+      "args": [
+        {
+          "pick": "pump",
+          "description": "",
+          "price": "-5"
+        },
+        [
+          {
+            "id": "pump",
+            "name": "Pump motor",
+            "cents": 45000
+          },
+          {
+            "id": "igniter",
+            "name": "Heater igniter",
+            "cents": 18500
+          }
+        ],
+        false
+      ],
+      "result": {
+        "repair": null,
+        "errors": {
+          "price": "Enter a price like 185."
+        }
+      }
+    },
+    {
+      "args": [
+        {
+          "pick": "pump",
+          "description": "",
+          "price": "abc"
+        },
+        [
+          {
+            "id": "pump",
+            "name": "Pump motor",
+            "cents": 45000
+          },
+          {
+            "id": "igniter",
+            "name": "Heater igniter",
+            "cents": 18500
+          }
+        ],
+        false
+      ],
+      "result": {
+        "repair": null,
+        "errors": {
+          "price": "Enter a price like 185."
+        }
+      }
+    },
+    {
+      "args": [
+        {
+          "pick": "",
+          "description": "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+          "price": "5"
+        },
+        [],
+        false
+      ],
+      "result": {
+        "repair": null,
+        "errors": {
+          "description": "Keep it under 200 characters."
+        }
+      }
+    },
+    {
+      "args": [
+        {
+          "pick": "missing",
+          "description": "",
+          "price": "12"
+        },
+        [
+          {
+            "id": "pump",
+            "name": "Pump motor",
+            "cents": 45000
+          },
+          {
+            "id": "igniter",
+            "name": "Heater igniter",
+            "cents": 18500
+          }
+        ],
+        false
+      ],
+      "result": {
+        "repair": {
+          "price_book_item_id": null,
+          "description": "Repair",
+          "price_cents": 1200
+        },
+        "errors": {}
+      }
+    }
+  ],
+  "checkRepairDrafts": [
+    {
+      "args": [
+        [
+          {
+            "pick": "pump",
+            "description": "",
+            "price": "450.00"
+          },
+          {
+            "pick": "",
+            "description": "",
+            "price": ""
+          },
+          {
+            "pick": "igniter",
+            "description": "",
+            "price": "185.00"
+          }
+        ],
+        [
+          {
+            "id": "pump",
+            "name": "Pump motor",
+            "cents": 45000
+          },
+          {
+            "id": "igniter",
+            "name": "Heater igniter",
+            "cents": 18500
+          }
+        ]
+      ],
+      "result": {
+        "repairs": [
+          {
+            "price_book_item_id": "pump",
+            "description": "Pump motor",
+            "price_cents": 45000
+          },
+          {
+            "price_book_item_id": "igniter",
+            "description": "Heater igniter",
+            "price_cents": 18500
+          }
+        ],
+        "errors": [
+          {},
+          {},
+          {}
+        ],
+        "ok": true
+      }
+    },
+    {
+      "args": [
+        [
+          {
+            "pick": "pump",
+            "description": "",
+            "price": "x"
+          },
+          {
+            "pick": "custom",
+            "description": "Lid",
+            "price": ""
+          }
+        ],
+        [
+          {
+            "id": "pump",
+            "name": "Pump motor",
+            "cents": 45000
+          },
+          {
+            "id": "igniter",
+            "name": "Heater igniter",
+            "cents": 18500
+          }
+        ]
+      ],
+      "result": {
+        "repairs": [],
+        "errors": [
+          {
+            "price": "Enter a price like 185."
+          },
+          {
+            "price": "Enter a price like 185."
+          }
+        ],
+        "ok": false
+      }
+    },
+    {
+      "args": [
+        [],
+        [
+          {
+            "id": "pump",
+            "name": "Pump motor",
+            "cents": 45000
+          },
+          {
+            "id": "igniter",
+            "name": "Heater igniter",
+            "cents": 18500
+          }
+        ]
+      ],
+      "result": {
+        "repairs": [],
+        "errors": [],
+        "ok": true
+      }
+    }
+  ],
+  "pickRepair": [
+    {
+      "args": [
+        {
+          "pick": "",
+          "description": "",
+          "price": ""
+        },
+        "pump",
+        [
+          {
+            "id": "pump",
+            "name": "Pump motor",
+            "cents": 45000
+          },
+          {
+            "id": "igniter",
+            "name": "Heater igniter",
+            "cents": 18500
+          }
+        ]
+      ],
+      "result": {
+        "pick": "pump",
+        "description": "",
+        "price": "450.00"
+      }
+    },
+    {
+      "args": [
+        {
+          "pick": "pump",
+          "description": "",
+          "price": "450.00"
+        },
+        "custom",
+        [
+          {
+            "id": "pump",
+            "name": "Pump motor",
+            "cents": 45000
+          },
+          {
+            "id": "igniter",
+            "name": "Heater igniter",
+            "cents": 18500
+          }
+        ]
+      ],
+      "result": {
+        "pick": "custom",
+        "description": "",
+        "price": "450.00"
+      }
+    },
+    {
+      "args": [
+        {
+          "pick": "pump",
+          "description": "Lid",
+          "price": "12"
+        },
+        "",
+        [
+          {
+            "id": "pump",
+            "name": "Pump motor",
+            "cents": 45000
+          },
+          {
+            "id": "igniter",
+            "name": "Heater igniter",
+            "cents": 18500
+          }
+        ]
+      ],
+      "result": {
+        "pick": "",
+        "description": "Lid",
+        "price": "12"
+      }
+    }
+  ],
+  "repairBookingName": [
+    {
+      "args": [
+        [
+          {
+            "price_book_item_id": "igniter",
+            "description": "Heater igniter",
+            "price_cents": 18500
+          },
+          {
+            "price_book_item_id": "igniter",
+            "description": "Lid",
+            "price_cents": 18500
+          }
+        ]
+      ],
+      "result": "Heater igniter, Lid"
+    },
+    {
+      "args": [
+        []
+      ],
+      "result": null
+    }
+  ],
+  "repairsFee": [
+    {
+      "args": [
+        [
+          {
+            "price_book_item_id": "igniter",
+            "description": "Heater igniter",
+            "price_cents": 18500
+          },
+          {
+            "price_book_item_id": "igniter",
+            "description": "Heater igniter",
+            "price_cents": 100
+          }
+        ]
+      ],
+      "result": 18600
+    },
+    {
+      "args": [
+        []
+      ],
+      "result": null
+    }
+  ],
+  "addRepairWrites": [
+    {
+      "args": [
+        {
+          "id": "j1",
+          "type": "repair",
+          "fee_cents": 45000,
+          "intake": {
+            "repair_item": "Pump motor"
+          }
+        },
+        [],
+        {
+          "price_book_item_id": "igniter",
+          "description": "Heater igniter",
+          "price_cents": 18500
+        }
+      ],
+      "result": {
+        "writes": [
+          {
+            "kind": "insert",
+            "id": "j1",
+            "values": {
+              "job_id": "j1",
+              "price_book_item_id": null,
+              "description": "Pump motor",
+              "price_cents": 45000,
+              "sort_order": 0
+            }
+          },
+          {
+            "kind": "insert",
+            "values": {
+              "job_id": "j1",
+              "price_book_item_id": "igniter",
+              "description": "Heater igniter",
+              "price_cents": 18500,
+              "sort_order": 1
+            }
+          }
+        ],
+        "fee_cents": 63500
+      }
+    },
+    {
+      "args": [
+        {
+          "id": "j1",
+          "type": "repair",
+          "fee_cents": 45000,
+          "intake": {
+            "repair_item": "Pump motor"
+          }
+        },
+        [
+          {
+            "id": "b",
+            "job_id": "j1",
+            "price_book_item_id": "igniter",
+            "description": "Heater igniter",
+            "price_cents": 18500,
+            "sort_order": 1,
+            "created_at": "2026-10-22T15:00:00Z",
+            "deleted_at": null
+          },
+          {
+            "id": "a",
+            "job_id": "j1",
+            "price_book_item_id": null,
+            "description": "Pump motor",
+            "price_cents": 45000,
+            "sort_order": 0,
+            "created_at": "2026-10-22T15:00:00Z",
+            "deleted_at": null
+          },
+          {
+            "id": "c",
+            "job_id": "j1",
+            "price_book_item_id": null,
+            "description": "Skimmer lid",
+            "price_cents": 2500,
+            "sort_order": 1,
+            "created_at": "2026-10-22T14:00:00Z",
+            "deleted_at": null
+          },
+          {
+            "id": "gone",
+            "job_id": "j1",
+            "price_book_item_id": null,
+            "description": "Pump motor",
+            "price_cents": 45000,
+            "sort_order": 3,
+            "created_at": "2026-10-22T15:00:00Z",
+            "deleted_at": "2026-10-22T16:00:00Z"
+          },
+          {
+            "id": "other",
+            "job_id": "j2",
+            "price_book_item_id": null,
+            "description": "Pump motor",
+            "price_cents": 45000,
+            "sort_order": 0,
+            "created_at": "2026-10-22T15:00:00Z",
+            "deleted_at": null
+          }
+        ],
+        {
+          "price_book_item_id": "igniter",
+          "description": "Heater igniter",
+          "price_cents": 18500
+        }
+      ],
+      "result": {
+        "writes": [
+          {
+            "kind": "insert",
+            "values": {
+              "job_id": "j1",
+              "price_book_item_id": "igniter",
+              "description": "Heater igniter",
+              "price_cents": 18500,
+              "sort_order": 4
+            }
+          }
+        ],
+        "fee_cents": 84500
+      }
+    },
+    {
+      "args": [
+        {
+          "id": "j1",
+          "type": "repair",
+          "fee_cents": null,
+          "intake": null
+        },
+        [],
+        {
+          "price_book_item_id": "igniter",
+          "description": "Heater igniter",
+          "price_cents": 18500
+        }
+      ],
+      "result": {
+        "writes": [
+          {
+            "kind": "insert",
+            "values": {
+              "job_id": "j1",
+              "price_book_item_id": "igniter",
+              "description": "Heater igniter",
+              "price_cents": 18500,
+              "sort_order": 0
+            }
+          }
+        ],
+        "fee_cents": 18500
+      }
+    },
+    {
+      "args": [
+        {
+          "id": "j1",
+          "type": "repair",
+          "fee_cents": 45000,
+          "intake": {
+            "repair_item": "Pump motor"
+          }
+        },
+        [
+          {
+            "id": "a",
+            "job_id": "j1",
+            "price_book_item_id": null,
+            "description": "Pump motor",
+            "price_cents": 45000,
+            "sort_order": 0,
+            "created_at": "2026-10-22T15:00:00Z",
+            "deleted_at": "2026-10-22T16:00:00Z"
+          }
+        ],
+        {
+          "price_book_item_id": "igniter",
+          "description": "Heater igniter",
+          "price_cents": 18500
+        }
+      ],
+      "result": {
+        "writes": [
+          {
+            "kind": "insert",
+            "values": {
+              "job_id": "j1",
+              "price_book_item_id": "igniter",
+              "description": "Heater igniter",
+              "price_cents": 18500,
+              "sort_order": 1
+            }
+          }
+        ],
+        "fee_cents": 18500
+      }
+    }
+  ],
+  "removeRepairWrites": [
+    {
+      "args": [
+        {
+          "id": "j1",
+          "type": "repair",
+          "fee_cents": 45000,
+          "intake": {
+            "repair_item": "Pump motor"
+          }
+        },
+        [],
+        "j1",
+        "2026-10-22T18:00:00Z"
+      ],
+      "result": {
+        "writes": [
+          {
+            "kind": "insert",
+            "id": "j1",
+            "values": {
+              "job_id": "j1",
+              "price_book_item_id": null,
+              "description": "Pump motor",
+              "price_cents": 45000,
+              "sort_order": 0,
+              "deleted_at": "2026-10-22T18:00:00Z"
+            }
+          }
+        ],
+        "fee_cents": 0
+      }
+    },
+    {
+      "args": [
+        {
+          "id": "j1",
+          "type": "repair",
+          "fee_cents": 45000,
+          "intake": {
+            "repair_item": "Pump motor"
+          }
+        },
+        [
+          {
+            "id": "b",
+            "job_id": "j1",
+            "price_book_item_id": "igniter",
+            "description": "Heater igniter",
+            "price_cents": 18500,
+            "sort_order": 1,
+            "created_at": "2026-10-22T15:00:00Z",
+            "deleted_at": null
+          },
+          {
+            "id": "a",
+            "job_id": "j1",
+            "price_book_item_id": null,
+            "description": "Pump motor",
+            "price_cents": 45000,
+            "sort_order": 0,
+            "created_at": "2026-10-22T15:00:00Z",
+            "deleted_at": null
+          },
+          {
+            "id": "c",
+            "job_id": "j1",
+            "price_book_item_id": null,
+            "description": "Skimmer lid",
+            "price_cents": 2500,
+            "sort_order": 1,
+            "created_at": "2026-10-22T14:00:00Z",
+            "deleted_at": null
+          },
+          {
+            "id": "gone",
+            "job_id": "j1",
+            "price_book_item_id": null,
+            "description": "Pump motor",
+            "price_cents": 45000,
+            "sort_order": 3,
+            "created_at": "2026-10-22T15:00:00Z",
+            "deleted_at": "2026-10-22T16:00:00Z"
+          },
+          {
+            "id": "other",
+            "job_id": "j2",
+            "price_book_item_id": null,
+            "description": "Pump motor",
+            "price_cents": 45000,
+            "sort_order": 0,
+            "created_at": "2026-10-22T15:00:00Z",
+            "deleted_at": null
+          }
+        ],
+        "b",
+        "2026-10-22T18:00:00Z"
+      ],
+      "result": {
+        "writes": [
+          {
+            "kind": "update",
+            "id": "b",
+            "values": {
+              "deleted_at": "2026-10-22T18:00:00Z"
+            }
+          }
+        ],
+        "fee_cents": 47500
+      }
+    },
+    {
+      "args": [
+        {
+          "id": "j1",
+          "type": "repair",
+          "fee_cents": 45000,
+          "intake": {
+            "repair_item": "Pump motor"
+          }
+        },
+        [
+          {
+            "id": "b",
+            "job_id": "j1",
+            "price_book_item_id": "igniter",
+            "description": "Heater igniter",
+            "price_cents": 18500,
+            "sort_order": 1,
+            "created_at": "2026-10-22T15:00:00Z",
+            "deleted_at": null
+          },
+          {
+            "id": "a",
+            "job_id": "j1",
+            "price_book_item_id": null,
+            "description": "Pump motor",
+            "price_cents": 45000,
+            "sort_order": 0,
+            "created_at": "2026-10-22T15:00:00Z",
+            "deleted_at": null
+          },
+          {
+            "id": "c",
+            "job_id": "j1",
+            "price_book_item_id": null,
+            "description": "Skimmer lid",
+            "price_cents": 2500,
+            "sort_order": 1,
+            "created_at": "2026-10-22T14:00:00Z",
+            "deleted_at": null
+          },
+          {
+            "id": "gone",
+            "job_id": "j1",
+            "price_book_item_id": null,
+            "description": "Pump motor",
+            "price_cents": 45000,
+            "sort_order": 3,
+            "created_at": "2026-10-22T15:00:00Z",
+            "deleted_at": "2026-10-22T16:00:00Z"
+          },
+          {
+            "id": "other",
+            "job_id": "j2",
+            "price_book_item_id": null,
+            "description": "Pump motor",
+            "price_cents": 45000,
+            "sort_order": 0,
+            "created_at": "2026-10-22T15:00:00Z",
+            "deleted_at": null
+          }
+        ],
+        "nope",
+        "2026-10-22T18:00:00Z"
+      ],
+      "result": {
+        "writes": [],
+        "fee_cents": 66000
+      }
+    },
+    {
+      "args": [
+        {
+          "id": "j1",
+          "type": "repair",
+          "fee_cents": 9900,
+          "intake": null
+        },
+        [],
+        "j1",
+        "2026-10-22T18:00:00Z"
+      ],
+      "result": {
+        "writes": [
+          {
+            "kind": "insert",
+            "id": "j1",
+            "values": {
+              "job_id": "j1",
+              "price_book_item_id": null,
+              "description": "Repair",
+              "price_cents": 9900,
+              "sort_order": 0,
+              "deleted_at": "2026-10-22T18:00:00Z"
+            }
+          }
+        ],
+        "fee_cents": 0
+      }
+    }
+  ]
+}

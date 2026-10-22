@@ -41,6 +41,16 @@ export function useJobRows<T>(table: string, companyId: string, jobId: string): 
   );
 }
 
+/** One job's rows of a table, removed ones too (a job's repairs: packages/core repairs.ts). */
+export function useJobRowsWithRemoved<T>(table: string, companyId: string, jobId: string): T[] {
+  const version = useTableVersion(table);
+  return useMemo(
+    () => getServices().sync.list(table, companyId, jobId, true) as unknown as T[],
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- version signals data changes
+    [table, companyId, jobId, version],
+  );
+}
+
 export function useRow<T>(table: string, id: string | undefined): T | undefined {
   const version = useTableVersion(table);
   return useMemo(

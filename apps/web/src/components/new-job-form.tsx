@@ -13,6 +13,7 @@ import {
   type Services,
 } from "@leakbook/core";
 import { createJobAction } from "@/app/actions/jobs";
+import { NewJobRepairs } from "./job-repairs";
 import { AddressField } from "./address-field";
 import { FieldError, SField, STextArea, SettingsForm } from "./settings-forms";
 import { Suggestions } from "./route-board";
@@ -365,44 +366,32 @@ export function NewJobForm({
                 ]}
               />
             ) : null}
-            <SField
-              label={plan ? "Price per month ($)" : detection ? "Detection fee ($)" : "Price ($)"}
-              name="fee"
-              inputMode="decimal"
-              value={fee}
-              onChange={(e) => setFee(e.target.value)}
-              hint={
-                maintenance
-                  ? "Billed monthly with the customer's other visits."
-                  : detection
-                    ? "Shown on the report and billed on the invoice."
-                    : "Billed on the invoice. Add parts there before sending."
-              }
-            />
+            {/* A repair's price is its repairs' (From the Customer). */}
+            {kind === "repair" ? null : (
+              <SField
+                label={plan ? "Price per month ($)" : detection ? "Detection fee ($)" : "Price ($)"}
+                name="fee"
+                inputMode="decimal"
+                value={fee}
+                onChange={(e) => setFee(e.target.value)}
+                hint={
+                  maintenance
+                    ? "Billed monthly with the customer's other visits."
+                    : detection
+                      ? "Shown on the report and billed on the invoice."
+                      : "Billed on the invoice. Add parts there before sending."
+                }
+              />
+            )}
           </div>
         </div>
       </Section>
 
       {kind === "repair" ? (
         <Section title="From the Customer">
-          {repairItems.length ? (
-            <Select
-              label="What do they need?"
-              name="repair_item"
-              defaultValue=""
-              onChange={(e) => {
-                const item = repairItems.find((i) => i.id === e.target.value);
-                if (item) setFee((item.cents / 100).toFixed(2));
-              }}
-              options={[
-                { value: "", label: "Pick from the price book…" },
-                ...repairItems.map((i) => ({
-                  value: i.id,
-                  label: `${i.name} ($${(i.cents / 100).toFixed(2)})`,
-                })),
-              ]}
-            />
-          ) : null}
+          {/* One or more repairs (owner, 2026-10-22: "add additional repair"); the job's price
+              is their sum. */}
+          <NewJobRepairs items={repairItems} />
           <STextArea
             label="What they said (optional)"
             name="notes"

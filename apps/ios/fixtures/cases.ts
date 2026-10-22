@@ -20,6 +20,7 @@ import { team } from "./cases/team";
 import { logoColors } from "./cases/logo-colors";
 import { wrapUpCases } from "./cases/wrap-up";
 import { visitReportBarCases } from "./cases/visit-report-bar";
+import { repairs } from "./cases/repairs";
 
 /** One fixture file per entry: apps/ios/Tests/Fixtures/<name>.json. */
 export const modules: Record<string, ModuleCases> = {
@@ -44,4 +45,5 @@ export const modules: Record<string, ModuleCases> = {
   "logo-colors": logoColors,
   "wrap-up": wrapUpCases,
   "visit-report-bar": visitReportBarCases,
+  repairs,
 };

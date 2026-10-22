@@ -5,8 +5,12 @@ import { notifyJobChanged } from "@/server/notify-events";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import {
+  checkRepairDrafts,
   parseDollars,
+  repairBookingName,
+  repairsFee,
   REPAIR_ITEM_KEY,
+  type RepairValues,
   seesAllJobs,
   planComponents,
   splitEmails,
@@ -428,17 +432,41 @@ export async function createJobAction(_: FormState, form: FormData): Promise<For
     }
   }
 
-  // From the Customer (owner, 2026-10-19): the price book item a repair was booked for.
-  const repairItem = kind === "repair" ? text(form, "repair_item") : "";
-  if (repairItem) {
-    const { data: item } = await supabase
-      .from("price_book_item")
-      .select("name")
-      .eq("id", repairItem)
-      .eq("company_id", office.company.id)
-      .is("deleted_at", null)
-      .maybeSingle();
-    if (item) intake[REPAIR_ITEM_KEY] = item.name as string;
+  // From the Customer (owner, 2026-10-19): what a repair was booked for, one or more repairs
+  // (owner, 2026-10-22: "add additional repair"), each a price book item or a description, with
+  // its price. The job's price is their sum.
+  let repairs: RepairValues[] = [];
+  if (kind === "repair") {
+    const count = Math.min(Math.max(Number(text(form, "repair_count")) || 0, 0), 50);
+    const drafts = Array.from({ length: count }, (_, i) => ({
+      pick: text(form, `repair_pick_${i}`),
+      description: text(form, `repair_description_${i}`),
+      price: text(form, `repair_price_${i}`),
+    }));
+    const ids = drafts.map((d) => d.pick).filter(isUuid);
+    const { data: picked } = ids.length
+      ? await supabase
+          .from("price_book_item")
+          .select("id, name, price_cents")
+          .in("id", ids)
+          .eq("company_id", office.company.id)
+          .is("deleted_at", null)
+      : { data: [] };
+    const items = ((picked ?? []) as { id: string; name: string; price_cents: number }[]).map(
+      (i) => ({ id: i.id, name: i.name, cents: i.price_cents }),
+    );
+    const checked = checkRepairDrafts(drafts, items);
+    if (!checked.ok) {
+      const repairFields: Record<string, string> = {};
+      checked.errors.forEach((e, i) => {
+        if (e.description) repairFields[`repair_description_${i}`] = e.description;
+        if (e.price) repairFields[`repair_price_${i}`] = e.price;
+      });
+      return { fields: repairFields };
+    }
+    repairs = checked.repairs;
+    const name = repairBookingName(repairs);
+    if (name) intake[REPAIR_ITEM_KEY] = name;
   }
 
   const start = scheduled
@@ -459,9 +487,10 @@ export async function createJobAction(_: FormState, form: FormData): Promise<For
         : null,
       assigned_user_id: tech,
       second_tech_id: second,
-      fee_cents: fee,
+      fee_cents: kind === "repair" ? repairsFee(repairs) : fee,
       intake: Object.keys(intake).length ? intake : null,
       summary_notes: text(form, "notes") || null,
+      ...(kind === "repair" ? { repairs } : {}),
     },
     components,
   });

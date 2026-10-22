@@ -2,6 +2,9 @@
 
 Newest first. Each entry: date, decision, reason.
 
+## 2026-10-22 (owner: "On repair jobs, (in the intake and actually working the job) we need a button to 'add additional repair'")
+- **A repair job holds several repairs**, one synced `job_repair` row each (not a list in `job.intake`, which last-writer-wins sync would lose under two phones). The job's price is their total, kept right by the server. **Add Additional Repair** is in New Job › Repair and in the job's Details (Repairs group, with Remove and Total) on every platform. The invoice bills one line per repair; the repair report lists them. Design and the open choices (price book list on the job, untaxed lines, remove-and-add to change a price): `design/2026-10-22-multiple-repairs.md`.
+
 ## 2026-10-22 (owner: "The reorder button takes up a full horizontal line. Move it elsewhere. Then the 'move up/down' buttons take up so much space and are redundant to the drag")
 - **Reorder sits in the navigation bar beside New Job** (Done while reordering), as iOS puts Edit, on the phones; on computers at the end of Today's title row. No line of its own above the card.
 - **No Move Up / Move Down buttons on screen in Reorder:** the drag handle moves a stop. They stay as VoiceOver and TalkBack actions on each stop, and on the website as buttons that show only when a keyboard focuses them.
