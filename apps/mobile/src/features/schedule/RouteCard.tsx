@@ -294,8 +294,8 @@ function TechTitle({ route: c }: { route: Route }) {
 /**
  * A stop on a tech's day: the schedule card (ScheduleCard.tsx). Its body drags only after a hold, so a
  * page of cards always scrolls (owner, 2026-10-21: "I'm still struggling to scroll when I have
- * a page full of job tiles"): the grip picks it up at once, or a 0.4 s touch and hold anywhere
- * on it (owner, 2026-10-22), and the other stops slide aside as it passes. Its menu is on "⋯";
+ * a page full of job tiles"): the grip picks it up after a brief rest (a flick there scrolls,
+ * owner 2026-10-22), or a 0.4 s touch and hold anywhere on it (owner, 2026-10-22), and the other stops slide aside as it passes. Its menu is on "⋯";
  * only the customer's name opens the job.
  */
 function StopCard({

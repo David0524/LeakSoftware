@@ -3,12 +3,15 @@
     import SundeckSync
     import SwiftUI
 
-    /// A maintenance visit's Visit Report (owner, 2026-10-20; website visit-report-panel.tsx): how
+    /// A maintenance visit's Visit Report (owner, 2026-10-20; website visit-report-panel.tsx), in
+    /// Details until the visit is done, then in the Next Step bar's sheet (owner, 2026-10-22): how
     /// it goes out, View Visit Report, the customer email, Send by Email and Send by Text (or Get
     /// Link to Text without a company number), and its versions. Hidden when the shop turned
     /// visit reports off.
     struct VisitReportSection: View {
         var job: JobView
+        /// "Visit Report" above the card; the bar's sheet has it as its title instead.
+        var heading = true
         @Environment(Session.self) private var session
         @Environment(SyncService.self) private var sync
         @Environment(AppEnvironment.self) private var app
@@ -28,7 +31,7 @@
                 let latest = versions.first(where: \.current)
                 let hasLine = companyLine(sync.store, companyId: company.id)?.status == "active"
                 VStack(alignment: .leading, spacing: 12) {
-                    SectionHeading(VisitReportText.title)
+                    if heading { SectionHeading(VisitReportText.title) }
                     VStack(alignment: .leading, spacing: 12) {
                         Text(
                             visitReportStatus(

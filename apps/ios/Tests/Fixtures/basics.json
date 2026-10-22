@@ -1934,6 +1934,39 @@
     },
     {
       "args": [
+        null,
+        {
+          "checklistToDo": 2,
+          "photos": 0,
+          "type": "repair"
+        }
+      ],
+      "result": null
+    },
+    {
+      "args": [
+        null,
+        {
+          "checklistToDo": 2,
+          "photos": 1,
+          "type": "repair"
+        }
+      ],
+      "result": null
+    },
+    {
+      "args": [
+        null,
+        {
+          "checklistToDo": 2,
+          "photos": 1,
+          "type": "detection"
+        }
+      ],
+      "result": null
+    },
+    {
+      "args": [
         {},
         {
           "checklistToDo": 0,
@@ -1968,6 +2001,39 @@
         {
           "checklistToDo": 3,
           "photos": 2
+        }
+      ],
+      "result": null
+    },
+    {
+      "args": [
+        {},
+        {
+          "checklistToDo": 2,
+          "photos": 0,
+          "type": "repair"
+        }
+      ],
+      "result": null
+    },
+    {
+      "args": [
+        {},
+        {
+          "checklistToDo": 2,
+          "photos": 1,
+          "type": "repair"
+        }
+      ],
+      "result": null
+    },
+    {
+      "args": [
+        {},
+        {
+          "checklistToDo": 2,
+          "photos": 1,
+          "type": "detection"
         }
       ],
       "result": null
@@ -2023,6 +2089,45 @@
     {
       "args": [
         {
+          "require_checklist_to_finish": true
+        },
+        {
+          "checklistToDo": 2,
+          "photos": 0,
+          "type": "repair"
+        }
+      ],
+      "result": null
+    },
+    {
+      "args": [
+        {
+          "require_checklist_to_finish": true
+        },
+        {
+          "checklistToDo": 2,
+          "photos": 1,
+          "type": "repair"
+        }
+      ],
+      "result": null
+    },
+    {
+      "args": [
+        {
+          "require_checklist_to_finish": true
+        },
+        {
+          "checklistToDo": 2,
+          "photos": 1,
+          "type": "detection"
+        }
+      ],
+      "result": "Finish the checklist before completing this job."
+    },
+    {
+      "args": [
+        {
           "require_finish_photo": true
         },
         {
@@ -2064,6 +2169,45 @@
         {
           "checklistToDo": 3,
           "photos": 2
+        }
+      ],
+      "result": null
+    },
+    {
+      "args": [
+        {
+          "require_finish_photo": true
+        },
+        {
+          "checklistToDo": 2,
+          "photos": 0,
+          "type": "repair"
+        }
+      ],
+      "result": "Take a photo of the pool before finishing this job."
+    },
+    {
+      "args": [
+        {
+          "require_finish_photo": true
+        },
+        {
+          "checklistToDo": 2,
+          "photos": 1,
+          "type": "repair"
+        }
+      ],
+      "result": null
+    },
+    {
+      "args": [
+        {
+          "require_finish_photo": true
+        },
+        {
+          "checklistToDo": 2,
+          "photos": 1,
+          "type": "detection"
         }
       ],
       "result": null
@@ -2116,6 +2260,48 @@
         {
           "checklistToDo": 3,
           "photos": 2
+        }
+      ],
+      "result": "Finish the checklist before completing this job."
+    },
+    {
+      "args": [
+        {
+          "require_checklist_to_finish": true,
+          "require_finish_photo": true
+        },
+        {
+          "checklistToDo": 2,
+          "photos": 0,
+          "type": "repair"
+        }
+      ],
+      "result": "Take a photo of the pool before finishing this job."
+    },
+    {
+      "args": [
+        {
+          "require_checklist_to_finish": true,
+          "require_finish_photo": true
+        },
+        {
+          "checklistToDo": 2,
+          "photos": 1,
+          "type": "repair"
+        }
+      ],
+      "result": null
+    },
+    {
+      "args": [
+        {
+          "require_checklist_to_finish": true,
+          "require_finish_photo": true
+        },
+        {
+          "checklistToDo": 2,
+          "photos": 1,
+          "type": "detection"
         }
       ],
       "result": "Finish the checklist before completing this job."
@@ -3062,6 +3248,44 @@
     {
       "args": [
         "repair"
+      ],
+      "result": true
+    },
+    {
+      "args": [
+        null
+      ],
+      "result": true
+    },
+    {
+      "args": [
+        ""
+      ],
+      "result": true
+    }
+  ],
+  "jobHasChecklist": [
+    {
+      "args": [
+        "maintenance"
+      ],
+      "result": true
+    },
+    {
+      "args": [
+        "detection"
+      ],
+      "result": true
+    },
+    {
+      "args": [
+        "repair"
+      ],
+      "result": false
+    },
+    {
+      "args": [
+        "inspection"
       ],
       "result": true
     },
@@ -5037,6 +5261,38 @@
         "Inspection"
       ],
       "result": "Leak Detection Report"
+    }
+  ],
+  "writeDraftIntro": [
+    {
+      "args": [
+        "inspection"
+      ],
+      "result": "Write Draft fills in the report from this job’s checklist, tests, and findings. Read and edit it before sending."
+    },
+    {
+      "args": [
+        "detection"
+      ],
+      "result": "Write Draft fills in the report from this job’s checklist, tests, and findings. Read and edit it before sending."
+    },
+    {
+      "args": [
+        "repair"
+      ],
+      "result": "Write Draft fills in the report from this job’s repairs, notes, and findings. Read and edit it before sending."
+    },
+    {
+      "args": [
+        "maintenance"
+      ],
+      "result": "Write Draft fills in the report from this job’s checklist, tests, and findings. Read and edit it before sending."
+    },
+    {
+      "args": [
+        null
+      ],
+      "result": "Write Draft fills in the report from this job’s checklist, tests, and findings. Read and edit it before sending."
     }
   ],
   "reportShareText": [

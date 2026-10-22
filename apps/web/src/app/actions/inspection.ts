@@ -27,6 +27,7 @@ import {
   parseGallons,
   localDate,
   markCompleteValues,
+  jobHasChecklist,
 } from "@leakbook/core";
 import { getOffice } from "@/lib/auth";
 import { requireCompletable } from "@/server/reports";
@@ -179,7 +180,8 @@ export async function saveJobDetails(_: FormState, form: FormData): Promise<Form
   const { error } = await db
     .from("job")
     .update({
-      fee_cents: feeCents,
+      // A repair job has no price field here: its price is its repairs' (owner, 2026-10-22).
+      ...(form.has("fee") ? { fee_cents: feeCents } : {}),
       ...(form.get("detection") === "1"
         ? { location_marked: form.get("location_marked") === "on" }
         : {}),
@@ -220,6 +222,8 @@ export async function setUpChecklist(_: FormState, form: FormData): Promise<Form
     pool_type: string | null;
   } | null;
   const type = (job as { type?: string } | null)?.type;
+  // A repair job has no checklist (owner, 2026-10-22).
+  if (!jobHasChecklist(type)) return { error: "Repair jobs don’t have a checklist." };
   const jobType = type === "maintenance" || type === "inspection" ? type : "detection";
   const planned = planComponents(
     (types ?? []) as ComponentType[],
@@ -345,27 +349,6 @@ export async function markRest(_: FormState, form: FormData): Promise<FormState>
     .update(verdictValues("ok", office.user.id))
     .eq("job_id", jobId)
     .eq("status", "pending")
-    .in("job_component_id", ids)
-    .is("deleted_at", null);
-  if (error) return { error: error.message };
-  return done(jobId);
-}
-
-/**
- * Undo after "Mark N Remaining …" (owner, 2026-10-20): the items it marked go back to do.
- * Only items still holding the shortcut's answer are cleared, so one changed since stays.
- */
-export async function unmarkRest(_: FormState, form: FormData): Promise<FormState> {
-  const { office, db } = await ctx();
-  const jobId = text(form, "job");
-  const ids = text(form, "components").split(",").filter(Boolean);
-  if (ids.length === 0) return { message: "Nothing to clear." };
-  const { error } = await db
-    .from("checklist_item_result")
-    .update(verdictValues(null, office.user.id))
-    .eq("job_id", jobId)
-    .eq("status", "inspected")
-    .eq("outcome", "ok")
     .in("job_component_id", ids)
     .is("deleted_at", null);
   if (error) return { error: error.message };

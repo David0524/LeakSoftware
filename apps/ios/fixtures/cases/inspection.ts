@@ -61,6 +61,15 @@ import {
   JOB_SORTS,
   jobSort,
   sortJobs,
+  ALL_JOB_TYPES,
+  JOB_TYPE_FILTER_TITLE,
+  jobTypeFilter,
+  jobTypeFilterLabel,
+  jobTypeFilters,
+  jobsEmpty,
+  matchesJobType,
+  type JobTypeFilter,
+  type Services,
   type JobSortItem,
   localDate,
   nativeMapsUrl,
@@ -1252,6 +1261,36 @@ export const inspection: ModuleCases = {
     ],
   ),
 
+  // Filtering the Jobs list and Activity by job type (owner, 2026-10-22).
+  JOB_TYPE_FILTER_WORDS: rule(() => ({ JOB_TYPE_FILTER_TITLE, ALL_JOB_TYPES }), [[]]),
+  jobTypeFilters: rule((s: Services) => jobTypeFilters(s), [["pool"], ["leak"], ["both"]]),
+  jobTypeFilter: rule(
+    (key: string | null, s: Services) => jobTypeFilter(key, s),
+    [
+      ["repair", "both"],
+      ["detection", "pool"],
+      ["maintenance", "leak"],
+      ["inspection", "both"],
+      ["all", "both"],
+      ["bad", "both"],
+      [null, "pool"],
+    ],
+  ),
+  jobTypeFilterLabel: rule(
+    (f: JobTypeFilter) => jobTypeFilterLabel(f),
+    [["all"], ["detection"], ["repair"], ["maintenance"], ["inspection"]],
+  ),
+  jobsEmpty: rule((f: JobTypeFilter) => jobsEmpty(f), [["all"], ["detection"], ["inspection"]]),
+  matchesJobType: rule(
+    (t: string | null, f: JobTypeFilter) => matchesJobType(t, f),
+    [
+      ["repair", "all"],
+      [null, "all"],
+      ["repair", "repair"],
+      ["detection", "repair"],
+      [null, "maintenance"],
+    ],
+  ),
   // Sorting the Jobs list (owner, 2026-10-20).
   JOB_SORTS: rule(() => JOB_SORTS, [[]]),
   jobSort: rule((key: unknown) => jobSort(key), [["customer"], ["newest"], ["bad"], [null]]),

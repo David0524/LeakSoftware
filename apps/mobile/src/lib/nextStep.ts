@@ -11,8 +11,8 @@ export type NextStep =
   | "add-finding"
   | "add-photo"
   | "add-video"
-  | "write-draft"
-  | "review";
+  | "wrap-up"
+  | "visit-report";
 
 export const NEXT_STEP_LABELS: Record<NextStep, string> = {
   start: "Start Job",
@@ -21,8 +21,10 @@ export const NEXT_STEP_LABELS: Record<NextStep, string> = {
   "add-finding": "Add Finding",
   "add-photo": "Add Photo",
   "add-video": "Add Video",
-  "write-draft": "Write Draft",
-  review: "Review with Customer",
+  // Wrap-Up's button names its next step (core wrapUp's next.action); this is its fallback.
+  "wrap-up": "Next Step",
+  // View Report or Send Visit Report (core visitReportBar's label); this is its fallback.
+  "visit-report": "Visit Report",
 };
 
 export interface NextStepState {
@@ -32,10 +34,10 @@ export interface NextStepState {
   jobType: string;
   /** The shop has test types, so Add Test can open its sheet. */
   hasTestTypes: boolean;
-  /** Wrap-Up's report has no draft yet (and the shop uses it). */
-  noDraft: boolean;
-  /** Drafts can be written now (server set up and a signal); otherwise Review with Customer. */
-  canWriteDraft: boolean;
+  /** Wrap-Up's next step's action (core wrapUp), null when every step is done. */
+  wrapUpAction?: string | null;
+  /** A maintenance visit's report button (core visitReportBar): View Report or Send. */
+  visitAction?: "view" | "send" | null;
 }
 
 /**
@@ -50,18 +52,19 @@ export function jobMoves(status: JobStatus, jobType: string): JobStatus[] {
 
 /**
  * The bar's buttons, primary first; empty hides the bar. First match wins: a job that can be
- * started; a maintenance visit's checklist that can be completed; Findings; Photos; Wrap-Up
- * with no draft yet.
+ * started; a done maintenance visit's report; a maintenance visit's checklist that can be
+ * completed; Findings; Photos; Wrap-Up's next step.
  */
 export function nextStepButtons(s: NextStepState): NextStep[] {
   const moves = jobMoves(s.status, s.jobType);
   if ((s.status === "scheduled" || s.status === "unscheduled") && moves.includes("in_progress"))
     return ["start"];
+  if (s.jobType === "maintenance" && s.status === "done" && s.visitAction) return ["visit-report"];
   if (s.section === "checklist" && s.jobType === "maintenance" && moves.includes("done"))
     return ["complete"];
   if (s.section === "findings")
     return s.hasTestTypes ? ["add-test", "add-finding"] : ["add-finding"];
   if (s.section === "photos") return ["add-photo", "add-video"];
-  if (s.section === "wrapup" && s.noDraft) return [s.canWriteDraft ? "write-draft" : "review"];
+  if (s.section === "wrapup" && s.wrapUpAction) return ["wrap-up"];
   return [];
 }

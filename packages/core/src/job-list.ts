@@ -1,4 +1,4 @@
-import type { Job } from "./models";
+import { JOB_TYPE_LABELS, newJobTypes, type Job, type JobType, type Services } from "./models";
 import { dateFormat } from "./intl";
 
 export interface JobGroups<T extends Job = Job> {
@@ -139,4 +139,58 @@ export function sortJobs<T extends JobSortItem>(jobs: T[], sort: unknown): T[] {
     .map((j, n) => ({ j, n }))
     .sort((x, y) => by[s](x.j, y.j) || (y.j.number ?? 0) - (x.j.number ?? 0) || x.n - y.n)
     .map((x) => x.j);
+}
+
+// ---------------------------------------------------------------------------
+// Filtering by job type (owner, 2026-10-22: "Add a filter on the jobs and activity pages for
+// job type")
+// ---------------------------------------------------------------------------
+
+/** All Types, or one job type. */
+export type JobTypeFilter = JobType | "all";
+
+/** The menu's name, beside Sort. */
+export const JOB_TYPE_FILTER_TITLE = "Type";
+/** The menu's first choice: no filter. */
+export const ALL_JOB_TYPES = "All Types";
+
+/** A job type's name in the menu: the name rows show, in Title Case ("Leak Detection"). */
+function typeTitle(type: JobType): string {
+  return JOB_TYPE_LABELS[type].replace(
+    /(^|\s)(\S)/g,
+    (_, gap: string, c: string) => gap + c.toUpperCase(),
+  );
+}
+
+/**
+ * The Type menu on Jobs and Activity, in order: All Types, then the jobs the shop does in New
+ * Job's order (a pool care shop sees no leak detection, a leak shop no maintenance).
+ */
+export function jobTypeFilters(services: Services): { key: JobTypeFilter; label: string }[] {
+  return [
+    { key: "all", label: ALL_JOB_TYPES },
+    ...newJobTypes(services).map((t) => ({ key: t.value, label: typeTitle(t.value) })),
+  ];
+}
+
+/** A type from a page's address or a saved choice; All Types when the shop's menu lacks it. */
+export function jobTypeFilter(key: unknown, services: Services): JobTypeFilter {
+  return jobTypeFilters(services).find((f) => f.key === key)?.key ?? "all";
+}
+
+/** The menu button's words: "All Types", or the type picked ("Repair"). */
+export function jobTypeFilterLabel(filter: JobTypeFilter): string {
+  return filter === "all" ? ALL_JOB_TYPES : typeTitle(filter);
+}
+
+/** Whether a job of this type shows under the filter (All Types shows every job). */
+export function matchesJobType(type: string | null | undefined, filter: JobTypeFilter): boolean {
+  return filter === "all" || type === filter;
+}
+
+/** The Jobs list with nothing to show: "No repair jobs here." with a type picked. */
+export function jobsEmpty(filter: JobTypeFilter): string {
+  return filter === "all"
+    ? "No jobs here. Add one with New Job, or on the phone."
+    : `No ${JOB_TYPE_LABELS[filter].toLowerCase()} jobs here.`;
 }

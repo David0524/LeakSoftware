@@ -17,7 +17,7 @@ const base: NextStepState = {
   status: "in_progress",
   jobType: "detection",
   hasTestTypes: true,
-  canWriteDraft: false,
+  wrapUpAction: null,
 };
 
 describe("nextStepButtons (item 1)", () => {
@@ -45,11 +45,28 @@ describe("nextStepButtons (item 1)", () => {
     expect(nextStepButtons({ ...base, section: "photos" })).toEqual(["add-photo", "add-video"]);
   });
 
-  it("offers Write Draft on Wrap-Up only while there is no draft", () => {
-    expect(nextStepButtons({ ...base, section: "wrap-up", canWriteDraft: true })).toEqual([
-      "write-draft",
-    ]);
+  it("offers Wrap-Up's next step until every step is done", () => {
+    expect(
+      nextStepButtons({ ...base, section: "wrap-up", wrapUpAction: "Review with Customer" }),
+    ).toEqual(["wrap-up"]);
     expect(nextStepButtons({ ...base, section: "wrap-up" })).toEqual([]);
+    // Only on Wrap-Up.
+    expect(nextStepButtons({ ...base, wrapUpAction: "Send Invoice" })).toEqual([]);
+  });
+
+  it("offers a done maintenance visit's report on every section", () => {
+    const done = { ...base, jobType: "maintenance", status: "done" as const };
+    for (const section of ["details", "checklist", "photos"])
+      expect(nextStepButtons({ ...done, section, visitAction: "view" })).toEqual(["visit-report"]);
+    expect(nextStepButtons({ ...done, section: "checklist", visitAction: "send" })).toEqual([
+      "visit-report",
+    ]);
+    // Before it's done, the checklist keeps Complete Job.
+    expect(
+      nextStepButtons({ ...done, status: "in_progress", section: "checklist", visitAction: null }),
+    ).toEqual(["complete"]);
+    // Visit reports off: nothing.
+    expect(nextStepButtons({ ...done, section: "details" })).toEqual([]);
   });
 
   it("hides the bar when there is nothing to offer", () => {

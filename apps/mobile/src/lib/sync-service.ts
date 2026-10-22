@@ -219,8 +219,13 @@ export class SyncService {
   }
 
   /** Rows of a table, optionally for one company and one job (job rows use the job index). */
-  list<T extends Row>(table: string, companyId?: string, jobId?: string): T[] {
-    return this.store.list<T>(table, { companyId, jobId });
+  list<T extends Row>(
+    table: string,
+    companyId?: string,
+    jobId?: string,
+    includeDeleted = false,
+  ): T[] {
+    return this.store.list<T>(table, { companyId, jobId, includeDeleted });
   }
 
   /**

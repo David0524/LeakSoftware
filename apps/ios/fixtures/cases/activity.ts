@@ -7,6 +7,7 @@ import {
   ACTIVITY_PAGE_SIZE,
   ACTIVITY_TITLE,
   activityButtonLabel,
+  activityEmpty,
   activityDay,
   activityRow,
   activityTime,
@@ -109,6 +110,10 @@ export const activity: ModuleCases = {
     [[]],
   ),
   activityButtonLabel: rule((unread: boolean) => activityButtonLabel(unread), [[true], [false]]),
+  activityEmpty: rule(
+    (f: "all" | "detection" | "repair" | "maintenance" | "inspection") => activityEmpty(f),
+    [["all"], ["detection"], ["repair"], ["maintenance"], ["inspection"]],
+  ),
   firstName: rule(
     (n: string | null) => firstName(n),
     [["Tony Reyes"], ["  Maria  Alvarez "], [""], [null], ["Cher"]],

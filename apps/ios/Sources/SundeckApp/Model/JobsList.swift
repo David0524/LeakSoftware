@@ -144,18 +144,20 @@ public struct JobListRow: Identifiable, Equatable, Sendable {
     public var sample = false
 }
 
-/// The Jobs list for a filter, search and sort: deleted jobs left out, a limited tech's own jobs
+/// The Jobs list for a filter, type, search and sort: deleted jobs left out, a limited tech's own jobs
 /// only, in the sort's order (Scheduled Date: soonest first, jobs without a time last, then the
 /// newest number). The search matches the customer's name or the job number ("1040", "#1040").
 public func jobList(
     _ views: [JobView], filter: JobFilter, search: String, now: Date, timeZone: String, userId: String,
-    seesAll: Bool, names: [String: String], sort: JobSort = .scheduled
+    seesAll: Bool, names: [String: String], sort: JobSort = .scheduled, type: JobTypeFilter = .all
 ) -> [JobListRow] {
     let q = search.trimmingCharacters(in: .whitespaces)
     let number = q.wholeMatch(of: /#?(\d+)/).flatMap { Int($0.1) }
     let picked = views.filter { v in
         guard v.job["deleted_at"]?.string == nil else { return false }
         if let statuses = filter.statuses, !statuses.contains(v.status) { return false }
+        // The Type menu (owner, 2026-10-22; core `matchesJobType`).
+        if !matchesJobType(v.type.rawValue, type) { return false }
         if !seesAll {
             let mine = [v.job["assigned_user_id"]?.string, v.job["second_tech_id"]?.string].contains(userId)
             if !mine { return false }

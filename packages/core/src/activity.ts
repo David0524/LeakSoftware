@@ -5,7 +5,8 @@
  * here so the website and both apps say the same thing.
  */
 
-import { localDate } from "./job-list";
+import { localDate, type JobTypeFilter } from "./job-list";
+import { JOB_TYPE_LABELS } from "./models";
 import { dateFormat } from "./intl";
 import { formatCents } from "./money";
 
@@ -59,6 +60,16 @@ export const ACTIVITY_DASHBOARD_COUNT = 3;
 export const ACTIVITY_OFFLINE = "Activity shows when you’re online.";
 export const ACTIVITY_EMPTY =
   "Nothing yet. Accepted quotes, payments, reports, finished jobs, and customer texts show here.";
+/**
+ * Activity with a type picked in its Type menu (owner, 2026-10-22) and nothing of that type:
+ * "No activity on repair jobs yet." Texts aren't about a job, so they show only under All Types.
+ */
+export function activityEmpty(filter: JobTypeFilter): string {
+  return filter === "all"
+    ? ACTIVITY_EMPTY
+    : `No activity on ${JOB_TYPE_LABELS[filter].toLowerCase()} jobs yet.`;
+}
+
 /** What a screen reader says for the blue dot: there are events since Activity was opened. */
 export const ACTIVITY_NEW = "New activity";
 

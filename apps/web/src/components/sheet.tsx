@@ -27,6 +27,7 @@ export function Sheet({
   cancelLabel = "Cancel",
   wide = false,
   done,
+  doneOnly = false,
 }: {
   open: boolean;
   onClose: () => void;
@@ -37,6 +38,11 @@ export function Sheet({
   wide?: boolean;
   /** A bold Done (or Save) at the trailing end of the title bar, as iOS sheets have. */
   done?: { label: string; onClick: () => void; disabled?: boolean };
+  /**
+   * Only a bold Done at the trailing end, which closes the sheet (asking first when something
+   * changed): for a sheet whose edits save as they're made, such as a Wrap-Up step.
+   */
+  doneOnly?: boolean;
 }) {
   const titleId = useId();
   const panel = useRef<HTMLDivElement>(null);
@@ -169,17 +175,29 @@ export function Sheet({
             className="mx-auto mt-2 h-1.5 w-9 rounded-full bg-text/25 sm:hidden"
           />
           <div className="grid grid-cols-[1fr_auto_1fr] items-center px-2 pt-1 pb-2">
-            <button
-              type="button"
-              onClick={() => void requestClose()}
-              className="min-h-11 justify-self-start rounded-full px-3 text-link"
-            >
-              {cancelLabel}
-            </button>
+            {doneOnly ? (
+              <span />
+            ) : (
+              <button
+                type="button"
+                onClick={() => void requestClose()}
+                className="min-h-11 justify-self-start rounded-full px-3 text-link"
+              >
+                {cancelLabel}
+              </button>
+            )}
             <h2 id={titleId} className="truncate px-2 font-sans text-[1.0625rem] font-semibold">
               {title}
             </h2>
-            {done ? (
+            {doneOnly ? (
+              <button
+                type="button"
+                onClick={() => void requestClose()}
+                className="min-h-11 justify-self-end rounded-full px-3 font-semibold text-link"
+              >
+                Done
+              </button>
+            ) : done ? (
               <button
                 type="button"
                 onClick={done.onClick}

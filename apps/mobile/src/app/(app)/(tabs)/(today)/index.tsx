@@ -26,7 +26,7 @@ import { useWeather } from "../../../../data/weather";
 import { GettingStarted } from "../../../../features/today/GettingStarted";
 import { useTeamSync, useTeamToday } from "../../../../features/today/TeamToday";
 import { CleaningsDue } from "../../../../features/maintenance/Cleanings";
-import { TodayComplete, undoStopDone } from "../../../../features/job/CompleteJob";
+import { ROW_PILL, TodayComplete, undoStopDone } from "../../../../features/job/CompleteJob";
 import { OnMyWayTrigger } from "../../../../features/today/OnMyWay";
 import { useStopMessage } from "../../../../features/today/useStopMessage";
 import {
@@ -409,12 +409,31 @@ export default function Today() {
           {weather ? <WeatherBadge weather={weather} /> : null}
         </View>
       }
+      // Reorder (Done while reordering) in the bar beside New Job, as iOS puts Edit (owner,
+      // 2026-10-22: "The reorder button takes up a full horizontal line. Move it elsewhere").
       headerRight={
         reorder.editing
           ? () => <HeaderButton title="Done" strong onPress={() => reorder.setEditing(false)} />
-          : canAdd
+          : reorder.canReorder || canAdd
             ? () => (
-                <HeaderButton title="New Job" icon="add" onPress={() => router.push("/jobs/new")} />
+                <View style={styles.headerButtons} testID="today-reorder">
+                  {reorder.canReorder ? (
+                    <HeaderButton
+                      title="Reorder"
+                      onPress={() => {
+                        haptics.selection();
+                        reorder.setEditing(true);
+                      }}
+                    />
+                  ) : null}
+                  {canAdd ? (
+                    <HeaderButton
+                      title="New Job"
+                      icon="add"
+                      onPress={() => router.push("/jobs/new")}
+                    />
+                  ) : null}
+                </View>
               )
             : undefined
       }
@@ -467,29 +486,7 @@ export default function Today() {
           <View style={styles.route}>
             {/* No summary line (owner, 2026-10-22: "Get rid of this on all platforms: 0 of 4
                 stops done. 4 stops · 1 hr 37 min driving"); the card says "Stop 1 of 4".
-                Reorder keeps its place at the top of the day. */}
-            {reorder.canReorder || reorder.editing ? (
-              <View style={styles.reorderLine} testID="today-reorder">
-                <Pressable
-                  accessibilityRole="button"
-                  accessibilityLabel={reorder.editing ? "Done" : "Reorder"}
-                  accessibilityHint={reorder.editing ? undefined : "Change the order of the stops"}
-                  onPress={() => {
-                    haptics.selection();
-                    reorder.setEditing(!reorder.editing);
-                  }}
-                  hitSlop={4}
-                  style={({ pressed }) => [styles.dayLineButton, pressed && { opacity: 0.5 }]}
-                >
-                  <Text
-                    style={[type.body, face.semiBold, { color: color.link }]}
-                    maxFontSizeMultiplier={MAX_TEXT_SCALE}
-                  >
-                    {reorder.editing ? "Done" : "Reorder"}
-                  </Text>
-                </Pressable>
-              </View>
-            ) : null}
+                Reorder is in the bar (headerRight). */}
             {reorder.error ? <Notice tone="error">{reorder.error}</Notice> : null}
             {hero && !reorder.editing ? (
               <TodayHeroCard
@@ -820,6 +817,7 @@ const Stop = memo(function Stop({
               trigger={action?.action === "mark_complete" ? action.nonce : undefined}
               pressNonce={completeAsked}
               onPressHandled={() => setCompleteAsked(0)}
+              inRow
             />
             {doLater && !undoText ? (
               <Button
@@ -827,6 +825,7 @@ const Stop = memo(function Stop({
                 title="Do Later"
                 accessibilityLabel={`Do Later, ${name}`}
                 onPress={doLater}
+                style={ROW_PILL}
               />
             ) : null}
             {done ? null : (
@@ -862,8 +861,7 @@ const styles = StyleSheet.create({
   },
   route: { gap: 0 },
   // Reorder and Done at the top of the day, on the right: 44 pt tall.
-  reorderLine: { flexDirection: "row", justifyContent: "flex-end", marginBottom: space["2"] },
-  dayLineButton: { minHeight: minTap, justifyContent: "center" },
+  headerButtons: { flexDirection: "row", alignItems: "center", gap: space["1"] },
   undo: { paddingHorizontal: space["3"], paddingBottom: space["2"] },
   // The day's stops in one block (`.card`), the tiles touching.
   block: { borderRadius: shape.card, overflow: "hidden" },

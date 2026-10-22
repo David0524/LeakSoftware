@@ -221,7 +221,7 @@ export function NavBar({
           first, then only the chevron (the cell is a container, so the label hides once its
           column is under about 3.5 of its own letters wide). The action column keeps its
           button's width; the title's column shrinks instead. */}
-      <div className="grid min-h-11 grid-cols-[minmax(2.75rem,1fr)_minmax(0,auto)_minmax(2.75rem,1fr)] items-center px-2">
+      <div className="@container/bar grid min-h-11 grid-cols-[minmax(2.75rem,1fr)_minmax(0,auto)_minmax(2.75rem,1fr)] items-center px-2">
         <div className="@container min-w-0">
           {back ? (
             <Link

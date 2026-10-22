@@ -40,6 +40,14 @@ const ref =
   JSON.parse(readFileSync(join(root, "config", "supabase-dev.json"), "utf8")).projectRef;
 
 const DEMO = "Demo Leak Co.";
+// The demo shop is the one the demo owner signs in to: its name can change (the owner renamed
+// it Canyon State Leak Detections, 2026-10-22), its owner's login doesn't.
+const DEMO_OWNER = "owner@demo.leakbook.test";
+const demoCompany = `(select c.id from public.company c
+    join public.membership m on m.company_id = c.id and m.role = 'owner' and m.deleted_at is null
+    join auth.users u on u.id = m.user_id
+    where u.email = ${"'"}${DEMO_OWNER}${"'"} and c.deleted_at is null
+    order by c.created_at limit 1)`;
 const PASSWORD = "leakbook-demo";
 
 // ---------------------------------------------------------------------------
@@ -635,7 +643,43 @@ export function buildDemo(today, depot) {
     }
   }
 
-  return { today, first, last, days, customers, plans, detections, repairs };
+  // Needs a Time (owner, 2026-10-22: "fill 'needs a time' with like 3-4 demos"): jobs taken
+  // but not booked yet, with no time and no tech, for the Schedule's Needs a Time.
+  const leakCustomers = customers.filter((c) => !plans.some((p) => p.customer_id === c.id));
+  const unscheduled = [
+    {
+      type: "detection",
+      at: leakCustomers[3],
+      notes: "Losing about an inch a day. Wants the earliest opening.",
+      fee_cents: 37500,
+    },
+    {
+      type: "detection",
+      at: leakCustomers[17],
+      notes: "Water bill doubled; spa drops faster than the pool.",
+      fee_cents: 45000,
+    },
+    {
+      type: "repair",
+      at: plans[7],
+      notes: "Replace the cracked skimmer lid and the weir door.",
+      fee_cents: 18500,
+    },
+    {
+      type: "repair",
+      at: plans[66],
+      notes: "Pool light out. Check the bulb and the GFCI.",
+      fee_cents: 22000,
+    },
+  ].map((u) => ({
+    type: u.type,
+    customer_id: u.type === "repair" ? u.at.customer_id : u.at.id,
+    property_id: u.at.property_id,
+    notes: u.notes,
+    fee_cents: u.fee_cents,
+  }));
+
+  return { today, first, last, days, customers, plans, detections, repairs, unscheduled };
 }
 
 // ---------------------------------------------------------------------------
@@ -649,6 +693,7 @@ function resetSql(demo) {
     plans: demo.plans,
     detections: demo.detections,
     repairs: demo.repairs,
+    unscheduled: demo.unscheduled,
   });
   const dana = member("dana").id;
   const jake = member("jake").id;
@@ -673,10 +718,9 @@ declare
   removed jsonb := '{}';
   k bigint;
 begin
-  select id, timezone into co, tz from public.company where name = ${lit(DEMO)}
-  order by created_at limit 1;
+  select id, timezone into co, tz from public.company where id = ${demoCompany};
   if co is null then
-    raise exception 'No demo company (${DEMO}) on this database';
+    raise exception 'No demo company (owned by ${DEMO_OWNER}) on this database';
   end if;
   if (now() at time zone tz)::date <> ${lit(demo.today)}::date then
     raise exception 'The shop''s day changed since this was built (%); run it again',
@@ -814,6 +858,14 @@ begin
     end if;
   end loop;
 
+  -- ---- Needs a Time: taken, not booked (no time, no tech) ----------------
+  for x in select * from jsonb_array_elements(data -> 'unscheduled') loop
+    insert into public.job (company_id, type, property_id, bill_to_customer_id, status,
+                            fee_cents, summary_notes)
+    values (co, x ->> 'type', (x ->> 'property_id')::uuid, (x ->> 'customer_id')::uuid,
+            'unscheduled', (x ->> 'fee_cents')::integer, x ->> 'notes');
+  end loop;
+
   -- ---- Weekly plans: saving each makes its visits (app.plan_visits) -------
   for x in select * from jsonb_array_elements(data -> 'plans') loop
     insert into public.service_plan (company_id, customer_id, property_id, assigned_user_id,
@@ -925,11 +977,11 @@ $demo_reset$;
 
 const where = local ? `local database ${local}` : `project ${ref}`;
 const [company] = await query(`
-  select id, timezone, latitude, longitude, (now() at time zone timezone)::date::text as today
-  from public.company where name = ${lit(DEMO)} order by created_at limit 1`);
+  select id, name, timezone, latitude, longitude, (now() at time zone timezone)::date::text as today
+  from public.company where id = ${demoCompany}`);
 if (!company) {
   console.error(
-    `${where}: no "${DEMO}" company. Load the demo seed first (pnpm db:deploy -- --seed).`,
+    `${where}: no demo company (owned by ${DEMO_OWNER}). Load the demo seed first (pnpm db:deploy -- --seed).`,
   );
   process.exit(1);
 }
@@ -959,7 +1011,9 @@ const team = await query(`
   where m.company_id = ${co} and m.deleted_at is null order by m.status, m.created_at`);
 
 const byTech = (list, id) => list.filter((x) => x.tech === id).length;
-console.log(`${where}: "${DEMO}" (${company.id}), today ${company.today} (${company.timezone})`);
+console.log(
+  `${where}: "${company.name}" (${company.id}), today ${company.today} (${company.timezone})`,
+);
 console.log(`\nRemove (soft-delete):`);
 console.log(
   `  ${counts.jobs} jobs, ${counts.quotes} quotes, ${counts.invoices} invoices, ${counts.plans} plans`,
@@ -1008,6 +1062,9 @@ console.log(
 );
 console.log(
   `  ${demo.repairs.length} repairs: ${state(demo.repairs, "finished")} paid, ${state(demo.repairs, "in_progress")} in progress, ${state(demo.repairs, "scheduled")} scheduled`,
+);
+console.log(
+  `  ${demo.unscheduled.length} in Needs a Time (no time, no tech): ${demo.unscheduled.map((u) => u.type).join(", ")}`,
 );
 console.log(
   `  plan visits: made by the plans (about ${mCustomers} a week through the shop's weeks ahead)`,

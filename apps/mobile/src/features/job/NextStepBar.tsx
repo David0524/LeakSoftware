@@ -1,6 +1,6 @@
-import { StyleSheet, Text, View } from "react-native";
+import { Pressable, StyleSheet, Text, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { Button } from "../../ui/components";
+import { Button, Chevron } from "../../ui/components";
 import { Glass } from "../../ui/Glass";
 import { useKeyboardOpen } from "../../ui/keyboard";
 import { ReadyPop } from "../../ui/ReadyPop";
@@ -28,8 +28,14 @@ export interface NextStepButton {
 export function NextStepBar({
   buttons,
   note = null,
+  status = null,
 }: {
   buttons: NextStepButton[];
+  /**
+   * A maintenance visit's report status over the buttons ("Visit report sent · 2:14 PM"), which
+   * opens its sheet (owner, 2026-10-22: "the visit report is really buried").
+   */
+  status?: { text: string; onPress: () => void } | null;
   /**
    * A short line over the buttons when the first one is the last thing left (owner,
    * 2026-10-22: Complete Job once the checklist is all done); the button then scales in once.
@@ -53,6 +59,22 @@ export function NextStepBar({
           >
             {note}
           </Text>
+        ) : status ? (
+          <Pressable
+            testID="visit-report-line"
+            accessibilityRole="button"
+            accessibilityHint="Opens the visit report"
+            onPress={status.onPress}
+            style={styles.status}
+          >
+            <Text
+              style={[type.secondary, face.semiBold, { color: color.text }]}
+              maxFontSizeMultiplier={MAX_TEXT_SCALE}
+            >
+              {status.text}
+            </Text>
+            <Chevron />
+          </Pressable>
         ) : null}
         <View style={styles.row}>
           {buttons.map((b, i) => (
@@ -72,4 +94,11 @@ const styles = StyleSheet.create({
   row: { flexDirection: "row", gap: space["2"] },
   slot: { flex: 1 },
   note: { textAlign: "center", paddingTop: space["1"], paddingBottom: space["2"] },
+  status: {
+    minHeight: 44,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: space["1"],
+  },
 });

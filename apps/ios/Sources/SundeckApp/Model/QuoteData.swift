@@ -237,10 +237,13 @@ public struct MoneyServer {
     }
 
     /// The server builds the invoice from the job (fee, accepted quote, deposit); it syncs down.
+    /// It waits only for the phone's own unsent changes, and the invoice comes down with a sync
+    /// started after (owner, 2026-10-22: Create Invoice "takes a super long time": it waited for
+    /// two whole syncs, which can be a large download).
     public func createInvoice(jobId: String) async throws -> String {
-        await sync.syncNow()
+        if ((try? sync.store.pendingCount()) ?? 0) > 0 { await sync.syncNow() }
         let reply = try await api.post("api/jobs/\(jobId)/invoice")
-        await sync.syncNow()
+        Task { await sync.syncNow() }
         return reply["invoiceId"]?.string ?? ""
     }
 

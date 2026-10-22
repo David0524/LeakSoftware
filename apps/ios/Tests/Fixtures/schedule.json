@@ -1,4 +1,17 @@
 {
+  "constants": [
+    {
+      "args": [],
+      "result": {
+        "SCHEDULE_DRAG": {
+          "gripDwellMs": 130,
+          "holdMs": 400,
+          "slopPt": 8,
+          "scrollSettleMs": 100
+        }
+      }
+    }
+  ],
   "isDateString": [
     {
       "args": [

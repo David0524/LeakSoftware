@@ -1,6 +1,6 @@
 import { expect, test } from "@playwright/test";
 import { signedInClient } from "./backend";
-import { OWNER, RUN, signIn } from "./helpers";
+import { OWNER, RUN, jobSection, signIn } from "./helpers";
 
 // Maintenance (owner request, 2026-10-13): an owner adds a weekly cleaning plan on the
 // customer's page; its 30-minute visits appear on the tech's route; the tech runs one (service
@@ -71,6 +71,8 @@ test("a weekly cleaning plan puts visits on the route, and a visit is marked don
   // A visit has no Wrap-Up (owner, 2026-10-19).
   await expect(page.getByText("Wrap-Up", { exact: true })).toHaveCount(0);
   await page.getByRole("button", { name: "Start Job" }).click();
+  // The job page shows one tab at a time on every screen (owner, 2026-10-22).
+  await jobSection(page, "Checklist");
   await expect(page.getByText(/^0 done · 0 need attention · 0 skipped · 7 to do$/)).toBeVisible();
   // Each item's answers are a segmented control: Done · Needs Attention · Skipped (owner,
   // 2026-10-20).
@@ -83,8 +85,8 @@ test("a weekly cleaning plan puts visits on the route, and a visit is marked don
   );
   await page.getByRole("button", { name: /^Mark 6 Remaining Done$/ }).click();
   await expect(page.getByText(/^7 done · 0 need attention · 0 skipped · 0 to do$/)).toBeVisible();
-  // For five seconds the shortcut's place holds "Marked 6" and Undo (owner, 2026-10-20).
-  await expect(page.getByText("Marked 6", { exact: true })).toBeVisible();
+  // No "Marked 6" and Undo after it (owner, 2026-10-22).
+  await expect(page.getByText("Marked 6", { exact: true })).toHaveCount(0);
   await expect(page.getByRole("button", { name: "Complete Job" })).toHaveCount(2);
   await page.getByRole("button", { name: "Complete Job" }).last().click();
   // An Automatic shop asks before the visit report goes out (owner, 2026-10-20).
@@ -93,6 +95,31 @@ test("a weekly cleaning plan puts visits on the route, and a visit is marked don
   await expect(ask.or(reopen)).toBeVisible();
   if (await ask.isVisible()) await ask.getByRole("button", { name: "Complete and Send" }).click();
   await expect(reopen).toBeVisible();
+  // Done: the visit report floats at the bottom of the page (owner, 2026-10-22: "the visit
+  // report is really buried"), with Send Visit Report until it's sent, then View Report.
+  const bar = page.getByRole("toolbar", { name: "Next step" });
+  const viewReport = bar.getByRole("link", { name: "View Report" });
+  const sendReport = bar.getByRole("button", { name: "Send Visit Report" });
+  await expect(viewReport.or(sendReport)).toBeVisible();
+  await expect(page.getByRole("region", { name: "Visit Report" })).toHaveCount(0);
+  if (await sendReport.isVisible()) {
+    await expect(bar.getByTestId("visit-report-line")).toContainText(/Ready to send|Not sent yet/);
+    await sendReport.click();
+    const sheet = page.getByRole("dialog", { name: "Visit Report" });
+    await sheet.getByRole("button", { name: /^(Send by Text|Get Link to Text)$/ }).click();
+    await expect(sheet.getByText(/^Visit report (texted|ready)/)).toBeVisible();
+    await sheet.getByRole("button", { name: "Done", exact: true }).click();
+  }
+  await expect(bar.getByTestId("visit-report-line")).toContainText(/^Visit report sent · /);
+  await expect(viewReport).toHaveAttribute("href", /\/r\//);
+  // The status opens the sheet: Send Again and the versions.
+  await bar.getByTestId("visit-report-line").click();
+  await expect(
+    page
+      .getByRole("dialog", { name: "Visit Report" })
+      .getByRole("link", { name: "View Visit Report" }),
+  ).toBeVisible();
+  await page.keyboard.press("Escape");
   // Reopen Visit shows at once (owner, 2026-10-22); let the save finish before leaving.
   await page.waitForLoadState("networkidle");
   await page.goto(`/customers/${job!.bill_to_customer_id}`);
@@ -135,7 +162,9 @@ test("New Job books a maintenance visit, or starts a plan for a new customer", a
   await page.getByRole("button", { name: "Create Job" }).click();
   await expect(page.getByText(/^Job #\d+$/).first()).toBeVisible();
   // The service checklist, not the leak one.
+  await jobSection(page, "Checklist");
   await expect(page.getByText(/^0 done · 0 need attention · 0 skipped · 7 to do$/)).toBeVisible();
+  await jobSection(page, "Details");
 
   // Its visit report (owner, 2026-10-20): sent by hand by default, opened at the customer link.
   const visit = page.getByRole("region", { name: "Visit Report" });

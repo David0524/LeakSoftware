@@ -87,7 +87,7 @@ export default async function ReportsPage({ searchParams }: PageProps<"/jobs/rep
               }}
             >
               <RowContent
-                href={`/jobs/${r.job_id}#wrap-up`}
+                href={`/jobs/${r.job_id}?tab=wrap-up`}
                 label={
                   <>
                     <span className="font-semibold">{r.job?.bill_to?.name ?? "Customer"}</span>

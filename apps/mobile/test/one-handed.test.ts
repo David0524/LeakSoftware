@@ -95,8 +95,7 @@ describe("Next Step bar (item 1)", () => {
     status: "in_progress",
     jobType: "detection",
     hasTestTypes: true,
-    noDraft: true,
-    canWriteDraft: true,
+    wrapUpAction: "Write the Draft",
   };
   it("offers Start Job first on a job that can be started", () => {
     expect(nextStepButtons({ ...base, status: "scheduled", section: "findings" })).toEqual([
@@ -116,12 +115,25 @@ describe("Next Step bar (item 1)", () => {
       "add-finding",
     ]);
     expect(nextStepButtons({ ...base, section: "photos" })).toEqual(["add-photo", "add-video"]);
-    expect(nextStepButtons({ ...base, section: "wrapup" })).toEqual(["write-draft"]);
-    expect(nextStepButtons({ ...base, section: "wrapup", canWriteDraft: false })).toEqual([
-      "review",
-    ]);
-    expect(nextStepButtons({ ...base, section: "wrapup", noDraft: false })).toEqual([]);
+    // Wrap-Up's next step (owner, 2026-10-22), until every step is done.
+    expect(nextStepButtons({ ...base, section: "wrapup" })).toEqual(["wrap-up"]);
+    expect(nextStepButtons({ ...base, section: "wrapup", wrapUpAction: null })).toEqual([]);
     expect(nextStepButtons(base)).toEqual([]);
+  });
+  it("a done maintenance visit's report on every section", () => {
+    const done = { ...base, jobType: "maintenance", status: "done" as const };
+    for (const section of ["details", "checklist", "photos"])
+      expect(nextStepButtons({ ...done, section, visitAction: "view" })).toEqual(["visit-report"]);
+    expect(nextStepButtons({ ...done, visitAction: "send" })).toEqual(["visit-report"]);
+    expect(nextStepButtons(done)).toEqual([]);
+    expect(
+      nextStepButtons({
+        ...done,
+        status: "in_progress",
+        section: "checklist",
+        visitAction: "send",
+      }),
+    ).toEqual(["complete"]);
   });
 });
 

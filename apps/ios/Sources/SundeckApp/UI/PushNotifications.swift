@@ -33,25 +33,39 @@
 
         func application(_ application: UIApplication, didFailToRegisterForRemoteNotificationsWithError error: Error) {}
 
+        // The completion-handler forms, not the async ones: Swift's async bridge called iOS's
+        // completion handler off the main thread, and tapping a notification crashed the app
+        // (owner, 2026-10-22). iOS calls these on the main thread; the handler is called there.
+
         /// While the app is open: a banner, in the list, with its sound.
         nonisolated func userNotificationCenter(
-            _ center: UNUserNotificationCenter, willPresent notification: UNNotification
-        ) async -> UNNotificationPresentationOptions {
-            [.banner, .list, .sound]
+            _ center: UNUserNotificationCenter, willPresent notification: UNNotification,
+            withCompletionHandler completionHandler: @escaping (UNNotificationPresentationOptions) -> Void
+        ) {
+            completionHandler([.banner, .list, .sound])
         }
 
         /// A tapped notification opens its job, or its conversation in Messages.
         nonisolated func userNotificationCenter(
-            _ center: UNUserNotificationCenter, didReceive response: UNNotificationResponse
-        ) async {
-            guard let link = AppLink(push: response.notification.request.content.userInfo) else { return }
-            await MainActor.run {
-                if let environment = Self.environment {
-                    environment.link = link
-                } else {
-                    Self.pendingLink = link
+            _ center: UNUserNotificationCenter, didReceive response: UNNotificationResponse,
+            withCompletionHandler completionHandler: @escaping () -> Void
+        ) {
+            let link = AppLink(push: response.notification.request.content.userInfo)
+            // iOS's handler isn't marked Sendable; it's only ever called on the main thread here.
+            nonisolated(unsafe) let done = completionHandler
+            let deliver: @Sendable () -> Void = {
+                MainActor.assumeIsolated {
+                    if let link {
+                        if let environment = Self.environment {
+                            environment.link = link
+                        } else {
+                            Self.pendingLink = link
+                        }
+                    }
+                    done()
                 }
             }
+            if Thread.isMainThread { deliver() } else { DispatchQueue.main.async(execute: deliver) }
         }
 
         @MainActor private static func deliverPending(_ environment: AppEnvironment) {

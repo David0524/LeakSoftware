@@ -23,10 +23,12 @@ public enum JobPageSection: String, CaseIterable, Hashable, Sendable {
     }
 
     /// Five parts; a maintenance visit has no tests or findings, so no Findings, and ends with
-    /// Complete Job, billed monthly, so no Wrap-Up (core `jobHasWrapUp`, owner 2026-10-19).
+    /// Complete Job, billed monthly, so no Wrap-Up (core `jobHasWrapUp`, owner 2026-10-19). A
+    /// repair job has no Checklist (core `jobHasChecklist`, owner 2026-10-22).
     public static func sections(for type: JobType) -> [JobPageSection] {
         allCases.filter {
             !(type == .maintenance && $0 == .findings) && ($0 != .wrapUp || jobHasWrapUp(type.rawValue))
+                && ($0 != .checklist || jobHasChecklist(type.rawValue))
         }
     }
 }
@@ -87,6 +89,10 @@ public func jobCanStart(_ status: JobStatus, type: JobType) -> Bool {
 /// replaces.
 public enum NextStepAction: String, Equatable, Sendable {
     case startJob, completeJob, addTest, addFinding, addPhoto, addVideo, writeDraft, reviewWithCustomer
+    /// Wrap-Up's next step (owner, 2026-10-22): its words come from core `wrapUp`'s next action.
+    case wrapUp
+    /// A done maintenance visit's View Report or Send Visit Report (core `visitReportBar`).
+    case visitReport
 
     public var title: String {
         switch self {
@@ -98,18 +104,24 @@ public enum NextStepAction: String, Equatable, Sendable {
         case .addVideo: "Add Video"
         case .writeDraft: "Write Draft"
         case .reviewWithCustomer: ReportTabModel.reviewWithCustomer
+        case .wrapUp: "Next Step"
+        case .visitReport: "Visit Report"
         }
     }
 }
 
 /// The Next Step bar's buttons, primary first; empty hides the bar. First match wins: Start Job
-/// while the job can be started; Complete Job on a visit's Checklist; Add Test and Add Finding
-/// on Findings; Add Photo and Add Video on Photos; Write Draft on Wrap-Up before a draft
-/// (Review with Customer when a draft can't be written now, offline).
+/// while the job can be started; a done maintenance visit's report on every section (owner,
+/// 2026-10-22: "the visit report is really buried"); Complete Job on a visit's Checklist; Add
+/// Test and Add Finding on Findings; Add Photo and Add Video on Photos; Wrap-Up's next step
+/// (core `wrapUp`) until every step is done. Port of nextStepButtons in
+/// apps/web/src/lib/next-step.ts.
 public func nextStepActions(
-    _ job: JobView, section: JobPageSection, hasTestTypes: Bool, reportOn: Bool, hasDraft: Bool, online: Bool
+    _ job: JobView, section: JobPageSection, hasTestTypes: Bool, wrapUp: WrapUpNext? = nil,
+    visitAction: VisitReportBarAction? = nil
 ) -> [NextStepAction] {
     if jobCanStart(job.status, type: job.type) { return [.startJob] }
+    if job.type == .maintenance, job.status == .done, visitAction != nil { return [.visitReport] }
     switch section {
     case .checklist:
         return checklistShowsCompleteJob(job) ? [.completeJob] : []
@@ -118,8 +130,7 @@ public func nextStepActions(
     case .photos:
         return [.addPhoto, .addVideo]
     case .wrapUp:
-        guard reportOn, !hasDraft else { return [] }
-        return [online ? .writeDraft : .reviewWithCustomer]
+        return wrapUp == nil ? [] : [.wrapUp]
     case .details:
         return []
     }
@@ -171,6 +182,11 @@ public struct JobDetails: Equatable, Sendable {
     public var fee: String?
     /// "Detection fee" on leak detection, else "Price" (core `jobFeeLabel`).
     public var feeLabel: String
+    /// The price row and field: not on a repair job, whose price is its Repairs' total (owner,
+    /// 2026-10-22: "add additional repair").
+    public var showsFee: Bool
+    /// A repair job lists its repairs (Repairs, between Assigned to and From the Customer).
+    public var showsRepairs: Bool
     /// Only leak detection marks a leak's location (owner, 2026-10-19: no leak checkbox on
     /// visits); it's also what makes the price a detection fee.
     public var marksLeakLocation: Bool
@@ -202,11 +218,14 @@ public struct JobDetails: Equatable, Sendable {
         with = job.job["second_tech_id"]?.string.map { id in team.first { $0.id == id }?.displayName ?? "Teammate" }
         fee = job.job["fee_cents"]?.number.map { formatCents(Int($0)) }
         feeLabel = jobFeeLabel(job.type)
+        showsRepairs = job.type == .repair
+        showsFee = !showsRepairs
         marksLeakLocation = job.type == .detection
         feeFooter = marksLeakLocation ? "The detection fee is shown on the report." : "Billed on the invoice."
         intake = intakeAnswers(settings: settings, intake: job.job["intake"], jobType: job.type)
-        // From the Customer on a repair (owner, 2026-10-19): what the customer needs, first.
-        if let need = job.job["intake"]?[repairItemKey]?.string, !need.isEmpty {
+        // From the Customer on a repair (owner, 2026-10-19): what the customer needs, first. A
+        // repair job lists them under Repairs instead (owner, 2026-10-22).
+        if !showsRepairs, let need = job.job["intake"]?[repairItemKey]?.string, !need.isEmpty {
             intake.insert(IntakeAnswer(question: repairItemLabel, answer: need), at: 0)
         }
         intakeTitle = "From the Customer"

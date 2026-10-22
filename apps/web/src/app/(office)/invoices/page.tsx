@@ -172,7 +172,7 @@ export default async function InvoicesPage({ searchParams }: PageProps<"/invoice
             {invoices.map((i) => (
               <InvoiceActions key={i.id} as="li" invoice={actions(i)}>
                 <RowContent
-                  href={`/jobs/${i.job_id}#invoice`}
+                  href={`/jobs/${i.job_id}?tab=wrap-up`}
                   label={<span className="font-semibold">{i.customer}</span>}
                   detail={
                     <>
@@ -236,7 +236,7 @@ export default async function InvoicesPage({ searchParams }: PageProps<"/invoice
                   >
                     <td className="px-4 py-3">
                       <Link
-                        href={`/jobs/${i.job_id}#invoice`}
+                        href={`/jobs/${i.job_id}?tab=wrap-up`}
                         className="inline-flex min-h-11 items-center font-semibold text-link underline-offset-4 hover:underline"
                       >
                         #{i.number}

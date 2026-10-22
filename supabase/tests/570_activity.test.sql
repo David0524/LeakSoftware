@@ -268,7 +268,7 @@ select pg_temp.as_server();
 create temp table newcomer on commit drop as select tests.create_user('activity-newcomer@test.local') as id;
 select is((select activity_seen_at is not null from profile where id = (select id from newcomer)), true,
   'someone new starts with nothing unread');
-select is(has_function_privilege('anon', 'public.activity_feed(uuid, timestamptz, uuid, integer)', 'execute'),
+select is(has_function_privilege('anon', 'public.activity_feed(uuid, timestamptz, uuid, integer, text)', 'execute'),
   false, 'signed-out visitors can''t read it');
 
 select * from finish();

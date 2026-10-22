@@ -13,6 +13,7 @@ import {
   poolDiagram,
   previewTest,
   userTransitions,
+  verdictIcon,
   verdictOptions,
   type ChecklistItemResult,
   type ChecklistSection,
@@ -44,7 +45,6 @@ import {
   setPoolShape,
   setPoolSpa,
   setVerdict,
-  unmarkRest,
 } from "@/app/actions/inspection";
 import { InspectionChecklist } from "./inspection-checklist";
 import { useNextStep } from "./next-step-events";
@@ -52,10 +52,11 @@ import { DiagramShapes } from "./pool-diagram";
 import { Segmented } from "./segmented";
 import { ShapePicker } from "./shape-picker";
 import { FieldError, SField, STextArea, SettingsForm } from "./settings-forms";
-import { RowActions, type MenuEntry } from "./row-actions";
+import { AnswerIconButtons } from "./answer-controls";
+import { RowActions, RowMenuButton, type MenuEntry } from "./row-actions";
 import { Sheet, useConfirm } from "./sheet";
 import { Button, Checkbox, Chip, Select, buttonClass, cx } from "./ui";
-import { SavedNote, UndoNotice, useAutosave, useUndoWindow } from "./undo";
+import { SavedNote, useAutosave } from "./undo";
 import { saveFailed, useJobStatus, useSetJobStatus } from "./instant";
 
 // Working a job on the website (M9.5): the phone's job screen, for a browser.
@@ -281,6 +282,7 @@ export function JobDetailsForm({
   // Only leak detection marks a leak's location (owner, 2026-10-19: no leak checkbox on
   // maintenance visits) and calls its price a detection fee.
   const detection = jobType === "detection";
+  const repair = jobType === "repair";
   const [gallons, setGallons] = useState(pool?.gallons ? pool.gallons.toLocaleString("en-US") : "");
   return (
     <SettingsForm action={saveJobDetails} submit="Save">
@@ -288,23 +290,26 @@ export function JobDetailsForm({
       {detection ? <input type="hidden" name="detection" value="1" /> : null}
       <div>
         <ul className="grouped">
-          <li className="flex min-h-11 items-center gap-3 px-4 py-1.5">
-            <label htmlFor="job-fee" className="min-w-0 flex-1">
-              {jobFeeLabel(jobType)}
-            </label>
-            <span aria-hidden="true" className="text-text-muted">
-              $
-            </span>
-            <input
-              id="job-fee"
-              name="fee"
-              inputMode="decimal"
-              placeholder="0.00"
-              defaultValue={fee != null ? (fee / 100).toFixed(2) : ""}
-              aria-describedby="job-fee-note"
-              className={cx(ROW_INPUT, "min-h-11 w-28 text-right tabular-nums")}
-            />
-          </li>
+          {/* A repair job's price is its repairs' (Repairs, owner 2026-10-22). */}
+          {repair ? null : (
+            <li className="flex min-h-11 items-center gap-3 px-4 py-1.5">
+              <label htmlFor="job-fee" className="min-w-0 flex-1">
+                {jobFeeLabel(jobType)}
+              </label>
+              <span aria-hidden="true" className="text-text-muted">
+                $
+              </span>
+              <input
+                id="job-fee"
+                name="fee"
+                inputMode="decimal"
+                placeholder="0.00"
+                defaultValue={fee != null ? (fee / 100).toFixed(2) : ""}
+                aria-describedby="job-fee-note"
+                className={cx(ROW_INPUT, "min-h-11 w-28 text-right tabular-nums")}
+              />
+            </li>
+          )}
           {pool ? (
             <li className="flex min-h-11 items-center gap-3 px-4 py-1.5">
               <input type="hidden" name="property" value={pool.id} />
@@ -347,9 +352,11 @@ export function JobDetailsForm({
             />
           </li>
         </ul>
-        <p id="job-fee-note" className="mt-2 px-4 text-[0.8125rem] text-text-muted">
-          {detection ? "The detection fee is shown on the report." : "Billed on the invoice."}
-        </p>
+        {repair ? null : (
+          <p id="job-fee-note" className="mt-2 px-4 text-[0.8125rem] text-text-muted">
+            {detection ? "The detection fee is shown on the report." : "Billed on the invoice."}
+          </p>
+        )}
         <div className="px-4">
           <FieldError name="fee" />
           <FieldError name="approx_gallons" />
@@ -491,9 +498,6 @@ function ChecklistGroup({
 }) {
   const { pending, error, call } = useRun();
   const toDo = items.filter((r) => currentVerdict(r.result ?? undefined) === null);
-  // Undo after Mark Remaining (owner, 2026-10-20): "Marked N" and Undo where the button was.
-  const undo = useUndoWindow();
-  const [marked, setMarked] = useState<string[]>([]);
   const leaking = items.filter((r) => r.result?.outcome === "leaking").length;
   const attention = items.filter((r) => r.result?.outcome === "attention").length;
   const [folded, setOpen] = useState(toDo.length > 0);
@@ -561,18 +565,9 @@ function ChecklistGroup({
               </li>
             ))}
           </ul>
-          {undo.open ? (
-            <div className="border-t-[0.5px] border-separator px-4 py-1">
-              <UndoNotice
-                text={`Marked ${marked.length}`}
-                label={`Undo Marked ${marked.length}: ${title}`}
-                onUndo={() => {
-                  undo.cancel();
-                  void call(unmarkRest, { job: jobId, components: marked.join(",") });
-                }}
-              />
-            </div>
-          ) : toDo.length > 0 ? (
+          {/* No "Marked N" and Undo after it (owner, 2026-10-22): each item's answer changes it
+              back. */}
+          {toDo.length > 0 ? (
             <div className="border-t-[0.5px] border-separator px-4 py-1">
               <button
                 type="button"
@@ -580,16 +575,7 @@ function ChecklistGroup({
                 className="min-h-11 text-[1.0625rem] text-link"
                 onClick={() => {
                   const ids = toDo.map((r) => r.id);
-                  void call(
-                    markRest,
-                    { job: jobId, components: ids.join(",") },
-                    undefined,
-                    (result) => {
-                      if (result.error) return;
-                      setMarked(ids);
-                      undo.start();
-                    },
-                  );
+                  void call(markRest, { job: jobId, components: ids.join(",") });
                 }}
               >
                 {pending
@@ -681,6 +667,14 @@ function ChecklistItem({
   }
 
   const note = [row.result?.method, row.result?.notes].filter(Boolean).join(" · ");
+  // The phone line's: the chosen answer's word first, so the icons are learnable.
+  const phoneNote = [
+    options.find((o) => o.value === shown)?.label,
+    row.photos ? `${row.photos} photo${row.photos === 1 ? "" : "s"}` : null,
+    note,
+  ]
+    .filter(Boolean)
+    .join(" · ");
   // Swipe right for the first answer (Done, No, Not Leaking); touch and hold, right-click, or
   // "⋯" for every answer and Not Done (gestures.md section 12), the same as the segments.
   const first = options[0]!;
@@ -703,20 +697,42 @@ function ChecklistItem({
             ? []
             : [{ label: first.label, tone: "green", onSelect: () => void choose(first.value) }]
         }
-        buttonClassName="absolute top-1.5 right-2"
+        button="none"
         data-no-swipe=""
       >
-        <div className="px-4 py-2">
-          <Segmented<Verdict | "">
-            label={row.label}
-            name={`verdict-${row.id}`}
-            value={shown ?? ""}
-            options={options}
-            description={note || undefined}
-            fit
-            segmentClassName="min-h-11!"
-            onChange={(v) => void choose(v === shown ? "todo" : v)}
+        <RowMenuButton className="absolute top-1.5 right-2 max-sm:hidden" />
+        {/* Phones: one line, the name and the answers as icons, one tap each (owner,
+            2026-10-22: tapping the name opened the item by accident). The name opens nothing. */}
+        <div className="flex items-center gap-1 py-1 pr-2 pl-4 sm:hidden" data-testid="answer-line">
+          <div className="min-w-0 flex-1 py-1">
+            <p className="leading-tight font-medium">{row.label}</p>
+            {phoneNote ? (
+              <p className="truncate text-[0.8125rem] text-text-muted">{phoneNote}</p>
+            ) : null}
+          </div>
+          <AnswerIconButtons
+            itemLabel={row.label}
+            choices={options.map((o) => ({
+              label: o.label,
+              icon: verdictIcon(row.type.answer, o.value),
+              chosen: shown === o.value,
+              onSelect: () => void choose(shown === o.value ? "todo" : o.value),
+            }))}
           />
+        </div>
+        <div className="px-4 py-2 max-sm:pt-0 max-sm:pb-1">
+          <div className="max-sm:hidden">
+            <Segmented<Verdict | "">
+              label={row.label}
+              name={`verdict-${row.id}`}
+              value={shown ?? ""}
+              options={options}
+              description={note || undefined}
+              fit
+              segmentClassName="min-h-11!"
+              onChange={(v) => void choose(v === shown ? "todo" : v)}
+            />
+          </div>
           {needsWhere && row.result ? (
             <WhereField
               jobId={jobId}

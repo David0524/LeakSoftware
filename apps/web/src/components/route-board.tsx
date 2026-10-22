@@ -51,6 +51,7 @@ import {
   formatDay,
   JOB_STATUS_LABELS,
   planMovedBanner,
+  SCHEDULE_DRAG,
   startLegLabel,
   visitMovedBanner,
   weekday,
@@ -124,15 +125,20 @@ const DROP_SLIDE = { duration: 250, easing: "cubic-bezier(0.22, 1, 0.36, 1)" };
 /** Whether a press began on a schedule card's grip (≡). */
 const onGrip = (e: Event) => !!(e.target as Element | null)?.closest?.("[data-grip]");
 
-// A schedule card drags from its grip at once, by any pointer (owner, 2026-10-21: "I'm still
-// struggling to scroll when I have a page full of job tiles"); a finger on its body drags only
-// after a hold (StopTouchSensor), so a page of cards always scrolls. The pointer sensor listens on the document, so a drag still
-// ends if the card under the finger is re-rendered away mid-drag.
+// A schedule card drags from its grip, by any pointer (owner, 2026-10-21: "I'm still
+// struggling to scroll when I have a page full of job tiles"): a mouse or a pen at once
+// (GripSensor); a finger once it has rested there briefly (FingerSensor), so a flick that starts
+// on the grip scrolls the page (owner, 2026-10-22: "make it slightly less sensitive"). A finger
+// on a card's body drags only after a hold, so a page of cards always scrolls. The pointer sensor
+// listens on the document, so a drag still ends if the card under the finger is re-rendered away
+// mid-drag.
 class GripSensor extends PointerSensor {
   static activators = PointerSensor.activators.map((a) => ({
     ...a,
-    handler: (...args: Parameters<typeof a.handler>) =>
-      onGrip(args[0].nativeEvent) && a.handler(...args),
+    handler: (...args: Parameters<typeof a.handler>) => {
+      const e = args[0].nativeEvent;
+      return onGrip(e) && e.pointerType !== "touch" && a.handler(...args);
+    },
   }));
 }
 /** Whether a press began on a stop's tile on a day (Day, Week), not Needs a Time or a customer. */
@@ -142,9 +148,8 @@ const onControl = (e: Event) =>
   !!(e.target as Element | null)?.closest?.("a, button:not([data-grip]), input, [role=menuitem]");
 // Press and hold, then drag, anywhere on a stop's tile (owner, 2026-10-22, as Reminders and
 // Things do; docs/design/2026-10-22-schedule-hold-drag.md), the grip kept as a backup. A mouse
-// anywhere on the tile but the name and the buttons, once it moves 6 px; a finger after a
-// 0.4 s touch and hold (a quick tap or a swipe up or down is the page's). Customers to Add
-// tiles (no grip): a mouse anywhere, a finger after a 0.25 s hold, as before.
+// anywhere on the tile but the name and the buttons, once it moves 6 px. Customers to Add tiles
+// (no grip): a mouse anywhere once it moves a little.
 class TileMouseSensor extends MouseSensor {
   static activators = MouseSensor.activators.map((a) => ({
     ...a,
@@ -154,29 +159,41 @@ class TileMouseSensor extends MouseSensor {
     },
   }));
 }
-class TileTouchSensor extends TouchSensor {
-  static activators = TouchSensor.activators.map((a) => ({
-    ...a,
-    handler: (...args: Parameters<typeof a.handler>) => {
-      const e = args[0].nativeEvent;
-      return !onGrip(e) && !onStopTile(e) && a.handler(...args);
-    },
-  }));
-}
-class StopTouchSensor extends TouchSensor {
-  static activators = TouchSensor.activators.map((a) => ({
-    ...a,
-    handler: (...args: Parameters<typeof a.handler>) => {
-      const e = args[0].nativeEvent;
-      return !onGrip(e) && onStopTile(e) && a.handler(...args);
-    },
-  }));
-}
 /** The last press on a stop's tile: its pointer, and whether it was a finger. */
 const lastTouch = { id: -1, touch: false };
 
 /** How long a finger rests on a stop's tile before it lifts (as iOS's drag and drop). */
-export const HOLD_MS = 400;
+export const HOLD_MS = SCHEDULE_DRAG.holdMs;
+/** How long a finger rests on a Customers to Add tile before it lifts. */
+const PLAN_HOLD_MS = 250;
+
+/** When the page (or a row in it) last scrolled, so a finger landing on a glide only stops it. */
+let scrolledAt = Number.NEGATIVE_INFINITY;
+const pageGliding = () => performance.now() - scrolledAt < SCHEDULE_DRAG.scrollSettleMs;
+
+// A finger, anywhere (owner, 2026-10-22: "it just needs to avoid flicks and anything else
+// unintentional"; core SCHEDULE_DRAG): it rests, moving less than the slop (8 px), for
+// gripDwellMs on the grip, HOLD_MS on a stop's tile, PLAN_HOLD_MS on a Customers to Add tile;
+// moving further first is the page's scroll (a flick or a swipe), and a finger landing while the
+// page still glides only stops it. One sensor for every finger: dnd-kit keeps one handler per
+// event name, so two touch sensors would hide one another.
+class FingerSensor extends TouchSensor {
+  constructor(props: ConstructorParameters<typeof TouchSensor>[0]) {
+    const e = props.event;
+    const delay = onGrip(e) ? SCHEDULE_DRAG.gripDwellMs : onStopTile(e) ? HOLD_MS : PLAN_HOLD_MS;
+    super({
+      ...props,
+      options: {
+        ...props.options,
+        activationConstraint: { delay, tolerance: SCHEDULE_DRAG.slopPt },
+      },
+    });
+  }
+  static activators = TouchSensor.activators.map((a) => ({
+    ...a,
+    handler: (...args: Parameters<typeof a.handler>) => !pageGliding() && a.handler(...args),
+  }));
+}
 import { Button, StatusBadge, buttonClass, cx, pillClass } from "./ui";
 import { NO_CONNECTION, whenOffline } from "@/lib/offline";
 
@@ -454,20 +471,28 @@ export function RouteBoard({
   const dndId = useId();
 
   const sensors = useSensors(
-    // A schedule card from its grip at once (GripSensor; a couple of pixels, so a click on the
-    // grip isn't a drag). A stop's tile on a day also from anywhere else on it: a mouse once it
-    // moves 6 px (not from the name or a button), a finger after a 0.4 s hold (StopTouchSensor),
-    // so a quick tap or a swipe up or down still scrolls the page. The grip doesn't scroll the
-    // page (touch-none), and while dragging the page scrolls near the screen's edges
-    // (autoScroll). The other cards in the day slide into their new places as one passes them
-    // (SORT_SLIDE), so the gap is where it lands. Customers to Add tiles: a mouse anywhere once
-    // it moves a little, a finger after a touch and hold.
+    // A schedule card from its grip: a mouse at once (GripSensor; a couple of pixels, so a click
+    // on the grip isn't a drag), a finger after a brief rest (FingerSensor), so a flick there
+    // scrolls the page. A stop's tile on a day also from anywhere else on it: a mouse once it
+    // moves 6 px (not from the name or a button), a finger after a 0.4 s hold, so a quick tap
+    // or a swipe up or down still scrolls the page. While dragging the page scrolls near the
+    // screen's edges (autoScroll). The other cards in the day slide into their new places as one
+    // passes them (SORT_SLIDE), so the gap is where it lands. Customers to Add tiles: a mouse
+    // anywhere once it moves a little, a finger after a touch and hold.
     useSensor(GripSensor, { activationConstraint: { distance: 2 } }),
     useSensor(TileMouseSensor, { activationConstraint: { distance: 6 } }),
-    useSensor(TileTouchSensor, { activationConstraint: { delay: 250, tolerance: 8 } }),
-    useSensor(StopTouchSensor, { activationConstraint: { delay: HOLD_MS, tolerance: 8 } }),
+    useSensor(FingerSensor),
     useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates }),
   );
+  // A finger that lands while the page glides (a flick's momentum) only stops it: FingerSensor
+  // checks when anything last scrolled.
+  useEffect(() => {
+    const mark = () => {
+      scrolledAt = performance.now();
+    };
+    document.addEventListener("scroll", mark, { capture: true, passive: true });
+    return () => document.removeEventListener("scroll", mark, { capture: true });
+  }, []);
   // Never stuck mid-drag (owner, 2026-10-21: "it sometimes freezes up"): a pointer let go,
   // cancelled or lost that the drag didn't hear (its card re-rendered away under the finger)
   // cancels it, so no card stays lifted and the page always scrolls again.
@@ -1323,10 +1348,11 @@ export function Grip(
       // A drag from here isn't a swipe to the next day.
       data-no-swipe
       aria-label={label}
-      // On phones too (owner, 2026-10-20). touch-none: a finger on the grip drags the job, not
-      // the page; no text selection or callout on the long press.
+      // On phones too (owner, 2026-10-20). A finger drags the job once it has rested here a
+      // moment (FingerSensor); a flick from here scrolls the page (owner, 2026-10-22). No text
+      // selection or callout on the press.
       className={cx(
-        "grid shrink-0 cursor-grab touch-none place-items-center rounded-full text-text-muted select-none [-webkit-touch-callout:none] hover:bg-text/[0.06] active:cursor-grabbing active:bg-link/10 active:text-link",
+        "grid shrink-0 cursor-grab place-items-center rounded-full text-text-muted select-none [-webkit-touch-callout:none] hover:bg-text/[0.06] active:cursor-grabbing active:bg-link/10 active:text-link",
         // Desktop's one-line cards: a pointer target the card's height (the whole card drags).
         compact ? "h-8 w-7" : "size-11",
         className,

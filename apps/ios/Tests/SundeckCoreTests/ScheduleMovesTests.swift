@@ -8,10 +8,23 @@ import Testing
 
     @Test func everyRuleIsChecked() {
         let checked: Set<String> = [
-            "isDateString", "addDays", "addMonths", "monthGrid", "scheduleDays", "formatDay", "formatTime", "planDay",
-            "noteSentences", "renumberDay", "moveJobChange", "suggestionDates", "suggestTimes", "timeline",
+            "constants", "isDateString", "addDays", "addMonths", "monthGrid", "scheduleDays", "formatDay", "formatTime",
+            "planDay", "noteSentences", "renumberDay", "moveJobChange", "suggestionDates", "suggestTimes", "timeline",
         ]
         #expect(Fixtures.rules(module) == checked)
+    }
+
+    @Test func dragConstants() {
+        checkRule(module, "constants") { _ in
+            JSONValue.object([
+                "SCHEDULE_DRAG": .object([
+                    "gripDwellMs": .number(Double(ScheduleDrag.gripDwellMs)),
+                    "holdMs": .number(Double(ScheduleDrag.holdMs)),
+                    "slopPt": .number(Double(ScheduleDrag.slopPt)),
+                    "scrollSettleMs": .number(Double(ScheduleDrag.scrollSettleMs)),
+                ])
+            ])
+        }
     }
 
     @Test func scheduleDates() {

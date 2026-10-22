@@ -51,7 +51,7 @@ async function Review({ params }: { params: Promise<{ reportId: string }> }) {
   const { data } = await db.rpc("report_preview", { target_report: reportId });
   const r = data as Preview | null;
   if (!r) notFound();
-  if (r.status !== "draft") redirect(`/jobs/${r.job_id}#wrap-up`);
+  if (r.status !== "draft") redirect(`/jobs/${r.job_id}?tab=wrap-up`);
 
   const s = r.snapshot;
   const company = await getCompany(office);
@@ -65,7 +65,7 @@ async function Review({ params }: { params: Promise<{ reportId: string }> }) {
       : Promise.resolve({ data: null }),
   ]);
   const hasText = (r.final_sections ?? []).some((x) => x.text.trim());
-  const back = `/jobs/${r.job_id}#wrap-up`;
+  const back = `/jobs/${r.job_id}?tab=wrap-up`;
 
   return (
     <>

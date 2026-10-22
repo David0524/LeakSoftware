@@ -134,6 +134,16 @@ public enum ActivityText {
     public static let detail = "Quotes, payments, reports, jobs, and texts"
 }
 
+/// Activity with a type picked in its Type menu (owner, 2026-10-22) and nothing of that type:
+/// "No activity on repair jobs yet." Texts aren't about a job, so they show only under All Types
+/// (`activityEmpty`).
+public func activityEmpty(_ filter: JobTypeFilter) -> String {
+    switch filter {
+    case .all: ActivityText.empty
+    case .type(let t): "No activity on \(t.label.lowercased()) jobs yet."
+    }
+}
+
 /// "Tony Reyes" -> "Tony".
 public func firstName(_ name: String?) -> String? {
     let trimmed = ECMA.trim(name ?? "")

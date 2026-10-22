@@ -33,9 +33,14 @@ public func requiresFinishedChecklist(_ settings: JSONValue?) -> Bool {
 public let finishChecklistMessage = "Finish the checklist before completing this job."
 
 /// What stops Complete Job (owner, 2026-10-19): the checklist first, then the photo. Nil when
-/// the job can be completed.
-public func completeJobBlocker(_ settings: JSONValue?, checklistToDo: Int, photos: Int) -> String? {
-    if requiresFinishedChecklist(settings) && checklistToDo > 0 { return finishChecklistMessage }
+/// the job can be completed. A repair job has no checklist (owner, 2026-10-22), so the checklist
+/// rule never holds one up.
+public func completeJobBlocker(_ settings: JSONValue?, checklistToDo: Int, photos: Int, type: String? = nil)
+    -> String?
+{
+    if requiresFinishedChecklist(settings) && jobHasChecklist(type) && checklistToDo > 0 {
+        return finishChecklistMessage
+    }
     if requiresFinishPhoto(settings) && photos == 0 { return finishPhotoMessage }
     return nil
 }
@@ -89,6 +94,11 @@ public func todayUndo(type: String, status: String, stopDoneOn: String?, day: St
 /// Maintenance visits don't (owner, 2026-10-19): they end with Complete Job, are billed monthly,
 /// and quote repairs from Details.
 public func jobHasWrapUp(_ type: String?) -> Bool { type != "maintenance" }
+
+/// Whether the job has a checklist: its Checklist section, its count, Open Checklist on Today, and
+/// the shop's "Finish the checklist first" rule. A repair job doesn't (owner, 2026-10-22: "Remove
+/// the checklist entirely for repair jobs."); rows an older repair job has are kept, not shown.
+public func jobHasChecklist(_ type: String?) -> Bool { type != "repair" }
 
 /// `job.intake`'s key for the price book item a repair was booked for (From the Customer).
 public let repairItemKey = "repair_item"

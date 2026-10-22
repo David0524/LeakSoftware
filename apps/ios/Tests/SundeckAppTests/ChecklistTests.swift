@@ -429,6 +429,8 @@ import Testing
         #expect(try service().summary == "1 needs attention")
         #expect(try service().summaryTone == .warning)
         #expect(try #require(try service().items.first).subline(photos: 0) == "Needs Attention")
+        #expect(try #require(try service().items.first).phoneSubline(photos: 0) == "Needs Attention")
+        #expect(try #require(try service().items.first).answerIcons.map(\.symbol) == [.check, .exclamation, .skip])
     }
 
     @Test func markRemainingAnswersEveryItemLeftInOneBatch() throws {
@@ -584,6 +586,10 @@ import Testing
         #expect(after.subline(photos: 2) == "2 photos · Visual · Dye test clean")
         #expect(after.subline(photos: 1) == "1 photo · Visual · Dye test clean")
         #expect(after.exclusionText == "Covered by deck")
+        // The phone's one line puts the chosen answer's word first (owner, 2026-10-22).
+        #expect(item.phoneSubline(photos: 0) == nil)
+        #expect(after.phoneSubline(photos: 1) == "N/A · 1 photo · Visual · Dye test clean")
+        #expect(after.answerIcons.map(\.symbol) == [.check, .drop, .exclamation, .minus])
     }
 
     @Test func theItemScreenSavesMethodAndAnExclusionReasonOnlyForNA() throws {

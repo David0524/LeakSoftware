@@ -26,6 +26,7 @@ import {
   NOT_ON_MAP,
   formatAddress,
   heroActions,
+  jobHasChecklist,
   heroDrive,
   heroTopLine,
   heroSegmentsSpoken,
@@ -126,7 +127,8 @@ export const TodayHeroCard = memo(function TodayHeroCard({
   // finished stop offers only Reopen Visit or Mark Not Complete.
   // The checklist all done: Mark Complete is the last thing, so it takes the row (owner,
   // 2026-10-22).
-  const actions = heroActions(hero.moment, mine, checklistDone);
+  // A repair job has no checklist: on site, Mark Complete alone (owner, 2026-10-22).
+  const actions = heroActions(hero.moment, mine, checklistDone, !job || jobHasChecklist(job.type));
   const target = job;
   const drive = job ? heroDrive(hero.moment, driveMin) : null;
   // "Up next" (the figure says "2 of 3") or "At the pool · Stop 2 of 3"; no clock times (gestures

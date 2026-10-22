@@ -88,7 +88,7 @@
                                 ChecklistGroup(
                                     jobId: job.id, section: section, photos: photos, editing: editing,
                                     choose: choose, saveWhere: saveWhere, remove: remove,
-                                    markRest: { markRest(section.items) }, undoMarked: undoMarked)
+                                    markRest: { markRest(section.items) })
                             }
                         }
                         if !model.addOptions.isEmpty { addItem(model, inspection).padding(.top, 16) }
@@ -159,22 +159,15 @@
             }
         }
 
-        /// Mark N Remaining, saved straight away; returns what Undo puts back.
-        private func markRest(_ items: [ChecklistItemRow]) -> MarkedUndo? {
-            guard let company = session.company else { return nil }
+        /// Mark N Remaining, saved straight away.
+        private func markRest(_ items: [ChecklistItemRow]) {
+            guard let company = session.company else { return }
             do {
-                let ids = try InspectionWrites.markRemaining(
+                _ = try InspectionWrites.markRemaining(
                     sync, companyId: company.id, jobId: job.id, items: items, userId: session.user?.id)
-                return ids.isEmpty ? nil : MarkedUndo(resultIds: ids)
             } catch {
                 saveError = String(describing: error)
-                return nil
             }
-        }
-
-        private func undoMarked(_ marked: MarkedUndo) {
-            guard let company = session.company else { return }
-            run { try marked.undo(sync, companyId: company.id) }
         }
 
         private func addAnother(_ type: ComponentType, _ inspection: JobInspection) {
@@ -239,8 +232,8 @@
     }
 
     /// One checklist section as a grouped block that folds away: a 56 tall header with a chevron,
-    /// the name and its summary; open, a row per item and "Mark N Remaining …", which shows
-    /// "Marked N" and Undo in its place for 5 seconds after (owner, 2026-10-20).
+    /// the name and its summary; open, a row per item and "Mark N Remaining …" (no "Marked N"
+    /// and Undo after it, owner 2026-10-22: each item's icons change it back).
     private struct ChecklistGroup: View {
         var jobId: String
         var section: ChecklistSectionRows
@@ -249,17 +242,14 @@
         var choose: (ChecklistItemRow, Verdict?) -> Void
         var saveWhere: (ChecklistItemRow, String) -> Void
         var remove: (ChecklistItemRow) -> Void
-        var markRest: () -> MarkedUndo?
-        var undoMarked: (MarkedUndo) -> Void
+        var markRest: () -> Void
         /// nil follows the items: open while any are to do.
         @State private var folded: Bool?
-        @State private var marked: MarkedUndo?
         @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
         var body: some View {
             // Editing opens every section, so each item shows its Remove button.
-            // Open while Undo shows, though nothing is left to do.
-            let open = section.isOpen(folded: folded, editing: editing) || marked != nil
+            let open = section.isOpen(folded: folded, editing: editing)
             VStack(spacing: 0) {
                 Button {
                     let shown = !(folded ?? !section.startsOpen)
@@ -301,23 +291,14 @@
                             choose: { choose(item, $0) }, saveWhere: { saveWhere(item, $0) },
                             remove: { remove(item) })
                     }
-                    if let marked {
+                    if let title = section.markRemainingTitle {
                         Hairline()
-                        UndoRow(text: marked.text) {
-                            undoMarked(marked)
-                            withAnimation(Motion.smooth) { self.marked = nil }
-                        }
-                        .padding(.horizontal, CGFloat(Spacing.rowHorizontal))
-                        .frame(maxWidth: .infinity, alignment: .leading)
-                    } else if let title = section.markRemainingTitle {
-                        Hairline()
-                        ActionRow(title) { withAnimation(Motion.smooth) { marked = markRest() } }
+                        ActionRow(title) { withAnimation(Motion.smooth) { markRest() } }
                     }
                 }
             }
             .background(Color.surface)
             .clipShape(RoundedRectangle(cornerRadius: CGFloat(Radius.grouped), style: .continuous))
-            .undoWindow($marked)
         }
 
         /// Barlow SemiBold 15.
@@ -336,10 +317,10 @@
         }
     }
 
-    /// One item: its name (opening the item's screen), then its answers as an inline segmented
-    /// control, full width and 44 tall (owner, 2026-10-20: one tap; tapping the chosen one again
-    /// clears it). "Where" under a Leaking or Attention item saves by itself 1 second after typing
-    /// stops and when it loses focus. Remove stays behind Edit and swipe to remove.
+    /// One item on one line (owner, 2026-10-22): its name, its answers as icon buttons (one tap;
+    /// tapping the chosen one again clears it), and "›" for the item's screen. "Where" under a
+    /// Leaking or Attention item saves by itself 1 second after typing stops and when it loses
+    /// focus. Remove stays behind Edit and swipe to remove.
     private struct ChecklistItemView: View {
         var jobId: String
         var item: ChecklistItemRow
@@ -421,41 +402,51 @@
             .padding(.vertical, 4)
         }
 
-        /// The name and its sub-line; tapping opens the item's screen (apps only).
+        /// The name and its sub-line (the chosen answer's word first). It opens nothing: tapping it
+        /// opened the item by accident (owner, 2026-10-22); the "›" at the row's end does.
         private var name: some View {
-            Button {
-                openRoute(.component(jobId: jobId, componentId: item.component.id))
-            } label: {
-                VStack(alignment: .leading, spacing: 2) {
-                    Text(item.component.label)
-                        .font(.role(.bodyMedium))
-                        .foregroundStyle(item.isCheck && item.isDone ? Color.textMuted : Color.text)
-                        .multilineTextAlignment(.leading)
-                    if let line = item.subline(photos: photos) {
-                        Text(line).textRole(.footnote).foregroundStyle(Color.textMuted).lineLimit(1)
-                    }
+            VStack(alignment: .leading, spacing: 2) {
+                Text(item.component.label)
+                    .font(.role(.bodyMedium))
+                    .foregroundStyle(item.isCheck && item.isDone ? Color.textMuted : Color.text)
+                    .multilineTextAlignment(.leading)
+                if let line = item.phoneSubline(photos: photos) {
+                    Text(line).textRole(.footnote).foregroundStyle(Color.textMuted).lineLimit(1)
                 }
-                .frame(maxWidth: .infinity, minHeight: minTarget, alignment: .leading)
-                .contentShape(Rectangle())
             }
-            .buttonStyle(.plain)
-            .accessibilityHint("Opens the item: method, notes, and photos")
+            .frame(maxWidth: .infinity, minHeight: minTarget, alignment: .leading)
+            .accessibilityElement(children: .combine)
         }
 
+        /// One line: the name, the answers as icons (one tap; the chosen one again clears it), and
+        /// "›" for the item's screen; Where and why it was left out under it when they apply.
         private var verdictRow: some View {
             VStack(alignment: .leading, spacing: 4) {
-                name
-                VerdictSegments(item: item, choose: choose)
+                HStack(spacing: 4) {
+                    name
+                    AnswerIconButtons(
+                        itemLabel: item.component.label,
+                        choices: zip(item.options, item.answerIcons).map { option, icon in
+                            AnswerIconChoice(
+                                label: option.label, icon: icon, chosen: option.value == item.verdict
+                            ) { choose(item.verdictAfterTap(option.value)) }
+                        },
+                        selection: item.verdict?.rawValue ?? "")
+                    ItemDetailsButton(itemLabel: item.component.label) {
+                        openRoute(.component(jobId: jobId, componentId: item.component.id))
+                    }
+                }
                 if item.needsWhere && item.result != nil {
-                    whereField
+                    whereField.padding(.trailing, 12)
                     if savedWhere { SavedLabel() }
                 }
                 if let reason = item.exclusionText {
                     Text(reason).textRole(.secondary).foregroundStyle(Color.textMuted)
                 }
             }
-            .padding(.horizontal, 16)
-            .padding(.vertical, 8)
+            .padding(.leading, 16)
+            .padding(.trailing, 4)
+            .padding(.vertical, 4)
         }
 
         private var whereField: some View {
@@ -499,60 +490,6 @@
             guard text != (item.result?.locationText ?? "") else { return }
             saveWhere(text)
             withAnimation { savedWhere = true }
-        }
-    }
-
-    /// An item's answers in one tap (owner, 2026-10-20): the core `verdictOptions` labels as a
-    /// segmented control, 44 tall and full row width; the chosen one in its status color, and
-    /// tapping it again clears it back to To do.
-    private struct VerdictSegments: View {
-        var item: ChecklistItemRow
-        var choose: (Verdict?) -> Void
-
-        var body: some View {
-            HStack(spacing: 2) {
-                ForEach(item.options, id: \.value) { option in
-                    let chosen = option.value == item.verdict
-                    Button {
-                        choose(item.verdictAfterTap(option.value))
-                    } label: {
-                        Text(option.label)
-                            .font(.role(.segment).weight(chosen ? .semibold : .medium))
-                            .foregroundStyle(chosen ? Color.onStatus : Color.text)
-                            .lineLimit(1)
-                            .minimumScaleFactor(0.7)
-                            .padding(.horizontal, 4)
-                            .frame(maxWidth: .infinity, minHeight: 40)
-                            .background {
-                                if chosen { Capsule().fill(color(option.value)) }
-                            }
-                            .contentShape(Capsule())
-                    }
-                    .buttonStyle(.plain)
-                    .accessibilityLabel(option.label)
-                    .accessibilityAddTraits(chosen ? [.isSelected] : [])
-                    .accessibilityHint(chosen ? "Tap again to clear" : "")
-                }
-            }
-            .padding(2)
-            .background(
-                RoundedRectangle(cornerRadius: CGFloat(Radius.segmentTrack), style: .continuous).fill(Color.fill)
-            )
-            .animation(Motion.bouncy, value: item.verdict)
-            .sensoryFeedback(.selection, trigger: item.verdict)
-            .keepsHorizontalDrags()
-            .accessibilityElement(children: .contain)
-            .accessibilityLabel(item.component.label)
-            .accessibilityValue(item.verdictLabel)
-        }
-
-        private func color(_ verdict: Verdict) -> Color {
-            switch verdict {
-            case .ok: .pass
-            case .leaking: .fail
-            case .attention: .warning
-            case .na: .excluded
-            }
         }
     }
 #endif

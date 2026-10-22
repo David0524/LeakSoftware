@@ -344,3 +344,67 @@ public func sortJobs<T>(_ jobs: [T], sort: JobSort, item: (T) -> JobSortItem) ->
         return i < j
     }.map { jobs[$0] }
 }
+
+// MARK: - Filtering by job type (owner, 2026-10-22: "Add a filter on the jobs and activity pages for job type")
+
+/// All Types, or one job type (`JobTypeFilter`).
+public enum JobTypeFilter: Hashable, Sendable {
+    case all
+    case type(JobType)
+
+    /// "all", or the type's value ("repair"), as the website's address writes it.
+    public var key: String {
+        switch self {
+        case .all: "all"
+        case .type(let t): t.rawValue
+        }
+    }
+
+    /// The menu's words: "All Types", or the type's name in Title Case ("Leak Detection";
+    /// `jobTypeFilterLabel`).
+    public var label: String {
+        switch self {
+        case .all: JobTypeFilterText.all
+        case .type(let t):
+            t.label.split(separator: " ", omittingEmptySubsequences: false)
+                .map { $0.prefix(1).uppercased() + $0.dropFirst() }
+                .joined(separator: " ")
+        }
+    }
+}
+
+/// The Type menu's words (`JOB_TYPE_FILTER_TITLE`, `ALL_JOB_TYPES`).
+public enum JobTypeFilterText {
+    /// The menu's name, beside Sort.
+    public static let title = "Type"
+    /// The menu's first choice: no filter.
+    public static let all = "All Types"
+}
+
+/// The Type menu on Jobs and Activity, in order (`jobTypeFilters`): All Types, then the jobs the
+/// shop does in New Job's order (a pool care shop sees no leak detection, a leak shop no
+/// maintenance).
+public func jobTypeFilters(_ services: Services) -> [JobTypeFilter] {
+    [.all] + newJobTypes(services).map { .type($0.value) }
+}
+
+/// A type from a saved choice; All Types when the shop's menu lacks it (`jobTypeFilter`).
+public func jobTypeFilter(_ key: String?, _ services: Services) -> JobTypeFilter {
+    jobTypeFilters(services).first { $0.key == key } ?? .all
+}
+
+/// Whether a job of this type shows under the filter (`matchesJobType`).
+public func matchesJobType(_ type: String?, _ filter: JobTypeFilter) -> Bool {
+    switch filter {
+    case .all: true
+    case .type(let t): type == t.rawValue
+    }
+}
+
+/// The Jobs list with nothing to show: "No repair jobs here." with a type picked (`jobsEmpty`).
+public func jobsEmpty(_ filter: JobTypeFilter) -> String {
+    switch filter {
+    case .all: "No jobs here. Add one with New Job, or on the phone."
+    case .type(let t): "No \(t.label.lowercased()) jobs here."
+    }
+}

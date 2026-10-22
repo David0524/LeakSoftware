@@ -701,6 +701,11 @@
                 try store.write("job", id: first.id, companyId: "c1", ["stop_done_on": .string(today)])
             }
             try await snapshot("30-today-marked", height: 1500, MainView().app(env))
+            // Reorder (owner, 2026-10-22): Reorder and Done in the bar, no Move Up / Move Down,
+            // and the logo's wordmark folding away as the list scrolls.
+            func reorder() -> some View { MainView().environment(\.todayStartsReordering, true).app(env) }
+            try await snapshot("30-today-reorder", reorder())
+            try await snapshot("30-today-reorder-scrolled", scrolled: 160, reorder())
             let empty = try sampleEnvironment(jobs: false)
             try await snapshot("30-today-empty", MainView().app(empty))
         }
@@ -995,7 +1000,14 @@
             let repair = NewJobForm(sync: env.session.sync, company: company, userId: "u1")
             repair.jobType = .repair
             repair.jobTypeChanged()
-            repair.pickRepairItem(repair.repairItems.first)
+            // Two repairs (owner, 2026-10-22: "add additional repair").
+            if let first = repair.repairItems.first {
+                repair.chooseRepair(repair.repairs[0].id, pick: first.id)
+            }
+            repair.addAdditionalRepair()
+            if let second = repair.repairItems.dropFirst().first, let entry = repair.repairs.last {
+                repair.chooseRepair(entry.id, pick: second.id)
+            }
             repair.notes = "Pump hums but won't start. Breaker trips after a minute."
             try await snapshot(
                 "08-new-job-repair", height: 2600,
@@ -1022,9 +1034,21 @@
             }
             try await snapshot("19-photos", height: 1800, page(JobPhotosSection(job: job)))
             try await snapshot("19-photos-dark", dark: true, height: 1800, page(JobPhotosSection(job: job)))
-            try await snapshot("20-wrap-up", height: 5200, page(WrapUpSection(job: job)))
-            try await snapshot("20-wrap-up-dark", dark: true, height: 5200, page(WrapUpSection(job: job)))
-            try await snapshot("20-wrap-up-large-text", largeText: true, height: 7000, page(WrapUpSection(job: job)))
+            // The finish list (owner, 2026-10-22, option A), then each step's sheet.
+            try await snapshot("20-wrap-up", height: 1400, page(WrapUpSection(job: job)))
+            try await snapshot("20-wrap-up-dark", dark: true, height: 1400, page(WrapUpSection(job: job)))
+            try await snapshot("20-wrap-up-large-text", largeText: true, height: 2400, page(WrapUpSection(job: job)))
+            let store = env.session.sync.store
+            let list = wrapUp(wrapUpInput(store: store, companyId: "c1", settings: nil, job: job))
+            let quote = jobQuotes(store, companyId: "c1", jobId: job.id).first?.id
+            for (name, step) in [
+                ("report", WrapUpOpen(step: .report, refId: nil)), ("quote", WrapUpOpen(step: .quote, refId: quote)),
+                ("sign", WrapUpOpen(step: .sign, refId: nil)), ("invoice", WrapUpOpen(step: .invoice, refId: nil)),
+            ] {
+                try await snapshot(
+                    "20-wrap-up-\(name)", height: 3600,
+                    WrapUpStepSheet(job: job, step: step, title: step.title(list)).app(env))
+            }
 
             let sent = try sampleEnvironment()
             let sentIds = try seedInspection(sent)
@@ -1032,9 +1056,16 @@
             let sentJob = try #require(
                 try jobViews(sent.session.sync.store, companyId: "c1").first { $0.id == sentIds.job })
             try await snapshot(
-                "21-wrap-up-sent", height: 3600,
+                "21-wrap-up-sent", height: 1400,
                 NavigationStack { ScreenScroll { WrapUpSection(job: sentJob) }.navigationTitle("Job #1042") }
                     .app(sent))
+            try await snapshot(
+                "21-wrap-up-sent-invoice", height: 2400,
+                WrapUpStepSheet(job: sentJob, step: WrapUpOpen(step: .invoice, refId: nil), title: "Invoice").app(sent))
+            // Next Step bar on Wrap-Up: the next step's action above the tab bar.
+            try await snapshot(
+                "21-wrap-up-bar", height: 1400,
+                NavigationStack { JobScreen(jobId: sentIds.job, section: .wrapUp) }.app(sent))
         }
 
         // MARK: Messages and More (spec 5.7 to 5.13, 6.6)
@@ -1174,6 +1205,12 @@
             try await snapshot(
                 "47-visit-photo-needed-dark", dark: true, height: 2600,
                 NavigationStack { JobScreen(jobId: visit.id, section: .checklist, photoNeeded: true) }.app(env))
+            // Done: the visit report on the Next Step bar (owner, 2026-10-22: "really buried").
+            try store.write("job", id: visit.id, companyId: "c1", ["status": "done"])
+            try await snapshot(
+                "47-visit-report-bar", height: 1600,
+                NavigationStack { JobScreen(jobId: visit.id, section: .details) }.app(env))
+            try store.write("job", id: visit.id, companyId: "c1", ["status": "in_progress"])
             let sam = try #require(try store.list("customer").first { $0["name"] == "Sam Sample" }?.id)
             try await snapshot(
                 "47-customer-chemical", height: 1800, NavigationStack { CustomerScreen(customerId: sam) }.app(env))

@@ -461,7 +461,9 @@ import Testing
     }
 
     /// From the Customer on a repair (owner, 2026-10-19): the price book items the owner picked,
-    /// or every active one; picking fills the Price; the name is saved in `intake.repair_item`.
+    /// or every active one; picking fills that repair's price. Add Additional Repair (owner,
+    /// 2026-10-22) books more: each is a `job_repair` row, the job's price is their sum, and
+    /// their names are kept in `intake.repair_item`.
     @Test func whenTheyCallPicksWhatTheyNeedAndSavesIt() throws {
         let (customer, _) = try seedCustomer(spa: false)
         func item(_ n: Int, _ name: String, cents: Int, sort: Int, onCall: JSONValue, active: Bool = true) -> PulledRow
@@ -494,29 +496,88 @@ import Testing
         // Once the owner picks some: only those, active, in order.
         #expect(f.repairItems.map(\.label) == ["Pump motor ($450.00)", "Heater igniter ($185.00)"])
         let pump = try #require(f.repairItems.first)
-        f.pickRepairItem(pump)
-        #expect(f.repairItem == pump && f.fee == "450.00" && f.isDirty)
+        let first = try #require(f.repairs.first)
+        f.chooseRepair(first.id, pick: pump.id)
+        #expect(f.repairs.first?.draft == RepairDraft(pick: pump.id, price: "450.00") && f.isDirty)
         // "Pick from the price book…" keeps the price typed.
-        f.pickRepairItem(nil)
-        #expect(f.repairItem == nil && f.fee == "450.00")
-        f.pickRepairItem(pump)
-        f.fee = "475.00"
+        f.chooseRepair(first.id, pick: "")
+        #expect(f.repairs.first?.draft == RepairDraft(pick: "", price: "450.00"))
+        f.chooseRepair(first.id, pick: pump.id)
+        f.setRepairPrice(first.id, "475.00")
+        // Add Additional Repair: Something else, typed, then one more that's removed again.
+        f.addAdditionalRepair()
+        f.addAdditionalRepair()
+        #expect(f.repairs.count == 3)
+        let second = f.repairs[1]
+        f.chooseRepair(second.id, pick: repairCustom)
+        #expect(f.repairIsTyped(f.repairs[1]))
+        f.setRepairDescription(second.id, "Skimmer lid")
+        f.removeAdditionalRepair(f.repairs[2].id)
+        f.removeAdditionalRepair(first.id)
+        #expect(f.repairs.count == 2)
         f.notes = "Motor hums but won't start"
         f.mode = .existing
         f.selectCustomer(customer)
         f.input.scheduleDate = f.tomorrow
+        // Something else needs its price.
+        #expect(throws: NewJobFormError.self) { try f.save() }
+        #expect(f.repairErrors.map(\.price) == [nil, "Enter a price like 185."])
+        f.setRepairPrice(second.id, "25")
+        #expect(f.repairsTotalCents == 50000)
         let pending = try sync.store.pendingCount()
         let job = try #require(try sync.store.get("job", f.save()))
         #expect(job["type"] == "repair")
-        #expect(job["intake"] == [repairItemKey: "Pump motor"])
-        #expect(job["fee_cents"] == 47500)
+        #expect(job["intake"] == [repairItemKey: "Pump motor, Skimmer lid"])
+        #expect(job["fee_cents"] == 50000)
         #expect(job["summary_notes"] == "Motor hums but won't start")
         #expect(try sync.store.pendingCount() > pending)
-        // The job page shows it under "From the Customer".
+        let rows = try sync.store.list("job_repair", companyId: Self.company, jobId: job.id)
+            .sorted { ($0["sort_order"]?.number ?? 0) < ($1["sort_order"]?.number ?? 0) }
+        #expect(rows.map { $0["description"]?.string } == ["Pump motor", "Skimmer lid"])
+        #expect(rows.map { $0["price_cents"]?.number } == [47500, 2500])
+        #expect(rows.first?["price_book_item_id"]?.string == pump.id)
+        // The job page lists them under Repairs (not "What they need"), with their total.
         let view = try #require(try jobViews(sync.store, companyId: Self.company).first { $0.id == job.id })
         let details = JobDetails(job: view, team: [], settings: .null)
-        #expect(details.intakeTitle == "From the Customer")
-        #expect(details.intake.first == IntakeAnswer(question: "What they need", answer: "Pump motor"))
+        #expect(details.showsRepairs && !details.showsFee && details.intake.isEmpty)
+        let lines = jobRepairs(sync.store, job: job)
+        #expect(lines.map(\.description) == ["Pump motor", "Skimmer lid"])
+
+        // Add Additional Repair on the job, then remove one: local rows, and the price follows.
+        try addJobRepair(
+            sync, job: job, RepairValues(priceBookItemId: nil, description: "Heater igniter", priceCents: 18500))
+        let after = try #require(try sync.store.get("job", job.id))
+        #expect(after["fee_cents"] == 68500)
+        #expect(
+            jobRepairs(sync.store, job: after).map(\.description) == ["Pump motor", "Skimmer lid", "Heater igniter"])
+        let lid = try #require(lines.last)
+        try removeJobRepair(sync, job: after, id: lid.id)
+        let end = try #require(try sync.store.get("job", job.id))
+        #expect(end["fee_cents"] == 66000)
+        #expect(jobRepairs(sync.store, job: end).map(\.description) == ["Pump motor", "Heater igniter"])
+    }
+
+    /// A repair booked before repairs were rows (`intake.repair_item` and the price only): it shows
+    /// as the job's one repair, and adding another writes it as a row with the job's id first.
+    @Test func olderRepairJobGetsAnAdditionalRepair() throws {
+        let (customer, _) = try seedCustomer(spa: false)
+        let f = form()
+        f.jobType = .detection
+        f.mode = .existing
+        f.selectCustomer(customer)
+        f.input.scheduleDate = f.tomorrow
+        let id = try f.save()
+        try sync.store.write(
+            "job", id: id, companyId: Self.company,
+            ["type": "repair", "fee_cents": 45000, "intake": [repairItemKey: "Pump motor"]])
+        let job = try #require(try sync.store.get("job", id))
+        #expect(jobRepairs(sync.store, job: job).map(\.booked) == [true])
+        try addJobRepair(sync, job: job, RepairValues(priceBookItemId: nil, description: "Lid", priceCents: 2500))
+        let rows = try sync.store.list("job_repair", companyId: Self.company, jobId: id)
+        #expect(rows.contains { $0.id == id && $0["description"] == "Pump motor" })
+        #expect(try sync.store.get("job", id)?["fee_cents"] == 47500)
+        let after = try #require(try sync.store.get("job", id))
+        #expect(jobRepairs(sync.store, job: after).map(\.description) == ["Pump motor", "Lid"])
     }
 
     /// Gallons (owner, 2026-10-19: replaces "Size of the pool"): in From the Customer on leak

@@ -14,6 +14,7 @@ import {
   NOT_ON_MAP,
   directionsHref,
   heroActions,
+  jobHasChecklist,
   checklistReady,
   COMPLETE_READY_LINE,
   heroDrive,
@@ -182,10 +183,12 @@ export function TodayHeroCard({
   // The checklist all done: Mark Complete is the last thing, so it takes the row (owner,
   // 2026-10-22).
   const shown = stops.find((s) => s.id === hero.stopId);
+  // A repair job has no checklist: on site, Mark Complete alone (owner, 2026-10-22).
   const actions = heroActions(
     hero.moment,
     mine,
     !!shown && checklistReady(shown.checklistDone, shown.checklistTotal),
+    !shown || jobHasChecklist(shown.type),
   );
   const drive = job ? heroDrive(hero.moment, job.driveMin) : null;
   // "Up next" (the figure says "2 of 5"), or "At the pool · Stop 2 of 5"; no clock times
@@ -574,7 +577,7 @@ function Primary({
   const button = cx(BUTTON, ON_WATER, inline && "min-h-11");
   if (action === "open_checklist" || started)
     return (
-      <Link href={`/jobs/${job.id}#checklist`} className={button}>
+      <Link href={`/jobs/${job.id}?tab=checklist`} className={button}>
         {HERO_ACTION_LABELS.open_checklist}
       </Link>
     );

@@ -43,9 +43,11 @@ public func jobChecklistToDo(_ store: LocalStore, jobId: String) -> Int {
 
 /// What stops Complete Job (core `completeJobBlocker`) from what's on this phone: the checklist
 /// first, then the pool photo (photos waiting to upload count). Nil when it can be completed.
+/// A repair job has no checklist (owner, 2026-10-22), so only its photo can hold it up.
 public func completeJobBlock(_ store: LocalStore, settings: JSONValue?, jobId: String) -> String? {
     completeJobBlocker(
-        settings, checklistToDo: jobChecklistToDo(store, jobId: jobId), photos: jobPhotoCount(store, jobId: jobId))
+        settings, checklistToDo: jobChecklistToDo(store, jobId: jobId), photos: jobPhotoCount(store, jobId: jobId),
+        type: (try? store.get("job", jobId))??["type"]?.string)
 }
 
 /// Whether moving a job to `to` waits for something: any job type moving to Done, as the
@@ -75,6 +77,9 @@ public enum FinishPhotoText {
 /// Mark Complete on a Today stop's words (owner, 2026-10-19).
 public enum MarkStopText {
     public static let complete = "Mark Complete"
+    /// On a Today stop's row, so Complete, Do Later and the contact buttons fit on one line (owner,
+    /// 2026-10-22: "I don't like these being on 2 rows"). VoiceOver still says Mark Complete.
+    public static let completeShort = "Complete"
     public static let notComplete = TodayUndo.markNotComplete.label
     public static let reopenVisit = TodayUndo.reopenVisit.label
     public static let openJob = "Open Job"

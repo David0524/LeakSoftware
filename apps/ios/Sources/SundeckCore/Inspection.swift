@@ -442,7 +442,8 @@ public struct PlannedComponent: Codable, Equatable, Sendable {
 public func planComponents(_ types: [ComponentType], _ property: Property, _ jobType: JobType = .detection)
     -> [PlannedComponent]
 {
-    // A repair job has no checklist: no item's job_type is "repair".
+    // A repair job has no checklist (owner, 2026-10-22).
+    if !jobHasChecklist(jobType.rawValue) { return [] }
     let applicable = types.filter {
         isLive($0.deletedAt) && $0.active && $0.onSchedule != true && ($0.jobType ?? .detection) == jobType
             && componentApplies($0, property)

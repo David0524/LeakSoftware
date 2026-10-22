@@ -1,8 +1,8 @@
 // Discard changes, everywhere (owner, 2026-10-20: "should apply everywhere"): an editor with
 // unsaved changes asks "Discard changes?" before it closes. "Unsaved" is what its fields hold
 // now against what they held when it opened (or last saved). Fields that save by themselves
-// (marked data-autosave) never count. Hidden inputs do: a segmented control keeps its choice
-// in one.
+// (marked data-autosave) never count, nor do read-only ones (a link to copy). Hidden inputs do:
+// a segmented control keeps its choice in one.
 
 /** One field as the editor holds it. */
 export interface FieldValue {
@@ -39,14 +39,17 @@ export function fieldsOf(root: ParentNode): FieldValue[] {
   const els = root.querySelectorAll<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>(
     "input, select, textarea",
   );
-  return [...els].map((el, i) => ({
-    key: el.name || el.id || String(i),
-    type: el instanceof HTMLInputElement ? el.type : el.tagName.toLowerCase(),
-    value: el.value,
-    checked: el instanceof HTMLInputElement ? el.checked : undefined,
-    autosave: el.closest("[data-autosave]") !== null,
-    files: el instanceof HTMLInputElement ? (el.files?.length ?? 0) : undefined,
-  }));
+  // A read-only field (a customer link to copy) can't hold an edit.
+  return [...els]
+    .filter((el) => el instanceof HTMLSelectElement || !el.readOnly)
+    .map((el, i) => ({
+      key: el.name || el.id || String(i),
+      type: el instanceof HTMLInputElement ? el.type : el.tagName.toLowerCase(),
+      value: el.value,
+      checked: el instanceof HTMLInputElement ? el.checked : undefined,
+      autosave: el.closest("[data-autosave]") !== null,
+      files: el instanceof HTMLInputElement ? (el.files?.length ?? 0) : undefined,
+    }));
 }
 
 /** The question before unsaved changes are thrown away (item 4's alert). */

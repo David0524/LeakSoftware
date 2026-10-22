@@ -18,6 +18,10 @@ import { weekPlan } from "./cases/week-plan";
 import { download } from "./cases/download";
 import { team } from "./cases/team";
 import { logoColors } from "./cases/logo-colors";
+import { wrapUpCases } from "./cases/wrap-up";
+import { visitReportBarCases } from "./cases/visit-report-bar";
+import { repairs } from "./cases/repairs";
+import { answerIcons } from "./cases/answer-icons";
 
 /** One fixture file per entry: apps/ios/Tests/Fixtures/<name>.json. */
 export const modules: Record<string, ModuleCases> = {
@@ -40,4 +44,8 @@ export const modules: Record<string, ModuleCases> = {
   download,
   team,
   "logo-colors": logoColors,
+  "wrap-up": wrapUpCases,
+  "visit-report-bar": visitReportBarCases,
+  repairs,
+  "answer-icons": answerIcons,
 };

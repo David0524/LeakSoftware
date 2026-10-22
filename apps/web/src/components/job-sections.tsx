@@ -16,28 +16,51 @@ export interface JobSection {
   content: ReactNode;
 }
 
+const TAB_EVENT = "leakbook:job-tab";
+
+/** The part named in the URL: ?tab=checklist, or an older link's #checklist. */
+function tabInUrl() {
+  return new URLSearchParams(window.location.search).get("tab") ?? window.location.hash.slice(1);
+}
+
 /**
- * The job page in parts. Phones get a segmented switcher pinned under the navigation bar,
- * one part at a time (the page was 15 screens long); wider screens keep one page.
- * The part shown is kept in the URL (#checklist) so a reload or a shared link returns to it.
+ * The job page in parts, one at a time, on every screen (owner, 2026-10-22: "The browser's job
+ * page need different tabs too just like mobile"): a segmented switcher under the title, pinned
+ * under the navigation bar on phones (the page was 15 screens long). The part shown is kept in
+ * the URL (?tab=checklist) so a reload, a shared link, or Back to the job returns to it. Wider
+ * screens use their width inside a part, and on the widest the checklist has its part's
+ * neighbour (`beside`, the pool diagram and findings) next to it.
  */
 export function JobSections({
   sections,
   nextStep,
+  initial,
+  beside,
 }: {
   sections: JobSection[];
   /** The job, for the phone's Next Step bar (owner, 2026-10-20). */
   nextStep?: NextStepJob;
+  /** The part the request asked for (?tab=), so the first paint shows it. */
+  initial?: string;
+  /** A part shown beside another on wide screens: { checklist: "findings" }. */
+  beside?: Record<string, string>;
 }) {
-  const hash = useSyncExternalStore(
+  const asked = useSyncExternalStore(
     (onChange) => {
       window.addEventListener("hashchange", onChange);
-      return () => window.removeEventListener("hashchange", onChange);
+      window.addEventListener("popstate", onChange);
+      window.addEventListener(TAB_EVENT, onChange);
+      return () => {
+        window.removeEventListener("hashchange", onChange);
+        window.removeEventListener("popstate", onChange);
+        window.removeEventListener(TAB_EVENT, onChange);
+      };
     },
-    () => window.location.hash.slice(1),
-    () => "",
+    tabInUrl,
+    () => initial ?? "",
   );
-  const active = sections.some((s) => s.id === hash) ? hash : sections[0]!.id;
+  const active = sections.some((s) => s.id === asked) ? asked : sections[0]!.id;
+  const companion = beside?.[active];
 
   const index = sections.findIndex((s) => s.id === active);
   // Hold the chosen part and drag it along, and swipe across the page for the next or previous
@@ -46,7 +69,7 @@ export function JobSections({
   const { held, handlers } = useSegmentDrag(index, (i) => choose(sections[i]!.id));
   const shown = held ?? index;
   const track = useTrackOverflow<HTMLDivElement>(index);
-  // Wider screens show every part on one page, so only phones page.
+  // Swipes between parts are for phones.
   const phone = useSyncExternalStore(
     (onChange) => {
       const q = matchMedia(PHONE);
@@ -76,9 +99,12 @@ export function JobSections({
   function choose(id: string) {
     if (id === active) return;
     scrolled.current.set(active, window.scrollY);
-    // replaceState keeps Back for leaving the job; tell the store the hash changed.
-    history.replaceState(null, "", `#${id}`);
-    window.dispatchEvent(new HashChangeEvent("hashchange"));
+    // replaceState keeps Back for leaving the job; tell the store the part changed.
+    const url = new URL(window.location.href);
+    url.searchParams.set("tab", id);
+    url.hash = "";
+    history.replaceState(null, "", url);
+    window.dispatchEvent(new Event(TAB_EVENT));
     restore.current = scrolled.current.get(id) ?? 0;
   }
 
@@ -87,7 +113,7 @@ export function JobSections({
       {/* As in iOS: the segmented control sits on the page, and once scrolled it stays under
           the navigation bar on the same frosted bar, one hairline below both (no floating
           card). */}
-      <div className="nav-accessory glass-bar sticky top-[calc(2.75rem+env(safe-area-inset-top))] z-20 -mx-4 mb-4 px-4 py-2 sm:hidden">
+      <div className="nav-accessory glass-bar sticky top-[calc(2.75rem+env(safe-area-inset-top))] z-20 -mx-4 mb-4 px-4 py-2 sm:static sm:mx-0 sm:mb-6 sm:max-w-2xl sm:px-0 sm:py-0">
         {/* Five equal segments; a label that needs more room gets its own width, and with
             large text the row scrolls inside the track (useTrackOverflow) instead of the
             labels running into each other. */}
@@ -143,17 +169,31 @@ export function JobSections({
         onPrev={() => go(-1)}
         onNext={() => go(1)}
       >
-        {sections.map((s, i) => (
-          <div
-            key={s.id}
-            id={`part-${s.id}`}
-            role="tabpanel"
-            aria-labelledby={`tab-${s.id}`}
-            className={cx(i > 0 && "sm:mt-10", active !== s.id && "max-sm:hidden")}
-          >
-            {s.content}
-          </div>
-        ))}
+        <div
+          className={cx(
+            companion &&
+              "xl:grid xl:grid-cols-[minmax(0,3fr)_minmax(0,2fr)] xl:items-start xl:gap-8",
+          )}
+        >
+          {sections.map((s) => (
+            <div
+              key={s.id}
+              id={`part-${s.id}`}
+              role="tabpanel"
+              aria-labelledby={`tab-${s.id}`}
+              className={cx(
+                active === s.id
+                  ? undefined
+                  : companion === s.id
+                    ? // Beside the chosen part on the widest screens only.
+                      "hidden xl:block"
+                    : "hidden",
+              )}
+            >
+              {s.content}
+            </div>
+          ))}
+        </div>
       </SwipePages>
       {nextStep ? <NextStepBar section={active} job={nextStep} /> : null}
     </>

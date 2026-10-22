@@ -364,14 +364,15 @@ test("on a phone, a stop drags by its grip to another place in the day", async (
   expect(grip44.height).toBeGreaterThanOrEqual(44);
 
   // A plain drag on the tile scrolls the page; it doesn't pick the job up (owner, 2026-10-21:
-  // "I can't scroll on a Scheduling tile"). The tile leaves vertical panning to the browser
-  // (only the grip is touch-action: none), and a finger dragged up its body moves nothing.
+  // "I can't scroll on a Scheduling tile"). The tile and the grip leave panning to the browser
+  // (owner, 2026-10-22: a flick that starts on the grip scrolls too), and a finger dragged up
+  // its body moves nothing.
   // (Headless Chromium here doesn't scroll the page for a synthesized touch gesture anywhere,
   // even on the title, so the scroll itself isn't measured.)
   const body0 = tempe.getByTestId("stop-line");
   await body0.evaluate((el) => el.scrollIntoView({ block: "center" }));
   expect(await body0.evaluate((el) => getComputedStyle(el).touchAction)).not.toBe("none");
-  expect(await grip.evaluate((el) => getComputedStyle(el).touchAction)).toBe("none");
+  expect(await grip.evaluate((el) => getComputedStyle(el).touchAction)).not.toBe("none");
   {
     const b = (await body0.boundingBox())!;
     const cdp = await context.newCDPSession(page);
@@ -402,8 +403,6 @@ test("on a phone, a stop drags by its grip to another place in the day", async (
   expect(new URL(page.url()).pathname).toBe("/schedule");
   await expect(page.getByRole("menu")).toHaveCount(0);
 
-  // The grip drags at once on touch down, no hold first; then drag it above the first stop
-  // (touch events, as a finger).
   // The first and last stops on screen together (touch points are in the viewport).
   await route
     .getByTestId("stop")
@@ -420,7 +419,37 @@ test("on a phone, a stop drags by its grip to another place in the day", async (
   const x = from.x + from.width / 2;
   const y0 = from.y + from.height / 2;
   const y1 = first.y + 8;
+  const unmoved = async () => {
+    await page.waitForTimeout(600);
+    await expect(page.getByText("Moved.", { exact: true })).toHaveCount(0);
+    expect((await routeNames(page, "Priya Shah"))[2]).toBe(name("tempe"));
+    await expect(route.locator("[data-testid=stop].invisible")).toHaveCount(0);
+  };
+
+  // A flick that starts on the grip scrolls; it never moves the job (owner, 2026-10-22: "It's
+  // slightly too easy to slide jobs around in the schedule when flicking to scroll"): the
+  // finger is past the 8 px slop before it has rested there.
   await touch("touchStart", x, y0);
+  for (let i = 1; i <= 8; i++) await touch("touchMove", x, y0 + ((y1 - y0) * i) / 8);
+  await touch("touchEnd");
+  await unmoved();
+
+  // A finger that lands on the grip while the page is still gliding only stops it, however
+  // long it then rests.
+  await page.evaluate(() => document.dispatchEvent(new Event("scroll")));
+  await touch("touchStart", x, y0);
+  await page.waitForTimeout(250);
+  for (let i = 1; i <= 8; i++) {
+    await touch("touchMove", x, y0 + ((y1 - y0) * i) / 8);
+    await page.waitForTimeout(16);
+  }
+  await touch("touchEnd");
+  await unmoved();
+
+  // Rested on the grip a moment (no hold: about a tenth of a second), it lifts; then drag it
+  // above the first stop (touch events, as a finger).
+  await touch("touchStart", x, y0);
+  await page.waitForTimeout(250);
   for (let i = 1; i <= 20; i++) {
     await touch("touchMove", x, y0 + ((y1 - y0) * i) / 20);
     await page.waitForTimeout(16);
@@ -528,6 +557,19 @@ test("a stop's tile drags from anywhere on it: a mouse past 6 px, a finger after
     });
   const x = b.x + 20;
   const y0 = b.y + b.height - 8;
+  // A slow scroll from the tile isn't a hold (owner, 2026-10-22: "avoid flicks and anything
+  // else unintentional"): past the 8 px slop before 0.4 s, the page has the touch, however long
+  // the finger then stays.
+  await touch("touchStart", x, y0);
+  for (let i = 1; i <= 10; i++) {
+    await touch("touchMove", x, y0 - i * 3);
+    await phone.waitForTimeout(30);
+  }
+  await phone.waitForTimeout(500);
+  await expect(proute.locator("[data-testid=stop].invisible")).toHaveCount(0);
+  await touch("touchEnd");
+  await phone.waitForTimeout(300);
+  expect((await mine(phone))[2]).toBe(lastName);
   await touch("touchStart", x, y0);
   // Held still for half a second: it lifts.
   await phone.waitForTimeout(550);

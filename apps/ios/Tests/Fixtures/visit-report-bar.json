@@ -1,0 +1,177 @@
+{
+  "visitReportBar": [
+    {
+      "args": [
+        "maintenance",
+        "done",
+        "manual",
+        null,
+        "2026-10-22T20:00:00Z",
+        "America/Los_Angeles"
+      ],
+      "result": {
+        "line": "Ready to send",
+        "action": "send",
+        "label": "Send Visit Report"
+      }
+    },
+    {
+      "args": [
+        "maintenance",
+        "done",
+        "auto",
+        null,
+        "2026-10-22T20:00:00Z",
+        "America/Los_Angeles"
+      ],
+      "result": {
+        "line": "Not sent yet",
+        "action": "send",
+        "label": "Send Visit Report"
+      }
+    },
+    {
+      "args": [
+        "maintenance",
+        "in_progress",
+        "auto",
+        null,
+        "2026-10-22T20:00:00Z",
+        "America/Los_Angeles"
+      ],
+      "result": {
+        "line": "Sends by itself when you finish",
+        "action": null,
+        "label": null
+      }
+    },
+    {
+      "args": [
+        "maintenance",
+        "scheduled",
+        "auto",
+        null,
+        "2026-10-22T20:00:00Z",
+        "America/Los_Angeles"
+      ],
+      "result": {
+        "line": "Sends by itself when you finish",
+        "action": null,
+        "label": null
+      }
+    },
+    {
+      "args": [
+        "maintenance",
+        "in_progress",
+        "manual",
+        null,
+        "2026-10-22T20:00:00Z",
+        "America/Los_Angeles"
+      ],
+      "result": null
+    },
+    {
+      "args": [
+        "maintenance",
+        "done",
+        "manual",
+        "2026-10-22T21:14:00Z",
+        "2026-10-22T20:00:00Z",
+        "America/Los_Angeles"
+      ],
+      "result": {
+        "line": "Visit report sent · 2:14 PM",
+        "action": "view",
+        "label": "View Report"
+      }
+    },
+    {
+      "args": [
+        "maintenance",
+        "done",
+        "auto",
+        "2026-10-20T16:05:00Z",
+        "2026-10-22T20:00:00Z",
+        "America/Los_Angeles"
+      ],
+      "result": {
+        "line": "Visit report sent · Tue, Oct 20, 9:05 AM",
+        "action": "view",
+        "label": "View Report"
+      }
+    },
+    {
+      "args": [
+        "maintenance",
+        "done",
+        "manual",
+        "2026-10-22T21:14:00Z",
+        "2026-10-22T20:00:00Z",
+        "America/New_York"
+      ],
+      "result": {
+        "line": "Visit report sent · 5:14 PM",
+        "action": "view",
+        "label": "View Report"
+      }
+    },
+    {
+      "args": [
+        "maintenance",
+        "in_progress",
+        "manual",
+        "2026-10-22T18:00:00Z",
+        "2026-10-22T20:00:00Z",
+        "America/Los_Angeles"
+      ],
+      "result": {
+        "line": "Visit report sent · 11:00 AM",
+        "action": "view",
+        "label": "View Report"
+      }
+    },
+    {
+      "args": [
+        "maintenance",
+        "done",
+        "off",
+        null,
+        "2026-10-22T20:00:00Z",
+        "America/Los_Angeles"
+      ],
+      "result": null
+    },
+    {
+      "args": [
+        "maintenance",
+        "canceled",
+        "auto",
+        null,
+        "2026-10-22T20:00:00Z",
+        "America/Los_Angeles"
+      ],
+      "result": null
+    },
+    {
+      "args": [
+        "detection",
+        "done",
+        "manual",
+        null,
+        "2026-10-22T20:00:00Z",
+        "America/Los_Angeles"
+      ],
+      "result": null
+    }
+  ],
+  "VISIT_REPORT_BAR_LABELS": [
+    {
+      "args": [],
+      "result": {
+        "view": "View Report",
+        "send": "Send Visit Report"
+      }
+    }
+  ]
+}

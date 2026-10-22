@@ -5,7 +5,8 @@ import { OWNER, RUN, TECH, signIn } from "./helpers";
 
 // Today: change the order of stops (owner, 2026-10-20; docs/plans/today-reorder.md). Do Later
 // moves a stop after every stop still to do, with an inline Undo that puts back the saved
-// times; Reorder is an edit mode with Move Up / Move Down; started stops show a lock.
+// times; Reorder (in the bar) is an edit mode with drag handles, and Move Up / Move Down for
+// keyboards; started stops show a lock.
 
 const TZ = "America/Phoenix"; // The demo shop, UTC−7 all year.
 const SCREENS = process.env.E2E_SCREENSHOTS;
@@ -196,6 +197,17 @@ test.describe("Today: change the order of stops", () => {
     await signIn(page, TECH, "/today");
     await expect(row(page, "A")).toBeVisible();
     const aBefore = await timeOf(row(page, "A"));
+    if (SCREENS) await page.screenshot({ path: `${SCREENS}/today-reorder-bar.png` });
+    // A stop's buttons on one line (owner, 2026-10-22): Complete, Do Later, then contact.
+    const a = row(page, "A");
+    await a.getByRole("button", { name: `Show ${stopName("A")}` }).click();
+    const complete = a.getByRole("button", { name: `Mark Complete for ${stopName("A")}` });
+    await expect(complete).toHaveText("Complete");
+    const later = a.getByRole("button", { name: `Do Later for ${stopName("A")}` });
+    const [c, l] = [(await complete.boundingBox())!, (await later.boundingBox())!];
+    expect(Math.abs(c.y - l.y)).toBeLessThan(2);
+    if (SCREENS) await a.screenshot({ path: `${SCREENS}/today-row-buttons.png` });
+    await a.getByRole("button", { name: `Hide ${stopName("A")}` }).click();
     await page.getByTestId("today-reorder").getByRole("button", { name: "Reorder" }).click();
     // Edit mode: Today's card steps aside, and each stop has its controls.
     await expect(page.getByTestId("today-hero")).toHaveCount(0);
@@ -204,9 +216,13 @@ test.describe("Today: change the order of stops", () => {
     await expect(row(page, "A").getByTestId("reorder-handle")).toBeVisible();
     if (SCREENS) await page.screenshot({ path: `${SCREENS}/today-reorder.png`, fullPage: true });
 
-    await row(page, "A")
-      .getByRole("button", { name: `Move Down ${stopName("A")}` })
-      .click();
+    // No Move Up / Move Down in sight (owner, 2026-10-22): the handle is how fingers move a
+    // stop; the buttons show for a keyboard once focused.
+    const down = row(page, "A").getByRole("button", { name: `Move Down ${stopName("A")}` });
+    await expect(down).not.toBeInViewport();
+    await down.focus();
+    await expect(down).toBeInViewport();
+    await page.keyboard.press("Enter");
     await expect.poll(() => order(page)).toMatch(/^BA|B.*A/);
     await expect.poll(() => timeOf(row(page, "A"))).not.toBe(aBefore);
 

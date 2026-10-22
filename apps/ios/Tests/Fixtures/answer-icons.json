@@ -1,0 +1,473 @@
+{
+  "verdictIcon": [
+    {
+      "args": [
+        "leak",
+        "ok"
+      ],
+      "result": {
+        "symbol": "check",
+        "tone": "pass"
+      }
+    },
+    {
+      "args": [
+        "leak",
+        "leaking"
+      ],
+      "result": {
+        "symbol": "drop",
+        "tone": "fail"
+      }
+    },
+    {
+      "args": [
+        "leak",
+        "attention"
+      ],
+      "result": {
+        "symbol": "exclamation",
+        "tone": "warning"
+      }
+    },
+    {
+      "args": [
+        "leak",
+        "na"
+      ],
+      "result": {
+        "symbol": "minus",
+        "tone": "excluded"
+      }
+    },
+    {
+      "args": [
+        "done",
+        "ok"
+      ],
+      "result": {
+        "symbol": "check",
+        "tone": "pass"
+      }
+    },
+    {
+      "args": [
+        "done",
+        "leaking"
+      ],
+      "result": {
+        "symbol": "drop",
+        "tone": "fail"
+      }
+    },
+    {
+      "args": [
+        "done",
+        "attention"
+      ],
+      "result": {
+        "symbol": "exclamation",
+        "tone": "warning"
+      }
+    },
+    {
+      "args": [
+        "done",
+        "na"
+      ],
+      "result": {
+        "symbol": "skip",
+        "tone": "excluded"
+      }
+    },
+    {
+      "args": [
+        "yes_no",
+        "ok"
+      ],
+      "result": {
+        "symbol": "xmark",
+        "tone": "pass"
+      }
+    },
+    {
+      "args": [
+        "yes_no",
+        "leaking"
+      ],
+      "result": {
+        "symbol": "check",
+        "tone": "fail"
+      }
+    },
+    {
+      "args": [
+        "yes_no",
+        "attention"
+      ],
+      "result": {
+        "symbol": "check",
+        "tone": "warning"
+      }
+    },
+    {
+      "args": [
+        "yes_no",
+        "na"
+      ],
+      "result": {
+        "symbol": "minus",
+        "tone": "excluded"
+      }
+    },
+    {
+      "args": [
+        null,
+        "ok"
+      ],
+      "result": {
+        "symbol": "check",
+        "tone": "pass"
+      }
+    },
+    {
+      "args": [
+        null,
+        "leaking"
+      ],
+      "result": {
+        "symbol": "drop",
+        "tone": "fail"
+      }
+    },
+    {
+      "args": [
+        null,
+        "attention"
+      ],
+      "result": {
+        "symbol": "exclamation",
+        "tone": "warning"
+      }
+    },
+    {
+      "args": [
+        null,
+        "na"
+      ],
+      "result": {
+        "symbol": "minus",
+        "tone": "excluded"
+      }
+    },
+    {
+      "args": [
+        "choice",
+        "ok"
+      ],
+      "result": {
+        "symbol": "check",
+        "tone": "pass"
+      }
+    },
+    {
+      "args": [
+        "choice",
+        "leaking"
+      ],
+      "result": {
+        "symbol": "drop",
+        "tone": "fail"
+      }
+    },
+    {
+      "args": [
+        "choice",
+        "attention"
+      ],
+      "result": {
+        "symbol": "exclamation",
+        "tone": "warning"
+      }
+    },
+    {
+      "args": [
+        "choice",
+        "na"
+      ],
+      "result": {
+        "symbol": "minus",
+        "tone": "excluded"
+      }
+    }
+  ],
+  "choiceIcons": [
+    {
+      "args": [
+        [
+          {
+            "label": "Yes",
+            "flag": "ok"
+          },
+          {
+            "label": "No",
+            "flag": "attention"
+          },
+          {
+            "label": "Not applicable",
+            "flag": "na"
+          }
+        ]
+      ],
+      "result": [
+        {
+          "symbol": "check",
+          "tone": "pass"
+        },
+        {
+          "symbol": "xmark",
+          "tone": "warning"
+        },
+        {
+          "symbol": "minus",
+          "tone": "excluded"
+        }
+      ]
+    },
+    {
+      "args": [
+        [
+          {
+            "label": "Yes",
+            "flag": "attention"
+          },
+          {
+            "label": "No",
+            "flag": "ok"
+          }
+        ]
+      ],
+      "result": [
+        {
+          "symbol": "check",
+          "tone": "warning"
+        },
+        {
+          "symbol": "xmark",
+          "tone": "pass"
+        }
+      ]
+    },
+    {
+      "args": [
+        [
+          {
+            "label": "Yes"
+          },
+          {
+            "label": "No"
+          }
+        ]
+      ],
+      "result": [
+        {
+          "symbol": "check",
+          "tone": "plain"
+        },
+        {
+          "symbol": "xmark",
+          "tone": "plain"
+        }
+      ]
+    },
+    {
+      "args": [
+        [
+          {
+            "label": " yes "
+          },
+          {
+            "label": "NO"
+          },
+          {
+            "label": "N/A"
+          }
+        ]
+      ],
+      "result": [
+        {
+          "symbol": "check",
+          "tone": "plain"
+        },
+        {
+          "symbol": "xmark",
+          "tone": "plain"
+        },
+        {
+          "symbol": "minus",
+          "tone": "plain"
+        }
+      ]
+    },
+    {
+      "args": [
+        [
+          {
+            "label": "Not leaking",
+            "flag": "ok"
+          },
+          {
+            "label": "Leaking",
+            "flag": "leaking"
+          },
+          {
+            "label": "Not applicable",
+            "flag": "na"
+          }
+        ]
+      ],
+      "result": [
+        {
+          "symbol": "check",
+          "tone": "pass"
+        },
+        {
+          "symbol": "drop",
+          "tone": "fail"
+        },
+        {
+          "symbol": "minus",
+          "tone": "excluded"
+        }
+      ]
+    },
+    {
+      "args": [
+        [
+          {
+            "label": "Was solid and not cracked",
+            "flag": "ok"
+          },
+          {
+            "label": "Was cracked at area(s)",
+            "flag": "attention"
+          }
+        ]
+      ],
+      "result": [
+        {
+          "symbol": "check",
+          "tone": "pass"
+        },
+        {
+          "symbol": "exclamation",
+          "tone": "warning"
+        }
+      ]
+    },
+    {
+      "args": [
+        [
+          {
+            "label": "No leaks noted",
+            "flag": "ok"
+          },
+          {
+            "label": "Noted leak(s)",
+            "flag": "leaking"
+          },
+          {
+            "label": "Other"
+          }
+        ]
+      ],
+      "result": null
+    },
+    {
+      "args": [
+        [
+          {
+            "label": "No leaks noted",
+            "flag": "ok"
+          },
+          {
+            "label": "Was solid",
+            "flag": "ok"
+          }
+        ]
+      ],
+      "result": null
+    },
+    {
+      "args": [
+        [
+          {
+            "label": "DE"
+          },
+          {
+            "label": "Cartridge"
+          },
+          {
+            "label": "Sand / media"
+          }
+        ]
+      ],
+      "result": null
+    },
+    {
+      "args": [
+        [
+          {
+            "label": "A",
+            "flag": "ok"
+          },
+          {
+            "label": "B",
+            "flag": "ok"
+          },
+          {
+            "label": "C",
+            "flag": "ok"
+          },
+          {
+            "label": "D",
+            "flag": "ok"
+          },
+          {
+            "label": "E",
+            "flag": "ok"
+          }
+        ]
+      ],
+      "result": null
+    },
+    {
+      "args": [
+        [
+          {
+            "label": "Yes"
+          }
+        ]
+      ],
+      "result": null
+    },
+    {
+      "args": [
+        []
+      ],
+      "result": null
+    }
+  ],
+  "CHOOSE_LABEL": [
+    {
+      "args": [],
+      "result": "Choose"
+    }
+  ],
+  "CHOOSE_HINT": [
+    {
+      "args": [],
+      "result": "Choose an answer"
+    }
+  ]
+}

@@ -10,6 +10,8 @@
     /// (apps/web/src/components/quote-panel.tsx, quote-builder.tsx).
     struct QuoteSection: View {
         var job: JobView
+        /// Wrap-Up's sheet for one quote (owner, 2026-10-22): that card only, no heading or Start.
+        var only: String? = nil
         @Environment(Session.self) private var session
         @Environment(SyncService.self) private var sync
         @State private var flow: QuoteFlow?
@@ -21,15 +23,15 @@
                     store: sync.store, companyId: company.id, settings: company.settings, role: company.role, job: job,
                     timeZone: company.timeZone)
                 VStack(alignment: .leading, spacing: 12) {
-                    SectionHeading("Quotes")
-                    if model.showsStart {
+                    if only == nil { SectionHeading("Quotes") }
+                    if only == nil, model.showsStart {
                         ViewThatFits(in: .horizontal) {
                             HStack(spacing: 12) { startParts(flow, model.startLine) }
                             VStack(alignment: .leading, spacing: 12) { startParts(flow, model.startLine) }
                         }
                     }
                     VStack(alignment: .leading, spacing: 20) {
-                        ForEach(model.cards) { card in
+                        ForEach(model.cards.filter { only == nil || $0.id == only }) { card in
                             QuoteCard(card: card, builder: card.isEditable ? model.builder : nil, flow: flow)
                         }
                     }

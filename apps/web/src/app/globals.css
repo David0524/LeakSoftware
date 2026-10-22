@@ -246,6 +246,15 @@ header:not(.glass-bar) :focus-visible {
 body:has(.nav-accessory) .nav-main.glass-bar {
   box-shadow: none;
 }
+/* Wider screens: the job's section switcher sits on the page under the title, not on a bar. */
+@media (min-width: 40rem) {
+  .nav-accessory.glass-bar {
+    background: none;
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+    box-shadow: none;
+  }
+}
 /* Segmented controls that scroll inside their track once large text no longer fits them
    (useTrackOverflow in components/gestures.tsx): one row always, never two; the track only
    becomes a scroller while it overflows, so normal sizes keep the thumb's shadow. */

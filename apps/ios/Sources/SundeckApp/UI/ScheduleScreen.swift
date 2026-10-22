@@ -1857,7 +1857,9 @@
     /// schedule page should be similar to the daily one").
     ///
     /// Drag a stop by its grip (owner, 2026-10-21: "I'm still struggling to scroll when I have a
-    /// page full of job tiles"; Reorder Techs' feel): it lifts at once with a light haptic, follows
+    /// page full of job tiles"; Reorder Techs' feel): once the finger has rested on it for a moment
+    /// (0.13 s within 8 pt; owner, 2026-10-22: "make it slightly less sensitive", so a flick that
+    /// starts on the grip scrolls the page instead) it lifts with a light haptic, follows
     /// the finger, the others slide up or down by its height so the gap is always where it will
     /// land, and the drive chips fade until the new order is saved and worked out. Let go and it
     /// settles into the gap and saves through the same move as Move…; let go over another tech's
@@ -1866,9 +1868,9 @@
     /// be dropped among them (the system's drag), and goes where it's let go.
     ///
     /// The page never stays still after a drag (owner, 2026-10-21: "it sometimes freezes up"): the
-    /// drag in flight is a `@GestureState`, which the system resets however the touch ends
-    /// (lifted, cancelled, the menu taking over, a second finger), and the page's lock is let go
-    /// on the drag's end, on that reset, and when these stops leave the screen.
+    /// grip's and the tile's drags are UIKit long presses, which end, cancel or fail however the
+    /// touch ends (lifted, cancelled, a second finger), and the page's lock is let go on that, and
+    /// when these stops leave the screen.
     struct RouteStops: View {
         /// Nil: Week's "No tech yet" stops (no route, no drive, no reordering).
         var tech: TeamMember?
@@ -1900,8 +1902,6 @@
         /// The stop let go over Needs a Time or another block, fading where it was let go while
         /// it moves.
         @State private var leaving: String?
-        /// The grip being dragged, reset by the system however the touch ends.
-        @GestureState private var inFlight: String?
 
         /// The tiles touch (the hairlines are inside them).
         static let spacing: CGFloat = 0
@@ -1992,11 +1992,6 @@
             }
             .card(padding: 0)
             .sensoryFeedback(.impact(weight: .light), trigger: lifts)
-            .onChange(of: inFlight) { _, now in
-                // The touch ended without the drag's end (cancelled, the menu, a second finger):
-                // back to its place, and the page scrolls again.
-                if now == nil, lifted != nil { putDown() }
-            }
             .onDisappear {
                 lifted = nil
                 translation = 0
@@ -2026,24 +2021,15 @@
                 actions: stopActions,
                 opens: !up && dropped != j.id && lifted == nil
             ) {
+                // The grip: a brief rest, then drag (owner, 2026-10-22: "make it slightly less
+                // sensitive"); a flick or a scroll that starts here is the page's.
                 ScheduleGrip()
-                    .highPriorityGesture(grip(j.id, takeOff: stopActions.onTakeOff))
+                    .gesture(holdDrag(j, seconds: ScheduleReorder.gripSeconds, takeOff: stopActions.onTakeOff))
             }
             // Touch and hold anywhere on the tile, then drag (owner, 2026-10-22: as Reminders and
             // Things do; the grip stays). A UIKit long press, so a quick tap stays a tap and a
             // swipe up or down still scrolls the page.
-            .gesture(
-                HoldDrag(
-                    enabled: canMoveJob(j.status),
-                    began: { follow(j.id, translation: 0, finger: $0, takeOff: stopActions.onTakeOff) },
-                    changed: { follow(j.id, translation: $0, finger: $1, takeOff: stopActions.onTakeOff) },
-                    ended: { translation, finger in
-                        guard lifted == j.id else { return }
-                        letGo(j.id, translation: translation, finger: finger, takeOff: stopActions.onTakeOff)
-                    },
-                    cancelled: { if lifted == j.id { putDown() } }
-                )
-            )
+            .gesture(holdDrag(j, seconds: ScheduleReorder.holdSeconds, takeOff: stopActions.onTakeOff))
             .overlay(alignment: .bottom) {
                 if !last && !up && !gone { Hairline().padding(.leading, hairlineInset) }
             }
@@ -2069,19 +2055,22 @@
         /// Not found on the map, or with no map location at all: no drive to it.
         private func notOnMap(_ j: ScheduleJob) -> Bool { (board.routing && j.mapMissing) || j.location == nil }
 
-        /// The grip's drag: it lifts on touch (no hold), and the page holds still until it's let
-        /// go (`ScheduleDragState`). The finger is tracked on screen for Needs a Time and the
-        /// other blocks.
-        private func grip(_ id: String, takeOff: (() -> Void)?) -> some Gesture {
-            DragGesture(minimumDistance: 0, coordinateSpace: .global)
-                .updating($inFlight) { _, state, _ in state = id }
-                .onChanged { value in
-                    follow(id, translation: value.translation.height, finger: value.location, takeOff: takeOff)
-                }
-                .onEnded { value in
-                    guard lifted == id else { return }
-                    letGo(id, translation: value.translation.height, finger: value.location, takeOff: takeOff)
-                }
+        /// A stop's drag, from the grip (a brief rest) or the tile (a hold): it lifts once the finger
+        /// has stayed put `seconds`, and the page holds still until it's let go
+        /// (`ScheduleDragState`). The finger is tracked on screen for Needs a Time and the other
+        /// blocks.
+        private func holdDrag(_ j: ScheduleJob, seconds: Double, takeOff: (() -> Void)?) -> HoldDrag {
+            HoldDrag(
+                seconds: seconds,
+                enabled: canMoveJob(j.status),
+                began: { follow(j.id, translation: 0, finger: $0, takeOff: takeOff) },
+                changed: { follow(j.id, translation: $0, finger: $1, takeOff: takeOff) },
+                ended: { translation, finger in
+                    guard lifted == j.id else { return }
+                    letGo(j.id, translation: translation, finger: finger, takeOff: takeOff)
+                },
+                cancelled: { if lifted == j.id { putDown() } }
+            )
         }
 
         /// The lifted stop follows the finger (from the grip, or after a hold on the tile): it lifts
@@ -2177,12 +2166,16 @@
     }
 
     /// Touch and hold, then drag (owner, 2026-10-22: "Press-and-hold-then-drag on any tile, keeping
-    /// the grip as a backup"): a UIKit long press of `ScheduleReorder.holdSeconds` that allows 10 pt
-    /// of drift, then follows the finger. Moving sooner fails it, so the scroll view has a swipe; a
-    /// quick tap never begins it. Locations are in the window's points (`.global`); `changed` and
-    /// `ended` get the vertical distance from where it began. A SwiftUI long press on a scroll
-    /// view's content can hold the scroll back, which a UIKit one doesn't (`SidewaysPan`).
+    /// the grip as a backup"; "make it slightly less sensitive"): a UIKit long press of `seconds`
+    /// (`ScheduleReorder.holdSeconds` on the tile, `gripSeconds` on the grip) that allows
+    /// `ScheduleReorder.slop` (8 pt) of drift, then follows the finger. Moving sooner fails it, so
+    /// the scroll view has the flick or the swipe; a quick tap never begins it, and neither does a
+    /// touch that lands while the page is still gliding (it only stops the page). Locations are in
+    /// the window's points (`.global`); `changed` and `ended` get the vertical distance from where
+    /// it began. A SwiftUI long press on a scroll view's content can hold the scroll back, which a
+    /// UIKit one doesn't (`SidewaysPan`).
     struct HoldDrag: UIGestureRecognizerRepresentable {
+        var seconds = ScheduleReorder.holdSeconds
         var enabled = true
         var began: (CGPoint) -> Void
         var changed: (CGFloat, CGPoint) -> Void
@@ -2191,8 +2184,8 @@
 
         func makeUIGestureRecognizer(context: Context) -> UILongPressGestureRecognizer {
             let hold = UILongPressGestureRecognizer()
-            hold.minimumPressDuration = ScheduleReorder.holdSeconds
-            hold.allowableMovement = 10
+            hold.minimumPressDuration = seconds
+            hold.allowableMovement = ScheduleReorder.slop
             hold.delegate = context.coordinator
             hold.isEnabled = enabled
             return hold
@@ -2200,6 +2193,7 @@
 
         func updateUIGestureRecognizer(_ recognizer: UILongPressGestureRecognizer, context: Context) {
             recognizer.isEnabled = enabled
+            recognizer.minimumPressDuration = seconds
         }
 
         func makeCoordinator(converter: CoordinateSpaceConverter) -> Coordinator { Coordinator() }
@@ -2219,6 +2213,26 @@
 
         @MainActor final class Coordinator: NSObject, UIGestureRecognizerDelegate {
             var start = CGPoint.zero
+            /// The page was gliding (a flick's momentum) when the finger came down.
+            private var landedGliding = false
+
+            /// A finger coming down while the page (or a row of it) still glides stops the glide;
+            /// that touch never lifts a stop, however long it rests.
+            func gestureRecognizer(_ recognizer: UIGestureRecognizer, shouldReceive touch: UITouch) -> Bool {
+                var view = recognizer.view
+                landedGliding = false
+                while let v = view, !landedGliding {
+                    if let scroll = v as? UIScrollView, scroll.isDecelerating || scroll.isDragging {
+                        landedGliding = true
+                    }
+                    view = v.superview
+                }
+                return true
+            }
+
+            func gestureRecognizerShouldBegin(_ recognizer: UIGestureRecognizer) -> Bool {
+                !landedGliding
+            }
 
             /// The page's scroll keeps its own pan until the hold lifts the stop (the page then
             /// holds still: `ScheduleDragState`).

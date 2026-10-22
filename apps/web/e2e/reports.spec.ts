@@ -1,5 +1,5 @@
 import { expect, test, type Page } from "@playwright/test";
-import { OWNER, RUN, openChecklist, sendUnsigned, signIn } from "./helpers";
+import { OWNER, RUN, openChecklist, sendUnsigned, signIn, wrapUpStep } from "./helpers";
 import { adminClient } from "./backend";
 import { lastEmailTo } from "./outbox";
 
@@ -12,10 +12,13 @@ async function openSampleJob(page: Page, customer = "Sam Sample", signedIn = fal
   if (!signedIn) await signIn(page, OWNER);
   await page.goto(`/jobs?status=all&q=${encodeURIComponent(customer)}`);
   await page.getByRole("row").filter({ hasText: customer }).getByRole("link").first().click();
-  await expect(page.getByRole("heading", { name: "Report and Sign-Off" })).toBeVisible();
+  // One tab at a time on every screen (owner, 2026-10-22): the job opens on Details.
+  await expect(page.getByRole("tablist", { name: "Job sections" })).toBeVisible();
 }
 
 async function writeDraft(page: Page, template: "homeowner" | "partner") {
+  // The report opens from Wrap-Up's finish list, in a sheet (owner, 2026-10-22).
+  await wrapUpStep(page, "Report");
   const panel = page.getByTestId(`report-${template}`);
   // Writing again over an existing draft asks first, in an action sheet (reruns against a
   // shared database).
@@ -53,6 +56,7 @@ test("homeowner report: draft, edit, email, and the customer's link", async ({ p
   await reportText.click();
   await expect(summary).toBeHidden();
   await page.reload();
+  await wrapUpStep(page, "Report");
   await panel.getByRole("button", { name: "Report Text" }).click();
   await expect(summary).toHaveValue(new RegExp(note.replace(/[.]/g, "\\.")));
 

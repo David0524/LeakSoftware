@@ -22,7 +22,7 @@ import {
   type ReorderRow as RowInfo,
   type ReorderStop,
 } from "../../lib/todayReorder";
-import { Button, Pill, useReduceMotion } from "../../ui/components";
+import { Pill, useReduceMotion } from "../../ui/components";
 import { haptics } from "../../ui/haptics";
 import { useUndoWindow } from "../../ui/Undo";
 import { WebIcon } from "../../ui/WebIcon";
@@ -42,9 +42,9 @@ import {
 // Today: change the order of stops (owner, 2026-10-20; docs/plans/today-reorder.md), as the
 // website. Do Later on a stop (its row's button, a trailing swipe, and the card's button) puts
 // it after every stop still to do, with "Moved to 2:15 PM" and Undo where the button was for 5
-// seconds. Reorder at the end of the day's line switches the list to edit mode, as iOS
-// Reminders: a drag handle and Move Up / Move Down on each stop that can move, a lock and the
-// reason on those that can't, and Done to end it. Each move is the shared rule's (core
+// seconds. Reorder in the bar switches the list to edit mode, as iOS Reminders: a drag handle on
+// each stop that can move (Move Up / Move Down are screen-reader actions), a lock and the reason
+// on those that can't, and Done to end it. Each move is the shared rule's (core
 // todayMoveIndex, then the Schedule's moveJobChange), as the website's, worked out from this
 // phone's jobs and saved through the sync layer at once.
 
@@ -358,8 +358,9 @@ export function ReorderStopRow({
           now && { borderWidth: 2, borderColor: color.link },
         ]}
       >
-        {/* One item for TalkBack and VoiceOver, with Move Up and Move Down as its actions; the
-            buttons below stay for everyone else. */}
+        {/* One item for TalkBack and VoiceOver, with Move Up and Move Down as its actions; no
+            buttons on screen (owner, 2026-10-22: they "take up so much space and are redundant
+            to the drag"). */}
         <View
           accessible
           accessibilityLabel={`Stop ${n}: ${time} ${name}${info.lock ? `, ${info.lock}` : ""}`}
@@ -398,7 +399,7 @@ export function ReorderStopRow({
               </Text>
             </View>
           ) : (
-            // Dragging is the quick way; Move Up and Move Down below do the same.
+            // Dragging; screen readers use the row's Move Up and Move Down actions.
             <GestureDetector gesture={gesture}>
               <View
                 style={styles.grip}
@@ -410,26 +411,6 @@ export function ReorderStopRow({
             </GestureDetector>
           )}
         </View>
-        {movable && (info.canUp || info.canDown) ? (
-          <View style={styles.buttons}>
-            <Button
-              kind="secondary"
-              small
-              title="Move Up"
-              disabled={!info.canUp}
-              accessibilityLabel={`Move Up, ${name}`}
-              onPress={() => onAct("up")}
-            />
-            <Button
-              kind="secondary"
-              small
-              title="Move Down"
-              disabled={!info.canDown}
-              accessibilityLabel={`Move Down, ${name}`}
-              onPress={() => onAct("down")}
-            />
-          </View>
-        ) : null}
       </View>
     </Animated.View>
   );
@@ -472,12 +453,4 @@ const styles = StyleSheet.create({
     flexShrink: 1,
   },
   grip: { width: minTap, height: minTap, alignItems: "center", justifyContent: "center" },
-  buttons: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-    gap: space["2"],
-    paddingLeft: space["3"] + 32 + space["2"],
-    paddingRight: space["3"],
-    paddingBottom: space["3"],
-  },
 });

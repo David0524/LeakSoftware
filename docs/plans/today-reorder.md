@@ -15,11 +15,14 @@ and behavior.
      secondary button beside Call and Directions.
    - Afterwards, where the button was, for 5 seconds: "Moved" and an **Undo** pill (the
      same inline undo as Mark Remaining; not a toast).
-2. **Reorder** for the whole day: a **Reorder** button at the end of the day's summary line
-   ("6 stops · 1 hr 15 min driving · back by 3:14 PM · Reorder").
+2. **Reorder** for the whole day: a **Reorder** button in the navigation bar at the top right,
+   beside New Job, as iOS puts Edit (owner, 2026-10-22: "The reorder button takes up a full
+   horizontal line. Move it elsewhere"; on computers, at the end of the title row).
    - The list switches to edit mode, as iOS Reminders does: each movable stop gets a drag handle
-     (≡) and **Move Up** / **Move Down** buttons (the buttons are the visible, accessible
-     alternative to dragging); stops that can't move show a lock and the reason.
+     (≡); stops that can't move show a lock and the reason. No Move Up / Move Down buttons on
+     screen (owner, 2026-10-22: they "take up so much space and are redundant to the drag");
+     they stay as VoiceOver and TalkBack actions on each stop, and on the website as buttons that
+     appear when a keyboard focuses them.
    - **Done** ends it. Each move saves at once (no Save step), and the drive times and arrival
      times under each stop update as you go.
 

@@ -54,8 +54,9 @@ public func dayHeroStops(
     cleanings: [String: [VisitCleaning]]
 ) -> [HeroStop] {
     stops.map { job in
+        // A repair job has no checklist to count (owner, 2026-10-22).
         let count =
-            job.status == .inProgress || job.id == counted
+            (job.status == .inProgress || job.id == counted) && jobHasChecklist(job.type.rawValue)
             ? checklistCount(store, companyId: companyId, job: job) : (done: 0, total: 0)
         return HeroStop(
             id: job.id, type: job.type.rawValue, status: job.status.rawValue, stopDoneOn: job.stopDoneOn,

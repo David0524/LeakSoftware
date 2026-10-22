@@ -238,9 +238,10 @@
         }
     }
 
-    /// The Lock Screen (and banner) view: the mark and "Sundeck Pro" (or the actions), the
-    /// headline, the large figure, the stop and the next stop, and the day's progress, on the
-    /// brand's water blue.
+    /// The Lock Screen (and banner) view: the mark with the headline beside it (owner,
+    /// 2026-10-22: larger, and more room for the lines below) and the actions, then the stop, the
+    /// next stop, the access notes and cleanings beside the large figure, and the day's progress,
+    /// on the brand's water blue.
     public struct LiveStopLockScreen: View {
         public var content: LiveStopContent
         public var logo: Image?
@@ -255,28 +256,21 @@
 
         public var body: some View {
             VStack(alignment: .leading, spacing: 10) {
-                HStack(spacing: 8) {
-                    LiveStopMark(logo: logo, height: 22)
-                    if actions.isEmpty {
-                        Text("Sundeck Pro")
-                            .font(LiveStopStyle.display(15, .semiBold))
-                            .foregroundStyle(LiveStopStyle.muted)
-                        Spacer(minLength: 8)
-                    } else {
-                        Spacer(minLength: 8)
-                        // Round icon buttons, 44 points (owner, 2026-10-21: the pills were cramped).
-                        ForEach(actions) { link in
-                            Link(destination: link.url) { LiveStopRoundButton(action: link.action) }
-                        }
+                HStack(spacing: 10) {
+                    LiveStopMark(logo: logo, height: 26)
+                    Text(content.headline)
+                        .font(LiveStopStyle.display(24))
+                        .foregroundStyle(LiveStopStyle.text)
+                        .lineLimit(1)
+                        .minimumScaleFactor(0.7)
+                    Spacer(minLength: 8)
+                    // Round icon buttons, 44 points (owner, 2026-10-21: the pills were cramped).
+                    ForEach(actions) { link in
+                        Link(destination: link.url) { LiveStopRoundButton(action: link.action) }
                     }
                 }
                 HStack(alignment: .center, spacing: 12) {
                     VStack(alignment: .leading, spacing: 3) {
-                        Text(content.headline)
-                            .font(LiveStopStyle.display(22))
-                            .foregroundStyle(LiveStopStyle.text)
-                            .lineLimit(1)
-                            .minimumScaleFactor(0.75)
                         Text(content.detail)
                             .font(LiveStopStyle.small())
                             .foregroundStyle(LiveStopStyle.muted)

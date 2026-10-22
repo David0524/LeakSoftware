@@ -1,14 +1,21 @@
 import { router, useLocalSearchParams } from "expo-router";
 import { useMemo, useState } from "react";
-import { Animated, Linking, Pressable, RefreshControl, StyleSheet, Text, View } from "react-native";
+import { Animated, Linking, Pressable, RefreshControl, StyleSheet, View } from "react-native";
 import {
   JOB_SORTS,
+  JOB_TYPE_FILTER_TITLE,
   JOB_TYPE_LABELS,
   canMakeJobs,
+  companyServices,
   formatAddress,
   formatSchedule,
   jobReschedulable,
   jobSort,
+  jobTypeFilter,
+  jobsEmpty,
+  jobTypeFilterLabel,
+  jobTypeFilters,
+  matchesJobType,
   propertyLocation,
   sortJobs,
   toE164,
@@ -53,11 +60,10 @@ import {
 import { haptics } from "../../../../../ui/haptics";
 import { useResultBanner } from "../../../../../ui/ResultBanner";
 import { rowGestures, useRowMenu, type RowGestures } from "../../../../../ui/RowMenu";
-import { useMenu } from "../../../../../ui/Select";
+import { MenuButton, useMenu } from "../../../../../ui/Select";
 import { SwipeActions } from "../../../../../ui/SwipeRow";
-import { WebIcon } from "../../../../../ui/WebIcon";
 import { SyncBar } from "../../../../../ui/SyncBar";
-import { color, face, MAX_TEXT_SCALE, minTap, shape, space, type } from "../../../../../ui/theme";
+import { color, shape, space } from "../../../../../ui/theme";
 
 const OPEN: JobStatus[] = [
   "unscheduled",
@@ -88,6 +94,8 @@ const FILTERS: { value: string; label: string; statuses: JobStatus[] | null }[] 
 
 /** The Sort picked, kept while the app runs (as the section a job opens on). */
 let lastSort: string = "scheduled";
+/** The Type picked (owner, 2026-10-22), kept the same way. */
+let lastType: string = "all";
 
 const REPORT_FILTERS = [
   { value: "all", label: "All" },
@@ -132,6 +140,16 @@ export default function Jobs() {
     setSortState(jobSort(v));
   };
   const sortLabel = JOB_SORTS.find((x) => x.key === sort)?.label ?? "Scheduled Date";
+  // Type (owner, 2026-10-22: "Add a filter on the jobs and activity pages for job type"): the
+  // shop's job types, with the status filter and Sort; kept while the app runs.
+  const shopServices = companyServices(company.settings);
+  const types = jobTypeFilters(shopServices);
+  const [typeKey, setTypeKey] = useState(lastType);
+  const jobType = jobTypeFilter(typeKey, shopServices);
+  const setType = (v: string) => {
+    lastType = v;
+    setTypeKey(v);
+  };
   const menu = useMenu();
   const [refreshing, setRefreshing] = useState(false);
   const now = new Date();
@@ -213,7 +231,8 @@ export default function Jobs() {
     const statuses = FILTERS.find((f) => f.value === filter)?.statuses;
     const matched = jobs
       .filter((j) => !j.deleted_at)
-      .filter((j) => !statuses || statuses.includes(j.status));
+      .filter((j) => !statuses || statuses.includes(j.status))
+      .filter((j) => matchesJobType(j.type, jobType));
     // core sortJobs, as the website: the customer's name as `customer`.
     const keyed = matched.map((j) => ({
       job: j,
@@ -223,7 +242,7 @@ export default function Jobs() {
       customer: j.customer?.name ?? null,
     }));
     return sortJobs(keyed, sort).map((k) => k.job);
-  }, [jobs, filter, sort]);
+  }, [jobs, filter, sort, jobType]);
 
   const reportRows = useMemo(() => {
     const byId = new Map(jobs.map((j) => [j.id, j]));
@@ -280,12 +299,28 @@ export default function Jobs() {
           {view === "jobs" ? (
             <>
               <FilterPills label="Status" options={FILTERS} value={filter} onChange={setFilter} />
-              {/* Sort, as Invoices sorts; the search across the shop above replaces the old
-                  jobs-only search. */}
+              {/* Type and Sort, as the website's; the search across the shop above replaces the
+                  old jobs-only search. */}
               <View style={styles.searchRow}>
-                <Pressable
-                  accessibilityRole="button"
-                  accessibilityLabel={`Sort, ${sortLabel}`}
+                <MenuButton
+                  title={JOB_TYPE_FILTER_TITLE}
+                  value={jobTypeFilterLabel(jobType)}
+                  icon="filter"
+                  onPress={() =>
+                    menu.open({
+                      title: JOB_TYPE_FILTER_TITLE,
+                      items: types.map((x) => ({
+                        label: x.label,
+                        checked: x.key === jobType,
+                        onPress: () => setType(x.key),
+                      })),
+                    })
+                  }
+                />
+                <MenuButton
+                  title="Sort"
+                  value={sortLabel}
+                  icon="updown"
                   onPress={() =>
                     menu.open({
                       title: "Sort",
@@ -296,16 +331,7 @@ export default function Jobs() {
                       })),
                     })
                   }
-                  style={({ pressed }) => [styles.sort, pressed && { opacity: 0.5 }]}
-                >
-                  <Text
-                    style={[type.secondary, face.semiBold, { color: color.link }]}
-                    maxFontSizeMultiplier={MAX_TEXT_SCALE}
-                  >
-                    {sortLabel}
-                  </Text>
-                  <WebIcon name="updown" size={16} color={color.link} strokeWidth={2} />
-                </Pressable>
+                />
               </View>
               {menu.element}
             </>
@@ -323,7 +349,7 @@ export default function Jobs() {
   );
 
   const empty = searching ? null : view === "jobs" ? (
-    <Empty>No jobs here. Add one with New Job, or on the phone.</Empty>
+    <Empty>{jobsEmpty(jobType)}</Empty>
   ) : (
     <Empty>
       {reportFilter === "sent"
@@ -588,5 +614,4 @@ const styles = StyleSheet.create({
     justifyContent: "flex-end",
     gap: space["3"],
   },
-  sort: { minHeight: minTap, flexDirection: "row", alignItems: "center", gap: 4 },
 });

@@ -76,7 +76,10 @@
 
         var body: some View {
             let c = hero.content
-            let actions = heroActions(hero.moment, mine: day.mine, checklistDone: checklistDone)
+            // A repair job has no checklist: on site, Mark Complete alone (owner, 2026-10-22).
+            let actions = heroActions(
+                hero.moment, mine: day.mine, checklistDone: checklistDone,
+                hasChecklist: job.map { jobHasChecklist($0.type.rawValue) } ?? true)
             let hasButtons =
                 (actions.primary != nil && target != nil) || (actions.complete && job != nil) || undoJob != nil
             // Before leaving and on the way, Start leads one row with the round buttons after it

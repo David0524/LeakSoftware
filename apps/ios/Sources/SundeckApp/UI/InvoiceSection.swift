@@ -11,6 +11,8 @@
     /// look (apps/web/src/components/invoice-panel.tsx).
     struct InvoiceSection: View {
         var job: JobView
+        /// "Invoice" above it; Wrap-Up's sheet has it as its title instead (owner, 2026-10-22).
+        var heading = true
         @Environment(Session.self) private var session
         @Environment(SyncService.self) private var sync
         @Environment(AppEnvironment.self) private var app
@@ -23,7 +25,7 @@
                     store: sync.store, companyId: company.id, settings: company.settings, role: company.role, job: job,
                     timeZone: company.timeZone)
                 VStack(alignment: .leading, spacing: 12) {
-                    SectionHeading("Invoice")
+                    if heading { SectionHeading("Invoice") }
                     switch model.state {
                     case .invoice(let card):
                         InvoiceCard(card: card, job: job, flow: flow)

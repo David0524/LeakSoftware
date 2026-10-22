@@ -18,6 +18,9 @@
         case small
         /// Full-width field actions in sheets and forms: 48 tall (gloves, wet hands).
         case field
+        /// A row of pills that must stay on one line (Today's stops): 44 tall, 14 side padding,
+        /// body 17.
+        case compact
     }
 
     /// Icon and text 8 apart inside a button.
@@ -49,7 +52,7 @@
                 .lineLimit(2)
                 .multilineTextAlignment(.center)
                 .foregroundStyle(foreground)
-                .padding(.horizontal, size == .small ? 12 : 20)
+                .padding(.horizontal, size == .small ? 12 : size == .compact ? 14 : 20)
                 .padding(.vertical, 6)
                 .frame(maxWidth: fullWidth ? .infinity : nil, minHeight: size == .field ? fieldTarget : minTarget)
                 .modifier(PillBackground(background: background, glass: glass))

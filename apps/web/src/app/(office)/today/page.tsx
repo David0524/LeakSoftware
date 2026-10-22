@@ -16,6 +16,7 @@ import {
   visitReportMode,
   mapStatus,
   todayHero,
+  jobHasChecklist,
   todayMoves,
   todayStopLock,
   JOB_TYPE_LABELS,
@@ -126,7 +127,8 @@ export default async function TodayPage({ searchParams }: PageProps<"/today">) {
     ).catch(() => new Map<string, { planCleaningId: string }[]>()),
     Promise.all(
       allJobs
-        .filter((j) => j.status === "in_progress")
+        // A repair job has no checklist to count (owner, 2026-10-22).
+        .filter((j) => j.status === "in_progress" && jobHasChecklist(j.type))
         .map(async (j) => {
           const detail = await getJob(office, j.id).catch(() => null);
           return [j.id, detail ? checklistCount(detail) : { done: 0, total: 0 }] as const;
@@ -313,7 +315,8 @@ export default async function TodayPage({ searchParams }: PageProps<"/today">) {
             ) : null}
             <div className="flex flex-wrap items-start gap-2 pt-2">
               {/* Every stop: done for the day without the full process (owner,
-                            2026-10-19). */}
+                            2026-10-19). Complete, Do Later and the contact buttons on one
+                            line (owner, 2026-10-22). */}
               <TodayComplete
                 jobId={j.id}
                 customer={j.customer?.name ?? "this stop"}
@@ -325,12 +328,14 @@ export default async function TodayPage({ searchParams }: PageProps<"/today">) {
                   reportMode,
                   customer: j.customer?.name,
                 })}
+                inRow
               />
               {moves ? (
                 <DoLaterButton
                   jobId={j.id}
                   customer={j.customer?.name ?? "this stop"}
                   show={moves.later}
+                  inRow
                 />
               ) : null}
               {done ? null : (
@@ -444,12 +449,8 @@ export default async function TodayPage({ searchParams }: PageProps<"/today">) {
             <TodayReorderProvider tech={dayTech}>
               {/* No summary line (owner, 2026-10-22: "Get rid of this on all platforms: 0 of 4
                   stops done. 4 stops · 1 hr 37 min driving"); the card says "Stop 1 of 4".
-                  Reorder keeps its place at the top of the day. */}
-              {anyMoves ? (
-                <p className="mb-2 flex justify-end" data-testid="today-reorder">
-                  <ReorderToggle separator={false} />
-                </p>
-              ) : null}
+                  Reorder is in the bar at the top right (ReorderToggle). */}
+              {anyMoves ? <ReorderToggle /> : null}
               <ReorderStatus />
               {hero ? (
                 <HideWhileReordering>

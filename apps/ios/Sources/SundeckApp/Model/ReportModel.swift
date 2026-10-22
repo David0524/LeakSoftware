@@ -53,8 +53,6 @@ public struct ReportTabModel: Equatable, Sendable {
         "This app isn’t connected to the Sundeck Pro server, so reports can’t be written here. Use the office website."
     public static let noSignatures =
         "None yet. The customer signs at the end of the report: write the draft, then Review with Customer."
-    public static let intro =
-        "Write Draft fills in the report from this job’s checklist, tests, and findings. Read and edit it before sending."
     public static let signWorkAuthorization = "Sign Work Authorization"
     public static let reviewWithCustomer = "Review with Customer"
     public static let finishReport = "Finish Report"

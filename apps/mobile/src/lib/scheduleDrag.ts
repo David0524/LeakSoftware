@@ -1,4 +1,4 @@
-import { canMoveJob, canUnschedule } from "@leakbook/core";
+import { canMoveJob, canUnschedule, SCHEDULE_DRAG } from "@leakbook/core";
 
 // Schedule drag and drop (owner, 2026-10-20: "bring back drag/drop on mobile"), as the
 // website's route board: pick a stop up by its grip, drop it at a place in a tech's day, on a
@@ -198,6 +198,7 @@ export function slideFor(
 
 /**
  * How long a finger rests on a stop's tile before it lifts (owner, 2026-10-22: "Press-and-hold-
- * then-drag on any tile, keeping the grip as a backup"), the same on every platform.
+ * then-drag on any tile, keeping the grip as a backup"), the same on every platform (core
+ * SCHEDULE_DRAG).
  */
-export const STOP_HOLD_MS = 400;
+export const STOP_HOLD_MS = SCHEDULE_DRAG.holdMs;

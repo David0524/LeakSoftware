@@ -1,0 +1,1878 @@
+{
+  "wrapUp": [
+    {
+      "args": [
+        {
+          "jobType": "detection",
+          "customer": "Maria Alvarez",
+          "reportOn": true,
+          "hasDraft": false,
+          "sentVersion": null,
+          "unsignedReason": null,
+          "findings": 0,
+          "tests": 0,
+          "signers": [],
+          "quotes": [],
+          "invoices": []
+        }
+      ],
+      "result": {
+        "rows": [
+          {
+            "key": "report",
+            "step": "report",
+            "title": "Report",
+            "detail": "Not written yet",
+            "amount": null,
+            "done": false,
+            "opens": "report",
+            "id": null,
+            "number": 1,
+            "next": true,
+            "spoken": "Step 1 of 3, Report, not written yet, next"
+          },
+          {
+            "key": "sign",
+            "step": "sign",
+            "title": "Customer signs",
+            "detail": "Write the report first",
+            "amount": null,
+            "done": false,
+            "opens": "report",
+            "id": null,
+            "number": 2,
+            "next": false,
+            "spoken": "Step 2 of 3, Customer signs, write the report first"
+          },
+          {
+            "key": "invoice",
+            "step": "invoice",
+            "title": "Invoice",
+            "detail": "Not started",
+            "amount": null,
+            "done": false,
+            "opens": "invoice",
+            "id": null,
+            "number": 3,
+            "next": false,
+            "spoken": "Step 3 of 3, Invoice, not started"
+          }
+        ],
+        "done": 0,
+        "total": 3,
+        "subtitle": "Maria Alvarez · 0 of 3 done",
+        "next": {
+          "step": "report",
+          "id": null,
+          "action": "Write the Draft"
+        },
+        "canStartQuote": true
+      }
+    },
+    {
+      "args": [
+        {
+          "jobType": "detection",
+          "customer": null,
+          "reportOn": true,
+          "hasDraft": false,
+          "sentVersion": null,
+          "unsignedReason": null,
+          "findings": 0,
+          "tests": 0,
+          "signers": [],
+          "quotes": [],
+          "invoices": []
+        }
+      ],
+      "result": {
+        "rows": [
+          {
+            "key": "report",
+            "step": "report",
+            "title": "Report",
+            "detail": "Not written yet",
+            "amount": null,
+            "done": false,
+            "opens": "report",
+            "id": null,
+            "number": 1,
+            "next": true,
+            "spoken": "Step 1 of 3, Report, not written yet, next"
+          },
+          {
+            "key": "sign",
+            "step": "sign",
+            "title": "Customer signs",
+            "detail": "Write the report first",
+            "amount": null,
+            "done": false,
+            "opens": "report",
+            "id": null,
+            "number": 2,
+            "next": false,
+            "spoken": "Step 2 of 3, Customer signs, write the report first"
+          },
+          {
+            "key": "invoice",
+            "step": "invoice",
+            "title": "Invoice",
+            "detail": "Not started",
+            "amount": null,
+            "done": false,
+            "opens": "invoice",
+            "id": null,
+            "number": 3,
+            "next": false,
+            "spoken": "Step 3 of 3, Invoice, not started"
+          }
+        ],
+        "done": 0,
+        "total": 3,
+        "subtitle": "0 of 3 done",
+        "next": {
+          "step": "report",
+          "id": null,
+          "action": "Write the Draft"
+        },
+        "canStartQuote": true
+      }
+    },
+    {
+      "args": [
+        {
+          "jobType": "detection",
+          "customer": "  ",
+          "reportOn": true,
+          "hasDraft": false,
+          "sentVersion": null,
+          "unsignedReason": null,
+          "findings": 0,
+          "tests": 0,
+          "signers": [],
+          "quotes": [],
+          "invoices": []
+        }
+      ],
+      "result": {
+        "rows": [
+          {
+            "key": "report",
+            "step": "report",
+            "title": "Report",
+            "detail": "Not written yet",
+            "amount": null,
+            "done": false,
+            "opens": "report",
+            "id": null,
+            "number": 1,
+            "next": true,
+            "spoken": "Step 1 of 3, Report, not written yet, next"
+          },
+          {
+            "key": "sign",
+            "step": "sign",
+            "title": "Customer signs",
+            "detail": "Write the report first",
+            "amount": null,
+            "done": false,
+            "opens": "report",
+            "id": null,
+            "number": 2,
+            "next": false,
+            "spoken": "Step 2 of 3, Customer signs, write the report first"
+          },
+          {
+            "key": "invoice",
+            "step": "invoice",
+            "title": "Invoice",
+            "detail": "Not started",
+            "amount": null,
+            "done": false,
+            "opens": "invoice",
+            "id": null,
+            "number": 3,
+            "next": false,
+            "spoken": "Step 3 of 3, Invoice, not started"
+          }
+        ],
+        "done": 0,
+        "total": 3,
+        "subtitle": "0 of 3 done",
+        "next": {
+          "step": "report",
+          "id": null,
+          "action": "Write the Draft"
+        },
+        "canStartQuote": true
+      }
+    },
+    {
+      "args": [
+        {
+          "jobType": "detection",
+          "customer": "Maria Alvarez",
+          "reportOn": true,
+          "hasDraft": true,
+          "sentVersion": null,
+          "unsignedReason": null,
+          "findings": 0,
+          "tests": 0,
+          "signers": [],
+          "quotes": [],
+          "invoices": []
+        }
+      ],
+      "result": {
+        "rows": [
+          {
+            "key": "report",
+            "step": "report",
+            "title": "Report",
+            "detail": "Draft ready",
+            "amount": null,
+            "done": true,
+            "opens": "report",
+            "id": null,
+            "number": 1,
+            "next": false,
+            "spoken": "Step 1 of 3, Report, draft ready, done"
+          },
+          {
+            "key": "sign",
+            "step": "sign",
+            "title": "Customer signs",
+            "detail": "Not yet",
+            "amount": null,
+            "done": false,
+            "opens": "sign",
+            "id": null,
+            "number": 2,
+            "next": true,
+            "spoken": "Step 2 of 3, Customer signs, not yet, next"
+          },
+          {
+            "key": "invoice",
+            "step": "invoice",
+            "title": "Invoice",
+            "detail": "Not started",
+            "amount": null,
+            "done": false,
+            "opens": "invoice",
+            "id": null,
+            "number": 3,
+            "next": false,
+            "spoken": "Step 3 of 3, Invoice, not started"
+          }
+        ],
+        "done": 1,
+        "total": 3,
+        "subtitle": "Maria Alvarez · 1 of 3 done",
+        "next": {
+          "step": "sign",
+          "id": null,
+          "action": "Review with Customer"
+        },
+        "canStartQuote": true
+      }
+    },
+    {
+      "args": [
+        {
+          "jobType": "detection",
+          "customer": "Maria Alvarez",
+          "reportOn": true,
+          "hasDraft": true,
+          "sentVersion": null,
+          "unsignedReason": null,
+          "findings": 1,
+          "tests": 0,
+          "signers": [],
+          "quotes": [],
+          "invoices": []
+        }
+      ],
+      "result": {
+        "rows": [
+          {
+            "key": "report",
+            "step": "report",
+            "title": "Report",
+            "detail": "Draft ready · 1 finding",
+            "amount": null,
+            "done": true,
+            "opens": "report",
+            "id": null,
+            "number": 1,
+            "next": false,
+            "spoken": "Step 1 of 3, Report, draft ready, 1 finding, done"
+          },
+          {
+            "key": "sign",
+            "step": "sign",
+            "title": "Customer signs",
+            "detail": "Not yet",
+            "amount": null,
+            "done": false,
+            "opens": "sign",
+            "id": null,
+            "number": 2,
+            "next": true,
+            "spoken": "Step 2 of 3, Customer signs, not yet, next"
+          },
+          {
+            "key": "invoice",
+            "step": "invoice",
+            "title": "Invoice",
+            "detail": "Not started",
+            "amount": null,
+            "done": false,
+            "opens": "invoice",
+            "id": null,
+            "number": 3,
+            "next": false,
+            "spoken": "Step 3 of 3, Invoice, not started"
+          }
+        ],
+        "done": 1,
+        "total": 3,
+        "subtitle": "Maria Alvarez · 1 of 3 done",
+        "next": {
+          "step": "sign",
+          "id": null,
+          "action": "Review with Customer"
+        },
+        "canStartQuote": true
+      }
+    },
+    {
+      "args": [
+        {
+          "jobType": "detection",
+          "customer": "Maria Alvarez",
+          "reportOn": true,
+          "hasDraft": true,
+          "sentVersion": null,
+          "unsignedReason": null,
+          "findings": 0,
+          "tests": 1,
+          "signers": [],
+          "quotes": [],
+          "invoices": []
+        }
+      ],
+      "result": {
+        "rows": [
+          {
+            "key": "report",
+            "step": "report",
+            "title": "Report",
+            "detail": "Draft ready · 1 test",
+            "amount": null,
+            "done": true,
+            "opens": "report",
+            "id": null,
+            "number": 1,
+            "next": false,
+            "spoken": "Step 1 of 3, Report, draft ready, 1 test, done"
+          },
+          {
+            "key": "sign",
+            "step": "sign",
+            "title": "Customer signs",
+            "detail": "Not yet",
+            "amount": null,
+            "done": false,
+            "opens": "sign",
+            "id": null,
+            "number": 2,
+            "next": true,
+            "spoken": "Step 2 of 3, Customer signs, not yet, next"
+          },
+          {
+            "key": "invoice",
+            "step": "invoice",
+            "title": "Invoice",
+            "detail": "Not started",
+            "amount": null,
+            "done": false,
+            "opens": "invoice",
+            "id": null,
+            "number": 3,
+            "next": false,
+            "spoken": "Step 3 of 3, Invoice, not started"
+          }
+        ],
+        "done": 1,
+        "total": 3,
+        "subtitle": "Maria Alvarez · 1 of 3 done",
+        "next": {
+          "step": "sign",
+          "id": null,
+          "action": "Review with Customer"
+        },
+        "canStartQuote": true
+      }
+    },
+    {
+      "args": [
+        {
+          "jobType": "detection",
+          "customer": "Maria Alvarez",
+          "reportOn": true,
+          "hasDraft": true,
+          "sentVersion": null,
+          "unsignedReason": null,
+          "findings": 2,
+          "tests": 5,
+          "signers": [],
+          "quotes": [
+            {
+              "id": "a",
+              "number": 1006,
+              "status": "accepted",
+              "total_cents": 125000,
+              "depositPaid": true
+            }
+          ],
+          "invoices": [
+            {
+              "id": "i",
+              "number": 1025,
+              "status": "draft",
+              "total_cents": 64900,
+              "amount_paid_cents": 0
+            }
+          ]
+        }
+      ],
+      "result": {
+        "rows": [
+          {
+            "key": "report",
+            "step": "report",
+            "title": "Report",
+            "detail": "Draft ready · 2 findings, 5 tests",
+            "amount": null,
+            "done": true,
+            "opens": "report",
+            "id": null,
+            "number": 1,
+            "next": false,
+            "spoken": "Step 1 of 4, Report, draft ready, 2 findings, 5 tests, done"
+          },
+          {
+            "key": "quote:a",
+            "step": "quote",
+            "title": "Quote #1006",
+            "detail": "Accepted · deposit paid",
+            "amount": "$1,250.00",
+            "done": true,
+            "opens": "quote",
+            "id": "a",
+            "number": 2,
+            "next": false,
+            "spoken": "Step 2 of 4, Quote #1006, accepted, deposit paid, $1,250.00, done"
+          },
+          {
+            "key": "sign",
+            "step": "sign",
+            "title": "Customer signs",
+            "detail": "Not yet",
+            "amount": null,
+            "done": false,
+            "opens": "sign",
+            "id": null,
+            "number": 3,
+            "next": true,
+            "spoken": "Step 3 of 4, Customer signs, not yet, next"
+          },
+          {
+            "key": "invoice:i",
+            "step": "invoice",
+            "title": "Invoice #1025",
+            "detail": "Draft · not sent",
+            "amount": "$649.00",
+            "done": false,
+            "opens": "invoice",
+            "id": "i",
+            "number": 4,
+            "next": false,
+            "spoken": "Step 4 of 4, Invoice #1025, draft, not sent, $649.00"
+          }
+        ],
+        "done": 2,
+        "total": 4,
+        "subtitle": "Maria Alvarez · 2 of 4 done",
+        "next": {
+          "step": "sign",
+          "id": null,
+          "action": "Review with Customer"
+        },
+        "canStartQuote": false
+      }
+    },
+    {
+      "args": [
+        {
+          "jobType": "detection",
+          "customer": "Maria Alvarez",
+          "reportOn": true,
+          "hasDraft": true,
+          "sentVersion": null,
+          "unsignedReason": null,
+          "findings": 0,
+          "tests": 0,
+          "signers": [],
+          "quotes": [
+            {
+              "id": "a",
+              "number": 1006,
+              "status": "accepted",
+              "total_cents": 125000,
+              "depositPaid": false
+            }
+          ],
+          "invoices": []
+        }
+      ],
+      "result": {
+        "rows": [
+          {
+            "key": "report",
+            "step": "report",
+            "title": "Report",
+            "detail": "Draft ready",
+            "amount": null,
+            "done": true,
+            "opens": "report",
+            "id": null,
+            "number": 1,
+            "next": false,
+            "spoken": "Step 1 of 4, Report, draft ready, done"
+          },
+          {
+            "key": "quote:a",
+            "step": "quote",
+            "title": "Quote #1006",
+            "detail": "Accepted",
+            "amount": "$1,250.00",
+            "done": true,
+            "opens": "quote",
+            "id": "a",
+            "number": 2,
+            "next": false,
+            "spoken": "Step 2 of 4, Quote #1006, accepted, $1,250.00, done"
+          },
+          {
+            "key": "sign",
+            "step": "sign",
+            "title": "Customer signs",
+            "detail": "Not yet",
+            "amount": null,
+            "done": false,
+            "opens": "sign",
+            "id": null,
+            "number": 3,
+            "next": true,
+            "spoken": "Step 3 of 4, Customer signs, not yet, next"
+          },
+          {
+            "key": "invoice",
+            "step": "invoice",
+            "title": "Invoice",
+            "detail": "Not started",
+            "amount": null,
+            "done": false,
+            "opens": "invoice",
+            "id": null,
+            "number": 4,
+            "next": false,
+            "spoken": "Step 4 of 4, Invoice, not started"
+          }
+        ],
+        "done": 2,
+        "total": 4,
+        "subtitle": "Maria Alvarez · 2 of 4 done",
+        "next": {
+          "step": "sign",
+          "id": null,
+          "action": "Review with Customer"
+        },
+        "canStartQuote": false
+      }
+    },
+    {
+      "args": [
+        {
+          "jobType": "detection",
+          "customer": "Maria Alvarez",
+          "reportOn": true,
+          "hasDraft": true,
+          "sentVersion": null,
+          "unsignedReason": null,
+          "findings": 0,
+          "tests": 0,
+          "signers": [],
+          "quotes": [
+            {
+              "id": "b",
+              "number": 1007,
+              "status": "draft",
+              "total_cents": 125000,
+              "depositPaid": false
+            },
+            {
+              "id": "a",
+              "number": 1006,
+              "status": "declined",
+              "total_cents": 125000,
+              "depositPaid": false
+            },
+            {
+              "id": "c",
+              "number": null,
+              "status": "expired",
+              "total_cents": 125000,
+              "depositPaid": false
+            }
+          ],
+          "invoices": []
+        }
+      ],
+      "result": {
+        "rows": [
+          {
+            "key": "report",
+            "step": "report",
+            "title": "Report",
+            "detail": "Draft ready",
+            "amount": null,
+            "done": true,
+            "opens": "report",
+            "id": null,
+            "number": 1,
+            "next": false,
+            "spoken": "Step 1 of 4, Report, draft ready, done"
+          },
+          {
+            "key": "quote:a",
+            "step": "quote",
+            "title": "Quote #1006",
+            "detail": "Declined",
+            "amount": "$1,250.00",
+            "done": true,
+            "opens": "quote",
+            "id": "a",
+            "number": 2,
+            "next": false,
+            "spoken": "Step 2 of 4, Quote #1006, declined, $1,250.00, done"
+          },
+          {
+            "key": "quote:b",
+            "step": "quote",
+            "title": "Quote #1007",
+            "detail": "Draft · not sent",
+            "amount": "$1,250.00",
+            "done": false,
+            "opens": "quote",
+            "id": "b",
+            "number": 2,
+            "next": true,
+            "spoken": "Step 2 of 4, Quote #1007, draft, not sent, $1,250.00, next"
+          },
+          {
+            "key": "quote:c",
+            "step": "quote",
+            "title": "Quote",
+            "detail": "Expired",
+            "amount": "$1,250.00",
+            "done": true,
+            "opens": "quote",
+            "id": "c",
+            "number": 2,
+            "next": false,
+            "spoken": "Step 2 of 4, Quote, expired, $1,250.00, done"
+          },
+          {
+            "key": "sign",
+            "step": "sign",
+            "title": "Customer signs",
+            "detail": "Not yet",
+            "amount": null,
+            "done": false,
+            "opens": "sign",
+            "id": null,
+            "number": 3,
+            "next": false,
+            "spoken": "Step 3 of 4, Customer signs, not yet"
+          },
+          {
+            "key": "invoice",
+            "step": "invoice",
+            "title": "Invoice",
+            "detail": "Not started",
+            "amount": null,
+            "done": false,
+            "opens": "invoice",
+            "id": null,
+            "number": 4,
+            "next": false,
+            "spoken": "Step 4 of 4, Invoice, not started"
+          }
+        ],
+        "done": 1,
+        "total": 4,
+        "subtitle": "Maria Alvarez · 1 of 4 done",
+        "next": {
+          "step": "quote",
+          "id": "b",
+          "action": "Send Quote"
+        },
+        "canStartQuote": false
+      }
+    },
+    {
+      "args": [
+        {
+          "jobType": "detection",
+          "customer": "Maria Alvarez",
+          "reportOn": true,
+          "hasDraft": true,
+          "sentVersion": null,
+          "unsignedReason": null,
+          "findings": 0,
+          "tests": 0,
+          "signers": [],
+          "quotes": [
+            {
+              "id": "a",
+              "number": 1006,
+              "status": "sent",
+              "total_cents": 125000,
+              "depositPaid": false
+            }
+          ],
+          "invoices": []
+        }
+      ],
+      "result": {
+        "rows": [
+          {
+            "key": "report",
+            "step": "report",
+            "title": "Report",
+            "detail": "Draft ready",
+            "amount": null,
+            "done": true,
+            "opens": "report",
+            "id": null,
+            "number": 1,
+            "next": false,
+            "spoken": "Step 1 of 4, Report, draft ready, done"
+          },
+          {
+            "key": "quote:a",
+            "step": "quote",
+            "title": "Quote #1006",
+            "detail": "Sent · waiting",
+            "amount": "$1,250.00",
+            "done": true,
+            "opens": "quote",
+            "id": "a",
+            "number": 2,
+            "next": false,
+            "spoken": "Step 2 of 4, Quote #1006, sent, waiting, $1,250.00, done"
+          },
+          {
+            "key": "sign",
+            "step": "sign",
+            "title": "Customer signs",
+            "detail": "Not yet",
+            "amount": null,
+            "done": false,
+            "opens": "sign",
+            "id": null,
+            "number": 3,
+            "next": true,
+            "spoken": "Step 3 of 4, Customer signs, not yet, next"
+          },
+          {
+            "key": "invoice",
+            "step": "invoice",
+            "title": "Invoice",
+            "detail": "Not started",
+            "amount": null,
+            "done": false,
+            "opens": "invoice",
+            "id": null,
+            "number": 4,
+            "next": false,
+            "spoken": "Step 4 of 4, Invoice, not started"
+          }
+        ],
+        "done": 2,
+        "total": 4,
+        "subtitle": "Maria Alvarez · 2 of 4 done",
+        "next": {
+          "step": "sign",
+          "id": null,
+          "action": "Review with Customer"
+        },
+        "canStartQuote": true
+      }
+    },
+    {
+      "args": [
+        {
+          "jobType": "repair",
+          "customer": "Maria Alvarez",
+          "reportOn": true,
+          "hasDraft": false,
+          "sentVersion": null,
+          "unsignedReason": null,
+          "findings": 0,
+          "tests": 0,
+          "signers": [],
+          "quotes": [
+            {
+              "id": "a",
+              "number": 1006,
+              "status": "sent",
+              "total_cents": 125000,
+              "depositPaid": false
+            }
+          ],
+          "invoices": []
+        }
+      ],
+      "result": {
+        "rows": [
+          {
+            "key": "report",
+            "step": "report",
+            "title": "Report",
+            "detail": "Not written yet",
+            "amount": null,
+            "done": false,
+            "opens": "report",
+            "id": null,
+            "number": 1,
+            "next": true,
+            "spoken": "Step 1 of 3, Report, not written yet, next"
+          },
+          {
+            "key": "sign",
+            "step": "sign",
+            "title": "Customer signs",
+            "detail": "Write the report first",
+            "amount": null,
+            "done": false,
+            "opens": "report",
+            "id": null,
+            "number": 2,
+            "next": false,
+            "spoken": "Step 2 of 3, Customer signs, write the report first"
+          },
+          {
+            "key": "invoice",
+            "step": "invoice",
+            "title": "Invoice",
+            "detail": "Not started",
+            "amount": null,
+            "done": false,
+            "opens": "invoice",
+            "id": null,
+            "number": 3,
+            "next": false,
+            "spoken": "Step 3 of 3, Invoice, not started"
+          }
+        ],
+        "done": 0,
+        "total": 3,
+        "subtitle": "Maria Alvarez · 0 of 3 done",
+        "next": {
+          "step": "report",
+          "id": null,
+          "action": "Write the Draft"
+        },
+        "canStartQuote": false
+      }
+    },
+    {
+      "args": [
+        {
+          "jobType": "inspection",
+          "customer": "Maria Alvarez",
+          "reportOn": true,
+          "hasDraft": false,
+          "sentVersion": null,
+          "unsignedReason": null,
+          "findings": 0,
+          "tests": 0,
+          "signers": [],
+          "quotes": [
+            {
+              "id": "a",
+              "number": 1006,
+              "status": "draft",
+              "total_cents": 125000,
+              "depositPaid": false
+            }
+          ],
+          "invoices": []
+        }
+      ],
+      "result": {
+        "rows": [
+          {
+            "key": "report",
+            "step": "report",
+            "title": "Report",
+            "detail": "Not written yet",
+            "amount": null,
+            "done": false,
+            "opens": "report",
+            "id": null,
+            "number": 1,
+            "next": true,
+            "spoken": "Step 1 of 4, Report, not written yet, next"
+          },
+          {
+            "key": "quote:a",
+            "step": "quote",
+            "title": "Quote #1006",
+            "detail": "Draft · not sent",
+            "amount": "$1,250.00",
+            "done": false,
+            "opens": "quote",
+            "id": "a",
+            "number": 2,
+            "next": false,
+            "spoken": "Step 2 of 4, Quote #1006, draft, not sent, $1,250.00"
+          },
+          {
+            "key": "sign",
+            "step": "sign",
+            "title": "Customer signs",
+            "detail": "Write the report first",
+            "amount": null,
+            "done": false,
+            "opens": "report",
+            "id": null,
+            "number": 3,
+            "next": false,
+            "spoken": "Step 3 of 4, Customer signs, write the report first"
+          },
+          {
+            "key": "invoice",
+            "step": "invoice",
+            "title": "Invoice",
+            "detail": "Not started",
+            "amount": null,
+            "done": false,
+            "opens": "invoice",
+            "id": null,
+            "number": 4,
+            "next": false,
+            "spoken": "Step 4 of 4, Invoice, not started"
+          }
+        ],
+        "done": 0,
+        "total": 4,
+        "subtitle": "Maria Alvarez · 0 of 4 done",
+        "next": {
+          "step": "report",
+          "id": null,
+          "action": "Write the Draft"
+        },
+        "canStartQuote": false
+      }
+    },
+    {
+      "args": [
+        {
+          "jobType": "detection",
+          "customer": "Maria Alvarez",
+          "reportOn": true,
+          "hasDraft": true,
+          "sentVersion": null,
+          "unsignedReason": null,
+          "findings": 0,
+          "tests": 0,
+          "signers": [
+            "Maria Alvarez",
+            " Maria Alvarez ",
+            "Jo"
+          ],
+          "quotes": [],
+          "invoices": []
+        }
+      ],
+      "result": {
+        "rows": [
+          {
+            "key": "report",
+            "step": "report",
+            "title": "Report",
+            "detail": "Draft ready",
+            "amount": null,
+            "done": true,
+            "opens": "report",
+            "id": null,
+            "number": 1,
+            "next": false,
+            "spoken": "Step 1 of 3, Report, draft ready, done"
+          },
+          {
+            "key": "sign",
+            "step": "sign",
+            "title": "Customer signs",
+            "detail": "Signed by Maria Alvarez, Jo",
+            "amount": null,
+            "done": true,
+            "opens": "sign",
+            "id": null,
+            "number": 2,
+            "next": false,
+            "spoken": "Step 2 of 3, Customer signs, signed by Maria Alvarez, Jo, done"
+          },
+          {
+            "key": "invoice",
+            "step": "invoice",
+            "title": "Invoice",
+            "detail": "Not started",
+            "amount": null,
+            "done": false,
+            "opens": "invoice",
+            "id": null,
+            "number": 3,
+            "next": true,
+            "spoken": "Step 3 of 3, Invoice, not started, next"
+          }
+        ],
+        "done": 2,
+        "total": 3,
+        "subtitle": "Maria Alvarez · 2 of 3 done",
+        "next": {
+          "step": "invoice",
+          "id": null,
+          "action": "Send Invoice"
+        },
+        "canStartQuote": true
+      }
+    },
+    {
+      "args": [
+        {
+          "jobType": "detection",
+          "customer": "Maria Alvarez",
+          "reportOn": true,
+          "hasDraft": false,
+          "sentVersion": 2,
+          "unsignedReason": "Customer not present",
+          "findings": 0,
+          "tests": 0,
+          "signers": [],
+          "quotes": [],
+          "invoices": []
+        }
+      ],
+      "result": {
+        "rows": [
+          {
+            "key": "report",
+            "step": "report",
+            "title": "Report",
+            "detail": "Sent · version 2",
+            "amount": null,
+            "done": true,
+            "opens": "report",
+            "id": null,
+            "number": 1,
+            "next": false,
+            "spoken": "Step 1 of 3, Report, sent, version 2, done"
+          },
+          {
+            "key": "sign",
+            "step": "sign",
+            "title": "Customer signs",
+            "detail": "Not signed: customer not present",
+            "amount": null,
+            "done": true,
+            "opens": "sign",
+            "id": null,
+            "number": 2,
+            "next": false,
+            "spoken": "Step 2 of 3, Customer signs, not signed: customer not present, done"
+          },
+          {
+            "key": "invoice",
+            "step": "invoice",
+            "title": "Invoice",
+            "detail": "Not started",
+            "amount": null,
+            "done": false,
+            "opens": "invoice",
+            "id": null,
+            "number": 3,
+            "next": true,
+            "spoken": "Step 3 of 3, Invoice, not started, next"
+          }
+        ],
+        "done": 2,
+        "total": 3,
+        "subtitle": "Maria Alvarez · 2 of 3 done",
+        "next": {
+          "step": "invoice",
+          "id": null,
+          "action": "Send Invoice"
+        },
+        "canStartQuote": true
+      }
+    },
+    {
+      "args": [
+        {
+          "jobType": "detection",
+          "customer": "Maria Alvarez",
+          "reportOn": true,
+          "hasDraft": false,
+          "sentVersion": 2,
+          "unsignedReason": "  ",
+          "findings": 0,
+          "tests": 0,
+          "signers": [],
+          "quotes": [],
+          "invoices": []
+        }
+      ],
+      "result": {
+        "rows": [
+          {
+            "key": "report",
+            "step": "report",
+            "title": "Report",
+            "detail": "Sent · version 2",
+            "amount": null,
+            "done": true,
+            "opens": "report",
+            "id": null,
+            "number": 1,
+            "next": false,
+            "spoken": "Step 1 of 3, Report, sent, version 2, done"
+          },
+          {
+            "key": "sign",
+            "step": "sign",
+            "title": "Customer signs",
+            "detail": "Sent without a signature",
+            "amount": null,
+            "done": true,
+            "opens": "sign",
+            "id": null,
+            "number": 2,
+            "next": false,
+            "spoken": "Step 2 of 3, Customer signs, sent without a signature, done"
+          },
+          {
+            "key": "invoice",
+            "step": "invoice",
+            "title": "Invoice",
+            "detail": "Not started",
+            "amount": null,
+            "done": false,
+            "opens": "invoice",
+            "id": null,
+            "number": 3,
+            "next": true,
+            "spoken": "Step 3 of 3, Invoice, not started, next"
+          }
+        ],
+        "done": 2,
+        "total": 3,
+        "subtitle": "Maria Alvarez · 2 of 3 done",
+        "next": {
+          "step": "invoice",
+          "id": null,
+          "action": "Send Invoice"
+        },
+        "canStartQuote": true
+      }
+    },
+    {
+      "args": [
+        {
+          "jobType": "detection",
+          "customer": "Maria Alvarez",
+          "reportOn": true,
+          "hasDraft": true,
+          "sentVersion": 1,
+          "unsignedReason": null,
+          "findings": 0,
+          "tests": 0,
+          "signers": [],
+          "quotes": [],
+          "invoices": []
+        }
+      ],
+      "result": {
+        "rows": [
+          {
+            "key": "report",
+            "step": "report",
+            "title": "Report",
+            "detail": "Draft ready",
+            "amount": null,
+            "done": true,
+            "opens": "report",
+            "id": null,
+            "number": 1,
+            "next": false,
+            "spoken": "Step 1 of 3, Report, draft ready, done"
+          },
+          {
+            "key": "sign",
+            "step": "sign",
+            "title": "Customer signs",
+            "detail": "Not yet",
+            "amount": null,
+            "done": false,
+            "opens": "sign",
+            "id": null,
+            "number": 2,
+            "next": true,
+            "spoken": "Step 2 of 3, Customer signs, not yet, next"
+          },
+          {
+            "key": "invoice",
+            "step": "invoice",
+            "title": "Invoice",
+            "detail": "Not started",
+            "amount": null,
+            "done": false,
+            "opens": "invoice",
+            "id": null,
+            "number": 3,
+            "next": false,
+            "spoken": "Step 3 of 3, Invoice, not started"
+          }
+        ],
+        "done": 1,
+        "total": 3,
+        "subtitle": "Maria Alvarez · 1 of 3 done",
+        "next": {
+          "step": "sign",
+          "id": null,
+          "action": "Review with Customer"
+        },
+        "canStartQuote": true
+      }
+    },
+    {
+      "args": [
+        {
+          "jobType": "detection",
+          "customer": "Maria Alvarez",
+          "reportOn": true,
+          "hasDraft": false,
+          "sentVersion": null,
+          "unsignedReason": null,
+          "findings": 0,
+          "tests": 0,
+          "signers": [
+            "Maria Alvarez"
+          ],
+          "quotes": [],
+          "invoices": []
+        }
+      ],
+      "result": {
+        "rows": [
+          {
+            "key": "report",
+            "step": "report",
+            "title": "Report",
+            "detail": "Not written yet",
+            "amount": null,
+            "done": false,
+            "opens": "report",
+            "id": null,
+            "number": 1,
+            "next": true,
+            "spoken": "Step 1 of 3, Report, not written yet, next"
+          },
+          {
+            "key": "sign",
+            "step": "sign",
+            "title": "Customer signs",
+            "detail": "Signed by Maria Alvarez",
+            "amount": null,
+            "done": true,
+            "opens": "sign",
+            "id": null,
+            "number": 2,
+            "next": false,
+            "spoken": "Step 2 of 3, Customer signs, signed by Maria Alvarez, done"
+          },
+          {
+            "key": "invoice",
+            "step": "invoice",
+            "title": "Invoice",
+            "detail": "Not started",
+            "amount": null,
+            "done": false,
+            "opens": "invoice",
+            "id": null,
+            "number": 3,
+            "next": false,
+            "spoken": "Step 3 of 3, Invoice, not started"
+          }
+        ],
+        "done": 1,
+        "total": 3,
+        "subtitle": "Maria Alvarez · 1 of 3 done",
+        "next": {
+          "step": "report",
+          "id": null,
+          "action": "Write the Draft"
+        },
+        "canStartQuote": true
+      }
+    },
+    {
+      "args": [
+        {
+          "jobType": "detection",
+          "customer": "Maria Alvarez",
+          "reportOn": true,
+          "hasDraft": false,
+          "sentVersion": 1,
+          "unsignedReason": null,
+          "findings": 0,
+          "tests": 0,
+          "signers": [
+            "Maria Alvarez"
+          ],
+          "quotes": [],
+          "invoices": [
+            {
+              "id": "i",
+              "number": 1025,
+              "status": "sent",
+              "total_cents": 64900,
+              "amount_paid_cents": 0
+            }
+          ]
+        }
+      ],
+      "result": {
+        "rows": [
+          {
+            "key": "report",
+            "step": "report",
+            "title": "Report",
+            "detail": "Sent · version 1",
+            "amount": null,
+            "done": true,
+            "opens": "report",
+            "id": null,
+            "number": 1,
+            "next": false,
+            "spoken": "Step 1 of 3, Report, sent, version 1, done"
+          },
+          {
+            "key": "sign",
+            "step": "sign",
+            "title": "Customer signs",
+            "detail": "Signed by Maria Alvarez",
+            "amount": null,
+            "done": true,
+            "opens": "sign",
+            "id": null,
+            "number": 2,
+            "next": false,
+            "spoken": "Step 2 of 3, Customer signs, signed by Maria Alvarez, done"
+          },
+          {
+            "key": "invoice:i",
+            "step": "invoice",
+            "title": "Invoice #1025",
+            "detail": "Sent · $649.00 due",
+            "amount": "$649.00",
+            "done": true,
+            "opens": "invoice",
+            "id": "i",
+            "number": 3,
+            "next": false,
+            "spoken": "Step 3 of 3, Invoice #1025, sent, $649.00 due, $649.00, done"
+          }
+        ],
+        "done": 3,
+        "total": 3,
+        "subtitle": "Maria Alvarez · All done",
+        "next": null,
+        "canStartQuote": true
+      }
+    },
+    {
+      "args": [
+        {
+          "jobType": "detection",
+          "customer": "Maria Alvarez",
+          "reportOn": true,
+          "hasDraft": false,
+          "sentVersion": 1,
+          "unsignedReason": null,
+          "findings": 0,
+          "tests": 0,
+          "signers": [
+            "Maria"
+          ],
+          "quotes": [],
+          "invoices": [
+            {
+              "id": "i",
+              "number": 1025,
+              "status": "partially_paid",
+              "total_cents": 64900,
+              "amount_paid_cents": 27400
+            }
+          ]
+        }
+      ],
+      "result": {
+        "rows": [
+          {
+            "key": "report",
+            "step": "report",
+            "title": "Report",
+            "detail": "Sent · version 1",
+            "amount": null,
+            "done": true,
+            "opens": "report",
+            "id": null,
+            "number": 1,
+            "next": false,
+            "spoken": "Step 1 of 3, Report, sent, version 1, done"
+          },
+          {
+            "key": "sign",
+            "step": "sign",
+            "title": "Customer signs",
+            "detail": "Signed by Maria",
+            "amount": null,
+            "done": true,
+            "opens": "sign",
+            "id": null,
+            "number": 2,
+            "next": false,
+            "spoken": "Step 2 of 3, Customer signs, signed by Maria, done"
+          },
+          {
+            "key": "invoice:i",
+            "step": "invoice",
+            "title": "Invoice #1025",
+            "detail": "Partly paid · $375.00 due",
+            "amount": "$649.00",
+            "done": true,
+            "opens": "invoice",
+            "id": "i",
+            "number": 3,
+            "next": false,
+            "spoken": "Step 3 of 3, Invoice #1025, partly paid, $375.00 due, $649.00, done"
+          }
+        ],
+        "done": 3,
+        "total": 3,
+        "subtitle": "Maria Alvarez · All done",
+        "next": null,
+        "canStartQuote": true
+      }
+    },
+    {
+      "args": [
+        {
+          "jobType": "detection",
+          "customer": "Maria Alvarez",
+          "reportOn": true,
+          "hasDraft": false,
+          "sentVersion": 1,
+          "unsignedReason": null,
+          "findings": 0,
+          "tests": 0,
+          "signers": [
+            "Maria"
+          ],
+          "quotes": [],
+          "invoices": [
+            {
+              "id": "v",
+              "number": 1,
+              "status": "void",
+              "total_cents": 64900,
+              "amount_paid_cents": 0
+            },
+            {
+              "id": "i",
+              "number": 2,
+              "status": "paid",
+              "total_cents": 64900,
+              "amount_paid_cents": 64900
+            }
+          ]
+        }
+      ],
+      "result": {
+        "rows": [
+          {
+            "key": "report",
+            "step": "report",
+            "title": "Report",
+            "detail": "Sent · version 1",
+            "amount": null,
+            "done": true,
+            "opens": "report",
+            "id": null,
+            "number": 1,
+            "next": false,
+            "spoken": "Step 1 of 3, Report, sent, version 1, done"
+          },
+          {
+            "key": "sign",
+            "step": "sign",
+            "title": "Customer signs",
+            "detail": "Signed by Maria",
+            "amount": null,
+            "done": true,
+            "opens": "sign",
+            "id": null,
+            "number": 2,
+            "next": false,
+            "spoken": "Step 2 of 3, Customer signs, signed by Maria, done"
+          },
+          {
+            "key": "invoice:i",
+            "step": "invoice",
+            "title": "Invoice #2",
+            "detail": "Paid",
+            "amount": "$649.00",
+            "done": true,
+            "opens": "invoice",
+            "id": "i",
+            "number": 3,
+            "next": false,
+            "spoken": "Step 3 of 3, Invoice #2, paid, $649.00, done"
+          }
+        ],
+        "done": 3,
+        "total": 3,
+        "subtitle": "Maria Alvarez · All done",
+        "next": null,
+        "canStartQuote": true
+      }
+    },
+    {
+      "args": [
+        {
+          "jobType": "detection",
+          "customer": "Maria Alvarez",
+          "reportOn": true,
+          "hasDraft": false,
+          "sentVersion": null,
+          "unsignedReason": null,
+          "findings": 0,
+          "tests": 0,
+          "signers": [],
+          "quotes": [],
+          "invoices": [
+            {
+              "id": "a",
+              "number": null,
+              "status": "draft",
+              "total_cents": 64900,
+              "amount_paid_cents": 0
+            },
+            {
+              "id": "b",
+              "number": 9,
+              "status": "sent",
+              "total_cents": 64900,
+              "amount_paid_cents": 0
+            }
+          ]
+        }
+      ],
+      "result": {
+        "rows": [
+          {
+            "key": "report",
+            "step": "report",
+            "title": "Report",
+            "detail": "Not written yet",
+            "amount": null,
+            "done": false,
+            "opens": "report",
+            "id": null,
+            "number": 1,
+            "next": true,
+            "spoken": "Step 1 of 3, Report, not written yet, next"
+          },
+          {
+            "key": "sign",
+            "step": "sign",
+            "title": "Customer signs",
+            "detail": "Write the report first",
+            "amount": null,
+            "done": false,
+            "opens": "report",
+            "id": null,
+            "number": 2,
+            "next": false,
+            "spoken": "Step 2 of 3, Customer signs, write the report first"
+          },
+          {
+            "key": "invoice:b",
+            "step": "invoice",
+            "title": "Invoice #9",
+            "detail": "Sent · $649.00 due",
+            "amount": "$649.00",
+            "done": true,
+            "opens": "invoice",
+            "id": "b",
+            "number": 3,
+            "next": false,
+            "spoken": "Step 3 of 3, Invoice #9, sent, $649.00 due, $649.00, done"
+          },
+          {
+            "key": "invoice:a",
+            "step": "invoice",
+            "title": "Invoice",
+            "detail": "Draft · not sent",
+            "amount": "$649.00",
+            "done": false,
+            "opens": "invoice",
+            "id": "a",
+            "number": 3,
+            "next": false,
+            "spoken": "Step 3 of 3, Invoice, draft, not sent, $649.00"
+          }
+        ],
+        "done": 0,
+        "total": 3,
+        "subtitle": "Maria Alvarez · 0 of 3 done",
+        "next": {
+          "step": "report",
+          "id": null,
+          "action": "Write the Draft"
+        },
+        "canStartQuote": true
+      }
+    },
+    {
+      "args": [
+        {
+          "jobType": "detection",
+          "customer": "Maria Alvarez",
+          "reportOn": false,
+          "hasDraft": false,
+          "sentVersion": null,
+          "unsignedReason": null,
+          "findings": 0,
+          "tests": 0,
+          "signers": [],
+          "quotes": [],
+          "invoices": []
+        }
+      ],
+      "result": {
+        "rows": [
+          {
+            "key": "invoice",
+            "step": "invoice",
+            "title": "Invoice",
+            "detail": "Not started",
+            "amount": null,
+            "done": false,
+            "opens": "invoice",
+            "id": null,
+            "number": 1,
+            "next": true,
+            "spoken": "Step 1 of 1, Invoice, not started, next"
+          }
+        ],
+        "done": 0,
+        "total": 1,
+        "subtitle": "Maria Alvarez · 0 of 1 done",
+        "next": {
+          "step": "invoice",
+          "id": null,
+          "action": "Send Invoice"
+        },
+        "canStartQuote": true
+      }
+    },
+    {
+      "args": [
+        {
+          "jobType": "detection",
+          "customer": "Maria Alvarez",
+          "reportOn": false,
+          "hasDraft": false,
+          "sentVersion": null,
+          "unsignedReason": null,
+          "findings": 0,
+          "tests": 0,
+          "signers": [],
+          "quotes": [
+            {
+              "id": "a",
+              "number": 1006,
+              "status": "sent",
+              "total_cents": 125000,
+              "depositPaid": false
+            }
+          ],
+          "invoices": [
+            {
+              "id": "i",
+              "number": 1025,
+              "status": "paid",
+              "total_cents": 64900,
+              "amount_paid_cents": 64900
+            }
+          ]
+        }
+      ],
+      "result": {
+        "rows": [
+          {
+            "key": "quote:a",
+            "step": "quote",
+            "title": "Quote #1006",
+            "detail": "Sent · waiting",
+            "amount": "$1,250.00",
+            "done": true,
+            "opens": "quote",
+            "id": "a",
+            "number": 1,
+            "next": false,
+            "spoken": "Step 1 of 2, Quote #1006, sent, waiting, $1,250.00, done"
+          },
+          {
+            "key": "invoice:i",
+            "step": "invoice",
+            "title": "Invoice #1025",
+            "detail": "Paid",
+            "amount": "$649.00",
+            "done": true,
+            "opens": "invoice",
+            "id": "i",
+            "number": 2,
+            "next": false,
+            "spoken": "Step 2 of 2, Invoice #1025, paid, $649.00, done"
+          }
+        ],
+        "done": 2,
+        "total": 2,
+        "subtitle": "Maria Alvarez · All done",
+        "next": null,
+        "canStartQuote": true
+      }
+    },
+    {
+      "args": [
+        {
+          "jobType": "detection",
+          "customer": "Maria Alvarez",
+          "reportOn": true,
+          "hasDraft": false,
+          "sentVersion": null,
+          "unsignedReason": null,
+          "findings": 0,
+          "tests": 0,
+          "signers": [],
+          "quotes": [],
+          "invoices": [
+            {
+              "id": "i",
+              "number": 1025,
+              "status": "sent",
+              "total_cents": 64900,
+              "amount_paid_cents": 99999
+            }
+          ]
+        }
+      ],
+      "result": {
+        "rows": [
+          {
+            "key": "report",
+            "step": "report",
+            "title": "Report",
+            "detail": "Not written yet",
+            "amount": null,
+            "done": false,
+            "opens": "report",
+            "id": null,
+            "number": 1,
+            "next": true,
+            "spoken": "Step 1 of 3, Report, not written yet, next"
+          },
+          {
+            "key": "sign",
+            "step": "sign",
+            "title": "Customer signs",
+            "detail": "Write the report first",
+            "amount": null,
+            "done": false,
+            "opens": "report",
+            "id": null,
+            "number": 2,
+            "next": false,
+            "spoken": "Step 2 of 3, Customer signs, write the report first"
+          },
+          {
+            "key": "invoice:i",
+            "step": "invoice",
+            "title": "Invoice #1025",
+            "detail": "Sent · $0.00 due",
+            "amount": "$649.00",
+            "done": true,
+            "opens": "invoice",
+            "id": "i",
+            "number": 3,
+            "next": false,
+            "spoken": "Step 3 of 3, Invoice #1025, sent, $0.00 due, $649.00, done"
+          }
+        ],
+        "done": 1,
+        "total": 3,
+        "subtitle": "Maria Alvarez · 1 of 3 done",
+        "next": {
+          "step": "report",
+          "id": null,
+          "action": "Write the Draft"
+        },
+        "canStartQuote": true
+      }
+    }
+  ],
+  "WRAP_UP_ACTIONS": [
+    {
+      "args": [],
+      "result": {
+        "report": "Write the Draft",
+        "quote": "Send Quote",
+        "sign": "Review with Customer",
+        "invoice": "Send Invoice"
+      }
+    }
+  ],
+  "NEW_QUOTE_LABEL": [
+    {
+      "args": [],
+      "result": "New Quote"
+    }
+  ]
+}

@@ -944,6 +944,93 @@
         [
           {
             "id": "a",
+            "type": "repair",
+            "status": "in_progress",
+            "customer": "Customer a",
+            "address": "a Palm Ln",
+            "scheduled_start": "2026-10-20T16:00:00Z",
+            "checklistDone": 2,
+            "checklistTotal": 9
+          }
+        ],
+        "2026-10-20",
+        "America/Phoenix",
+        null
+      ],
+      "result": {
+        "moment": "on_site",
+        "stopId": "a",
+        "stop": 1,
+        "stops": 1,
+        "content": {
+          "headline": "At Customer a",
+          "figure": "On site",
+          "figureLabel": "",
+          "detail": "Stop 1 of 1 · a Palm Ln",
+          "next": null,
+          "progress": 0,
+          "compact": "•",
+          "spoken": "At Customer a. Stop 1 of 1.",
+          "access": null,
+          "cleanings": []
+        },
+        "segments": [
+          "current"
+        ],
+        "doneCount": 0,
+        "currentId": "a",
+        "browsing": false
+      }
+    },
+    {
+      "args": [
+        [
+          {
+            "id": "a",
+            "type": "repair",
+            "status": "scheduled",
+            "customer": "Customer a",
+            "address": "a Palm Ln",
+            "scheduled_start": "2026-10-20T16:00:00Z",
+            "checklistDone": 0,
+            "checklistTotal": 9,
+            "stop_done_on": "2026-10-20"
+          }
+        ],
+        "2026-10-20",
+        "America/Phoenix",
+        "a"
+      ],
+      "result": {
+        "moment": "done",
+        "stopId": "a",
+        "stop": 1,
+        "stops": 1,
+        "content": {
+          "headline": "Customer a done",
+          "figure": "✓",
+          "figureLabel": "Last stop",
+          "detail": "Stop 1 of 1",
+          "next": "That was the last stop today.",
+          "progress": 1,
+          "compact": "✓",
+          "spoken": "Customer a done. That was the last stop today.",
+          "access": null,
+          "cleanings": []
+        },
+        "segments": [
+          "done"
+        ],
+        "doneCount": 1,
+        "currentId": "a",
+        "browsing": false
+      }
+    },
+    {
+      "args": [
+        [
+          {
+            "id": "a",
             "type": "detection",
             "status": "scheduled",
             "customer": "Customer a",
@@ -2402,6 +2489,52 @@
       "args": [
         "ahead",
         true,
+        false,
+        true
+      ],
+      "result": {
+        "complete": false,
+        "onMyWay": true,
+        "undo": false,
+        "ready": false,
+        "primary": "start_job"
+      }
+    },
+    {
+      "args": [
+        "ahead",
+        false,
+        false,
+        true
+      ],
+      "result": {
+        "complete": false,
+        "onMyWay": false,
+        "undo": false,
+        "ready": false,
+        "primary": null
+      }
+    },
+    {
+      "args": [
+        "ahead",
+        true,
+        true,
+        true
+      ],
+      "result": {
+        "complete": false,
+        "onMyWay": true,
+        "undo": false,
+        "ready": false,
+        "primary": "start_job"
+      }
+    },
+    {
+      "args": [
+        "ahead",
+        true,
+        false,
         false
       ],
       "result": {
@@ -2416,47 +2549,6 @@
       "args": [
         "ahead",
         false,
-        false
-      ],
-      "result": {
-        "complete": false,
-        "onMyWay": false,
-        "undo": false,
-        "ready": false,
-        "primary": null
-      }
-    },
-    {
-      "args": [
-        "ahead",
-        true,
-        true
-      ],
-      "result": {
-        "complete": false,
-        "onMyWay": true,
-        "undo": false,
-        "ready": false,
-        "primary": "start_job"
-      }
-    },
-    {
-      "args": [
-        "driving",
-        true,
-        false
-      ],
-      "result": {
-        "complete": false,
-        "onMyWay": false,
-        "undo": false,
-        "ready": false,
-        "primary": "start_job"
-      }
-    },
-    {
-      "args": [
-        "driving",
         false,
         false
       ],
@@ -2472,6 +2564,7 @@
       "args": [
         "driving",
         true,
+        false,
         true
       ],
       "result": {
@@ -2484,9 +2577,70 @@
     },
     {
       "args": [
+        "driving",
+        false,
+        false,
+        true
+      ],
+      "result": {
+        "complete": false,
+        "onMyWay": false,
+        "undo": false,
+        "ready": false,
+        "primary": null
+      }
+    },
+    {
+      "args": [
+        "driving",
+        true,
+        true,
+        true
+      ],
+      "result": {
+        "complete": false,
+        "onMyWay": false,
+        "undo": false,
+        "ready": false,
+        "primary": "start_job"
+      }
+    },
+    {
+      "args": [
+        "driving",
+        true,
+        false,
+        false
+      ],
+      "result": {
+        "complete": false,
+        "onMyWay": false,
+        "undo": false,
+        "ready": false,
+        "primary": "start_job"
+      }
+    },
+    {
+      "args": [
+        "driving",
+        false,
+        false,
+        false
+      ],
+      "result": {
+        "complete": false,
+        "onMyWay": false,
+        "undo": false,
+        "ready": false,
+        "primary": null
+      }
+    },
+    {
+      "args": [
         "on_site",
         true,
-        false
+        false,
+        true
       ],
       "result": {
         "complete": true,
@@ -2500,7 +2654,8 @@
       "args": [
         "on_site",
         false,
-        false
+        false,
+        true
       ],
       "result": {
         "complete": true,
@@ -2513,6 +2668,7 @@
     {
       "args": [
         "on_site",
+        true,
         true,
         true
       ],
@@ -2526,8 +2682,84 @@
     },
     {
       "args": [
+        "on_site",
+        true,
+        false,
+        false
+      ],
+      "result": {
+        "complete": true,
+        "onMyWay": false,
+        "undo": false,
+        "ready": false,
+        "primary": null
+      }
+    },
+    {
+      "args": [
+        "on_site",
+        false,
+        false,
+        false
+      ],
+      "result": {
+        "complete": true,
+        "onMyWay": false,
+        "undo": false,
+        "ready": false,
+        "primary": null
+      }
+    },
+    {
+      "args": [
         "done",
         true,
+        false,
+        true
+      ],
+      "result": {
+        "complete": false,
+        "onMyWay": false,
+        "undo": true,
+        "ready": false,
+        "primary": null
+      }
+    },
+    {
+      "args": [
+        "done",
+        false,
+        false,
+        true
+      ],
+      "result": {
+        "complete": false,
+        "onMyWay": false,
+        "undo": false,
+        "ready": false,
+        "primary": null
+      }
+    },
+    {
+      "args": [
+        "done",
+        true,
+        true,
+        true
+      ],
+      "result": {
+        "complete": false,
+        "onMyWay": false,
+        "undo": true,
+        "ready": false,
+        "primary": null
+      }
+    },
+    {
+      "args": [
+        "done",
+        true,
+        false,
         false
       ],
       "result": {
@@ -2542,47 +2774,6 @@
       "args": [
         "done",
         false,
-        false
-      ],
-      "result": {
-        "complete": false,
-        "onMyWay": false,
-        "undo": false,
-        "ready": false,
-        "primary": null
-      }
-    },
-    {
-      "args": [
-        "done",
-        true,
-        true
-      ],
-      "result": {
-        "complete": false,
-        "onMyWay": false,
-        "undo": true,
-        "ready": false,
-        "primary": null
-      }
-    },
-    {
-      "args": [
-        "day_done",
-        true,
-        false
-      ],
-      "result": {
-        "complete": false,
-        "onMyWay": false,
-        "undo": false,
-        "ready": false,
-        "primary": null
-      }
-    },
-    {
-      "args": [
-        "day_done",
         false,
         false
       ],
@@ -2598,7 +2789,68 @@
       "args": [
         "day_done",
         true,
+        false,
         true
+      ],
+      "result": {
+        "complete": false,
+        "onMyWay": false,
+        "undo": false,
+        "ready": false,
+        "primary": null
+      }
+    },
+    {
+      "args": [
+        "day_done",
+        false,
+        false,
+        true
+      ],
+      "result": {
+        "complete": false,
+        "onMyWay": false,
+        "undo": false,
+        "ready": false,
+        "primary": null
+      }
+    },
+    {
+      "args": [
+        "day_done",
+        true,
+        true,
+        true
+      ],
+      "result": {
+        "complete": false,
+        "onMyWay": false,
+        "undo": false,
+        "ready": false,
+        "primary": null
+      }
+    },
+    {
+      "args": [
+        "day_done",
+        true,
+        false,
+        false
+      ],
+      "result": {
+        "complete": false,
+        "onMyWay": false,
+        "undo": false,
+        "ready": false,
+        "primary": null
+      }
+    },
+    {
+      "args": [
+        "day_done",
+        false,
+        false,
+        false
       ],
       "result": {
         "complete": false,

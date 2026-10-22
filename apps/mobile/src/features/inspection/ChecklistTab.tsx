@@ -1,5 +1,5 @@
 import { router } from "expo-router";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import { Animated, Pressable, StyleSheet, Text, TextInput, View } from "react-native";
 import {
   CHECKLIST_SECTION_LABELS,
@@ -8,6 +8,7 @@ import {
   componentApplies,
   markRemainingLabel,
   removeItemConfirm,
+  verdictIcon,
   type ChecklistSection,
   type ComponentType,
   type Job,
@@ -26,19 +27,18 @@ import {
 } from "../../data/inspection";
 import { useJobMedia } from "../../data/media";
 import { useSession } from "../../state/session";
-import { Button, Segmented, T } from "../../ui/components";
+import { Button, T } from "../../ui/components";
 import { confirmDestructive } from "../../ui/confirm";
 import { haptics } from "../../ui/haptics";
 import { Select } from "../../ui/Select";
 import { useNoSwipe } from "../../ui/SwipeNav";
-import { marksToUndo } from "../../lib/undo";
 import { checklistRowActions } from "../../lib/rowActions";
 import { rowGestures, useRowMenu, type RowMenu } from "../../ui/RowMenu";
 import { SwipeActions } from "../../ui/SwipeRow";
-import { UndoRow, useUndoWindow } from "../../ui/Undo";
 import { useAutosaveText } from "../../ui/useAutosave";
 import { color, face, font, MAX_TEXT_SCALE, minTap, shape, space } from "../../ui/theme";
 import { WebIcon } from "../../ui/WebIcon";
+import { AnswerIconButtons, ItemDetailsButton } from "./AnswerControls";
 import { InspectionChecklist } from "./InspectionChecklist";
 import { currentVerdict, verdictOptions, verdictValues, type Verdict } from "./verdict";
 
@@ -73,10 +73,10 @@ export function checklistOrder(
 
 /**
  * The checklist as on the website (spec 5.4): one folding block per section with its summary,
- * each item's answers in one tap (owner, 2026-10-20: a segmented control under its name;
- * tapping the chosen answer again clears it), "Where" under leaks, Mark Remaining (with Undo),
- * then Add an item. Remove is behind Edit. Tapping an item's name opens its own screen
- * (method, notes, photos). Works offline.
+ * each item's answers in one tap (owner, 2026-10-20; as icons on its line since 2026-10-22;
+ * tapping the chosen answer again clears it), "Where" under leaks, Mark Remaining (no Undo after it, owner 2026-10-22),
+ * then Add an item. Remove is behind Edit. Each item is one line: its name, its answers as
+ * icons, and "›" for its own screen (method, notes, photos; owner, 2026-10-22). Works offline.
  */
 export function ChecklistTab({ job, property }: { job: Job; property?: Property }) {
   const { services } = useSession();
@@ -260,14 +260,8 @@ function ChecklistGroup({
   }, [open, turn]);
   const title = CHECKLIST_SECTION_LABELS[section];
   const toDo = rows.filter((r) => currentVerdict(r.result) === null);
-  // Mark Remaining's Undo (owner, 2026-10-20): "Marked N" and Undo for 5 seconds, in its place.
-  const undo = useUndoWindow();
   // Touch and hold an item for its answers (gestures spec section 12).
   const hold = useRowMenu();
-  const results = useRef(insp.resultByComponent);
-  useEffect(() => {
-    results.current = insp.resultByComponent;
-  });
   const tone =
     summary.tone === "pass"
       ? color.pass
@@ -278,7 +272,6 @@ function ChecklistGroup({
           : color.textMuted;
 
   function markRest() {
-    const marked = toDo.map((r) => r.component.id);
     services.sync.batch(() => {
       for (const r of toDo)
         saveChecklistResult(
@@ -291,20 +284,6 @@ function ChecklistGroup({
         );
     });
     haptics.success();
-    // Undo clears what it marked, back to To do (not an item answered again since).
-    undo.start(`Marked ${marked.length}`, () =>
-      services.sync.batch(() => {
-        for (const id of marksToUndo(marked, results.current))
-          saveChecklistResult(
-            services.sync,
-            job.company_id,
-            job.id,
-            id,
-            results.current.get(id),
-            verdictValues(null, user?.id ?? null),
-          );
-      }),
-    );
   }
 
   return (
@@ -348,14 +327,9 @@ function ChecklistGroup({
               />
             </View>
           ))}
-          {undo.shown ? (
-            <>
-              <Hairline inset={0} />
-              <View style={styles.markRest}>
-                <UndoRow text={undo.shown.text} onUndo={undo.undo} />
-              </View>
-            </>
-          ) : toDo.length > 0 ? (
+          {/* No "Marked N" and Undo after Mark Remaining (owner, 2026-10-22): each item's
+              answer changes it back. */}
+          {toDo.length > 0 ? (
             <>
               <Hairline inset={0} />
               <Pressable
@@ -388,7 +362,10 @@ function Hairline({ inset }: { inset: number }) {
   );
 }
 
-/** One item: its name (opens the item's screen), then its answers in a segmented control. */
+/**
+ * One item on one line (owner, 2026-10-22): its name, its answers as icon buttons (one tap;
+ * the chosen one again clears it), and "›" for the item's screen.
+ */
 function ChecklistItem({
   job,
   component,
@@ -451,7 +428,9 @@ function ChecklistItem({
     );
   }
 
-  const sub = [photoText, result?.method, result?.notes].filter(Boolean).join(" · ");
+  // The chosen answer's word first, so the icons are learnable ("Leaking · 1 photo").
+  const answerWord = verdict ? options.find((o) => o.value === verdict)?.label : null;
+  const sub = [answerWord, photoText, result?.method, result?.notes].filter(Boolean).join(" · ");
   // Swipe right for its first answer (Done, Not Leaking, No); touch and hold for every answer
   // and Not Done (gestures spec section 12). The answers under the name stay the visible way.
   const actions = checklistRowActions(options, verdict);
@@ -467,36 +446,34 @@ function ChecklistItem({
       accessibilityActions={g.accessibilityActions}
       onAccessibilityAction={g.onAccessibilityAction}
     >
-      <Pressable
-        accessibilityRole="button"
-        accessibilityHint="Opens the item: method, notes, and photos"
-        onPress={open}
-        onLongPress={g.onLongPress}
-        style={styles.name}
-      >
-        <Text
-          style={[styles.itemName, { color: color.text }]}
-          maxFontSizeMultiplier={MAX_TEXT_SCALE}
-        >
-          {component.label}
-        </Text>
-        {sub ? (
-          <T variant="footnote" muted numberOfLines={1}>
-            {sub}
-          </T>
-        ) : null}
-      </Pressable>
-      {/* The answers in one tap, full width, 44 tall; the chosen one again clears it. */}
-      <Segmented
-        compact
-        accessibilityLabel={`${component.label}: ${
-          verdict ? (options.find((o) => o.value === verdict)?.label ?? "To Do") : "To Do"
-        }`}
-        options={options.map((o) => ({ value: o.value as string, label: o.label }))}
-        value={verdict}
-        onChange={(v) => choose(v as Verdict)}
-        onReselect={() => choose(null)}
-      />
+      {/* One line (owner, 2026-10-22): the name, which opens nothing (tapping it opened the
+          item by accident), the answers as icons, one tap each, and "›" for the item. */}
+      <View style={styles.line}>
+        {/* Touch and hold for every answer and Not Done (gestures spec section 12). */}
+        <Pressable accessible={false} onLongPress={g.onLongPress} style={styles.name}>
+          <Text
+            style={[styles.itemName, { color: color.text }]}
+            maxFontSizeMultiplier={MAX_TEXT_SCALE}
+          >
+            {component.label}
+          </Text>
+          {sub ? (
+            <T variant="footnote" muted numberOfLines={1}>
+              {sub}
+            </T>
+          ) : null}
+        </Pressable>
+        <AnswerIconButtons
+          itemLabel={component.label}
+          choices={options.map((o) => ({
+            label: o.label,
+            icon: verdictIcon(itemType.answer, o.value),
+            chosen: verdict === o.value,
+            onPress: () => choose(verdict === o.value ? null : o.value),
+          }))}
+        />
+        <ItemDetailsButton itemLabel={component.label} onPress={open} />
+      </View>
       {needsWhere && result ? (
         <WhereField
           item={component.label}
@@ -573,8 +550,14 @@ const styles = StyleSheet.create({
     paddingHorizontal: space["4"],
   },
   summary: { fontFamily: font.displaySemiBold, fontSize: 15, lineHeight: 20 },
-  item: { paddingHorizontal: space["4"], paddingVertical: space["2"], gap: space["2"] },
-  name: { minHeight: minTap, justifyContent: "center" },
+  item: {
+    paddingLeft: space["4"],
+    paddingRight: space["1"],
+    paddingVertical: space["1"],
+    gap: space["1"],
+  },
+  line: { flexDirection: "row", alignItems: "center", gap: space["1"] },
+  name: { flex: 1, minHeight: minTap, justifyContent: "center" },
   itemName: { ...face.medium, fontSize: 17, lineHeight: 21 },
   where: {
     minHeight: minTap,

@@ -42,6 +42,21 @@ public struct ChecklistItemRow: Identifiable, Equatable, Sendable {
         return parts.isEmpty ? nil : parts.joined(separator: " · ")
     }
 
+    /// Each answer's icon on a phone's one-line row (owner, 2026-10-22), in `options` order:
+    /// leaks ✓ drop ! –, maintenance ✓ ! ⏭, yes/no ✗ ✓ – (core `verdictIcon`).
+    public var answerIcons: [AnswerIcon] { options.map { verdictIcon(type.answer, $0.value) } }
+
+    /// The phone row's muted line (owner, 2026-10-22): the chosen answer's word first, so the
+    /// icons are learnable ("Leaking · 1 photo · Visual"), then photos, the method and notes.
+    public func phoneSubline(photos: Int) -> String? {
+        let parts = [
+            verdict != nil ? verdictLabel : nil, photos > 0 ? (photos == 1 ? "1 photo" : "\(photos) photos") : nil,
+            isCheck ? nil : result?.method, result?.notes,
+        ]
+        .compactMap { $0 }.filter { !$0.isEmpty }
+        return parts.isEmpty ? nil : parts.joined(separator: " · ")
+    }
+
     /// Put on this visit by the plan's scheduled cleaning (`job_component.plan_cleaning_id`).
     public var fromPlan: Bool { component.planCleaningId != nil }
 

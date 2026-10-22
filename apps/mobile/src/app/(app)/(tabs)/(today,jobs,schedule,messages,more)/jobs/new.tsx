@@ -13,6 +13,14 @@ import {
   splitEmails,
   formatCents,
   REPAIR_ITEM_KEY,
+  REPAIR_LABELS,
+  EMPTY_REPAIR_DRAFT,
+  checkRepairDrafts,
+  repairBookingName,
+  repairsFee,
+  repairsTotal,
+  type RepairCheck,
+  type RepairDraft,
   type ComponentType,
   type PriceBookItem,
   type Customer,
@@ -44,6 +52,7 @@ import {
 import { PlanRepeat } from "../../../../../features/maintenance/PlanRepeat";
 import { ChipToggles } from "../../../../../features/inspection/ChoicePills";
 import { Select } from "../../../../../ui/Select";
+import { AddRepairButton, RepairFields, repairItemsOf } from "../../../../../features/job/Repairs";
 import { useCompany, useSession } from "../../../../../state/session";
 import {
   Button,
@@ -64,7 +73,7 @@ import { useDiscardChanges } from "../../../../../ui/discard";
 import { haptics } from "../../../../../ui/haptics";
 import { DateField, TimeField } from "../../../../../features/schedule/DateField";
 import { ShapePicker } from "../../../../../ui/ShapePicker";
-import { space } from "../../../../../ui/theme";
+import { color, space, tabular } from "../../../../../ui/theme";
 
 type When = "now" | "scheduled" | "later";
 
@@ -150,7 +159,7 @@ function NewJobForm() {
   const [secondTech, setSecondTech] = useState<string>("none");
   const [fee, setFee] = useState<string | null>(null);
   const [feeError, setFeeError] = useState<string | undefined>();
-  const [repairPriceError, setRepairPriceError] = useState<string | undefined>();
+  const [repairErrors, setRepairErrors] = useState<RepairCheck["errors"][]>([]);
   // The detection fee starts from the price book (pool, or pool and spa).
   const detection = priceBook
     .filter((i) => i.active && i.category === "Detection")
@@ -172,9 +181,12 @@ function NewJobForm() {
     .filter((i) => i.active && !i.deleted_at)
     .sort((a, b) => a.sort_order - b.sort_order);
   const picked = live.filter((i) => (i as { on_repair_call?: boolean }).on_repair_call);
-  const repairItems = picked.length ? picked : live;
-  const [repairItem, setRepairItem] = useState("");
-  const [repairPrice, setRepairPrice] = useState("");
+  const repairItems = repairItemsOf(picked.length ? picked : live);
+  // One or more repairs (owner, 2026-10-22: "add additional repair"), each with its own key.
+  const [repairs, setRepairs] = useState<{ key: number; draft: RepairDraft }[]>([
+    { key: 0, draft: EMPTY_REPAIR_DRAFT },
+  ]);
+  const [nextRepairKey, setNextRepairKey] = useState(1);
   const [repairNotes, setRepairNotes] = useState("");
   // The pool's gallons (owner, 2026-10-19: it replaced "Size of the pool"), saved on the pool:
   // an existing pool's fills in; blank keeps what the pool has.
@@ -242,8 +254,8 @@ function NewJobForm() {
     otherEmails.trim() ||
     shape ||
     fee !== null ||
-    repairItem ||
-    repairPrice.trim() ||
+    repairs.some((r) => r.draft.pick || r.draft.description.trim() || r.draft.price.trim()) ||
+    repairs.length > 1 ||
     repairNotes.trim() ||
     Boolean(gallonsTyped?.text) ||
     repeat !== "0" ||
@@ -359,13 +371,16 @@ function NewJobForm() {
     const badFee =
       (leak || inspection) && Boolean(feeText.trim()) && (feeCents === null || feeCents < 0);
     setFeeError(badFee ? "Enter a price like 649." : undefined);
-    const priceCents = repairPrice.trim() ? parseDollars(repairPrice) : null;
-    const badPrice =
-      repair && Boolean(repairPrice.trim()) && (priceCents === null || priceCents < 0);
-    setRepairPriceError(badPrice ? "Enter a price like 649." : undefined);
+    const checkedRepairs = checkRepairDrafts(
+      repairs.map((r) => r.draft),
+      repairItems,
+    );
+    setRepairErrors(repair ? checkedRepairs.errors : []);
+    const badPrice = repair && !checkedRepairs.ok;
     const gallons = gallonsToSave();
     if (Object.keys(e).length > 0 || badFee || badPrice || gallons === false) return;
-    const item = repair ? repairItems.find((i) => i.id === repairItem) : undefined;
+    const booked = repair ? checkedRepairs.repairs : [];
+    const bookedName = repairBookingName(booked);
 
     const records = newJobRecords(input, {
       poolType,
@@ -413,18 +428,22 @@ function NewJobForm() {
         // Leak detection has a detection fee and booking questions, a pool inspection its price
         // and its own questions; a repair its price and what they need (From the Customer), as
         // the website. Pool service visits have no second tech.
-        fee_cents: leak || inspection ? feeCents : repair ? priceCents : null,
+        fee_cents: leak || inspection ? feeCents : repair ? repairsFee(booked) : null,
         second_tech_id: maintenance || secondTech === "none" ? null : secondTech,
         intake:
           leak || inspection
             ? Object.fromEntries(
                 questions.filter((q) => q.key in answers).map((q) => [q.key, answers[q.key]!]),
               )
-            : item
-              ? { [REPAIR_ITEM_KEY]: item.name }
+            : bookedName
+              ? { [REPAIR_ITEM_KEY]: bookedName }
               : {},
         ...(repair && repairNotes.trim() ? { summary_notes: repairNotes.trim() } : {}),
       });
+      // Each repair is its own row, with the job (offline too).
+      booked.forEach((r, i) =>
+        sync.insert("job_repair", company.id, { job_id: job, ...r, sort_order: i }),
+      );
       // The checklist is ready the moment the job opens, even offline.
       const existingProperty = properties.find((p) => p.id === prop);
       const spa = existingProperty ? existingProperty.has_spa : hasSpa;
@@ -605,30 +624,54 @@ function NewJobForm() {
 
       {repair ? (
         <Section title="From the Customer">
-          {repairItems.length ? (
-            <Select
-              label="What do they need?"
-              placeholder="Pick from the price book…"
-              options={repairItems.map((i) => ({
-                value: i.id,
-                label: `${i.name} (${formatCents(i.price_cents)})`,
-              }))}
-              value={repairItem || null}
-              onChange={(id) => {
-                setRepairItem(id);
-                const chosen = repairItems.find((i) => i.id === id);
-                if (chosen) setRepairPrice((chosen.price_cents / 100).toFixed(2));
-              }}
-            />
-          ) : null}
-          <Field
-            label="Price ($)"
-            value={repairPrice}
-            onChangeText={setRepairPrice}
-            keyboardType="decimal-pad"
-            error={repairPriceError}
-            hint="Billed on the invoice. Add parts there before sending."
+          {repairs.map(({ key, draft }, index) => (
+            <View key={key} style={index > 0 ? styles.addedRepair : undefined}>
+              {index > 0 ? (
+                <View style={styles.repairHead}>
+                  <T variant="bodyEmphasis">{REPAIR_LABELS.additional}</T>
+                  <Button
+                    title={REPAIR_LABELS.remove}
+                    kind="danger"
+                    small
+                    accessibilityLabel={`${REPAIR_LABELS.remove} ${REPAIR_LABELS.additional.toLowerCase()} ${index}`}
+                    onPress={() => setRepairs((rs) => rs.filter((r) => r.key !== key))}
+                  />
+                </View>
+              ) : null}
+              <RepairFields
+                draft={draft}
+                items={repairItems}
+                label={index === 0 ? REPAIR_LABELS.first : REPAIR_LABELS.item}
+                errors={repairErrors[index]}
+                onChange={(d) =>
+                  setRepairs((rs) => rs.map((r) => (r.key === key ? { key, draft: d } : r)))
+                }
+              />
+            </View>
+          ))}
+          <AddRepairButton
+            onPress={() => {
+              setRepairs((rs) => [...rs, { key: nextRepairKey, draft: EMPTY_REPAIR_DRAFT }]);
+              setNextRepairKey((k) => k + 1);
+            }}
           />
+          {repairs.length > 1 ? (
+            <View style={styles.repairHead}>
+              <T variant="bodyEmphasis">{REPAIR_LABELS.total}</T>
+              <T variant="bodyEmphasis" style={tabular}>
+                {formatCents(
+                  repairsTotal(
+                    repairs.map((r) => ({
+                      price_cents: Math.max(parseDollars(r.draft.price) ?? 0, 0),
+                    })),
+                  ),
+                )}
+              </T>
+            </View>
+          ) : null}
+          <T variant="secondary" muted>
+            {REPAIR_LABELS.footer}
+          </T>
           <Field
             label="What they said (optional)"
             value={repairNotes}
@@ -889,4 +932,12 @@ function NewJobForm() {
 
 const styles = StyleSheet.create({
   cols: { flexDirection: "row", gap: space["3"] },
+  // Each added repair under a hairline, its name and Remove on one line.
+  addedRepair: {
+    gap: space["3"],
+    paddingTop: space["3"],
+    borderTopWidth: StyleSheet.hairlineWidth,
+    borderTopColor: color.separator,
+  },
+  repairHead: { flexDirection: "row", alignItems: "center", justifyContent: "space-between" },
 });

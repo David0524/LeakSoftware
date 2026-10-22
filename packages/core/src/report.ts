@@ -994,6 +994,16 @@ export function reportTitle(jobType: string | null | undefined): string {
   return "Leak Detection Report";
 }
 
+/**
+ * The line above Write Draft. A repair job's draft comes from its repairs, notes, and findings: it
+ * has no checklist (owner, 2026-10-22).
+ */
+export function writeDraftIntro(jobType: string | null | undefined): string {
+  const from =
+    jobType === "repair" ? "repairs, notes, and findings" : "checklist, tests, and findings";
+  return `Write Draft fills in the report from this job’s ${from}. Read and edit it before sending.`;
+}
+
 /** Block order on the report page, per template (report_template.sections). */
 export const REPORT_BLOCKS: Record<"homeowner" | "partner", string[]> = {
   homeowner: [

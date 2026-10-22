@@ -3,11 +3,16 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import {
   JOB_SORTS,
+  JOB_TYPE_FILTER_TITLE,
   JOB_TYPE_LABELS,
   canMoveJob,
+  companyServices,
   formatAddress,
   formatSchedule,
   jobSort,
+  jobTypeFilter,
+  jobsEmpty,
+  jobTypeFilters,
   propertyLocation,
   userTransitions,
   visitReportMode,
@@ -59,16 +64,21 @@ const FILTERS: { key: string; label: string; statuses: JobStatus[] | null }[] = 
 export default async function JobsPage({ searchParams }: PageProps<"/jobs">) {
   const office = await getOffice();
   const canAdd = await mayMakeJobs(office);
-  const { status, q, show, sort: sortParam } = await searchParams;
+  const { status, q, show, sort: sortParam, type: typeParam } = await searchParams;
   // The order, as Invoices sorts (owner, 2026-10-20); Scheduled Date isn't written in the address.
   const sort = jobSort(sortParam);
   const filter = FILTERS.find((f) => f.key === status) ?? FILTERS[0]!;
   const search = typeof q === "string" ? q.trim() : "";
   const limit = Math.min(Math.max(Number(show) || PAGE, PAGE), 500);
-  const [found, company, line] = await Promise.all([
-    listJobs(office, filter.statuses, { limit, search, sort }),
-    getCompany(office),
-    getLine(office),
+  const lineLoad = getLine(office);
+  const company = await getCompany(office);
+  // The Type menu (owner, 2026-10-22): the shop's job types; All Types isn't written in the
+  // address. It narrows the status filter and the search, as Sort orders them.
+  const types = jobTypeFilters(companyServices(company.settings));
+  const type = jobTypeFilter(typeParam, companyServices(company.settings));
+  const [found, line] = await Promise.all([
+    listJobs(office, filter.statuses, { limit, search, sort, type }),
+    lineLoad,
   ]);
   const reportMode = visitReportMode(company.settings);
   // A row's swipe actions and menu (gestures.md section 12), from what its page offers.
@@ -96,10 +106,12 @@ export default async function JobsPage({ searchParams }: PageProps<"/jobs">) {
       ...(filter.key !== "open" ? { status: filter.key } : {}),
       ...(search ? { q: search } : {}),
       ...(sort !== "scheduled" ? { sort } : {}),
+      ...(type !== "all" ? { type } : {}),
       ...params,
     });
     if (next.get("status") === "open") next.delete("status");
     if (next.get("sort") === "scheduled") next.delete("sort");
+    if (next.get("type") === "all") next.delete("type");
     if (!next.get("q")) next.delete("q");
     return `/jobs${next.size ? `?${next}` : ""}`;
   };
@@ -141,6 +153,7 @@ export default async function JobsPage({ searchParams }: PageProps<"/jobs">) {
               <input type="hidden" name="status" value={filter.key} />
             ) : null}
             {sort !== "scheduled" ? <input type="hidden" name="sort" value={sort} /> : null}
+            {type !== "all" ? <input type="hidden" name="type" value={type} /> : null}
             <label htmlFor="q" className="sr-only">
               Search jobs
             </label>
@@ -157,6 +170,15 @@ export default async function JobsPage({ searchParams }: PageProps<"/jobs">) {
             </Button>
           </form>
           <SortMenu
+            compact
+            label={JOB_TYPE_FILTER_TITLE}
+            name="type"
+            options={types}
+            value={type}
+            hrefFor={Object.fromEntries(types.map((x) => [x.key, link({ type: x.key })]))}
+          />
+          <SortMenu
+            compact
             options={JOB_SORTS}
             value={sort}
             hrefFor={Object.fromEntries(JOB_SORTS.map((x) => [x.key, link({ sort: x.key })]))}
@@ -164,11 +186,7 @@ export default async function JobsPage({ searchParams }: PageProps<"/jobs">) {
         </div>
 
         {jobs.length === 0 ? (
-          <Empty>
-            {search
-              ? `No jobs match “${search}”.`
-              : "No jobs here. Add one with New Job, or on the phone."}
-          </Empty>
+          <Empty>{search ? `No jobs match “${search}”.` : jobsEmpty(type)}</Empty>
         ) : (
           <>
             {/* Phones: an inset grouped list, a row per job. */}

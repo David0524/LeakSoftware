@@ -64,8 +64,10 @@
                     if let with = details.with {
                         ListRow("With") { techValue(with, colors[job.job["second_tech_id"]?.string ?? ""]) }
                     }
-                    if let fee = details.fee { ListRow(details.feeLabel, value: fee) }
+                    if details.showsFee, let fee = details.fee { ListRow(details.feeLabel, value: fee) }
                 }
+                // A repair job's repairs and its price (owner, 2026-10-22).
+                if details.showsRepairs { JobRepairsGroup(job: job) }
                 if !details.intake.isEmpty {
                     Grouped(label: details.intakeTitle) {
                         ForEach(Array(details.intake.enumerated()), id: \.offset) { _, answer in
@@ -78,7 +80,11 @@
                 if isManagerRole(company?.role) { JobTimeline(jobId: job.id) }
                 // A visit has no Wrap-Up: its quotes are here, before Cancel Job (owner, 2026-10-19).
                 // A visit's report (owner, 2026-10-20), above its quotes; hidden when the shop turned it off.
-                if job.type == .maintenance { VisitReportSection(job: job).padding(.top, 8) }
+                // Once the visit is done its report is on the Next Step bar (owner, 2026-10-22);
+                // until then it stays here, so it can still be sent early.
+                if job.type == .maintenance, job.status != .done {
+                    VisitReportSection(job: job).padding(.top, 8)
+                }
                 if !jobHasWrapUp(job.type.rawValue) { QuoteSection(job: job).padding(.top, 8) }
                 if jobCanCancel(job.status, type: job.type) {
                     Button("Cancel Job", role: .destructive) { confirmCancel = true }
@@ -321,25 +327,28 @@
         /// still being typed in. Fee and notes never write location_marked.
         private func onSite(_ details: JobDetails) -> some View {
             VStack(alignment: .leading, spacing: 16) {
-                Grouped(label: "On site", footer: details.feeFooter) {
-                    HStack(spacing: 12) {
-                        Text(details.feeLabel)
-                            .textRole(.body)
-                            .foregroundStyle(Color.text)
-                            .frame(maxWidth: .infinity, alignment: .leading)
-                        Text("$").textRole(.body).foregroundStyle(Color.textMuted).accessibilityHidden(true)
-                        TextField("", text: $fee, prompt: Text("0.00").foregroundStyle(Color.placeholder))
-                            .keyboardType(.decimalPad)
-                            .multilineTextAlignment(.trailing)
-                            .monospacedDigit()
-                            .focused($focus, equals: .fee)
-                            .onSubmit { focus = nil }
-                            .fieldBox(focused: focus == .fee)
-                            .frame(width: 112)
-                            .accessibilityLabel("\(details.feeLabel), dollars")
+                Grouped(label: "On site", footer: details.showsFee ? details.feeFooter : nil) {
+                    // A repair job's price is its repairs' (Repairs, owner 2026-10-22).
+                    if details.showsFee {
+                        HStack(spacing: 12) {
+                            Text(details.feeLabel)
+                                .textRole(.body)
+                                .foregroundStyle(Color.text)
+                                .frame(maxWidth: .infinity, alignment: .leading)
+                            Text("$").textRole(.body).foregroundStyle(Color.textMuted).accessibilityHidden(true)
+                            TextField("", text: $fee, prompt: Text("0.00").foregroundStyle(Color.placeholder))
+                                .keyboardType(.decimalPad)
+                                .multilineTextAlignment(.trailing)
+                                .monospacedDigit()
+                                .focused($focus, equals: .fee)
+                                .onSubmit { focus = nil }
+                                .fieldBox(focused: focus == .fee)
+                                .frame(width: 112)
+                                .accessibilityLabel("\(details.feeLabel), dollars")
+                        }
+                        .padding(.horizontal, CGFloat(Spacing.rowHorizontal))
+                        .padding(.vertical, 6)
                     }
-                    .padding(.horizontal, CGFloat(Spacing.rowHorizontal))
-                    .padding(.vertical, 6)
                     if details.poolId != nil {
                         // The pool's gallons (owner, 2026-10-19), saved on the pool; blank clears.
                         VStack(alignment: .leading, spacing: 4) {
@@ -426,6 +435,8 @@
         }
 
         private func saveFee() {
+            // A repair job's price is its repairs' (owner, 2026-10-22): never written from here.
+            guard job.type != .repair else { return }
             let text = fee.trimmingCharacters(in: .whitespaces)
             let cents: JSONValue = text.isEmpty ? .null : parseDollars(text).map { .number(Double($0)) } ?? .null
             if cents != (job.job["fee_cents"] ?? .null) { save(["fee_cents": cents]) }

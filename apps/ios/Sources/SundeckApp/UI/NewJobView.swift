@@ -275,9 +275,12 @@
                         options: [nil] + form.feeItems.map { Optional($0) },
                         optionLabel: { $0?.label ?? "Pick from the price book…" })
                 }
-                OutlinedField(
-                    label: form.feeLabel, text: $form.fee, hint: form.feeHint, error: form.feeError,
-                    keyboard: .decimalPad)
+                // A repair's price is its repairs' (From the Customer, owner 2026-10-22).
+                if !form.showsRepairCall {
+                    OutlinedField(
+                        label: form.feeLabel, text: $form.fee, hint: form.feeHint, error: form.feeError,
+                        keyboard: .decimalPad)
+                }
             }
         }
 
@@ -342,15 +345,27 @@
 
         @ViewBuilder private var calledCard: some View {
             if form.showsRepairCall {
-                // From the Customer on a repair (owner, 2026-10-19): what they need fills the Price.
+                // From the Customer on a repair (owner, 2026-10-19): what they need, then each
+                // repair added with Add Additional Repair (owner, 2026-10-22); each fills its price.
                 FormCard(NewJobForm.fromCustomerTitle) {
-                    if !form.repairItems.isEmpty {
-                        SelectField(
-                            label: "What do they need?",
-                            selection: Binding(get: { form.repairItem }, set: { form.pickRepairItem($0) }),
-                            options: [nil] + form.repairItems.map { Optional($0) },
-                            optionLabel: { $0?.label ?? "Pick from the price book…" })
+                    ForEach(Array(form.repairs.enumerated()), id: \.element.id) { index, entry in
+                        repairFields(index: index, entry: entry)
                     }
+                    HStack(spacing: 12) {
+                        Button {
+                            form.addAdditionalRepair()
+                        } label: {
+                            Label(RepairLabels.add, systemImage: "plus")
+                        }
+                        .buttonStyle(.secondary)
+                        Spacer(minLength: 0)
+                        if form.repairs.count > 1 {
+                            Text(verbatim: "\(RepairLabels.total) \(formatCents(form.repairsTotalCents))")
+                                .textRole(.bodyEmphasis)
+                                .monospacedDigit()
+                        }
+                    }
+                    FieldHint(text: RepairLabels.footer)
                     OutlinedField(
                         label: "What they said (optional)", text: $form.notes, hint: "Shown to the tech with the job.",
                         multiline: true)
@@ -394,6 +409,43 @@
                 FormCard("Notes") {
                     OutlinedField(label: "Notes for the tech (optional)", text: $form.notes, multiline: true)
                 }
+            }
+        }
+
+        /// One repair: its menu (or Something else, typed) and its price; an added one has Remove.
+        @ViewBuilder private func repairFields(index: Int, entry: NewJobForm.RepairEntry) -> some View {
+            let errors = form.repairErrors.indices.contains(index) ? form.repairErrors[index] : nil
+            VStack(alignment: .leading, spacing: 16) {
+                if index > 0 {
+                    Divider()
+                    HStack {
+                        Text(RepairLabels.additional).textRole(.bodyEmphasis)
+                        Spacer(minLength: 0)
+                        Button(RepairLabels.remove, role: .destructive) {
+                            form.removeAdditionalRepair(entry.id)
+                        }
+                        .buttonStyle(.danger(size: .small))
+                        .accessibilityLabel("\(RepairLabels.remove) \(RepairLabels.additional.lowercased()) \(index)")
+                    }
+                }
+                if !form.repairItems.isEmpty {
+                    SelectField(
+                        label: index == 0 ? RepairLabels.first : RepairLabels.item,
+                        selection: Binding(get: { entry.draft.pick }, set: { form.chooseRepair(entry.id, pick: $0) }),
+                        options: form.repairPicks, optionLabel: { form.repairChoiceLabel($0) })
+                }
+                if form.repairIsTyped(entry) {
+                    OutlinedField(
+                        label: form.repairItems.isEmpty
+                            ? (index == 0 ? RepairLabels.first : RepairLabels.item) : RepairLabels.description,
+                        text: Binding(
+                            get: { entry.draft.description }, set: { form.setRepairDescription(entry.id, $0) }),
+                        error: errors?.description)
+                }
+                OutlinedField(
+                    label: RepairLabels.price,
+                    text: Binding(get: { entry.draft.price }, set: { form.setRepairPrice(entry.id, $0) }),
+                    error: errors?.price, keyboard: .decimalPad)
             }
         }
 

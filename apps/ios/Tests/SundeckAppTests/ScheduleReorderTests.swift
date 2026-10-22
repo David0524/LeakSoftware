@@ -14,6 +14,14 @@ import Testing
         #expect(ScheduleReorder.holdSeconds == 0.4)
     }
 
+    /// The grip lifts after a brief rest, within 8 pt (owner, 2026-10-22: "make it slightly less
+    /// sensitive"), so a flick that starts on it scrolls the page.
+    @Test func theGripLiftsAfterABriefRest() {
+        #expect(ScheduleReorder.gripSeconds == 0.13)
+        #expect(ScheduleReorder.slop == 8)
+        #expect(ScheduleReorder.gripSeconds < ScheduleReorder.holdSeconds)
+    }
+
     @Test func staysPutUntilItPassesAMiddle() {
         #expect(ScheduleReorder.target(from: 0, translation: 0, heights: heights, spacing: spacing) == 0)
         // Its middle at 32 + 75 = 107: not yet past the next middle (108).

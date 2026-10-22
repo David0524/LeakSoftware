@@ -3,6 +3,7 @@ import { createClient as createSupabase, type SupabaseClient } from "@supabase/s
 import {
   FINISH_PHOTO_MESSAGE,
   completeJobBlocker,
+  jobHasChecklist,
   requiresFinishPhoto,
   requiresFinishedChecklist,
   narrativeTemplate,
@@ -241,7 +242,8 @@ export async function requireCompletable(db: SupabaseClient, jobId: string): Pro
     .single();
   const settings = (job?.company as unknown as { settings: unknown } | null)?.settings;
   const [toDo, photos] = await Promise.all([
-    !requiresFinishedChecklist(settings)
+    // A repair job has no checklist (owner, 2026-10-22).
+    !requiresFinishedChecklist(settings) || !jobHasChecklist(job?.type)
       ? { count: 0 }
       : job?.type === "inspection"
         ? // Questions folded away by their gate aren't to do (2026-10-20).
@@ -264,6 +266,7 @@ export async function requireCompletable(db: SupabaseClient, jobId: string): Pro
   const blocker = completeJobBlocker(settings, {
     checklistToDo: toDo.count ?? 0,
     photos: photos.count ?? 0,
+    type: job?.type,
   });
   if (blocker) throw new Refusal(blocker);
 }

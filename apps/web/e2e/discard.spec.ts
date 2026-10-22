@@ -33,7 +33,7 @@ test("a sheet with changes asks before it closes, and a clean one doesn't", asyn
   await expect(page).toHaveURL(new RegExp(`/jobs/${SAMPLE_JOB}`));
   await ask(page).getByRole("button", { name: "Discard Changes" }).click();
   await expect(sheet).toHaveCount(0);
-  await expect(page).toHaveURL(new RegExp(`/jobs/${SAMPLE_JOB}#findings$`));
+  await expect(page).toHaveURL(new RegExp(`/jobs/${SAMPLE_JOB}\\?tab=findings$`));
 });
 
 test("a page form with changes asks before a tab leaves it", async ({ page }) => {
