@@ -28,7 +28,7 @@ import { useRouteStart } from "../../../../data/memberStarts";
 import { useLine } from "../../../../data/texting";
 import { useWeather } from "../../../../data/weather";
 import { GettingStarted } from "../../../../features/today/GettingStarted";
-import { TeamToday, useTeamSync, useTeamToday } from "../../../../features/today/TeamToday";
+import { useTeamSync, useTeamToday } from "../../../../features/today/TeamToday";
 import { CleaningsDue } from "../../../../features/maintenance/Cleanings";
 import { TodayComplete, undoStopDone } from "../../../../features/job/CompleteJob";
 import { OnMyWayTrigger } from "../../../../features/today/OnMyWay";
@@ -165,8 +165,9 @@ export default function Today() {
   const myName = meProfile?.full_name || meProfile?.email || "your tech";
 
   const settings = useMemo(() => routingSettings(company.settings), [company.settings]);
-  // The owner's Team (owner, 2026-10-22: techs' progress live): each tech's ring, the stop
-  // they're on and the last one done, kept fresh every 15 seconds while it shows.
+  // Techs' progress live (owner, 2026-10-22): while another tech has stops today, the owner's
+  // Today syncs every 15 seconds. The Team list itself is on the desktop website only (owner,
+  // of it on a phone: "definitely not on mobile").
   const teamRows = useTeamToday({
     company,
     dayJobs,
@@ -447,16 +448,6 @@ export default function Today() {
     >
       {sync.inline}
       {manager ? <GettingStarted company={company} /> : null}
-      {showTeam ? (
-        <TeamToday
-          rows={teamRows}
-          shown={shownTech}
-          onPick={(v) => {
-            if (asked) clearStopAction(asked.nonce);
-            setTechId(v);
-          }}
-        />
-      ) : null}
       {manager && people.length > 1 ? (
         <FilterPills
           label="Whose day"

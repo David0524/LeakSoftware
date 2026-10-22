@@ -75,15 +75,8 @@ export function TodayDays({
       <div className="min-w-0">
         <PageHeader title={day.title} navAction={navAction} subtitle={subtitle} />
         {intro}
-        {team ? (
-          // Phones and tablets: above Whose Day. Computers have it at the top of the right column.
-          <TeamToday
-            days={days}
-            shown={day.id}
-            onPick={(id) => pick(days.findIndex((d) => d.id === id))}
-            className="mb-5 lg:hidden"
-          />
-        ) : null}
+        {/* The Team list is on computers only, at the top of the right column (owner,
+            2026-10-22, of it on a phone: "I do not like this … definitely not on mobile"). */}
         {days.length > 1 ? (
           <nav aria-label="Whose day" className="-mx-4 mb-5 flex gap-2 overflow-x-auto px-4">
             {days.map((d, i) => (

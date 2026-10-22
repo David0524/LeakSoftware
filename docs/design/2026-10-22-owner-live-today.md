@@ -27,8 +27,9 @@ else Me first, then A to Z).
 - **Choosing a row** shows that tech's day, as Whose Day does. Whose Day stays as the compact way
   to switch.
 - **Where:** desktop website, at the top of the right column, above Today's Map (Activity stays
-  under the map). The chosen tech's row is tinted, and the day beside it is theirs. Phones (website,
-  iPhone, Android): above Whose Day, with a chevron, since choosing it shows the day below.
+  under the map). The chosen tech's row is tinted, and the day beside it is theirs. Phones (website, iPhone, Android): no Team list (owner, 2026-10-22, of it on a
+  phone: "I do not like this … definitely not on mobile"); Whose Day switches days and Today
+  still refreshes live.
 - **VoiceOver and TalkBack:** the ring is hidden; a row reads "Tony Tech, 4 of 11 stops done, In
   progress: Smith, Last done: Jones at 10:42 AM".
 
@@ -73,6 +74,5 @@ moved on in its pipeline. The same line core `stopDone` draws.
 
 1. The Team shows techs with stops today only (a tech with no stops has no row). Say if you'd like
    every active tech listed, with "No stops today".
-2. Owners and admins on phones see the Team above their own day. If you'd rather your own day
-   come first on phones, it can move under the stops, or behind a "Team" choice in Whose Day.
+2. (Settled: no Team list on phones.)
 3. The website checks every 5 seconds; the apps every 15 seconds while Today or Schedule shows.

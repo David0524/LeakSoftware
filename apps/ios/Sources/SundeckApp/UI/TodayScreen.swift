@@ -132,9 +132,8 @@
                     // Getting Started is off on the phone for now: inside the tab view it stops Today
                     // drawing in the simulator screenshots, cause not found yet (docs/plans/swift-app.md).
                     if day.ctx.isManager && GettingStartedCard.enabled { GettingStartedCard(company: company) }
-                    if day.showTeam {
-                        TeamToday(rows: day.teamRows, shown: day.techId) { pickTech($0) }
-                    }
+                    // The Team list is on the desktop website only (owner, 2026-10-22: "definitely
+                    // not on mobile"); day.showTeam still keeps the owner's Today syncing.
                     if day.ctx.isManager && day.techs.count > 1 {
                         FilterPills(
                             selection: Binding(get: { day.techId }, set: { pickTech($0) }),

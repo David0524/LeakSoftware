@@ -1,6 +1,6 @@
 import { useFocusEffect } from "expo-router";
 import { useCallback, useMemo } from "react";
-import { AppState, StyleSheet, View } from "react-native";
+import { AppState } from "react-native";
 import {
   daySummary,
   formatTime,
@@ -21,10 +21,6 @@ import { inRouteOrderViews, type JobView } from "../../data/jobs";
 import { shopLocation, useMemberStarts } from "../../data/memberStarts";
 import { useDriveTimes } from "../../data/schedule";
 import { getServices } from "../../lib/services";
-import { DayRing } from "../../ui/DayRing";
-import { TechDot } from "../../ui/TechDot";
-import { Group, ListRow, Pill, Section, StatusChip, T } from "../../ui/components";
-import { color, face, space } from "../../ui/theme";
 
 /** How often the owner's Today brings teammates' changes down while it's showing. */
 export const TEAM_SYNC_MS = 15_000;
@@ -137,80 +133,3 @@ export function useTeamSync(enabled: boolean) {
     }, [enabled]),
   );
 }
-
-/** The Team list: one row per tech; a row shows that tech's day, as Whose Day does. */
-export function TeamToday({
-  rows,
-  shown,
-  onPick,
-}: {
-  rows: TeamTodayRow[];
-  shown: string;
-  onPick: (id: string) => void;
-}) {
-  return (
-    <Section title="Team">
-      <View testID="team-today">
-        <Group separatorInset={space["4"] + 28 + space["3"]}>
-          {rows.map((r) => {
-            const { day } = r;
-            const current = day.current;
-            const spoken = [
-              r.label,
-              day.progress.text ? day.progress.spoken : day.line,
-              current ? `${current.started ? "In progress" : "Now"}: ${current.customer}` : null,
-              r.lastDone,
-            ]
-              .filter(Boolean)
-              .join(", ");
-            return (
-              <ListRow
-                key={r.value}
-                onPress={() => onPick(r.value)}
-                accessibilityRole="button"
-                accessibilityLabel={spoken}
-                accessibilityHint={r.value === shown ? undefined : "Shows their day"}
-                leading={<DayRing progress={day.progress} />}
-              >
-                <View style={styles.top}>
-                  <TechDot tech={r.dot} />
-                  <T style={styles.name} numberOfLines={1}>
-                    {r.label}
-                  </T>
-                  <T variant="secondary" muted style={styles.line}>
-                    {day.line}
-                  </T>
-                </View>
-                {current ? (
-                  <View style={styles.now}>
-                    {current.started ? (
-                      <StatusChip status="in_progress" />
-                    ) : (
-                      <Pill label="Now" color={color.water} />
-                    )}
-                    <T variant="secondary" numberOfLines={1} style={styles.customer}>
-                      {current.customer}
-                    </T>
-                  </View>
-                ) : null}
-                {r.lastDone ? (
-                  <T variant="footnote" muted numberOfLines={1}>
-                    {r.lastDone}
-                  </T>
-                ) : null}
-              </ListRow>
-            );
-          })}
-        </Group>
-      </View>
-    </Section>
-  );
-}
-
-const styles = StyleSheet.create({
-  top: { flexDirection: "row", alignItems: "center", gap: space["2"] },
-  name: { flexShrink: 1, ...face.semiBold },
-  line: { marginLeft: "auto", paddingLeft: space["2"], fontVariant: ["tabular-nums"] },
-  now: { flexDirection: "row", alignItems: "center", gap: space["2"], marginTop: space["1"] },
-  customer: { flexShrink: 1 },
-});
