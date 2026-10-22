@@ -319,6 +319,7 @@ export function DayMap({
   tech,
   day,
   variant = "column",
+  short = false,
   action,
   className = "mt-3",
 }: {
@@ -331,6 +332,8 @@ export function DayMap({
   /** "Monday". */
   day: string;
   variant?: "column" | "week";
+  /** Column: a wider, shorter map (3:1), as on desktop Today's side column. */
+  short?: boolean;
   /** Week: the day's Optimize, beside Enlarge. */
   action?: ReactNode;
   /** Column: spacing around it (default: a gap above). */
@@ -347,7 +350,7 @@ export function DayMap({
   const open = useSyncExternalStore(subscribeOpen, readOpen, () => true);
   const boxId = useId();
   const week = variant === "week";
-  const size = week ? { w: 360, h: 240 } : { w: 640, h: 320 };
+  const size = week ? { w: 360, h: 240 } : short ? { w: 720, h: 240 } : { w: 640, h: 320 };
   const src = pins ? mapSrc(company, pins, size) : null;
   const failed = src !== null && failedSrc === src;
   const fail = useCallback(() => setFailedSrc(src), [src]);
@@ -383,7 +386,7 @@ export function DayMap({
         <MapImage
           src={src}
           alt={alt}
-          ratio={week ? "aspect-[3/2]" : "aspect-[2/1]"}
+          ratio={week ? "aspect-[3/2]" : short ? "aspect-[3/1]" : "aspect-[2/1]"}
           width={size.w}
           height={size.h}
           lazy

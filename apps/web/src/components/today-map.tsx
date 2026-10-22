@@ -21,7 +21,7 @@ function subscribeWide(fn: () => void) {
 /** A quiet box in the map's shape: while the page comes alive, or when there's no map. */
 function MapBox({ children }: { children?: ReactNode }) {
   return (
-    <div className="grid aspect-[2/1] place-items-center rounded-[1.25rem] bg-text/[0.04] px-4 text-center text-[0.9375rem] text-text-muted">
+    <div className="grid aspect-[3/1] place-items-center rounded-[1.25rem] bg-text/[0.04] px-4 text-center text-[0.9375rem] text-text-muted">
       {children}
     </div>
   );
@@ -63,7 +63,7 @@ export function TodayMap({
     const note = missingNote(missing);
     return (
       <>
-        <div aria-hidden="true" className="aspect-[2/1] rounded-[1.25rem] bg-fill" />
+        <div aria-hidden="true" className="aspect-[3/1] rounded-[1.25rem] bg-fill" />
         {note ? <p className="mt-1.5 text-[0.9375rem] text-text-muted">{note}</p> : null}
       </>
     );
@@ -76,6 +76,9 @@ export function TodayMap({
       missing={missing}
       tech={tech}
       day={day}
+      // Shorter than the Schedule's, so it doesn't fill the column (owner, 2026-10-22: "the
+      // map appears huge").
+      short
       className=""
     />
   );

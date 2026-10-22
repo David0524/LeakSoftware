@@ -98,8 +98,10 @@ export function AppleMap({
         const el = pinElement(p, () => select.current(p.label));
         els.push(el);
         return new kit.Annotation(coord(p), () => el, {
-          // The 44 pt button's middle sits on the place (MapKit anchors the bottom middle).
-          anchorOffset: new DOMPoint(0, 22),
+          // The 44 pt button's middle sits on the place. MapKit anchors the bottom middle, and a
+          // positive y moved the pins up a whole pin (owner, 2026-10-22: "The numbers on the map
+          // don't sit on points"), so half a pin the other way.
+          anchorOffset: new DOMPoint(0, -22),
           calloutEnabled: false,
           animates: false,
           accessibilityLabel: el.getAttribute("aria-label"),

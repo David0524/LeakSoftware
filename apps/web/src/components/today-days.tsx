@@ -97,7 +97,9 @@ export function TodayDays({
       <aside
         aria-label="Map and Activity"
         data-testid="today-side"
-        className="sticky top-[5.5rem] hidden min-w-0 lg:block"
+        // A hairline between the day and this column (owner, 2026-10-22: "We need some sort of
+        // divider").
+        className="sticky top-[5.5rem] hidden min-w-0 lg:block lg:border-l lg:border-separator lg:pl-8"
       >
         <section aria-labelledby="today-map-title">
           <h2 id="today-map-title" className="mb-2 px-4 text-[0.8125rem] text-text-muted uppercase">
