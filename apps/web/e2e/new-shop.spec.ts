@@ -315,9 +315,12 @@ test("a new shop signs up and runs the whole loop, then subscribes", async ({
 
   // 11. Canceled: read-only. Everything is still there; nothing can be changed.
   await webhook(request, subscription("canceled", `evt_sub_off_${RUN}`));
-  await page.goto(detectionJob);
+  // The finding is on its tab (one tab at a time on every screen, owner 2026-10-22); the
+  // notes are in Details.
+  await page.goto(`${detectionJob}?tab=findings`);
   await expect(page.getByRole("alert").filter({ hasText: /^Read-only/ })).toBeVisible();
   await expect(page.getByText("Cracked skimmer throat", { exact: true })).toBeVisible();
+  await page.getByRole("tab", { name: /^Details/ }).click();
   await page.getByLabel("Job notes").fill("Trying to change this");
   const onSite = page.locator("form").filter({ has: page.getByLabel("Job notes") });
   await onSite.getByRole("button", { name: "Save" }).click();

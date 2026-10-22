@@ -113,9 +113,10 @@ test("a repair job: two repairs booked in New Job, one added and one removed on 
       (await saved()).find((r) => r.description === `Skimmer lid ${RUN}`)?.deleted_at,
     ).toBeTruthy();
 
-    // On a phone, the list and its button fit, and each row is a 44 pt target.
+    // On a phone, the list and its button fit, and each row is a 44 pt target (on Details:
+    // a phone opens a started job on its next step's tab).
     await page.setViewportSize(PHONE.viewport);
-    await page.reload();
+    await page.goto(`/jobs/${jobId}?tab=details`);
     await expect(rows).toHaveCount(2);
     for (const box of await rows.evaluateAll((els) =>
       els.map((e) => e.getBoundingClientRect().height),

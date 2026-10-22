@@ -143,12 +143,31 @@ export function ReorderToggle() {
             type="button"
             onClick={() => r.setEditing(!r.editing)}
             aria-pressed={r.editing}
+            aria-label={r.editing ? "Done" : "Reorder"}
             className={cx(
-              "inline-flex min-h-11 items-center px-2 text-[1.0625rem] text-link",
+              "inline-flex min-h-11 min-w-11 items-center justify-center px-2 text-[1.0625rem] text-link",
               r.editing ? "font-bold" : "font-semibold",
             )}
           >
-            {r.editing ? "Done" : "Reorder"}
+            {/* A crowded phone bar (large text or zoom): an icon beside the logo, as iOS bars
+                do, so the logo keeps its room. */}
+            <span className="@max-[20rem]/bar:hidden">{r.editing ? "Done" : "Reorder"}</span>
+            <svg
+              viewBox="0 0 24 24"
+              aria-hidden="true"
+              className="hidden size-6 @max-[20rem]/bar:block"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2.2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            >
+              <path
+                d={
+                  r.editing ? "M5 12.5l4.5 4.5L19 7.5" : "M8 20V5M4 9l4-4 4 4M16 4v15m-4-4 4 4 4-4"
+                }
+              />
+            </svg>
           </button>,
           slot,
           slot.dataset.slot,
