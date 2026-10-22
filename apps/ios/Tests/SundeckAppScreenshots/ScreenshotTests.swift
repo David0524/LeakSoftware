@@ -974,7 +974,7 @@
                 "company", id: "c1", companyId: "c1", ["brand_primary": "#1D5FA8", "brand_secondary": "#3C4450"])
             // (68-settings-company has the whole page.)
             try await snapshot(
-                "49-settings-company-branding", height: 1400, scrolled: 1100,
+                "49-settings-company-branding", height: 2800,
                 NavigationStack { CompanySettingsScreen() }.app(env))
             try await snapshot(
                 "49-settings-company-dark", dark: true, height: 1400, scrolled: 1100,
