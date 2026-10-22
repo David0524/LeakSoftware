@@ -90,3 +90,10 @@ just going to have to rearrange some of the other pills that land in that spot")
 
 The same tile and block in the Day and Week columns. The chip and the drive home replace the
 drive lines there too.
+
+Week shows the shop's work days, plus today and any day with something on it (owner,
+2026-10-22: "We really only need Mon-Fri"), so each day is wide enough for the tile. In those
+cells line 2 is the chip and the time only; the street is on the job. Long drives stay in
+minutes ("72"; owner: "Mins are fine"). The website keeps the "⋯" button on tiles where there's
+room, so a mouse has a visible way into the menu; desktop Week cells drop it for room (right
+click and Shift+F10 open the same menu).

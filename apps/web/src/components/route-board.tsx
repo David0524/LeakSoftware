@@ -1508,9 +1508,11 @@ function StopTile({
                 className={actions?.drivesHidden ? "invisible" : undefined}
               />
             ) : null}
-            {/* The time is never cut short; "With …" and the street are, after it. */}
+            {/* The time is never cut short; "With …" and the street are, after it. Week's
+                narrow desktop cells show only the chip and the time: the street had room for
+                a letter or two. */}
             <span className="shrink-0 tabular-nums">{time}</span>
-            {withNote || street ? (
+            {!compact && (withNote || street) ? (
               <span className="min-w-0 truncate">
                 {[withNote, street]
                   .filter(Boolean)
@@ -1878,7 +1880,7 @@ function WeekMaps({
 function WeekGrid({
   columns,
   lists,
-  days,
+  days: allDays,
   workDates,
   today,
   optimizingKey,
@@ -1888,7 +1890,7 @@ function WeekGrid({
   columns: BoardColumn[];
   lists: Lists;
   days: [string, string][];
-  /** The shop's work days; a day off with nothing on it is a narrow column. */
+  /** The shop's work days; a day off with nothing on it isn't shown. */
   workDates: string[];
   today: string;
   optimizingKey: string | null;
@@ -1896,6 +1898,14 @@ function WeekGrid({
   onPlan: (techId: string, date: string) => void;
 }) {
   const rows = [...new Map(columns.map((c) => [c.techId, c])).values()];
+  // The shop's work days, plus today and any day with something on it (owner, 2026-10-22: "We
+  // really only need Mon-Fri"), so each day is wide enough for a stop's name.
+  const days = allDays.filter(
+    ([d]) =>
+      workDates.includes(d) ||
+      d === today ||
+      rows.some((r) => (lists[`${r.techId ?? "none"}|${d}`] ?? []).length > 0),
+  );
   /**
    * The day's "⋯" menu (owner, 2026-10-20: "you can't optimize" on Routes): Optimize each
    * tech's route that day, and Open Day.
@@ -1914,23 +1924,11 @@ function WeekGrid({
       { label: "Open Day", href: `/schedule?view=day&date=${d}` },
     ];
   };
-  // Each day at least 10.5 rem, so a stop's name reads (owner, 2026-10-21); a day off with
-  // nothing on it is 4.5 rem. When they don't all fit, the table slides sideways, with a
-  // second scrollbar on top, as on Day.
-  const narrow = new Set(
-    days
-      .map(([d]) => d)
-      .filter(
-        (d) =>
-          !workDates.includes(d) &&
-          d !== today &&
-          rows.every((r) => !(lists[`${r.techId ?? "none"}|${d}`] ?? []).length),
-      ),
-  );
+  // Each day at least 10.5 rem, so a stop's name reads (owner, 2026-10-21). When they don't all
+  // fit, the table slides sideways, with a second scrollbar on top, as on Day.
   const TECH_REM = 7;
   const DAY_REM = 10.5;
-  const NARROW_REM = 4.5;
-  const minRem = TECH_REM + days.reduce((n, [d]) => n + (narrow.has(d) ? NARROW_REM : DAY_REM), 0);
+  const minRem = TECH_REM + days.length * DAY_REM;
   return (
     <TopScroller
       data-testid="week-grid"
@@ -1943,7 +1941,7 @@ function WeekGrid({
         <colgroup>
           <col style={{ width: `${TECH_REM}rem` }} />
           {days.map(([d]) => (
-            <col key={d} style={narrow.has(d) ? { width: `${NARROW_REM}rem` } : undefined} />
+            <col key={d} />
           ))}
         </colgroup>
         <thead className="border-b border-border">
@@ -1972,18 +1970,9 @@ function WeekGrid({
                   <Link
                     href={`/schedule?view=day&date=${d}`}
                     aria-current={d === today ? "date" : undefined}
-                    title={narrow.has(d) ? label : undefined}
                     className="min-w-0 truncate py-1.5 underline-offset-4 hover:underline"
                   >
-                    {/* A narrow day off: its short name ("Sat"); the full date in the title. */}
-                    {narrow.has(d) ? (
-                      <>
-                        <span aria-hidden="true">{label.split(",")[0]}</span>
-                        <span className="sr-only">{label}</span>
-                      </>
-                    ) : (
-                      label
-                    )}
+                    {label}
                     {d === today ? " · Today" : ""}
                   </Link>
                   {optimizingKey?.endsWith(`|${d}`) ? (
@@ -1993,13 +1982,10 @@ function WeekGrid({
                       className="size-3.5 shrink-0 animate-spin rounded-full border-2 border-current border-r-transparent motion-reduce:animate-none"
                     />
                   ) : null}
-                  {/* A narrow day off has nothing to optimize; its name opens the day. */}
-                  {narrow.has(d) ? null : (
-                    <RowMenuButton
-                      visible
-                      className="ml-auto grid size-8 shrink-0 place-items-center rounded-full text-link hover:bg-link/10 aria-expanded:bg-link/10"
-                    />
-                  )}
+                  <RowMenuButton
+                    visible
+                    className="ml-auto grid size-8 shrink-0 place-items-center rounded-full text-link hover:bg-link/10 aria-expanded:bg-link/10"
+                  />
                 </RowActions>
               </th>
             ))}
