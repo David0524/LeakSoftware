@@ -295,21 +295,31 @@ test("the demo tech cannot reach settings", async ({ page }) => {
   }
 });
 
-test("the site starts light; the sun/moon button switches it and remembers", async ({ page }) => {
+test("the site starts light; the office's sun/moon button switches it and remembers", async ({
+  page,
+}) => {
   // The device's dark setting is not followed: light by default (owner, 2026-10-13).
   await page.emulateMedia({ colorScheme: "dark" });
   await page.goto("/");
   const html = page.locator("html");
   await expect(html).toHaveAttribute("data-theme", "light");
+  // The landing page has no dark mode (owner, 2026-10-22).
+  await expect(page.getByRole("button", { name: "Dark mode" })).toHaveCount(0);
 
+  // The office has the button, in the account menu.
+  await signIn(page, OWNER);
+  await expect(html).toHaveAttribute("data-theme", "light");
+  await page.getByRole("button", { name: /: account$/ }).click();
   await page.getByRole("button", { name: "Dark mode" }).click();
   await expect(html).toHaveAttribute("data-theme", "dark");
   await page.reload();
   await expect(html).toHaveAttribute("data-theme", "dark");
-  await expect(page.getByRole("img", { name: "Sundeck Pro" }).first()).toBeVisible();
 
-  // The office has the button too, in the account menu.
-  await signIn(page, OWNER);
+  // The landing page stays light for someone who chose Dark, and the office keeps their choice.
+  await page.goto("/");
+  await expect(html).toHaveAttribute("data-theme", "light");
+  await expect(page.getByRole("img", { name: "Sundeck Pro" }).first()).toBeVisible();
+  await page.goBack();
   await expect(html).toHaveAttribute("data-theme", "dark");
   await page.getByRole("button", { name: /: account$/ }).click();
   await page.getByRole("button", { name: "Light mode" }).click();

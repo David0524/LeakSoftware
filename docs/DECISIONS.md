@@ -2,6 +2,9 @@
 
 Newest first. Each entry: date, decision, reason.
 
+## 2026-10-22 (owner: "remove dark mode on the landing page")
+- **The public site is always light:** the landing page, terms, privacy, security, status, sign-in, sign-up and invite pages, whatever the person chose in the office. Their footer has no sun/moon button. The office keeps Light | Dark as before. Replaces, for those pages only, the 2026-10-13 sun/moon button in the public footer.
+
 ## 2026-10-22 (owner's overnight list: hold-to-drag, "5 Days | 7 Days", instant changes, skeletons, progress cues, live owner view, opened/paid pushes, weekly email, first win, first stop in one tap)
 - **Holding a schedule tile drags it** (0.4 s for a finger; a mouse after 6 px), on every platform. The grip stays. The tile menu moved to a "⋯" button, since a hold can't both drag and open a menu; right click and Shift+F10 still open it on desktop. Design: `design/2026-10-22-schedule-hold-drag.md`.
 - **Desktop Week: "5 Days | 7 Days"** in the This Week row, remembered per browser; it replaces the weekend column ("we can't eliminate weekends entirely").
