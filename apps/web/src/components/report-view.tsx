@@ -440,7 +440,35 @@ export function ReportView(p: ReportViewProps) {
         <Block title={section("tests")?.title ?? "Tests we ran"}>
           {section("tests")?.text ? <Paragraphs text={section("tests")!.text} /> : null}
           {s.tests.length ? (
-            <div className="mt-4 overflow-x-auto">
+            // Phones: one test per row (name and outcome, then where and the result), since
+            // four columns don't fit a phone's width.
+            <ul className="mt-4 sm:hidden">
+              {s.tests.map((t) => (
+                <li
+                  key={t.id}
+                  className="border-b py-2 break-inside-avoid"
+                  style={{ borderColor: NEUTRAL["200"] }}
+                >
+                  <div className="flex items-start justify-between gap-3">
+                    <span className="font-semibold">{t.type_name}</span>
+                    <Badge tone={testOutcomeLabel(t.outcome).tone}>
+                      {testOutcomeLabel(t.outcome).label}
+                    </Badge>
+                  </div>
+                  <p className="mt-0.5 text-[0.9375rem]" style={{ color: NEUTRAL["600"] }}>
+                    {[
+                      t.component_id ? labelOf.get(t.component_id) : "",
+                      testSummary(t) ?? Object.values(t.data).filter(Boolean).join(", "),
+                    ]
+                      .filter(Boolean)
+                      .join(" · ")}
+                  </p>
+                </li>
+              ))}
+            </ul>
+          ) : null}
+          {s.tests.length ? (
+            <div className="mt-4 overflow-x-auto max-sm:hidden">
               <table className="w-full text-left text-[0.9375rem]">
                 <thead>
                   <tr className="border-b" style={{ borderColor: NEUTRAL["300"] }}>

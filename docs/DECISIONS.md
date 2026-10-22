@@ -2,6 +2,21 @@
 
 Newest first. Each entry: date, decision, reason.
 
+## 2026-10-22 (owner's overnight list: hold-to-drag, "5 Days | 7 Days", instant changes, skeletons, progress cues, live owner view, opened/paid pushes, weekly email, first win, first stop in one tap)
+- **Holding a schedule tile drags it** (0.4 s for a finger; a mouse after 6 px), on every platform. The grip stays. The tile menu moved to a "⋯" button, since a hold can't both drag and open a menu; right click and Shift+F10 still open it on desktop. Design: `design/2026-10-22-schedule-hold-drag.md`.
+- **Desktop Week: "5 Days | 7 Days"** in the This Week row, remembered per browser; it replaces the weekend column ("we can't eliminate weekends entirely").
+- **Optimize and Optimize Week show the new order at once with Undo;** "Already the best order" when nothing moves; a failed save puts the order back.
+- **The website changes things at once and saves after,** like the phones: job status, Mark Complete, Reopen Visit, Start Job, deletes. A failed save changes back: "Changed back. Nothing was saved." Forms with a Save button still wait for the server (their fields are checked there). Design: `design/2026-10-22-instant-and-skeletons.md`.
+- **Skeleton screens, not spinners,** in the page's shape on every platform; spinners stay only inside buttons, the first download and report steps.
+- **Progress cues:** Today's ring ("4 of 11 stops"; with 3 or fewer left "2 left · about 1 hr"; "All 11 done"); "Everything's checked. Mark it complete." with a filled Mark Complete; Getting Started starts at "Account created"; the Live Activity bar counts stops done. Design: `design/2026-10-22-progress-cues.md`.
+- **Owners see the team live on Today:** a Team list with each tech's ring, current stop and last stop done. The website checks for changes every 5 s; the apps sync every 15 s on Today and Schedule. A poll, not Supabase Realtime, for now. Design: `design/2026-10-22-owner-live-today.md`.
+- **Pushes when a customer first opens a report** ("Rebecca Soto opened the report.") **and when they pay,** to the job's techs and owners, each with its own switch. Visit reports don't notify on open.
+- **Weekly summary email on Mondays** to owners (admins opt in, never techs): jobs done, money in, owed, quotes waiting, this week's jobs. No email for an empty week.
+- **First win:** every new leak detection shop gets one finished sample job on today's schedule, marked Sample, with its own name and logo, "Send Yourself This Report" (to the signed-in person only), never counted anywhere, gone for good once deleted. Pool-only shops get none for now. Design: `design/2026-10-22-first-win.md`.
+- **Start of the day:** each tech's phone schedules a local notification at the shop's start time ("5 stops today · First: Smith"); one tap opens the first stop. Local rather than a server push, so it works with no signal and no push keys.
+- **The shop's own logo is on reports, quotes and invoices,** and the main color is filled from the logo with a picker ("A hex code alone is not useful"). Sent reports keep the logo they were sent with.
+- **No tips or hints in the apps** ("The app is super intuitive").
+
 ## 2026-10-21 (owner: "The nav bar still shrinks on 'Wrap Up'"; "Fix this white space. Keep the weather on one line. I don't need 'showers and thunderstorms'"; "make sure this is the most seamless app possible")
 - **The iPhone tab bar never shrinks** while a page scrolls (iOS 26 minimizes it by default; on the job page the Next Step bar sits on it).
 - **Today's weather is one line:** the icon, the temperature and the high; the conditions are read to screen readers only. Today's sync bar takes no room when it has nothing to say. Every platform.
