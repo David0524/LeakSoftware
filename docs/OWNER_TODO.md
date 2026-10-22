@@ -5,10 +5,12 @@ first. Tick an item off by deleting it (and tell Claude, so it can check the res
 
 ## From 2026-10-22: Admin portal, password reset, usage
 
-1. **Put your email on the staff list** (needed for the Admin portal). Vercel › the web
-   project › Settings › Environment Variables › `SUNDECK_STAFF_EMAILS` = your email (more than
-   one: comma-separated), for Production. Redeploy. Then turn on two-step sign-in in the office
-   (More › Two-Step Sign-In) and use **Admin Sign In** at the bottom of the home page.
+1. **Put David's and Cole's emails on the staff list** (needed for the Admin portal). Vercel ›
+   the web project › Settings › Environment Variables › `SUNDECK_STAFF_EMAILS` =
+   `david@sundeckpro.com,cole@sundeckpro.com`, for Production. Redeploy. Their accounts exist
+   (made 2026-10-22 with the password the owner chose; change it after the first sign-in with
+   Forgot Password?). Then each one: **Admin Sign In** at the bottom of the home page, the
+   portal says to set up two-step sign-in, scan the code with an authenticator app, done.
 
 2. **Send Supabase's own emails through Resend** (sign-in links and sign-up confirmations).
    Today they go out through Supabase's built-in mailer, limited to a couple an hour. Password

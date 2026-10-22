@@ -26,6 +26,15 @@ test("a new pool company sets up its shop and tries a visit", async ({ page }) =
     page.getByRole("heading", { name: "Every pool on your route, handled." }),
   ).toBeVisible();
   await page.getByRole("button", { name: "Get Started" }).click();
+  // The phone's Back goes to the step before, not out to the sign-up form (owner, 2026-10-22).
+  await expect(
+    page.getByRole("heading", { name: "What should Sundeck Pro fix first?" }),
+  ).toBeVisible();
+  await page.goBack();
+  await expect(
+    page.getByRole("heading", { name: "Every pool on your route, handled." }),
+  ).toBeVisible();
+  await page.getByRole("button", { name: "Get Started" }).click();
   // The questions can be skipped; the usual three answers show.
   await page.getByRole("button", { name: "Skip" }).click();
   await expect(page.getByRole("heading", { name: /^Set up Blue Lagoon Pools/ })).toBeVisible();
