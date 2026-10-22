@@ -2,8 +2,13 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { after } from "next/server";
-import { Suspense } from "react";
-import type { FinalSection, ReportSnapshot, ReportTemplateKey } from "@leakbook/core";
+import { Suspense, cache } from "react";
+import {
+  reportTitle,
+  type FinalSection,
+  type ReportSnapshot,
+  type ReportTemplateKey,
+} from "@leakbook/core";
 import { Banner, DOC_PAGE } from "@/components/doc-ui";
 import { ReportLoading } from "@/components/report-loading";
 import { ReportView } from "@/components/report-view";
@@ -14,7 +19,36 @@ import { adminClient } from "@/server/admin";
 import { notifyReportOpened } from "@/server/notify-events";
 import { publicClient } from "@/server/reports";
 
-export const metadata: Metadata = { title: "Leak Detection Report", robots: { index: false } };
+/**
+ * The report for a link, once per request: the page and the browser tab's title share this one
+ * lookup (React `cache`), so naming the tab after the report costs no extra database call.
+ */
+const loadReport = cache(async (token: string, countView: boolean) => {
+  const { data } = await publicClient().rpc("report_for_token", {
+    link_token: token,
+    count_view: countView,
+  });
+  return data as TokenReport | null;
+});
+
+/** The browser tab says what the report is (owner, 2026-10-22: "Pool maintenance companies do
+ * repairs too"): Repair Report, Pool Inspection Report, Pool Visit Report, Leak Detection Report. */
+export async function generateMetadata({
+  params,
+  searchParams,
+}: PageProps<"/r/[token]">): Promise<Metadata> {
+  const { token } = await params;
+  const { print } = await searchParams;
+  const r = await loadReport(token, !print);
+  const title = !r
+    ? "Report"
+    : r.template_key === "maintenance"
+      ? "Pool Visit Report"
+      : r.template_key === "partner"
+        ? "Leak Detection Report (Technical)"
+        : reportTitle(r.snapshot.job.type);
+  return { title, robots: { index: false } };
+}
 
 interface TokenReport {
   report_id: string;
@@ -44,8 +78,7 @@ async function Report({ params, searchParams }: PageProps<"/r/[token]">) {
   const { token } = await params;
   const { print } = await searchParams;
   const db = publicClient();
-  const { data } = await db.rpc("report_for_token", { link_token: token, count_view: !print });
-  const r = data as TokenReport | null;
+  const r = await loadReport(token, !print);
   if (!r) notFound();
   // The team hears the first time the customer opens it (owner, 2026-10-22), not when someone
   // from the shop looks at the link themselves. Sent after the page, so it never slows it.

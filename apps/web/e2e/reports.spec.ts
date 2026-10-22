@@ -1,5 +1,6 @@
 import { expect, test, type Page } from "@playwright/test";
 import { OWNER, RUN, openChecklist, sendUnsigned, signIn } from "./helpers";
+import { adminClient } from "./backend";
 import { lastEmailTo } from "./outbox";
 
 // M7 "Done when": both templates as a web page and a PDF on the sample job, and the email a
@@ -71,9 +72,18 @@ test("homeowner report: draft, edit, email, and the customer's link", async ({ p
   const token = link![1]!;
 
   // The customer opens the link signed out.
+  const admin = adminClient();
+  const viewsOf = async () =>
+    (await admin!.from("share_link").select("view_count").eq("token", token).single()).data
+      ?.view_count as number;
+  const before = admin ? await viewsOf() : 0;
   await page.context().clearCookies();
   await page.goto(`/r/${token}`);
   await expect(page.getByRole("heading", { name: "Summary" })).toBeVisible();
+  // The browser tab names the report (owner, 2026-10-22), and naming it doesn't open the link
+  // twice: the page and the title share one lookup, so one visit counts one view.
+  await expect(page).toHaveTitle(/Leak Detection Report/);
+  if (admin) expect(await viewsOf()).toBe(before + 1);
   await expect(page.getByText(note)).toBeVisible();
   await expect(page.getByText("Return 3 line break").first()).toBeVisible();
   await expect(page.getByText("Not applicable", { exact: true })).toBeVisible();
