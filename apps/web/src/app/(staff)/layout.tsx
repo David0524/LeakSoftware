@@ -5,6 +5,7 @@ import { AdminSidebar, CurrentSidebar } from "@/components/admin/sidebar";
 import { Logo } from "@/components/logo";
 import { SignOutForm } from "@/components/sign-out-form";
 import { getUser } from "@/lib/auth";
+import { createClient } from "@/lib/supabase/server";
 
 export const metadata: Metadata = {
   title: { template: "%s · Sundeck Pro Admin", default: "Sundeck Pro Admin" },
@@ -69,12 +70,24 @@ export default function StaffLayout({ children }: LayoutProps<"/">) {
 
 async function StaffMenu() {
   const user = await getUser();
+  // My Office only for staff who belong to a shop: without one, the office asks to set one up.
+  const { count } = user
+    ? await (
+        await createClient()
+      )
+        .from("membership")
+        .select("id", { count: "exact", head: true })
+        .eq("user_id", user.id)
+        .eq("status", "active")
+    : { count: 0 };
   return (
     <>
       {user?.email ? <span className="text-[0.9375rem] text-text-muted">{user.email}</span> : null}
-      <Link href="/home" className="min-h-11 content-center px-3 text-[0.9375rem] text-link">
-        My Office
-      </Link>
+      {count ? (
+        <Link href="/home" className="min-h-11 content-center px-3 text-[0.9375rem] text-link">
+          My Office
+        </Link>
+      ) : null}
       <SignOutForm action="/auth/sign-out" method="post">
         <button type="submit" className="min-h-11 px-3 text-[0.9375rem] font-medium text-link">
           Sign Out

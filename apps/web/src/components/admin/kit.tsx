@@ -324,12 +324,11 @@ export function TwoStepNeeded({ title }: { title: string }) {
     <>
       <PageHeader title={title} />
       <Empty>
-        The admin portal shows shops’ and people’s details, so it needs two-step sign-in. Turn it on
-        in{" "}
-        <Link href="/more/two-step" className="text-link underline">
-          More › Two-Step Sign-In
+        The admin portal shows shops’ and people’s details, so it needs two-step sign-in.{" "}
+        <Link href="/admin/two-step" className="text-link underline">
+          Set Up Two-Step Sign-In
         </Link>
-        , then sign in again.
+        , then sign in again if it asks.
       </Empty>
     </>
   );
