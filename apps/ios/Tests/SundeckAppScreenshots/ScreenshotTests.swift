@@ -977,7 +977,7 @@
                 "49-settings-company-branding", height: 2800,
                 NavigationStack { CompanySettingsScreen() }.app(env))
             try await snapshot(
-                "49-settings-company-dark", dark: true, height: 1400, scrolled: 1100,
+                "49-settings-company-dark", dark: true, height: 2800,
                 NavigationStack { CompanySettingsScreen() }.app(env))
         }
 
