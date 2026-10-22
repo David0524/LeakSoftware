@@ -76,9 +76,11 @@ export function UsageSummary({ u, person = false }: { u: Usage; person?: boolean
           label="Sessions"
           value={u.sessions}
           detail={
-            u.platforms.length
-              ? u.platforms.map((p) => `${platformLabel(p.platform)} ${p.people}`).join(" · ")
-              : "No use yet"
+            u.platforms.length === 0
+              ? "No use yet"
+              : person
+                ? `On ${u.platforms.map((p) => platformLabel(p.platform)).join(", ")}`
+                : `People: ${u.platforms.map((p) => `${platformLabel(p.platform)} ${p.people}`).join(" · ")}`
           }
         />
       </div>

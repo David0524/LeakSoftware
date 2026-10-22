@@ -181,8 +181,9 @@ export function BarChart({
         aria-hidden="true"
       >
         {bars.map((b, i) => (
-          <li key={b.key} className="flex-1 truncate">
-            {i % 2 === bars.length % 2 ? "" : b.short}
+          // About 8 labels, counted back from the last bar, so 31 days don't crowd.
+          <li key={b.key} className="flex-1 overflow-visible whitespace-nowrap">
+            {(bars.length - 1 - i) % Math.max(2, Math.ceil(bars.length / 8)) === 0 ? b.short : ""}
           </li>
         ))}
       </ol>
