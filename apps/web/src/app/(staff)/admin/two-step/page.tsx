@@ -26,7 +26,7 @@ export default function StaffTwoStepPage() {
 async function StaffTwoStep() {
   const user = await getUser();
   if (!user) redirect("/sign-in?next=/admin/two-step");
-  if (!isStaff(user)) redirect("/home");
+  if (!isStaff(user)) redirect("/sign-in/staff");
   const { data } = await (
     await createClient()
   )

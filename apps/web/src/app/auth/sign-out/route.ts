@@ -1,5 +1,6 @@
 import { cookies } from "next/headers";
 import { NextResponse } from "next/server";
+import { safePath } from "@leakbook/core";
 import { ACTIVE_COMPANY_COOKIE } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 
@@ -11,5 +12,7 @@ export async function POST(request: Request) {
   const supabase = await createClient();
   await supabase.auth.signOut();
   (await cookies()).delete(ACTIVE_COMPANY_COOKIE);
-  return NextResponse.redirect(new URL("/", request.url), 303);
+  // Admin Sign In's Sign Out and Switch goes on to sign-in; same-site paths only.
+  const next = safePath((await request.formData().catch(() => null))?.get("next"), "/");
+  return NextResponse.redirect(new URL(next, request.url), 303);
 }

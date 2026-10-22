@@ -43,9 +43,15 @@ export async function saveLead(input: LeadInput): Promise<void> {
  */
 export function isStaff(user: SignedInUser | null): boolean {
   if (!user?.email) return false;
-  const staff = (process.env.SUNDECK_STAFF_EMAILS ?? process.env.TIDEMARK_STAFF_EMAILS ?? "")
+  return staffEmails().includes(user.email.toLowerCase());
+}
+
+/** Whether any staff email is set on this server. */
+export const staffListSet = () => staffEmails().length > 0;
+
+function staffEmails(): string[] {
+  return (process.env.SUNDECK_STAFF_EMAILS ?? process.env.TIDEMARK_STAFF_EMAILS ?? "")
     .split(",")
     .map((e) => e.trim().toLowerCase())
     .filter(Boolean);
-  return staff.includes(user.email.toLowerCase());
 }

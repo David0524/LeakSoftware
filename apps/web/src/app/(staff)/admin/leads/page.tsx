@@ -50,7 +50,7 @@ async function Leads({
 }) {
   const user = await getUser();
   if (!user) redirect("/sign-in?next=/admin/leads");
-  if (!isStaff(user)) redirect("/home");
+  if (!isStaff(user)) redirect("/sign-in/staff");
   if (user.aal !== "aal2")
     return (
       <>

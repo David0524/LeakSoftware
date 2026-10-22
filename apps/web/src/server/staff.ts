@@ -17,13 +17,13 @@ export interface Staff {
 
 /**
  * For portal pages: the staff person, or "two-step" when they still need to pass the code.
- * Signed-out visitors go to sign-in and everyone else to their office.
+ * Signed-out visitors go to sign-in; other accounts to a page that says so and offers a switch.
  */
 export const staffGate = cache(
   async (next = "/admin"): Promise<{ staff: Staff } | { needsTwoStep: true }> => {
     const user = await getUser();
     if (!user) redirect(`/sign-in?next=${encodeURIComponent(next)}`);
-    if (!isStaff(user)) redirect("/home");
+    if (!isStaff(user)) redirect("/sign-in/staff");
     if (user.aal !== "aal2") return { needsTwoStep: true };
     return { staff: { id: user.id, email: user.email!.toLowerCase() } };
   },

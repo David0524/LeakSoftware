@@ -33,7 +33,7 @@ async function StaffImport({
 }) {
   const user = await getUser();
   if (!user) redirect("/sign-in?next=/admin/leads");
-  if (!isStaff(user)) redirect("/home");
+  if (!isStaff(user)) redirect("/sign-in/staff");
   const back = { href: "/admin/leads", label: "Leads" };
   if (user.aal !== "aal2")
     return (
