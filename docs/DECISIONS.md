@@ -2,6 +2,11 @@
 
 Newest first. Each entry: date, decision, reason.
 
+## 2026-10-22 (owner: "The reorder button takes up a full horizontal line. Move it elsewhere. Then the 'move up/down' buttons take up so much space and are redundant to the drag")
+- **Reorder sits in the navigation bar beside New Job** (Done while reordering), as iOS puts Edit, on the phones; on computers at the end of Today's title row. No line of its own above the card.
+- **No Move Up / Move Down buttons on screen in Reorder:** the drag handle moves a stop. They stay as VoiceOver and TalkBack actions on each stop, and on the website as buttons that show only when a keyboard focuses them.
+- **The iPhone's logo wordmark folds away as Reorder's list scrolls**, as on every other tab page (owner: "The text part of the sundeck pro logo does not disappear when you scroll on the reorder page").
+
 ## 2026-10-22 (owner's overnight list: hold-to-drag, "5 Days | 7 Days", instant changes, skeletons, progress cues, live owner view, opened/paid pushes, weekly email, first win, first stop in one tap)
 - **Holding a schedule tile drags it** (0.4 s for a finger; a mouse after 6 px), on every platform. The grip stays. The tile menu moved to a "⋯" button, since a hold can't both drag and open a menu; right click and Shift+F10 still open it on desktop. Design: `design/2026-10-22-schedule-hold-drag.md`.
 - **Desktop Week: "5 Days | 7 Days"** in the This Week row, remembered per browser; it replaces the weekend column ("we can't eliminate weekends entirely").

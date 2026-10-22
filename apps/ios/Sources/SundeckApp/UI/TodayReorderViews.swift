@@ -20,9 +20,9 @@
         }
     }
 
-    /// A stop in Reorder: its number, time and customer, the drive to it, and Move Up and Move
-    /// Down (the visible alternative to the drag handle), or a lock with why it stays ("Started",
-    /// "Locked", "Time locked").
+    /// A stop in Reorder: its number, time and customer, the drive to it, and the drag handle, or
+    /// a lock with why it stays ("Started", "Locked", "Time locked"). Move Up and Move Down are
+    /// VoiceOver actions, not buttons (owner, 2026-10-22: "redundant to the drag").
     struct TodayReorderRow: View {
         var number: Int
         var job: ScheduleJob
@@ -37,44 +37,32 @@
         var move: (StopPlace) -> Void
 
         var body: some View {
-            VStack(alignment: .leading, spacing: 8) {
-                HStack(alignment: .firstTextBaseline, spacing: 8) {
-                    Text(verbatim: String(number))
+            HStack(alignment: .firstTextBaseline, spacing: 8) {
+                Text(verbatim: String(number))
+                    .font(.custom(BrandFonts.Weight.bold.rawValue, size: 17, relativeTo: .body))
+                    .foregroundStyle(Color.textMuted)
+                    .frame(minWidth: 24, alignment: .leading)
+                    .accessibilityHidden(true)
+                VStack(alignment: .leading, spacing: 2) {
+                    (Text(formatTime(job.scheduledStart, timeZone: timeZone))
                         .font(.custom(BrandFonts.Weight.bold.rawValue, size: 17, relativeTo: .body))
+                        + Text(verbatim: "  ") + Text(job.customerName).font(.role(.bodyEmphasis)))
+                        .monospacedDigit()
+                        .foregroundStyle(Color.text)
+                    Text(verbatim: "\(durationLabel(leg)) \(first ? startLegLabel(start) : "drive")")
+                        .textRole(.secondary)
                         .foregroundStyle(Color.textMuted)
-                        .frame(minWidth: 24, alignment: .leading)
-                        .accessibilityHidden(true)
-                    VStack(alignment: .leading, spacing: 2) {
-                        (Text(formatTime(job.scheduledStart, timeZone: timeZone))
-                            .font(.custom(BrandFonts.Weight.bold.rawValue, size: 17, relativeTo: .body))
-                            + Text(verbatim: "  ") + Text(job.customerName).font(.role(.bodyEmphasis)))
-                            .monospacedDigit()
-                            .foregroundStyle(Color.text)
-                        Text(verbatim: "\(durationLabel(leg)) \(first ? startLegLabel(start) : "drive")")
-                            .textRole(.secondary)
+                    if let lock {
+                        Label(lock.text, systemImage: "lock.fill")
+                            .font(.role(.footnote).weight(.semibold))
                             .foregroundStyle(Color.textMuted)
-                        if let lock {
-                            Label(lock.text, systemImage: "lock.fill")
-                                .font(.role(.footnote).weight(.semibold))
-                                .foregroundStyle(Color.textMuted)
-                        }
                     }
-                }
-                .accessibilityElement(children: .combine)
-                if lock == nil {
-                    HStack(spacing: 8) {
-                        Button(TodayReorderText.moveUp) { move(.up) }
-                            .buttonStyle(.secondary)
-                            .disabled(!canUp)
-                        Button(TodayReorderText.moveDown) { move(.down) }
-                            .buttonStyle(.secondary)
-                            .disabled(!canDown)
-                    }
-                    .padding(.leading, 32)
                 }
             }
             .padding(.vertical, 4)
-            .accessibilityElement(children: .contain)
+            .accessibilityElement(children: .combine)
+            .accessibilityAction(named: TodayReorderText.moveUp) { if canUp { move(.up) } }
+            .accessibilityAction(named: TodayReorderText.moveDown) { if canDown { move(.down) } }
         }
     }
 #endif

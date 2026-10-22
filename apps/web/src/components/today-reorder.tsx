@@ -9,6 +9,7 @@ import {
   useTransition,
   type ReactNode,
 } from "react";
+import { createPortal } from "react-dom";
 import type { JobChange, TodayMove } from "@leakbook/core";
 import { moveTodayStop, undoTodayMove, type TodayMoveResult } from "@/app/actions/routes";
 import { NO_CONNECTION, whenOffline } from "@/lib/offline";
@@ -18,8 +19,10 @@ import { buttonClass, cx } from "./ui";
 
 // Today: change the order of stops (owner, 2026-10-20; docs/plans/today-reorder.md). Do Later
 // on a stop moves it after every stop still to do, with an inline Undo for five seconds; Reorder
-// puts the list in edit mode, as iOS Reminders does: a drag handle and Move Up / Move Down on
-// each stop that can move, a lock and the reason on each that can't. Each move saves at once.
+// puts the list in edit mode, as iOS Reminders does: a drag handle on each stop that can move
+// (Move Up / Move Down only for keyboards and screen readers; owner, 2026-10-22: the buttons
+// "take up so much space and are redundant to the drag"), a lock and the reason on each that
+// can't. Each move saves at once.
 
 /** What a stop row offers: its moves, or why it can't move. */
 export interface StopMoves {
@@ -120,29 +123,42 @@ export function TodayReorderProvider({ tech, children }: { tech: string; childre
 
 export const useTodayReorder = () => useContext(ReorderContext);
 
-/** Reorder at the end of the day's summary line; Done while the list is in edit mode. */
-export function ReorderToggle({ separator = true }: { separator?: boolean }) {
+/** Where Reorder goes: the phone's navigation bar beside "+", and the title row on computers. */
+export const ReorderSlots = createContext<HTMLElement[]>([]);
+
+/**
+ * Reorder (Done while the list is in edit mode), in the bar at the top right as iOS puts Edit
+ * (owner, 2026-10-22: "The reorder button takes up a full horizontal line. Move it elsewhere").
+ * TodayDays renders the empty slots; the day's content fills them, since Reorder belongs to it.
+ */
+export function ReorderToggle() {
   const r = useTodayReorder();
+  const slots = useContext(ReorderSlots);
   if (!r) return null;
   return (
     <>
-      {separator ? " · " : null}
-      <button
-        type="button"
-        onClick={() => r.setEditing(!r.editing)}
-        aria-pressed={r.editing}
-        className={cx(
-          "-my-3 inline-flex min-h-11 items-center px-1 text-link",
-          r.editing ? "font-bold" : "font-semibold",
-        )}
-      >
-        {r.editing ? "Done" : "Reorder"}
-      </button>
+      {slots.map((slot) =>
+        createPortal(
+          <button
+            type="button"
+            onClick={() => r.setEditing(!r.editing)}
+            aria-pressed={r.editing}
+            className={cx(
+              "inline-flex min-h-11 items-center px-2 text-[1.0625rem] text-link",
+              r.editing ? "font-bold" : "font-semibold",
+            )}
+          >
+            {r.editing ? "Done" : "Reorder"}
+          </button>,
+          slot,
+          slot.dataset.slot,
+        ),
+      )}
     </>
   );
 }
 
-/** A move that went wrong in Reorder, under the summary line. */
+/** A move that went wrong in Reorder, at the top of the day. */
 export function ReorderStatus() {
   const r = useTodayReorder();
   if (!r?.editing || !r.error) return null;
@@ -291,7 +307,8 @@ function DoLaterError({ error, onWater }: { error: string; onWater: boolean }) {
 
 /**
  * A stop's controls in Reorder, under its row: a lock and the reason when it can't move;
- * otherwise Move Up and Move Down, the visible, accessible alternative to dragging the handle.
+ * otherwise Move Up and Move Down for keyboards and screen readers, out of sight until one is
+ * focused (dragging the handle is how a finger or mouse moves a stop).
  */
 export function ReorderControls({ moves }: { moves: StopMoves }) {
   const r = useTodayReorder();
@@ -307,7 +324,7 @@ export function ReorderControls({ moves }: { moves: StopMoves }) {
       </p>
     );
   return (
-    <div className="flex flex-wrap items-center gap-2 px-3 pb-3 pl-[3.25rem]">
+    <div className="sr-only focus-within:not-sr-only focus-within:flex focus-within:flex-wrap focus-within:items-center focus-within:gap-2 focus-within:px-3 focus-within:pb-3 focus-within:pl-[3.25rem]">
       <button
         type="button"
         disabled={r.pending || !moves.up}
@@ -364,7 +381,8 @@ export function ReorderHandle({ moves }: { moves: StopMoves }) {
   return (
     <button
       type="button"
-      // Dragging only: Move Up and Move Down below do the same for keyboards and VoiceOver.
+      // Dragging only: Move Up and Move Down (shown when focused) do it for keyboards and
+      // screen readers.
       tabIndex={-1}
       aria-hidden="true"
       disabled={r.pending}

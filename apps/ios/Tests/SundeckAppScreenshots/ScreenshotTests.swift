@@ -698,6 +698,11 @@
                 try store.write("job", id: first.id, companyId: "c1", ["stop_done_on": .string(today)])
             }
             try await snapshot("30-today-marked", height: 1500, MainView().app(env))
+            // Reorder (owner, 2026-10-22): Reorder and Done in the bar, no Move Up / Move Down,
+            // and the logo's wordmark folding away as the list scrolls.
+            func reorder() -> some View { MainView().environment(\.todayStartsReordering, true).app(env) }
+            try await snapshot("30-today-reorder", reorder())
+            try await snapshot("30-today-reorder-scrolled", scrolled: 160, reorder())
             let empty = try sampleEnvironment(jobs: false)
             try await snapshot("30-today-empty", MainView().app(empty))
         }

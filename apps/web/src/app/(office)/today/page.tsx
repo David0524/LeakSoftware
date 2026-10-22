@@ -444,12 +444,8 @@ export default async function TodayPage({ searchParams }: PageProps<"/today">) {
             <TodayReorderProvider tech={dayTech}>
               {/* No summary line (owner, 2026-10-22: "Get rid of this on all platforms: 0 of 4
                   stops done. 4 stops · 1 hr 37 min driving"); the card says "Stop 1 of 4".
-                  Reorder keeps its place at the top of the day. */}
-              {anyMoves ? (
-                <p className="mb-2 flex justify-end" data-testid="today-reorder">
-                  <ReorderToggle separator={false} />
-                </p>
-              ) : null}
+                  Reorder is in the bar at the top right (ReorderToggle). */}
+              {anyMoves ? <ReorderToggle /> : null}
               <ReorderStatus />
               {hero ? (
                 <HideWhileReordering>

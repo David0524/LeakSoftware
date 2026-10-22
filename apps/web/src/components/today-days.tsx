@@ -1,8 +1,9 @@
 "use client";
 
-import { useState, type ReactNode } from "react";
+import { useMemo, useState, type ReactNode } from "react";
 import { TechDot } from "./tech-dot";
 import { TeamToday, type TeamRow } from "./team-today";
+import { ReorderSlots } from "./today-reorder";
 import { PageHeader, cx, pillClass } from "./ui";
 
 export interface TodayDay {
@@ -54,6 +55,13 @@ export function TodayDays({
   aside?: ReactNode;
 }) {
   const [shown, setShown] = useState(initial);
+  // Reorder's two places, filled by the day's content (ReorderToggle).
+  const [navSlot, setNavSlot] = useState<HTMLElement | null>(null);
+  const [barSlot, setBarSlot] = useState<HTMLElement | null>(null);
+  const slots = useMemo(
+    () => [navSlot, barSlot].filter((el): el is HTMLElement => el != null),
+    [navSlot, barSlot],
+  );
   const at = Math.max(
     0,
     days.findIndex((d) => d.id === shown),
@@ -73,7 +81,32 @@ export function TodayDays({
   return (
     <div className="max-w-2xl lg:grid lg:max-w-none lg:grid-cols-2 lg:items-start lg:gap-8">
       <div className="min-w-0">
-        <PageHeader title={day.title} navAction={navAction} subtitle={subtitle} />
+        {/* Reorder's places (ReorderToggle fills them for the day shown): beside "+" in the
+            phone's bar, at the end of the title row on computers. */}
+        <PageHeader
+          title={day.title}
+          navAction={
+            <span className="flex items-center gap-1">
+              <span
+                ref={setNavSlot}
+                data-slot="nav"
+                data-testid="today-reorder"
+                className="contents"
+              />
+              {navAction}
+            </span>
+          }
+          subtitle={subtitle}
+          actions={
+            <span
+              ref={setBarSlot}
+              data-slot="bar"
+              data-testid="today-reorder"
+              className="contents"
+            />
+          }
+          actionsClassName="max-sm:hidden"
+        />
         {intro}
         {/* The Team list is on computers only, at the top of the right column (owner,
             2026-10-22, of it on a phone: "I do not like this … definitely not on mobile"). */}
@@ -104,7 +137,9 @@ export function TodayDays({
         ) : null}
         {/* No page-wide swipe between techs' days: Whose Day is the way (owner, 2026-10-21:
             "too many gestures"). */}
-        <div key={day.id}>{day.content}</div>
+        <ReorderSlots value={slots}>
+          <div key={day.id}>{day.content}</div>
+        </ReorderSlots>
       </div>
       {/* Under the desktop bar (3.5rem) and the page's top space, staying in view. */}
       <aside

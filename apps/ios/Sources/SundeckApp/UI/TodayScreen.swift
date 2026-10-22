@@ -6,6 +6,11 @@
     import SwiftUI
     import UIKit
 
+    extension EnvironmentValues {
+        /// On only in the screenshot test of Reorder.
+        @Entry var todayStartsReordering = false
+    }
+
     /// Today (spec 5.1): the signed-in tech's stops for today in route order, with the driving
     /// between them, directions, a call button and On My Way. Computed on the phone from synced
     /// jobs; drive times are the shop's cached live times when online, else estimates. Port of
@@ -34,6 +39,8 @@
         @State private var showDone = false
         /// Reorder: the list in edit mode, as iOS Reminders (owner, 2026-10-20).
         @State private var reordering = false
+        /// Screenshot tests open Reorder straight away.
+        @Environment(\.todayStartsReordering) private var startsReordering
         /// Do Later just done: "Moved." and Undo where the button was, for 5 seconds.
         @State private var moved: StopMoveUndo?
         /// The last move's message, or why it wasn't made.
@@ -61,6 +68,7 @@
                 moveNote = nil
             }
             .onChange(of: reordering) { _, _ in moveNote = nil }
+            .onAppear { if startsReordering { reordering = true } }
             .onChange(of: app.stopRequest, initial: true) { _, request in
                 // A Live Activity button: show my day, where the stop's card does it (a done stop's
                 // card is in the "N done" row, which opens).
@@ -75,7 +83,10 @@
                 }
             }
             .rootTitle(title)
-            .toolbar { NewJobToolbar(back: "Today") }
+            .toolbar {
+                reorderToolbar
+                NewJobToolbar(back: "Today")
+            }
             .task(id: "\(sync.revision)|\(session.company?.id ?? "")|\(techId ?? "")|\(drive.known.count)") {
                 await reload()
             }
@@ -194,7 +205,7 @@
                 let chip = { (i: Int) in chips.indices.contains(i) ? chips[i] : nil }
                 // Rows are built as they scroll on (gestures spec section 6: long lists virtualized).
                 LazyVStack(alignment: .leading, spacing: 4) {
-                    if reordering || day.reorderable || moveNote != nil { summaryLine(day).padding(.bottom, 8) }
+                    if moveNote != nil { moveNoteLine.padding(.bottom, 8) }
                     TodayHeroPager(day: day, viewing: $viewing, flash: flash, moves: stopMoves).padding(.bottom, 20)
                     // The stops touch in one block (owner, 2026-10-21; docs/design/
                     // 2026-10-21-schedule-tile.md, Today): hairlines between tiles from after the
@@ -241,39 +252,37 @@
         }
 
         /// No summary line over the day (owner, 2026-10-22: "Get rid of this on all platforms: 0 of
-        /// 4 stops done. 4 stops · 1 hr 37 min driving"); the card says "Stop 1 of 4". Reorder
-        /// (Done while reordering) keeps its place at the top of the day, on the right, with the
-        /// last move's message under it.
-        private func summaryLine(_ day: TodayDay) -> some View {
-            let button = reordering || day.reorderable
-            return VStack(alignment: .leading, spacing: 4) {
-                HStack(alignment: .center, spacing: 6) {
-                    Spacer(minLength: 0)
-                    if button {
-                        Button(reordering ? TodayReorderText.done : TodayReorderText.reorder) {
-                            withAnimation(Motion.smooth) { reordering.toggle() }
-                        }
-                        .textRole(.bodyEmphasis)
-                        .foregroundStyle(Color.link)
-                        .buttonStyle(.plain)
-                        .frame(minHeight: minTarget)
-                        .contentShape(Rectangle())
-                        .accessibilityHint(
-                            reordering ? "Ends reordering" : "Shows Move Up and Move Down on each stop")
+        /// 4 stops done. 4 stops · 1 hr 37 min driving"); the card says "Stop 1 of 4". Reorder is in
+        /// the navigation bar (`reorderToolbar`); only the last move's message shows at the top.
+        @ViewBuilder private var moveNoteLine: some View {
+            if let moveNote {
+                Text(moveNote.text)
+                    .textRole(.secondary)
+                    .foregroundStyle(moveNote.error ? Color.fail : Color.textMuted)
+                    .fixedSize(horizontal: false, vertical: true)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+            }
+        }
+
+        /// Reorder (Done while reordering) in the navigation bar beside New Job, as iOS lists put
+        /// Edit (owner, 2026-10-22: "The reorder button takes up a full horizontal line. Move it
+        /// elsewhere").
+        @ToolbarContentBuilder private var reorderToolbar: some ToolbarContent {
+            if reordering || day?.reorderable == true {
+                ToolbarItem(placement: .topBarTrailing) {
+                    Button(reordering ? TodayReorderText.done : TodayReorderText.reorder) {
+                        withAnimation(Motion.smooth) { reordering.toggle() }
                     }
-                }
-                if let moveNote {
-                    Text(moveNote.text)
-                        .textRole(.secondary)
-                        .foregroundStyle(moveNote.error ? Color.fail : Color.textMuted)
-                        .fixedSize(horizontal: false, vertical: true)
+                    .fontWeight(reordering ? .semibold : .regular)
+                    .accessibilityHint(reordering ? "Ends reordering" : "Drag stops to change their order")
                 }
             }
         }
 
         /// Reorder (owner, 2026-10-20): the day's stops still to do in a list in edit mode, as iOS
-        /// Reminders. Each stop that can move has a drag handle and Move Up and Move Down (the
-        /// visible alternative to dragging); one that can't shows a lock and why. Each move saves at
+        /// Reminders. Each stop that can move has a drag handle (Move Up and Move Down are VoiceOver
+        /// actions; owner, 2026-10-22: the buttons "take up so much space and are redundant to the
+        /// drag"); one that can't shows a lock and why. Each move saves at
         /// once, and the times and drives update as you go. Done ends it.
         private func reorderList(_ day: TodayDay, _ route: DayRoute) -> some View {
             let shown = shownJobs(day, route)
@@ -286,8 +295,8 @@
                         timeZone: day.ctx.timeZone) != nil
             }
             return List {
-                Section {
-                    summaryLine(day).plainListRow()
+                if moveNote != nil {
+                    Section { moveNoteLine.plainListRow() }
                 }
                 Section {
                     ForEach(stops, id: \.element.id) { i, job in
@@ -317,6 +326,7 @@
             .scrollContentBackground(.hidden)
             .background(Color.bg)
             .environment(\.editMode, .constant(.active))
+            .rootTitleScroll()
         }
 
         /// The day's stops with Reorder's just-chosen order applied to the ones still to do (done
