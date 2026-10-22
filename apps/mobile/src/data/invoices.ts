@@ -52,12 +52,17 @@ export function useJobInvoices(companyId: string, jobId: string) {
 
 export type JobInvoice = ReturnType<typeof useJobInvoices>[number];
 
-/** The server builds the invoice from the job (fee, accepted quote, deposit); it syncs down. */
+/**
+ * The server builds the invoice from the job (fee, accepted quote, deposit); it syncs down.
+ * It waits only for the phone's own unsent changes, and the invoice comes down with a sync
+ * started after (owner, 2026-10-22: Create Invoice "takes a super long time": it waited for two
+ * whole syncs, which can be a large download).
+ */
 export async function createJobInvoice(jobId: string): Promise<string> {
   const { sync } = getServices();
-  await sync.syncNow();
+  if (sync.store.pendingCount() > 0) await sync.syncNow();
   const r = await call<{ invoiceId: string }>(`/api/jobs/${jobId}/invoice`, {});
-  await sync.syncNow();
+  void sync.syncNow();
   return r.invoiceId;
 }
 
