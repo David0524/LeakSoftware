@@ -1,5 +1,5 @@
 import { router } from "expo-router";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import { Animated, Pressable, StyleSheet, Text, TextInput, View } from "react-native";
 import {
   CHECKLIST_SECTION_LABELS,
@@ -32,11 +32,9 @@ import { confirmDestructive } from "../../ui/confirm";
 import { haptics } from "../../ui/haptics";
 import { Select } from "../../ui/Select";
 import { useNoSwipe } from "../../ui/SwipeNav";
-import { marksToUndo } from "../../lib/undo";
 import { checklistRowActions } from "../../lib/rowActions";
 import { rowGestures, useRowMenu, type RowMenu } from "../../ui/RowMenu";
 import { SwipeActions } from "../../ui/SwipeRow";
-import { UndoRow, useUndoWindow } from "../../ui/Undo";
 import { useAutosaveText } from "../../ui/useAutosave";
 import { color, face, font, MAX_TEXT_SCALE, minTap, shape, space } from "../../ui/theme";
 import { WebIcon } from "../../ui/WebIcon";
@@ -76,7 +74,7 @@ export function checklistOrder(
 /**
  * The checklist as on the website (spec 5.4): one folding block per section with its summary,
  * each item's answers in one tap (owner, 2026-10-20; as icons on its line since 2026-10-22;
- * tapping the chosen answer again clears it), "Where" under leaks, Mark Remaining (with Undo),
+ * tapping the chosen answer again clears it), "Where" under leaks, Mark Remaining (no Undo after it, owner 2026-10-22),
  * then Add an item. Remove is behind Edit. Each item is one line: its name, its answers as
  * icons, and "›" for its own screen (method, notes, photos; owner, 2026-10-22). Works offline.
  */
@@ -262,14 +260,8 @@ function ChecklistGroup({
   }, [open, turn]);
   const title = CHECKLIST_SECTION_LABELS[section];
   const toDo = rows.filter((r) => currentVerdict(r.result) === null);
-  // Mark Remaining's Undo (owner, 2026-10-20): "Marked N" and Undo for 5 seconds, in its place.
-  const undo = useUndoWindow();
   // Touch and hold an item for its answers (gestures spec section 12).
   const hold = useRowMenu();
-  const results = useRef(insp.resultByComponent);
-  useEffect(() => {
-    results.current = insp.resultByComponent;
-  });
   const tone =
     summary.tone === "pass"
       ? color.pass
@@ -280,7 +272,6 @@ function ChecklistGroup({
           : color.textMuted;
 
   function markRest() {
-    const marked = toDo.map((r) => r.component.id);
     services.sync.batch(() => {
       for (const r of toDo)
         saveChecklistResult(
@@ -293,20 +284,6 @@ function ChecklistGroup({
         );
     });
     haptics.success();
-    // Undo clears what it marked, back to To do (not an item answered again since).
-    undo.start(`Marked ${marked.length}`, () =>
-      services.sync.batch(() => {
-        for (const id of marksToUndo(marked, results.current))
-          saveChecklistResult(
-            services.sync,
-            job.company_id,
-            job.id,
-            id,
-            results.current.get(id),
-            verdictValues(null, user?.id ?? null),
-          );
-      }),
-    );
   }
 
   return (
@@ -350,14 +327,9 @@ function ChecklistGroup({
               />
             </View>
           ))}
-          {undo.shown ? (
-            <>
-              <Hairline inset={0} />
-              <View style={styles.markRest}>
-                <UndoRow text={undo.shown.text} onUndo={undo.undo} />
-              </View>
-            </>
-          ) : toDo.length > 0 ? (
+          {/* No "Marked N" and Undo after Mark Remaining (owner, 2026-10-22): each item's
+              answer changes it back. */}
+          {toDo.length > 0 ? (
             <>
               <Hairline inset={0} />
               <Pressable

@@ -88,7 +88,7 @@
                                 ChecklistGroup(
                                     jobId: job.id, section: section, photos: photos, editing: editing,
                                     choose: choose, saveWhere: saveWhere, remove: remove,
-                                    markRest: { markRest(section.items) }, undoMarked: undoMarked)
+                                    markRest: { markRest(section.items) })
                             }
                         }
                         if !model.addOptions.isEmpty { addItem(model, inspection).padding(.top, 16) }
@@ -159,22 +159,15 @@
             }
         }
 
-        /// Mark N Remaining, saved straight away; returns what Undo puts back.
-        private func markRest(_ items: [ChecklistItemRow]) -> MarkedUndo? {
-            guard let company = session.company else { return nil }
+        /// Mark N Remaining, saved straight away.
+        private func markRest(_ items: [ChecklistItemRow]) {
+            guard let company = session.company else { return }
             do {
-                let ids = try InspectionWrites.markRemaining(
+                _ = try InspectionWrites.markRemaining(
                     sync, companyId: company.id, jobId: job.id, items: items, userId: session.user?.id)
-                return ids.isEmpty ? nil : MarkedUndo(resultIds: ids)
             } catch {
                 saveError = String(describing: error)
-                return nil
             }
-        }
-
-        private func undoMarked(_ marked: MarkedUndo) {
-            guard let company = session.company else { return }
-            run { try marked.undo(sync, companyId: company.id) }
         }
 
         private func addAnother(_ type: ComponentType, _ inspection: JobInspection) {
@@ -239,8 +232,8 @@
     }
 
     /// One checklist section as a grouped block that folds away: a 56 tall header with a chevron,
-    /// the name and its summary; open, a row per item and "Mark N Remaining …", which shows
-    /// "Marked N" and Undo in its place for 5 seconds after (owner, 2026-10-20).
+    /// the name and its summary; open, a row per item and "Mark N Remaining …" (no "Marked N"
+    /// and Undo after it, owner 2026-10-22: each item's icons change it back).
     private struct ChecklistGroup: View {
         var jobId: String
         var section: ChecklistSectionRows
@@ -249,17 +242,14 @@
         var choose: (ChecklistItemRow, Verdict?) -> Void
         var saveWhere: (ChecklistItemRow, String) -> Void
         var remove: (ChecklistItemRow) -> Void
-        var markRest: () -> MarkedUndo?
-        var undoMarked: (MarkedUndo) -> Void
+        var markRest: () -> Void
         /// nil follows the items: open while any are to do.
         @State private var folded: Bool?
-        @State private var marked: MarkedUndo?
         @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
         var body: some View {
             // Editing opens every section, so each item shows its Remove button.
-            // Open while Undo shows, though nothing is left to do.
-            let open = section.isOpen(folded: folded, editing: editing) || marked != nil
+            let open = section.isOpen(folded: folded, editing: editing)
             VStack(spacing: 0) {
                 Button {
                     let shown = !(folded ?? !section.startsOpen)
@@ -301,23 +291,14 @@
                             choose: { choose(item, $0) }, saveWhere: { saveWhere(item, $0) },
                             remove: { remove(item) })
                     }
-                    if let marked {
+                    if let title = section.markRemainingTitle {
                         Hairline()
-                        UndoRow(text: marked.text) {
-                            undoMarked(marked)
-                            withAnimation(Motion.smooth) { self.marked = nil }
-                        }
-                        .padding(.horizontal, CGFloat(Spacing.rowHorizontal))
-                        .frame(maxWidth: .infinity, alignment: .leading)
-                    } else if let title = section.markRemainingTitle {
-                        Hairline()
-                        ActionRow(title) { withAnimation(Motion.smooth) { marked = markRest() } }
+                        ActionRow(title) { withAnimation(Motion.smooth) { markRest() } }
                     }
                 }
             }
             .background(Color.surface)
             .clipShape(RoundedRectangle(cornerRadius: CGFloat(Radius.grouped), style: .continuous))
-            .undoWindow($marked)
         }
 
         /// Barlow SemiBold 15.

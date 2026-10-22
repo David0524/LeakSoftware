@@ -85,8 +85,8 @@ test("a weekly cleaning plan puts visits on the route, and a visit is marked don
   );
   await page.getByRole("button", { name: /^Mark 6 Remaining Done$/ }).click();
   await expect(page.getByText(/^7 done · 0 need attention · 0 skipped · 0 to do$/)).toBeVisible();
-  // For five seconds the shortcut's place holds "Marked 6" and Undo (owner, 2026-10-20).
-  await expect(page.getByText("Marked 6", { exact: true })).toBeVisible();
+  // No "Marked 6" and Undo after it (owner, 2026-10-22).
+  await expect(page.getByText("Marked 6", { exact: true })).toHaveCount(0);
   await expect(page.getByRole("button", { name: "Complete Job" })).toHaveCount(2);
   await page.getByRole("button", { name: "Complete Job" }).last().click();
   // An Automatic shop asks before the visit report goes out (owner, 2026-10-20).

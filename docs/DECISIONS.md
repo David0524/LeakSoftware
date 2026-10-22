@@ -2,6 +2,9 @@
 
 Newest first. Each entry: date, decision, reason.
 
+## 2026-10-22 (owner, of "Marked 2 · U…" after Mark Remaining: "Glitched bubble after marking all … we can just remove it completely")
+- **Mark N Remaining has no "Marked N" and Undo after it**, on every platform: the items are answered at once and each item's icons change any of them back.
+
 ## 2026-10-22 (owner: "Add a filter on the jobs and activity pages for job type")
 - **A Type menu on Jobs and on More › Activity, on every platform** (core `jobTypeFilters`): All Types, then the job types the shop does in New Job's order, named as the rows name them in Title Case (Maintenance, Repair, Leak Detection, Pool Inspection; a pool care shop sees no leak types, a leak shop no Maintenance). On Jobs it narrows the status pills, the search and Sort; on Activity it keeps the events about jobs of that type, filtered by the server (`activity_feed(..., job_type)`, `20261022000900_activity_job_type.sql`) so each page of 50 is full, and customer texts (about a conversation, not a job) show only under All Types. Websites: a "Type" menu beside Sort (on phones the two share one row, labels for screen readers only), kept in the address as `?type=`; iPhone: the filter symbol in the navigation bar, filled while a type is picked; Android: a "Type" pull-down beside Sort. Empty states: "No repair jobs here." / "No activity on repair jobs yet." The Dashboard's Activity dropdown and Today's Activity beside the map stay unfiltered (latest few, then See All opens the page with the menu).
 

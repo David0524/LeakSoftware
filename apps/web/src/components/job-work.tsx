@@ -45,7 +45,6 @@ import {
   setPoolShape,
   setPoolSpa,
   setVerdict,
-  unmarkRest,
 } from "@/app/actions/inspection";
 import { InspectionChecklist } from "./inspection-checklist";
 import { useNextStep } from "./next-step-events";
@@ -57,7 +56,7 @@ import { AnswerIconButtons } from "./answer-controls";
 import { RowActions, RowMenuButton, type MenuEntry } from "./row-actions";
 import { Sheet, useConfirm } from "./sheet";
 import { Button, Checkbox, Chip, Select, buttonClass, cx } from "./ui";
-import { SavedNote, UndoNotice, useAutosave, useUndoWindow } from "./undo";
+import { SavedNote, useAutosave } from "./undo";
 import { saveFailed, useJobStatus, useSetJobStatus } from "./instant";
 
 // Working a job on the website (M9.5): the phone's job screen, for a browser.
@@ -499,9 +498,6 @@ function ChecklistGroup({
 }) {
   const { pending, error, call } = useRun();
   const toDo = items.filter((r) => currentVerdict(r.result ?? undefined) === null);
-  // Undo after Mark Remaining (owner, 2026-10-20): "Marked N" and Undo where the button was.
-  const undo = useUndoWindow();
-  const [marked, setMarked] = useState<string[]>([]);
   const leaking = items.filter((r) => r.result?.outcome === "leaking").length;
   const attention = items.filter((r) => r.result?.outcome === "attention").length;
   const [folded, setOpen] = useState(toDo.length > 0);
@@ -569,18 +565,9 @@ function ChecklistGroup({
               </li>
             ))}
           </ul>
-          {undo.open ? (
-            <div className="border-t-[0.5px] border-separator px-4 py-1">
-              <UndoNotice
-                text={`Marked ${marked.length}`}
-                label={`Undo Marked ${marked.length}: ${title}`}
-                onUndo={() => {
-                  undo.cancel();
-                  void call(unmarkRest, { job: jobId, components: marked.join(",") });
-                }}
-              />
-            </div>
-          ) : toDo.length > 0 ? (
+          {/* No "Marked N" and Undo after it (owner, 2026-10-22): each item's answer changes it
+              back. */}
+          {toDo.length > 0 ? (
             <div className="border-t-[0.5px] border-separator px-4 py-1">
               <button
                 type="button"
@@ -588,16 +575,7 @@ function ChecklistGroup({
                 className="min-h-11 text-[1.0625rem] text-link"
                 onClick={() => {
                   const ids = toDo.map((r) => r.id);
-                  void call(
-                    markRest,
-                    { job: jobId, components: ids.join(",") },
-                    undefined,
-                    (result) => {
-                      if (result.error) return;
-                      setMarked(ids);
-                      undo.start();
-                    },
-                  );
+                  void call(markRest, { job: jobId, components: ids.join(",") });
                 }}
               >
                 {pending
