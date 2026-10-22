@@ -23,6 +23,7 @@ import { visitReportBarCases } from "./cases/visit-report-bar";
 import { repairs } from "./cases/repairs";
 import { answerIcons } from "./cases/answer-icons";
 import { customerCounts } from "./cases/customer-counts";
+import { massEmail } from "./cases/mass-email";
 
 /** One fixture file per entry: apps/ios/Tests/Fixtures/<name>.json. */
 export const modules: Record<string, ModuleCases> = {
@@ -50,4 +51,5 @@ export const modules: Record<string, ModuleCases> = {
   repairs,
   "answer-icons": answerIcons,
   "customer-counts": customerCounts,
+  "mass-email": massEmail,
 };

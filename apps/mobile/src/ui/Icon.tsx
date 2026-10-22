@@ -34,6 +34,8 @@ const ICONS = {
   search: { sf: "magnifyingglass", ion: "search-outline" },
   report: { sf: "doc.text", ion: "document-text-outline" },
   offline: { sf: "wifi.slash", ion: "cloud-offline-outline" },
+  /** Email Customers in the Customers bar. */
+  mail: { sf: "envelope", ion: "mail-outline" },
 } as const satisfies Record<string, { sf: SFSymbolName; ion: IoniconName }>;
 
 export type IconName = keyof typeof ICONS;

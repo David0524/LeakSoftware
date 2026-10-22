@@ -3,6 +3,7 @@ import { customerShowOptions, formatAddress, offersPool, propertyLocation } from
 import { CustomerActions } from "@/components/list-actions";
 import { getLine } from "@/lib/messages";
 import { CustomerFilters } from "@/components/customer-filters";
+import { EmailCustomersButton, EmailCustomersNav } from "@/components/mass-email-link";
 import { Empty, Grouped, PageHeader, RowContent } from "@/components/ui";
 import { getOffice } from "@/lib/auth";
 import {
@@ -48,6 +49,10 @@ export default async function CustomersPage({ searchParams }: PageProps<"/custom
     <>
       <PageHeader
         title="Customers"
+        // Email Customers (owner, 2026-10-22): owners and admins.
+        navAction={office.isManager ? <EmailCustomersNav /> : undefined}
+        actions={office.isManager ? <EmailCustomersButton /> : undefined}
+        actionsClassName="hidden sm:flex"
         subtitle={
           <span className="hidden sm:inline">
             Homeowners, pool companies, and everyone you bill.

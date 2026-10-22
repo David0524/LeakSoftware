@@ -104,6 +104,7 @@ describe("malformed links", () => {
       "/i/88f473afec9be82464d213d698ca7bdc/pdf",
       "/customers",
       "/invoices",
+      "/customers/email",
     ])
       expect(malformedLink(path)).toBe(false);
   });

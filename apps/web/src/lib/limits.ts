@@ -75,6 +75,8 @@ export function malformedLink(path: string): boolean {
     const [, kind, id] = record as unknown as [string, string, string];
     if (kind === "jobs" && JOB_PAGES.has(id)) return false;
     if (kind === "messages" && id === "new") return false;
+    // Email Customers (2026-10-22).
+    if (kind === "customers" && id === "email") return false;
     return !isUuid(id);
   }
   const share = /^\/(q|i|r|stop)\/([^/]+)(\/pdf)?$/.exec(path);

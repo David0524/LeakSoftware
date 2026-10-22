@@ -1,5 +1,12 @@
 import { router, useLocalSearchParams } from "expo-router";
-import { customerShowOptions, formatAddress, offersPool, propertyLocation } from "@leakbook/core";
+import {
+  MASS_EMAIL_TITLE,
+  customerShowOptions,
+  formatAddress,
+  isManagerRole,
+  offersPool,
+  propertyLocation,
+} from "@leakbook/core";
 import { useMemo, useState } from "react";
 import { useSyncRefresh } from "../../../../data/hooks";
 import { Animated, Linking, RefreshControl, StyleSheet, Text, View } from "react-native";
@@ -15,8 +22,8 @@ import { customerRowActions, menuTitle, type CustomerActionId } from "../../../.
 import { openDirections, useDirectionsChoice } from "../../../../state/directions";
 import { rowGestures, useRowMenu } from "../../../../ui/RowMenu";
 import { FlatGroupedRow } from "../../../../features/more/FlatGroupedRow";
-import { useCompany } from "../../../../state/session";
-import { Empty, SearchField, T, useScreenChrome } from "../../../../ui/components";
+import { useCompany, useSession } from "../../../../state/session";
+import { Empty, HeaderButton, SearchField, T, useScreenChrome } from "../../../../ui/components";
 import { Select } from "../../../../ui/Select";
 import { color, MAX_TEXT_SCALE, space, type } from "../../../../ui/theme";
 
@@ -62,8 +69,19 @@ export default function Customers() {
     () => customerShowOptions(offersPool(company.settings), counts),
     [company.settings, counts],
   );
+  // Email Customers (owner, 2026-10-22), owners and admins: the envelope in the bar.
+  const { membership } = useSession();
   const { header, ref, scrollProps, contentContainerStyle } = useScreenChrome({
     title: "Customers",
+    headerRight: isManagerRole(membership?.role)
+      ? () => (
+          <HeaderButton
+            title={MASS_EMAIL_TITLE}
+            icon="mail"
+            onPress={() => router.push("/email-customers")}
+          />
+        )
+      : () => null,
   });
 
   const thisYear = new Date().getFullYear();

@@ -48,7 +48,7 @@ create or replace function tests.make_company(label text) returns jsonb
 language plpgsql as $$
 declare
   c uuid; o uuid; ad uuid; t uuid; cust uuid; prop uuid; j uuid; jc uuid; tr uuid; f uuid;
-  rep uuid; q uuid; qli uuid; inv uuid; conv uuid; sp uuid;
+  rep uuid; q uuid; qli uuid; inv uuid; conv uuid; sp uuid; ec uuid;
 begin
   o := tests.create_user(label || '-owner@test.local');
   t := tests.create_user(label || '-tech@test.local');
@@ -130,6 +130,11 @@ begin
   -- The owner's weekly summary email for last week (server only; owners read it).
   insert into weekly_summary (company_id, week_of, user_id, email)
     values (c, app.last_week_monday(current_date), o, label || '-owner@test.local');
+  -- A mass email to the customer (server only; owners and admins read it).
+  insert into email_campaign (company_id, subject, body, sent_by, recipient_count)
+    values (c, 'Fall opening', 'Hi {first name}', o, 1) returning id into ec;
+  insert into email_campaign_recipient (company_id, campaign_id, customer_id, email)
+    values (c, ec, cust, 'c@example.com');
 
   insert into storage.objects (bucket_id, name) values
     ('media', c || '/' || j || '/photo.jpg'),

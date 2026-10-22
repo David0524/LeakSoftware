@@ -52,3 +52,4 @@ export * from "./repairs";
 export * from "./answer-icons";
 export * from "./admin";
 export * from "./customer-counts";
+export * from "./mass-email";

@@ -26,15 +26,17 @@
         @State private var loaded = false
         /// The company number works: Message opens New Message, as the customer's page does.
         @State private var lineWorking = false
+        /// Email Customers (owner, 2026-10-22), owners and admins.
+        @State private var emailing = false
         @Environment(\.openRoute) private var openRoute
 
-        var body: some View {
-            let company = session.company
         /// `show`: the Show choice to open on (the Dashboard's trackers open On a Plan).
         init(show: String = "all") {
             _show = State(initialValue: show)
         }
 
+        var body: some View {
+            let company = session.company
             let services = company?.services ?? .both
             let shows = customerShows(services, counts: counts)
             List {
@@ -86,6 +88,14 @@
             .refreshable { await sync.syncNow() }
             .navigationTitle("Customers")
             .navigationBarTitleDisplayMode(.large)
+            .toolbar {
+                if isManagerRole(company?.role) {
+                    ToolbarItem(placement: .topBarTrailing) {
+                        BarIconButton(systemImage: "envelope", label: MassEmailText.title) { emailing = true }
+                    }
+                }
+            }
+            .navigationDestination(isPresented: $emailing) { MassEmailScreen() }
             .task(id: "\(sync.revision)|\(company?.id ?? "")|\(search)|\(sort.rawValue)|\(show)") { reload() }
         }
 

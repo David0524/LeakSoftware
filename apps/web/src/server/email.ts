@@ -14,6 +14,8 @@ export interface Email {
   html: string;
   text: string;
   attachments?: { filename: string; content: Buffer }[];
+  /** Extra headers, such as List-Unsubscribe on a mass email. */
+  headers?: Record<string, string>;
 }
 
 export interface Sent {
@@ -63,6 +65,7 @@ export async function sendEmail(email: Email, fetchImpl: typeof fetch = fetch): 
       subject: email.subject,
       html: email.html,
       text: email.text,
+      headers: email.headers,
       attachments: email.attachments?.map((a) => ({
         filename: a.filename,
         content: a.content.toString("base64"),
@@ -74,9 +77,86 @@ export async function sendEmail(email: Email, fetchImpl: typeof fetch = fetch): 
   return { id: body.id };
 }
 
-/** "{Shop} via Sundeck Pro" <reports@domain>, replies go to the shop (6.5). */
-export function fromAddress(shopName: string): string {
+/**
+ * "{Shop} via Sundeck Pro" <reports@domain>, replies go to the shop (6.5). Mass emails come
+ * from news@ (Email Customers, 2026-10-22).
+ */
+export function fromAddress(shopName: string, mailbox: "reports" | "news" = "reports"): string {
   const domain = process.env.EMAIL_FROM_DOMAIN || "send.sundeckpro.com";
   const name = shopName.replace(/["<>]/g, "").trim() || "Sundeck Pro";
-  return `"${name} via Sundeck Pro" <reports@${domain}>`;
+  return `"${name} via Sundeck Pro" <${mailbox}@${domain}>`;
+}
+
+/** One email's result in a batch: its provider id, or why it didn't go. */
+export type BatchResult = { id: string } | { error: string };
+
+/** Resend's batch endpoint takes up to 100 emails a request. */
+export const BATCH_SIZE = 100;
+
+/**
+ * Sends many emails, each to one person (no attachments, no cc): Resend's batch endpoint, 100 a
+ * request, about two requests a second (Resend's default rate), a 429 tried once more after a
+ * pause. Results come back in order. Without a key, EMAIL_OUTBOX_DIR gets one file per email.
+ */
+export async function sendEmailBatch(
+  emails: Email[],
+  fetchImpl: typeof fetch = fetch,
+  pause: (ms: number) => Promise<void> = (ms) => new Promise((r) => setTimeout(r, ms)),
+): Promise<BatchResult[]> {
+  if (!process.env.RESEND_API_KEY) {
+    if (!process.env.EMAIL_OUTBOX_DIR) throw new EmailNotConfigured();
+    const results: BatchResult[] = [];
+    for (const email of emails) {
+      try {
+        results.push(await sendEmail(email, fetchImpl));
+      } catch (e) {
+        results.push({ error: e instanceof Error ? e.message : String(e) });
+      }
+    }
+    return results;
+  }
+  const results: BatchResult[] = [];
+  for (let i = 0; i < emails.length; i += BATCH_SIZE) {
+    if (i > 0) await pause(600);
+    const chunk = emails.slice(i, i + BATCH_SIZE);
+    const post = () =>
+      fetchImpl("https://api.resend.com/emails/batch", {
+        method: "POST",
+        headers: {
+          authorization: `Bearer ${process.env.RESEND_API_KEY}`,
+          "content-type": "application/json",
+        },
+        body: JSON.stringify(
+          chunk.map((email) => ({
+            from: email.from,
+            to: [email.to],
+            reply_to: email.replyTo || undefined,
+            subject: email.subject,
+            html: email.html,
+            text: email.text,
+            headers: email.headers,
+          })),
+        ),
+      });
+    try {
+      let res = await post();
+      if (res.status === 429) {
+        await pause(1500);
+        res = await post();
+      }
+      const body = (await res.json().catch(() => ({}))) as {
+        data?: { id?: string }[];
+        message?: string;
+      };
+      if (!res.ok || !Array.isArray(body.data)) throw new Error(body.message ?? String(res.status));
+      chunk.forEach((_, j) => {
+        const id = body.data?.[j]?.id;
+        results.push(id ? { id } : { error: "No id from the email service" });
+      });
+    } catch (e) {
+      const error = `Email failed: ${e instanceof Error ? e.message : String(e)}`;
+      chunk.forEach(() => results.push({ error }));
+    }
+  }
+  return results;
 }
