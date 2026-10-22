@@ -79,7 +79,7 @@ export function TodayDays({
       ?.scrollIntoView({ block: "nearest", inline: "nearest" });
   };
   return (
-    <div className="max-w-2xl lg:grid lg:max-w-none lg:grid-cols-2 lg:items-start lg:gap-8">
+    <div className="@container/today max-w-2xl lg:grid lg:max-w-none lg:grid-cols-2 lg:items-start lg:gap-8">
       <div className="min-w-0">
         {/* Reorder's places (ReorderToggle fills them for the day shown): beside "+" in the
             phone's bar, at the end of the title row on computers. */}
@@ -105,7 +105,9 @@ export function TodayDays({
               className="contents"
             />
           }
-          actionsClassName="max-sm:hidden"
+          // Phones keep Reorder in the bar, unless the bar is too narrow for it (zoom or text
+          // at 200%): then it's at the end of the title row.
+          actionsClassName="max-sm:hidden max-sm:@max-[13.5rem]/today:flex"
         />
         {intro}
         {/* The Team list is on computers only, at the top of the right column (owner,

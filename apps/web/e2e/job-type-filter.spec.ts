@@ -95,6 +95,9 @@ test.describe("job type filter", () => {
     await expect(page.getByText(`No jobs match “TypeFilter ${RUN}”.`)).toBeVisible();
     // Leak Detection shows the other one; All Types both, and leaves the address.
     await page.getByRole("link", { name: "Open", exact: true }).click();
+    // The Open list has loaded (the repair one again) before the next pick.
+    await expect(page).not.toHaveURL(/status=paid/);
+    await expect(rows).toHaveCount(1);
     await type.selectOption("detection");
     await expect(rows).toHaveCount(1);
     await expect(rows.first()).toContainText(leak);

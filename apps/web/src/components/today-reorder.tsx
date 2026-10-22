@@ -146,6 +146,9 @@ export function ReorderToggle() {
             aria-label={r.editing ? "Done" : "Reorder"}
             className={cx(
               "inline-flex min-h-11 min-w-11 items-center justify-center px-2 text-[1.0625rem] text-link",
+              // A bar too narrow even for the icon (zoom or text at 200%): the title row's
+              // Reorder shows instead (TodayDays).
+              "@max-[14rem]/bar:hidden",
               r.editing ? "font-bold" : "font-semibold",
             )}
           >
