@@ -38,6 +38,7 @@ create table if not exists auth.users (
   email text unique,
   encrypted_password text,
   email_confirmed_at timestamptz,
+  last_sign_in_at timestamptz,
   raw_app_meta_data jsonb not null default '{}'::jsonb,
   raw_user_meta_data jsonb not null default '{}'::jsonb,
   confirmation_token text,

@@ -45,3 +45,4 @@ export * from "./team";
 export * from "./logo-colors";
 export * from "./png";
 export * from "./sample";
+export * from "./admin";
