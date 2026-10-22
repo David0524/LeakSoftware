@@ -48,7 +48,7 @@
     extension MoreRoute {
         var usagePath: String {
             switch self {
-            case .customers: "/customers"
+            case .customers, .customersFiltered: "/customers"
             case .customer: "/customers/:id"
             case .invoices, .invoicesFiltered: "/invoices"
             case .chemicals: "/chemicals"
