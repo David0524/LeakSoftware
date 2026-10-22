@@ -212,13 +212,6 @@ export async function acceptInvite(_: FormState, form: FormData): Promise<FormSt
   redirect("/home");
 }
 
-export async function signOut() {
-  const supabase = await createClient();
-  await supabase.auth.signOut();
-  (await cookies()).delete(ACTIVE_COMPANY_COOKIE);
-  redirect("/");
-}
-
 export async function switchCompany(form: FormData) {
   const office = await getOffice();
   const id = text(form, "company");

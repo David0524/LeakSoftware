@@ -1,7 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { Suspense } from "react";
-import { signOut } from "@/app/actions/auth";
 import { AdminSidebar } from "@/components/admin/sidebar";
 import { Logo } from "@/components/logo";
 import { SignOutForm } from "@/components/sign-out-form";
@@ -73,7 +72,7 @@ async function StaffMenu() {
       <Link href="/home" className="min-h-11 content-center px-3 text-[0.9375rem] text-link">
         My Office
       </Link>
-      <SignOutForm action={signOut}>
+      <SignOutForm action="/auth/sign-out" method="post">
         <button type="submit" className="min-h-11 px-3 text-[0.9375rem] font-medium text-link">
           Sign Out
         </button>

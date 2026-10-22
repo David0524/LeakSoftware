@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
-import { signOut, switchCompany } from "@/app/actions/auth";
+import { switchCompany } from "@/app/actions/auth";
 import { FeatureRequest } from "./feature-request";
 import { ThemeToggle } from "./theme-toggle";
 import { SignOutForm } from "./sign-out-form";
@@ -134,7 +134,7 @@ export function AccountMenu({
           </a>
           <FeatureRequest className="px-4 text-text hover:bg-text/[0.05]" />
           <div className="border-t-[0.5px] border-separator" />
-          <SignOutForm action={signOut}>
+          <SignOutForm action="/auth/sign-out" method="post">
             <button type="submit" className={row}>
               Sign Out
             </button>
