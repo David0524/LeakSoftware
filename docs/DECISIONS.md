@@ -5,6 +5,8 @@ Newest first. Each entry: date, decision, reason.
 ## 2026-10-22 (owner: "remove dark mode on the landing page")
 - **The public site is always light:** the landing page, terms, privacy, security, status, sign-in, sign-up and invite pages, whatever the person chose in the office. Their footer has no sun/moon button. The office keeps Light | Dark as before. Replaces, for those pages only, the 2026-10-13 sun/moon button in the public footer.
 
+## 2026-10-22 (owner: "It's slightly too easy to slide jobs around in the schedule when flicking to scroll …")
+- **The schedule's grip (≡) lifts a job only after the finger rests on it briefly**, on every platform, touch only (a mouse still drags at once): 0.13 s within 8 pt, then it drags as before. A finger that moves past 8 pt first (a flick, a scroll) scrolls the page and never moves the job; the tile's 0.4 s hold uses the same 8 pt; and a finger landing while the page still glides only stops it. One set of numbers in core `SCHEDULE_DRAG`. Design: `design/2026-10-22-schedule-hold-drag.md` section 1a.
 
 ## 2026-10-22 (owner, of "Marked 2 · U…" after Mark Remaining: "Glitched bubble after marking all … we can just remove it completely")
 - **Mark N Remaining has no "Marked N" and Undo after it**, on every platform: the items are answered at once and each item's icons change any of them back.

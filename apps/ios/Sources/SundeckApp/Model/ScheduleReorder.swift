@@ -1,4 +1,5 @@
 import Foundation
+import SundeckCore
 
 // Schedule › Day: dragging a stop within its day (owner, 2026-10-21, after a TestFlight recording:
 // "That's not good"; docs/design/2026-10-21-schedule-card.md). The real card lifts and follows
@@ -9,8 +10,13 @@ import Foundation
 public enum ScheduleReorder {
     /// How long a finger rests on a stop's tile before it lifts to drag (owner, 2026-10-22:
     /// "Press-and-hold-then-drag on any tile, keeping the grip as a backup"): 0.4 s on every
-    /// platform (website `HOLD_MS`, Android `STOP_HOLD_MS`).
-    public static let holdSeconds: Double = 0.4
+    /// platform (core `SCHEDULE_DRAG.holdMs`).
+    public static let holdSeconds: Double = ScheduleDrag.holdSeconds
+    /// How long a finger rests on the grip (≡) before the stop lifts (owner, 2026-10-22: "make it
+    /// slightly less sensitive"): 0.13 s, so a flick that starts on the grip scrolls the page.
+    public static let gripSeconds: Double = ScheduleDrag.gripDwellSeconds
+    /// How far a finger may drift during the grip's rest or the tile's hold before it's a scroll.
+    public static let slop = Double(ScheduleDrag.slopPt)
 
     /// Where the row at `from` lands (its index in the new order, 0 first) when it's been dragged
     /// `translation` points (down is positive): among the other rows, the ones whose middle is

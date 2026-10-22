@@ -21,10 +21,10 @@ import type { Stop } from "./RouteCard";
 // and the iPhone app: two lines. The tech's color stripe and the stop's number, then the time
 // and the customer; under them the kind of visit and the street only. Trailing, small icons
 // only for exceptions (a lock, not on the map, a cleaning due), or the status when it isn't
-// plain Scheduled; then "⋯" and the grip. A day's stop drags from the grip at once, or from
-// anywhere on it after a 0.4 s touch and hold (owner, 2026-10-22); its menu is on "⋯". Only the customer's
-// name opens the job (owner, 2026-10-21: "I find myself accidentally opening jobs all the
-// time"), drawn as a link with "›". Move…, the locks, Take Off Schedule and Directions are in
+// plain Scheduled; then "⋯" and the grip. A day's stop drags from the grip after a brief rest
+// (0.13 s; a flick there scrolls), or from anywhere on it after a 0.4 s touch and hold (owner,
+// 2026-10-22); its menu is on "⋯". Only the customer's name opens the job (owner, 2026-10-21:
+// "I find myself accidentally opening jobs all the time"), drawn as a link with "›". Move…, the locks, Take Off Schedule and Directions are in
 // its touch-and-hold menu and its TalkBack actions.
 
 /** The street alone ("5024 W Las Palmaritas Dr"), without the city or ZIP. */

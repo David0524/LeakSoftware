@@ -15,6 +15,7 @@ import {
   useWindowDimensions,
   type ScrollView,
 } from "react-native";
+import { SCHEDULE_DRAG } from "@leakbook/core";
 import { Gesture, type PanGesture } from "react-native-gesture-handler";
 import Animated, {
   useAnimatedStyle,
@@ -43,8 +44,10 @@ import { haptics } from "../../ui/haptics";
 import { color, face, MAX_TEXT_SCALE, shape, space, tint, type } from "../../ui/theme";
 
 // Schedule drag and drop (owner, 2026-10-20: "bring back drag/drop on mobile"; the website's
-// route board). Put a finger on a stop's grip (≡) to pick it up at once (a firm tap is felt;
-// owner, 2026-10-21: "I'm still struggling to scroll when I have a page full of job tiles"),
+// route board). Rest a finger on a stop's grip (≡) for a moment to pick it up (a firm tap is
+// felt; owner, 2026-10-21: "I'm still struggling to scroll when I have a page full of job
+// tiles"; 2026-10-22: "make it slightly less sensitive", so a flick that starts on the grip
+// scrolls the page: core SCHEDULE_DRAG, 0.13 s within 8 dp, never while the page glides),
 // drag it to a place in a tech's day, a day in the week strip, or Needs a Time, and let go. A
 // stop's tile on a day also lifts after a 0.4 s touch and hold anywhere on it (owner,
 // 2026-10-22, as Reminders and Things do), its menu then on "⋯"; a quick swipe up or down still
@@ -77,6 +80,8 @@ interface DragApi {
   /** Ref for a stop on a route, so a drop lands between stops. */
   slotRef: (id: string, route: string) => (node: View | null) => void;
   begin: (item: DragItem, node: View, ghost: ReactNode, x: number, y: number) => void;
+  /** The page is scrolling, or was a moment ago (a flick still gliding): no lift now. */
+  scrolling: () => boolean;
   move: (x: number, y: number) => void;
   end: () => void;
   cancel: () => void;
@@ -108,6 +113,7 @@ const Api = createContext<DragApi>({
   zoneRef: noop,
   slotRef: noop,
   begin: () => {},
+  scrolling: () => false,
   move: () => {},
   end: () => {},
   cancel: () => {},
@@ -167,6 +173,8 @@ export function useScheduleDrag({
   const scrollRef = useRef<ScrollView | null>(null);
   const overlayRef = useRef<View>(null);
   const metrics = useRef<ScrollMetrics>({ y: 0, contentHeight: 0, viewHeight: 0 });
+  /** When the page last scrolled (ms). */
+  const scrolledAt = useRef(0);
   const nodes = useRef(new Map<string, { node: View; zone?: ZoneInfo; slot?: string }>());
   const opts = useRef({ today, fallbackTech, onDrop, top: 0, bottom: 0 });
   useEffect(() => {
@@ -283,6 +291,7 @@ export function useScheduleDrag({
         if (node) nodes.current.set(`slot:${id}`, { node, slot: route });
         else nodes.current.delete(`slot:${id}`);
       },
+      scrolling: () => Date.now() - scrolledAt.current < SCHEDULE_DRAG.scrollSettleMs,
       begin: (item, node, ghostNode, px, py) => {
         if (drag) stop();
         haptics.pickUp();
@@ -410,6 +419,7 @@ export function useScheduleDrag({
     dragging: hover.id != null,
     scrollRef,
     onScrollMetrics: (m: Partial<ScrollMetrics>) => {
+      if (m.y !== undefined && m.y !== metrics.current.y) scrolledAt.current = Date.now();
       Object.assign(metrics.current, m);
     },
   };
@@ -484,16 +494,19 @@ class SourceBox {
  * The gesture and the ref callback for a stop's card. `item` null: it can't be dragged (a
  * canceled job). `ghost` draws the card under the finger.
  *
- * `"grip"` (Needs a Time cards): the gesture goes on the grip only and picks the card up at once
- * on touch down, with no hold; the card's body scrolls the page, and its touch and hold is the
- * card's menu (its own Pressable), never a drag. The ref goes on the whole card.
+ * `"grip"` (Needs a Time cards): the gesture goes on the grip only and picks the card up once
+ * the finger has rested on it briefly (SCHEDULE_DRAG.gripDwellMs, within slopPt; owner,
+ * 2026-10-22: "make it slightly less sensitive"), so a flick or a scroll that starts on the grip
+ * is the page's; the card's body scrolls the page, and its touch and hold is the card's menu
+ * (its own Pressable), never a drag. The ref goes on the whole card.
  *
  * `"tile"` (stop tiles on a day, Day and Week; owner, 2026-10-22: "Press-and-hold-then-drag on
- * any tile, keeping the grip as a backup"): `gesture` goes on the grip and picks it up at once,
- * as `"grip"`; `holdGesture` goes on the whole tile and lifts it after a 0.4 s touch and hold
- * (STOP_HOLD_MS), with the same haptic, then drags it the same way. A quick tap stays a tap and
- * a swipe up or down scrolls the page (moving before the hold ends lets the page have it). Held
- * and let go without moving, it settles back: the tile's menu is on its "⋯" button.
+ * any tile, keeping the grip as a backup"): `gesture` goes on the grip and picks it up after the
+ * brief rest, as `"grip"`; `holdGesture` goes on the whole tile and lifts it after a 0.4 s
+ * touch and hold (STOP_HOLD_MS, within the same slop), with the same haptic, then drags it the
+ * same way. A quick tap stays a tap and a swipe up or down scrolls the page (moving before the hold ends lets the page have it). Held
+ * and let go without moving, it settles back: the tile's menu is on its "⋯" button. A touch
+ * that lands while the page is still gliding only stops it, and never lifts a card.
  *
  * `"hold"` (Customers to Add tiles): the gesture goes on the whole tile and lifts it after a
  * touch and hold; `onHold` is its menu, opened by a hold let go without moving.
@@ -513,30 +526,39 @@ export function useDragSource(
   useEffect(() => () => box.finish(api), [api, box]);
   const enabled = api.enabled && item != null;
   const gestures = useMemo(() => {
-    const make = (kind: "now" | "hold", holdMs: number) => {
-      const pan = Gesture.Pan().runOnJS(true).enabled(enabled).shouldCancelWhenOutside(false);
-      return (
-        (kind === "now" ? pan.minDistance(0) : pan.activateAfterLongPress(holdMs))
-          .onStart((e) => {
-            box.lift(e.absoluteX, e.absoluteY);
-            box.start(api, e.absoluteX, e.absoluteY);
-          })
-          .onUpdate((e) => {
-            box.track(e.absoluteX, e.absoluteY);
-            api.move(e.absoluteX, e.absoluteY);
-          })
-          // Let go: the drop. Interrupted (another gesture or the system took the touch):
-          // nothing.
-          .onEnd((_, done) => (done ? box.release(api, mode === "hold") : box.finish(api)))
-          .onTouchesCancelled(() => box.finish(api))
-          .onFinalize(() => box.finish(api))
-      );
-    };
+    const slop = SCHEDULE_DRAG.slopPt;
+    const make = (holdMs: number) =>
+      Gesture.Pan()
+        .runOnJS(true)
+        .enabled(enabled)
+        .shouldCancelWhenOutside(false)
+        // Lifts only once the finger has rested `holdMs` within the slop; moving further first
+        // fails it, so the page has the flick or the swipe.
+        .activateAfterLongPress(holdMs)
+        .failOffsetX([-slop, slop])
+        .failOffsetY([-slop, slop])
+        // A finger that lands while the page glides only stops it.
+        .onTouchesDown((_, manager) => {
+          if (api.scrolling()) manager.fail();
+        })
+        .onStart((e) => {
+          box.lift(e.absoluteX, e.absoluteY);
+          box.start(api, e.absoluteX, e.absoluteY);
+        })
+        .onUpdate((e) => {
+          box.track(e.absoluteX, e.absoluteY);
+          api.move(e.absoluteX, e.absoluteY);
+        })
+        // Let go: the drop. Interrupted (another gesture or the system took the touch):
+        // nothing.
+        .onEnd((_, done) => (done ? box.release(api, mode === "hold") : box.finish(api)))
+        .onTouchesCancelled(() => box.finish(api))
+        .onFinalize(() => box.finish(api));
     return mode === "hold"
-      ? { gesture: make("hold", HOLD_MS), holdGesture: make("hold", HOLD_MS) }
+      ? { gesture: make(HOLD_MS), holdGesture: make(HOLD_MS) }
       : {
-          gesture: make("now", 0),
-          holdGesture: make("hold", STOP_HOLD_MS).enabled(enabled && mode === "tile"),
+          gesture: make(SCHEDULE_DRAG.gripDwellMs),
+          holdGesture: make(STOP_HOLD_MS).enabled(enabled && mode === "tile"),
         };
   }, [api, enabled, box, mode]);
   return { ...gestures, ref: box.attach };

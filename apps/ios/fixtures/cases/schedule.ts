@@ -1,5 +1,6 @@
 import {
   ROUTING_DEFAULTS,
+  SCHEDULE_DRAG,
   addDays,
   addMonths,
   formatDay,
@@ -150,6 +151,8 @@ const route = (techId: string, date: string, jobs: PlanJob[], label = true): Sug
 
 // office.ts (schedule dates and the timeline) and schedule-moves.ts.
 export const schedule: ModuleCases = {
+  // schedule-drag.ts: how a finger picks up a job (the grip's rest, the tile's hold, the slop).
+  constants: rule(() => ({ SCHEDULE_DRAG }), [[]]),
   isDateString: rule(
     (v: unknown) => isDateString(v),
     [

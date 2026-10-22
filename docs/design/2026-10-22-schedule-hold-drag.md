@@ -13,9 +13,9 @@ Things let you hold a row, then drag it).
   lifts, with the same light haptic as the grip; then it drags exactly like a grip drag (the
   others slide, another day's block or Needs a Time takes it, nothing stays lifted).
   - A quick tap does what it did (only the name opens the job).
-  - A swipe up or down scrolls the page: moving more than about 10 pt before the 0.4 s lets the
-    page have the touch.
-  - The grip still lifts the tile at once, with no hold.
+  - A swipe up or down scrolls the page: moving more than 8 pt before the 0.4 s lets the page
+    have the touch.
+  - The grip lifts the tile after a brief rest, not a hold (section 1a).
 - **Desktop website:** press the mouse anywhere on the tile except the name link and the
   buttons, and move it 6 px: the drag starts. A plain click does nothing; the name still opens
   the job; a press on the name never drags. The grip stays.
@@ -39,8 +39,46 @@ its "⋯" button** on every platform, so they all work the same way.
 - Desktop: right click, the menu key and Shift+F10 still open the menu.
 - VoiceOver and TalkBack keep the menu's actions, Move Up and Move Down.
 
-Hold length: one constant per platform, all 0.4 s (website `HOLD_MS`, Android `STOP_HOLD_MS`,
-iPhone `ScheduleReorder.holdSeconds`).
+Hold length: 0.4 s on every platform, from core `SCHEDULE_DRAG.holdMs` (website `HOLD_MS`,
+Android `STOP_HOLD_MS`, iPhone `ScheduleReorder.holdSeconds`).
+
+## 1a. The grip waits for a resting finger, never a flick
+
+Owner, 2026-10-22: "It's slightly too easy to slide jobs around in the schedule when flicking to
+scroll. I like the hamburger drag but make it slightly less sensitive. I'm not even looking for a
+tap and hold, but it just needs to avoid flicks and anything else unintentional."
+
+A finger on the grip (≡) no longer lifts the job the moment it lands. Touch only, on the phone
+website, the iPhone app and the Android app (and a touch screen on a computer); a mouse or
+trackpad still drags from the grip at once.
+
+- **Rest, then drag:** the job lifts once the finger has rested on the grip for **0.13 s**,
+  moving less than **8 pt** (short enough not to feel like a hold); from then on it drags as
+  before, with the same haptic.
+- **A flick or a scroll is the page's:** a finger that moves more than 8 pt before the 0.13 s is
+  a scroll. The page (or Needs a Time's row) scrolls and the job stays put, so a fast flick that
+  starts on the grip never moves a job.
+- **The tile's hold uses the same slop:** moving more than 8 pt before the 0.4 s is a scroll, so
+  a slow scroll never turns into a drag.
+- **Never while the page glides:** a finger that lands while the page is still scrolling (a
+  flick's momentum) only stops it; it doesn't lift a job, however long it rests there.
+
+One set of numbers in core, `SCHEDULE_DRAG` (`packages/core/src/schedule-drag.ts`: `gripDwellMs`
+130, `holdMs` 400, `slopPt` 8, `scrollSettleMs` 100), checked on the iPhone through the
+`schedule` fixtures (`ScheduleDrag` in SundeckCore):
+
+- **Website:** one finger sensor (`FingerSensor` in `route-board.tsx`) waits 0.13 s on the grip,
+  0.4 s on a stop's tile and 0.25 s on a Customers to Add tile, each within 8 px, and refuses a
+  touch that lands within 0.1 s of a scroll. The grip no longer has `touch-action: none`, so the
+  browser scrolls a flick from it. Mice and pens keep the grip's at-once drag (`GripSensor`).
+- **iPhone:** the grip's drag is the same UIKit long press as the tile's (`HoldDrag`), 0.13 s on
+  the grip, 0.4 s on the tile, 8 pt of drift; it doesn't begin when the finger lands on a scroll
+  view that is still decelerating.
+- **Android:** the grip's and the tile's pans activate after a long press (0.13 s and 0.4 s) and
+  fail past 8 dp; a touch within 0.1 s of the page scrolling fails at once.
+
+Today's Reorder handle is separate code and unchanged: Reorder is a mode of its own, where the
+handle is the only way to move a stop.
 
 ## 2. Desktop Week: 5 Days | 7 Days
 

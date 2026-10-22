@@ -32,6 +32,7 @@ export * from "./leads";
 export * from "./import";
 export * from "./checklist-summary";
 export * from "./schedule-moves";
+export * from "./schedule-drag";
 export * from "./notifications";
 export * from "./today-hero";
 export * from "./progress-cues";
