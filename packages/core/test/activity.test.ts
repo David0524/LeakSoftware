@@ -1,5 +1,14 @@
 import { describe, expect, it } from "vitest";
-import { activityDay, activityRow, activityTime, firstName, groupActivity, movedTo } from "../src";
+import {
+  ACTIVITY_EMPTY,
+  activityDay,
+  activityEmpty,
+  activityRow,
+  activityTime,
+  firstName,
+  groupActivity,
+  movedTo,
+} from "../src";
 
 const tz = "America/Phoenix";
 const now = new Date("2026-10-20T17:00:00Z"); // Tue Oct 20, 10:00 AM in Phoenix
@@ -90,5 +99,13 @@ describe("activity", () => {
       ["Yesterday", ["c"]],
       ["Mon, Oct 12", ["d"]],
     ]);
+  });
+});
+
+describe("activityEmpty (owner, 2026-10-22)", () => {
+  it("says which type has nothing yet", () => {
+    expect(activityEmpty("all")).toBe(ACTIVITY_EMPTY);
+    expect(activityEmpty("repair")).toBe("No activity on repair jobs yet.");
+    expect(activityEmpty("detection")).toBe("No activity on leak detection jobs yet.");
   });
 });

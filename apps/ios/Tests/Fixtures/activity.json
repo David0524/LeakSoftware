@@ -27,6 +27,38 @@
       "result": "Activity"
     }
   ],
+  "activityEmpty": [
+    {
+      "args": [
+        "all"
+      ],
+      "result": "Nothing yet. Accepted quotes, payments, reports, finished jobs, and customer texts show here."
+    },
+    {
+      "args": [
+        "detection"
+      ],
+      "result": "No activity on leak detection jobs yet."
+    },
+    {
+      "args": [
+        "repair"
+      ],
+      "result": "No activity on repair jobs yet."
+    },
+    {
+      "args": [
+        "maintenance"
+      ],
+      "result": "No activity on maintenance jobs yet."
+    },
+    {
+      "args": [
+        "inspection"
+      ],
+      "result": "No activity on pool inspection jobs yet."
+    }
+  ],
   "firstName": [
     {
       "args": [

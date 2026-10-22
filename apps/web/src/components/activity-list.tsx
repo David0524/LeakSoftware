@@ -3,10 +3,11 @@
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import {
-  ACTIVITY_EMPTY,
   ACTIVITY_OFFLINE,
+  activityEmpty,
   groupActivity,
   type ActivityEvent,
+  type JobTypeFilter,
 } from "@leakbook/core";
 import { markActivitySeen, moreActivity } from "@/app/actions/activity";
 import { ActivityItem } from "./activity-rows";
@@ -21,10 +22,13 @@ export function ActivityList({
   initial,
   more: initialMore,
   timeZone,
+  type = "all",
 }: {
   initial: ActivityEvent[];
   more: boolean;
   timeZone: string;
+  /** The Type menu's choice (owner, 2026-10-22); the next pages keep it. */
+  type?: JobTypeFilter;
 }) {
   const router = useRouter();
   const [events, setEvents] = useState(initial);
@@ -47,7 +51,7 @@ export function ActivityList({
     busy.current = true;
     setLoading(true);
     try {
-      const page = await moreActivity({ at: last.created_at, id: last.id });
+      const page = await moreActivity({ at: last.created_at, id: last.id }, type);
       setEvents((e) => [...e, ...page.events.filter((x) => !e.some((y) => y.id === x.id))]);
       setMore(page.more);
       setOffline(false);
@@ -75,7 +79,7 @@ export function ActivityList({
     return () => io.disconnect();
   }, [more, offline, events.length]);
 
-  if (events.length === 0) return <Empty>{ACTIVITY_EMPTY}</Empty>;
+  if (events.length === 0) return <Empty>{activityEmpty(type)}</Empty>;
   const days = groupActivity(events, new Date(), timeZone);
   return (
     <div className="max-w-2xl space-y-6">

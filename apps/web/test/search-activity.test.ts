@@ -88,6 +88,22 @@ describe("Activity", () => {
     expect(await moreActivity({ at: "nope", id: "x" })).toEqual({ events: [], more: false });
   });
 
+  it("keeps the Type menu's job type on the next pages (owner, 2026-10-22)", async () => {
+    rpc.mockResolvedValue({ data: { events: [], more: false }, error: null });
+    const id = "0190a1b2-c3d4-7e5f-8a9b-0c1d2e3f4a5b";
+    await moreActivity({ at: "2026-10-20T16:00:00Z", id }, "repair");
+    expect(rpc).toHaveBeenLastCalledWith("activity_feed", {
+      target_company: "c1",
+      before_at: "2026-10-20T16:00:00Z",
+      before_id: id,
+      page_size: 50,
+      job_type: "repair",
+    });
+    // Anything else asks for every event.
+    await moreActivity({ at: "2026-10-20T16:00:00Z", id }, "constructor" as never);
+    expect(rpc.mock.lastCall?.[1]).not.toHaveProperty("job_type");
+  });
+
   it("marks it seen, and reads the dot (none when the database can't say)", async () => {
     rpc.mockResolvedValue({ data: null, error: null });
     await markActivitySeen();

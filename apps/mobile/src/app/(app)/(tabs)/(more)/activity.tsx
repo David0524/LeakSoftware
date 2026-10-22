@@ -1,10 +1,15 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Animated, RefreshControl, StyleSheet, View } from "react-native";
 import {
-  ACTIVITY_EMPTY,
   ACTIVITY_OFFLINE,
   ACTIVITY_TITLE,
+  JOB_TYPE_FILTER_TITLE,
+  activityEmpty,
+  companyServices,
   groupActivity,
+  jobTypeFilter,
+  jobTypeFilterLabel,
+  jobTypeFilters,
   type ActivityEvent,
   type ActivityRow,
 } from "@leakbook/core";
@@ -15,6 +20,7 @@ import { appendActivity, fetchActivity } from "../../../../lib/activity";
 import { getServices } from "../../../../lib/services";
 import { useCompany } from "../../../../state/session";
 import { Button, Empty, T, useScreenChrome } from "../../../../ui/components";
+import { MenuButton, useMenu } from "../../../../ui/Select";
 import { color, space } from "../../../../ui/theme";
 import { SkeletonRows } from "../../../../ui/Skeleton";
 
@@ -23,7 +29,9 @@ import { SkeletonRows } from "../../../../ui/Skeleton";
  * website's: what happened in the shop, newest first, under day headers; 50 at a time, the
  * next 50 loading as the end scrolls into view. Read from the server like the Dashboard, so
  * each person sees the events about what they can open (row security decides). Opening it
- * clears the dot on More and on the Activity row.
+ * clears the dot on More and on the Activity row. The Type menu (owner, 2026-10-22: "Add a
+ * filter on the jobs and activity pages for job type") keeps the events about jobs of one type,
+ * as on Jobs; texts aren't about a job, so they show only under All Types.
  */
 export default function ActivityScreen() {
   const company = useCompany();
@@ -34,22 +42,37 @@ export default function ActivityScreen() {
   const [loadingMore, setLoadingMore] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
   const busy = useRef(false);
+  /** The latest first-page request: an older one (another type) that answers late is dropped. */
+  const request = useRef(0);
+  const services = companyServices(company.settings);
+  const types = jobTypeFilters(services);
+  const [typeKey, setTypeKey] = useState("all");
+  const jobType = jobTypeFilter(typeKey, services);
+  const menu = useMenu();
   const { header, ref, scrollProps, contentContainerStyle } = useScreenChrome({
     title: ACTIVITY_TITLE,
     subtitle: company.name,
   });
 
   const loadFirst = useCallback(async () => {
+    const mine = ++request.current;
     try {
-      const page = await fetchActivity(getServices().supabase, company.id);
+      const page = await fetchActivity(
+        getServices().supabase,
+        company.id,
+        null,
+        undefined,
+        jobType,
+      );
+      if (mine !== request.current) return;
       setEvents(page.events);
       setMore(page.more);
       setFailed(false);
       void seeActivity(company.id);
     } catch {
-      setFailed(true);
+      if (mine === request.current) setFailed(true);
     }
-  }, [company.id]);
+  }, [company.id, jobType]);
 
   useEffect(() => {
     const timer = setTimeout(() => void loadFirst(), 0);
@@ -59,10 +82,18 @@ export default function ActivityScreen() {
   async function loadMore() {
     const last = events?.at(-1);
     if (!last || !more || busy.current) return;
+    const mine = request.current;
     busy.current = true;
     setLoadingMore(true);
     try {
-      const page = await fetchActivity(getServices().supabase, company.id, last);
+      const page = await fetchActivity(
+        getServices().supabase,
+        company.id,
+        last,
+        undefined,
+        jobType,
+      );
+      if (mine !== request.current) return;
       setEvents((e) => appendActivity(e ?? [], page.events));
       setMore(page.more);
       setFailed(false);
@@ -112,7 +143,7 @@ export default function ActivityScreen() {
         <SkeletonRows count={6} dot label="Loading activity" />
       )
     ) : (
-      <Empty>{ACTIVITY_EMPTY}</Empty>
+      <Empty>{activityEmpty(jobType)}</Empty>
     );
 
   const footer =
@@ -144,7 +175,35 @@ export default function ActivityScreen() {
       contentContainerStyle={contentContainerStyle}
       data={items}
       keyExtractor={(i) => i.key}
-      ListHeaderComponent={<View style={styles.top}>{header}</View>}
+      ListHeaderComponent={
+        <View style={styles.top}>
+          {header}
+          <View style={styles.menuRow}>
+            <MenuButton
+              title={JOB_TYPE_FILTER_TITLE}
+              value={jobTypeFilterLabel(jobType)}
+              icon="filter"
+              onPress={() =>
+                menu.open({
+                  title: JOB_TYPE_FILTER_TITLE,
+                  items: types.map((x) => ({
+                    label: x.label,
+                    checked: x.key === jobType,
+                    onPress: () => {
+                      if (x.key === jobType) return;
+                      // A new type starts a new list.
+                      setEvents(null);
+                      setMore(false);
+                      setTypeKey(x.key);
+                    },
+                  })),
+                })
+              }
+            />
+          </View>
+          {menu.element}
+        </View>
+      }
       ListEmptyComponent={empty}
       ListFooterComponent={footer}
       onEndReached={() => {
@@ -168,6 +227,7 @@ export default function ActivityScreen() {
 
 const styles = StyleSheet.create({
   top: { marginBottom: space["5"] },
+  menuRow: { flexDirection: "row", justifyContent: "flex-end" },
   day: { marginBottom: space["2"] },
   dayGap: { marginTop: space["6"] },
   gap: { gap: space["3"] },

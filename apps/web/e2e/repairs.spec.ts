@@ -7,7 +7,8 @@ import { PHONE } from "./money";
 // A repair job holds several repairs (owner, 2026-10-22: "On repair jobs, (in the intake and
 // actually working the job) we need a button to 'add additional repair'"; docs/design/
 // 2026-10-22-multiple-repairs.md): New Job › Repair books two, the job's Details lists them with
-// their total, and Add Additional Repair and Remove work there. The job's price and invoice lines
+// their total, and Add Additional Repair and Remove work there. A repair job has no Checklist
+// (owner, 2026-10-22). The job's price and invoice lines
 // are checked in supabase/tests/670_job_repairs.test.sql. The job is removed at the end.
 
 const cents = (text: string) => Math.round(Number(text.replace(/[^0-9.]/g, "")) * 100);
@@ -74,6 +75,11 @@ test("a repair job: two repairs booked in New Job, one added and one removed on 
     await expect(rows.nth(1)).toContainText(`Skimmer lid ${RUN}`);
     await expect(page.getByTestId("repairs-total")).toContainText(formatCents(firstPrice + 2500));
 
+    // No checklist on a repair job (owner, 2026-10-22: "Remove the checklist entirely for repair
+    // jobs."): its parts are Details, Findings, Photos and Wrap-Up.
+    const tabs = page.getByRole("tablist", { name: "Job sections" }).getByRole("tab");
+    await expect(tabs).toHaveText(["Details", "Findings", "Photos", "Wrap-Up"]);
+
     // Add Additional Repair on the job: something else, typed.
     await page.getByRole("button", { name: "Add Additional Repair" }).click();
     const sheet = page.getByRole("dialog", { name: "Add Additional Repair" });
@@ -113,11 +119,22 @@ test("a repair job: two repairs booked in New Job, one added and one removed on 
       (await saved()).find((r) => r.description === `Skimmer lid ${RUN}`)?.deleted_at,
     ).toBeTruthy();
 
-    // On a phone, the list and its button fit, and each row is a 44 pt target (on Details:
-    // a phone opens a started job on its next step's tab).
+    // On a phone, the list and its button fit, and each row is a 44 pt target. An old link to
+    // the checklist opens Details: there's no Checklist to show.
     await page.setViewportSize(PHONE.viewport);
-    await page.goto(`/jobs/${jobId}?tab=details`);
+    await page.goto(`/jobs/${jobId}?tab=checklist`);
     await expect(rows).toHaveCount(2);
+    await expect(tabs).toHaveText(["Details", "Findings", "Photos", "Wrap-Up"]);
+    await expect(page.getByRole("tab", { name: "Details" })).toHaveAttribute(
+      "aria-selected",
+      "true",
+    );
+    await expect(page.getByRole("heading", { name: "Checklist" })).toHaveCount(0);
+    await page.screenshot({ path: test.info().outputPath("repair-job-phone.png") });
+    await page.screenshot({
+      path: test.info().outputPath("repair-job-phone-full.png"),
+      fullPage: true,
+    });
     for (const box of await rows.evaluateAll((els) =>
       els.map((e) => e.getBoundingClientRect().height),
     ))

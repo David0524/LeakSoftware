@@ -16,7 +16,7 @@ import { Glass } from "./Glass";
 import { TechDot } from "./TechDot";
 import { haptics } from "./haptics";
 import { color, face, ios, MAX_TEXT_SCALE, minTap, shape, space, type } from "./theme";
-import { WebIcon } from "./WebIcon";
+import { WebIcon, type WebIconName } from "./WebIcon";
 
 // Selects and pull-down menus (spec 3.14 "Select", 3.15 action sheets). iPhone opens the
 // system action sheet; Android and the browser preview draw the same panels (decision 2),
@@ -238,7 +238,47 @@ export function Select<V extends string>({
   );
 }
 
+/**
+ * A pull-down's button: the current choice in link blue with its symbol, opening a menu
+ * (`useMenu`). Sort and Type on Jobs, Type on Activity (owner, 2026-10-22). Read as "Type,
+ * Repair".
+ */
+export function MenuButton({
+  title,
+  value,
+  icon,
+  onPress,
+  testID,
+}: {
+  /** What it chooses: "Sort", "Type". */
+  title: string;
+  /** The current choice. */
+  value: string;
+  icon: WebIconName;
+  onPress: () => void;
+  testID?: string;
+}) {
+  return (
+    <Pressable
+      accessibilityRole="button"
+      accessibilityLabel={`${title}, ${value}`}
+      onPress={onPress}
+      testID={testID}
+      style={({ pressed }) => [styles.menuButton, pressed && { opacity: 0.5 }]}
+    >
+      <Text
+        style={[type.secondary, face.semiBold, { color: color.link }]}
+        maxFontSizeMultiplier={MAX_TEXT_SCALE}
+      >
+        {value}
+      </Text>
+      <WebIcon name={icon} size={16} color={color.link} strokeWidth={2} />
+    </Pressable>
+  );
+}
+
 const styles = StyleSheet.create({
+  menuButton: { minHeight: minTap, flexDirection: "row", alignItems: "center", gap: 4 },
   scrim: { position: "absolute", left: 0, right: 0, top: 0, bottom: 0 },
   sheet: {
     position: "absolute",

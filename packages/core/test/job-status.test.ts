@@ -126,6 +126,19 @@ describe("Complete Job", () => {
     expect(jobHasWrapUp("detection")).toBe(true);
     expect(jobHasWrapUp("repair")).toBe(true);
   });
+
+  it("never waits for a checklist on a repair job, which has none (owner, 2026-10-22)", async () => {
+    const { completeJobBlocker, jobHasChecklist } = await import("../src");
+    const on = { require_checklist_to_finish: true };
+    expect(jobHasChecklist("repair")).toBe(false);
+    expect(jobHasChecklist("detection")).toBe(true);
+    expect(jobHasChecklist("maintenance")).toBe(true);
+    expect(jobHasChecklist("inspection")).toBe(true);
+    expect(completeJobBlocker(on, { checklistToDo: 3, photos: 1, type: "repair" })).toBeNull();
+    expect(completeJobBlocker(on, { checklistToDo: 3, photos: 1, type: "detection" })).toBe(
+      "Finish the checklist before completing this job.",
+    );
+  });
 });
 
 describe("Mark Complete on Today", () => {

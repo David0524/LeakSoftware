@@ -182,5 +182,13 @@ import Testing
         #expect(
             try json(ActivityFeedParams(company: "co", after: last, pageSize: 3))
                 == ["target_company": "co", "before_at": "2026-10-20T15:00:00Z", "before_id": "e9", "page_size": 3])
+        // The Type menu (owner, 2026-10-22): a type is sent; All Types leaves it out.
+        #expect(
+            try json(ActivityFeedParams(company: "co", type: .type(.repair)))
+                == [
+                    "target_company": "co", "before_at": .null, "before_id": .null, "page_size": 50,
+                    "job_type": "repair",
+                ])
+        #expect(try json(ActivityFeedParams(company: "co", type: .all))["job_type"] == nil)
     }
 }

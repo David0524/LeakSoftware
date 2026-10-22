@@ -60,6 +60,14 @@ const days: HeroArgs[] = [
   [[stop("a", { status: "done", type: "maintenance" }), stop("b")], today, TZ, ""],
   [[stop("a"), stop("b")], today, TZ, "a"],
   [[stop("a", { stop_done_on: today, checklistDone: 9, checklistTotal: 9 })], today, TZ, "a"],
+  // A repair job has no checklist (owner, 2026-10-22): rows it already has aren't counted.
+  [
+    [stop("a", { type: "repair", status: "in_progress", checklistDone: 2, checklistTotal: 9 })],
+    today,
+    TZ,
+    null,
+  ],
+  [[stop("a", { type: "repair", stop_done_on: today, checklistTotal: 9 })], today, TZ, "a"],
   [[stop("a", { stop_done_on: today }), stop("b", { status: "report_sent" })], today, TZ, null],
   [[stop("a", { status: "canceled" })], today, TZ, null],
   [[stop("a", { stop_done_on: "2026-10-19" }), stop("b")], today, TZ, null],
@@ -162,12 +170,15 @@ export const todayHeroCases: ModuleCases = {
     ],
   ),
   heroActions: rule(
-    (moment: HeroMoment, mine: boolean, checklistDone: boolean) =>
-      heroActions(moment, mine, checklistDone),
+    (moment: HeroMoment, mine: boolean, checklistDone: boolean, hasChecklist: boolean) =>
+      heroActions(moment, mine, checklistDone, hasChecklist),
     moments.flatMap((m) => [
-      [m, true, false] as [HeroMoment, boolean, boolean],
-      [m, false, false] as [HeroMoment, boolean, boolean],
-      [m, true, true] as [HeroMoment, boolean, boolean],
+      [m, true, false, true] as [HeroMoment, boolean, boolean, boolean],
+      [m, false, false, true] as [HeroMoment, boolean, boolean, boolean],
+      [m, true, true, true] as [HeroMoment, boolean, boolean, boolean],
+      // A repair job: no checklist (owner, 2026-10-22).
+      [m, true, false, false] as [HeroMoment, boolean, boolean, boolean],
+      [m, false, false, false] as [HeroMoment, boolean, boolean, boolean],
     ]),
   ),
   HERO_ACTION_LABELS: rule(() => HERO_ACTION_LABELS, [[]]),

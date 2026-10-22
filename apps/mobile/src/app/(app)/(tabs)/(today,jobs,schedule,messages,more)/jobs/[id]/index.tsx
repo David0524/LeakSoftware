@@ -18,6 +18,7 @@ import {
   parseGallons,
   jobFeeLabel,
   jobHasWrapUp,
+  jobHasChecklist,
   parseDollars,
   propertyLocation,
   toE164,
@@ -259,7 +260,11 @@ export default function JobDetail() {
   const { tally, inspection } = progress;
   const sections: { value: JobSection; label: string; badge?: number }[] = [
     { value: "details", label: "Details" },
-    { value: "checklist", label: "Checklist", badge: progress.toDo || undefined },
+    // A repair job has no checklist (owner, 2026-10-22: "Remove the checklist entirely for
+    // repair jobs."); rows an older one has are kept, not shown.
+    ...(jobHasChecklist(job.type)
+      ? [{ value: "checklist" as const, label: "Checklist", badge: progress.toDo || undefined }]
+      : []),
     ...(maintenance ? [] : [{ value: "findings" as const, label: "Findings" }]),
     { value: "photos", label: "Photos" },
     // Visits end with Complete Job and are billed monthly: no Wrap-Up (owner, 2026-10-19).

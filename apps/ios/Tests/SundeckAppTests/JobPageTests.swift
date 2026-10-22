@@ -22,7 +22,9 @@ import Testing
             JobPageSection.sections(for: .detection).map(\.title) == [
                 "Details", "Checklist", "Findings", "Photos", "Wrap-Up",
             ])
-        #expect(JobPageSection.sections(for: .repair).count == 5)
+        // A repair job has no checklist (owner, 2026-10-22).
+        #expect(
+            JobPageSection.sections(for: .repair).map(\.title) == ["Details", "Findings", "Photos", "Wrap-Up"])
         #expect(
             JobPageSection.sections(for: .maintenance).map(\.title) == ["Details", "Checklist", "Photos"])
     }

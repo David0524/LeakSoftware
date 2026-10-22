@@ -1,6 +1,6 @@
 import "server-only";
 import { cache } from "react";
-import { ACTIVITY_PAGE_SIZE, type ActivityEvent } from "@leakbook/core";
+import { ACTIVITY_PAGE_SIZE, type ActivityEvent, type JobTypeFilter } from "@leakbook/core";
 import type { Office } from "./auth";
 import { createClient } from "./supabase/server";
 
@@ -12,11 +12,15 @@ export interface ActivityPage {
   more: boolean;
 }
 
-/** A page of the shop's activity, newest first; pass the last event to get the next page. */
+/**
+ * A page of the shop's activity, newest first; pass the last event to get the next page. A job
+ * type (the Type menu, owner 2026-10-22) keeps the events about jobs of that type.
+ */
 export async function activityPage(
   office: Office,
   after?: { at: string; id: string } | null,
   size = ACTIVITY_PAGE_SIZE,
+  type: JobTypeFilter = "all",
 ): Promise<ActivityPage> {
   const { data, error } = await (
     await createClient()
@@ -25,6 +29,8 @@ export async function activityPage(
     before_at: after?.at ?? null,
     before_id: after?.id ?? null,
     page_size: size,
+    // Left out for All Types, so a database without the filter yet still answers.
+    ...(type !== "all" ? { job_type: type } : {}),
   });
   if (error) throw new Error(error.message);
   const page = (data ?? {}) as { events?: ActivityEvent[]; more?: boolean };

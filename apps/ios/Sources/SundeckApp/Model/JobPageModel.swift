@@ -23,10 +23,12 @@ public enum JobPageSection: String, CaseIterable, Hashable, Sendable {
     }
 
     /// Five parts; a maintenance visit has no tests or findings, so no Findings, and ends with
-    /// Complete Job, billed monthly, so no Wrap-Up (core `jobHasWrapUp`, owner 2026-10-19).
+    /// Complete Job, billed monthly, so no Wrap-Up (core `jobHasWrapUp`, owner 2026-10-19). A
+    /// repair job has no Checklist (core `jobHasChecklist`, owner 2026-10-22).
     public static func sections(for type: JobType) -> [JobPageSection] {
         allCases.filter {
             !(type == .maintenance && $0 == .findings) && ($0 != .wrapUp || jobHasWrapUp(type.rawValue))
+                && ($0 != .checklist || jobHasChecklist(type.rawValue))
         }
     }
 }

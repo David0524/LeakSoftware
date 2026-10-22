@@ -27,6 +27,7 @@ import {
   parseGallons,
   localDate,
   markCompleteValues,
+  jobHasChecklist,
 } from "@leakbook/core";
 import { getOffice } from "@/lib/auth";
 import { requireCompletable } from "@/server/reports";
@@ -221,6 +222,8 @@ export async function setUpChecklist(_: FormState, form: FormData): Promise<Form
     pool_type: string | null;
   } | null;
   const type = (job as { type?: string } | null)?.type;
+  // A repair job has no checklist (owner, 2026-10-22).
+  if (!jobHasChecklist(type)) return { error: "Repair jobs don’t have a checklist." };
   const jobType = type === "maintenance" || type === "inspection" ? type : "detection";
   const planned = planComponents(
     (types ?? []) as ComponentType[],

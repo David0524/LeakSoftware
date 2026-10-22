@@ -5,7 +5,7 @@
  * pick the same stop. No timer or countdown (owner, 2026-10-19).
  */
 import { localDate } from "./job-list";
-import { stopDone } from "./models";
+import { jobHasChecklist, stopDone } from "./models";
 import {
   liveStopContent,
   type LiveStopContent,
@@ -53,6 +53,13 @@ export interface TodayHero {
   currentId: string | null;
   /** Whether the card shows a stop the tech picked, not the one the day is on. */
   browsing: boolean;
+}
+
+/** A stop's checklist count; a repair job has none (owner, 2026-10-22). */
+function checklistOf(s: HeroStop): { checklistDone: number; checklistTotal: number } {
+  return jobHasChecklist(s.type)
+    ? { checklistDone: s.checklistDone, checklistTotal: s.checklistTotal }
+    : { checklistDone: 0, checklistTotal: 0 };
 }
 
 /** Whether On My Way was sent for this stop today (in the shop's time zone). */
@@ -120,8 +127,7 @@ function stopHero(
       doneStops: stops.length - left.length,
       eta: phase === "driving" && s.arrive_at ? formatTime(s.arrive_at, timeZone) : null,
       scheduled: s.scheduled_start ? formatTime(s.scheduled_start, timeZone) : null,
-      checklistDone: s.checklistDone,
-      checklistTotal: s.checklistTotal,
+      ...checklistOf(s),
       next: next
         ? {
             customer: next.customer,
@@ -205,8 +211,7 @@ function dayHero(input: {
         stops: stops.length,
         doneStops: doneCount,
         eta: null,
-        checklistDone: s.checklistDone,
-        checklistTotal: s.checklistTotal,
+        ...checklistOf(s),
         next: left[0]
           ? {
               customer: left[0].customer,
@@ -242,8 +247,7 @@ function dayHero(input: {
       doneStops: stops.length - left.length,
       eta: phase === "driving" && target.arrive_at ? formatTime(target.arrive_at, timeZone) : null,
       scheduled: target.scheduled_start ? formatTime(target.scheduled_start, timeZone) : null,
-      checklistDone: target.checklistDone,
-      checklistTotal: target.checklistTotal,
+      ...checklistOf(target),
       next: nextAfter(at),
       access: target.access ?? null,
       cleanings: target.cleanings ?? [],
@@ -269,6 +273,8 @@ export function heroActions(
   moment: HeroMoment,
   mine: boolean,
   checklistDone = false,
+  // A repair job has no checklist (owner, 2026-10-22): on site, Mark Complete alone.
+  hasChecklist = true,
 ): {
   primary: "start_job" | "open_checklist" | null;
   complete: boolean;
@@ -283,6 +289,7 @@ export function heroActions(
   const off = { complete: false, onMyWay: false, undo: false, ready: false };
   if (moment === "ahead") return { ...off, primary: mine ? "start_job" : null, onMyWay: mine };
   if (moment === "driving") return { ...off, primary: mine ? "start_job" : null };
+  if (moment === "on_site" && !hasChecklist) return { ...off, primary: null, complete: true };
   if (moment === "on_site")
     return checklistDone
       ? { ...off, primary: null, complete: true, ready: true }

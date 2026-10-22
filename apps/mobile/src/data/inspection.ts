@@ -5,6 +5,7 @@ import {
   foldedItems,
   inspectionAnswerValues,
   inspectionProgress,
+  jobHasChecklist,
   nextInstance,
   planComponents,
   type InspectionValue,
@@ -243,6 +244,9 @@ export function useChecklistProgress(companyId: string, jobId: string, jobType?:
   const config = useInspectionConfig(companyId);
   const insp = useJobInspection(companyId, jobId);
   return useMemo(() => {
+    // A repair job has no checklist (owner, 2026-10-22): rows an older one has aren't counted.
+    if (!jobHasChecklist(jobType))
+      return { tally: checklistTally([], []), inspection: null, toDo: 0 };
     const tally = checklistTally(insp.components, insp.results);
     if (jobType !== "inspection") return { tally, inspection: null, toDo: tally.pending };
     const rows = inspectionRows(insp.components, insp.resultByComponent, config.componentTypeById);

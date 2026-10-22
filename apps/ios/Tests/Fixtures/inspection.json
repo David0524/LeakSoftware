@@ -24955,6 +24955,226 @@
       "throws": "Invalid time zone specified: Nowhere/Zone"
     }
   ],
+  "JOB_TYPE_FILTER_WORDS": [
+    {
+      "args": [],
+      "result": {
+        "JOB_TYPE_FILTER_TITLE": "Type",
+        "ALL_JOB_TYPES": "All Types"
+      }
+    }
+  ],
+  "jobTypeFilters": [
+    {
+      "args": [
+        "pool"
+      ],
+      "result": [
+        {
+          "key": "all",
+          "label": "All Types"
+        },
+        {
+          "key": "maintenance",
+          "label": "Maintenance"
+        },
+        {
+          "key": "repair",
+          "label": "Repair"
+        }
+      ]
+    },
+    {
+      "args": [
+        "leak"
+      ],
+      "result": [
+        {
+          "key": "all",
+          "label": "All Types"
+        },
+        {
+          "key": "repair",
+          "label": "Repair"
+        },
+        {
+          "key": "detection",
+          "label": "Leak Detection"
+        },
+        {
+          "key": "inspection",
+          "label": "Pool Inspection"
+        }
+      ]
+    },
+    {
+      "args": [
+        "both"
+      ],
+      "result": [
+        {
+          "key": "all",
+          "label": "All Types"
+        },
+        {
+          "key": "maintenance",
+          "label": "Maintenance"
+        },
+        {
+          "key": "repair",
+          "label": "Repair"
+        },
+        {
+          "key": "detection",
+          "label": "Leak Detection"
+        },
+        {
+          "key": "inspection",
+          "label": "Pool Inspection"
+        }
+      ]
+    }
+  ],
+  "jobTypeFilter": [
+    {
+      "args": [
+        "repair",
+        "both"
+      ],
+      "result": "repair"
+    },
+    {
+      "args": [
+        "detection",
+        "pool"
+      ],
+      "result": "all"
+    },
+    {
+      "args": [
+        "maintenance",
+        "leak"
+      ],
+      "result": "all"
+    },
+    {
+      "args": [
+        "inspection",
+        "both"
+      ],
+      "result": "inspection"
+    },
+    {
+      "args": [
+        "all",
+        "both"
+      ],
+      "result": "all"
+    },
+    {
+      "args": [
+        "bad",
+        "both"
+      ],
+      "result": "all"
+    },
+    {
+      "args": [
+        null,
+        "pool"
+      ],
+      "result": "all"
+    }
+  ],
+  "jobTypeFilterLabel": [
+    {
+      "args": [
+        "all"
+      ],
+      "result": "All Types"
+    },
+    {
+      "args": [
+        "detection"
+      ],
+      "result": "Leak Detection"
+    },
+    {
+      "args": [
+        "repair"
+      ],
+      "result": "Repair"
+    },
+    {
+      "args": [
+        "maintenance"
+      ],
+      "result": "Maintenance"
+    },
+    {
+      "args": [
+        "inspection"
+      ],
+      "result": "Pool Inspection"
+    }
+  ],
+  "jobsEmpty": [
+    {
+      "args": [
+        "all"
+      ],
+      "result": "No jobs here. Add one with New Job, or on the phone."
+    },
+    {
+      "args": [
+        "detection"
+      ],
+      "result": "No leak detection jobs here."
+    },
+    {
+      "args": [
+        "inspection"
+      ],
+      "result": "No pool inspection jobs here."
+    }
+  ],
+  "matchesJobType": [
+    {
+      "args": [
+        "repair",
+        "all"
+      ],
+      "result": true
+    },
+    {
+      "args": [
+        null,
+        "all"
+      ],
+      "result": true
+    },
+    {
+      "args": [
+        "repair",
+        "repair"
+      ],
+      "result": true
+    },
+    {
+      "args": [
+        "detection",
+        "repair"
+      ],
+      "result": false
+    },
+    {
+      "args": [
+        null,
+        "maintenance"
+      ],
+      "result": false
+    }
+  ],
   "JOB_SORTS": [
     {
       "args": [],

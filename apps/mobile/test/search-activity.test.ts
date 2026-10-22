@@ -263,6 +263,22 @@ describe("Activity", () => {
     ]);
   });
 
+  it("sends the Type menu's job type, and leaves it out for All Types (owner, 2026-10-22)", async () => {
+    const { calls, client } = rpc({ data: { events: [], more: false } });
+    await fetchActivity(client, "co", null, undefined, "inspection");
+    await fetchActivity(client, "co", null, undefined, "all");
+    expect(calls.map((c) => c.args)).toEqual([
+      {
+        target_company: "co",
+        before_at: null,
+        before_id: null,
+        page_size: 50,
+        job_type: "inspection",
+      },
+      { target_company: "co", before_at: null, before_id: null, page_size: 50 },
+    ]);
+  });
+
   it("throws when it can't reach the server, so the screen says it needs a connection", async () => {
     await expect(
       fetchActivity(rpc({ error: { message: "Failed to fetch" } }).client, "co"),

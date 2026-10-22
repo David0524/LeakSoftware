@@ -26,26 +26,33 @@ public struct ActivityPage: Decodable, Equatable, Sendable {
     }
 }
 
-/// `activity_feed(target_company, before_at, before_id, page_size)`: the page after the last
-/// event shown (`after`), or the first.
+/// `activity_feed(target_company, before_at, before_id, page_size, job_type)`: the page after the
+/// last event shown (`after`), or the first; with a job type (the Type menu, owner 2026-10-22),
+/// only the events about jobs of that type. All Types leaves `job_type` out.
 public struct ActivityFeedParams: Encodable, Equatable, Sendable {
     public var targetCompany: String
     public var beforeAt: String?
     public var beforeId: String?
     public var pageSize: Int
+    public var jobType: JobType?
 
     enum CodingKeys: String, CodingKey {
         case targetCompany = "target_company"
         case beforeAt = "before_at"
         case beforeId = "before_id"
         case pageSize = "page_size"
+        case jobType = "job_type"
     }
 
-    public init(company: String, after: ActivityEvent? = nil, pageSize: Int = ActivityText.pageSize) {
+    public init(
+        company: String, after: ActivityEvent? = nil, pageSize: Int = ActivityText.pageSize,
+        type: JobTypeFilter = .all
+    ) {
         targetCompany = company
         beforeAt = after?.createdAt
         beforeId = after?.id
         self.pageSize = pageSize
+        if case .type(let t) = type { jobType = t }
     }
 
     public func encode(to encoder: Encoder) throws {
@@ -54,6 +61,7 @@ public struct ActivityFeedParams: Encodable, Equatable, Sendable {
         try c.encode(beforeAt, forKey: .beforeAt)
         try c.encode(beforeId, forKey: .beforeId)
         try c.encode(pageSize, forKey: .pageSize)
+        try c.encodeIfPresent(jobType, forKey: .jobType)
     }
 }
 

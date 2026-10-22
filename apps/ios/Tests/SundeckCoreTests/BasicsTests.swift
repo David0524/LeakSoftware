@@ -14,9 +14,9 @@ import Testing
             "isManagerRole", "splitEmails", "POOL_TYPE_LABELS", "jobOnPhones", "requiresFinishPhoto",
             "FINISH_PHOTO_MESSAGE", "REPAIR_ITEM_KEY", "REPAIR_ITEM_LABEL", "jobActionLabel", "jobFeeLabel",
             "parseGallons", "requiresFinishedChecklist", "FINISH_CHECKLIST_MESSAGE", "completeJobBlocker",
-            "jobHasWrapUp", "stopDone", "markCompleteValues", "isHexColor", "parseReminderDays",
+            "jobHasWrapUp", "jobHasChecklist", "stopDone", "markCompleteValues", "isHexColor", "parseReminderDays",
             "SAVED_REPORT_SECTIONS", "savedReportSections", "applySavedReport", "replaceSavedReportQuestion",
-            "savedReportFrom", "JOB_TYPE_LABELS", "reportTitle", "reportShareText",
+            "savedReportFrom", "JOB_TYPE_LABELS", "reportTitle", "writeDraftIntro", "reportShareText",
         ]
         #expect(Fixtures.rules(module) == checked)
     }
@@ -67,6 +67,7 @@ import Testing
         checkRule(module, "jobFeeLabel") { c in jobFeeLabel(try c.arg(0, as: String?.self)) }
         checkRule(module, "JOB_TYPE_LABELS") { _ in labelTable(\JobType.label) }
         checkRule(module, "reportTitle") { c in reportTitle(try c.arg(0, as: String?.self)) }
+        checkRule(module, "writeDraftIntro") { c in writeDraftIntro(try c.arg(0, as: String?.self)) }
         checkRule(module, "reportShareText") { c in
             reportShareText(
                 try c.arg(0), try c.arg(1), withQuote: try c.arg(2, as: Bool?.self) ?? false,
@@ -91,9 +92,10 @@ import Testing
         }
         checkRule(module, "FINISH_CHECKLIST_MESSAGE") { _ in finishChecklistMessage }
         checkRule(module, "completeJobBlocker") { c in
-            let job = try c.arg(1, as: [String: Int].self)
+            let job = try c.arg(1, as: JSONValue.self)
             return completeJobBlocker(
-                try c.arg(0, as: JSONValue?.self), checklistToDo: job["checklistToDo"] ?? 0, photos: job["photos"] ?? 0)
+                try c.arg(0, as: JSONValue?.self), checklistToDo: Int(job["checklistToDo"]?.number ?? 0),
+                photos: Int(job["photos"]?.number ?? 0), type: job["type"]?.string)
         }
         checkRule(module, "stopDone") { c in
             let job = try c.arg(0, as: JSONValue.self)
@@ -114,6 +116,7 @@ import Testing
                 stopDoneOn: job["stop_done_on"]?.string, day: try c.arg(1))
         }
         checkRule(module, "jobHasWrapUp") { c in jobHasWrapUp(try c.arg(0, as: String?.self)) }
+        checkRule(module, "jobHasChecklist") { c in jobHasChecklist(try c.arg(0, as: String?.self)) }
         checkRule(module, "REPAIR_ITEM_KEY") { _ in repairItemKey }
         checkRule(module, "REPAIR_ITEM_LABEL") { _ in repairItemLabel }
         checkRule(module, "newJobTypes") { c in newJobTypes(try c.arg(0)) }

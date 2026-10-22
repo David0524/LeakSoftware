@@ -29,6 +29,9 @@ import Testing
             "optionsFromText",
             // Sorting the Jobs list.
             "JOB_SORTS", "jobSort", "sortJobs",
+            // Filtering by job type.
+            "JOB_TYPE_FILTER_WORDS", "jobTypeFilters", "jobTypeFilter", "jobTypeFilterLabel", "jobsEmpty",
+            "matchesJobType",
             // Landmarks that turn on tap.
             "tapLandmark", "landmarkTurn",
         ]
@@ -193,6 +196,22 @@ import Testing
         }
         checkRule(module, "JOB_SORTS") { _ in JobSort.allCases.map { ["key": $0.rawValue, "label": $0.label] } }
         checkRule(module, "jobSort") { c in jobSort(try c.arg(0, as: String?.self)).rawValue }
+        checkRule(module, "JOB_TYPE_FILTER_WORDS") { _ in
+            ["JOB_TYPE_FILTER_TITLE": JobTypeFilterText.title, "ALL_JOB_TYPES": JobTypeFilterText.all]
+        }
+        checkRule(module, "jobTypeFilters") { c in
+            jobTypeFilters(try c.arg(0, as: Services.self)).map { ["key": $0.key, "label": $0.label] }
+        }
+        checkRule(module, "jobTypeFilter") { c in
+            jobTypeFilter(try c.arg(0, as: String?.self), try c.arg(1, as: Services.self)).key
+        }
+        checkRule(module, "jobTypeFilterLabel") { c in
+            jobTypeFilter(try c.arg(0, as: String.self), .both).label
+        }
+        checkRule(module, "jobsEmpty") { c in jobsEmpty(jobTypeFilter(try c.arg(0, as: String.self), .both)) }
+        checkRule(module, "matchesJobType") { c in
+            matchesJobType(try c.arg(0, as: String?.self), jobTypeFilter(try c.arg(1, as: String.self), .both))
+        }
         checkRule(module, "sortJobs") { c in
             func field(_ j: JSONValue, _ k: String) -> JSONValue? {
                 if case .object(let o) = j { return o[k] }

@@ -2,6 +2,7 @@ import {
   JOB_TYPE_LABELS,
   reportShareText,
   reportTitle,
+  writeDraftIntro,
   SAVED_REPORT_SECTIONS,
   applySavedReport,
   replaceSavedReportQuestion,
@@ -32,6 +33,7 @@ import {
   FINISH_CHECKLIST_MESSAGE,
   completeJobBlocker,
   jobHasWrapUp,
+  jobHasChecklist,
   markCompleteValues,
   stopDone,
   REPAIR_ITEM_KEY,
@@ -254,7 +256,8 @@ export const basics: ModuleCases = {
   ),
   FINISH_CHECKLIST_MESSAGE: rule(() => FINISH_CHECKLIST_MESSAGE, [[]]),
   completeJobBlocker: rule(
-    (s: unknown, job: { checklistToDo: number; photos: number }) => completeJobBlocker(s, job),
+    (s: unknown, job: { checklistToDo: number; photos: number; type?: string }) =>
+      completeJobBlocker(s, job),
     [
       null,
       {},
@@ -270,7 +273,13 @@ export const basics: ModuleCases = {
         { checklistToDo: 2, photos: 0 },
         { checklistToDo: 0, photos: 1 },
         { checklistToDo: 3, photos: 2 },
-      ].map((job) => [s, job] as [unknown, { checklistToDo: number; photos: number }]),
+        // A repair job has no checklist (owner, 2026-10-22).
+        { checklistToDo: 2, photos: 0, type: "repair" },
+        { checklistToDo: 2, photos: 1, type: "repair" },
+        { checklistToDo: 2, photos: 1, type: "detection" },
+      ].map(
+        (job) => [s, job] as [unknown, { checklistToDo: number; photos: number; type?: string }],
+      ),
     ),
   ),
   // Mark Complete on Today (owner, 2026-10-19).
@@ -331,6 +340,11 @@ export const basics: ModuleCases = {
   jobHasWrapUp: rule(
     (t: string | null) => jobHasWrapUp(t),
     [["maintenance"], ["detection"], ["repair"], [null], [""]],
+  ),
+  // No checklist on a repair job (owner, 2026-10-22).
+  jobHasChecklist: rule(
+    (t: string | null) => jobHasChecklist(t),
+    [["maintenance"], ["detection"], ["repair"], ["inspection"], [null], [""]],
   ),
   REPAIR_ITEM_KEY: rule(() => REPAIR_ITEM_KEY, [[]]),
   REPAIR_ITEM_LABEL: rule(() => REPAIR_ITEM_LABEL, [[]]),
@@ -507,6 +521,11 @@ export const basics: ModuleCases = {
   reportTitle: rule(
     (t: string | null) => reportTitle(t),
     [["inspection"], ["detection"], ["repair"], ["maintenance"], [null], ["Inspection"]],
+  ),
+  // A repair's draft comes from its repairs: no checklist (owner, 2026-10-22).
+  writeDraftIntro: rule(
+    (t: string | null) => writeDraftIntro(t),
+    [["inspection"], ["detection"], ["repair"], ["maintenance"], [null]],
   ),
   reportShareText: rule(
     (shop: string, link: string, withQuote?: boolean, jobType?: string | null) =>

@@ -23,6 +23,13 @@ extension SignaturePurpose {
     }
 }
 
+/// The line above Write Draft (`writeDraftIntro`). A repair job's draft comes from its repairs,
+/// notes, and findings: it has no checklist (owner, 2026-10-22).
+public func writeDraftIntro(_ jobType: String?) -> String {
+    let from = jobType == "repair" ? "repairs, notes, and findings" : "checklist, tests, and findings"
+    return "Write Draft fills in the report from this job’s \(from). Read and edit it before sending."
+}
+
 /// The report's title: the job type's own name (`reportTitle`). A repair's report is about the
 /// work (owner, 2026-10-22).
 public func reportTitle(_ jobType: String?) -> String {

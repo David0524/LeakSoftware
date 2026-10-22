@@ -29,6 +29,7 @@ import {
   sortJobs,
   type CleaningKind,
   type JobSort,
+  type JobTypeFilter,
   techColor,
   type TechColor,
 } from "@leakbook/core";
@@ -212,7 +213,7 @@ export const OPEN_STATUSES: JobStatus[] = [
 export async function listJobs(
   office: Office,
   statuses: JobStatus[] | null,
-  opts: { limit?: number; search?: string; sort?: JobSort } = {},
+  opts: { limit?: number; search?: string; sort?: JobSort; type?: JobTypeFilter } = {},
 ): Promise<JobRow[]> {
   const supabase = await db();
   preloadTeam(office);
@@ -245,6 +246,8 @@ export async function listJobs(
     // Typed loosely: the same filters on two selects.
     let r = (q as unknown as JobQuery).eq("company_id", office.company.id).is("deleted_at", null);
     if (statuses) r = r.in("status", statuses);
+    // The Type menu (owner, 2026-10-22).
+    if (opts.type && opts.type !== "all") r = r.eq("type", opts.type);
     if (terms) r = r.or(terms.join(","));
     return r as unknown as Q;
   };

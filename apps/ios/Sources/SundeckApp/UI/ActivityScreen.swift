@@ -10,11 +10,13 @@
 
     /// The Activity RPCs, called as the signed-in person like the Dashboard's `owner_dashboard`.
     @MainActor enum ActivityServer {
-        static func page(_ client: SupabaseClient, company: String, after: ActivityEvent? = nil, size: Int)
-            async throws -> ActivityPage
-        {
+        static func page(
+            _ client: SupabaseClient, company: String, after: ActivityEvent? = nil, size: Int,
+            type: JobTypeFilter = .all
+        ) async throws -> ActivityPage {
             try await client.rpc(
-                "activity_feed", params: ActivityFeedParams(company: company, after: after, pageSize: size)
+                "activity_feed",
+                params: ActivityFeedParams(company: company, after: after, pageSize: size, type: type)
             ).execute().value
         }
 
@@ -43,7 +45,10 @@
 
     /// More › Activity: what happened in the shop, newest first, under day headers; 50 at a time,
     /// the next 50 loading as the end scrolls into view (or with Show More). Opening it clears the
-    /// dot on More and on the Activity row. Read from the server, so it needs a connection.
+    /// dot on More and on the Activity row. Read from the server, so it needs a connection. The
+    /// Type menu in the bar (owner, 2026-10-22: "Add a filter on the jobs and activity pages for job
+    /// type") keeps the events about jobs of one type, as on Jobs; texts aren't about a job, so they
+    /// show only under All Types.
     struct ActivityScreen: View {
         @Environment(Session.self) private var session
         @Environment(AppEnvironment.self) private var app
@@ -52,12 +57,13 @@
         @State private var failed = false
         @State private var loadingMore = false
         @State private var moreFailed = false
+        @State private var type = JobTypeFilter.all
 
         var body: some View {
             ScreenScroll {
                 if let log {
                     if log.events.isEmpty {
-                        EmptyState(text: ActivityText.empty)
+                        EmptyState(text: activityEmpty(type))
                     } else {
                         let days =
                             (try? groupActivity(log.events, now: Date(), timeZone: session.company?.timeZone ?? "UTC"))
@@ -78,9 +84,21 @@
             .refreshable { await load() }
             .navigationTitle(ActivityText.title)
             .navigationBarTitleDisplayMode(.large)
+            .toolbar {
+                ToolbarItem(placement: .topBarTrailing) {
+                    JobTypeMenu(
+                        selection: $type, services: companyServices(session.company?.settings))
+                }
+            }
             .task(id: session.company?.id) {
                 await load()
                 if log != nil, await ActivityServer.markSeen(app.client) { badge?.unread = false }
+            }
+            .onChange(of: type) { _, _ in
+                // A new type starts a new list.
+                log = nil
+                failed = false
+                Task { await load() }
             }
         }
 
@@ -105,13 +123,17 @@
 
         private func load() async {
             guard let company = session.company else { return }
+            let asked = type
             do {
-                let page = try await ActivityServer.page(app.client, company: company.id, size: ActivityText.pageSize)
+                let page = try await ActivityServer.page(
+                    app.client, company: company.id, size: ActivityText.pageSize, type: asked)
+                // Another type picked meanwhile: its own load shows.
+                guard asked == type else { return }
                 log = ActivityLog(page)
                 failed = false
                 moreFailed = false
             } catch {
-                if log == nil { failed = true }
+                if log == nil, asked == type { failed = true }
             }
         }
 
@@ -119,9 +141,11 @@
             guard let company = session.company, let after = log?.next, !loadingMore else { return }
             loadingMore = true
             defer { loadingMore = false }
+            let asked = type
             do {
                 let page = try await ActivityServer.page(
-                    app.client, company: company.id, after: after, size: ActivityText.pageSize)
+                    app.client, company: company.id, after: after, size: ActivityText.pageSize, type: asked)
+                guard asked == type else { return }
                 log?.append(page)
                 moreFailed = false
             } catch {

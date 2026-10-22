@@ -48,7 +48,8 @@
                             if model.templates.isEmpty {
                                 EmptyState(text: "The shop turned off the homeowner report.")
                             } else {
-                                Text(ReportTabModel.intro).textRole(.secondary).foregroundStyle(Color.textMuted)
+                                Text(writeDraftIntro(job.type.rawValue)).textRole(.secondary).foregroundStyle(
+                                    Color.textMuted)
                                 ReportCard(job: job, model: model, flow: flow)
                             }
                         }

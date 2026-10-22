@@ -102,6 +102,21 @@ describe("todayHero (owner, 2026-10-20)", () => {
   });
 });
 
+describe("a repair stop (owner, 2026-10-22)", () => {
+  it("counts no checklist, even rows an older repair job has", () => {
+    const h = todayHero({
+      stops: [
+        stop("a", { type: "repair", status: "in_progress", checklistDone: 2, checklistTotal: 9 }),
+      ],
+      today,
+      timeZone: TZ,
+    })!;
+    expect(h.moment).toBe("on_site");
+    expect(h.content.figureLabel).not.toBe("Checklist");
+    expect(h.content.spoken).not.toContain("Checklist");
+  });
+});
+
 describe("the card's buttons and lines", () => {
   it("gives each moment its main button, and none of the tech's to someone else", () => {
     // Start Job from the start; On My Way is an icon until it's sent.
@@ -149,6 +164,15 @@ describe("the card's buttons and lines", () => {
       ready: true,
     });
     expect(heroActions("ahead", true, true).ready).toBe(false);
+    // A repair job has no checklist (owner, 2026-10-22): on site, Mark Complete alone.
+    expect(heroActions("on_site", true, false, false)).toEqual({
+      primary: null,
+      complete: true,
+      onMyWay: false,
+      undo: false,
+      ready: false,
+    });
+    expect(heroActions("ahead", true, false, false).primary).toBe("start_job");
   });
 
   it("says the job type, the stop, and the drive", () => {

@@ -43,6 +43,8 @@ import {
   dateFormat,
   jobFeeLabel,
   jobHasWrapUp,
+  jobHasChecklist,
+  writeDraftIntro,
   readingSummary,
   jobLock,
   wrapUp,
@@ -230,7 +232,11 @@ export default async function JobPage({ params, searchParams }: PageProps<"/jobs
         initial={typeof tab === "string" ? tab : undefined}
         // The widest screens show the pool diagram and findings beside the checklist (owner,
         // 2026-10-22: "use the desktop's width to your advantage").
-        beside={job.type === "maintenance" ? undefined : { checklist: "findings" }}
+        beside={
+          job.type === "maintenance" || !jobHasChecklist(job.type)
+            ? undefined
+            : { checklist: "findings" }
+        }
         nextStep={{
           jobId: job.id,
           status: job.status,
@@ -474,64 +480,70 @@ export default async function JobPage({ params, searchParams }: PageProps<"/jobs
               </>
             ),
           },
-          {
-            id: "checklist",
-            label: "Checklist",
-            badge: inspection ? inspection.toDo : tally.pending,
-            content: (
-              <section aria-labelledby="checklist">
-                {/* Chemical first, at the top of the checklist (owner, 2026-10-19). */}
-                {job.type === "maintenance" && job.property ? (
-                  <Suspense fallback={null}>
-                    <Chemical detail={detail} tz={tz} />
-                  </Suspense>
-                ) : null}
-                {job.type === "maintenance" && job.service_plan_id ? (
-                  <Suspense fallback={null}>
-                    <Cleanings detail={detail} tz={tz} />
-                  </Suspense>
-                ) : null}
-                <h2 id="checklist" className="font-display text-2xl font-bold">
-                  Checklist
-                </h2>
-                <p className="mb-3 text-text-muted">
-                  {total === 0
-                    ? "No checklist yet."
-                    : (inspection
-                        ? [
-                            `${inspection.answered} of ${inspection.total} answered`,
-                            `${inspection.attention} need attention`,
-                            `${inspection.leaking} leaking`,
-                          ]
-                        : job.type === "maintenance"
-                          ? [
-                              `${tally.pass} done`,
-                              `${tally.attention} need attention`,
-                              `${tally.notApplicable} skipped`,
-                              `${tally.pending} to do`,
-                            ]
-                          : [
-                              `${tally.pass} not leaking`,
-                              `${tally.attention} attention`,
-                              `${tally.leaking} leaking`,
-                              `${tally.notApplicable} not applicable`,
-                              `${tally.pending} to do`,
-                            ]
-                      ).join(" · ")}
-                </p>
-                {detail.components.length > 0 ? (
-                  <Checklist detail={detail} />
-                ) : (
-                  <SetUpChecklist jobId={job.id} />
-                )}
-                {/* Complete Job ends a visit, right under its list (owner, 2026-10-19). */}
-                {job.type === "maintenance" &&
-                (job.status === "scheduled" || job.status === "in_progress") ? (
-                  <CompleteJob jobId={job.id} prompt={completePrompt} ready={ready} />
-                ) : null}
-              </section>
-            ),
-          },
+          // A repair job has no checklist (owner, 2026-10-22: "Remove the checklist entirely for
+          // repair jobs."); rows an older one has are kept, not shown.
+          ...(jobHasChecklist(job.type)
+            ? [
+                {
+                  id: "checklist",
+                  label: "Checklist",
+                  badge: inspection ? inspection.toDo : tally.pending,
+                  content: (
+                    <section aria-labelledby="checklist">
+                      {/* Chemical first, at the top of the checklist (owner, 2026-10-19). */}
+                      {job.type === "maintenance" && job.property ? (
+                        <Suspense fallback={null}>
+                          <Chemical detail={detail} tz={tz} />
+                        </Suspense>
+                      ) : null}
+                      {job.type === "maintenance" && job.service_plan_id ? (
+                        <Suspense fallback={null}>
+                          <Cleanings detail={detail} tz={tz} />
+                        </Suspense>
+                      ) : null}
+                      <h2 id="checklist" className="font-display text-2xl font-bold">
+                        Checklist
+                      </h2>
+                      <p className="mb-3 text-text-muted">
+                        {total === 0
+                          ? "No checklist yet."
+                          : (inspection
+                              ? [
+                                  `${inspection.answered} of ${inspection.total} answered`,
+                                  `${inspection.attention} need attention`,
+                                  `${inspection.leaking} leaking`,
+                                ]
+                              : job.type === "maintenance"
+                                ? [
+                                    `${tally.pass} done`,
+                                    `${tally.attention} need attention`,
+                                    `${tally.notApplicable} skipped`,
+                                    `${tally.pending} to do`,
+                                  ]
+                                : [
+                                    `${tally.pass} not leaking`,
+                                    `${tally.attention} attention`,
+                                    `${tally.leaking} leaking`,
+                                    `${tally.notApplicable} not applicable`,
+                                    `${tally.pending} to do`,
+                                  ]
+                            ).join(" · ")}
+                      </p>
+                      {detail.components.length > 0 ? (
+                        <Checklist detail={detail} />
+                      ) : (
+                        <SetUpChecklist jobId={job.id} />
+                      )}
+                      {/* Complete Job ends a visit, right under its list (owner, 2026-10-19). */}
+                      {job.type === "maintenance" &&
+                      (job.status === "scheduled" || job.status === "in_progress") ? (
+                        <CompleteJob jobId={job.id} prompt={completePrompt} ready={ready} />
+                      ) : null}
+                    </section>
+                  ),
+                },
+              ]
+            : []),
           // Tests and findings are leak detection; a pool service visit has none.
           ...(job.type === "maintenance"
             ? []
@@ -1040,10 +1052,7 @@ async function Reports({ detail }: { detail: JobDetail }) {
   if (templates.find((t) => t.key === key)?.enabled === false) return null;
   return (
     <div className="grid max-w-3xl grid-cols-1 gap-5">
-      <p className="text-[0.9375rem] text-text-muted">
-        Write Draft fills in the report from this job’s checklist, tests, and findings. Read and
-        edit it before sending.
-      </p>
+      <p className="text-[0.9375rem] text-text-muted">{writeDraftIntro(detail.job.type)}</p>
       <ReportPanel
         jobId={detail.job.id}
         template={key}

@@ -1,7 +1,13 @@
 import { describe, expect, it } from "vitest";
 import {
+  ALL_JOB_TYPES,
   JOB_SORTS,
   formatSchedule,
+  jobTypeFilter,
+  jobsEmpty,
+  jobTypeFilterLabel,
+  jobTypeFilters,
+  matchesJobType,
   groupJobs,
   jobSort,
   localDate,
@@ -91,5 +97,47 @@ describe("sortJobs (owner, 2026-10-20)", () => {
     expect(ids("number")).toEqual(["b", "c", "a"]);
     expect(jobSort("customer")).toBe("customer");
     expect(jobSort(undefined)).toBe("scheduled");
+  });
+});
+
+describe("job type filter (owner, 2026-10-22)", () => {
+  it("lists All Types, then the shop's job types in New Job's order", () => {
+    expect(jobTypeFilters("both")).toEqual([
+      { key: "all", label: "All Types" },
+      { key: "maintenance", label: "Maintenance" },
+      { key: "repair", label: "Repair" },
+      { key: "detection", label: "Leak Detection" },
+      { key: "inspection", label: "Pool Inspection" },
+    ]);
+    expect(jobTypeFilters("pool").map((f) => f.key)).toEqual(["all", "maintenance", "repair"]);
+    expect(jobTypeFilters("leak").map((f) => f.key)).toEqual([
+      "all",
+      "repair",
+      "detection",
+      "inspection",
+    ]);
+  });
+
+  it("reads a type from the address, All Types when the shop's menu lacks it", () => {
+    expect(jobTypeFilter("repair", "both")).toBe("repair");
+    expect(jobTypeFilter("detection", "pool")).toBe("all");
+    expect(jobTypeFilter("bogus", "both")).toBe("all");
+    expect(jobTypeFilter(undefined, "both")).toBe("all");
+    expect(jobTypeFilter(["repair"], "both")).toBe("all");
+  });
+
+  it("names the menu button and matches jobs", () => {
+    expect(jobTypeFilterLabel("all")).toBe(ALL_JOB_TYPES);
+    expect(jobTypeFilterLabel("inspection")).toBe("Pool Inspection");
+    expect(matchesJobType("repair", "all")).toBe(true);
+    expect(matchesJobType(null, "all")).toBe(true);
+    expect(matchesJobType("repair", "repair")).toBe(true);
+    expect(matchesJobType("detection", "repair")).toBe(false);
+    expect(matchesJobType(null, "repair")).toBe(false);
+  });
+
+  it("says when a type has no jobs", () => {
+    expect(jobsEmpty("all")).toBe("No jobs here. Add one with New Job, or on the phone.");
+    expect(jobsEmpty("inspection")).toBe("No pool inspection jobs here.");
   });
 });

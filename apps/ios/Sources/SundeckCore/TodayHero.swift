@@ -147,6 +147,12 @@ public func todayHero(
 }
 
 /// The card for one stop the tech picked: done, at the pool, on the way, or still ahead.
+extension HeroStop {
+    /// The stop's checklist count; a repair job has none (owner, 2026-10-22).
+    var shownChecklistDone: Int { jobHasChecklist(type) ? checklistDone : 0 }
+    var shownChecklistTotal: Int { jobHasChecklist(type) ? checklistTotal : 0 }
+}
+
 private func stopHero(stops: [HeroStop], at: Int, today: String, timeZone: String) throws -> TodayHero {
     let s = stops[at]
     let doneFlags = stops.map { $0.done(today) }
@@ -161,8 +167,8 @@ private func stopHero(stops: [HeroStop], at: Int, today: String, timeZone: Strin
     let input = LiveStopInput(
         phase: phase, customer: s.customer, address: s.address, stop: at + 1, stops: stops.count,
         doneStops: stops.count - leftIndices.count, eta: phase == .driving ? try timeOrNil(s.arriveAt, timeZone) : nil,
-        scheduled: try timeOrNil(s.scheduledStart, timeZone), checklistDone: s.checklistDone,
-        checklistTotal: s.checklistTotal, next: next, access: s.access, cleanings: s.cleanings ?? [])
+        scheduled: try timeOrNil(s.scheduledStart, timeZone), checklistDone: s.shownChecklistDone,
+        checklistTotal: s.shownChecklistTotal, next: next, access: s.access, cleanings: s.cleanings ?? [])
     return TodayHero(
         moment: HeroMoment(rawValue: phase.rawValue)!, stopId: s.id, stop: at + 1, stops: stops.count,
         content: liveStopContent(input),
@@ -210,7 +216,8 @@ private func dayHero(stops: [HeroStop], today: String, timeZone: String, justDon
         }
         let input = LiveStopInput(
             phase: .done, customer: s.customer, address: s.address, stop: at + 1, stops: stops.count,
-            doneStops: doneCount, eta: nil, checklistDone: s.checklistDone, checklistTotal: s.checklistTotal, next: next
+            doneStops: doneCount, eta: nil, checklistDone: s.shownChecklistDone,
+            checklistTotal: s.shownChecklistTotal, next: next
         )
         return TodayHero(
             moment: .done, stopId: s.id, stop: at + 1, stops: stops.count, content: liveStopContent(input),
@@ -226,8 +233,8 @@ private func dayHero(stops: [HeroStop], today: String, timeZone: String, justDon
     let scheduled = try timeOrNil(target.scheduledStart, timeZone)
     let input = LiveStopInput(
         phase: phase, customer: target.customer, address: target.address, stop: at + 1, stops: stops.count,
-        doneStops: doneCount, eta: eta, scheduled: scheduled, checklistDone: target.checklistDone,
-        checklistTotal: target.checklistTotal,
+        doneStops: doneCount, eta: eta, scheduled: scheduled, checklistDone: target.shownChecklistDone,
+        checklistTotal: target.shownChecklistTotal,
         next: try nextAfter(at), access: target.access, cleanings: target.cleanings ?? [])
     return TodayHero(
         moment: HeroMoment(rawValue: phase.rawValue)!, stopId: target.id, stop: at + 1, stops: stops.count,
@@ -273,8 +280,14 @@ public struct HeroActions: Codable, Equatable, Sendable {
 /// 2026-10-20: "not every tech is going to use every function all the time"). Someone looking
 /// at another tech's day (owners and admins, "Whose day") gets no On My Way, Start Job or undo:
 /// those are the tech's to press (decision 4).
-public func heroActions(_ moment: HeroMoment, mine: Bool, checklistDone: Bool = false) -> HeroActions {
-    switch moment {
+public func heroActions(
+    _ moment: HeroMoment, mine: Bool, checklistDone: Bool = false, hasChecklist: Bool = true
+) -> HeroActions {
+    // A repair job has no checklist (owner, 2026-10-22): on site, Mark Complete alone.
+    if moment == .onSite && !hasChecklist {
+        return HeroActions(primary: nil, complete: true, onMyWay: false, undo: false)
+    }
+    return switch moment {
     case .ahead: HeroActions(primary: mine ? .startJob : nil, complete: false, onMyWay: mine, undo: false)
     case .driving: HeroActions(primary: mine ? .startJob : nil, complete: false, onMyWay: false, undo: false)
     case .onSite:

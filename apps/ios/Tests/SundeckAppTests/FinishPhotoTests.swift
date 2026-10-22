@@ -79,6 +79,27 @@ import Testing
         #expect(statusChangeBlock(.done, s.sync.store, settings: [:], jobId: "j3") == nil)
     }
 
+    /// A repair job has no checklist (owner, 2026-10-22): rows an older one has never hold it up.
+    @Test func aRepairJobNeverWaitsForAChecklist() throws {
+        let on: JSONValue = ["require_checklist_to_finish": true]
+        let s = try shell(on)
+        try s.sync.store.applyPage(
+            PullPage(
+                rows: [
+                    PulledRow(
+                        table: "job", xid: "1",
+                        row: ["id": "j4", "company_id": "c1", "type": "repair", "status": "in_progress"]),
+                    PulledRow(
+                        table: "checklist_item_result", xid: "1",
+                        row: [
+                            "id": "r4", "company_id": "c1", "job_id": "j4", "job_component_id": "jc4",
+                            "status": "pending",
+                        ]),
+                ], done: true, cursor: [:], serverHLC: "1760000000003-0000-srv"))
+        #expect(jobChecklistToDo(s.sync.store, jobId: "j4") == 1)
+        #expect(statusChangeBlock(.done, s.sync.store, settings: on, jobId: "j4") == nil)
+    }
+
     /// Complete Job (owner, 2026-10-19): with "Finish the checklist first", every checklist item
     /// answered, then the photo; Settings › Team › Completing a job writes both rules.
     @Test func completeJobWaitsForTheChecklistThenThePhoto() throws {

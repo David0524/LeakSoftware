@@ -1,5 +1,10 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
-import { ACTIVITY_PAGE_SIZE, type ActivityEvent, type ActivityRow } from "@leakbook/core";
+import {
+  ACTIVITY_PAGE_SIZE,
+  type ActivityEvent,
+  type ActivityRow,
+  type JobTypeFilter,
+} from "@leakbook/core";
 
 // Activity (owner, 2026-10-20; docs/plans/search-and-activity.md section 2): read from the
 // server as the signed-in person, like the Dashboard (not synced to phones), so row security
@@ -13,18 +18,24 @@ export interface ActivityPage {
 
 type Rpc = Pick<SupabaseClient, "rpc">;
 
-/** A page of the shop's activity, newest first; pass the last event shown for the next page. */
+/**
+ * A page of the shop's activity, newest first; pass the last event shown for the next page. A
+ * job type (the Type menu, owner 2026-10-22) keeps the events about jobs of that type.
+ */
 export async function fetchActivity(
   supabase: Rpc,
   companyId: string,
   after?: { created_at: string; id: string } | null,
   size = ACTIVITY_PAGE_SIZE,
+  type: JobTypeFilter = "all",
 ): Promise<ActivityPage> {
   const { data, error } = await supabase.rpc("activity_feed", {
     target_company: companyId,
     before_at: after?.created_at ?? null,
     before_id: after?.id ?? null,
     page_size: size,
+    // Left out for All Types, so a database without the filter yet still answers.
+    ...(type !== "all" ? { job_type: type } : {}),
   });
   if (error) throw new Error(error.message);
   const page = (data ?? {}) as { events?: ActivityEvent[]; more?: boolean };

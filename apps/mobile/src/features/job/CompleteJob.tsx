@@ -40,6 +40,7 @@ export function useCompleteJobBlocker(
     photos: media.filter(
       (m) => m.kind === "photo" && !(m as { deleted_at?: string | null }).deleted_at,
     ).length,
+    type: job.type,
   });
 }
 

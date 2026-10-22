@@ -4,6 +4,7 @@ import { router } from "expo-router";
 import {
   NEW_QUOTE_LABEL,
   wrapUp,
+  writeDraftIntro,
   type Customer,
   type Job,
   type WrapUp,
@@ -180,8 +181,7 @@ export function WrapUpList({
         {open?.step === "report" ? (
           <View style={styles.sheet}>
             <T variant="secondary" muted>
-              Write Draft fills in the report from this job’s checklist, tests, and findings. Read
-              and edit it before sending.
+              {writeDraftIntro(job.type)}
             </T>
             <ReportTab job={job} customer={customer} controls={reportControls} />
           </View>

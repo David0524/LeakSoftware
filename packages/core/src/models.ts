@@ -54,13 +54,15 @@ export const FINISH_CHECKLIST_MESSAGE = "Finish the checklist before completing 
 /**
  * What stops Complete Job (owner, 2026-10-19: "Owners/admins can decide whether the tech needs
  * to fill out the checklist/submit picture first"): the checklist first, then the photo. Null
- * when the job can be completed.
+ * when the job can be completed. A repair job has no checklist (owner, 2026-10-22), so the
+ * checklist rule never holds one up.
  */
 export function completeJobBlocker(
   settings: unknown,
-  job: { checklistToDo: number; photos: number },
+  job: { checklistToDo: number; photos: number; type?: string | null },
 ): string | null {
-  if (requiresFinishedChecklist(settings) && job.checklistToDo > 0) return FINISH_CHECKLIST_MESSAGE;
+  if (requiresFinishedChecklist(settings) && jobHasChecklist(job.type) && job.checklistToDo > 0)
+    return FINISH_CHECKLIST_MESSAGE;
   if (requiresFinishPhoto(settings) && job.photos === 0) return FINISH_PHOTO_MESSAGE;
   return null;
 }
@@ -126,6 +128,16 @@ export function todayUndo(
  */
 export function jobHasWrapUp(type: JobType | string | null | undefined): boolean {
   return type !== "maintenance";
+}
+
+/**
+ * Whether the job has a checklist: its Checklist section, its count, Open Checklist on Today,
+ * and the shop's "Finish the checklist first" rule. A repair job doesn't (owner, 2026-10-22:
+ * "Remove the checklist entirely for repair jobs."); checklist rows an older repair job already
+ * has are kept, just not shown or counted.
+ */
+export function jobHasChecklist(type: JobType | string | null | undefined): boolean {
+  return type !== "repair";
 }
 
 /**

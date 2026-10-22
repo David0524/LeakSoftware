@@ -16,6 +16,7 @@ import {
   visitReportMode,
   mapStatus,
   todayHero,
+  jobHasChecklist,
   todayMoves,
   todayStopLock,
   JOB_TYPE_LABELS,
@@ -126,7 +127,8 @@ export default async function TodayPage({ searchParams }: PageProps<"/today">) {
     ).catch(() => new Map<string, { planCleaningId: string }[]>()),
     Promise.all(
       allJobs
-        .filter((j) => j.status === "in_progress")
+        // A repair job has no checklist to count (owner, 2026-10-22).
+        .filter((j) => j.status === "in_progress" && jobHasChecklist(j.type))
         .map(async (j) => {
           const detail = await getJob(office, j.id).catch(() => null);
           return [j.id, detail ? checklistCount(detail) : { done: 0, total: 0 }] as const;

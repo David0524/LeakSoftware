@@ -83,6 +83,9 @@
         @State private var reportFilter = ReportFilter.all
         /// The list's order (owner, 2026-10-20: "Add sorting on the jobs page just like invoices").
         @State private var sort = JobSort.scheduled
+        /// The Type menu (owner, 2026-10-22: "Add a filter on the jobs and activity pages for job
+        /// type"): with the status filter and Sort.
+        @State private var type = JobTypeFilter.all
         @State private var rows: [JobListRow] = []
         @State private var reports: [ReportListRow] = []
         // Search (ShopSearchViews.swift).
@@ -153,10 +156,13 @@
             } message: { row in
                 Text(CompleteSendPrompt.message(customer: row.customer == "Customer" ? nil : row.customer))
             }
-            // Sort and the "+" on the bar's right while on Jobs.
-            .rootTitle(mode.title, trailingButtons: mode == .jobs ? 2 : 0)
+            // Type, Sort and the "+" on the bar's right while on Jobs.
+            .rootTitle(mode.title, trailingButtons: mode == .jobs ? 3 : 0)
             .toolbar {
                 if mode == .jobs {
+                    ToolbarItem(placement: .topBarTrailing) {
+                        JobTypeMenu(selection: $type, services: companyServices(company?.settings))
+                    }
                     // Sort, as Invoices has it: a menu in the navigation bar, applied at once,
                     // with the status filter and the search.
                     ToolbarItem(placement: .topBarTrailing) {
@@ -173,7 +179,9 @@
                     NewJobToolbar(back: "Jobs")
                 }
             }
-            .task(id: "\(sync.revision)|\(company?.id ?? "")|\(filter)|\(reportFilter)|\(mode)|\(sort)") {
+            .task(
+                id: "\(sync.revision)|\(company?.id ?? "")|\(filter)|\(reportFilter)|\(mode)|\(sort)|\(type.key)"
+            ) {
                 reload()
             }
             .task(id: "\(query)|\(searchGroup?.rawValue ?? "")|\(sync.revision)|\(company?.id ?? "")") {
@@ -256,7 +264,7 @@
 
         @ViewBuilder private var jobsList: some View {
             if rows.isEmpty {
-                EmptyState(text: "No jobs here. Add one with New Job, or on the phone.")
+                EmptyState(text: jobsEmpty(type))
             } else {
                 GroupedRows(rows) { row in
                     // Swipe left for Call and Directions, right for Mark Complete; touch and hold
@@ -468,11 +476,35 @@
                     uniquingKeysWith: { a, _ in a })
                 rows = jobList(
                     views, filter: filter, search: "", now: Date(), timeZone: company.timeZone, userId: user.id,
-                    seesAll: seesAllJobs(company.role, company.settings), names: names, sort: sort)
+                    seesAll: seesAllJobs(company.role, company.settings), names: names, sort: sort,
+                    type: jobTypeFilter(type.key, companyServices(company.settings)))
             } else {
                 reports = reportList(
                     sync.store, companyId: company.id, filter: reportFilter, timeZone: company.timeZone)
             }
+        }
+    }
+
+    /// The Type menu in the navigation bar (owner, 2026-10-22: "Add a filter on the jobs and
+    /// activity pages for job type"), on Jobs and on Activity: the filter symbol, filled while a type
+    /// is picked, opening All Types and the shop's job types (core `jobTypeFilters`), applied at once.
+    struct JobTypeMenu: View {
+        @Binding var selection: JobTypeFilter
+        var services: Services
+
+        var body: some View {
+            Menu {
+                Picker(JobTypeFilterText.title, selection: $selection) {
+                    ForEach(jobTypeFilters(services), id: \.self) { Text($0.label).tag($0) }
+                }
+            } label: {
+                Image(
+                    systemName: selection == .all
+                        ? "line.3.horizontal.decrease.circle" : "line.3.horizontal.decrease.circle.fill"
+                )
+                .frame(width: minTarget, height: minTarget)
+            }
+            .accessibilityLabel("\(JobTypeFilterText.title), \(selection.label)")
         }
     }
 
