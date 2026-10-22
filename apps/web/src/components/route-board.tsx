@@ -9,6 +9,7 @@ import {
   TouchSensor,
   closestCenter,
   pointerWithin,
+  rectIntersection,
   useDndContext,
   useDroppable,
   useSensor,
@@ -31,6 +32,7 @@ import {
   use,
   useCallback,
   useEffect,
+  useSyncExternalStore,
   useId,
   useMemo,
   useOptimistic,
@@ -293,11 +295,15 @@ function applyMove(lists: Lists, m: Move): Lists {
   return next;
 }
 
-/** The pointer's box first (for empty days and week cells), else the nearest stop. */
+/**
+ * Where a dragged stop lands follows the tile, not the cursor (owner, 2026-10-22: "it depends
+ * on where the cursor, not where the tile is"): the day, week cell, Needs a Time or stop the
+ * tile overlaps most, else the nearest stop.
+ */
 const collision: CollisionDetection = (args) => {
-  const hits = pointerWithin(args);
   // A customer to add lands only where the pointer is: a tech's day, never the nearest stop.
-  if (String(args.active.id).startsWith(PLAN_DRAG)) return hits;
+  if (String(args.active.id).startsWith(PLAN_DRAG)) return pointerWithin(args);
+  const hits = rectIntersection(args);
   return hits.length ? hits : closestCenter(args);
 };
 
@@ -1877,6 +1883,38 @@ function WeekMaps({
   );
 }
 
+/** This browser shows Week's days off (desktop). */
+const WEEKEND_KEY = "schedule.weekend";
+const WEEKEND_EVENT = "schedule-weekend";
+let weekendHere = false;
+
+function subscribeWeekend(fn: () => void) {
+  addEventListener(WEEKEND_EVENT, fn);
+  addEventListener("storage", fn);
+  return () => {
+    removeEventListener(WEEKEND_EVENT, fn);
+    removeEventListener("storage", fn);
+  };
+}
+
+function readWeekend() {
+  try {
+    return localStorage.getItem(WEEKEND_KEY) === "1";
+  } catch {
+    return weekendHere;
+  }
+}
+
+function writeWeekend(next: boolean) {
+  weekendHere = next;
+  try {
+    localStorage.setItem(WEEKEND_KEY, next ? "1" : "0");
+  } catch {
+    // Storage blocked: weekendHere keeps it.
+  }
+  dispatchEvent(new Event(WEEKEND_EVENT));
+}
+
 function WeekGrid({
   columns,
   lists,
@@ -1899,13 +1937,18 @@ function WeekGrid({
 }) {
   const rows = [...new Map(columns.map((c) => [c.techId, c])).values()];
   // The shop's work days, plus today and any day with something on it (owner, 2026-10-22: "We
-  // really only need Mon-Fri"), so each day is wide enough for a stop's name.
-  const days = allDays.filter(
-    ([d]) =>
-      workDates.includes(d) ||
-      d === today ||
-      rows.some((r) => (lists[`${r.techId ?? "none"}|${d}`] ?? []).length > 0),
-  );
+  // really only need Mon-Fri"), so each day is wide enough for a stop's name. The days off are
+  // a narrow last column that opens them (owner: "It needs to accessible somehow"); this
+  // browser remembers it.
+  const weekend = useSyncExternalStore(subscribeWeekend, readWeekend, () => false);
+  const toggleWeekend = () => writeWeekend(!weekend);
+  const always = ([d]: [string, string]) =>
+    workDates.includes(d) ||
+    d === today ||
+    rows.some((r) => (lists[`${r.techId ?? "none"}|${d}`] ?? []).length > 0);
+  const offDays = allDays.filter((d) => !always(d));
+  const days = weekend ? allDays : allDays.filter(always);
+  const offNames = offDays.map(([d]) => weekdayName(d)).join(" and ");
   /**
    * The day's "⋯" menu (owner, 2026-10-20: "you can't optimize" on Routes): Optimize each
    * tech's route that day, and Open Day.
@@ -1928,7 +1971,8 @@ function WeekGrid({
   // fit, the table slides sideways, with a second scrollbar on top, as on Day.
   const TECH_REM = 7;
   const DAY_REM = 10.5;
-  const minRem = TECH_REM + days.length * DAY_REM;
+  const TOGGLE_REM = 3.5;
+  const minRem = TECH_REM + days.length * DAY_REM + (offDays.length ? TOGGLE_REM : 0);
   return (
     <TopScroller
       data-testid="week-grid"
@@ -1943,6 +1987,7 @@ function WeekGrid({
           {days.map(([d]) => (
             <col key={d} />
           ))}
+          {offDays.length ? <col style={{ width: `${TOGGLE_REM}rem` }} /> : null}
         </colgroup>
         <thead className="border-b border-border">
           <tr>
@@ -1989,6 +2034,31 @@ function WeekGrid({
                 </RowActions>
               </th>
             ))}
+            {offDays.length ? (
+              <th scope="col" className="px-0.5 py-1">
+                <button
+                  type="button"
+                  onClick={toggleWeekend}
+                  aria-expanded={weekend}
+                  aria-label={weekend ? `Hide ${offNames}` : `Show ${offNames}`}
+                  className="flex min-h-11 w-full flex-col items-center justify-center rounded-lg text-[0.8125rem] leading-tight font-medium text-link hover:bg-link/10"
+                >
+                  {weekend ? (
+                    <>
+                      <span aria-hidden="true">‹</span>
+                      <span>Hide</span>
+                    </>
+                  ) : (
+                    <>
+                      {offDays.map(([d, label]) => (
+                        <span key={d}>{label.split(",")[0]}</span>
+                      ))}
+                      <span aria-hidden="true">›</span>
+                    </>
+                  )}
+                </button>
+              </th>
+            ) : null}
           </tr>
         </thead>
         <tbody>
@@ -2011,6 +2081,7 @@ function WeekGrid({
                   <WeekCell key={d} column={col} stops={lists[key] ?? []} today={d === today} />
                 );
               })}
+              {offDays.length ? <td aria-hidden="true" /> : null}
             </tr>
           ))}
         </tbody>
