@@ -961,6 +961,21 @@
             // Settings › Team with Completing a job (owners and admins, 2026-10-19).
             try await snapshot(
                 "49-settings-team", height: 1600, NavigationStack { SettingsListScreen(page: .team) }.app(env))
+            // The Checklist segmented control at the top of a list, not clipped (owner, 2026-10-22).
+            try await snapshot(
+                "49-settings-components", height: 1400,
+                NavigationStack { SettingsListScreen(page: .components) }.app(env))
+            // Company and Branding: one Save floating at the bottom (owner, 2026-10-22), and the
+            // accent's More colors without slate, kept first for a shop already on it.
+            try env.session.sync.store.write(
+                "company", id: "c1", companyId: "c1", ["brand_primary": "#1D5FA8", "brand_secondary": "#3C4450"])
+            // (68-settings-company has the whole page.)
+            try await snapshot(
+                "49-settings-company-branding", height: 1400, scrolled: 2400,
+                NavigationStack { CompanySettingsScreen() }.app(env))
+            try await snapshot(
+                "49-settings-company-dark", dark: true, height: 1400, scrolled: 2400,
+                NavigationStack { CompanySettingsScreen() }.app(env))
         }
 
         @Test func code() async throws {
@@ -1107,6 +1122,8 @@
         @Test func customers() async throws {
             let env = try sampleEnvironment()
             try await snapshot("44-customers", NavigationStack { CustomersScreen() }.app(env))
+            // The search field and Sort and Show, whole: not clipped by the list (owner, 2026-10-22).
+            try await snapshot("44-customers-dark", dark: true, NavigationStack { CustomersScreen() }.app(env))
             let maria = try #require(
                 try env.session.sync.store.list("customer").first { $0["name"] == "Maria Alvarez" }?.id)
             try await snapshot(

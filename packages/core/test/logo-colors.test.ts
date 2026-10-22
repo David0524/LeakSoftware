@@ -73,6 +73,12 @@ describe("brand color choices", () => {
     expect(new Set(c).size).toBe(c.length);
   });
 
+  it("keeps a shop's color that left the presets: slate shows first (owner, 2026-10-22)", () => {
+    expect(BRAND_COLOR_PRESETS).toHaveLength(7);
+    expect(BRAND_COLOR_PRESETS).not.toContain("#3C4450");
+    expect(brandColorChoices([], "#3c4450")).toEqual(["#3C4450", ...BRAND_COLOR_PRESETS]);
+  });
+
   it("fills from a new logo always, from an old one only over the default", () => {
     expect(suggestedBrandColor(["#AA3311"], "#334455", true)).toBe("#AA3311");
     expect(suggestedBrandColor(["#AA3311"], "#334455", false)).toBeNull();

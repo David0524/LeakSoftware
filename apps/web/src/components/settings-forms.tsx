@@ -9,6 +9,7 @@ import {
   useRef,
   useState,
   type ReactNode,
+  type RefObject,
 } from "react";
 import { requestFormReset } from "react-dom";
 import {
@@ -20,9 +21,11 @@ import {
 } from "@leakbook/core";
 import { tokens } from "@leakbook/tokens";
 import type { FormState } from "@/app/actions/auth";
+import { fieldsOf, signature } from "@/lib/dirty";
 import { orOffline } from "@/lib/offline";
 import { useConfirm } from "./sheet";
 import { Banner } from "./doc-ui";
+import { useTyping } from "./next-step-events";
 import {
   Button,
   Checkbox,
@@ -75,6 +78,7 @@ export function SettingsForm({
   inline = false,
   full = false,
   pinned = false,
+  floating = false,
   onSaved,
 }: {
   action: Action;
@@ -94,6 +98,11 @@ export function SettingsForm({
    * not at the end of the scroll (owner, 2026-10-20).
    */
   pinned?: boolean;
+  /**
+   * The page's one Save, floating at the bottom (owner, 2026-10-22: Company and Branding):
+   * dimmed until a field changes, "Saving…", then "Saved." until the next change.
+   */
+  floating?: boolean;
   /** Called after a save that succeeded, e.g. to close the form. */
   onSaved?: () => void;
 }) {
@@ -163,7 +172,14 @@ export function SettingsForm({
       className={cx(!inline && "space-y-4", className)}
     >
       <FieldErrors value={state.fields}>{children}</FieldErrors>
-      {full ? (
+      {floating ? (
+        <SaveBar
+          form={form}
+          pending={pending}
+          state={state}
+          error={state.error ?? (invalid ? "Fix the highlighted fields." : undefined)}
+        />
+      ) : full ? (
         <div className="space-y-3">
           {button}
           {state.error ? (
@@ -200,6 +216,114 @@ export function SettingsForm({
       )}
       {confirmSheet}
     </form>
+  );
+}
+
+/**
+ * Fired (bubbling) by a field whose value was set by the page rather than typed: the logo's
+ * color filling Main color. The Save bar checks for changes on it; the Discard changes guard
+ * doesn't hear it, since the owner changed nothing.
+ */
+const FIELD_SET = "leakbook:field-set";
+
+/**
+ * A page's one Save (owner, 2026-10-22: "Let's remove all the save buttons on that page and
+ * just have one floating one on the bottom"): the Next Step bar's floating glass, kept in view
+ * at the bottom of the page (above the tab bar on phones) while the form scrolls. Save is dimmed
+ * until a field differs from what was loaded or last saved; "Saved." shows above it until the
+ * next change, a problem until the next Save. Hidden on phones while a field has the keyboard,
+ * as the Next Step bar is. The same bar is SaveBar.swift on the iPhone and ui/SaveBar.tsx on
+ * Android.
+ */
+function SaveBar({
+  form,
+  pending,
+  state,
+  error,
+}: {
+  form: RefObject<HTMLFormElement | null>;
+  pending: boolean;
+  state: FormState;
+  error?: string;
+}) {
+  const typing = useTyping();
+  const baseline = useRef<string | null>(null);
+  const [changed, setChanged] = useState(false);
+  useEffect(() => {
+    const el = form.current;
+    if (!el) return;
+    const measure = () => signature(fieldsOf(el));
+    baseline.current ??= measure();
+    // Read after the event's own updates have drawn (a swatch's color, a segment's choice).
+    const check = () =>
+      setTimeout(() => {
+        if (el.isConnected) setChanged(measure() !== baseline.current);
+      }, 0);
+    el.addEventListener("input", check);
+    el.addEventListener("change", check);
+    el.addEventListener("click", check);
+    el.addEventListener(FIELD_SET, check);
+    return () => {
+      el.removeEventListener("input", check);
+      el.removeEventListener("change", check);
+      el.removeEventListener("click", check);
+      el.removeEventListener(FIELD_SET, check);
+    };
+  }, [form]);
+  // Saved: what the fields hold now (after the form's reset to the saved values) is the new
+  // starting point.
+  useEffect(() => {
+    if (!state.message || state.error) return;
+    const id = setTimeout(() => {
+      if (!form.current) return;
+      baseline.current = signature(fieldsOf(form.current));
+      setChanged(false);
+    }, 0);
+    return () => clearTimeout(id);
+  }, [state, form]);
+  const line = error
+    ? { text: error, ok: false }
+    : state.message && !changed
+      ? { text: state.message, ok: true }
+      : null;
+  return (
+    <div
+      className={cx(
+        "sticky z-30 mt-6 bottom-[calc(var(--tab-bar-top)+var(--tab-bar-row)+2px+var(--tab-bar-bottom))] sm:bottom-4",
+        typing && "max-sm:hidden",
+      )}
+      data-testid="save-bar"
+    >
+      <div className="glass flex flex-col gap-1 rounded-[28px] p-2">
+        <p
+          aria-live="polite"
+          role={line && !line.ok ? "alert" : undefined}
+          className={cx(
+            "flex items-center justify-center gap-1.5 px-3 text-center text-[0.9375rem] font-semibold",
+            line ? "min-h-7" : "hidden",
+            line?.ok ? "text-status-pass" : "text-status-fail",
+          )}
+        >
+          {line?.ok ? (
+            <svg aria-hidden="true" viewBox="0 0 20 20" className="size-[1.0625rem] shrink-0">
+              <circle cx="10" cy="10" r="10" fill="currentColor" />
+              <path
+                d="M5.8 10.3l2.8 2.8 5.6-5.8"
+                fill="none"
+                stroke="white"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              />
+            </svg>
+          ) : null}
+          {line?.text}
+        </p>
+        <Button type="submit" kind="primary" disabled={pending || !changed} className="w-full">
+          {pending ? "Saving…" : "Save"}
+        </Button>
+      </div>
+    </div>
   );
 }
 
@@ -278,11 +402,14 @@ export function FieldError({ name }: { name: string }) {
  */
 export function BrandingFields({
   logoUrl,
+  logoPath = null,
   companyName,
   primary,
   secondary,
 }: {
   logoUrl: string | null;
+  /** The stored logo's file: its colors are read once per logo, not per signed address. */
+  logoPath?: string | null;
   companyName: string;
   primary: string;
   secondary: string | null;
@@ -301,16 +428,21 @@ export function BrandingFields({
     }
   }
 
+  // The stored logo is read once per logo; a newly chosen one is read in onChange. A save gives
+  // the page a new signed address for the same logo: reading it again filled the default main
+  // color from the logo after the save, so the page looked changed and leaving asked "Discard
+  // changes?" (owner, 2026-10-22). Only the page's first read suggests a color.
+  const readLogo = useRef<string | null>(null);
   useEffect(() => {
-    if (!logoUrl) return;
-    let live = true;
-    void imagePalette(logoUrl).then((colors) => live && apply(colors, false));
-    return () => {
-      live = false;
-    };
-    // The stored logo is read once; a newly chosen one is read in onChange.
+    const key = logoPath ?? logoUrl;
+    if (!logoUrl || !key || readLogo.current === key) return;
+    const first = readLogo.current === null;
+    readLogo.current = key;
+    void imagePalette(logoUrl).then((colors) =>
+      first ? apply(colors, false) : setPalette(colors),
+    );
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [logoUrl]);
+  }, [logoPath, logoUrl]);
 
   return (
     <>
@@ -438,6 +570,14 @@ export function ColorField({
 }) {
   const [own, setOwn] = useState(defaultValue ?? "");
   const value = controlled ?? own;
+  // A value set from outside (the logo's color) tells the Save bar, which listens for typing.
+  const input = useRef<HTMLInputElement>(null);
+  const shown = useRef(value);
+  useEffect(() => {
+    if (shown.current === value) return;
+    shown.current = value;
+    input.current?.dispatchEvent(new Event(FIELD_SET, { bubbles: true }));
+  }, [value]);
   const set = (v: string) => (onChange ? onChange(v) : setOwn(v));
   const error = useFieldError(name);
   const valid = isHexColor(value);
@@ -476,6 +616,7 @@ export function ColorField({
           {optional ? <span className="text-text-muted sm:font-normal"> (optional)</span> : null}
         </span>
         <input
+          ref={input}
           id={id}
           name={name}
           value={value}

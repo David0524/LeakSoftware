@@ -1,12 +1,6 @@
 import type { Metadata } from "next";
 import { AddressField } from "@/components/address-field";
-import {
-  saveBranding,
-  saveCompany,
-  saveFollowups,
-  saveNextJobNumber,
-  saveReportText,
-} from "@/app/actions/settings";
+import { saveCompanySettings } from "@/app/actions/settings";
 import {
   BrandingFields,
   SField,
@@ -17,7 +11,7 @@ import {
   SettingsForm,
   SettingsSection,
 } from "@/components/settings-forms";
-import { ServicesForm } from "@/components/services-form";
+import { ServicesChoice } from "@/components/services-form";
 import { PageHeader } from "@/components/ui";
 import { getOffice } from "@/lib/auth";
 import { getCompany } from "@/lib/data";
@@ -72,140 +66,136 @@ export default async function CompanySettingsPage() {
         title="Company and Branding"
         subtitle="Shown on reports, quotes, and invoices."
       />
-      <div className="max-w-2xl space-y-6">
+      {/* One form and one Save for the whole page (owner, 2026-10-22: "remove all the save
+          buttons on that page and just have one floating one on the bottom"). */}
+      <SettingsForm action={saveCompanySettings} floating className="max-w-2xl space-y-6">
         <SettingsSection title="Services">
-          <ServicesForm services={companyServices(company.settings)} />
+          <div className="px-4 sm:px-0">
+            <ServicesChoice initial={companyServices(company.settings)} />
+          </div>
         </SettingsSection>
 
         <SettingsSection title="Company profile">
-          <SettingsForm action={saveCompany} full>
-            <SettingsFields labelWidth="7.5rem" className="sm:grid sm:grid-cols-2 sm:gap-4">
-              <SField label="Company name" name="name" defaultValue={company.name} required />
-              <SField
-                label="Legal name"
-                name="legal_name"
-                defaultValue={str("legal_name")}
-                hint="If different, for invoices."
-              />
-              <SField label="Phone" name="phone" type="tel" defaultValue={str("phone")} />
-              <SField label="Email" name="email" type="email" defaultValue={str("email")} />
-              <AddressField
-                label="Street address"
-                name="address_line1"
-                defaultValue={str("address_line1")}
-              />
-              <SField
-                label="Address line 2"
-                name="address_line2"
-                defaultValue={str("address_line2")}
-              />
-              <SField label="City" name="city" defaultValue={str("city")} />
-              <SField label="State" name="state" maxLength={2} defaultValue={str("state")} />
-              <SField label="ZIP" name="postal_code" defaultValue={str("postal_code")} />
-              <SSelect
-                label="Time zone"
-                name="timezone"
-                defaultValue={company.timezone}
-                options={zones.map((z) => ({ value: z, label: z.replace("_", " ") }))}
-              />
-              <SField
-                label="Review link"
-                name="review_url"
-                type="url"
-                defaultValue={str("review_url")}
-                hint="Your Google or Yelp page. Review requests link here."
-                className="sm:col-span-2"
-              />
-            </SettingsFields>
-          </SettingsForm>
+          <SettingsFields labelWidth="7.5rem" className="sm:grid sm:grid-cols-2 sm:gap-4">
+            <SField label="Company name" name="name" defaultValue={company.name} required />
+            <SField
+              label="Legal name"
+              name="legal_name"
+              defaultValue={str("legal_name")}
+              hint="If different, for invoices."
+            />
+            <SField label="Phone" name="phone" type="tel" defaultValue={str("phone")} />
+            <SField label="Email" name="email" type="email" defaultValue={str("email")} />
+            <AddressField
+              label="Street address"
+              name="address_line1"
+              defaultValue={str("address_line1")}
+            />
+            <SField
+              label="Address line 2"
+              name="address_line2"
+              defaultValue={str("address_line2")}
+            />
+            <SField label="City" name="city" defaultValue={str("city")} />
+            <SField label="State" name="state" maxLength={2} defaultValue={str("state")} />
+            <SField label="ZIP" name="postal_code" defaultValue={str("postal_code")} />
+            <SSelect
+              label="Time zone"
+              name="timezone"
+              defaultValue={company.timezone}
+              options={zones.map((z) => ({ value: z, label: z.replace("_", " ") }))}
+            />
+            <SField
+              label="Review link"
+              name="review_url"
+              type="url"
+              defaultValue={str("review_url")}
+              hint="Your Google or Yelp page. Review requests link here."
+              className="sm:col-span-2"
+            />
+          </SettingsFields>
         </SettingsSection>
 
         <SettingsSection title="Reminders and Reviews">
-          <SettingsForm action={saveFollowups} full>
-            <p className="px-4 text-[0.9375rem] text-text-muted sm:px-0">
-              Emails sent once a day, in the morning. They stop when a quote is accepted or an
-              invoice is paid, and customers can turn them off from any of them.
-            </p>
-            <SettingsFields className="sm:grid sm:grid-cols-2 sm:gap-4">
-              <SField
-                label="Quote reminders (days after sending)"
-                name="quote_days"
-                defaultValue={(settings.reminders?.quote_days ?? [3, 7]).join(", ")}
-                hint="For quotes not yet accepted. Leave empty for none."
-                stacked
-              />
-              <SField
-                label="Invoice reminders (days after sending)"
-                name="invoice_days"
-                defaultValue={(settings.reminders?.invoice_days ?? [7, 14, 30]).join(", ")}
-                hint="For invoices not yet paid in full. Leave empty for none."
-                stacked
-              />
-            </SettingsFields>
-            <SettingsFields>
-              <SSwitch
-                name="review_requests"
-                label="Ask for a review after a job is paid"
-                defaultChecked={settings.review_requests ?? true}
-                hint={
-                  company.review_url
-                    ? undefined
-                    : "Add your review link under Company profile to send review requests."
-                }
-              />
-            </SettingsFields>
-          </SettingsForm>
+          <p className="px-4 text-[0.9375rem] text-text-muted sm:px-0">
+            Emails sent once a day, in the morning. They stop when a quote is accepted or an invoice
+            is paid, and customers can turn them off from any of them.
+          </p>
+          <SettingsFields className="sm:grid sm:grid-cols-2 sm:gap-4">
+            <SField
+              label="Quote reminders (days after sending)"
+              name="quote_days"
+              defaultValue={(settings.reminders?.quote_days ?? [3, 7]).join(", ")}
+              hint="For quotes not yet accepted. Leave empty for none."
+              stacked
+            />
+            <SField
+              label="Invoice reminders (days after sending)"
+              name="invoice_days"
+              defaultValue={(settings.reminders?.invoice_days ?? [7, 14, 30]).join(", ")}
+              hint="For invoices not yet paid in full. Leave empty for none."
+              stacked
+            />
+          </SettingsFields>
+          <SettingsFields>
+            <SSwitch
+              name="review_requests"
+              label="Ask for a review after a job is paid"
+              defaultChecked={settings.review_requests ?? true}
+              hint={
+                company.review_url
+                  ? undefined
+                  : "Add your review link under Company profile to send review requests."
+              }
+            />
+          </SettingsFields>
         </SettingsSection>
 
         {offersLeak(company.settings) ? (
           <SettingsSection title="Report terms">
-            <SettingsForm action={saveReportText} full>
-              <SettingsFields>
-                <STextArea
-                  label="Disclaimer"
-                  name="report_disclaimer"
-                  rows={8}
-                  defaultValue={str("report_disclaimer")}
-                  hint="Printed at the end of every report, as written. Reports already sent keep the text they were sent with."
-                />
-              </SettingsFields>
-            </SettingsForm>
+            <SettingsFields>
+              <STextArea
+                label="Disclaimer"
+                name="report_disclaimer"
+                rows={8}
+                defaultValue={str("report_disclaimer")}
+                hint="Printed at the end of every report, as written. Reports already sent keep the text they were sent with."
+              />
+            </SettingsFields>
           </SettingsSection>
         ) : null}
 
         <SettingsSection title="Job numbers">
-          <SettingsForm action={saveNextJobNumber} full>
-            <SettingsFields labelWidth="9.5rem">
-              <SField
-                label="Next job number"
-                name="next_job_number"
-                type="number"
-                inputMode="numeric"
-                min={lastNumber + 1}
-                defaultValue={String(lastNumber + 1)}
-                hint={
-                  lastNumber
-                    ? `The last job is #${lastNumber}. To continue from your old system, enter a higher number.`
-                    : "To continue from your old system, enter your next number."
-                }
-              />
-            </SettingsFields>
-          </SettingsForm>
+          {/* What it was, so an unchanged number isn't sent again (numbers only go up). */}
+          <input type="hidden" name="next_job_number_was" value={String(lastNumber + 1)} />
+          <SettingsFields labelWidth="9.5rem">
+            <SField
+              label="Next job number"
+              name="next_job_number"
+              type="number"
+              inputMode="numeric"
+              min={lastNumber + 1}
+              defaultValue={String(lastNumber + 1)}
+              hint={
+                lastNumber
+                  ? `The last job is #${lastNumber}. To continue from your old system, enter a higher number.`
+                  : "To continue from your old system, enter your next number."
+              }
+            />
+          </SettingsFields>
         </SettingsSection>
 
         <SettingsSection title="Branding">
-          <SettingsForm action={saveBranding} full>
-            <SettingsFields className="sm:space-y-6">
-              <BrandingFields
-                logoUrl={logoUrl}
-                companyName={company.name}
-                primary={company.brand_primary}
-                secondary={company.brand_secondary}
-              />
-            </SettingsFields>
-          </SettingsForm>
+          <SettingsFields className="sm:space-y-6">
+            <BrandingFields
+              logoUrl={logoUrl}
+              companyName={company.name}
+              primary={company.brand_primary}
+              secondary={company.brand_secondary}
+            />
+          </SettingsFields>
         </SettingsSection>
-      </div>
+      </SettingsForm>
     </>
   );
 }

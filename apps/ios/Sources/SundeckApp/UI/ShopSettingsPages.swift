@@ -47,25 +47,44 @@
         @State private var nextNumber = ""
         @State private var lastNumber = 0
         @State private var loaded = false
-        @State private var results: [String: (text: String, error: Bool)] = [:]
-        @State private var busy: String?
+        /// The one Save at the bottom (owner, 2026-10-22): busy, then what it said.
+        @State private var saving = false
+        @State private var result: SaveBarResult?
         @State private var choosingLogo = false
         @State private var logo: UIImage?
+        /// The stored logo the picture above is, so a save doesn't read it again.
+        @State private var shownLogoPath: String?
+        @State private var pendingLogo: (data: Data, type: String)?
         /// The logo's colors (logoPalette), and whether the main color was just filled from them.
         @State private var logoColors: [String] = []
         @State private var pickedFromLogo = false
-        /// Each part as loaded or last saved: Back asks while any part has changes not saved.
+        /// The main color the stored logo suggested over the default when the page opened. It
+        /// lights Save, but leaving doesn't ask: the owner changed nothing.
+        @State private var suggestedPrimary: String?
+        /// Each part as loaded or last saved: Save lights, and Back asks, only when a part differs.
         @State private var savedProfile = CompanyProfileForm()
         @State private var savedFollowups = FollowupsForm(nil)
         @State private var savedBranding = BrandingForm(nil)
         @State private var savedDisclaimer = ""
         @State private var savedNextNumber = ""
 
-        private var dirty: Bool {
+        private var numberChanged: Bool { textChanged(nextNumber, from: savedNextNumber) }
+
+        /// Something on the page differs from what's saved: Save is on.
+        private var changed: Bool {
             loaded
                 && (profile != savedProfile || followups != savedFollowups || branding != savedBranding
-                    || textChanged(disclaimer, from: savedDisclaimer) || textChanged(nextNumber, from: savedNextNumber)
-                    || pendingLogo != nil)
+                    || textChanged(disclaimer, from: savedDisclaimer) || numberChanged || pendingLogo != nil)
+        }
+
+        /// Something the owner changed is unsaved: Back asks "Discard changes?". A main color the
+        /// stored logo suggested by itself doesn't count.
+        private var dirty: Bool {
+            var baseline = savedBranding
+            if let suggestedPrimary, branding.primary == suggestedPrimary { baseline.primary = suggestedPrimary }
+            return loaded
+                && (profile != savedProfile || followups != savedFollowups || branding != baseline
+                    || textChanged(disclaimer, from: savedDisclaimer) || numberChanged || pendingLogo != nil)
         }
 
         var body: some View {
@@ -80,6 +99,7 @@
             .navigationTitle(SettingsPage.company.title)
             .navigationBarTitleDisplayMode(.large)
             .discardOnBack(dirty: dirty)
+            .saveBar(changed: changed, busy: saving, result: result) { Task { await save() } }
             .onAppear(perform: load)
             .sheet(isPresented: $choosingLogo) {
                 LibraryPicker(kind: .photo) { results in
@@ -112,48 +132,45 @@
         }
 
         private var companyProfile: some View {
-            VStack(alignment: .leading, spacing: 12) {
-                Grouped(
-                    label: "Company profile",
-                    footer: "Review link: your Google or Yelp page. Review requests link here."
-                ) {
-                    LabeledFieldRow(label: "Company name", text: $profile.name, labelWidth: 132)
-                    LabeledFieldRow(
-                        label: "Legal name", text: $profile.legalName, placeholder: "If different, for invoices",
-                        labelWidth: 132)
-                    LabeledFieldRow(
-                        label: "Phone", text: $profile.phone, keyboard: .phonePad, labelWidth: 132,
-                        contentType: .telephoneNumber)
-                    LabeledFieldRow(
-                        label: "Email", text: $profile.email, keyboard: .emailAddress, labelWidth: 132,
-                        contentType: .emailAddress)
-                    LabeledFieldRow(
-                        label: "Street address", text: $profile.street, labelWidth: 132,
-                        contentType: .streetAddressLine1, onFocusChange: { streetFocused = $0 }
-                    )
-                    .addressLookup(suggester, text: profile.street, focused: streetFocused)
-                    // Address suggestions as you type (owner, 2026-10-20).
-                    AddressSuggestionRows(suggester: suggester) { s in
-                        profile.street = s.line1
-                        profile.city = s.city
-                        profile.state = s.state
-                        profile.zip = s.postalCode
-                    }
-                    LabeledFieldRow(
-                        label: "Address line 2", text: $profile.unit, labelWidth: 132, contentType: .streetAddressLine2)
-                    LabeledFieldRow(label: "City", text: $profile.city, labelWidth: 132, contentType: .addressCity)
-                    LabeledFieldRow(label: "State", text: $profile.state, labelWidth: 132, contentType: .addressState)
-                    LabeledFieldRow(
-                        label: "ZIP", text: $profile.zip, keyboard: .numberPad, labelWidth: 132,
-                        contentType: .postalCode)
-                    LabeledPickerRow(
-                        label: "Time zone", selection: $profile.timeZone, options: timeZoneChoices(profile.timeZone),
-                        optionLabel: { $0.replacingOccurrences(of: "_", with: " ") })
-                    LabeledFieldRow(
-                        label: "Review link", text: $profile.reviewURL, keyboard: .URL, labelWidth: 132,
-                        contentType: .URL)
+            Grouped(
+                label: "Company profile",
+                footer: "Review link: your Google or Yelp page. Review requests link here."
+            ) {
+                LabeledFieldRow(label: "Company name", text: $profile.name, labelWidth: 132)
+                LabeledFieldRow(
+                    label: "Legal name", text: $profile.legalName, placeholder: "If different, for invoices",
+                    labelWidth: 132)
+                LabeledFieldRow(
+                    label: "Phone", text: $profile.phone, keyboard: .phonePad, labelWidth: 132,
+                    contentType: .telephoneNumber)
+                LabeledFieldRow(
+                    label: "Email", text: $profile.email, keyboard: .emailAddress, labelWidth: 132,
+                    contentType: .emailAddress)
+                LabeledFieldRow(
+                    label: "Street address", text: $profile.street, labelWidth: 132,
+                    contentType: .streetAddressLine1, onFocusChange: { streetFocused = $0 }
+                )
+                .addressLookup(suggester, text: profile.street, focused: streetFocused)
+                // Address suggestions as you type (owner, 2026-10-20).
+                AddressSuggestionRows(suggester: suggester) { s in
+                    profile.street = s.line1
+                    profile.city = s.city
+                    profile.state = s.state
+                    profile.zip = s.postalCode
                 }
-                SaveRow(result: results["profile"]) { saveProfile() }
+                LabeledFieldRow(
+                    label: "Address line 2", text: $profile.unit, labelWidth: 132, contentType: .streetAddressLine2)
+                LabeledFieldRow(label: "City", text: $profile.city, labelWidth: 132, contentType: .addressCity)
+                LabeledFieldRow(label: "State", text: $profile.state, labelWidth: 132, contentType: .addressState)
+                LabeledFieldRow(
+                    label: "ZIP", text: $profile.zip, keyboard: .numberPad, labelWidth: 132,
+                    contentType: .postalCode)
+                LabeledPickerRow(
+                    label: "Time zone", selection: $profile.timeZone, options: timeZoneChoices(profile.timeZone),
+                    optionLabel: { $0.replacingOccurrences(of: "_", with: " ") })
+                LabeledFieldRow(
+                    label: "Review link", text: $profile.reviewURL, keyboard: .URL, labelWidth: 132,
+                    contentType: .URL)
             }
         }
 
@@ -176,101 +193,102 @@
                     "Days after sending. Quote reminders are for quotes not yet accepted; invoice reminders for invoices not yet paid in full. Leave empty for none."
                 )
                 .textRole(.secondary).foregroundStyle(Color.textMuted)
-                SaveRow(result: results["followups"]) { saveFollowups() }
             }
         }
 
         private var reportTerms: some View {
-            VStack(alignment: .leading, spacing: 12) {
-                Grouped(label: "Report terms", footer: reportDisclaimerHint) {
-                    LabeledFieldRow(label: "Disclaimer", text: $disclaimer, labelWidth: 104, multiline: true)
-                }
-                SaveRow(result: results["terms"]) { saveTerms() }
+            Grouped(label: "Report terms", footer: reportDisclaimerHint) {
+                LabeledFieldRow(label: "Disclaimer", text: $disclaimer, labelWidth: 104, multiline: true)
             }
         }
 
         private var jobNumbers: some View {
-            VStack(alignment: .leading, spacing: 12) {
-                Grouped(label: "Job numbers", footer: nextJobNumberHint(lastNumber: lastNumber)) {
-                    LabeledFieldRow(label: "Next job number", text: $nextNumber, keyboard: .numberPad, labelWidth: 150)
-                }
-                SaveRow(busy: busy == "number", result: results["number"]) { Task { await saveNextNumber() } }
+            Grouped(label: "Job numbers", footer: nextJobNumberHint(lastNumber: lastNumber)) {
+                LabeledFieldRow(label: "Next job number", text: $nextNumber, keyboard: .numberPad, labelWidth: 150)
             }
         }
 
         private var brandingSection: some View {
-            VStack(alignment: .leading, spacing: 12) {
-                Grouped(label: "Branding", footer: "PNG or JPEG, under 2 MB. A wide logo works best.") {
-                    VStack(alignment: .leading, spacing: 12) {
-                        Text("Logo").textRole(.body).foregroundStyle(Color.text)
-                        if let logo {
-                            Image(uiImage: logo).resizable().scaledToFit().frame(maxHeight: 80)
-                                .accessibilityLabel("\(profile.name) logo")
-                        } else {
-                            Text("No logo yet. Reports show your company name instead.")
-                                .textRole(.secondary).foregroundStyle(Color.textMuted)
-                        }
-                        Button(logo == nil ? "Choose Logo" : "Change Logo") { choosingLogo = true }
-                            .buttonStyle(.secondary)
+            Grouped(label: "Branding", footer: "PNG or JPEG, under 2 MB. A wide logo works best.") {
+                VStack(alignment: .leading, spacing: 12) {
+                    Text("Logo").textRole(.body).foregroundStyle(Color.text)
+                    if let logo {
+                        Image(uiImage: logo).resizable().scaledToFit().frame(maxHeight: 80)
+                            .accessibilityLabel("\(profile.name) logo")
+                    } else {
+                        Text("No logo yet. Reports show your company name instead.")
+                            .textRole(.secondary).foregroundStyle(Color.textMuted)
                     }
-                    .padding(.horizontal, CGFloat(Spacing.rowHorizontal))
-                    .padding(.vertical, CGFloat(Spacing.rowVertical))
-                    BrandColorRow(
-                        label: "Main color", hex: $branding.primary, logoColors: logoColors,
-                        note: pickedFromLogo ? "Color picked from your logo." : nil
-                    ) { pickedFromLogo = false }
-                    BrandColorRow(
-                        label: "Accent color", hex: $branding.secondary, logoColors: logoColors, optional: true)
+                    Button(logo == nil ? "Choose Logo" : "Change Logo") { choosingLogo = true }
+                        .buttonStyle(.secondary)
                 }
-                SaveRow(busy: busy == "logo", result: results["branding"]) { saveBranding() }
+                .padding(.horizontal, CGFloat(Spacing.rowHorizontal))
+                .padding(.vertical, CGFloat(Spacing.rowVertical))
+                BrandColorRow(
+                    label: "Main color", hex: $branding.primary, logoColors: logoColors,
+                    note: pickedFromLogo ? "Color picked from your logo." : nil
+                ) {
+                    pickedFromLogo = false
+                    suggestedPrimary = nil
+                }
+                BrandColorRow(
+                    label: "Accent color", hex: $branding.secondary, logoColors: logoColors, optional: true)
             }
         }
 
-        // MARK: Saves
+        // MARK: Save
 
-        private func saveProfile() {
-            if let e = firstError(profile.errors, ["name", "timezone", "review_url"]) {
-                results["profile"] = (e, true)
+        /// The first problem on the page, top to bottom (the website's field checks).
+        private var problem: String? {
+            firstError(profile.errors, ["name", "timezone", "review_url"])
+                ?? firstError(followups.errors, ["quote_days", "invoice_days"])
+                ?? reportDisclaimerProblem(disclaimer)
+                ?? (numberChanged ? nextJobNumberProblem(nextNumber) : nil)
+                ?? firstError(branding.errors, ["brand_primary", "brand_secondary"])
+        }
+
+        /// Saves every part that changed. The synced parts save on the phone, so offline too; the
+        /// logo and the next job number need a connection, and stay unsaved when it's missing.
+        /// Each part's baseline becomes what was stored (trimmed, "az" as "AZ"), so the page isn't
+        /// left looking changed after a save.
+        private func save() async {
+            if let problem {
+                result = SaveBarResult(text: problem, error: true)
                 return
             }
+            saving = true
+            defer { saving = false }
+            var failure: String?
             do {
-                try ShopSettingsWrites.saveProfile(sync, companyId: companyId, profile, locate: app.locate)
+                if profile != savedProfile {
+                    try ShopSettingsWrites.saveProfile(sync, companyId: companyId, profile, locate: app.locate)
+                    profile = CompanyProfileForm(row)
+                    savedProfile = profile
+                }
+                if followups != savedFollowups {
+                    let settings = followups.settings(row?["settings"] ?? session.company?.settings)
+                    try ShopSettingsWrites.saveSettings(sync, companyId: companyId, settings)
+                    followups = FollowupsForm(row?["settings"])
+                    savedFollowups = followups
+                }
+                if textChanged(disclaimer, from: savedDisclaimer) {
+                    try ShopSettingsWrites.saveDisclaimer(sync, companyId: companyId, disclaimer)
+                    disclaimer = row?["report_disclaimer"]?.string ?? ""
+                    savedDisclaimer = disclaimer
+                }
+                if branding != savedBranding {
+                    try ShopSettingsWrites.saveBranding(sync, companyId: companyId, branding, logoPath: nil)
+                    branding = BrandingForm(row)
+                    savedBranding = branding
+                    suggestedPrimary = nil
+                }
                 session.reloadCompanies()
-                savedProfile = profile
-                results["profile"] = ("Saved.", false)
             } catch {
-                results["profile"] = (String(describing: error), true)
+                failure = String(describing: error)
             }
-        }
-
-        private func saveFollowups() {
-            if let e = firstError(followups.errors, ["quote_days", "invoice_days"]) {
-                results["followups"] = (e, true)
-                return
-            }
-            do {
-                try ShopSettingsWrites.saveSettings(
-                    sync, companyId: companyId, followups.settings(session.company?.settings))
-                session.reloadCompanies()
-                savedFollowups = followups
-                results["followups"] = ("Saved.", false)
-            } catch {
-                results["followups"] = (String(describing: error), true)
-            }
-        }
-
-        private func saveTerms() {
-            if let e = reportDisclaimerProblem(disclaimer) {
-                results["terms"] = (e, true)
-                return
-            }
-            do {
-                try ShopSettingsWrites.saveDisclaimer(sync, companyId: companyId, disclaimer)
-                savedDisclaimer = disclaimer
-                results["terms"] = ("Saved.", false)
-            } catch {
-                results["terms"] = (String(describing: error), true)
-            }
+            if failure == nil, let pendingLogo { failure = await uploadLogo(pendingLogo) }
+            if failure == nil, numberChanged { failure = await saveNextNumber() }
+            result = SaveBarResult(text: failure ?? "Saved.", error: failure != nil)
         }
 
         private struct NextNumber: Encodable {
@@ -284,27 +302,20 @@
         }
 
         /// Numbers only go up (set_next_job_number): on the server, so it needs a connection.
-        private func saveNextNumber() async {
-            if let e = nextJobNumberProblem(nextNumber) {
-                results["number"] = (e, true)
-                return
-            }
+        private func saveNextNumber() async -> String? {
             let n = Int(nextNumber.trimmingCharacters(in: .whitespaces)) ?? 0
-            busy = "number"
-            defer { busy = nil }
             do {
                 try await app.client.rpc(
                     "set_next_job_number", params: NextNumber(targetCompany: companyId, nextNumber: n)
                 ).execute()
+                nextNumber = String(n)
                 savedNextNumber = nextNumber
-                results["number"] = ("The next job will be #\(n).", false)
+                return nil
             } catch {
                 let message = String(describing: error)
-                results["number"] = (isNetworkFailure(message) ? WebAPI.Failure.noConnection : message, true)
+                return isNetworkFailure(message) ? WebAPI.Failure.noConnection : message
             }
         }
-
-        @State private var pendingLogo: (data: Data, type: String)?
 
         private func pickLogo(_ data: Data) {
             // A PNG keeps its transparency; anything else is sent as JPEG.
@@ -313,73 +324,61 @@
             guard let image = UIImage(data: data),
                 let encoded = png ? image.pngData() : image.jpegData(compressionQuality: 0.9)
             else {
-                results["branding"] = ("Use a PNG, JPEG, or SVG file.", true)
+                result = SaveBarResult(text: "Use a PNG, JPEG, or SVG file.", error: true)
                 return
             }
             let mime = png ? "image/png" : "image/jpeg"
             if let e = logoFileProblem(contentType: mime, bytes: encoded.count).error {
-                results["branding"] = (e, true)
+                result = SaveBarResult(text: e, error: true)
                 return
             }
             logo = image
             pendingLogo = (encoded, mime)
-            results["branding"] = nil
+            result = nil
+            suggestedPrimary = nil
             readColors(image, newLogo: true)
         }
 
+        /// The stored logo, read once per logo: a save that leaves it alone doesn't read it (or
+        /// its colors) again, so a main color chosen over the logo's stays chosen.
         private func loadLogo() async {
-            guard pendingLogo == nil, let path = row?["logo_path"]?.string,
+            guard pendingLogo == nil, let path = row?["logo_path"]?.string, path != shownLogoPath,
                 let url = try? await app.client.storage.from("company-assets").createSignedURL(
                     path: path, expiresIn: 3600),
                 let (data, _) = try? await URLSession.shared.data(from: url)
             else { return }
+            let first = shownLogoPath == nil
+            shownLogoPath = path
             logo = UIImage(data: data)
-            if let logo { readColors(logo, newLogo: false) }
+            if let logo { readColors(logo, newLogo: false, suggest: first) }
         }
 
         /// The logo's colors; a new logo fills the main color, an old one only over the default.
-        private func readColors(_ image: UIImage, newLogo: Bool) {
+        private func readColors(_ image: UIImage, newLogo: Bool, suggest: Bool = true) {
             logoColors = logoPalette(logoPixels(image))
-            if let next = suggestedBrandColor(logoColors, current: branding.primary, newLogo: newLogo) {
-                branding.primary = next
-                pickedFromLogo = true
-            }
+            guard suggest,
+                let next = suggestedBrandColor(logoColors, current: branding.primary, newLogo: newLogo)
+            else { return }
+            branding.primary = next
+            pickedFromLogo = true
+            if !newLogo { suggestedPrimary = next }
         }
 
-        private func saveBranding() {
-            if let e = firstError(branding.errors, ["brand_primary", "brand_secondary"]) {
-                results["branding"] = (e, true)
-                return
-            }
-            guard let pendingLogo else {
-                write(logoPath: nil)
-                return
-            }
-            busy = "logo"
-            Task {
-                defer { busy = nil }
-                // A new name each time, so reports already sent keep pointing at the old logo.
-                let ext = pendingLogo.type == "image/png" ? "png" : "jpg"
-                let path = "\(companyId)/logo-\(Int(Date().timeIntervalSince1970 * 1000)).\(ext)"
-                do {
-                    try await app.client.storage.from("company-assets")
-                        .upload(path, data: pendingLogo.data, options: FileOptions(contentType: pendingLogo.type))
-                    self.pendingLogo = nil
-                    write(logoPath: path)
-                } catch {
-                    let message = String(describing: error)
-                    results["branding"] = (isNetworkFailure(message) ? WebAPI.Failure.noConnection : message, true)
-                }
-            }
-        }
-
-        private func write(logoPath: String?) {
+        /// A new name each time, so reports already sent keep pointing at the old logo.
+        private func uploadLogo(_ pending: (data: Data, type: String)) async -> String? {
+            let ext = pending.type == "image/png" ? "png" : "jpg"
+            let path = "\(companyId)/logo-\(Int(Date().timeIntervalSince1970 * 1000)).\(ext)"
             do {
-                try ShopSettingsWrites.saveBranding(sync, companyId: companyId, branding, logoPath: logoPath)
+                try await app.client.storage.from("company-assets")
+                    .upload(path, data: pending.data, options: FileOptions(contentType: pending.type))
+                try ShopSettingsWrites.saveBranding(sync, companyId: companyId, branding, logoPath: path)
+                pendingLogo = nil
+                shownLogoPath = path
                 savedBranding = branding
-                results["branding"] = ("Saved.", false)
+                return nil
             } catch {
-                results["branding"] = (String(describing: error), true)
+                let message = String(describing: error)
+                return isNetworkFailure(message) ? WebAPI.Failure.noConnection : message
             }
         }
     }

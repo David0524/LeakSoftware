@@ -16,6 +16,8 @@ const ICONS = {
   settings: { sf: "gearshape", ion: "settings-outline" },
   chevron: { sf: "chevron.forward", ion: "chevron-forward" },
   checkmark: { sf: "checkmark", ion: "checkmark" },
+  /** "Saved." on a page's Save bar. */
+  saved: { sf: "checkmark.circle.fill", ion: "checkmark-circle" },
   call: { sf: "phone.fill", ion: "call" },
   message: { sf: "message", ion: "chatbubble-outline" },
   directions: { sf: "location", ion: "navigate-outline" },

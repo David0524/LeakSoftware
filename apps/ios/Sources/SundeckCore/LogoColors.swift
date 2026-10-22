@@ -8,9 +8,10 @@ import Foundation
 /// The default brand color of a new shop (`DEFAULT_BRAND_COLOR`).
 public let defaultBrandColor = "#12263A"
 
-/// Swatches offered beside the logo's own colors (`BRAND_COLOR_PRESETS`).
+/// Swatches offered beside the logo's own colors (`BRAND_COLOR_PRESETS`): seven since slate
+/// #3C4450 went (owner, 2026-10-22: "Remove one color from Accent -> More Colors to save space").
 public let brandColorPresets = [
-    "#12263A", "#1D5FA8", "#0F7C80", "#2E7D32", "#B3261E", "#C2410C", "#5B3A9B", "#3C4450",
+    "#12263A", "#1D5FA8", "#0F7C80", "#2E7D32", "#B3261E", "#C2410C", "#5B3A9B",
 ]
 
 private struct ColorCluster {

@@ -66,120 +66,118 @@ function failed(error: { message: string } | null, fallback = "Couldn’t save. 
 // Company profile, branding, payments
 // ---------------------------------------------------------------------------
 
-export async function saveCompany(_: FormState, form: FormData): Promise<FormState> {
+/**
+ * Settings › Company and Branding, the whole page at once (owner, 2026-10-22: "Let's remove all
+ * the save buttons on that page and just have one floating one on the bottom"). Every field is
+ * checked first, so nothing is saved while one is wrong; then the shop's row in one update, the
+ * logo when one was chosen, the package when Services changed, and the next job number when it
+ * changed (numbers only go up, so an unchanged one isn't sent again).
+ */
+export async function saveCompanySettings(_: FormState, form: FormData): Promise<FormState> {
   const { office, supabase } = await owner();
+  const fields: Record<string, string> = {};
   const name = text(form, "name");
-  if (!name) return { fields: { name: "Enter the company name." } };
+  if (!name) fields.name = "Enter the company name.";
   const timezone = text(form, "timezone");
   if (!Intl.supportedValuesOf("timeZone").includes(timezone) && timezone !== "UTC")
-    return { fields: { timezone: "Pick a time zone." } };
+    fields.timezone = "Pick a time zone.";
   // It goes into customer emails as a link: web pages only, never javascript: or data:.
   const review = text(form, "review_url");
   if (review && !isWebUrl(review))
-    return { fields: { review_url: "Enter a web address that starts with https://." } };
-  const { error } = await supabase
-    .from("company")
-    .update({
-      name,
-      legal_name: optional(form, "legal_name"),
-      phone: optional(form, "phone"),
-      email: optional(form, "email"),
-      address_line1: optional(form, "address_line1"),
-      address_line2: optional(form, "address_line2"),
-      city: optional(form, "city"),
-      state: optional(form, "state"),
-      postal_code: optional(form, "postal_code"),
-      review_url: optional(form, "review_url"),
-      timezone,
-    })
-    .eq("id", office.company.id);
-  if (error) return failed(error);
-  // Every route starts at the shop: find its coordinates when the address changed.
-  await locateCompany(office);
-  revalidatePath("/", "layout");
-  return { message: "Saved." };
-}
-
-/** Reminder emails and review requests (M10). Sent once a day by the server. */
-export async function saveFollowups(_: FormState, form: FormData): Promise<FormState> {
-  const { office, supabase } = await owner();
+    fields.review_url = "Enter a web address that starts with https://.";
   const quoteDays = parseReminderDays(text(form, "quote_days"));
   const invoiceDays = parseReminderDays(text(form, "invoice_days"));
-  const fields: Record<string, string> = {};
   if (!quoteDays) fields.quote_days = "Enter days after sending, like 3, 7.";
   if (!invoiceDays) fields.invoice_days = "Enter days after sending, like 7, 14, 30.";
+  const hasTerms = form.has("report_disclaimer");
+  const disclaimer = text(form, "report_disclaimer");
+  if (disclaimer.length > 20_000) fields.report_disclaimer = "Keep it under 20,000 characters.";
+  const nextText = text(form, "next_job_number");
+  const next = Number(nextText);
+  const numberChanged = nextText !== text(form, "next_job_number_was");
+  if (numberChanged && (!Number.isInteger(next) || next < 1 || next > 2_000_000_000))
+    fields.next_job_number = "Enter a whole number, like 10450.";
+  const primary = text(form, "brand_primary");
+  const secondary = text(form, "brand_secondary");
+  if (!isHexColor(primary)) fields.brand_primary = "Use a color like #12263A.";
+  if (secondary && !isHexColor(secondary)) fields.brand_secondary = "Use a color like #EE6A1F.";
+  const logo = form.get("logo");
+  const logoFile = logo instanceof File && logo.size > 0 ? logo : null;
+  const ext = logoFile
+    ? { "image/png": "png", "image/jpeg": "jpg", "image/svg+xml": "svg" }[logoFile.type]
+    : undefined;
+  if (logoFile && !ext) fields.logo = "Use a PNG, JPEG, or SVG file.";
+  else if (logoFile && logoFile.size > 2 * 1024 * 1024) fields.logo = "Use a file under 2 MB.";
+  const services = form.has("services") ? text(form, "services") : null;
+  if (services !== null && services !== "pool" && services !== "leak" && services !== "both")
+    return { error: "Pick what your shop does." };
   if (Object.keys(fields).length) return { fields };
-  const { data: company } = await supabase
+
+  const { data: company, error: readError } = await supabase
     .from("company")
     .select("settings")
     .eq("id", office.company.id)
     .single();
-  const settings = {
-    ...((company?.settings ?? {}) as Record<string, unknown>),
-    reminders: { quote_days: quoteDays, invoice_days: invoiceDays },
-    review_requests: checked(form, "review_requests"),
-  };
-  const { error } = await supabase.from("company").update({ settings }).eq("id", office.company.id);
-  if (error) return failed(error);
-  return done("/settings/company");
-}
-
-/** The shop's own legal text, printed at the end of every report (M8.5). */
-export async function saveReportText(_: FormState, form: FormData): Promise<FormState> {
-  const { office, supabase } = await owner();
-  const disclaimer = text(form, "report_disclaimer");
-  if (disclaimer.length > 20_000)
-    return { fields: { report_disclaimer: "Keep it under 20,000 characters." } };
-  const { error } = await supabase
-    .from("company")
-    .update({ report_disclaimer: disclaimer || null })
-    .eq("id", office.company.id);
-  if (error) return failed(error);
-  return done("/settings/company");
-}
-
-/** Continue job numbers from the shop's old system. Numbers only go up. */
-export async function saveNextJobNumber(_: FormState, form: FormData): Promise<FormState> {
-  const { office, supabase } = await owner();
-  const next = Number(text(form, "next_job_number"));
-  if (!Number.isInteger(next) || next < 1 || next > 2_000_000_000)
-    return { fields: { next_job_number: "Enter a whole number, like 10450." } };
-  const { error } = await supabase.rpc("set_next_job_number", {
-    target_company: office.company.id,
-    next_number: next,
-  });
-  if (error) return { fields: { next_job_number: error.message } };
-  return done("/settings/company", `The next job will be #${next}.`);
-}
-
-export async function saveBranding(_: FormState, form: FormData): Promise<FormState> {
-  const { office, supabase } = await owner();
-  const primary = text(form, "brand_primary");
-  const secondary = text(form, "brand_secondary");
-  if (!isHexColor(primary)) return { fields: { brand_primary: "Use a color like #12263A." } };
-  if (secondary && !isHexColor(secondary))
-    return { fields: { brand_secondary: "Use a color like #EE6A1F." } };
-
-  const update: Record<string, string | null> = {
+  if (readError) return failed(readError);
+  const current = (company.settings ?? {}) as Record<string, unknown>;
+  const servicesChanged = services !== null && services !== (current.services ?? "both");
+  const update: Record<string, unknown> = {
+    name,
+    legal_name: optional(form, "legal_name"),
+    phone: optional(form, "phone"),
+    email: optional(form, "email"),
+    address_line1: optional(form, "address_line1"),
+    address_line2: optional(form, "address_line2"),
+    city: optional(form, "city"),
+    state: optional(form, "state")?.toUpperCase() ?? null,
+    postal_code: optional(form, "postal_code"),
+    review_url: review || null,
+    timezone,
+    settings: {
+      ...current,
+      reminders: { quote_days: quoteDays, invoice_days: invoiceDays },
+      review_requests: checked(form, "review_requests"),
+      ...(servicesChanged ? { services } : {}),
+    },
     brand_primary: primary.toUpperCase(),
     brand_secondary: secondary ? secondary.toUpperCase() : null,
+    ...(hasTerms ? { report_disclaimer: disclaimer || null } : {}),
   };
-  const logo = form.get("logo");
-  if (logo instanceof File && logo.size > 0) {
-    const ext = { "image/png": "png", "image/jpeg": "jpg", "image/svg+xml": "svg" }[logo.type];
-    if (!ext) return { fields: { logo: "Use a PNG, JPEG, or SVG file." } };
-    if (logo.size > 2 * 1024 * 1024) return { fields: { logo: "Use a file under 2 MB." } };
+  if (logoFile && ext) {
     // A new name each time, so reports already sent keep pointing at the old logo.
     const path = `${office.company.id}/logo-${Date.now()}.${ext}`;
     const { error } = await supabase.storage
       .from("company-assets")
-      .upload(path, logo, { contentType: logo.type, upsert: false });
+      .upload(path, logoFile, { contentType: logoFile.type, upsert: false });
     if (error) return failed(error);
     update.logo_path = path;
   }
   const { error } = await supabase.from("company").update(update).eq("id", office.company.id);
   if (error) return failed(error);
-  return done("/settings/company");
+  // Every route starts at the shop: find its coordinates when the address changed.
+  await locateCompany(office);
+  if (servicesChanged) {
+    // A package taken on brings its checklist, tests, and price book (once; nothing is removed).
+    const { error: setup } = await supabase.rpc("add_package_defaults", {
+      target_company: office.company.id,
+      services,
+    });
+    if (setup) return failed(setup);
+    // The package sets the Sundeck Pro price.
+    after(() => syncSubscriptionPrice(office.company.id).catch(logPriceSyncError));
+  }
+  if (numberChanged) {
+    const { error: numberError } = await supabase.rpc("set_next_job_number", {
+      target_company: office.company.id,
+      next_number: next,
+    });
+    if (numberError) {
+      revalidatePath("/", "layout");
+      return { fields: { next_job_number: numberError.message } };
+    }
+  }
+  revalidatePath("/", "layout");
+  return { message: "Saved." };
 }
 
 export async function savePayments(_: FormState, form: FormData): Promise<FormState> {
@@ -270,32 +268,6 @@ export async function revokeInvite(_: FormState, form: FormData): Promise<FormSt
   const { error } = await supabase.rpc("revoke_invite", { invite_id: text(form, "id") });
   if (error) return failed(error);
   return done("/settings/team", "Invite revoked.");
-}
-
-/** Owners: what the shop does, pool care, leak detection, or both (owner, 2026-10-16). */
-export async function saveServices(_: FormState, form: FormData): Promise<FormState> {
-  const { office, supabase } = await owner();
-  const choice = text(form, "services");
-  if (choice !== "pool" && choice !== "leak" && choice !== "both")
-    return { error: "Pick what your shop does." };
-  const { data: company } = await supabase
-    .from("company")
-    .select("settings")
-    .eq("id", office.company.id)
-    .single();
-  const settings = { ...((company?.settings ?? {}) as Record<string, unknown>), services: choice };
-  const { error } = await supabase.from("company").update({ settings }).eq("id", office.company.id);
-  if (error) return failed(error);
-  // A package taken on brings its checklist, tests, and price book (once; nothing is removed).
-  const { error: setup } = await supabase.rpc("add_package_defaults", {
-    target_company: office.company.id,
-    services: choice,
-  });
-  if (setup) return failed(setup);
-  // The package sets the Sundeck Pro price.
-  after(() => syncSubscriptionPrice(office.company.id).catch(logPriceSyncError));
-  revalidatePath("/", "layout");
-  return { message: "Saved." };
 }
 
 /** Owners: where On My Way texts go out from (owner, 2026-10-16). */

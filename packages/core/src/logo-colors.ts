@@ -6,7 +6,12 @@
 /** The default brand color of a new shop (company.brand_primary's column default). */
 export const DEFAULT_BRAND_COLOR = "#12263A";
 
-/** Swatches offered beside the logo's own colors: dark enough for white text, except none. */
+/**
+ * Swatches offered beside the logo's own colors: dark enough for white text. Seven (owner,
+ * 2026-10-22: "Remove one color from Accent -> More Colors to save space"): slate #3C4450 went,
+ * the closest to the default navy, so the Accent row's None and seven fill one row on a large
+ * iPhone. A shop already on slate still sees it, first and selected (brandColorChoices).
+ */
 export const BRAND_COLOR_PRESETS: readonly string[] = [
   "#12263A",
   "#1D5FA8",
@@ -15,7 +20,6 @@ export const BRAND_COLOR_PRESETS: readonly string[] = [
   "#B3261E",
   "#C2410C",
   "#5B3A9B",
-  "#3C4450",
 ];
 
 const hex2 = (n: number) => n.toString(16).padStart(2, "0").toUpperCase();

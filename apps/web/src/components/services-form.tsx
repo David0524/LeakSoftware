@@ -2,9 +2,7 @@
 
 import { useState } from "react";
 import type { Services } from "@leakbook/core";
-import { saveServices } from "@/app/actions/settings";
 import { Segmented } from "./segmented";
-import { SettingsForm } from "./settings-forms";
 
 const NOTE: Record<Services, string> = {
   pool: "Cleaning routes, maintenance plans, the service checklist, the chemical calculator, repair quotes, and monthly billing. Leak detection is hidden.",
@@ -15,7 +13,8 @@ const NOTE: Record<Services, string> = {
 /**
  * What the shop does: Pool Care, Leak Detection, or Both, with what each shows. One app, two
  * packages, and a combination for the rarer shop that does both (owner, 2026-10-16). Used
- * when signing up and in Settings › Company. Posts as `services`.
+ * when signing up and in Settings › Company (saved with the page's one Save). Posts as
+ * `services`.
  */
 export function ServicesChoice({ initial }: { initial: Services }) {
   const [value, setValue] = useState<Services>(initial);
@@ -34,16 +33,5 @@ export function ServicesChoice({ initial }: { initial: Services }) {
       />
       <p className="text-[0.9375rem] text-text-muted">{NOTE[value]}</p>
     </div>
-  );
-}
-
-/** Settings › Company: what the shop does. */
-export function ServicesForm({ services }: { services: Services }) {
-  return (
-    <SettingsForm action={saveServices} full>
-      <div className="px-4 sm:px-0">
-        <ServicesChoice initial={services} />
-      </div>
-    </SettingsForm>
   );
 }

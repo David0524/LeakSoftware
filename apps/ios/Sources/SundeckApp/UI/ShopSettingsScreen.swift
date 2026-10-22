@@ -94,7 +94,8 @@
             let manager = isManagerRole(company?.role)
             let canAdd = manager && (page == .priceBook || page == .exclusions)
             List {
-                Section {
+                // The segmented control isn't clipped by the list's rounded corners (ListTopSection).
+                ListTopSection {
                     VStack(alignment: .leading, spacing: 16) {
                         if let subtitle = settingsSubtitle(page, services: services, list: list) {
                             Text(subtitle).textRole(.body).foregroundStyle(Color.textMuted)

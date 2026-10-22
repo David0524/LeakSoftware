@@ -38,7 +38,9 @@
             let services = company?.services ?? .both
             let shows = customerShows(services, counts: counts)
             List {
-                Section {
+                // The search and pickers aren't clipped by the list's rounded corners (owner,
+                // 2026-10-22): see ListTopSection.
+                ListTopSection {
                     VStack(alignment: .leading, spacing: 16) {
                         SearchField(text: $search, placeholder: "Name, phone, or email")
                         // Sort above Show, so Show's count is never cut off ("On a Plan (65)").

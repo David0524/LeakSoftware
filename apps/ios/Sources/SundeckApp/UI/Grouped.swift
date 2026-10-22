@@ -252,4 +252,26 @@
                 .listRowSeparatorTint(Color.separator)
         }
     }
+
+    /// The block at the top of a `List` page that holds outlined controls: a search field,
+    /// pickers, a segmented control (owner, 2026-10-22: More › Customers' search field and
+    /// Sort and Show "sit on rounded tiles and their edges/corners get cut off. That occurs in a
+    /// few places"). An inset grouped list clips each row's content to its section's rounded
+    /// corners, which on iOS 26 are much rounder than a field's 10 pt, so a field laid edge to
+    /// edge in a plain row (`plainListRow`) lost its corners and outline, and its focus ring.
+    /// This draws the block as an empty section's header, which the list doesn't clip; it
+    /// lines up with the rows below, as the plain row did.
+    struct ListTopSection<Content: View>: View {
+        @ViewBuilder var content: Content
+
+        var body: some View {
+            Section {
+            } header: {
+                content
+                    .textCase(nil)
+                    .listRowInsets(EdgeInsets())
+                    .frame(maxWidth: .infinity, alignment: .leading)
+            }
+        }
+    }
 #endif
