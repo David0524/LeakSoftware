@@ -37,6 +37,7 @@ async function HealthBody() {
       return { ...u, limit, share: limit ? u.used / limit : 0 };
     })
     .sort((a, b) => b.share - a.share || b.used - a.used);
+  const down = status.checks.filter((c) => !c.ok).length;
   const failed = h.failed_messages_24h.reduce((n, f) => n + f.n, 0);
   return (
     <>
@@ -44,9 +45,9 @@ async function HealthBody() {
       <div className="grid grid-cols-4 gap-4">
         <Stat
           label="Services"
-          value={status.ok ? "All Up" : "Problem"}
-          tone={status.ok ? undefined : "fail"}
-          detail={`${status.checks.filter((c) => c.ok).length} of ${status.checks.length} checks pass`}
+          value={down ? `${down} Down` : "All Up"}
+          tone={down ? "fail" : undefined}
+          detail={`${status.checks.length - down} of ${status.checks.length} checks pass`}
         />
         <Stat
           label="Failed Sends"

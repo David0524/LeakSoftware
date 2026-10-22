@@ -127,7 +127,7 @@ export function monthStarts(now: Date, months = 12): Date[] {
 
 /**
  * MRR at the end of each month (the current month: now), from the subscription history, at
- * each shop's price today. Shops that no longer exist aren't counted. History starts
+ * each shop's price today. Only shops Stripe bills count; shops that no longer exist don't. History starts
  * 2026-10-22, so earlier months only know when each shop started its trial.
  */
 export function mrrHistory(
@@ -136,7 +136,10 @@ export function mrrHistory(
   now: Date,
   months = 12,
 ): { month: string; cents: Cents }[] {
-  const prices = new Map(shops.map((s) => [s.id, shopPriceCents(s)]));
+  // Only shops Stripe bills count, as in mrrCents: an active shop with no subscription is comped.
+  const prices = new Map(
+    shops.filter((s) => s.stripe_subscription_id).map((s) => [s.id, shopPriceCents(s)]),
+  );
   const history = byShop(events);
   return monthStarts(now, months).map((start, i, all) => {
     const next = all[i + 1];

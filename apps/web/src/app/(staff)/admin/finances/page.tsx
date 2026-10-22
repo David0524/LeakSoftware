@@ -264,7 +264,9 @@ function ShopList({ shops }: { shops: { id: string; name: string; note: string }
             className="flex min-h-11 items-center justify-between gap-3 py-1.5 hover:text-link"
           >
             <span className="font-medium">{s.name}</span>
-            <span className="text-[0.9375rem] text-text-muted">{s.note}</span>
+            <span className="shrink-0 text-[0.9375rem] whitespace-nowrap text-text-muted">
+              {s.note}
+            </span>
           </Link>
         </li>
       ))}

@@ -90,8 +90,14 @@ describe("prices and MRR", () => {
 
   it("rebuilds MRR month by month from the history", () => {
     const now = new Date("2026-10-22T12:00:00Z");
-    const shops = [shop({ id: "a" }), shop({ id: "b" })];
+    // "c" is active but comped (no Stripe subscription): not revenue.
+    const shops = [
+      shop({ id: "a" }),
+      shop({ id: "b" }),
+      shop({ id: "c", stripe_subscription_id: null }),
+    ];
     const events = [
+      { company_id: "c", status: "active", plan: "standard", at: "2026-08-01T00:00:00Z" },
       { company_id: "a", status: "trialing", plan: "standard", at: "2026-08-05T00:00:00Z" },
       { company_id: "a", status: "active", plan: "standard", at: "2026-09-05T00:00:00Z" },
       { company_id: "b", status: "trialing", plan: "standard", at: "2026-09-10T00:00:00Z" },

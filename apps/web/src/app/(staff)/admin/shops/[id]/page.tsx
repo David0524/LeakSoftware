@@ -29,7 +29,7 @@ import { CopyLink } from "@/components/settings-forms";
 import { iconButtonClass, PageHeader } from "@/components/ui";
 import { siteOrigin } from "@/lib/origin";
 import { dailyLimit } from "@/server/usage";
-import { loadShop, staffGate } from "@/server/staff";
+import { loadShop, staffGate, type TeamMember } from "@/server/staff";
 
 export const metadata: Metadata = { title: "Shop" };
 
@@ -78,6 +78,7 @@ async function Shop({ params }: Pick<PageProps<"/admin/shops/[id]">, "params">) 
     .filter(Boolean)
     .join(" · ");
   const u = d.usage;
+  const off = d.team.filter((m) => m.status !== "active");
   const open = d.support.find((x) => !x.ended_at && Date.parse(x.ends_at) > new Date().getTime());
 
   return (
@@ -224,49 +225,45 @@ async function Shop({ params }: Pick<PageProps<"/admin/shops/[id]">, "params">) 
           <table className={TABLE}>
             <thead className="border-b border-border text-text-muted">
               <tr>
-                <th scope="col" className="px-3 py-2 font-semibold">
+                <th scope="col" className="px-3 py-2 font-semibold whitespace-nowrap">
                   Person
                 </th>
-                <th scope="col" className="px-3 py-2 font-semibold">
+                <th scope="col" className="px-3 py-2 font-semibold whitespace-nowrap">
                   Role
                 </th>
-                <th scope="col" className="px-3 py-2 font-semibold">
+                <th scope="col" className="px-3 py-2 font-semibold whitespace-nowrap">
                   Last Sign-In
                 </th>
-                <th scope="col" className="px-3 py-2 font-semibold">
+                <th scope="col" className="px-3 py-2 font-semibold whitespace-nowrap">
                   Apps
                 </th>
-                <th scope="col" className="px-3 py-2 font-semibold">
+                <th scope="col" className="px-3 py-2 font-semibold whitespace-nowrap">
                   Two-Step
                 </th>
               </tr>
             </thead>
             <tbody>
-              {d.team.map((m) => (
-                <tr
-                  key={m.user_id}
-                  className={m.status === "disabled" ? "text-text-muted" : undefined}
-                >
-                  <td>
-                    <Link
-                      href={`/admin/people/${m.user_id}`}
-                      className="font-medium text-link hover:underline"
-                    >
-                      {m.name ?? m.email}
-                    </Link>
-                    <span className="block text-[0.8125rem] text-text-muted">{m.email}</span>
-                  </td>
-                  <td>
-                    {ROLE[m.role]}
-                    {m.status === "disabled" ? " (off)" : ""}
-                  </td>
-                  <td className="whitespace-nowrap">{relDays(m.last_sign_in_at)}</td>
-                  <td>{m.apps.length ? m.apps.join(", ") : "Website"}</td>
-                  <td>{m.two_step ? "On" : "Off"}</td>
-                </tr>
-              ))}
+              {d.team
+                .filter((m) => m.status === "active")
+                .map((m) => (
+                  <MemberRow key={m.user_id} m={m} />
+                ))}
             </tbody>
           </table>
+          {off.length ? (
+            <details className="mt-3">
+              <summary className="min-h-11 cursor-pointer content-center text-[0.9375rem] text-link">
+                Turned Off ({off.length})
+              </summary>
+              <table className={TABLE}>
+                <tbody>
+                  {off.map((m) => (
+                    <MemberRow key={m.user_id} m={m} />
+                  ))}
+                </tbody>
+              </table>
+            </details>
+          ) : null}
           {d.invites.length ? (
             <div className="mt-4 space-y-3">
               <h3 className="font-semibold">Waiting Invites</h3>
@@ -355,7 +352,7 @@ async function Shop({ params }: Pick<PageProps<"/admin/shops/[id]">, "params">) 
             <p className="text-text-muted">Nothing yet.</p>
           ) : (
             <ul className="divide-y divide-border/60 text-[0.9375rem]">
-              {d.activity.map((a, i) => (
+              {d.activity.slice(0, 15).map((a, i) => (
                 <li key={i} className="flex min-h-10 items-center justify-between gap-3 py-1.5">
                   <span>
                     {ACTIVITY[a.kind] ?? a.kind}
@@ -396,5 +393,25 @@ async function Shop({ params }: Pick<PageProps<"/admin/shops/[id]">, "params">) 
         </Panel>
       </div>
     </>
+  );
+}
+
+function MemberRow({ m }: { m: TeamMember }) {
+  return (
+    <tr className={m.status === "disabled" ? "text-text-muted" : undefined}>
+      <td>
+        <Link href={`/admin/people/${m.user_id}`} className="font-medium text-link hover:underline">
+          {m.name ?? m.email}
+        </Link>
+        <span className="block text-[0.8125rem] text-text-muted">{m.email}</span>
+      </td>
+      <td className="whitespace-nowrap">
+        {ROLE[m.role]}
+        {m.status === "disabled" ? " (off)" : ""}
+      </td>
+      <td className="whitespace-nowrap">{relDays(m.last_sign_in_at)}</td>
+      <td>{m.apps.length ? m.apps.join(", ") : "Website"}</td>
+      <td>{m.two_step ? "On" : "Off"}</td>
+    </tr>
   );
 }
