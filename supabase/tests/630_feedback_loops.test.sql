@@ -124,6 +124,13 @@ select is(jsonb_array_length(weekly_summaries_due('2026-10-21T15:45:00Z')), 0,
 select is((select count(*)::int from jsonb_array_elements(weekly_summaries_due('2026-10-19T04:30:00Z')) d
            where d ->> 'company_id' = (select ca::text from ids)), 0,
   'each shop by its own clock (Sunday night in Phoenix)');
+-- From 7 AM Monday in the shop's own time zone (owner, 2026-10-22; Phoenix is UTC-7).
+select is((select count(*)::int from jsonb_array_elements(weekly_summaries_due('2026-10-19T13:30:00Z')) d
+           where d ->> 'company_id' = (select ca::text from ids)), 0,
+  'not yet at 6:30 AM Monday in Phoenix');
+select is((select count(*)::int from jsonb_array_elements(weekly_summaries_due('2026-10-19T14:05:00Z')) d
+           where d ->> 'company_id' = (select ca::text from ids)), 1,
+  'due at 7:05 AM Monday in Phoenix');
 
 -- Claims: once per shop, week, and person.
 select isnt(claim_weekly_summary((select ca from ids), '2026-10-12', (select owner_a from ids),

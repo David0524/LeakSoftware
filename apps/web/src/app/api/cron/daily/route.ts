@@ -2,9 +2,7 @@ import { adminClient } from "@/server/admin";
 import { syncAllSubscriptionPrices } from "@/server/billing";
 import { runFollowups } from "@/server/followups";
 import { siteOrigin } from "@/lib/origin";
-import { SUPPORT_EMAIL } from "@/lib/site";
 import { sendVisitReport } from "@/server/visit-reports";
-import { runWeeklySummaries } from "@/server/weekly-summary";
 
 export const maxDuration = 300;
 
@@ -43,17 +41,9 @@ export async function GET(request: Request) {
       // Tried again tomorrow while the visit is within two days.
     }
   }
-  // The weekly summary to owners (owner, 2026-10-22): on Monday in each shop's time zone (this
-  // runs at 15:45 UTC, Monday morning across the US), once per shop, week, and person.
-  let weeklySummaries;
-  try {
-    weeklySummaries = await runWeeklySummaries(admin, origin, when, SUPPORT_EMAIL);
-  } catch (e) {
-    weeklySummaries = e instanceof Error ? e.message : String(e);
-  }
+  // The weekly summary has its own hourly run, /api/cron/weekly (7 AM Monday, shop time).
   return Response.json({
     followups,
-    weeklySummaries,
     subscriptionPrices: prices,
     expiredLinks: links.error ? links.error.message : links.data,
     maintenanceVisits: error ? error.message : visits,
