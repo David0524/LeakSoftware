@@ -2,6 +2,8 @@ import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 import dev from "../../../config/supabase-dev.json";
 import { malformedLink } from "@/lib/limits";
+import { isStaff } from "@/server/leads";
+import { viewOnlyIn } from "@/server/support";
 
 const url = process.env.SUPABASE_URL || dev.url;
 const key = process.env.SUPABASE_ANON_KEY || dev.publishableKey;
@@ -17,6 +19,8 @@ const OFFICE = [
   "/setup",
   "/sign-off",
 ];
+
+const VIEW_ONLY = "Support is in View Only for this shop. Nothing was changed.";
 
 /**
  * Refreshes the Supabase session cookie on every page request and sends signed-out visitors
@@ -41,6 +45,31 @@ export async function proxy(request: NextRequest) {
   const user = data?.claims?.sub ? data.claims : null;
 
   const path = request.nextUrl.pathname;
+  // Sundeck Pro staff in a View Only support session (Admin portal): the database refuses
+  // their changes; this refuses the website's own (server actions and API routes that write
+  // with the server's key). The portal itself and End Session stay open.
+  if (
+    user &&
+    !["GET", "HEAD", "OPTIONS"].includes(request.method) &&
+    (request.headers.has("next-action") || path.startsWith("/api/")) &&
+    !path.startsWith("/admin") &&
+    !path.startsWith("/api/admin/")
+  ) {
+    const who = {
+      id: String(user.sub),
+      email: typeof user.email === "string" ? user.email : null,
+      aal: typeof user.aal === "string" ? user.aal : "aal1",
+    };
+    if (
+      isStaff({ ...who, user_metadata: {} }) &&
+      // lb_company: ACTIVE_COMPANY_COOKIE (lib/auth.ts), the shop the office is showing.
+      (await viewOnlyIn(who, request.cookies.get("lb_company")?.value))
+    )
+      return new NextResponse(VIEW_ONLY, {
+        status: 403,
+        headers: { "content-type": "text/plain" },
+      });
+  }
   if (!user && OFFICE.some((p) => path === p || path.startsWith(`${p}/`))) {
     const signIn = request.nextUrl.clone();
     signIn.pathname = "/sign-in";

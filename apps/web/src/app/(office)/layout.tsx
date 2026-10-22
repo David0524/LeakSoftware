@@ -5,6 +5,7 @@ import { Logo, Mark } from "@/components/logo";
 import { DesktopNav, TabBar } from "@/components/nav-links";
 import { AccountMenu } from "@/components/account-menu";
 import { BannerHost } from "@/components/top-banner";
+import { SupportBanner } from "@/components/support-banner";
 import { InstantProvider } from "@/components/instant";
 import { PullToRefresh } from "@/components/pull-to-refresh";
 import { accessNotice } from "@leakbook/core";
@@ -55,6 +56,10 @@ export default function OfficeLayout({ children }: LayoutProps<"/">) {
       {/* Outside the header: its glass blur would make it the tab bar's positioning box. */}
       <Suspense fallback={null}>
         <PhoneTabs />
+      </Suspense>
+      {/* Sundeck Pro staff helping this shop (Admin portal). */}
+      <Suspense fallback={null}>
+        <SupportBanner />
       </Suspense>
       <Suspense fallback={null}>
         <AccessBanner />

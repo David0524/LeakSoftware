@@ -289,8 +289,8 @@ create table public.staff_action (
   id bigint generated always as identity primary key,
   staff_user_id uuid,
   staff_email text not null,
-  -- 'support_start', 'support_end', 'trial_extend', 'demo_on', 'demo_off', 'password_reset',
-  -- 'two_step_off', 'invite_resend', 'note', 'export', ...
+  -- 'support_start', 'support_end', 'trial_extend', 'demo_on', 'demo_off', 'two_step_off',
+  -- 'note', 'export', ...
   action text not null check (action ~ '^[a-z_]{2,40}$'),
   company_ref uuid references public.company (id) on delete set null,
   -- The shop's name as it was, so the log still reads after a rename or a deleted shop.
@@ -432,7 +432,7 @@ language sql stable security definer set search_path = public, pg_temp as $$
       left join public.profile p on p.id = m.user_id
       where m.company_id = target and m.deleted_at is null),
     'invites', (select coalesce(jsonb_agg(jsonb_build_object(
-        'id', i.id, 'email', i.email, 'role', i.role, 'created_at', i.created_at,
+        'id', i.id, 'email', i.email, 'role', i.role, 'created_at', i.created_at, 'token', i.token,
         'expires_at', i.expires_at) order by i.created_at desc), '[]'::jsonb)
       from public.invite i
       where i.company_id = target and i.accepted_at is null and i.revoked_at is null
@@ -520,7 +520,7 @@ language sql stable security definer set search_path = public, pg_temp as $$
                   'created_at', d.created_at, 'last_seen_at', d.last_seen_at)
                   order by d.last_seen_at desc), '[]'::jsonb)
                 from public.push_device d where d.user_id = u.id),
-    'invites', (select coalesce(jsonb_agg(jsonb_build_object('id', i.id, 'company_id', i.company_id,
+    'invites', (select coalesce(jsonb_agg(jsonb_build_object('id', i.id, 'company_id', i.company_id, 'token', i.token,
                   'company_name', c.name, 'role', i.role, 'expires_at', i.expires_at,
                   'accepted_at', i.accepted_at, 'revoked_at', i.revoked_at)
                   order by i.created_at desc), '[]'::jsonb)

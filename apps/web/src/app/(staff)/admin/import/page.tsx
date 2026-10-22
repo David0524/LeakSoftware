@@ -10,7 +10,7 @@ import { adminClient } from "@/server/admin";
 import { isStaff } from "@/server/leads";
 
 export const metadata: Metadata = {
-  title: "Import for a Shop · Sundeck Pro Staff",
+  title: "Import for a Shop",
   robots: { index: false },
 };
 

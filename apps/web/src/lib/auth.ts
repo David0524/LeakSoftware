@@ -3,6 +3,7 @@ import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import { cache } from "react";
 import { isManagerRole, type Role } from "@leakbook/core";
+import { openSupport, type OpenSupport } from "@/server/support";
 import { createClient } from "./supabase/server";
 
 export type { Role };
@@ -21,6 +22,11 @@ export interface Office {
   isOwner: boolean;
   /** Owner or admin: everything else that runs the shop. */
   isManager: boolean;
+  /**
+   * Sundeck Pro staff helping this shop through a support session (Admin portal): they work
+   * as its admin, View Only or Can Make Changes, and the office shows a banner.
+   */
+  support: OpenSupport | null;
 }
 
 export const ACTIVE_COMPANY_COOKIE = "lb_company";
@@ -59,7 +65,7 @@ export const getOffice = cache(async (): Promise<Office> => {
   const user = await getUser();
   if (!user) redirect("/sign-in");
   const supabase = await createClient();
-  const [{ data: memberships }, { data: profile }] = await Promise.all([
+  const [{ data: memberships }, { data: profile }, support] = await Promise.all([
     supabase
       .from("membership")
       .select("role, company:company_id (id, name, timezone)")
@@ -67,6 +73,7 @@ export const getOffice = cache(async (): Promise<Office> => {
       .eq("status", "active")
       .is("deleted_at", null),
     supabase.from("profile").select("full_name, two_step").eq("id", user.id).maybeSingle(),
+    openSupport(user),
   ]);
   // Two-step sign-in (owner, 2026-10-16): with it on, a password-only session sees no shop
   // data (the database refuses it), so the code comes first.
@@ -79,6 +86,15 @@ export const getOffice = cache(async (): Promise<Office> => {
     .filter((m) => m.company)
     .map((m) => ({ ...m.company!, role: m.role }))
     .sort((a, b) => a.name.localeCompare(b.name));
+  // A support session adds its shop, as an admin, unless they're already one of its people.
+  const helping = support && !companies.some((c) => c.id === support.companyId) ? support : null;
+  if (helping)
+    companies.push({
+      id: helping.companyId,
+      name: helping.companyName,
+      timezone: helping.timezone,
+      role: "admin",
+    });
   if (companies.length === 0) redirect("/setup");
 
   const wanted = (await cookies()).get(ACTIVE_COMPANY_COOKIE)?.value;
@@ -89,6 +105,7 @@ export const getOffice = cache(async (): Promise<Office> => {
     companies: companies.map(({ id, name, role }) => ({ id, name, role })),
     isOwner: company.role === "owner",
     isManager: isManagerRole(company.role),
+    support: helping && company.id === helping.companyId ? helping : null,
   };
 });
 
