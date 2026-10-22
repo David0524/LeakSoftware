@@ -649,6 +649,9 @@
             let env = try sampleEnvironment(signedIn: false)
             try await snapshot("01-sign-in", SignInFlow().app(env))
             try await snapshot("01-sign-in-dark", dark: true, SignInFlow().app(env))
+            // Forgot Password? (owner, 2026-10-22).
+            try await snapshot(
+                "01-forgot-password", NavigationStack { ForgotPasswordView(email: "dana@bluewave.test") }.app(env))
         }
 
         @Test func jobs() async throws {

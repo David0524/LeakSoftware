@@ -52,6 +52,15 @@ public struct WebAPI: Sendable {
         return try await send(request)
     }
 
+    /// POSTs `body` as JSON without a sign-in (Forgot Password?, before anyone is signed in).
+    public func postSignedOut(_ path: String, _ body: JSONValue = [:]) async throws -> JSONValue {
+        var request = URLRequest(url: baseURL.appendingPathComponent(path))
+        request.httpMethod = "POST"
+        request.setValue("application/json", forHTTPHeaderField: "content-type")
+        request.httpBody = try JSONEncoder().encode(body)
+        return try await send(request, signedIn: false)
+    }
+
     /// Sends `body` as JSON with another method (PUT, DELETE), and returns the JSON reply.
     public func send(_ method: String, _ path: String, _ body: JSONValue = [:]) async throws -> JSONValue {
         var request = URLRequest(url: baseURL.appendingPathComponent(path))
@@ -73,10 +82,12 @@ public struct WebAPI: Sendable {
         return try await send(request)
     }
 
-    private func send(_ prepared: URLRequest) async throws -> JSONValue {
-        guard let token = await accessToken() else { throw Failure(description: Failure.signInAgain) }
+    private func send(_ prepared: URLRequest, signedIn: Bool = true) async throws -> JSONValue {
         var request = prepared
-        request.setValue("Bearer \(token)", forHTTPHeaderField: "authorization")
+        if signedIn {
+            guard let token = await accessToken() else { throw Failure(description: Failure.signInAgain) }
+            request.setValue("Bearer \(token)", forHTTPHeaderField: "authorization")
+        }
         let data: Data
         let response: URLResponse
         do {
@@ -89,9 +100,12 @@ public struct WebAPI: Sendable {
         guard (200..<300).contains(status) else {
             var fields: [String: String] = [:]
             if case .object(let f)? = reply["fields"] { for (k, v) in f { fields[k] = v.string } }
-            throw Failure(
-                description: reply["error"]?.string ?? fields.values.sorted().first ?? "The server said \(status).",
-                fields: fields, status: status)
+            // An error people saw: counted in the Admin portal's Usage (not usage's own sends).
+            let message = reply["error"]?.string ?? fields.values.sorted().first ?? "The server said \(status)."
+            if request.url?.path.hasSuffix("/api/usage") == false {
+                await MainActor.run { UsageRecorder.shared.error(message) }
+            }
+            throw Failure(description: message, fields: fields, status: status)
         }
         return reply
     }

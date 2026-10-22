@@ -29,7 +29,14 @@ import { CopyLink } from "@/components/settings-forms";
 import { iconButtonClass, PageHeader } from "@/components/ui";
 import { siteOrigin } from "@/lib/origin";
 import { dailyLimit } from "@/server/usage";
-import { loadShop, staffGate, type TeamMember } from "@/server/staff";
+import { loadShop, loadUsage, staffGate, type TeamMember } from "@/server/staff";
+import {
+  PeriodControl,
+  UsageDetail,
+  UsagePeople,
+  usagePeriod,
+  UsageSummary,
+} from "@/components/admin/usage-panels";
 
 export const metadata: Metadata = { title: "Shop" };
 
@@ -53,19 +60,27 @@ const LIMITED = [
 ] as const;
 
 /** One shop, for helping it: who, what it pays, its team, how it uses Sundeck Pro, support. */
-export default function ShopPage({ params }: PageProps<"/admin/shops/[id]">) {
+export default function ShopPage({ params, searchParams }: PageProps<"/admin/shops/[id]">) {
   return (
     <Suspense fallback={<div className="h-96" aria-label="Loading" />}>
-      <Shop params={params} />
+      <Shop params={params} searchParams={searchParams} />
     </Suspense>
   );
 }
 
-async function Shop({ params }: Pick<PageProps<"/admin/shops/[id]">, "params">) {
+async function Shop({
+  params,
+  searchParams,
+}: Pick<PageProps<"/admin/shops/[id]">, "params" | "searchParams">) {
   const { id } = await params;
+  const days = usagePeriod((await searchParams).days);
   const gate = await staffGate(`/admin/shops/${id}`);
   if ("needsTwoStep" in gate) return <TwoStepNeeded title="Shop" />;
-  const [d, origin] = await Promise.all([loadShop(id), siteOrigin()]);
+  const [d, origin, usage] = await Promise.all([
+    loadShop(id),
+    siteOrigin(),
+    loadUsage(days, { companyId: id }),
+  ]);
   if (!d) notFound();
   const s = d.shop;
   const standing = shopStanding(s);
@@ -393,6 +408,20 @@ async function Shop({ params }: Pick<PageProps<"/admin/shops/[id]">, "params">) 
           )}
         </Panel>
       </div>
+      <section aria-labelledby="shop-usage-title" className="mt-10">
+        <div className="mb-4 flex items-end justify-between gap-4">
+          <div>
+            <h2 id="shop-usage-title" className="font-display text-2xl font-bold">
+              Usage
+            </h2>
+            <p className="text-text-muted">How this shop’s people use Sundeck Pro.</p>
+          </div>
+          <PeriodControl days={days} href={(n) => `/admin/shops/${s.id}?days=${n}`} />
+        </div>
+        <UsageSummary u={usage} />
+        <UsageDetail u={usage} />
+        <UsagePeople u={usage} showShops={false} />
+      </section>
     </>
   );
 }

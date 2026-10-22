@@ -3,7 +3,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { Suspense } from "react";
 import { formatPhone } from "@leakbook/core";
-import { TwoStepOff } from "@/components/admin/actions";
+import { SendPasswordReset, TwoStepOff } from "@/components/admin/actions";
 import {
   Facts,
   fmtDate,
@@ -17,26 +17,40 @@ import { MailIcon, PhoneIcon } from "@/components/icons";
 import { CopyLink } from "@/components/settings-forms";
 import { iconButtonClass, PageHeader } from "@/components/ui";
 import { siteOrigin } from "@/lib/origin";
-import { loadPerson, loadStaffActions, staffGate } from "@/server/staff";
+import { loadPerson, loadStaffActions, loadUsage, staffGate } from "@/server/staff";
+import {
+  PeriodControl,
+  UsageDetail,
+  usagePeriod,
+  UsageSummary,
+} from "@/components/admin/usage-panels";
 
 export const metadata: Metadata = { title: "Person" };
 
 const ROLE: Record<string, string> = { owner: "Owner", admin: "Admin", tech: "Tech" };
 
 /** One account: their shops, devices, invites, and the help staff can give them. */
-export default function PersonPage({ params }: PageProps<"/admin/people/[id]">) {
+export default function PersonPage({ params, searchParams }: PageProps<"/admin/people/[id]">) {
   return (
     <Suspense fallback={<div className="h-96" aria-label="Loading" />}>
-      <Person params={params} />
+      <Person params={params} searchParams={searchParams} />
     </Suspense>
   );
 }
 
-async function Person({ params }: Pick<PageProps<"/admin/people/[id]">, "params">) {
+async function Person({
+  params,
+  searchParams,
+}: Pick<PageProps<"/admin/people/[id]">, "params" | "searchParams">) {
   const { id } = await params;
+  const days = usagePeriod((await searchParams).days);
   const gate = await staffGate(`/admin/people/${id}`);
   if ("needsTwoStep" in gate) return <TwoStepNeeded title="Person" />;
-  const [p, origin] = await Promise.all([loadPerson(id), siteOrigin()]);
+  const [p, origin, usage] = await Promise.all([
+    loadPerson(id),
+    siteOrigin(),
+    loadUsage(days, { userId: id }),
+  ]);
   if (!p) notFound();
   const help = (await loadStaffActions({ limit: 500 })).filter((a) => a.target_user === p.id);
   const now = new Date().getTime();
@@ -49,7 +63,12 @@ async function Person({ params }: Pick<PageProps<"/admin/people/[id]">, "params"
         title={p.name ?? p.email}
         back={{ href: "/admin/people", label: "People" }}
         subtitle={`${p.email} · signed up ${fmtDate(p.created_at)}`}
-        actions={p.two_step ? <TwoStepOff userId={p.id} email={p.email} /> : null}
+        actions={
+          <>
+            <SendPasswordReset userId={p.id} />
+            {p.two_step ? <TwoStepOff userId={p.id} email={p.email} /> : null}
+          </>
+        }
       />
       <div className="grid grid-cols-3 gap-6">
         <Panel title="Account" className="col-span-2">
@@ -86,7 +105,8 @@ async function Person({ params }: Pick<PageProps<"/admin/people/[id]">, "params"
             </a>
           </div>
           <p className="mt-4 text-[0.9375rem] text-text-muted">
-            Forgot their password? They choose Email Me a Sign-In Link on the sign-in page.
+            Forgot their password? Send Password Reset emails them a link to choose a new one (or
+            they choose Forgot Password? on the sign-in page).
           </p>
         </Panel>
 
@@ -184,6 +204,19 @@ async function Person({ params }: Pick<PageProps<"/admin/people/[id]">, "params"
           )}
         </Panel>
       </div>
+      <section aria-labelledby="usage-title" className="mt-10">
+        <div className="mb-4 flex items-end justify-between gap-4">
+          <div>
+            <h2 id="usage-title" className="font-display text-2xl font-bold">
+              Usage
+            </h2>
+            <p className="text-text-muted">Screen time, screens and what they did.</p>
+          </div>
+          <PeriodControl days={days} href={(d) => `/admin/people/${p.id}?days=${d}`} />
+        </div>
+        <UsageSummary u={usage} person />
+        <UsageDetail u={usage} />
+      </section>
     </>
   );
 }

@@ -90,8 +90,8 @@ actions, each needing a reason and each logged:
   clears `profile.two_step` (today this is a manual SQL step in HANDOVER). Asks "I checked it's
   really them" and how, first.
 - **Waiting invites** with Copy Link (the app doesn't email invites; the owner sends the link).
-- No password reset: the website has no reset page. A person who forgot their password uses
-  Email Me a Sign-In Link on the sign-in page; the person's page says so.
+- **Send Password Reset** (added 2026-10-22 with Forgot Password?): the person's own reset
+  email, to their own address; logged.
 
 ### 3.4 Finances (`/admin/finances`)
 - MRR, ARR, average revenue per shop, paying shops, by package (cards and a 12-month MRR line
@@ -124,6 +124,10 @@ row security, not by signing in as the owner, so every change shows as the staff
 - **Logged:** start, end, reason, access, and every change through the shop's normal history.
 - **Support list** (`/admin/support`): sessions open now, and the full history (who, shop,
   reason, access, started, ended).
+
+### 3.5b Usage (`/admin/usage`, added 2026-10-22)
+Screen time, screens, what people did (from the audit log), app versions and errors, for
+everyone, a shop or a person, over 7, 30 or 90 days. See DECISIONS 2026-10-22.
 
 ### 3.6 Health (`/admin/health`)
 For tech help across shops: the `/status` checks (database, email, payments configured); failed

@@ -1,6 +1,7 @@
 import * as Sentry from "@sentry/react-native";
 import { Alert } from "react-native";
 import { isStorageFull } from "@leakbook/sync";
+import { noteError } from "./usage-errors";
 
 // Crash and error reports (M11). Off unless EXPO_PUBLIC_SENTRY_DSN is set at build time.
 // Errors only: no performance tracing, no session replay, and no user or customer details.
@@ -39,5 +40,6 @@ function handleFullStorage() {
 }
 
 export function reportError(error: unknown) {
+  noteError(error instanceof Error ? error.message : String(error));
   if (dsn) Sentry.captureException(error);
 }

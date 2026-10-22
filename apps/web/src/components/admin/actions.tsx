@@ -5,6 +5,7 @@ import {
   addShopNote,
   extendTrial,
   setDemo,
+  staffPasswordReset,
   startSupport,
   turnOffTwoStep,
   type AdminState,
@@ -196,5 +197,19 @@ export function TwoStepOff({ userId, email }: { userId: string; email: string })
         </form>
       </Sheet>
     </>
+  );
+}
+
+/** Send Password Reset: the person's own Forgot Password? email, to their own address. */
+export function SendPasswordReset({ userId }: { userId: string }) {
+  const [state, action, pending] = useActionState(staffPasswordReset, {});
+  return (
+    <form action={action} className="flex flex-col items-end gap-2">
+      <input type="hidden" name="user_id" value={userId} />
+      <Button type="submit" kind="secondary" disabled={pending}>
+        {pending ? "Sending…" : "Send Password Reset"}
+      </Button>
+      <Result state={state} />
+    </form>
   );
 }

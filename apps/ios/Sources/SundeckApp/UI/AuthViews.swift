@@ -214,6 +214,9 @@
                 }
                 .buttonStyle(.primary(fullWidth: true, size: .field))
                 .disabled(busy)
+                NavigationLink("Forgot Password?") { ForgotPasswordView(email: email) }
+                    .buttonStyle(.quiet)
+                    .frame(maxWidth: .infinity)
                 NavigationLink("Create an Account") { SignUpView() }
                     .buttonStyle(.quiet)
                     .frame(maxWidth: .infinity)
@@ -242,6 +245,49 @@
             } catch {
                 self.error = String(describing: error)
             }
+        }
+    }
+
+    /// Forgot Password? (owner, 2026-10-22): the website's Reset Password page. The email's link
+    /// opens the website to choose the new password; then they sign in here with it.
+    struct ForgotPasswordView: View {
+        @Environment(\.dismiss) private var dismiss
+        @State private var form: PasswordResetForm
+
+        init(email: String) { _form = State(initialValue: PasswordResetForm(email: email)) }
+
+        var body: some View {
+            AuthFrame(title: PasswordResetForm.title) {
+                Text(PasswordResetForm.intro)
+            } content: {
+                Grouped {
+                    LabeledFieldRow(
+                        label: "Email", text: $form.email, placeholder: "name@example.com", keyboard: .emailAddress,
+                        labelWidth: 96, contentType: .username
+                    )
+                    .textInputAutocapitalization(.never)
+                    .autocorrectionDisabled()
+                    .submitLabel(.send)
+                    .onSubmit { Task { await send() } }
+                }
+                if let error = form.error { Notice(kind: .error, text: error) }
+                if let sent = form.sent { Notice(kind: .success, text: sent) }
+                Button {
+                    Task { await send() }
+                } label: {
+                    BusyButtonLabel("Email Me a Reset Link", busy: form.sending, busyTitle: "Sending…")
+                }
+                .buttonStyle(.primary(fullWidth: true, size: .field))
+                .disabled(form.sending)
+                Button(PasswordResetForm.back) { dismiss() }
+                    .buttonStyle(.quiet)
+                    .frame(maxWidth: .infinity)
+            }
+            .navigationBarTitleDisplayMode(.inline)
+        }
+
+        private func send() async {
+            await form.send(WebAPI(baseURL: AppConfig.webURL) { nil })
         }
     }
 

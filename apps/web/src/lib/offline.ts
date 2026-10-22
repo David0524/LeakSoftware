@@ -1,3 +1,5 @@
+import { usageError } from "./usage-client";
+
 // A server action that can't reach the server (no signal) rejects with a TypeError ("Failed to
 // fetch"). Unanswered, that replaced the whole job page with the error screen and took what was
 // typed with it; these say so where the button is instead.
@@ -18,12 +20,16 @@ export function orOffline<S extends { error?: string | null }, P>(
   action: (state: S, payload: P) => Promise<S>,
 ): (state: S, payload: P) => Promise<S> {
   return async (state, payload) => {
+    let next: S;
     try {
-      return await action(state, payload);
+      next = await action(state, payload);
     } catch (e) {
       if (!isNoConnection(e)) throw e;
-      return { ...state, message: undefined, error: NO_CONNECTION };
+      next = { ...state, message: undefined, error: NO_CONNECTION };
     }
+    // A save that didn't work: counted in the Admin portal's Usage (owner, 2026-10-22).
+    if (next?.error) usageError(next.error);
+    return next;
   };
 }
 

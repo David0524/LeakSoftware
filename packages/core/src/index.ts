@@ -54,3 +54,4 @@ export * from "./admin";
 export * from "./customer-counts";
 export * from "./mass-email";
 export * from "./receipt";
+export * from "./usage";

@@ -206,31 +206,39 @@
         private func stack<Root: View>(_ tab: AppTab, @ViewBuilder root: () -> Root) -> some View {
             NavigationStack(path: Binding(get: { paths[tab] ?? NavigationPath() }, set: { paths[tab] = $0 })) {
                 root()
+                    .usageScreen("/\(tab.rawValue)")
                     // Only the tab's own page has the logo on its bar's leading edge
                     // (RootTitle.swift). Screens pushed onto the stack have Back there.
                     .environment(\.brandInBar, true)
                     .navigationDestination(for: Route.self) { route in
-                        switch route {
-                        case .job(let id): JobScreen(jobId: id).zoomDestination(id)
-                        case .jobSection(let id, let section):
-                            JobScreen(jobId: id, section: section).zoomDestination(id)
-                        case .sync:
-                            SettingsView(showReauth: { showReauth = true })
-                        case .messages(let route): MessagesDestination(route: route)
-                        case .more(let route): MoreDestination(route: route, showReauth: { showReauth = true })
-                        case .component(let jobId, let componentId):
-                            ComponentScreen(jobId: jobId, componentId: componentId)
-                        case .signature(let jobId, let quoteId): SignatureScreen(jobId: jobId, quoteId: quoteId)
-                        case .review(let jobId): ReviewScreen(jobId: jobId)
-                        case .newJob(let back): NewJobRoute(back: back)
-                        }
+                        destination(route).usageScreen(route.usagePath)
                     }
-                    .navigationDestination(for: MessagesRoute.self) { MessagesDestination(route: $0) }
+                    .navigationDestination(for: MessagesRoute.self) {
+                        MessagesDestination(route: $0).usageScreen($0.usagePath)
+                    }
                     .navigationDestination(for: MoreRoute.self) {
-                        MoreDestination(route: $0, showReauth: { showReauth = true })
+                        MoreDestination(route: $0, showReauth: { showReauth = true }).usageScreen($0.usagePath)
                     }
             }
             .environment(\.zoomScope, tab.rawValue)
+        }
+
+        /// The screen a route opens.
+        @ViewBuilder private func destination(_ route: Route) -> some View {
+            switch route {
+            case .job(let id): JobScreen(jobId: id).zoomDestination(id)
+            case .jobSection(let id, let section):
+                JobScreen(jobId: id, section: section).zoomDestination(id)
+            case .sync:
+                SettingsView(showReauth: { showReauth = true })
+            case .messages(let route): MessagesDestination(route: route)
+            case .more(let route): MoreDestination(route: route, showReauth: { showReauth = true })
+            case .component(let jobId, let componentId):
+                ComponentScreen(jobId: jobId, componentId: componentId)
+            case .signature(let jobId, let quoteId): SignatureScreen(jobId: jobId, quoteId: quoteId)
+            case .review(let jobId): ReviewScreen(jobId: jobId)
+            case .newJob(let back): NewJobRoute(back: back)
+            }
         }
     }
 

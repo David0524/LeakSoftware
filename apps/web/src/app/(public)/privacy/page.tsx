@@ -7,7 +7,7 @@ export const metadata: Metadata = { title: "Privacy Policy · Sundeck Pro" };
 /** Privacy policy: the App Store and Google Play listings link here. */
 export default function PrivacyPage() {
   return (
-    <LegalPage title="Privacy Policy" updated="October 18, 2026">
+    <LegalPage title="Privacy Policy" updated="October 22, 2026">
       <section>
         <h2>Who this covers</h2>
         <p>
@@ -41,6 +41,12 @@ export default function PrivacyPage() {
           </li>
           <li>Error reports from the app and website, without customer details.</li>
           <li>
+            How each person uses the app and website: which screens they open and for how long (only
+            while it’s open in front of them), the app version, what they do (such as jobs completed
+            or photos taken), and errors they run into. We use it to help shops and to improve
+            Sundeck Pro, and keep it for 180 days.
+          </li>
+          <li>
             Billing details for the shop’s Sundeck Pro subscription. Stripe keeps the card; we see
             only its brand and last four digits.
           </li>
@@ -56,8 +62,9 @@ export default function PrivacyPage() {
         <p>
           Each shop owns its records. Sundeck Pro stores and processes them for the shop, only to
           run the service, and other shops can’t see them. For the shop’s customers, the shop
-          decides what it keeps and is the one to ask first. We look at a shop’s records only when
-          the shop asks for help, to keep the service safe and working, or when the law requires it.
+          decides what it keeps and is the one to ask first. Our staff look at a shop’s records only
+          to help the shop and its people, to keep the service safe and working, or when the law
+          requires it, and each time is logged.
         </p>
       </section>
       <section>

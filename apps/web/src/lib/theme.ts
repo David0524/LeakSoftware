@@ -15,7 +15,7 @@ export const THEME_EVENT = "lb-theme-change";
 
 /** The (public) pages, which are always light. */
 export const LIGHT_ONLY_PATHS =
-  /^\/(?:privacy|terms|security|status|sign-in|sign-up|setup|invite)?(?:\/|$)/;
+  /^\/(?:privacy|terms|security|status|sign-in|sign-up|setup|invite|forgot-password|reset-password)?(?:\/|$)/;
 
 export const THEME_SCRIPT = `(function(){try{
 var d=document.documentElement;

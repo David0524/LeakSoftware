@@ -14,6 +14,7 @@ const ACTION: Record<StaffActionKind, string> = {
   demo_on: "Made demo shop",
   demo_off: "Ended demo",
   two_step_off: "Turned off two-step",
+  password_reset: "Sent password reset",
   note: "Wrote a note",
   export: "Exported a list",
 };

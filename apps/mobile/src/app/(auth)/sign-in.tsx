@@ -84,6 +84,12 @@ export default function SignIn() {
       </FieldGroup>
       {error ? <Notice tone="error">{error}</Notice> : null}
       <Button title={busy ? "Signing In…" : "Sign In"} wide onPress={submit} disabled={busy} />
+      <Button
+        title="Forgot Password?"
+        kind="quiet"
+        wide
+        onPress={() => router.push({ pathname: "/forgot-password", params: { email } })}
+      />
       {__DEV__ ? (
         <Notice>
           Demo accounts (dev only): tech@demo.leakbook.test or owner@demo.leakbook.test, password

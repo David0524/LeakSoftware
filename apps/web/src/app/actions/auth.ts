@@ -10,6 +10,14 @@ import { createClient } from "@/lib/supabase/server";
 import { adminClient } from "@/server/admin";
 import { billingConfigured, logPriceSyncError, syncSubscriptionPrice } from "@/server/billing";
 import { saveLead } from "@/server/leads";
+import { EMAIL_PATTERN, sendPasswordChanged, sendPasswordReset } from "@/server/password-reset";
+import {
+  newPasswordProblem,
+  RESET_COOKIE,
+  RESET_LINK_EXPIRED,
+  resetRequestedMessage,
+} from "@/lib/password-reset-email";
+import { SUPPORT_EMAIL } from "@/lib/site";
 
 export interface FormState {
   error?: string;
@@ -224,4 +232,46 @@ export async function switchCompany(form: FormData) {
     });
   }
   redirect("/home");
+}
+
+/**
+ * Forgot Password? (owner, 2026-10-22): emails a link to choose a new password. The same answer
+ * whether or not the address has an account; the link works for an hour, once.
+ */
+export async function requestPasswordReset(_: FormState, form: FormData): Promise<FormState> {
+  const email = text(form, "email");
+  if (!EMAIL_PATTERN.test(email)) return { error: "Enter your email.", values: { email } };
+  const outcome = await sendPasswordReset(email);
+  if (outcome === "unavailable")
+    return {
+      error: `Email isn’t working right now. Email ${SUPPORT_EMAIL} for help.`,
+      values: { email },
+    };
+  return { message: resetRequestedMessage(email), values: { email } };
+}
+
+/**
+ * The new password, from the reset link's session. With two-step on, the code comes first
+ * (/reset-password sends them there). Every other device is signed out, and the person gets an
+ * email saying so.
+ */
+export async function setNewPassword(_: FormState, form: FormData): Promise<FormState> {
+  const user = await getUser();
+  const jar = await cookies();
+  if (!user || !jar.has(RESET_COOKIE)) return { error: RESET_LINK_EXPIRED };
+  const password = String(form.get("password") ?? "");
+  const problem = newPasswordProblem(password, String(form.get("confirm") ?? ""));
+  if (problem) return { fields: { password: problem } };
+  const supabase = await createClient();
+  const { error } = await supabase.auth.updateUser({ password });
+  if (error)
+    return {
+      error: /different from the old/i.test(error.message)
+        ? "That’s your current password. Choose a new one."
+        : error.message,
+    };
+  await supabase.auth.signOut({ scope: "others" });
+  jar.delete(RESET_COOKIE);
+  if (user.email) after(() => sendPasswordChanged(user.email!));
+  return { message: "Your password is changed." };
 }
