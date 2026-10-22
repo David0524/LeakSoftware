@@ -86,11 +86,12 @@ The business at a glance:
 Every account across shops: name, email, shops and roles, signed up, last sign-in, two-step,
 apps. Search by name or email. A person's page has their shops and devices, plus support
 actions, each needing a reason and each logged:
-- **Send Password Reset** (the email Supabase sends).
 - **Turn Off Two-Step** for someone who lost their phone: removes their authenticator factors and
-  clears `profile.two_step` (today this is a manual SQL step in HANDOVER). Asks "Did you check it's
-  really them?" first.
-- **Resend Invite** for a pending invite.
+  clears `profile.two_step` (today this is a manual SQL step in HANDOVER). Asks "I checked it's
+  really them" and how, first.
+- **Waiting invites** with Copy Link (the app doesn't email invites; the owner sends the link).
+- No password reset: the website has no reset page. A person who forgot their password uses
+  Email Me a Sign-In Link on the sign-in page; the person's page says so.
 
 ### 3.4 Finances (`/admin/finances`)
 - MRR, ARR, average revenue per shop, paying shops, by package (cards and a 12-month MRR line
@@ -153,20 +154,24 @@ in it can be edited or deleted, including by staff.
   expired or ended session sees nothing; without two-step sees nothing; View Only can't write;
   Can Make Changes writes like an admin and can't do owner-only things; the staff user never
   appears among the shop's members.
-- Every staff action writes `app.staff_action` in the same request; CSV exports are logged too.
+- Every staff action writes `public.staff_action` in the same request; CSV exports are logged too.
+- In View Only, the proxy also refuses the website's own changes (server actions and `/api/`
+  writes, which may use the server's key). Sign Out and End Session are plain form posts, so they
+  still work; switching shops waits until End Session.
 
 ## 5. Data
 
-One migration (`2026102200xx_admin_portal.sql`), all in `app` or with `company_ref`, like
-`feature_request`, so they are staff tables, not shop tables, and never sync to devices:
+One migration (`20261022000700_admin_portal.sql`). The tables use `company_ref`, like
+`feature_request`: they are staff tables, not shop tables, readable only by the server, and never
+sync to devices:
 
 1. `public.support_session` (id, `company_ref`, staff user, staff email, reason, access
    `view|edit`, started, ends, ended, ended by). Readable by the signed-in staff user only for
    their own open sessions (the office reads it to show the banner); written only by the server.
-2. `app.staff_action` (id, staff user and email, action, `company_ref`, target user, reason,
+2. `public.staff_action` (id, staff user and email, action, `company_ref`, target user, reason,
    details jsonb, at). Insert-only.
-3. `app.shop_note` (id, `company_ref`, staff, text, at).
-4. **Subscription history:** `app.subscription_event` (company, status, price cents, people, at)
+3. `public.shop_note` (id, `company_ref`, staff, text, at).
+4. **Subscription history:** `public.subscription_event` (company, status, price cents, people, at)
    written by a trigger whenever `subscription` changes, so MRR over time and churn can be drawn.
    History starts on the day this ships; earlier months show what can be rebuilt (signup and
    cancel dates).

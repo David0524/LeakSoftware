@@ -39,10 +39,13 @@ entries in `docs/DECISIONS.md` (2026-10-15 and 2026-10-16 cover everything below
 - **Data protection (2026-10-16):** customer links expire after 180 days and can be turned
   off; two-step sign-in (enforced by the database); limited techs see only their customers'
   conversations; `/security` page; DPA draft in `docs/legal/`. **Someone who lost their
-  authenticator:** after checking it's really them (from their account's email), remove their
-  factors in the Supabase dashboard (Authentication › Users › the user › MFA factors) and run
-  `select set_two_step('<user id>', false);` in the SQL editor. Two-step's app screens have
+  authenticator:** after checking it's really them (from their account's email), Admin portal ›
+  People › the person › Turn Off Two-Step (2026-10-22; it was SQL in the Supabase dashboard). Two-step's app screens have
   not been seen on a device.
+- **Admin portal (2026-10-22):** `/admin`, desktop only, from Admin Sign In in the landing
+  footer. Staff are `SUNDECK_STAFF_EMAILS` on Vercel and need two-step sign-in. Overview, Shops
+  (Extend Trial, Make Demo Shop, Open Shop for support), People (Turn Off Two-Step), Finances,
+  Support, Health, Activity Log. Plan: `docs/plans/admin-portal.md`.
 - **Leads (2026-10-16):** `/admin/leads`. To see it: set `SUNDECK_STAFF_EMAILS` on Vercel to the
   owner's email, turn on two-step sign-in (More › Two-Step Sign-In), sign in again.
 - **Import Customers (2026-10-17):** Settings › Import Customers for owners; `/admin/import` from
