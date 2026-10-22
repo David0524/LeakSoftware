@@ -18,14 +18,18 @@ export async function drawMapImage(input: {
   theme: "light" | "dark";
   /** The Apple key when the website is on Apple Maps, else null. */
   apple: AppleKeys | null;
+  /** This site's address, for Apple to fetch the pin images from. */
+  pinBase?: string;
   mapboxToken: string | undefined;
   /** Take from the shared map budget (mapbox_take). */
   take: (kind: MapBudgetKind) => Promise<boolean>;
   fetchImpl?: typeof fetch;
 }): Promise<Drawn> {
-  const { pins, size, theme, apple, mapboxToken, take, fetchImpl = fetch } = input;
+  const { pins, size, theme, apple, pinBase, mapboxToken, take, fetchImpl = fetch } = input;
   if (apple && snapshotFits(pins) && (await take("apple_snapshot"))) {
-    const res = await fetchImpl(appleSnapshotUrl(pins, size, apple, theme)).catch(() => null);
+    const res = await fetchImpl(appleSnapshotUrl(pins, size, apple, theme, pinBase)).catch(
+      () => null,
+    );
     if (res?.ok) return { ok: true, res, by: "apple" };
     console.error(`Map image: Apple ${res?.status ?? "unreachable"}`);
   }

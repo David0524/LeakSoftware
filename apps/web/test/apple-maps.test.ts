@@ -162,7 +162,7 @@ describe("Apple Snapshots", () => {
     expect(annotations[0]).toEqual({
       point: "33.45000,-112.07000",
       color: "12263a",
-      markerStyle: "large",
+      markerStyle: "balloon",
     });
     expect(
       annotations.slice(1).map((a: { glyphText: string; color: string }) => [a.glyphText, a.color]),
@@ -178,6 +178,34 @@ describe("Apple Snapshots", () => {
     expect(line.points[0]).toBe(line.points[4]);
   });
 
+  it("uses this site's small round pins, centered on their places, when it has an address", () => {
+    const { keys } = throwaway();
+    const q = new URL(
+      appleSnapshotUrl(
+        [{ ...SHOP, home: true }, stop(1, "done"), stop(2), stop(3)],
+        { w: 640, h: 320 },
+        keys,
+        "light",
+        "https://app.example.com",
+      ),
+    ).searchParams;
+    expect(JSON.parse(q.get("imgs")!)).toEqual(
+      ["home", "done-1", "todo-2", "todo-3"].map((n) => ({
+        url: `https://app.example.com/api/map/pin/${n}.png`,
+        width: 28,
+        height: 28,
+      })),
+    );
+    const annotations = JSON.parse(q.get("annotations")!);
+    expect(annotations.map((a: { imgIdx: number }) => a.imgIdx)).toEqual([0, 1, 2, 3]);
+    expect(annotations[1]).toEqual({
+      point: expect.any(String),
+      markerStyle: "img",
+      imgIdx: 1,
+      offset: "0,-14",
+    });
+  });
+
   it("draws a home start as a house", () => {
     const { keys } = throwaway();
     const q = new URL(
@@ -187,7 +215,7 @@ describe("Apple Snapshots", () => {
     expect(start).toEqual({
       point: "33.45000,-112.07000",
       color: "12263a",
-      markerStyle: "large",
+      markerStyle: "balloon",
       glyphText: "⌂",
     });
   });

@@ -1,3 +1,4 @@
+import { siteOrigin } from "@/lib/origin";
 import { decodePins } from "@leakbook/core";
 import { createClient as cookieClient } from "@/lib/supabase/server";
 import { bearerSession, jsonError } from "@/server/bearer";
@@ -60,6 +61,7 @@ export async function GET(request: Request) {
     size: { w, h },
     theme,
     apple: resolveMapProvider() === "apple" ? appleKeys() : null,
+    pinBase: await siteOrigin(),
     mapboxToken: process.env.MAPBOX_TOKEN,
     take: (kind) => mapboxBudget(db, companyId!, kind, 1),
   });

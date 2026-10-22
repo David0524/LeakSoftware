@@ -48,6 +48,7 @@ import {
   directionsHref,
   durationLabel,
   formatDay,
+  JOB_STATUS_LABELS,
   planMovedBanner,
   startLegLabel,
   visitMovedBanner,
@@ -1429,6 +1430,18 @@ function StopTile({
   const twoTechs = s.lock?.kind === "two_techs";
   const cleaning = s.cleanings?.[0];
   const status = s.status !== "scheduled" && s.status !== "unscheduled";
+  // Week's desktop cells (owner, 2026-10-22: "This is insanely busy. It has to be cleaned
+  // up"): the number, the name on one line, then the chip and the time. The status is the
+  // number's color and check; the locks, not on the map and cleanings are in the tile's hover
+  // text and read out; the grip shows on hover.
+  const quiet = compact
+    ? [
+        status ? JOB_STATUS_LABELS[s.status] : null,
+        s.lock && !twoTechs ? s.lock.label : null,
+        missing ? "Not found on the map" : null,
+        cleaning ? `${cleaning.name} due` : null,
+      ].filter((t): t is string => !!t)
+    : [];
   return (
     <RowActions
       title={`${s.customer}${s.number ? ` · Job #${s.number}` : ""}`}
@@ -1448,20 +1461,16 @@ function StopTile({
             e.stopPropagation();
           }
         }}
+        title={compact ? [s.customer, ...quiet].join(" · ") : undefined}
         className={cx(
-          "relative flex items-center bg-surface select-none [-webkit-touch-callout:none]",
-          compact ? "min-h-14 gap-1.5 py-1.5 pl-3" : "min-h-[3.625rem] gap-2.5 py-1.5 pl-4",
+          "group/tile relative flex items-center bg-surface select-none [-webkit-touch-callout:none]",
+          compact ? "min-h-12 gap-2 py-1 pl-2.5" : "min-h-[3.625rem] gap-2.5 py-1.5 pl-4",
           s.draggable ? "pr-0.5" : "pr-2",
         )}
       >
         <StopBadge position={position} status={s.status} small={compact} />
         <div className={cx("min-w-0 flex-1", finished(s.status) && "opacity-70")}>
-          <p
-            className={cx(
-              "flex min-w-0 gap-1.5 leading-snug",
-              compact ? "items-start" : "items-center",
-            )}
-          >
+          <p className="flex min-w-0 items-center gap-1.5 leading-snug">
             {/* Only the customer's name opens the job (owner, 2026-10-21: "I find myself
                 accidentally opening jobs all the time"), its hit area 44 pt tall. */}
             <Link
@@ -1475,18 +1484,21 @@ function StopTile({
             >
               {/* In Week's narrow desktop cells the name takes two lines rather than being cut
                   to a few letters. */}
-              <span className={cx("min-w-0", compact ? "line-clamp-2 break-words" : "truncate")}>
-                {s.customer}
-              </span>
-              <span aria-hidden="true" className="shrink-0">
-                ›
-              </span>
+              <span className="min-w-0 truncate">{s.customer}</span>
+              {compact ? null : (
+                <span aria-hidden="true" className="shrink-0">
+                  ›
+                </span>
+              )}
             </Link>
+            {quiet.length ? <span className="sr-only">{`, ${quiet.join(", ")}`}</span> : null}
             {/* Exceptions only, as small icons after the name; the status at the line's end
                 when the stop isn't plain Scheduled. */}
-            {s.lock && !twoTechs ? <LockTag lock={s.lock} className="relative" /> : null}
-            {missing ? <NotOnMapTag /> : null}
-            {cleaning ? (
+            {s.lock && !twoTechs && !compact ? (
+              <LockTag lock={s.lock} className="relative" />
+            ) : null}
+            {missing && !compact ? <NotOnMapTag /> : null}
+            {cleaning && !compact ? (
               <span
                 className="relative inline-flex shrink-0 text-text-muted"
                 title={`${cleaning.name} due`}
@@ -1495,7 +1507,7 @@ function StopTile({
                 <span className="sr-only">{`${cleaning.name} due`}</span>
               </span>
             ) : null}
-            {status ? (
+            {status && !compact ? (
               <span className="relative ml-auto shrink-0">
                 <StatusBadge status={s.status} />
               </span>
@@ -1533,7 +1545,11 @@ function StopTile({
           <Grip
             compact={compact}
             label={`Drag ${s.customer}`}
-            className={cx("relative", compact && "w-5!")}
+            className={cx(
+              "relative",
+              compact &&
+                "w-5! opacity-0 group-hover/tile:opacity-100 focus-visible:opacity-100 [@media(hover:none)]:opacity-100",
+            )}
             {...attributes}
             {...listeners}
           />
@@ -1623,7 +1639,9 @@ function StopBlock({
           ))}
         </ol>
       </SortableContext>
-      {home ? (
+      {/* Week's desktop cells leave it to the day's "1 hr 40 min driving" under the block
+          (owner, 2026-10-22: "This is insanely busy"). */}
+      {home && !compact ? (
         <p
           data-testid="drive-home"
           title={home}
@@ -1769,6 +1787,16 @@ function WeekMaps({
   const shown = days.filter(
     ([d]) => workDates.includes(d) || (lists[`${tech}|${d}`] ?? []).length > 0,
   );
+  const pills = !!maps && techs.length > 1;
+  const planWeek = planDates ? (
+    <PlanWeek
+      dates={planDates}
+      waiting={planWaiting}
+      techs={techs.map(([id, title]) => ({ id, name: title, color: colors.get(id) }))}
+      defaultTech={maps ? tech : null}
+      className="contents"
+    />
+  ) : null;
   return (
     <section aria-labelledby="week-routes" className="mb-5">
       {/* The section's title with its one action, then whose week the maps show. */}
@@ -1776,37 +1804,34 @@ function WeekMaps({
         <h2 id="week-routes" className="font-display text-xl font-bold">
           {maps ? (techs.length > 1 ? "Maps" : `${name}’s Maps`) : "This Week"}
         </h2>
-        {planDates ? (
-          <PlanWeek
-            dates={planDates}
-            waiting={planWaiting}
-            techs={techs.map(([id, title]) => ({ id, name: title, color: colors.get(id) }))}
-            defaultTech={maps ? tech : null}
-            className="contents"
-          />
-        ) : null}
+        {planDates && !pills ? planWeek : null}
       </div>
-      {maps && techs.length > 1 ? (
-        <nav
-          aria-label="Whose routes"
-          className="-mx-1 mb-3 flex gap-2 overflow-x-auto px-1 pb-1 [scrollbar-width:thin]"
-        >
-          {techs.map(([id, title]) => (
-            <button
-              key={id}
-              type="button"
-              aria-pressed={id === tech}
-              onClick={() => setPicked(id)}
-              className={pillClass(id === tech, "gap-2")}
-            >
-              <TechDot
-                color={colors.get(id)}
-                className={cx(id === tech && "ring-2 ring-white/90")}
-              />
-              {title}
-            </button>
-          ))}
-        </nav>
+      {pills ? (
+        // Optimize Week at the end of the techs' row, not in a row of its own (owner,
+        // 2026-10-22: "Move optimize week down").
+        <div className="mb-3 flex items-center gap-3">
+          <nav
+            aria-label="Whose routes"
+            className="-mx-1 flex min-w-0 flex-1 gap-2 overflow-x-auto px-1 pb-1 [scrollbar-width:thin]"
+          >
+            {techs.map(([id, title]) => (
+              <button
+                key={id}
+                type="button"
+                aria-pressed={id === tech}
+                onClick={() => setPicked(id)}
+                className={pillClass(id === tech, "gap-2")}
+              >
+                <TechDot
+                  color={colors.get(id)}
+                  className={cx(id === tech && "ring-2 ring-white/90")}
+                />
+                {title}
+              </button>
+            ))}
+          </nav>
+          {planDates ? <div className="shrink-0 pb-1">{planWeek}</div> : null}
+        </div>
       ) : null}
       {maps && tech ? (
         // One row (owner, 2026-10-21: Friday wrapped onto a line of its own): the work days fit

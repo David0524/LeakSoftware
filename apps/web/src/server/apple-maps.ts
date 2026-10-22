@@ -108,6 +108,9 @@ export function appleSnapshotUrl(
   size: { w: number; h: number },
   keys: AppleKeys,
   theme: "light" | "dark" = "light",
+  /** This site's address: the pins are its own small circles (api/map/pin), as on the live
+   * map. Without it (tests), Apple's balloon pins. */
+  pinBase?: string,
 ): string {
   const { w, h, scale } = snapshotSize(size);
   const q = new URLSearchParams();
@@ -121,18 +124,45 @@ export function appleSnapshotUrl(
   q.set("scale", String(scale));
   q.set("colorScheme", theme);
   q.set("poi", "0");
-  q.set(
-    "annotations",
-    JSON.stringify(
-      pins.map((p) => ({
-        point: point(p.at),
-        color: hex(TONE_COLOR[p.tone]),
-        markerStyle: "large",
-        // The shop's pin is plain; someone's home is a house (⌂), never its street.
-        ...(p.tone === "shop" ? (p.home ? { glyphText: "\u2302" } : {}) : { glyphText: p.label }),
-      })),
-    ),
-  );
+  if (pinBase) {
+    // Each pin is a 28 pt circle, its middle on the place. Apple anchors an image's bottom
+    // middle, and a negative y moves it down (owner, 2026-10-22: Apple's own pins "look huge
+    // and cartoony"). At most 10 different images: stops 1 to 9 and the start.
+    const names = pins.map((p) =>
+      p.tone === "shop" ? (p.home ? "home" : "shop") : `${p.tone}-${p.label}`,
+    );
+    const unique = [...new Set(names)];
+    q.set(
+      "imgs",
+      JSON.stringify(
+        unique.map((n) => ({ url: `${pinBase}/api/map/pin/${n}.png`, width: 28, height: 28 })),
+      ),
+    );
+    q.set(
+      "annotations",
+      JSON.stringify(
+        pins.map((p, i) => ({
+          point: point(p.at),
+          markerStyle: "img",
+          imgIdx: unique.indexOf(names[i]!),
+          offset: "0,-14",
+        })),
+      ),
+    );
+  } else {
+    q.set(
+      "annotations",
+      JSON.stringify(
+        pins.map((p) => ({
+          point: point(p.at),
+          color: hex(TONE_COLOR[p.tone]),
+          markerStyle: "balloon",
+          // The shop's pin is plain; someone's home is a house (⌂), never its street.
+          ...(p.tone === "shop" ? (p.home ? { glyphText: "\u2302" } : {}) : { glyphText: p.label }),
+        })),
+      ),
+    );
+  }
   const shop = pins.find((p) => p.tone === "shop");
   const route = [...(shop ? [shop] : []), ...pins.filter((p) => p.tone !== "shop")];
   if (shop && route.length > 1) route.push(shop);
