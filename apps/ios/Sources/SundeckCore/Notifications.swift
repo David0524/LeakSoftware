@@ -307,7 +307,10 @@ private func liveStopBase(_ s: LiveStopInput) -> LiveStopContent {
 /// Whether the Live Activity runs now (owner, 2026-10-19: "Live Activity should begin at the
 /// beginning of the workday"): on one of the shop's work days, from the start of its working
 /// day (Settings › Scheduling), while any of the tech's stops today aren't done.
-public func liveStopRuns(settings: JSONValue?, date: String, nowMin: Int, stopsLeft: Int) -> Bool {
+public func liveStopRuns(
+    settings: JSONValue?, date: String, nowMin: Int, stopsLeft: Int, underway: Bool = false
+) -> Bool {
+    if stopsLeft > 0 && underway { return true }
     let r = routingSettings(settings)
     guard let day = weekday(date), r.workDays.contains(day) else { return false }
     return nowMin >= workDay(r).startMin && stopsLeft > 0

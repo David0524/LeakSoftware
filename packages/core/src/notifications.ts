@@ -370,7 +370,9 @@ function liveStopBase(s: LiveStopInput): Omit<LiveStopContent, "access" | "clean
 /**
  * Whether the Live Activity runs now (owner, 2026-10-19: "Live Activity should begin at the
  * beginning of the workday"): on one of the shop's work days, from the start of its working
- * day (Settings › Scheduling), while any of the tech's stops today aren't done.
+ * day (Settings › Scheduling), while any of the tech's stops today aren't done. A stop already
+ * underway (On My Way or started) runs it at any hour, any day (owner, 2026-10-22, with a stop
+ * started before the 8 AM start: "The live activity doesn't seem to be working for me").
  */
 export function liveStopRuns(input: {
   /** company.settings */
@@ -379,7 +381,10 @@ export function liveStopRuns(input: {
   date: string;
   nowMin: number;
   stopsLeft: number;
+  /** A stop today is on the way or started (Today's card is driving or on site). */
+  underway?: boolean;
 }): boolean {
+  if (input.stopsLeft > 0 && input.underway) return true;
   const r = routingSettings(input.settings);
   if (!r.workDays.includes(weekday(input.date))) return false;
   return input.nowMin >= workDay(r).startMin && input.stopsLeft > 0;

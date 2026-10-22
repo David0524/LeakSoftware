@@ -66,7 +66,9 @@ import Testing
                 days: try c.arg(4, as: [DayStartDay].self))
         }
         checkRule(module, "liveStopRuns") { c in
-            liveStopRuns(settings: try c.arg(0), date: try c.arg(1), nowMin: try c.arg(2), stopsLeft: try c.arg(3))
+            liveStopRuns(
+                settings: try c.arg(0), date: try c.arg(1), nowMin: try c.arg(2), stopsLeft: try c.arg(3),
+                underway: try c.arg(4))
         }
     }
 }

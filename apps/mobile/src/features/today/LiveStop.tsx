@@ -132,6 +132,8 @@ function LiveStopDay() {
     date: today,
     nowMin,
     stopsLeft: left.length,
+    // A stop on the way or started runs it at any hour (owner, 2026-10-22).
+    underway: hero?.moment === "driving" || hero?.moment === "on_site",
   });
   const phase = liveStopPhase({
     moment: hero && job ? hero.moment : null,

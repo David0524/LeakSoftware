@@ -198,6 +198,16 @@ describe("the workday's Live Activity", () => {
     expect(liveStopRuns({ settings, date: "2026-10-18", nowMin: 9 * 60, stopsLeft: 3 })).toBe(
       false,
     );
+    // A stop already started or On My Way runs it at any hour (owner, 2026-10-22).
+    expect(
+      liveStopRuns({ settings, date: "2026-10-19", nowMin: 5 * 60, stopsLeft: 3, underway: true }),
+    ).toBe(true);
+    expect(
+      liveStopRuns({ settings, date: "2026-10-18", nowMin: 9 * 60, stopsLeft: 1, underway: true }),
+    ).toBe(true);
+    expect(
+      liveStopRuns({ settings, date: "2026-10-19", nowMin: 5 * 60, stopsLeft: 0, underway: true }),
+    ).toBe(false);
   });
 });
 

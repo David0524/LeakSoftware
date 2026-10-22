@@ -182,17 +182,39 @@ export const notifications: ModuleCases = {
     })(),
   ),
   liveStopRuns: rule(
-    (settings: unknown, date: string, nowMin: number, stopsLeft: number) =>
-      liveStopRuns({ settings, date, nowMin, stopsLeft }),
+    (settings: unknown, date: string, nowMin: number, stopsLeft: number, underway: boolean) =>
+      liveStopRuns({ settings, date, nowMin, stopsLeft, underway }),
     [
-      [{}, "2026-10-19", 0, 3],
-      [{}, "2026-10-19", 9 * 60, 3],
-      [{}, "2026-10-18", 9 * 60, 3],
-      [{ routing: { day_start: "07:30", work_days: [1, 2, 3, 4, 5] } }, "2026-10-19", 449, 3],
-      [{ routing: { day_start: "07:30", work_days: [1, 2, 3, 4, 5] } }, "2026-10-19", 450, 3],
-      [{ routing: { day_start: "07:30", work_days: [1, 2, 3, 4, 5] } }, "2026-10-19", 900, 0],
-      [{ routing: { day_start: "07:30", work_days: [0, 6] } }, "2026-10-18", 600, 1],
-      [{ routing: { day_start: "bad" } }, "2026-10-19", 600, 1],
+      [{}, "2026-10-19", 0, 3, false],
+      [{}, "2026-10-19", 9 * 60, 3, false],
+      [{}, "2026-10-18", 9 * 60, 3, false],
+      [
+        { routing: { day_start: "07:30", work_days: [1, 2, 3, 4, 5] } },
+        "2026-10-19",
+        449,
+        3,
+        false,
+      ],
+      [
+        { routing: { day_start: "07:30", work_days: [1, 2, 3, 4, 5] } },
+        "2026-10-19",
+        450,
+        3,
+        false,
+      ],
+      [
+        { routing: { day_start: "07:30", work_days: [1, 2, 3, 4, 5] } },
+        "2026-10-19",
+        900,
+        0,
+        false,
+      ],
+      [{ routing: { day_start: "07:30", work_days: [0, 6] } }, "2026-10-18", 600, 1, false],
+      [{ routing: { day_start: "bad" } }, "2026-10-19", 600, 1, false],
+      // A stop already underway runs it before the start of the day, or on a day off.
+      [{ routing: { day_start: "08:00", work_days: [1, 2, 3, 4, 5] } }, "2026-10-22", 335, 4, true],
+      [{ routing: { day_start: "08:00", work_days: [1, 2, 3, 4, 5] } }, "2026-10-18", 600, 1, true],
+      [{ routing: { day_start: "08:00", work_days: [1, 2, 3, 4, 5] } }, "2026-10-22", 335, 0, true],
     ],
   ),
   accessLine: rule(

@@ -109,12 +109,17 @@ public func liveStopDay(
     let routes = loadRoutes(jobs, ctx: ctx, dates: [ctx.today], team: team, drive: DriveTimes()).routes
     let stops = routes[routeKey(userId, ctx.today)]?.jobs ?? []
     let left = stops.filter { !$0.doneOn(ctx.today) }.count
-    return LiveStopDay(
+    var day = LiveStopDay(
         today: ctx.today, timeZone: ctx.timeZone, stops: stops,
         heroStops: dayHeroStops(
             store, companyId: company.id, stops: stops,
             cleanings: dayCleanings(store, companyId: company.id, stops: stops, today: ctx.today)),
-        runs: liveStopRuns(settings: company.settings, date: ctx.today, nowMin: ctx.nowMin, stopsLeft: left))
+        runs: false)
+    // A stop on the way or started runs it at any hour (owner, 2026-10-22).
+    let underway = day.hero().map { $0.moment == .driving || $0.moment == .onSite } ?? false
+    day.runs = liveStopRuns(
+        settings: company.settings, date: ctx.today, nowMin: ctx.nowMin, stopsLeft: left, underway: underway)
+    return day
 }
 
 /// The arrival time of day On My Way texts: now plus the drive (at least 5 minutes), "9:42 AM".
