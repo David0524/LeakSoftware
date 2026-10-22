@@ -326,19 +326,16 @@
                 .minimumScaleFactor(0.75)
         }
 
-        /// Bottom: the stop, the next stop, the access notes and the cleanings due, and the
-        /// progress, then Call and On My Way and Mark Complete (owner, 2026-10-20); Open Job when
-        /// there are no actions (the island's tap opens the job too).
+        /// Bottom: the stop, the access notes and the cleanings due, and the progress, then Call
+        /// and On My Way and Mark Complete (owner, 2026-10-20); Open Job when there are no actions
+        /// (the island's tap opens the job too). No "Then: …" line here, so the buttons always fit
+        /// (owner, 2026-10-22: they were cut off); the Lock Screen keeps it.
         public static func bottom(
             _ content: LiveStopContent, call: URL?, open: URL?, actions: [LiveStopActionLink] = []
         ) -> some View {
             VStack(alignment: .leading, spacing: 8) {
                 VStack(alignment: .leading, spacing: 2) {
                     Text(content.detail).font(LiveStopStyle.small()).foregroundStyle(LiveStopStyle.muted).lineLimit(1)
-                    if let next = content.next {
-                        Text(next).font(LiveStopStyle.small(.medium)).foregroundStyle(LiveStopStyle.text)
-                            .lineLimit(1)
-                    }
                     if let access = content.access { LiveStopAccess(text: access) }
                     if !content.cleanings.isEmpty { LiveStopCleanings(cleanings: content.cleanings) }
                 }
