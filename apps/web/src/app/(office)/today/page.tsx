@@ -313,7 +313,8 @@ export default async function TodayPage({ searchParams }: PageProps<"/today">) {
             ) : null}
             <div className="flex flex-wrap items-start gap-2 pt-2">
               {/* Every stop: done for the day without the full process (owner,
-                            2026-10-19). */}
+                            2026-10-19). Complete, Do Later and the contact buttons on one
+                            line (owner, 2026-10-22). */}
               <TodayComplete
                 jobId={j.id}
                 customer={j.customer?.name ?? "this stop"}
@@ -325,12 +326,14 @@ export default async function TodayPage({ searchParams }: PageProps<"/today">) {
                   reportMode,
                   customer: j.customer?.name,
                 })}
+                inRow
               />
               {moves ? (
                 <DoLaterButton
                   jobId={j.id}
                   customer={j.customer?.name ?? "this stop"}
                   show={moves.later}
+                  inRow
                 />
               ) : null}
               {done ? null : (

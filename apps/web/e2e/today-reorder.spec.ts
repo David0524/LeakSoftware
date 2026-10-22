@@ -198,6 +198,16 @@ test.describe("Today: change the order of stops", () => {
     await expect(row(page, "A")).toBeVisible();
     const aBefore = await timeOf(row(page, "A"));
     if (SCREENS) await page.screenshot({ path: `${SCREENS}/today-reorder-bar.png` });
+    // A stop's buttons on one line (owner, 2026-10-22): Complete, Do Later, then contact.
+    const a = row(page, "A");
+    await a.getByRole("button", { name: `Show ${stopName("A")}` }).click();
+    const complete = a.getByRole("button", { name: `Mark Complete for ${stopName("A")}` });
+    await expect(complete).toHaveText("Complete");
+    const later = a.getByRole("button", { name: `Do Later for ${stopName("A")}` });
+    const [c, l] = [(await complete.boundingBox())!, (await later.boundingBox())!];
+    expect(Math.abs(c.y - l.y)).toBeLessThan(2);
+    if (SCREENS) await a.screenshot({ path: `${SCREENS}/today-row-buttons.png` });
+    await a.getByRole("button", { name: `Hide ${stopName("A")}` }).click();
     await page.getByTestId("today-reorder").getByRole("button", { name: "Reorder" }).click();
     // Edit mode: Today's card steps aside, and each stop has its controls.
     await expect(page.getByTestId("today-hero")).toHaveCount(0);

@@ -25,6 +25,7 @@ export function TodayComplete({
   undo,
   prompt = null,
   buttonClassName,
+  inRow = false,
   onCompleting,
   onCompleted,
 }: {
@@ -34,6 +35,11 @@ export function TodayComplete({
   onCompleted?: () => void;
   /** The button's look in place of the usual one (Today's card, on water blue). */
   buttonClassName?: string;
+  /**
+   * On a stop's row: "Complete" and tighter pills, so Complete, Do Later and the contact buttons
+   * fit on one line (owner, 2026-10-22: "I don't like these being on 2 rows").
+   */
+  inRow?: boolean;
   jobId: string;
   customer: string;
   done: boolean;
@@ -83,10 +89,13 @@ export function TodayComplete({
           run(!shown);
         }}
         className={
-          buttonClassName ?? cx(buttonClass(shown ? "secondary" : "primary", "min-h-11 px-5"))
+          buttonClassName ??
+          cx(
+            buttonClass(shown ? "secondary" : "primary", cx("min-h-11", inRow ? "px-3.5" : "px-5")),
+          )
         }
       >
-        {shown ? after : "Mark Complete"}
+        {shown ? after : inRow ? "Complete" : "Mark Complete"}
       </button>
       {confirmSheet}
     </div>

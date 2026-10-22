@@ -840,15 +840,19 @@
             .contentShape(Rectangle())
         }
 
-        /// Mark Complete (primary), or Reopen Visit or Mark Not Complete, then call and On My Way.
+        /// Complete (primary), or Reopen Visit or Mark Not Complete, and Do Later, then Message and
+        /// Call, all on one line (owner, 2026-10-22: "I don't like these being on 2 rows"); only
+        /// large text wraps them.
         private func buttons(done: Bool) -> some View {
             HStack(alignment: .top, spacing: 8) {
                 VStack(alignment: .leading, spacing: 8) {
                     FlowRow(spacing: 8) {
-                        if markStopTitle(job, day: day.ctx.today) != nil { TodayMarkButton(job: job, day: day) }
+                        if markStopTitle(job, day: day.ctx.today) != nil {
+                            TodayMarkButton(job: job, day: day, inRow: true)
+                        }
                         if canDoLater(done: done) && undoShown == nil {
                             Button(TodayReorderText.doLater) { moves.doLater(job, .row) }
-                                .buttonStyle(.secondary)
+                                .buttonStyle(.secondary(size: .compact))
                                 .accessibilityLabel("\(TodayReorderText.doLater), \(job.customerName)")
                                 .accessibilityHint("Moves the stop after the last one")
                         }
@@ -888,6 +892,8 @@
         /// On the card, the last thing left (the checklist all done, owner 2026-10-22): the filled
         /// white button.
         var filled = false
+        /// On a stop's row: "Complete" and tighter pills, so the row's buttons fit on one line.
+        var inRow = false
         @Environment(Session.self) private var session
         @Environment(AppEnvironment.self) private var app
         @Environment(SyncService.self) private var sync
@@ -906,7 +912,8 @@
                             .accessibilityLabel(MarkStopText.spoken(undo.label, job.customerName))
                     }
                 } else {
-                    styled(Button(MarkStopText.complete) { complete() }, primary: true)
+                    let title = inRow ? MarkStopText.completeShort : MarkStopText.complete
+                    styled(Button(title) { complete() }, primary: true)
                         .accessibilityLabel(MarkStopText.spoken(MarkStopText.complete, job.customerName))
                 }
                 if let blocked {
@@ -936,9 +943,9 @@
             if onCard {
                 button.buttonStyle(HeroButtonStyle(filled: filled && primary))
             } else if primary {
-                button.buttonStyle(.primary)
+                button.buttonStyle(.primary(size: inRow ? .compact : .regular))
             } else {
-                button.buttonStyle(.secondary)
+                button.buttonStyle(.secondary(size: inRow ? .compact : .regular))
             }
         }
 

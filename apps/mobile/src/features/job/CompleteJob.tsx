@@ -97,6 +97,9 @@ export function undoStopDone(job: Job, day: string): boolean {
  * completed visit has Reopen Visit, back to in progress as on its page (owner, 2026-10-20:
  * core todayUndo).
  */
+/** A Today stop row's pills: 14 side padding instead of 20, so the row stays on one line. */
+export const ROW_PILL = { paddingHorizontal: 14 };
+
 export function TodayComplete({
   job,
   customer,
@@ -108,6 +111,7 @@ export function TodayComplete({
   onPressHandled,
   onWater = false,
   filled = false,
+  inRow = false,
 }: {
   job: Job;
   /** The customer's name, or "this stop". */
@@ -123,6 +127,11 @@ export function TodayComplete({
   onWater?: boolean;
   /** The last thing left on the card: the filled white button (owner, 2026-10-22). */
   filled?: boolean;
+  /**
+   * On a stop's row: "Complete" and tighter pills, so Complete, Do Later and the contact buttons
+   * fit on one line (owner, 2026-10-22: "I don't like these being on 2 rows").
+   */
+  inRow?: boolean;
   /** Set when the row's swipe action asks for Mark Complete (gestures spec section 5). */
   pressNonce?: number;
   /** Called once that request is handled, so it isn't pressed again. */
@@ -134,6 +143,8 @@ export function TodayComplete({
   // What a done stop offers here: Reopen Visit, Mark Not Complete, or nothing.
   const undo = todayUndo(job, day);
   const label = done ? (undo?.label ?? "Mark Not Complete") : "Mark Complete";
+  // Read aloud in full: "Mark Complete for Maria Lopez".
+  const shown = inRow && !done ? "Complete" : label;
   function press() {
     const sync = getServices().sync;
     if (done) {
@@ -179,10 +190,11 @@ export function TodayComplete({
   return (
     <View style={{ gap: space["1"] }}>
       <Button
-        title={label}
+        title={shown}
         kind={onWater ? (filled ? "onWater" : "onWaterTinted") : done ? "secondary" : "primary"}
         accessibilityLabel={`${label} for ${customer}`}
         onPress={press}
+        style={inRow ? ROW_PILL : undefined}
       />
       {asked && blocker && !done ? (
         <Text

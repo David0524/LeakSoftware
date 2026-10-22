@@ -75,6 +75,9 @@ public enum FinishPhotoText {
 /// Mark Complete on a Today stop's words (owner, 2026-10-19).
 public enum MarkStopText {
     public static let complete = "Mark Complete"
+    /// On a Today stop's row, so Complete, Do Later and the contact buttons fit on one line (owner,
+    /// 2026-10-22: "I don't like these being on 2 rows"). VoiceOver still says Mark Complete.
+    public static let completeShort = "Complete"
     public static let notComplete = TodayUndo.markNotComplete.label
     public static let reopenVisit = TodayUndo.reopenVisit.label
     public static let openJob = "Open Job"

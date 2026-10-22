@@ -239,11 +239,14 @@ export function DoLaterButton({
   customer,
   show,
   onWater = false,
+  inRow = false,
 }: {
   jobId: string;
   customer: string;
   /** False when Do Later would do nothing (already last, or it can't move). */
   show: boolean;
+  /** On a stop's row: the tighter pill beside Complete (TodayComplete's `inRow`). */
+  inRow?: boolean;
   /** On Today's water-blue card. */
   onWater?: boolean;
 }) {
@@ -284,7 +287,7 @@ export function DoLaterButton({
         className={
           onWater
             ? "inline-flex min-h-11 items-center justify-center rounded-full bg-white/18 px-5 text-[1.0625rem] font-semibold text-white transition-colors hover:bg-white/28 disabled:opacity-60"
-            : buttonClass("secondary", "min-h-11 px-5")
+            : buttonClass("secondary", cx("min-h-11", inRow ? "px-3.5" : "px-5"))
         }
       >
         {d.pending ? "Moving…" : "Do Later"}

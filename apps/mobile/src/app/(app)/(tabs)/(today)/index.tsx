@@ -26,7 +26,7 @@ import { useWeather } from "../../../../data/weather";
 import { GettingStarted } from "../../../../features/today/GettingStarted";
 import { useTeamSync, useTeamToday } from "../../../../features/today/TeamToday";
 import { CleaningsDue } from "../../../../features/maintenance/Cleanings";
-import { TodayComplete, undoStopDone } from "../../../../features/job/CompleteJob";
+import { ROW_PILL, TodayComplete, undoStopDone } from "../../../../features/job/CompleteJob";
 import { OnMyWayTrigger } from "../../../../features/today/OnMyWay";
 import { useStopMessage } from "../../../../features/today/useStopMessage";
 import {
@@ -817,6 +817,7 @@ const Stop = memo(function Stop({
               trigger={action?.action === "mark_complete" ? action.nonce : undefined}
               pressNonce={completeAsked}
               onPressHandled={() => setCompleteAsked(0)}
+              inRow
             />
             {doLater && !undoText ? (
               <Button
@@ -824,6 +825,7 @@ const Stop = memo(function Stop({
                 title="Do Later"
                 accessibilityLabel={`Do Later, ${name}`}
                 onPress={doLater}
+                style={ROW_PILL}
               />
             ) : null}
             {done ? null : (
