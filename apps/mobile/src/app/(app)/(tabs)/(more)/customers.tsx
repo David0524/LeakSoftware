@@ -1,11 +1,11 @@
-import { router } from "expo-router";
-import { formatAddress, offersPool, propertyLocation } from "@leakbook/core";
+import { router, useLocalSearchParams } from "expo-router";
+import { customerShowOptions, formatAddress, offersPool, propertyLocation } from "@leakbook/core";
 import { useMemo, useState } from "react";
 import { useSyncRefresh } from "../../../../data/hooks";
 import { Animated, Linking, RefreshControl, StyleSheet, Text, View } from "react-native";
 import {
   CUSTOMER_SORTS,
-  KIND_PLURALS,
+  useCustomerCounts,
   useCustomerList,
   type CustomerListRow,
   type CustomerSort,
@@ -30,8 +30,14 @@ export default function Customers() {
   const company = useCompany();
   const [search, setSearch] = useState("");
   const [sort, setSort] = useState<CustomerSort>("name");
-  const [show, setShow] = useState("all");
-  const rows = useCustomerList(company.id, search, sort, show);
+  // Opened from the Dashboard's trackers (`/customers?show=plan`).
+  const { show: asked } = useLocalSearchParams<{ show?: string }>();
+  const [show, setShow] = useState(() =>
+    customerShowOptions(true).some((o) => o.value === asked) ? asked! : "all",
+  );
+  const rows = useCustomerList(company.id, company.timezone, search, sort, show);
+  // Each Show choice with its count (owner, 2026-10-22), of what the search finds.
+  const counts = useCustomerCounts(company.id, company.timezone, search);
   const line = useLine(company.id);
   const [choice] = useDirectionsChoice();
   const menu = useRowMenu();
@@ -53,17 +59,8 @@ export default function Customers() {
     return rowGestures(actions, run, () => menu.open(menuTitle(c.name), actions.menu, run));
   }
   const shows = useMemo(
-    () => [
-      { value: "all", label: "All Customers" },
-      ...(offersPool(company.settings)
-        ? [
-            { value: "plan", label: "On a Plan" },
-            { value: "no_plan", label: "No Plan" },
-          ]
-        : []),
-      ...Object.entries(KIND_PLURALS).map(([value, label]) => ({ value, label })),
-    ],
-    [company.settings],
+    () => customerShowOptions(offersPool(company.settings), counts),
+    [company.settings, counts],
   );
   const { header, ref, scrollProps, contentContainerStyle } = useScreenChrome({
     title: "Customers",
@@ -91,7 +88,6 @@ export default function Customers() {
       <View style={styles.selects}>
         <Select
           label="Sort"
-          style={{ flex: 1 }}
           value={sort}
           onChange={setSort}
           options={Object.entries(CUSTOMER_SORTS).map(([value, label]) => ({
@@ -99,7 +95,7 @@ export default function Customers() {
             label,
           }))}
         />
-        <Select label="Show" style={{ flex: 1 }} value={show} onChange={setShow} options={shows} />
+        <Select label="Show" value={show} onChange={setShow} options={shows} />
       </View>
     </View>
   );
@@ -167,5 +163,6 @@ export default function Customers() {
 
 const styles = StyleSheet.create({
   top: { gap: space["4"], marginBottom: space["5"] },
-  selects: { flexDirection: "row", gap: space["3"] },
+  // Sort above Show, so Show's count is never cut off ("On a Plan (65)").
+  selects: { gap: space["3"] },
 });

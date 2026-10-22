@@ -1,39 +1,32 @@
 import type { Metadata } from "next";
-import { formatAddress, offersPool, propertyLocation } from "@leakbook/core";
+import { customerShowOptions, formatAddress, offersPool, propertyLocation } from "@leakbook/core";
 import { CustomerActions } from "@/components/list-actions";
 import { getLine } from "@/lib/messages";
 import { CustomerFilters } from "@/components/customer-filters";
 import { Empty, Grouped, PageHeader, RowContent } from "@/components/ui";
 import { getOffice } from "@/lib/auth";
-import { CUSTOMER_SORTS, getCompany, listCustomers, type CustomerSort } from "@/lib/data";
+import {
+  CUSTOMER_SORTS,
+  customerCounts,
+  getCompany,
+  listCustomers,
+  type CustomerSort,
+} from "@/lib/data";
 
 export const metadata: Metadata = { title: "Customers · Sundeck Pro" };
-
-/** Customer kinds, as on the customer's page; plural for the Show menu. */
-const KINDS: Record<string, string> = {
-  homeowner: "Homeowners",
-  pool_company: "Pool Companies",
-  builder: "Builders",
-  insurer: "Insurers",
-  property_manager: "Property Managers",
-  other: "Other",
-};
 
 export default async function CustomersPage({ searchParams }: PageProps<"/customers">) {
   const office = await getOffice();
   const { q, sort: sortParam, show: showParam } = await searchParams;
   const search = typeof q === "string" ? q : "";
-  const [company, line] = await Promise.all([getCompany(office), getLine(office)]);
-  const shows = [
-    { value: "all", label: "All Customers" },
-    ...(offersPool(company.settings)
-      ? [
-          { value: "plan", label: "On a Plan" },
-          { value: "no_plan", label: "No Plan" },
-        ]
-      : []),
-    ...Object.entries(KINDS).map(([value, label]) => ({ value, label })),
-  ];
+  // Each Show choice with its count (owner, 2026-10-22: "have a number showing the total next
+  // to each thing"), of what the search finds when there is one.
+  const [company, line, counts] = await Promise.all([
+    getCompany(office),
+    getLine(office),
+    customerCounts(office, search),
+  ]);
+  const shows = customerShowOptions(offersPool(company.settings), counts);
   const sort: CustomerSort =
     typeof sortParam === "string" && sortParam in CUSTOMER_SORTS
       ? (sortParam as CustomerSort)

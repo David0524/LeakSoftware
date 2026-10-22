@@ -7,6 +7,8 @@
     /// Where the More tab goes.
     enum MoreRoute: Hashable {
         case customers
+        /// Customers on one Show choice (the dashboard's customer trackers).
+        case customersFiltered(String)
         case customer(String)
         case invoices
         /// Chemical; a visit or a customer's pool opens it for that pool (Submit and its log).
@@ -35,6 +37,7 @@
         var body: some View {
             switch route {
             case .customers: CustomersScreen()
+            case .customersFiltered(let show): CustomersScreen(show: show)
             case .customer(let id): CustomerScreen(customerId: id)
             case .invoices: InvoicesScreen()
             case .chemicals(let target): ChemicalsScreen(target: target)

@@ -1,5 +1,15 @@
 import { useMemo } from "react";
-import type { Customer, Job, Property } from "@leakbook/core";
+import {
+  CUSTOMER_KIND_PLURALS,
+  countCustomers,
+  customersAddedSince,
+  customersOnPlan,
+  localDate,
+  type Customer,
+  type CustomerCounts,
+  type Job,
+  type Property,
+} from "@leakbook/core";
 import { useRows } from "./hooks";
 
 // Customers on the phone (spec 5.9), from synced rows: searched, filtered, and sorted as the
@@ -16,14 +26,7 @@ export const CUSTOMER_SORTS = {
 export type CustomerSort = keyof typeof CUSTOMER_SORTS;
 
 /** Customer kinds, plural for the Show menu. */
-export const KIND_PLURALS: Record<string, string> = {
-  homeowner: "Homeowners",
-  pool_company: "Pool Companies",
-  builder: "Builders",
-  insurer: "Insurers",
-  property_manager: "Property Managers",
-  other: "Other",
-};
+export const KIND_PLURALS = CUSTOMER_KIND_PLURALS;
 
 /** Customer kinds, as on the customer's page. */
 export const KIND_LABELS: Record<string, string> = {
@@ -76,9 +79,50 @@ export function useCustomerData(companyId: string) {
   return { customers, properties, plans, jobs };
 }
 
+/** Whether a customer matches the list's search: name or email, or 3+ digits of the phone. */
+function matchesSearch(c: CustomerRow, search: string): boolean {
+  const term = search.trim().toLowerCase();
+  if (!term) return true;
+  const digits = term.replace(/\D/g, "");
+  return (
+    c.name.toLowerCase().includes(term) ||
+    (c.email ?? "").toLowerCase().includes(term) ||
+    (digits.length >= 3 && (c.phone ?? "").replace(/\D/g, "").includes(digits))
+  );
+}
+
+/** The customers on a current plan (customer-counts.ts), by the shop's today. */
+function onPlan(plans: ServicePlanRow[], timeZone: string): string[] {
+  return customersOnPlan(plans, localDate(new Date(), timeZone));
+}
+
+/**
+ * Counts for the Show menu (owner, 2026-10-22: "have a number showing the total next to each
+ * thing") and the Dashboard's trackers, from the synced rows: the whole shop, or what the
+ * search finds.
+ */
+export function useCustomerCounts(
+  companyId: string,
+  timeZone: string,
+  search = "",
+): CustomerCounts {
+  const customers = useRows<CustomerRow>("customer", companyId);
+  const plans = useRows<ServicePlanRow>("service_plan", companyId);
+  return useMemo(
+    () =>
+      countCustomers(
+        customers.filter((c) => matchesSearch(c, search)),
+        onPlan(plans, timeZone),
+        customersAddedSince(new Date()),
+      ),
+    [customers, plans, search, timeZone],
+  );
+}
+
 /** The list, searched (name, phone, or email), filtered by `show`, and sorted. */
 export function useCustomerList(
   companyId: string,
+  timeZone: string,
   search: string,
   sort: CustomerSort,
   show: string,
@@ -86,7 +130,7 @@ export function useCustomerList(
   const { customers, properties, plans, jobs } = useCustomerData(companyId);
   return useMemo(() => {
     const now = new Date().toISOString();
-    const withPlan = new Set(plans.filter((p) => !p.deleted_at).map((p) => p.customer_id));
+    const withPlan = new Set(onPlan(plans, timeZone));
     const lastVisit = new Map<string, string>();
     for (const v of jobs) {
       if (v.deleted_at || v.status === "canceled" || !v.bill_to_customer_id) continue;
@@ -95,17 +139,9 @@ export function useCustomerList(
       const had = lastVisit.get(v.bill_to_customer_id);
       if (!had || at > had) lastVisit.set(v.bill_to_customer_id, at);
     }
-    const term = search.trim().toLowerCase();
-    const digits = term.replace(/\D/g, "");
     let rows: CustomerListRow[] = customers
       .filter((c) => !c.deleted_at)
-      .filter(
-        (c) =>
-          !term ||
-          c.name.toLowerCase().includes(term) ||
-          (c.email ?? "").toLowerCase().includes(term) ||
-          (digits.length >= 3 && (c.phone ?? "").replace(/\D/g, "").includes(digits)),
-      )
+      .filter((c) => matchesSearch(c, search))
       .filter((c) => ["all", "plan", "no_plan"].includes(show) || c.kind === show)
       .map((c) => {
         const pools = properties.filter((p) => p.customer_id === c.id && !p.deleted_at);
@@ -144,5 +180,5 @@ export function useCustomerList(
       }
     });
     return rows;
-  }, [customers, properties, plans, jobs, search, sort, show]);
+  }, [customers, properties, plans, jobs, search, sort, show, timeZone]);
 }

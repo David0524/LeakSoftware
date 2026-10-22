@@ -4,14 +4,20 @@ import { redirect } from "next/navigation";
 import {
   JOB_STATUSES,
   JOB_STATUS_LABELS,
+  CUSTOMER_TRACKER_LABELS,
   acceptanceRate,
+  customersAddedNote,
   dashboardTotals,
   formatCents,
+  formatCount,
   monthLabel,
+  offersPool,
+  onPlanShareNote,
   type Dashboard,
 } from "@leakbook/core";
 import { Card, Empty, Grouped, PageHeader, Row } from "@/components/ui";
 import { getOffice } from "@/lib/auth";
+import { customerCounts, getCompany } from "@/lib/data";
 import { createClient } from "@/lib/supabase/server";
 import { Suspense, cache } from "react";
 import { GettingStarted } from "@/components/getting-started";
@@ -35,12 +41,14 @@ const WAITING: string[] = ["report_sent", "quote_sent", "quote_accepted", "invoi
 export default async function DashboardPage() {
   const office = await getOffice();
   if (!office.isManager) redirect("/jobs");
-  const { data, error } = await (
-    await createClient()
-  ).rpc("owner_dashboard", {
-    target_company: office.company.id,
-    months: MONTHS,
-  });
+  const [{ data, error }, counts, company] = await Promise.all([
+    (await createClient()).rpc("owner_dashboard", {
+      target_company: office.company.id,
+      months: MONTHS,
+    }),
+    customerCounts(office),
+    getCompany(office),
+  ]);
   if (error || !data) {
     return (
       <>
@@ -74,7 +82,27 @@ export default async function DashboardPage() {
         <GettingStarted />
       </Suspense>
 
-      <dl className="grid grid-cols-2 gap-4 lg:grid-cols-4">
+      <dl className={`grid grid-cols-2 gap-4 ${counts ? "lg:grid-cols-3" : "lg:grid-cols-4"}`}>
+        {/* Customer trackers (owner, 2026-10-22: "a tracker of total customers, and customers
+            actively on a plan"), each opening Customers on its Show choice. */}
+        {counts ? (
+          <>
+            <Stat
+              label={CUSTOMER_TRACKER_LABELS.customers}
+              value={formatCount(counts.all)}
+              note={customersAddedNote(counts.added)}
+              href="/customers"
+            />
+            {offersPool(company.settings) ? (
+              <Stat
+                label={CUSTOMER_TRACKER_LABELS.onPlan}
+                value={formatCount(counts.plan)}
+                note={onPlanShareNote(counts.plan, counts.all)}
+                href="/customers?show=plan"
+              />
+            ) : null}
+          </>
+        ) : null}
         <Stat
           label="Collected"
           value={formatCents(totals.collected_cents)}
@@ -262,12 +290,48 @@ export default async function DashboardPage() {
   );
 }
 
-function Stat({ label, value, note }: { label: string; value: string; note: React.ReactNode }) {
-  return (
-    <div className="card p-4">
-      <dt className="text-[0.9375rem] text-text-muted">{label}</dt>
+function Stat({
+  label,
+  value,
+  note,
+  href,
+}: {
+  label: string;
+  value: string;
+  note: React.ReactNode;
+  /** The whole card opens this, with a chevron after the label. */
+  href?: string;
+}) {
+  const body = (
+    <>
+      <dt className="flex items-center gap-1 text-[0.9375rem] text-text-muted">
+        {label}
+        {href ? (
+          <svg aria-hidden="true" viewBox="0 0 16 16" className="size-3.5 text-text-muted">
+            <path
+              d="M6 3.5 10.5 8 6 12.5"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            />
+          </svg>
+        ) : null}
+      </dt>
       <dd className="font-display text-3xl font-extrabold tabular-nums">{value}</dd>
       <dd className="text-[0.9375rem] text-text-muted">{note}</dd>
+    </>
+  );
+  if (!href) return <div className="card p-4">{body}</div>;
+  return (
+    <div className="card relative p-4 hover:bg-text/[0.02] active:bg-text/[0.04]">
+      {body}
+      <Link
+        href={href}
+        className="absolute inset-0 rounded-[inherit]"
+        aria-label={`${label}: ${value}`}
+      />
     </div>
   );
 }

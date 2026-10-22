@@ -220,6 +220,17 @@ import Testing
         #expect(customerRowValue(last[1], sort: .lastVisit, now: now, timeZone: "America/Phoenix") == "No visits")
         #expect(customersEmptyText(search: "zz", show: "all") == "No customers match “zz”.")
         #expect(customerShows(.leak).map(\.value).prefix(2) == ["all", "homeowner"])
+        // Each Show choice's count (owner, 2026-10-22), of the shop or a search.
+        let counts = customerCounts(s.sync.store, companyId: "c1", now: now, timeZone: "America/Phoenix")
+        #expect(counts.all == 2)
+        #expect(counts.kinds["pool_company"] == 1)
+        #expect(
+            counts.plan
+                == customerList(s.sync.store, companyId: "c1", show: "plan", now: now, timeZone: "America/Phoenix")
+                .count
+        )
+        #expect(customerShows(.leak, counts: counts).map(\.label).prefix(2) == ["All Customers (2)", "Homeowners (1)"])
+        #expect(customerCounts(s.sync.store, companyId: "c1", search: "0144", now: now, timeZone: "UTC").all == 1)
 
         let detail = try #require(
             customerDetail(s.sync.store, companyId: "c1", customerId: "a", now: now, timeZone: "America/Phoenix"))

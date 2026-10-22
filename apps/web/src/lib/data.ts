@@ -23,6 +23,11 @@ import type {
 import {
   canMakeJobs,
   checklistTally,
+  countCustomers,
+  customersAddedSince,
+  customersOnPlan,
+  localDate,
+  type CustomerCounts,
   cleaningKind,
   inspectionProgress,
   jobSort,
@@ -534,6 +539,60 @@ export type CustomerSort = keyof typeof CUSTOMER_SORTS;
 /** all, plan, no_plan, or a customer kind (homeowner, pool_company, ...). */
 export type CustomerShow = string;
 
+/** The list's search text, made safe for PostgREST's or= filter (as listCustomers). */
+function customerTerm(search: string) {
+  return search.replace(/[%,()]/g, " ").trim();
+}
+
+/**
+ * Counts for the Customers list's Show menu and the Dashboard's trackers (owner, 2026-10-22),
+ * for the whole shop or what a search finds: one query (public.customer_counts). Null when
+ * they can't be read, so the menu shows its plain labels.
+ */
+export async function customerCounts(office: Office, search = ""): Promise<CustomerCounts | null> {
+  const supabase = await db();
+  const term = customerTerm(search);
+  const { data, error } = await supabase.rpc("customer_counts", {
+    target_company: office.company.id,
+    search: term || null,
+  });
+  if (!error && data) return data as CustomerCounts;
+  // Until the database has customer_counts (20261022001400): count the rows here, by the same
+  // rules (at most 10,000 customers).
+  try {
+    const rows: { id: string; kind: string | null; created_at: string | null }[] = [];
+    for (let from = 0; from < 10_000; from += 1000) {
+      let q = supabase
+        .from("customer")
+        .select("id, kind, created_at")
+        .eq("company_id", office.company.id)
+        .is("deleted_at", null)
+        .order("id")
+        .range(from, from + 999);
+      if (term) q = q.or(`name.ilike.%${term}%,email.ilike.%${term}%,phone.ilike.%${term}%`);
+      const page = must(await q) as typeof rows;
+      rows.push(...page);
+      if (page.length < 1000) break;
+    }
+    const plans = must(
+      await supabase
+        .from("service_plan")
+        .select("customer_id, ends_on")
+        .eq("company_id", office.company.id)
+        .is("deleted_at", null)
+        .limit(10_000),
+    ) as { customer_id: string; ends_on: string | null }[];
+    const now = new Date();
+    return countCustomers(
+      rows,
+      customersOnPlan(plans, localDate(now, office.company.timezone)),
+      customersAddedSince(now),
+    );
+  } catch {
+    return null;
+  }
+}
+
 /**
  * Customers for the list, searched, filtered, and sorted (owner, 2026-10-18: "sort customers by
  * a variety of filters"). Each comes with its pools, whether it has a maintenance plan, and its
@@ -556,7 +615,7 @@ export async function listCustomers(
       ascending: sort !== "newest" && sort !== "name_desc",
     })
     .limit(500);
-  const term = search.replace(/[%,()]/g, " ").trim();
+  const term = customerTerm(search);
   if (term) q = q.or(`name.ilike.%${term}%,email.ilike.%${term}%,phone.ilike.%${term}%`);
   if (!["all", "plan", "no_plan"].includes(show)) q = q.eq("kind", show);
   const customers = must(await q) as Customer[];
@@ -566,7 +625,7 @@ export async function listCustomers(
         supabase.from("property").select("*").in("customer_id", ids).is("deleted_at", null),
         supabase
           .from("service_plan")
-          .select("customer_id")
+          .select("customer_id, ends_on")
           .in("customer_id", ids)
           .is("deleted_at", null),
         supabase
@@ -582,7 +641,7 @@ export async function listCustomers(
         ([p, sp, j]) =>
           [
             must(p) as Property[],
-            must(sp) as { customer_id: string }[],
+            must(sp) as { customer_id: string; ends_on: string | null }[],
             must(j) as {
               bill_to_customer_id: string;
               scheduled_start: string | null;
@@ -591,7 +650,8 @@ export async function listCustomers(
           ] as const,
       )
     : ([[], [], []] as const);
-  const withPlan = new Set(plans.map((p) => p.customer_id));
+  // On a Plan: a plan not ended before the shop's today, as the counts (customer-counts.ts).
+  const withPlan = new Set(customersOnPlan(plans, localDate(new Date(), office.company.timezone)));
   const lastVisit = new Map<string, string>();
   for (const v of visits) {
     const at = v.completed_at ?? v.scheduled_start;

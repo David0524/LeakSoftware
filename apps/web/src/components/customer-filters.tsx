@@ -39,7 +39,8 @@ export function CustomerFilters({
           Search
         </Button>
       </div>
-      <div className="grid grid-cols-2 gap-3 sm:max-w-xl">
+      {/* Phones stack Sort and Show, so Show's count is never cut off ("On a Plan (65)"). */}
+      <div className="grid gap-3 sm:max-w-xl sm:grid-cols-2">
         <Select label="Sort" name="sort" defaultValue={sort} options={sorts} onChange={apply} />
         <Select label="Show" name="show" defaultValue={show} options={shows} onChange={apply} />
       </div>

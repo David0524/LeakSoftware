@@ -19,8 +19,10 @@
         }
         @State private var search = ""
         @State private var sort = CustomerSort.name
-        @State private var show = "all"
+        @State private var show: String
         @State private var rows: [CustomerListItem] = []
+        /// Each Show choice's count (owner, 2026-10-22), of what the search finds.
+        @State private var counts: CustomerCounts?
         @State private var loaded = false
         /// The company number works: Message opens New Message, as the customer's page does.
         @State private var lineWorking = false
@@ -28,13 +30,19 @@
 
         var body: some View {
             let company = session.company
+        /// `show`: the Show choice to open on (the Dashboard's trackers open On a Plan).
+        init(show: String = "all") {
+            _show = State(initialValue: show)
+        }
+
             let services = company?.services ?? .both
-            let shows = customerShows(services)
+            let shows = customerShows(services, counts: counts)
             List {
                 Section {
                     VStack(alignment: .leading, spacing: 16) {
                         SearchField(text: $search, placeholder: "Name, phone, or email")
-                        HStack(alignment: .top, spacing: 12) {
+                        // Sort above Show, so Show's count is never cut off ("On a Plan (65)").
+                        VStack(alignment: .leading, spacing: 12) {
                             SelectField(
                                 label: "Sort", selection: $sort, options: CustomerSort.allCases, optionLabel: \.label)
                             SelectField(
@@ -81,7 +89,9 @@
 
         private func reload() {
             guard let company = session.company else { return }
-            rows = customerList(sync.store, companyId: company.id, search: search, sort: sort, show: show)
+            rows = customerList(
+                sync.store, companyId: company.id, search: search, sort: sort, show: show, timeZone: company.timeZone)
+            counts = customerCounts(sync.store, companyId: company.id, search: search, timeZone: company.timeZone)
             lineWorking = companyLine(sync.store, companyId: company.id)?.status == "active"
             loaded = true
         }

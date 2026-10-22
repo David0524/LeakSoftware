@@ -1,0 +1,569 @@
+{
+  "planIsCurrent": [
+    {
+      "args": [
+        {
+          "customer_id": "a",
+          "ends_on": null
+        },
+        "2026-10-22"
+      ],
+      "result": true
+    },
+    {
+      "args": [
+        {
+          "customer_id": "a",
+          "ends_on": "2026-12-31"
+        },
+        "2026-10-22"
+      ],
+      "result": true
+    },
+    {
+      "args": [
+        {
+          "customer_id": "b",
+          "ends_on": "2026-10-22"
+        },
+        "2026-10-22"
+      ],
+      "result": true
+    },
+    {
+      "args": [
+        {
+          "customer_id": "c",
+          "ends_on": "2026-10-21"
+        },
+        "2026-10-22"
+      ],
+      "result": false
+    },
+    {
+      "args": [
+        {
+          "customer_id": "d",
+          "ends_on": null,
+          "deleted_at": "2026-10-01T00:00:00Z"
+        },
+        "2026-10-22"
+      ],
+      "result": false
+    },
+    {
+      "args": [
+        {
+          "customer_id": "e",
+          "ends_on": ""
+        },
+        "2026-10-22"
+      ],
+      "result": true
+    }
+  ],
+  "customersOnPlan": [
+    {
+      "args": [
+        [
+          {
+            "customer_id": "a",
+            "ends_on": null
+          },
+          {
+            "customer_id": "a",
+            "ends_on": "2026-12-31"
+          },
+          {
+            "customer_id": "b",
+            "ends_on": "2026-10-22"
+          },
+          {
+            "customer_id": "c",
+            "ends_on": "2026-10-21"
+          },
+          {
+            "customer_id": "d",
+            "ends_on": null,
+            "deleted_at": "2026-10-01T00:00:00Z"
+          },
+          {
+            "customer_id": "e",
+            "ends_on": ""
+          }
+        ],
+        "2026-10-22"
+      ],
+      "result": [
+        "a",
+        "b",
+        "e"
+      ]
+    },
+    {
+      "args": [
+        [
+          {
+            "customer_id": "a",
+            "ends_on": null
+          },
+          {
+            "customer_id": "a",
+            "ends_on": "2026-12-31"
+          },
+          {
+            "customer_id": "b",
+            "ends_on": "2026-10-22"
+          },
+          {
+            "customer_id": "c",
+            "ends_on": "2026-10-21"
+          },
+          {
+            "customer_id": "d",
+            "ends_on": null,
+            "deleted_at": "2026-10-01T00:00:00Z"
+          },
+          {
+            "customer_id": "e",
+            "ends_on": ""
+          }
+        ],
+        "2026-10-23"
+      ],
+      "result": [
+        "a",
+        "e"
+      ]
+    },
+    {
+      "args": [
+        [],
+        "2026-10-22"
+      ],
+      "result": []
+    }
+  ],
+  "customersAddedSince": [
+    {
+      "args": [
+        "2026-10-22T17:00:00Z"
+      ],
+      "result": "2026-09-22T17:00:00.000Z"
+    },
+    {
+      "args": [
+        "2026-03-10T08:30:15.250Z"
+      ],
+      "result": "2026-02-08T08:30:15.250Z"
+    }
+  ],
+  "countCustomers": [
+    {
+      "args": [
+        [
+          {
+            "id": "a",
+            "kind": "homeowner",
+            "created_at": "2026-10-20 10:00:00+00"
+          },
+          {
+            "id": "b",
+            "kind": "builder",
+            "created_at": "2026-09-22T17:00:00.000Z"
+          },
+          {
+            "id": "c",
+            "kind": "homeowner",
+            "created_at": "2026-09-22T16:59:59+00:00"
+          },
+          {
+            "id": "d",
+            "kind": null,
+            "created_at": null
+          },
+          {
+            "id": "e",
+            "kind": "insurer",
+            "deleted_at": "2026-10-02T00:00:00Z"
+          },
+          {
+            "id": "f",
+            "kind": "property_manager",
+            "created_at": "2026-10-22T16:00:00.123456+00:00"
+          }
+        ],
+        [
+          "a",
+          "b",
+          "e"
+        ],
+        "2026-09-22T17:00:00.000Z"
+      ],
+      "result": {
+        "all": 5,
+        "plan": 2,
+        "no_plan": 3,
+        "kinds": {
+          "homeowner": 3,
+          "builder": 1,
+          "property_manager": 1
+        },
+        "added": 3
+      }
+    },
+    {
+      "args": [
+        [
+          {
+            "id": "a",
+            "kind": "homeowner",
+            "created_at": "2026-10-20 10:00:00+00"
+          },
+          {
+            "id": "b",
+            "kind": "builder",
+            "created_at": "2026-09-22T17:00:00.000Z"
+          },
+          {
+            "id": "c",
+            "kind": "homeowner",
+            "created_at": "2026-09-22T16:59:59+00:00"
+          },
+          {
+            "id": "d",
+            "kind": null,
+            "created_at": null
+          },
+          {
+            "id": "e",
+            "kind": "insurer",
+            "deleted_at": "2026-10-02T00:00:00Z"
+          },
+          {
+            "id": "f",
+            "kind": "property_manager",
+            "created_at": "2026-10-22T16:00:00.123456+00:00"
+          }
+        ],
+        [],
+        "2026-10-21T00:00:00Z"
+      ],
+      "result": {
+        "all": 5,
+        "plan": 0,
+        "no_plan": 5,
+        "kinds": {
+          "homeowner": 3,
+          "builder": 1,
+          "property_manager": 1
+        },
+        "added": 1
+      }
+    },
+    {
+      "args": [
+        [],
+        [
+          "a"
+        ],
+        "2026-09-22T17:00:00Z"
+      ],
+      "result": {
+        "all": 0,
+        "plan": 0,
+        "no_plan": 0,
+        "kinds": {},
+        "added": 0
+      }
+    }
+  ],
+  "customerShowOptions": [
+    {
+      "args": [
+        true,
+        {
+          "all": 1204,
+          "plan": 65,
+          "no_plan": 1139,
+          "kinds": {
+            "homeowner": 1100,
+            "builder": 4
+          },
+          "added": 4
+        }
+      ],
+      "result": [
+        {
+          "value": "all",
+          "label": "All Customers (1,204)"
+        },
+        {
+          "value": "plan",
+          "label": "On a Plan (65)"
+        },
+        {
+          "value": "no_plan",
+          "label": "No Plan (1,139)"
+        },
+        {
+          "value": "homeowner",
+          "label": "Homeowners (1,100)"
+        },
+        {
+          "value": "pool_company",
+          "label": "Pool Companies (0)"
+        },
+        {
+          "value": "builder",
+          "label": "Builders (4)"
+        },
+        {
+          "value": "insurer",
+          "label": "Insurers (0)"
+        },
+        {
+          "value": "property_manager",
+          "label": "Property Managers (0)"
+        },
+        {
+          "value": "other",
+          "label": "Other (0)"
+        }
+      ]
+    },
+    {
+      "args": [
+        false,
+        {
+          "all": 1204,
+          "plan": 65,
+          "no_plan": 1139,
+          "kinds": {
+            "homeowner": 1100,
+            "builder": 4
+          },
+          "added": 4
+        }
+      ],
+      "result": [
+        {
+          "value": "all",
+          "label": "All Customers (1,204)"
+        },
+        {
+          "value": "homeowner",
+          "label": "Homeowners (1,100)"
+        },
+        {
+          "value": "pool_company",
+          "label": "Pool Companies (0)"
+        },
+        {
+          "value": "builder",
+          "label": "Builders (4)"
+        },
+        {
+          "value": "insurer",
+          "label": "Insurers (0)"
+        },
+        {
+          "value": "property_manager",
+          "label": "Property Managers (0)"
+        },
+        {
+          "value": "other",
+          "label": "Other (0)"
+        }
+      ]
+    },
+    {
+      "args": [
+        true,
+        null
+      ],
+      "result": [
+        {
+          "value": "all",
+          "label": "All Customers"
+        },
+        {
+          "value": "plan",
+          "label": "On a Plan"
+        },
+        {
+          "value": "no_plan",
+          "label": "No Plan"
+        },
+        {
+          "value": "homeowner",
+          "label": "Homeowners"
+        },
+        {
+          "value": "pool_company",
+          "label": "Pool Companies"
+        },
+        {
+          "value": "builder",
+          "label": "Builders"
+        },
+        {
+          "value": "insurer",
+          "label": "Insurers"
+        },
+        {
+          "value": "property_manager",
+          "label": "Property Managers"
+        },
+        {
+          "value": "other",
+          "label": "Other"
+        }
+      ]
+    },
+    {
+      "args": [
+        false,
+        null
+      ],
+      "result": [
+        {
+          "value": "all",
+          "label": "All Customers"
+        },
+        {
+          "value": "homeowner",
+          "label": "Homeowners"
+        },
+        {
+          "value": "pool_company",
+          "label": "Pool Companies"
+        },
+        {
+          "value": "builder",
+          "label": "Builders"
+        },
+        {
+          "value": "insurer",
+          "label": "Insurers"
+        },
+        {
+          "value": "property_manager",
+          "label": "Property Managers"
+        },
+        {
+          "value": "other",
+          "label": "Other"
+        }
+      ]
+    }
+  ],
+  "formatCount": [
+    {
+      "args": [
+        0
+      ],
+      "result": "0"
+    },
+    {
+      "args": [
+        7
+      ],
+      "result": "7"
+    },
+    {
+      "args": [
+        999
+      ],
+      "result": "999"
+    },
+    {
+      "args": [
+        1000
+      ],
+      "result": "1,000"
+    },
+    {
+      "args": [
+        1204
+      ],
+      "result": "1,204"
+    },
+    {
+      "args": [
+        1234567
+      ],
+      "result": "1,234,567"
+    }
+  ],
+  "customersAddedNote": [
+    {
+      "args": [
+        0
+      ],
+      "result": "None new in 30 days"
+    },
+    {
+      "args": [
+        1
+      ],
+      "result": "+1 in 30 days"
+    },
+    {
+      "args": [
+        4
+      ],
+      "result": "+4 in 30 days"
+    },
+    {
+      "args": [
+        1500
+      ],
+      "result": "+1,500 in 30 days"
+    }
+  ],
+  "onPlanShareNote": [
+    {
+      "args": [
+        65,
+        125
+      ],
+      "result": "52% of customers"
+    },
+    {
+      "args": [
+        0,
+        0
+      ],
+      "result": "No customers yet"
+    },
+    {
+      "args": [
+        0,
+        12
+      ],
+      "result": "0% of customers"
+    },
+    {
+      "args": [
+        1,
+        3
+      ],
+      "result": "33% of customers"
+    },
+    {
+      "args": [
+        2,
+        3
+      ],
+      "result": "67% of customers"
+    },
+    {
+      "args": [
+        1,
+        8
+      ],
+      "result": "13% of customers"
+    }
+  ]
+}

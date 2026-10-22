@@ -2,6 +2,11 @@
 
 Newest first. Each entry: date, decision, reason.
 
+## 2026-10-22 (owner: customer filter counts, Dashboard customer trackers)
+- **Every choice of the Customers list's Show menu shows its count** (owner: "have a number showing the total next to each thing"), on all four platforms in one format: `On a Plan (65)`, `All Customers (128)`, `Builders (0)`, thousands with commas. The counts are of the whole shop's customers, not the page shown; **with a search typed, they count what the search finds**, so picking a choice lists as many as it says. The website counts in one query (`public.customer_counts`, migration `20261022001400`); the apps count their synced rows. Shared rules and wording: `packages/core/src/customer-counts.ts`, ported to Swift with fixtures.
+- **"On a Plan" means a current maintenance plan:** not deleted, and not ended before the shop's today (its end date is today or later, or none). **A paused plan still counts** (the customer is on it; only the visits are on hold). An ended plan no longer counts, which changes the filter from "has any plan". No Plan is everyone else.
+- **The Dashboard has two trackers, first among its stat cards:** Customers (every customer not deleted; note "+4 in 30 days", or "None new in 30 days") and On a plan (the same number as the filter; note "52% of customers"). Each opens Customers, the second on On a Plan. On a plan shows only for shops that offer pool service, like the filter. In the apps they come from the phone's rows. Labels are sentence case like the other cards; the card has a chevron after its label instead of a blue note.
+
 ## 2026-10-22 (owner: "Build a desktop-only Admin portal")
 - **An Admin portal for Sundeck Pro staff at `/admin`**, desktop only (narrower windows get a message, not the pages; not in the apps): Overview, Shops, People, Finances, Support, Health, Leads, Feature Requests, Activity Log. Staff are still `SUNDECK_STAFF_EMAILS`, and every page needs two-step sign-in. Plan: `plans/admin-portal.md`.
 - **Admin Sign In** sits in the landing page footer with Privacy, Terms, Security and Status.

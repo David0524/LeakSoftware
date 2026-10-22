@@ -6,19 +6,25 @@ import {
   ACTIVITY_EMPTY,
   ACTIVITY_OFFLINE,
   ACTIVITY_TITLE,
+  CUSTOMER_TRACKER_LABELS,
   JOB_STATUSES,
   JOB_STATUS_LABELS,
   SEARCH_WORDS,
   acceptanceRate,
   activityButtonLabel,
   activityRow,
+  customersAddedNote,
   dashboardTotals,
   formatCents,
+  formatCount,
   monthLabel,
+  offersPool,
+  onPlanShareNote,
   type ActivityEvent,
   type Dashboard,
 } from "@leakbook/core";
 import { useActivityUnread } from "../../../../data/activity";
+import { useCustomerCounts } from "../../../../data/customers";
 import { ActivityItem, ACTIVITY_SEPARATOR_INSET } from "../../../../features/activity/ActivityRow";
 import { fetchActivity } from "../../../../lib/activity";
 import { getServices } from "../../../../lib/services";
@@ -132,6 +138,10 @@ function DashboardPage() {
 }
 
 function DashboardBody({ d }: { d: Dashboard }) {
+  const company = useCompany();
+  // Customer trackers (owner, 2026-10-22: "a tracker of total customers, and customers actively
+  // on a plan"), from the synced rows, each opening Customers on its Show choice.
+  const counts = useCustomerCounts(company.id, company.timezone);
   const totals = dashboardTotals(d.months);
   const statuses = JOB_STATUSES.map((s) => ({ status: s, n: d.statuses[s] ?? 0 })).filter(
     (s) => s.n > 0,
@@ -142,6 +152,22 @@ function DashboardBody({ d }: { d: Dashboard }) {
   return (
     <>
       <View style={styles.stats}>
+        <Stat
+          label={CUSTOMER_TRACKER_LABELS.customers}
+          value={formatCount(counts.all)}
+          note={customersAddedNote(counts.added)}
+          onPress={() => router.push("/customers")}
+          chevron
+        />
+        {offersPool(company.settings) ? (
+          <Stat
+            label={CUSTOMER_TRACKER_LABELS.onPlan}
+            value={formatCount(counts.plan)}
+            note={onPlanShareNote(counts.plan, counts.all)}
+            onPress={() => router.push("/customers?show=plan")}
+            chevron
+          />
+        ) : null}
         <Stat
           label="Collected"
           value={formatCents(totals.collected_cents)}
@@ -356,21 +382,33 @@ function Stat({
   value,
   note,
   onPress,
+  chevron = false,
 }: {
   label: string;
   value: string;
   note: string;
   onPress?: () => void;
+  /** A chevron after the label, the note muted (the customer trackers): the card opens a list. */
+  chevron?: boolean;
 }) {
   const body = (
     <Card style={styles.stat}>
-      <T variant="secondary" muted>
-        {label}
-      </T>
+      <View style={styles.statLabel}>
+        <T variant="secondary" muted>
+          {label}
+        </T>
+        {chevron ? (
+          <WebIcon name="chevronRight" size={14} color={color.textMuted} strokeWidth={2.6} />
+        ) : null}
+      </View>
       <T variant="sectionHeading" style={tabular}>
         {value}
       </T>
-      <T variant="secondary" style={onPress ? { color: color.link } : undefined} muted={!onPress}>
+      <T
+        variant="secondary"
+        style={onPress && !chevron ? { color: color.link } : undefined}
+        muted={!onPress || chevron}
+      >
         {note}
       </T>
     </Card>
@@ -392,6 +430,7 @@ const styles = StyleSheet.create({
   stats: { flexDirection: "row", flexWrap: "wrap", gap: space["3"] },
   statCell: { flexBasis: "47%", flexGrow: 1 },
   stat: { gap: 2, flexGrow: 1 },
+  statLabel: { flexDirection: "row", alignItems: "center", gap: 4 },
   card: { gap: space["2"] },
   chart: {
     flexDirection: "row",

@@ -2,6 +2,7 @@
     import Charts
     import Supabase
     import SundeckCore
+    import SundeckSync
     import SundeckTokens
     import SwiftUI
 
@@ -19,7 +20,10 @@
     struct DashboardScreen: View {
         @Environment(Session.self) private var session
         @Environment(AppEnvironment.self) private var app
+        @Environment(SyncService.self) private var sync
         @State private var data: DashboardData?
+        /// The customer trackers' numbers, from the phone's rows (they work offline).
+        @State private var counts: CustomerCounts?
         @State private var loading = false
         @State private var step = 0
         @State private var failed: String?
@@ -69,6 +73,10 @@
                 await load()
                 await loadActivity()
             }
+            .task(id: "\(sync.revision)|\(session.company?.id ?? "")") {
+                guard let company = session.company else { return }
+                counts = customerCounts(sync.store, companyId: company.id, timeZone: company.timeZone)
+            }
         }
 
         private func loadActivity() async {
@@ -117,6 +125,28 @@
             let totals = dashboardTotals(d.months)
             Text(DashboardText.subtitle(d)).textRole(.body).foregroundStyle(Color.textMuted)
             Grid(horizontalSpacing: 12, verticalSpacing: 12) {
+                // Customer trackers (owner, 2026-10-22: "a tracker of total customers, and
+                // customers actively on a plan"), each opening Customers on its Show choice.
+                if let counts {
+                    GridRow {
+                        NavigationLink(value: MoreRoute.customers) {
+                            StatCard(
+                                label: CustomerTrackerLabels.customers, value: formatCount(counts.all),
+                                note: customersAddedNote(counts.added), chevron: true)
+                        }
+                        .buttonStyle(.plain)
+                        if session.company?.services != .leak {
+                            NavigationLink(value: MoreRoute.customersFiltered("plan")) {
+                                StatCard(
+                                    label: CustomerTrackerLabels.onPlan, value: formatCount(counts.plan),
+                                    note: onPlanShareNote(counts.plan, counts.all), chevron: true)
+                            }
+                            .buttonStyle(.plain)
+                        } else {
+                            Color.clear.gridCellUnsizedAxes([.horizontal, .vertical])
+                        }
+                    }
+                }
                 GridRow {
                     StatCard(
                         label: DashboardText.collected, value: formatCents(totals.collectedCents),
@@ -236,10 +266,18 @@
         var value: String
         var note: String
         var link = false
+        /// A chevron after the label, the note muted (the customer trackers): the card opens a list.
+        var chevron = false
 
         var body: some View {
             VStack(alignment: .leading, spacing: 4) {
-                Text(label).textRole(.secondary).foregroundStyle(Color.textMuted)
+                HStack(spacing: 4) {
+                    Text(label).textRole(.secondary).foregroundStyle(Color.textMuted)
+                    if chevron {
+                        Image(systemName: "chevron.right").font(.caption2.weight(.semibold))
+                            .foregroundStyle(Color.textMuted)
+                    }
+                }
                 Text(value)
                     .font(.custom(BrandFonts.Weight.bold.rawValue, size: 26, relativeTo: .title2))
                     .monospacedDigit()

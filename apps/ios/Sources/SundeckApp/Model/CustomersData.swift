@@ -43,22 +43,50 @@ public func customerKindLabel(_ kind: String?) -> String? {
 public let customerKinds = ["homeowner", "pool_company", "builder", "insurer", "property_manager", "other"]
 
 /// One choice in the Show menu: all, plan, no_plan, or a customer kind.
-public struct CustomerShow: Hashable, Sendable {
-    public var value: String
-    public var label: String
+public typealias CustomerShow = CustomerShowOption
+
+/// The Show menu: All Customers, On a Plan and No Plan (pool shops), then the kinds; with
+/// counts, "On a Plan (65)" (owner, 2026-10-22: "have a number showing the total next to each
+/// thing").
+public func customerShows(_ services: Services, counts: CustomerCounts? = nil) -> [CustomerShow] {
+    customerShowOptions(offersPool: services != .leak, counts: counts)
 }
 
-/// The Show menu: All Customers, On a Plan and No Plan (pool shops), then the kinds.
-public func customerShows(_ services: Services) -> [CustomerShow] {
-    var shows = [CustomerShow(value: "all", label: "All Customers")]
-    if services != .leak {
-        shows += [CustomerShow(value: "plan", label: "On a Plan"), CustomerShow(value: "no_plan", label: "No Plan")]
+/// The customers on a current plan (customer-counts.ts: not deleted, not ended before the
+/// shop's today; paused counts).
+func customersOnPlan(_ store: LocalStore, companyId: String, now: Date, timeZone: String) -> Set<String> {
+    let plans = ((try? store.list("service_plan", companyId: companyId)) ?? []).compactMap { p -> PlanForCount? in
+        guard let customer = p["customer_id"]?.string else { return nil }
+        return PlanForCount(customerId: customer, endsOn: p["ends_on"]?.string, deletedAt: p["deleted_at"]?.string)
     }
-    let plural = [
-        "homeowner": "Homeowners", "pool_company": "Pool Companies", "builder": "Builders", "insurer": "Insurers",
-        "property_manager": "Property Managers", "other": "Other",
-    ]
-    return shows + customerKinds.map { CustomerShow(value: $0, label: plural[$0] ?? $0) }
+    let today = (try? localDate(now, timeZone)) ?? ""
+    return Set(customersOnPlan(plans, today: today))
+}
+
+/// Whether a customer matches the list's search (name, phone or email containing it).
+private func customerMatches(_ term: String, name: String, email: String?, phone: String?) -> Bool {
+    term.isEmpty || [name, email ?? "", phone ?? ""].contains { $0.lowercased().contains(term) }
+}
+
+/// Counts for the Show menu and the Dashboard's trackers, from the phone's rows: the whole
+/// shop, or what the search finds.
+public func customerCounts(
+    _ store: LocalStore, companyId: String, search: String = "", now: Date = Date(), timeZone: String
+) -> CustomerCounts {
+    let term = search.trimmingCharacters(in: .whitespaces).lowercased()
+    let customers = ((try? store.list("customer", companyId: companyId)) ?? [])
+        .filter {
+            customerMatches(
+                term, name: $0["name"]?.string ?? "Customer", email: trimmed($0["email"]), phone: trimmed($0["phone"]))
+        }
+        .map {
+            CustomerForCount(
+                id: $0.id, kind: $0["kind"]?.string, createdAt: $0["created_at"]?.string,
+                deletedAt: $0["deleted_at"]?.string)
+        }
+    return countCustomers(
+        customers, onPlan: Array(customersOnPlan(store, companyId: companyId, now: now, timeZone: timeZone)),
+        addedSince: customersAddedSince(now))
 }
 
 /// A row in the customers list.
@@ -99,11 +127,10 @@ func decodeProperty(_ row: Row) -> Property? {
 /// The customers, searched (name, phone or email), shown and sorted as chosen.
 public func customerList(
     _ store: LocalStore, companyId: String, search: String = "", sort: CustomerSort = .name, show: String = "all",
-    now: Date = Date()
+    now: Date = Date(), timeZone: String = "UTC"
 ) -> [CustomerListItem] {
     let properties = (try? store.list("property", companyId: companyId)) ?? []
-    let plans = Set(
-        ((try? store.list("service_plan", companyId: companyId)) ?? []).compactMap { $0["customer_id"]?.string })
+    let plans = customersOnPlan(store, companyId: companyId, now: now, timeZone: timeZone)
     let nowISO = isoTimestamp(milliseconds: now.timeIntervalSince1970 * 1000)
     var lastVisit: [String: String] = [:]
     for job in (try? store.list("job", companyId: companyId)) ?? [] {
@@ -129,9 +156,7 @@ public func customerList(
             }.first)
     }
     if !term.isEmpty {
-        rows = rows.filter { c in
-            [c.name, c.email ?? "", c.phone ?? ""].contains { $0.lowercased().contains(term) }
-        }
+        rows = rows.filter { customerMatches(term, name: $0.name, email: $0.email, phone: $0.phone) }
     }
     switch show {
     case "all": break
