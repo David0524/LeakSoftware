@@ -344,6 +344,8 @@ private func sentQuote(_ status: String, accepted: Bool = false) -> [(String, JS
         let m = s.quotes()
         // A sent quote isn't a draft or accepted: a new one can be started beside it.
         #expect(m.showsStart)
+        // Never "No quote yet" above a quote (owner, 2026-10-22).
+        #expect(m.startLine == "Need another price? Start a new quote.")
         #expect(m.cards.first?.title == "Quote #1006 · Sent")
         #expect(m.cards.first?.acceptedText == nil)
     }

@@ -24,8 +24,8 @@
                     SectionHeading("Quotes")
                     if model.showsStart {
                         ViewThatFits(in: .horizontal) {
-                            HStack(spacing: 12) { startParts(flow) }
-                            VStack(alignment: .leading, spacing: 12) { startParts(flow) }
+                            HStack(spacing: 12) { startParts(flow, model.startLine) }
+                            VStack(alignment: .leading, spacing: 12) { startParts(flow, model.startLine) }
                         }
                     }
                     VStack(alignment: .leading, spacing: 20) {
@@ -48,8 +48,8 @@
             }
         }
 
-        @ViewBuilder private func startParts(_ flow: QuoteFlow) -> some View {
-            Text(QuoteSectionModel.startText).textRole(.body).foregroundStyle(Color.textMuted)
+        @ViewBuilder private func startParts(_ flow: QuoteFlow, _ line: String) -> some View {
+            Text(line).textRole(.body).foregroundStyle(Color.textMuted)
                 .frame(maxWidth: .infinity, alignment: .leading)
             Button("Start Quote") { flow.start() }.buttonStyle(.secondary).fixedSize()
         }

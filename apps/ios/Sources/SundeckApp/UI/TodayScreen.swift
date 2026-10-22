@@ -194,7 +194,7 @@
                 let chip = { (i: Int) in chips.indices.contains(i) ? chips[i] : nil }
                 // Rows are built as they scroll on (gestures spec section 6: long lists virtualized).
                 LazyVStack(alignment: .leading, spacing: 4) {
-                    summaryLine(day).padding(.bottom, 12)
+                    if reordering || day.reorderable || moveNote != nil { summaryLine(day).padding(.bottom, 8) }
                     TodayHeroPager(day: day, viewing: $viewing, flash: flash, moves: stopMoves).padding(.bottom, 20)
                     // The stops touch in one block (owner, 2026-10-21; docs/design/
                     // 2026-10-21-schedule-tile.md, Today): hairlines between tiles from after the
@@ -240,26 +240,15 @@
             }
         }
 
-        /// The day's ring, then "4 of 11 stops · Reorder" (owner, 2026-10-22: goal-gradient), the
-        /// last few counting down ("2 left · about 1 hr"), then "All 11 done"; before the first
-        /// stop is done, "6 stops · 1 hr 15 min driving · Reorder" (Done while reordering). The
+        /// No summary line over the day (owner, 2026-10-22: "Get rid of this on all platforms: 0 of
+        /// 4 stops done. 4 stops · 1 hr 37 min driving"); the card says "Stop 1 of 4". Reorder
+        /// (Done while reordering) keeps its place at the top of the day, on the right, with the
         /// last move's message under it.
         private func summaryLine(_ day: TodayDay) -> some View {
             let button = reordering || day.reorderable
-            let progress = day.progress
             return VStack(alignment: .leading, spacing: 4) {
                 HStack(alignment: .center, spacing: 6) {
-                    if let progress {
-                        DayRing(progress: progress).padding(.trailing, 4)
-                    }
-                    Text(day.summaryText + (button ? " ·" : ""))
-                        .textRole(.body)
-                        .foregroundStyle(Color.textMuted)
-                        .monospacedDigit()
-                        .contentTransition(.numericText())
-                        .fixedSize(horizontal: false, vertical: true)
-                        .accessibilityLabel(
-                            progress?.text != nil ? (progress?.spoken ?? "") : day.summaryText)
+                    Spacer(minLength: 0)
                     if button {
                         Button(reordering ? TodayReorderText.done : TodayReorderText.reorder) {
                             withAnimation(Motion.smooth) { reordering.toggle() }
@@ -272,7 +261,6 @@
                         .accessibilityHint(
                             reordering ? "Ends reordering" : "Shows Move Up and Move Down on each stop")
                     }
-                    Spacer(minLength: 0)
                 }
                 if let moveNote {
                     Text(moveNote.text)
@@ -607,31 +595,6 @@
         /// Whether any stop can change places (Reorder shows).
         var reorderable: Bool {
             (route?.jobs ?? []).contains { canPlace($0, .later) || canPlace($0, .up) }
-        }
-
-        /// The day's ring (owner, 2026-10-22: goal-gradient): stops done of all, and what's left
-        /// (time at each pool plus the drive in). Nil without a route.
-        var progress: DayProgress? {
-            guard let route else { return nil }
-            return dayProgress(
-                route.jobs.enumerated().map { i, job in
-                    ProgressStop(
-                        done: job.doneOn(ctx.today), durationMin: job.minutes(ctx.settings),
-                        driveMin: route.summary.legs[routeIndex: i], onSite: job.status == .inProgress)
-                })
-        }
-
-        /// "3 stops · 1 hr 20 min driving" (no clock times, owner 2026-10-21) before the first stop
-        /// is done; then the ring's words: "4 of 11 stops", "2 left · about 1 hr", "All 11 done".
-        var summaryText: String {
-            guard let route else { return "" }
-            if let text = progress?.text { return text }
-            let n = route.jobs.count
-            // Someone who starts from home: their day's driving is counted from there.
-            return [
-                "\(n) \(n == 1 ? "stop" : "stops")", "\(durationLabel(route.summary.driveMin)) driving",
-                startLabel == .home ? startLegLabel(.home) : nil,
-            ].compactMap { $0 }.joined(separator: " · ")
         }
     }
 

@@ -114,12 +114,8 @@ test("a tech starts their day from home", async ({ page }) => {
     await expect(setting.getByTestId("not-on-map")).toHaveCount(0);
 
     await page.goto("/today");
-    // Before a stop is done the line is the plan, "… driving · from home"; once the ring has
-    // counted a stop it says how far the day is (owner, 2026-10-22), and the drive home below
-    // still says where the day ends.
-    await expect(page.getByTestId("today-summary")).toContainText(
-      /driving · from home|\d+ of \d+ stops|\d+ left|All \d+ done/,
-    );
+    // The drive home at the end of the day says where the day ends (the summary line that
+    // said "from home" is gone, owner 2026-10-22).
     await expect(page.getByText(/\d+ (min|hr).* back home$/)).toBeVisible();
     await expect(page.getByText(/back to the shop/)).toHaveCount(0);
   } finally {

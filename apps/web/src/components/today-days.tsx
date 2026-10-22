@@ -78,7 +78,12 @@ export function TodayDays({
         {/* The Team list is on computers only, at the top of the right column (owner,
             2026-10-22, of it on a phone: "I do not like this … definitely not on mobile"). */}
         {days.length > 1 ? (
-          <nav aria-label="Whose day" className="-mx-4 mb-5 flex gap-2 overflow-x-auto px-4">
+          // Computers with the Team list pick the day there instead (owner, 2026-10-22: "make
+          // the names on the right side the selector").
+          <nav
+            aria-label="Whose day"
+            className={cx("-mx-4 mb-5 flex gap-2 overflow-x-auto px-4", team && "lg:hidden")}
+          >
             {days.map((d, i) => (
               <a
                 key={d.id}

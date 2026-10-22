@@ -45,12 +45,15 @@ function ErrorText({ error }: { error: string | null }) {
   ) : null;
 }
 
-export function StartQuote({ jobId }: { jobId: string }) {
+export function StartQuote({ jobId, another = false }: { jobId: string; another?: boolean }) {
   const { pending, error, run } = useRun();
   return (
     <div className="flex flex-wrap items-center justify-between gap-3">
       <p className="min-w-0 flex-1 basis-48 text-text-muted">
-        No quote yet. Start one to price the repairs for these findings.
+        {/* With a quote already there, never "No quote yet" (owner, 2026-10-22). */}
+        {another
+          ? "Need another price? Start a new quote."
+          : "No quote yet. Start one to price the repairs for these findings."}
       </p>
       <Button
         type="button"

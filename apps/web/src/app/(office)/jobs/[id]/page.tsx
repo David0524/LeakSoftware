@@ -1101,7 +1101,9 @@ async function Quotes({ detail }: { detail: JobDetail }) {
           </Link>
         </Notice>
       ) : null}
-      {!hasDraft && !hasAccepted ? <StartQuote jobId={detail.job.id} /> : null}
+      {!hasDraft && !hasAccepted ? (
+        <StartQuote jobId={detail.job.id} another={quotes.length > 0} />
+      ) : null}
       {quotes.length ? (
         <div className="grid grid-cols-1 gap-5 xl:grid-cols-2">
           {quotes.map((q) => (

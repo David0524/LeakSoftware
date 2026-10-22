@@ -121,12 +121,12 @@ export function TodayReorderProvider({ tech, children }: { tech: string; childre
 export const useTodayReorder = () => useContext(ReorderContext);
 
 /** Reorder at the end of the day's summary line; Done while the list is in edit mode. */
-export function ReorderToggle() {
+export function ReorderToggle({ separator = true }: { separator?: boolean }) {
   const r = useTodayReorder();
   if (!r) return null;
   return (
     <>
-      {" · "}
+      {separator ? " · " : null}
       <button
         type="button"
         onClick={() => r.setEditing(!r.editing)}

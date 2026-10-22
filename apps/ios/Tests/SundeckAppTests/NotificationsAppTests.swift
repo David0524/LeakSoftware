@@ -258,6 +258,11 @@ import Testing
         #expect(liveStopBegins(day, dismissedOn: nil))
         #expect(!liveStopBegins(day, dismissedOn: day.today))
         #expect(liveStopBegins(day, dismissedOn: "2026-10-19"))
+        // Before the day starts, with nothing underway: not yet.
+        let before = liveStopDay(
+            s.sync.store, kv: s.sync.kv, company: s.company, userId: me,
+            now: ScheduleDataTests.now.addingTimeInterval(-60))
+        #expect(!before.runs && !liveStopBegins(before, dismissedOn: nil))
         // On My Way to the second stop: the day is on it (Today's card agrees: `todayHero`).
         try StopWrites.recordOnMyWay(
             s.sync, companyId: ScheduleDataTests.company, jobId: s.id(1), driveMinutes: 10, now: ScheduleDataTests.now)
@@ -270,11 +275,12 @@ import Testing
         let moved = liveStopDay(s.sync.store, kv: s.sync.kv, company: s.company, userId: me, now: ScheduleDataTests.now)
         #expect(moved.hero()?.stopId == s.id(1))
         #expect(moved.open()?.id == s.id(1))
-        // Before the day starts: not yet.
+        // Before the day starts with a stop already on the way: it runs (owner, 2026-10-22: a
+        // stop started before the 8 AM start showed no Live Activity).
         let early = liveStopDay(
             s.sync.store, kv: s.sync.kv, company: s.company, userId: me,
             now: ScheduleDataTests.now.addingTimeInterval(-60))
-        #expect(!early.runs && !liveStopBegins(early, dismissedOn: nil))
+        #expect(early.runs && liveStopBegins(early, dismissedOn: nil))
         // Both stops done: it doesn't run, and there's nothing to move on to.
         try setStatus(s, s.id(2), "completed")
         try setStatus(s, s.id(1), "completed")

@@ -196,7 +196,7 @@ test.describe("Today: change the order of stops", () => {
     await signIn(page, TECH, "/today");
     await expect(row(page, "A")).toBeVisible();
     const aBefore = await timeOf(row(page, "A"));
-    await page.getByTestId("today-summary").getByRole("button", { name: "Reorder" }).click();
+    await page.getByTestId("today-reorder").getByRole("button", { name: "Reorder" }).click();
     // Edit mode: Today's card steps aside, and each stop has its controls.
     await expect(page.getByTestId("today-hero")).toHaveCount(0);
     await expect(row(page, "C").getByTestId("reorder-lock")).toHaveText("Started");
@@ -210,7 +210,7 @@ test.describe("Today: change the order of stops", () => {
     await expect.poll(() => order(page)).toMatch(/^BA|B.*A/);
     await expect.poll(() => timeOf(row(page, "A"))).not.toBe(aBefore);
 
-    await page.getByTestId("today-summary").getByRole("button", { name: "Done" }).click();
+    await page.getByTestId("today-reorder").getByRole("button", { name: "Done" }).click();
     await expect(page.getByTestId("today-hero")).toBeVisible();
     await expect(row(page, "A").getByTestId("reorder-handle")).toHaveCount(0);
     await context.close();

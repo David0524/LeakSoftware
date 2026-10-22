@@ -16,6 +16,9 @@ Newest first. Each entry: date, decision, reason.
 - **Start of the day:** each tech's phone schedules a local notification at the shop's start time ("5 stops today · First: Smith"); one tap opens the first stop. Local rather than a server push, so it works with no signal and no push keys.
 - **The shop's own logo is on reports, quotes and invoices,** and the main color is filled from the logo with a picker ("A hex code alone is not useful"). Sent reports keep the logo they were sent with.
 - **No tips or hints in the apps** ("The app is super intuitive").
+- **No summary line over Today** on any platform (owner: "Get rid of this on all platforms: 0 of 4 stops done. 4 stops · 1 hr 37 min driving"); the card says "Stop 1 of 4". Reorder stays at the top of the day on the right.
+- **Desktop Today: the Team list is the tech selector;** the tech chips are gone there (owner: "remove the highlighted portion, and make the names on the right side the selector"). Phones keep the chips.
+- **A quote already on the job never reads "No quote yet":** the start line says "Need another price? Start a new quote." on every platform.
 - **Owner's answers the next morning:** the "⋯" tile menu with hold-to-drag stays ("Yes that's super smooth"); no pool-visit sample job for pool-only shops ("Nah we're fine"); the apps' Dashboard keeps its skeleton instead of the "Getting your numbers…" steps ("it's a fast loading screen anyway").
 
 ## 2026-10-21 (owner: "The nav bar still shrinks on 'Wrap Up'"; "Fix this white space. Keep the weather on one line. I don't need 'showers and thunderstorms'"; "make sure this is the most seamless app possible")

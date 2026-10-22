@@ -2,8 +2,6 @@ import { SamplePill } from "@/components/sample-pill";
 import type { Metadata } from "next";
 import Link from "next/link";
 import {
-  durationLabel,
-  startLegLabel,
   formatAddress,
   formatDay,
   formatTime,
@@ -23,7 +21,6 @@ import {
   JOB_TYPE_LABELS,
   type HeroStop,
   scheduleOrder,
-  dayProgress,
   jobMinutes,
   techDayProgress,
   lastDoneLine,
@@ -71,7 +68,6 @@ import { getLine } from "@/lib/messages";
 import { loadRoutes, routeContext, routeKey, shopToday } from "@/server/route-days";
 import { NavPlus } from "@/components/nav-bar";
 import { GettingStarted } from "@/components/getting-started";
-import { DayRing } from "@/components/day-ring";
 import { LiveRefresh } from "@/components/live-refresh";
 
 export const metadata: Metadata = { title: "Today · Sundeck Pro" };
@@ -235,15 +231,6 @@ export default async function TodayPage({ searchParams }: PageProps<"/today">) {
         : undefined;
     };
     const homeLine = driveHomeLine(route ? backLeg : null, startLabel);
-    // The day's ring: stops done of all, and what's left (time at each pool plus the drive in).
-    const progress = dayProgress(
-      jobs.map((j, i) => ({
-        done: stopDone(j, ctx.today),
-        durationMin: jobMinutes(j, ctx.settings),
-        driveMin: route?.summary.legs[i] ?? null,
-        onSite: j.status === "in_progress",
-      })),
-    );
     const anyMoves = canReorder && [...moveable.values()].some((m) => m.up || m.down);
 
     // The day's stops touch in one block (owner, 2026-10-21; docs/design/
@@ -455,28 +442,14 @@ export default async function TodayPage({ searchParams }: PageProps<"/today">) {
             </Empty>
           ) : (
             <TodayReorderProvider tech={dayTech}>
-              {/* The day's ring leads the line (owner, 2026-10-22: goal-gradient): "4 of 11
-                  stops · Reorder", the last few counting down ("2 left · about 1 hr"), then
-                  "All 11 done". Before the first stop is done the line keeps the plan. */}
-              <p
-                className="mb-4 flex items-center gap-2.5 text-text-muted"
-                data-testid="today-summary"
-              >
-                <DayRing progress={progress} />
-                <span className="min-w-0">
-                  <span className="sr-only">{progress.spoken}. </span>
-                  <span aria-hidden={progress.text ? true : undefined}>
-                    {progress.text ??
-                      `${jobs.length} ${jobs.length === 1 ? "stop" : "stops"} · ${durationLabel(
-                        route!.summary.driveMin,
-                      )} driving`}
-                  </span>
-                  {progress.state === "start" && startLabel === "home"
-                    ? ` · ${startLegLabel("home")}`
-                    : null}
-                  {anyMoves ? <ReorderToggle /> : null}
-                </span>
-              </p>
+              {/* No summary line (owner, 2026-10-22: "Get rid of this on all platforms: 0 of 4
+                  stops done. 4 stops · 1 hr 37 min driving"); the card says "Stop 1 of 4".
+                  Reorder keeps its place at the top of the day. */}
+              {anyMoves ? (
+                <p className="mb-2 flex justify-end" data-testid="today-reorder">
+                  <ReorderToggle separator={false} />
+                </p>
+              ) : null}
               <ReorderStatus />
               {hero ? (
                 <HideWhileReordering>

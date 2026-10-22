@@ -207,9 +207,12 @@
                 .padding(.top, 4)
                 HStack(spacing: 12) {
                     Text(form.pinStatus).textRole(.secondary).foregroundStyle(Color.text)
+                        .fixedSize(horizontal: false, vertical: true)
                     if form.pin != nil {
-                        Button("Clear Pin") { self.form?.pin = nil }.buttonStyle(.quiet)
+                        // Never cut short ("Clea…", owner 2026-10-22): the button keeps its width.
+                        Button("Clear Pin") { self.form?.pin = nil }.buttonStyle(.quiet).fixedSize()
                     }
+                    Spacer(minLength: 0)
                 }
                 .frame(minHeight: minTarget)
                 .accessibilityElement(children: .contain)
