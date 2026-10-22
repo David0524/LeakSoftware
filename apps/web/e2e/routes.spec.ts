@@ -607,7 +607,8 @@ test("Today shows a tech's route with directions", async ({ page }) => {
   await expect(page.getByTestId("today-summary")).toContainText(
     /stops? · .* driving|\d+ of \d+ stops|\d+ left|All \d+ done/,
   );
-  await expect(page.getByTestId("day-ring")).toBeVisible();
+  // The Team list (owner view) has a ring per tech; this is the day's own, on its summary.
+  await expect(page.getByTestId("today-summary").getByTestId("day-ring")).toBeVisible();
   // The card at the top for the stop she's on (owner, 2026-10-20): the Live Activity's words and
   // a segment per stop. On My Way and Start are hers to press, so an owner doesn't get them.
   const hero = page.getByTestId("today-hero");
