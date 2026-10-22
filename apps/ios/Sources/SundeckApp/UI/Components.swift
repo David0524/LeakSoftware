@@ -48,7 +48,11 @@
                 HStack(spacing: 8) { subtitle }
                     .textRole(.body)
                     .foregroundStyle(Color.textMuted)
-                HStack(spacing: 12) { actions }
+                // No actions, no row: an empty one still took the 12 pt gap above it (owner,
+                // 2026-10-22: "On the tech's page there is empty space").
+                if Actions.self != EmptyView.self {
+                    HStack(spacing: 12) { actions }
+                }
             }
             .frame(maxWidth: .infinity, alignment: .leading)
         }
