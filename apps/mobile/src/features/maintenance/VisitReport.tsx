@@ -23,7 +23,16 @@ export function VisitReportQueue() {
   return null;
 }
 
-export function VisitReport({ job, customer }: { job: Job; customer: Customer | undefined }) {
+export function VisitReport({
+  job,
+  customer,
+  heading = true,
+}: {
+  job: Job;
+  customer: Customer | undefined;
+  /** "Visit Report" above the card; the Next Step bar's sheet has it as its title instead. */
+  heading?: boolean;
+}) {
   const company = useCompany();
   const mode = visitReportMode(company.settings);
   const line = useLine(company.id);
@@ -87,7 +96,7 @@ export function VisitReport({ job, customer }: { job: Job; customer: Customer | 
   const open = (token: string) => void WebBrowser.openBrowserAsync(`${API_URL}/r/${token}`);
   return (
     <View style={styles.part}>
-      <T variant="sectionHeading">Visit Report</T>
+      {heading ? <T variant="sectionHeading">Visit Report</T> : null}
       <Card style={styles.card}>
         <T variant="secondary" muted>
           {status}

@@ -207,7 +207,7 @@ export function InvoiceActions({
     ? { label: "Record Payment", tone: "green", onSelect: () => setPaying(true) }
     : null;
   const menu: MenuEntry[] = [
-    { label: "Open", href: `/jobs/${i.jobId}#invoice` },
+    { label: "Open", href: `/jobs/${i.jobId}?tab=wrap-up` },
     live &&
       i.link && {
         label: "Copy Payment Link",
@@ -325,7 +325,7 @@ export function ReportActions({
     });
   }
   const menu: MenuEntry[] = [
-    { label: "Open", href: `/jobs/${r.jobId}#wrap-up` },
+    { label: "Open", href: `/jobs/${r.jobId}?tab=wrap-up` },
     r.link && {
       label: "Copy Customer Link",
       onSelect: () => copyWithBanner(r.link!, "Copied the customer link."),

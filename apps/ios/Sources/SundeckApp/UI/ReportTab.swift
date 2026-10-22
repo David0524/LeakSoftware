@@ -12,7 +12,11 @@
     /// apps/mobile/src/features/report/ReportTab.tsx with the website's look
     /// (apps/web/src/components/report-panel.tsx).
     struct ReportTab: View {
+        /// Wrap-Up's sheets show one part each (owner, 2026-10-22: the finish list).
+        enum Part { case all, report, sign }
+
         var job: JobView
+        var part: Part = .all
         @Environment(Session.self) private var session
         @Environment(SyncService.self) private var sync
         @Environment(AppEnvironment.self) private var app
@@ -20,9 +24,10 @@
         var sharedFlow: ReportFlow?
         @State private var ownFlow: ReportFlow?
 
-        init(job: JobView, sharedFlow: ReportFlow? = nil) {
+        init(job: JobView, sharedFlow: ReportFlow? = nil, part: Part = .all) {
             self.job = job
             self.sharedFlow = sharedFlow
+            self.part = part
         }
 
         private var flow: ReportFlow? { sharedFlow ?? ownFlow }
@@ -37,16 +42,21 @@
                     template: flow.template, online: sync.status.phase != .offline,
                     timeZone: TimeZone(identifier: company.timeZone) ?? .current)
                 VStack(alignment: .leading, spacing: 32) {
-                    VStack(alignment: .leading, spacing: 12) {
-                        SectionHeading("Report and Sign-Off")
-                        if model.templates.isEmpty {
-                            EmptyState(text: "The shop turned off the homeowner report.")
-                        } else {
-                            Text(ReportTabModel.intro).textRole(.secondary).foregroundStyle(Color.textMuted)
-                            ReportCard(job: job, model: model, flow: flow)
+                    if part != .sign {
+                        VStack(alignment: .leading, spacing: 12) {
+                            if part == .all { SectionHeading("Report and Sign-Off") }
+                            if model.templates.isEmpty {
+                                EmptyState(text: "The shop turned off the homeowner report.")
+                            } else {
+                                Text(ReportTabModel.intro).textRole(.secondary).foregroundStyle(Color.textMuted)
+                                ReportCard(job: job, model: model, flow: flow)
+                            }
                         }
                     }
-                    SignaturesPart(job: job, model: model, flow: flow)
+                    if part == .sign, model.hasDraftText {
+                        ReviewCard(job: job, flow: flow)
+                    }
+                    if part != .report { SignaturesPart(job: job, model: model, flow: flow) }
                 }
                 .frame(maxWidth: .infinity, alignment: .leading)
             } else if let company = session.company {
@@ -427,6 +437,31 @@
                     .padding(.vertical, 4)
                 }
             }
+        }
+    }
+
+    // MARK: - Review with Customer
+
+    /// Wrap-Up's Customer signs: hand the phone over to read and sign the draft.
+    private struct ReviewCard: View {
+        var job: JobView
+        var flow: ReportFlow
+        @Environment(\.openRoute) private var openRoute
+
+        var body: some View {
+            VStack(alignment: .leading, spacing: 12) {
+                Text(
+                    "Hand the phone to the customer: they read the report and sign at the bottom. Signing locks this version; changes after that go out as a new version."
+                )
+                .textRole(.secondary).foregroundStyle(Color.textMuted)
+                Button(ReportTabModel.reviewWithCustomer) {
+                    flow.saveEdits()
+                    if flow.canReview() { openRoute(.review(jobId: job.id)) }
+                }
+                .buttonStyle(.primary)
+                .disabled(flow.busy != nil)
+            }
+            .card()
         }
     }
 

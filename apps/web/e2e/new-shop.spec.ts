@@ -1,6 +1,6 @@
 import { expect, test } from "@playwright/test";
 import { adminClient, signedEvent, signedInClient } from "./backend";
-import { RUN, finishChecklist } from "./helpers";
+import { RUN, closeWrapUpStep, finishChecklist, jobSection, wrapUpStep } from "./helpers";
 import { PHONE, sessionEvent, webhook } from "./money";
 
 // M10 "Done when": a new shop signs up, starts its free trial, connects Stripe, and runs the
@@ -139,6 +139,8 @@ test("a new shop signs up and runs the whole loop, then subscribes", async ({
   // 4. Inspect: start, one leak with where, the rest not leaking; a finding.
   await page.getByRole("button", { name: "Start Job" }).click();
   await expect(page.getByRole("button", { name: "Move Back to Scheduled" })).toBeVisible();
+  // The job page shows one tab at a time on every screen (owner, 2026-10-22).
+  await jobSection(page, "Checklist");
   await page
     .getByRole("radiogroup", { name: "Skimmer", exact: true })
     .getByRole("radio", { name: "Leaking", exact: true })
@@ -152,6 +154,7 @@ test("a new shop signs up and runs the whole loop, then subscribes", async ({
   await finishChecklist(page);
   await expect(page.getByText(/ · 1 leaking · 0 not applicable · 0 to do/)).toBeVisible();
 
+  await jobSection(page, "Findings");
   await page.getByRole("button", { name: "Add Finding" }).click();
   const addFinding = page.getByRole("dialog", { name: "Add Finding" });
   await addFinding.getByLabel("What").fill("Cracked skimmer throat");
@@ -162,12 +165,15 @@ test("a new shop signs up and runs the whole loop, then subscribes", async ({
   await expect(page.getByText("Cracked skimmer throat", { exact: true })).toBeVisible();
 
   // 5. Report: nobody home to sign, so it is finished with Customer Not Here, then texted.
+  await wrapUpStep(page, "Report");
   const report = page.getByTestId("report-homeowner");
   await report.getByRole("button", { name: "Write Draft" }).click();
   await expect(report.getByText(/^Draft written\./)).toBeVisible();
   await report.getByRole("button", { name: "Review with Customer" }).click();
   await page.getByRole("button", { name: "Customer Not Here" }).click();
-  await page.waitForURL(/\/jobs\/[^/]+#wrap-up$/);
+  await page.waitForURL(/\/jobs\/[^/]+\?tab=wrap-up$/);
+  await expect(page.getByTestId("wrap-up-sign")).toContainText("Not signed: customer not present");
+  await wrapUpStep(page, "Report");
   const finished = report.getByTestId("finished-report");
   await finished.getByRole("button", { name: "Send by Text" }).click();
   await expect(report.getByText("Report sent. Copy the message below.")).toBeVisible();
@@ -181,9 +187,10 @@ test("a new shop signs up and runs the whole loop, then subscribes", async ({
   );
   await expect((await customerPage.request.get(`${reportHref}/pdf`)).status()).toBe(200);
   await customerPage.close();
+  await closeWrapUpStep(page);
 
   // 6. Quote from the finding's suggested price, sent.
-  await page.getByRole("button", { name: "Start Quote" }).click();
+  await page.getByRole("button", { name: "New Quote" }).click();
   const quotePanel = page.getByTestId("quote");
   await quotePanel
     .getByLabel("Add from the price book")
@@ -192,6 +199,7 @@ test("a new shop signs up and runs the whole loop, then subscribes", async ({
   await expect(quotePanel.getByTestId("quote-line")).toHaveCount(1);
   await quotePanel.getByRole("button", { name: "Send Quote" }).click();
   const quoteLink = await quotePanel.getByLabel("Customer link").inputValue();
+  await closeWrapUpStep(page);
 
   // 7. The customer accepts on a phone and pays the 25% deposit chosen in onboarding.
   const phone = await browser.newContext(PHONE);
@@ -223,6 +231,10 @@ test("a new shop signs up and runs the whole loop, then subscribes", async ({
   // 8. The repair: started, invoiced with the deposit credited, paid online.
   await page.goto(`/jobs/${quote!.repair_job_id}`);
   await page.getByRole("button", { name: "Start Job" }).click();
+  await expect(page.getByRole("button", { name: "Move Back to Scheduled" })).toBeVisible();
+  // A repair job's finish list has no quote rows; the invoice opens in a sheet.
+  await expect(page.getByTestId("wrap-up-quote")).toHaveCount(0);
+  await wrapUpStep(page, "Invoice");
   await expect(page.getByRole("button", { name: "Create Invoice" })).toBeVisible();
   await page.getByRole("button", { name: "Create Invoice" }).click();
   const invoice = page.getByTestId("invoice");

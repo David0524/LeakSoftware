@@ -1,5 +1,5 @@
 import { expect, test } from "@playwright/test";
-import { OWNER, RUN, sendUnsigned, signIn } from "./helpers";
+import { OWNER, RUN, jobSection, sendUnsigned, signIn, wrapUpStep } from "./helpers";
 
 // Pool Inspection (owner, 2026-10-20; docs/plans/pool-inspection.md): from New Job to a sent
 // Pool Inspection Report, on the website.
@@ -28,6 +28,8 @@ test("a pool inspection: New Job, answers and gates, and its report", async ({ p
   await expect(page.getByRole("heading", { name, level: 1 })).toBeVisible();
   await expect(page.getByText("Pool inspection", { exact: true }).first()).toBeVisible();
   await expect(page.getByText("Spa, Deck Jets")).toBeVisible();
+  // The job page shows one tab at a time on every screen (owner, 2026-10-22).
+  await jobSection(page, "Checklist");
   await expect(page.getByText(/^0 of \d+ answered · 0 need attention · 0 leaking$/)).toBeVisible();
 
   // Equipment opens first; a flagged answer counts as needing attention.
@@ -71,6 +73,7 @@ test("a pool inspection: New Job, answers and gates, and its report", async ({ p
   await expect(page.getByText(/· 1 need attention · 1 leaking$/)).toBeVisible();
 
   // The report: Write Draft from the answers, then send.
+  await wrapUpStep(page, "Report");
   const panel = page.getByTestId("report-homeowner");
   await expect(panel.getByText("Pool Inspection Report")).toBeVisible();
   await panel.getByRole("button", { name: "Write Draft" }).click();

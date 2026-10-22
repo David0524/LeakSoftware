@@ -46,8 +46,7 @@ describe("Next Step bar for every status, type and section", () => {
             status,
             jobType,
             hasTestTypes: true,
-            noDraft: true,
-            canWriteDraft: true,
+            wrapUpAction: "Write the Draft",
           });
           if (steps.includes("start")) expect(["scheduled", "unscheduled"]).toContain(status);
           if (steps.includes("complete")) {
@@ -67,8 +66,7 @@ describe("Next Step bar for every status, type and section", () => {
           status,
           jobType: "maintenance",
           hasTestTypes: false,
-          noDraft: false,
-          canWriteDraft: false,
+          wrapUpAction: null,
         }),
       ).toEqual([]);
   });
@@ -78,8 +76,7 @@ describe("Next Step bar for every status, type and section", () => {
       status: "on_hold" as JobStatus,
       jobType: "detection",
       hasTestTypes: true,
-      noDraft: true,
-      canWriteDraft: true,
+      wrapUpAction: "Write the Draft",
     };
     expect(jobMoves("on_hold" as JobStatus, "detection")).toEqual([]);
     expect(nextStepButtons(state)).toEqual(["add-test", "add-finding"]);

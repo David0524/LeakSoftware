@@ -738,6 +738,8 @@ export interface ReportRow {
   ai_draft: { problems?: { message: string; section?: string; match?: string }[] } | null;
   model: string | null;
   sent_at: string | null;
+  /** A finished version nobody signed says why ("Customer not present"). */
+  sign_off?: { unsigned_reason?: string | null } | null;
   token: string | null;
 }
 
@@ -746,7 +748,9 @@ export const getReports = cache(async function getReports(office: Office, jobId:
   const [reports, links, templates, messages] = await Promise.all([
     supabase
       .from("report")
-      .select("id, template_key, version, status, final_sections, ai_draft, model, sent_at")
+      .select(
+        "id, template_key, version, status, final_sections, ai_draft, model, sent_at, sign_off:data_snapshot->sign_off",
+      )
       .eq("company_id", office.company.id)
       .eq("job_id", jobId)
       .is("deleted_at", null)

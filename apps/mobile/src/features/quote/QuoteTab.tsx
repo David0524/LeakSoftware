@@ -63,10 +63,18 @@ interface PaymentRow {
  * the builder (from findings, the price book, custom lines, the discount, totals) and Send
  * Quote; a sent one its lines, deposit, customer link and acceptance. Drafts work offline.
  */
-export function QuoteTab({ job }: { job: Job }) {
+export function QuoteTab({
+  job,
+  only,
+}: {
+  job: Job;
+  /** Wrap-Up's sheet for one quote (owner, 2026-10-22): that card, without Start Quote. */
+  only?: string;
+}) {
   const company = useCompany();
   const { services, membership } = useSession();
-  const quotes = useJobQuotes(company.id, job.id);
+  const all = useJobQuotes(company.id, job.id);
+  const quotes = only ? all.filter((q) => q.id === only) : all;
   const manager = isManagerRole(membership?.role);
   const [paymentsReady, setPaymentsReady] = useState<boolean | null>(null);
   const anySent = quotes.some((q) => q.status !== "draft");
@@ -115,7 +123,7 @@ export function QuoteTab({ job }: { job: Job }) {
           </T>
         </Notice>
       ) : null}
-      {!hasDraft && !hasAccepted ? (
+      {!only && !hasDraft && !hasAccepted ? (
         <View style={styles.start}>
           <T muted style={{ flexGrow: 1, flexBasis: 192, flexShrink: 1 }}>
             {/* With a quote already there, never "No quote yet" (owner, 2026-10-22). */}

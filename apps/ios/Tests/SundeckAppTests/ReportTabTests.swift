@@ -784,3 +784,46 @@ private func signature(_ id: String, _ name: String, purpose: String = "inspecti
         #expect(queue.pending.isEmpty && queue.readyText(jobId: "j1") == "Your report")
     }
 }
+
+/// Wrap-Up's finish list read from the phone's database (owner, 2026-10-22).
+@Suite @MainActor struct WrapUpInputTests {
+    @Test func theListReadsTheReportSignaturesQuotesAndInvoices() throws {
+        var sent = report("r1", version: 1, status: "sent", sections: twoSections, sentAt: "2026-10-19T15:00:00Z")
+        if case .object(var row) = sent.1 {
+            row["data_snapshot"] = ["sign_off": ["unsigned_reason": "Customer not present"]]
+            sent.1 = .object(row)
+        }
+        let s = try ReportJob(rows: [
+            sent,
+            signature("s1", "Pat Doe", purpose: "work_authorization"),
+            (
+                "quote",
+                [
+                    "id": "q1", "company_id": "c1", "job_id": "j1", "number": 1006, "status": "accepted",
+                    "subtotal_cents": 125000, "discount_cents": 0, "tax_cents": 0, "total_cents": 125000,
+                    "deposit_cents": 31250,
+                ]
+            ),
+            (
+                "payment",
+                [
+                    "id": "pay1", "company_id": "c1", "quote_id": "q1", "amount_cents": 31250, "method": "card",
+                    "status": "succeeded",
+                ]
+            ),
+        ])
+        let input = wrapUpInput(store: s.store, companyId: "c1", settings: nil, job: s.job)
+        #expect(input.customer == "Pat Doe")
+        #expect(input.sentVersion == 1 && !input.hasDraft)
+        #expect(input.unsignedReason == "Customer not present")
+        // Work authorization is signed before the work: not the report's sign-off.
+        #expect(input.signers.isEmpty)
+        let list = wrapUp(input)
+        #expect(
+            list.rows.map(\.detail) == [
+                "Sent · version 1", "Accepted · deposit paid", "Not signed: customer not present", "Not started",
+            ])
+        #expect(list.subtitle == "Pat Doe · 3 of 4 done")
+        #expect(list.next?.action == "Send Invoice")
+    }
+}

@@ -3,11 +3,13 @@ import {
   OWNER,
   RUN,
   TECH,
+  closeWrapUpStep,
   finishChecklist,
   jobSection,
   openChecklist,
   signIn,
   signOut,
+  wrapUpStep,
 } from "./helpers";
 import { signedInClient } from "./backend";
 import { solidPng } from "./png";
@@ -95,6 +97,7 @@ test("owner views the M4 sample job", async ({ page }) => {
   ).toBeVisible();
 
   // Tests: the failing pressure test and the bucket test, worked out from the readings.
+  await jobSection(page, "Findings");
   await expect(page.getByText("Dropped 8 PSI in 15 min")).toBeVisible();
   await expect(page.getByText(/0\.69 in lost beyond evaporation/)).toBeVisible();
 
@@ -103,6 +106,7 @@ test("owner views the M4 sample job", async ({ page }) => {
   await expect(page.getByRole("img", { name: /Pool diagram with 2 finding pins/ })).toBeVisible();
 
   // Owners see the timeline: the latest three changes, the rest behind Show More.
+  await jobSection(page, "Details");
   await expect(page.getByRole("heading", { name: "Timeline" })).toBeVisible();
   const timeline = page.getByRole("region", { name: "Timeline" });
   await expect(timeline.getByRole("listitem").filter({ visible: true })).toHaveCount(3);
@@ -429,7 +433,8 @@ test("the office adds a job for a new customer, with its checklist ready", async
   await expect(page.getByRole("link", { name, exact: true })).toBeVisible();
   await expect(page.getByText("12 Office Way, Tempe, AZ").first()).toBeVisible();
   await expect(page.getByText("Tony Tech").first()).toBeVisible();
-  // The checklist is ready for the tech, every item to do.
+  // The checklist is ready for the tech, every item to do (its own tab, owner 2026-10-22).
+  await jobSection(page, "Checklist");
   await expect(
     page.getByText(/0 not leaking · 0 attention · 0 leaking · 0 not applicable · \d+ to do/),
   ).toBeVisible();
@@ -615,11 +620,26 @@ test("on a phone: a tech starts a job, fills the checklist, and records a test a
 
   // Wrap-up: the report is written, then the customer reads it on the phone and signs at
   // the bottom; signing finishes it.
+  // Wrap-Up is a finish list (owner, 2026-10-22): a row per step with its state, each opening
+  // a sheet, and the Next Step bar naming the next step.
   await jobSection(tech, "Wrap-Up");
+  const wrapUp = tech.getByTestId("wrap-up");
+  await expect(wrapUp.getByTestId("wrap-up-count")).toContainText("0 of 3 done");
+  await expect(wrapUp.getByTestId("wrap-up-report")).toContainText("Not written yet");
+  await expect(wrapUp.getByTestId("wrap-up-sign")).toContainText("Write the report first");
+  await expect(wrapUp.getByTestId("wrap-up-invoice")).toContainText("Not started");
+  const bar = tech.getByRole("toolbar", { name: "Next step" });
+  await expect(bar.getByRole("button", { name: "Write the Draft" })).toBeVisible();
+  // The bar's button opens the step, as tapping its row does.
+  await bar.getByRole("button", { name: "Write the Draft" }).click();
   const report = tech.getByTestId("report-homeowner");
   await report.getByRole("button", { name: "Write Draft" }).click();
   await expect(report.getByText(/^Draft written\./)).toBeVisible();
-  await report.getByRole("button", { name: "Review with Customer" }).click();
+  await closeWrapUpStep(tech);
+  await expect(wrapUp.getByTestId("wrap-up-report")).toContainText("Draft ready");
+  await expect(wrapUp.getByTestId("wrap-up-count")).toContainText("1 of 3 done");
+  // Review with Customer starts the review at once.
+  await bar.getByRole("button", { name: "Review with Customer" }).click();
   await tech.waitForURL(/\/sign-off\//);
   await expect(tech.getByText(`Line break ${RUN}`).first()).toBeVisible();
   const sign = tech.locator("#sign");
@@ -640,11 +660,15 @@ test("on a phone: a tech starts a job, fills the checklist, and records a test a
     await tech.mouse.move(pad!.x + x, pad!.y + y, { steps: 4 });
   await tech.mouse.up();
   await sign.getByRole("button", { name: "Sign", exact: true }).click();
-  await tech.waitForURL(/\/jobs\/[^/]+#wrap-up$/);
+  await tech.waitForURL(/\/jobs\/[^/]+\?tab=wrap-up$/);
+  await expect(wrapUp.getByTestId("wrap-up-sign")).toContainText(`Signed by ${name}`);
+  await wrapUpStep(tech, "Customer signs");
   await expect(tech.getByRole("img", { name: `Signature of ${name}` })).toBeVisible();
   await expect(tech.getByText(/Inspection acknowledged ·/)).toBeVisible();
+  await closeWrapUpStep(tech);
 
   // The finished version goes out by text, and the customer's page carries the signature.
+  await wrapUpStep(tech, "Report");
   const finished = report.getByTestId("finished-report");
   await expect(finished).toContainText("Version 1 is finished");
   await finished.getByRole("button", { name: "Send by Text" }).click();
@@ -656,9 +680,11 @@ test("on a phone: a tech starts a job, fills the checklist, and records a test a
   await customerPage.goto(reportHref!);
   await expect(customerPage.getByRole("img", { name: `Signature of ${name}` })).toBeVisible();
   await customerPage.close();
+  await closeWrapUpStep(tech);
 
-  // A quote built on the phone from the price book and a custom line, then sent.
-  await tech.getByRole("button", { name: "Start Quote" }).click();
+  // A quote built on the phone from the price book and a custom line, then sent: New Quote
+  // opens the new quote's sheet.
+  await wrapUp.getByRole("button", { name: "New Quote" }).click();
   const quote = tech.getByTestId("quote");
   await quote.getByLabel("Add from the price book").selectOption({ index: 1 });
   await quote.getByRole("button", { name: "Add Item" }).click();
@@ -675,6 +701,9 @@ test("on a phone: a tech starts a job, fills the checklist, and records a test a
   await quote.getByRole("button", { name: "Send Quote" }).click();
   await expect(quote.getByLabel("Customer link")).toHaveValue(/\/q\//);
   await expect(quote).toContainText("Sent");
+  await closeWrapUpStep(tech);
+  await expect(wrapUp.getByTestId("wrap-up-quote")).toContainText("Sent · waiting");
+  await expect(bar.getByRole("button", { name: "Send Invoice" })).toBeVisible();
 
   await jobSection(tech, "Details");
   await tech.getByLabel("Job notes").fill("Gate code 1234 worked.");

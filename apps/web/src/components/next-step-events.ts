@@ -29,28 +29,6 @@ export function useNextStep(step: NextStep, handler: () => void) {
   }, [step]);
 }
 
-// Whether Wrap-Up's report panel is on screen without a draft (it loads on its own), so the bar
-// knows to offer Write Draft.
-let draftWritable = false;
-const draftListeners = new Set<() => void>();
-
-export function setDraftWritable(value: boolean) {
-  if (draftWritable === value) return;
-  draftWritable = value;
-  draftListeners.forEach((l) => l());
-}
-
-export function useDraftWritable() {
-  return useSyncExternalStore(
-    (onChange) => {
-      draftListeners.add(onChange);
-      return () => draftListeners.delete(onChange);
-    },
-    () => draftWritable,
-    () => false,
-  );
-}
-
 const NOT_TYPED = new Set([
   "button",
   "checkbox",

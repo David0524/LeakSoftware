@@ -32,8 +32,15 @@
         /// The Photos section's capture (Attach to, camera, library), shared with the Next Step
         /// bar's Add Photo and Add Video.
         @State private var capture: CaptureController
-        /// The report the Wrap-Up section works on, shared with the Next Step bar's Write Draft.
+        /// The report the Wrap-Up section works on.
         @State private var reportFlow: ReportFlow?
+        /// Wrap-Up's open step (owner, 2026-10-22: the finish list), also opened by the Next Step
+        /// bar's button.
+        @State private var wrapUpOpen: WrapUpOpen?
+        /// A done maintenance visit's Visit Report sheet (owner, 2026-10-22: "the visit report is
+        /// really buried"), and its report page.
+        @State private var visitSheet = false
+        @State private var visitPage: BrowsedPage?
         @Environment(\.openEditor) private var openEditor
         @Environment(\.openRoute) private var openRoute
         /// Opens the checklist in Edit (screenshots).
@@ -139,6 +146,19 @@
                 .safeAreaInset(edge: .bottom, spacing: 0) { nextStepBar(job, current, company) }
                 .trackingKeyboard($keyboardShown)
                 .mediaViewer(jobId: jobId)
+                .browser($visitPage)
+                .sheet(isPresented: $visitSheet) {
+                    NavigationStack {
+                        ScreenScroll { VisitReportSection(job: job, heading: false) }
+                            .navigationTitle(VisitReportText.title)
+                            .toolbar {
+                                ToolbarItem(placement: .confirmationAction) {
+                                    Button("Done") { visitSheet = false }.fontWeight(.semibold)
+                                }
+                            }
+                    }
+                    .environment(session).environment(sync).environment(app)
+                }
                 .onChange(of: section) { _, next in
                     // Each section comes back where it was left; a new one opens at the top.
                     restoring = true
@@ -167,6 +187,10 @@
             -> some View
         {
             let actions = nextActions(job, current, company)
+            let visit = visitBar(job, company)
+            // The visit report's status, with its button or above Complete Job (Automatic shops).
+            let visitLine =
+                actions.contains(.visitReport) || actions.contains(.completeJob) ? visit?.bar.line : nil
             let notice = blocked.flatMap { current == .checklist && job.status != .done ? $0 : nil }
             // Everything on the visit's checklist is done: Complete Job is the last thing (owner,
             // 2026-10-22), so the bar says so and the button scales in once.
@@ -174,6 +198,23 @@
             if !keyboardShown, !actions.isEmpty {
                 VStack(alignment: .leading, spacing: 8) {
                     if let notice { CompleteJobNotice(jobId: job.id, message: notice) }
+                    if let visitLine, !ready {
+                        // Tapping the status opens the sheet: Send Again and the versions.
+                        Button {
+                            visitSheet = true
+                        } label: {
+                            HStack(spacing: 4) {
+                                Text(visitLine).textRole(.secondary).fontWeight(.semibold)
+                                    .foregroundStyle(Color.text)
+                                Image(systemName: "chevron.right").font(.footnote.weight(.semibold))
+                                    .foregroundStyle(Color.textMuted)
+                            }
+                            .frame(maxWidth: .infinity, minHeight: minTarget)
+                            .contentShape(Rectangle())
+                        }
+                        .buttonStyle(.plain)
+                        .accessibilityHint("Opens the visit report")
+                    }
                     if ready {
                         Text(completeReadyLine)
                             .textRole(.secondary)
@@ -211,15 +252,29 @@
         private func nextActions(_ job: JobView, _ current: JobPageSection, _ company: CompanyContext)
             -> [NextStepAction]
         {
-            let report =
-                current == .wrapUp
-                ? ReportTabModel(store: sync.store, companyId: company.id, settings: company.settings, job: job) : nil
             return nextStepActions(
                 job, section: current,
                 hasTestTypes: current == .findings
                     && !InspectionConfig(sync.store, companyId: company.id).testTypes.isEmpty,
-                reportOn: !(report?.templates.isEmpty ?? true), hasDraft: report?.hasDraftText ?? false,
-                online: sync.status.phase != .offline)
+                wrapUp: current == .wrapUp ? wrapUpList(job, company).next : nil,
+                visitAction: visitBar(job, company)?.bar.action)
+        }
+
+        /// Wrap-Up's finish list (core `wrapUp`).
+        private func wrapUpList(_ job: JobView, _ company: CompanyContext) -> WrapUp {
+            wrapUp(wrapUpInput(store: sync.store, companyId: company.id, settings: company.settings, job: job))
+        }
+
+        /// A maintenance visit's report on the bar (core `visitReportBar`), and its page once sent.
+        private func visitBar(_ job: JobView, _ company: CompanyContext) -> (bar: VisitReportBar, url: URL?)? {
+            guard job.type == .maintenance else { return nil }
+            let latest = visitReportVersions(sync.store, jobId: job.id).first(where: \.current)
+            guard
+                let bar = visitReportBar(
+                    jobType: job.type.rawValue, status: job.status.rawValue, mode: visitReportMode(company.settings),
+                    sentAt: latest?.sentAt, now: Date(), timeZone: company.timeZone)
+            else { return nil }
+            return (bar, latest?.token.map { reportURL(AppConfig.webURL, $0) })
         }
 
         @ViewBuilder private func nextStepButton(_ action: NextStepAction, primary: Bool) -> some View {
@@ -227,7 +282,7 @@
             Button {
                 run(action)
             } label: {
-                BusyButtonLabel(action.title, busy: writing, busyTitle: "Writing…")
+                BusyButtonLabel(title(action), busy: writing, busyTitle: "Writing…")
             }
             .modifier(BarButtonStyle(primary: primary))
             .disabled(action == .writeDraft && reportFlow?.busy != nil)
@@ -246,6 +301,31 @@
                 guard let reportFlow else { return }
                 Task { await reportFlow.run(.draft, server: ReportServer(sync: sync, api: app.api)) }
             case .reviewWithCustomer: openRoute(.review(jobId: jobId))
+            case .wrapUp:
+                // As tapping the next row, except Review with Customer, which starts the review.
+                guard let job, let company = session.company, let next = wrapUpList(job, company).next else { return }
+                if next.step == .sign {
+                    openRoute(.review(jobId: jobId))
+                } else {
+                    wrapUpOpen = WrapUpOpen(step: next.step, refId: next.id)
+                }
+            case .visitReport:
+                guard let job, let company = session.company, let visit = visitBar(job, company) else { return }
+                if visit.bar.action == .view, let url = visit.url {
+                    visitPage = BrowsedPage(url: url)
+                } else {
+                    visitSheet = true
+                }
+            }
+        }
+
+        /// The button's words: Wrap-Up's next action and the visit report's come from core.
+        private func title(_ action: NextStepAction) -> String {
+            guard let job, let company = session.company else { return action.title }
+            switch action {
+            case .wrapUp: return wrapUpList(job, company).next?.action ?? action.title
+            case .visitReport: return visitBar(job, company)?.bar.label ?? action.title
+            default: return action.title
             }
         }
 
@@ -312,7 +392,7 @@
                     FindingsTab(job: job)
                 }
             case .photos: JobPhotosSection(job: job, capture: capture)
-            case .wrapUp: WrapUpSection(job: job, flow: reportFlow)
+            case .wrapUp: WrapUpSection(job: job, flow: reportFlow, open: $wrapUpOpen)
             }
         }
 

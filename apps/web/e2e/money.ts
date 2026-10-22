@@ -1,6 +1,6 @@
 import { expect, type APIRequestContext, type Page } from "@playwright/test";
 import { signedEvent, signedInClient } from "./backend";
-import { OWNER, RUN, TECH, signIn } from "./helpers";
+import { OWNER, RUN, TECH, signIn, wrapUpStep } from "./helpers";
 
 // Shared by the quote (M8) and invoice (M9) tests.
 
@@ -32,6 +32,8 @@ export async function draftQuote(lines: [string, number][]) {
 
 export async function sendFromOffice(page: Page, number: number): Promise<string> {
   await signIn(page, OWNER, `/jobs/${SAMPLE_JOB}`);
+  // Each quote opens from Wrap-Up's finish list, in a sheet (owner, 2026-10-22).
+  await wrapUpStep(page, `Quote #${number},`);
   const panel = page.getByTestId("quote").filter({ hasText: `Quote #${number} ·` });
   await expect(panel).toContainText("Draft");
   await panel.getByRole("button", { name: "Send Quote" }).click();

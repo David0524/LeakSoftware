@@ -150,13 +150,18 @@ import Testing
     @Test func theNextStepBarOffersTheNextThing() {
         func steps(
             _ section: JobPageSection, type: String = "detection", status: String = "in_progress",
-            tests: Bool = true, report: Bool = true, draft: Bool = false, online: Bool = true
+            tests: Bool = true, next: WrapUpNext? = nil, visit: VisitReportBarAction? = nil
         ) -> [String] {
             nextStepActions(
-                view(type: type, status: status), section: section, hasTestTypes: tests, reportOn: report,
-                hasDraft: draft, online: online
+                view(type: type, status: status), section: section, hasTestTypes: tests, wrapUp: next,
+                visitAction: visit
             ).map(\.title)
         }
+        let review = wrapUp(
+            WrapUpInput(
+                jobType: "detection", customer: "Maria Alvarez", reportOn: true, hasDraft: true, sentVersion: nil,
+                unsignedReason: nil, findings: 2, tests: 5, signers: [], quotes: [], invoices: [])
+        ).next
         // Start Job wins while the job can be started, on any section.
         #expect(steps(.findings, status: "scheduled") == ["Start Job"])
         #expect(steps(.details, status: "unscheduled") == ["Start Job"])
@@ -167,10 +172,16 @@ import Testing
         #expect(steps(.findings) == ["Add Test", "Add Finding"])
         #expect(steps(.findings, tests: false) == ["Add Finding"])
         #expect(steps(.photos) == ["Add Photo", "Add Video"])
-        #expect(steps(.wrapUp) == ["Write Draft"])
-        #expect(steps(.wrapUp, online: false) == ["Review with Customer"])
-        #expect(steps(.wrapUp, draft: true).isEmpty)
-        #expect(steps(.wrapUp, report: false).isEmpty)
+        // Wrap-Up's next step (owner, 2026-10-22), until every step is done.
+        #expect(review?.action == "Review with Customer")
+        #expect(steps(.wrapUp, next: review) == ["Next Step"])
+        #expect(steps(.wrapUp).isEmpty)
+        #expect(steps(.details, next: review).isEmpty)
+        // A done visit's report, on every section.
+        for section in JobPageSection.allCases {
+            #expect(steps(section, type: "maintenance", status: "done", visit: .view) == ["Visit Report"])
+        }
+        #expect(steps(.checklist, type: "maintenance", visit: .send) == ["Complete Job"])
         #expect(steps(.details).isEmpty)
 
         // On the phone the header drops Start Job (it's on the bar) and keeps the rest.

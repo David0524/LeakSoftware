@@ -87,6 +87,10 @@ public func jobCanStart(_ status: JobStatus, type: JobType) -> Bool {
 /// replaces.
 public enum NextStepAction: String, Equatable, Sendable {
     case startJob, completeJob, addTest, addFinding, addPhoto, addVideo, writeDraft, reviewWithCustomer
+    /// Wrap-Up's next step (owner, 2026-10-22): its words come from core `wrapUp`'s next action.
+    case wrapUp
+    /// A done maintenance visit's View Report or Send Visit Report (core `visitReportBar`).
+    case visitReport
 
     public var title: String {
         switch self {
@@ -98,18 +102,24 @@ public enum NextStepAction: String, Equatable, Sendable {
         case .addVideo: "Add Video"
         case .writeDraft: "Write Draft"
         case .reviewWithCustomer: ReportTabModel.reviewWithCustomer
+        case .wrapUp: "Next Step"
+        case .visitReport: "Visit Report"
         }
     }
 }
 
 /// The Next Step bar's buttons, primary first; empty hides the bar. First match wins: Start Job
-/// while the job can be started; Complete Job on a visit's Checklist; Add Test and Add Finding
-/// on Findings; Add Photo and Add Video on Photos; Write Draft on Wrap-Up before a draft
-/// (Review with Customer when a draft can't be written now, offline).
+/// while the job can be started; a done maintenance visit's report on every section (owner,
+/// 2026-10-22: "the visit report is really buried"); Complete Job on a visit's Checklist; Add
+/// Test and Add Finding on Findings; Add Photo and Add Video on Photos; Wrap-Up's next step
+/// (core `wrapUp`) until every step is done. Port of nextStepButtons in
+/// apps/web/src/lib/next-step.ts.
 public func nextStepActions(
-    _ job: JobView, section: JobPageSection, hasTestTypes: Bool, reportOn: Bool, hasDraft: Bool, online: Bool
+    _ job: JobView, section: JobPageSection, hasTestTypes: Bool, wrapUp: WrapUpNext? = nil,
+    visitAction: VisitReportBarAction? = nil
 ) -> [NextStepAction] {
     if jobCanStart(job.status, type: job.type) { return [.startJob] }
+    if job.type == .maintenance, job.status == .done, visitAction != nil { return [.visitReport] }
     switch section {
     case .checklist:
         return checklistShowsCompleteJob(job) ? [.completeJob] : []
@@ -118,8 +128,7 @@ public func nextStepActions(
     case .photos:
         return [.addPhoto, .addVideo]
     case .wrapUp:
-        guard reportOn, !hasDraft else { return [] }
-        return [online ? .writeDraft : .reviewWithCustomer]
+        return wrapUp == nil ? [] : [.wrapUp]
     case .details:
         return []
     }

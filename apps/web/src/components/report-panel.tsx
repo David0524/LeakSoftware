@@ -12,7 +12,6 @@ import type { ReportRow } from "@/lib/data";
 import { orOffline } from "@/lib/offline";
 import { SavedReportActions, type SavedReportOption } from "./saved-reports";
 import { CopyLink } from "./settings-forms";
-import { setDraftWritable, useNextStep } from "./next-step-events";
 import { useConfirm } from "./sheet";
 import { Button, Notice, buttonClass, cx } from "./ui";
 import { SavedNote, useAutosave } from "./undo";
@@ -103,15 +102,6 @@ export function ReportPanel({
   useEffect(() => {
     if (draftState.error) reset();
   }, [draftState, reset]);
-
-  // The phone's Next Step bar offers Write Draft while there's no draft and no version yet
-  // (owner, 2026-10-20).
-  const firstReport = !hasDraft && sent.length === 0;
-  useEffect(() => {
-    setDraftWritable(firstReport);
-    return () => setDraftWritable(false);
-  }, [firstReport]);
-  useNextStep("write-draft", () => writeForm.current?.requestSubmit());
 
   const status = (
     <div className="space-y-3">

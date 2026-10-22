@@ -45,6 +45,8 @@ import {
   jobHasWrapUp,
   readingSummary,
   jobLock,
+  wrapUp,
+  visitReportBar,
 } from "@leakbook/core";
 import { CustomerLinks } from "@/components/customer-links";
 import { DiagramPanel } from "@/components/diagram-work";
@@ -63,9 +65,18 @@ import {
   TestsEditor,
   type ChecklistRow,
 } from "@/components/job-work";
-import { Card, Empty, Grouped, Notice, PageHeader, Row, iconButtonClass } from "@/components/ui";
+import {
+  Card,
+  Empty,
+  Grouped,
+  Notice,
+  PageHeader,
+  Row,
+  buttonClass,
+  iconButtonClass,
+} from "@/components/ui";
 import { LiveStatusBadge } from "@/components/instant";
-import { getOffice } from "@/lib/auth";
+import { getOffice, type Office } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import {
   auditFor,
@@ -101,11 +112,14 @@ import { NotOnMapRow, NotOnMapTag } from "@/components/not-on-map";
 import { AccessNotesForm, PoolDetailsForm } from "@/components/pool-details";
 import { SheetRow } from "@/components/settings-list";
 import { SampleJob } from "@/components/sample-job";
+import { WrapUpList } from "@/components/wrap-up";
+import { wrapUpInput } from "@/lib/wrap-up";
 
 export const metadata: Metadata = { title: "Job · Sundeck Pro" };
 
-export default async function JobPage({ params }: PageProps<"/jobs/[id]">) {
+export default async function JobPage({ params, searchParams }: PageProps<"/jobs/[id]">) {
   const { id } = await params;
+  const { tab } = await searchParams;
   const office = await getOffice();
   // Start the Wrap-Up panels' queries now, alongside the job: they need only its id, and
   // each used to wait for the whole job to load first. The panels pick up these requests.
@@ -123,6 +137,8 @@ export default async function JobPage({ params }: PageProps<"/jobs/[id]">) {
   ]);
   if (!detail) notFound();
   const { job } = detail;
+  const wrap = jobHasWrapUp(job.type) && !job.sample ? await wrapUpOf(office, detail) : null;
+  const visit = job.type === "maintenance" ? await visitReportOf(office, detail) : null;
   // The sample job opens to its finished report (owner, 2026-10-22: first win).
   if (job.sample) return <SampleJob office={office} job={job} />;
   const tz = office.company.timezone;
@@ -200,6 +216,10 @@ export default async function JobPage({ params }: PageProps<"/jobs/[id]">) {
       />
 
       <JobSections
+        initial={typeof tab === "string" ? tab : undefined}
+        // The widest screens show the pool diagram and findings beside the checklist (owner,
+        // 2026-10-22: "use the desktop's width to your advantage").
+        beside={job.type === "maintenance" ? undefined : { checklist: "findings" }}
         nextStep={{
           jobId: job.id,
           status: job.status,
@@ -207,6 +227,8 @@ export default async function JobPage({ params }: PageProps<"/jobs/[id]">) {
           hasTestTypes: [...detail.testTypes.values()].some((t) => t.active && !t.deleted_at),
           completePrompt,
           ready: job.type === "maintenance" && ready,
+          wrapUpAction: wrap?.list.next?.action ?? null,
+          visitReport: visit?.bar ? { bar: visit.bar, href: visit.href, panel: visit.panel } : null,
         }}
         sections={[
           {
@@ -411,7 +433,17 @@ export default async function JobPage({ params }: PageProps<"/jobs/[id]">) {
                   </section>
                 ) : null}
 
-                {job.type === "maintenance" ? <VisitReport detail={detail} /> : null}
+                {/* Once the visit is done, its report is on the Next Step bar (owner,
+                    2026-10-22: "the visit report is really buried"); before that it stays here,
+                    so it can still be sent early. */}
+                {visit && job.status !== "done" ? (
+                  <section className="mt-8 max-w-3xl" aria-labelledby="visit-report">
+                    <h2 id="visit-report" className="mb-3 font-display text-2xl font-bold">
+                      Visit Report
+                    </h2>
+                    {visit.panel}
+                  </section>
+                ) : null}
 
                 {jobHasWrapUp(job.type) ? null : (
                   <section className="mt-8 max-w-3xl" aria-labelledby="quotes">
@@ -494,29 +526,34 @@ export default async function JobPage({ params }: PageProps<"/jobs/[id]">) {
                   id: "findings",
                   label: "Findings",
                   content: (
-                    <>
-                      {job.property ? (
-                        <section className="mb-8" aria-labelledby="pool-diagram">
-                          <h2 id="pool-diagram" className="mb-3 font-display text-2xl font-bold">
-                            Pool Diagram
-                          </h2>
-                          <Diagram detail={detail} />
-                        </section>
-                      ) : null}
-                      <section aria-labelledby="tests">
-                        <h2 id="tests" className="mb-3 font-display text-2xl font-bold">
-                          Tests
-                        </h2>
-                        <Tests detail={detail} tz={tz} />
-                      </section>
-
-                      <section className="mt-8" aria-labelledby="findings">
-                        <h2 id="findings" className="mb-3 font-display text-2xl font-bold">
-                          Findings
-                        </h2>
-                        <Findings detail={detail} />
-                      </section>
-                    </>
+                    // Its own tab on a computer: the diagram beside the tests and findings
+                    // when there's room (a container query, so beside the checklist it stacks).
+                    <div className="@container">
+                      <div className="@4xl:grid @4xl:grid-cols-2 @4xl:items-start @4xl:gap-8">
+                        {job.property ? (
+                          <section className="mb-8" aria-labelledby="pool-diagram">
+                            <h2 id="pool-diagram" className="mb-3 font-display text-2xl font-bold">
+                              Pool Diagram
+                            </h2>
+                            <Diagram detail={detail} />
+                          </section>
+                        ) : null}
+                        <div>
+                          <section aria-labelledby="tests">
+                            <h2 id="tests" className="mb-3 font-display text-2xl font-bold">
+                              Tests
+                            </h2>
+                            <Tests detail={detail} tz={tz} />
+                          </section>
+                          <section className="mt-8" aria-labelledby="findings">
+                            <h2 id="findings" className="mb-3 font-display text-2xl font-bold">
+                              Findings
+                            </h2>
+                            <Findings detail={detail} />
+                          </section>
+                        </div>
+                      </div>
+                    </div>
                   ),
                 },
               ]),
@@ -539,39 +576,29 @@ export default async function JobPage({ params }: PageProps<"/jobs/[id]">) {
                 {
                   id: "wrap-up",
                   label: "Wrap-Up",
-                  content: (
-                    <>
-                      <section aria-labelledby="reports">
-                        <h2 id="reports" className="mb-3 font-display text-2xl font-bold">
-                          Report and Sign-Off
-                        </h2>
-                        <Reports detail={detail} />
-                      </section>
-
-                      <section className="mt-8" aria-labelledby="signatures">
-                        <h2 id="signatures" className="mb-3 font-display text-2xl font-bold">
-                          Signatures
-                        </h2>
-                        <Signatures detail={detail} tz={tz} />
-                      </section>
-
-                      {job.type !== "repair" ? (
-                        <section className="mt-8" aria-labelledby="quotes">
-                          <h2 id="quotes" className="mb-3 font-display text-2xl font-bold">
-                            Quotes
-                          </h2>
-                          <Quotes detail={detail} />
-                        </section>
-                      ) : null}
-
-                      <section className="mt-8" aria-labelledby="invoice">
-                        <h2 id="invoice" className="mb-3 font-display text-2xl font-bold">
-                          Invoice
-                        </h2>
-                        <Invoices detail={detail} />
-                      </section>
-                    </>
-                  ),
+                  content: wrap ? (
+                    <WrapUpList
+                      wrap={wrap.list}
+                      jobId={job.id}
+                      reviewHref={wrap.draftId ? `/sign-off/${wrap.draftId}` : null}
+                      draftQuoteId={wrap.draftQuoteId}
+                      report={<Reports detail={detail} />}
+                      sign={<SignStep detail={detail} tz={tz} draftId={wrap.draftId} />}
+                      quotes={Object.fromEntries(
+                        wrap.quoteIds.map((id) => [
+                          id,
+                          <Quotes key={id} detail={detail} only={id} />,
+                        ]),
+                      )}
+                      invoices={Object.fromEntries(
+                        wrap.invoiceIds.map((id) => [
+                          id,
+                          <Invoices key={id} detail={detail} only={id} />,
+                        ]),
+                      )}
+                      newInvoice={<Invoices detail={detail} />}
+                    />
+                  ) : null,
                 },
               ]
             : []),
@@ -787,7 +814,8 @@ async function Gallery({ detail, tz }: { detail: JobDetail; tz: string }) {
       {detail.media.length === 0 ? (
         <Empty>No photos or recordings yet.</Empty>
       ) : (
-        <ul className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        // Photos get the whole width on their own tab (owner, 2026-10-22).
+        <ul className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
           {detail.media.map((m) => {
             const url = m.storage_path ? urls.get(m.storage_path) : undefined;
             const markup = parseMarkup(m.markup).shapes;
@@ -876,7 +904,8 @@ async function Signatures({ detail, tz }: { detail: JobDetail; tz: string }) {
           Customer.
         </p>
       ) : (
-        <ul className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        // Photos get the whole width on their own tab (owner, 2026-10-22).
+        <ul className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
           {signatures.map((s) => {
             const url = s.image_path ? urls.get(s.image_path) : undefined;
             return (
@@ -916,6 +945,72 @@ async function Signatures({ detail, tz }: { detail: JobDetail; tz: string }) {
         address={detail.job.property ? formatAddress(detail.job.property) : null}
         signed={signatures.map((s) => s.purpose)}
       />
+    </div>
+  );
+}
+
+/** Wrap-Up's finish list (owner, 2026-10-22, option A) and what its sheets need. */
+async function wrapUpOf(office: Office, detail: JobDetail) {
+  const { job } = detail;
+  const [{ reports, templates }, quotes, invoices, signatures] = await Promise.all([
+    getReports(office, job.id),
+    getQuotes(office, job.id),
+    // Until the invoices migration reaches a database, the rest of the page still works.
+    getInvoices(office, job.id).catch(() => []),
+    getSignatures(office, job.id),
+  ]);
+  const list = wrapUp(
+    wrapUpInput({
+      jobType: job.type,
+      customer: job.customer?.name ?? null,
+      reportOn: templates.find((t) => t.key === "homeowner")?.enabled !== false,
+      reports,
+      findings: detail.findings.length,
+      tests: detail.tests.length,
+      signatures,
+      quotes,
+      invoices,
+    }),
+  );
+  const draft = reports.find((r) => r.template_key === "homeowner" && r.status === "draft");
+  return {
+    list,
+    draftId: draft?.final_sections ? draft.id : null,
+    draftQuoteId: quotes.find((q) => q.status === "draft")?.id ?? null,
+    quoteIds: job.type === "repair" ? [] : quotes.map((q) => q.id),
+    invoiceIds: invoices.filter((i) => i.status !== "void").map((i) => i.id),
+  };
+}
+
+/** Wrap-Up's Customer signs: Review with Customer, then the job's signatures. */
+function SignStep({
+  detail,
+  tz,
+  draftId,
+}: {
+  detail: JobDetail;
+  tz: string;
+  /** The draft to review, once there is one. */
+  draftId: string | null;
+}) {
+  return (
+    <div className="space-y-5">
+      {draftId ? (
+        <div className="card p-5">
+          <p className="text-[0.9375rem] text-text-muted">
+            Hand the phone to the customer: they read the report and sign at the bottom. Signing
+            locks this version; changes after that go out as a new version.
+          </p>
+          <Link
+            href={`/sign-off/${draftId}`}
+            className={`${buttonClass("primary")} mt-3`}
+            data-testid="review-with-customer"
+          >
+            Review with Customer
+          </Link>
+        </div>
+      ) : null}
+      <Signatures detail={detail} tz={tz} />
     </div>
   );
 }
@@ -1009,8 +1104,11 @@ async function Schedule({ detail, tz }: { detail: JobDetail; tz: string }) {
  * A maintenance visit's report (owner, 2026-10-20): what went to the customer, and Send Visit
  * Report. Hidden when the shop turned visit reports off.
  */
-async function VisitReport({ detail }: { detail: JobDetail }) {
-  const office = await getOffice();
+/**
+ * A maintenance visit's report (owner, 2026-10-20): its versions and the panel to send it, which
+ * the Next Step bar opens (owner, 2026-10-22: "the visit report is really buried").
+ */
+async function visitReportOf(office: Office, detail: JobDetail) {
   const [company, line, sent] = await Promise.all([
     getCompany(office),
     getLine(office),
@@ -1041,11 +1139,20 @@ async function VisitReport({ detail }: { detail: JobDetail }) {
     sentAt: r.sent_at,
     token: r.share_link.find((l) => !l.revoked_at)?.token ?? null,
   }));
-  return (
-    <section className="mt-8 max-w-3xl" aria-labelledby="visit-report">
-      <h2 id="visit-report" className="mb-3 font-display text-2xl font-bold">
-        Visit Report
-      </h2>
+  const latest = versions.find((v) => v.current) ?? null;
+  const tz = office.company.timezone;
+  return {
+    mode,
+    bar: visitReportBar({
+      jobType: detail.job.type,
+      status: detail.job.status,
+      mode,
+      sentAt: latest?.sentAt ?? null,
+      now: new Date(),
+      timeZone: tz,
+    }),
+    href: latest?.token ? `/r/${latest.token}` : null,
+    panel: (
       <VisitReportPanel
         jobId={detail.job.id}
         auto={mode === "auto"}
@@ -1054,13 +1161,13 @@ async function VisitReport({ detail }: { detail: JobDetail }) {
         hasLine={line?.status === "active"}
         emailReady={emailConfigured()}
         versions={versions}
-        timeZone={office.company.timezone}
+        timeZone={tz}
       />
-    </section>
-  );
+    ),
+  };
 }
 
-async function Quotes({ detail }: { detail: JobDetail }) {
+async function Quotes({ detail, only }: { detail: JobDetail; only?: string }) {
   const office = await getOffice();
   const [quotes, account, origin, company, priceBook] = await Promise.all([
     getQuotes(office, detail.job.id),
@@ -1088,6 +1195,8 @@ async function Quotes({ detail }: { detail: JobDetail }) {
     }));
   const hasDraft = quotes.some((q) => q.status === "draft");
   const hasAccepted = quotes.some((q) => q.status === "accepted");
+  // Wrap-Up shows one quote per sheet; its list has New Quote.
+  const shown = only ? quotes.filter((q) => q.id === only) : quotes;
   return (
     <div className="space-y-4">
       {office.isManager && !account?.charges_enabled && quotes.some((q) => q.status !== "draft") ? (
@@ -1101,12 +1210,12 @@ async function Quotes({ detail }: { detail: JobDetail }) {
           </Link>
         </Notice>
       ) : null}
-      {!hasDraft && !hasAccepted ? (
+      {!only && !hasDraft && !hasAccepted ? (
         <StartQuote jobId={detail.job.id} another={quotes.length > 0} />
       ) : null}
-      {quotes.length ? (
-        <div className="grid grid-cols-1 gap-5 xl:grid-cols-2">
-          {quotes.map((q) => (
+      {shown.length ? (
+        <div className={only ? "grid grid-cols-1 gap-5" : "grid grid-cols-1 gap-5 xl:grid-cols-2"}>
+          {shown.map((q) => (
             <QuotePanel key={q.id} quote={q} jobId={detail.job.id} origin={origin}>
               {q.status === "draft" ? (
                 <QuoteBuilder
@@ -1139,7 +1248,7 @@ async function Quotes({ detail }: { detail: JobDetail }) {
 
 const INVOICEABLE = ["in_progress", "report_sent", "quote_sent", "quote_accepted", "invoiced"];
 
-async function Invoices({ detail }: { detail: JobDetail }) {
+async function Invoices({ detail, only }: { detail: JobDetail; only?: string }) {
   const office = await getOffice();
   const { job } = detail;
   const [invoices, company, origin] = await Promise.all([
@@ -1151,8 +1260,9 @@ async function Invoices({ detail }: { detail: JobDetail }) {
   if (!invoices) {
     return <Notice tone="warning">Invoicing isn’t available until the database is updated.</Notice>;
   }
-  const current = invoices.find((i) => i.status !== "void");
-  const voided = invoices.filter((i) => i.status === "void");
+  // Wrap-Up opens one invoice per sheet.
+  const current = invoices.find((i) => (only ? i.id === only : i.status !== "void"));
+  const voided = only ? [] : invoices.filter((i) => i.status === "void");
   const rate = Number((company.settings as { tax_rate_bps?: number }).tax_rate_bps ?? 0);
   return (
     <div className="space-y-4">

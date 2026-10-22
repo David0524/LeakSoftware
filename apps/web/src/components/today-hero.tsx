@@ -574,7 +574,7 @@ function Primary({
   const button = cx(BUTTON, ON_WATER, inline && "min-h-11");
   if (action === "open_checklist" || started)
     return (
-      <Link href={`/jobs/${job.id}#checklist`} className={button}>
+      <Link href={`/jobs/${job.id}?tab=checklist`} className={button}>
         {HERO_ACTION_LABELS.open_checklist}
       </Link>
     );

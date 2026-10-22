@@ -99,6 +99,6 @@ test("Invoices: a right-click opens the row's menu, without what a void invoice 
       menu.getByRole("menuitem", { name: "Copy Payment Link", exact: true }),
     ).toHaveCount(0);
     await menu.getByRole("menuitem", { name: "Open", exact: true }).click();
-    await page.waitForURL(/\/jobs\/[0-9a-f-]{36}#invoice/);
+    await page.waitForURL(/\/jobs\/[0-9a-f-]{36}\?tab=wrap-up/);
   }
 });

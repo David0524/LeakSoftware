@@ -30,10 +30,15 @@ import {
   type Property,
   COMPLETE_READY_LINE,
   checklistReady,
+  visitReportBar,
+  visitReportMode,
 } from "@leakbook/core";
+import * as WebBrowser from "expo-web-browser";
 import type { JsonValue } from "@leakbook/sync";
-import { useRow, useSyncStatus } from "../../../../../../data/hooks";
-import { reportsOnline, useJobReports } from "../../../../../../data/reports";
+import { useRow } from "../../../../../../data/hooks";
+import { useJobReports } from "../../../../../../data/reports";
+import { API_URL } from "../../../../../../lib/config";
+import { WrapUpList, useWrapUp, type WrapUpOpen } from "../../../../../../features/job/WrapUp";
 import { AUTOSAVE_DELAY_MS } from "../../../../../../lib/autosave";
 import {
   NEXT_STEP_LABELS,
@@ -112,13 +117,8 @@ import { JobTimeline } from "../../../../../../features/job/Timeline";
 import { useRememberOpened } from "../../../../../../features/search/useRememberOpened";
 import { SampleJob } from "../../../../../../features/sample/SampleJob";
 import { MediaSection, type MediaControls } from "../../../../../../features/media/MediaSection";
-import { InvoiceSection } from "../../../../../../features/invoice/InvoiceSection";
 import { QuoteTab } from "../../../../../../features/quote/QuoteTab";
-import {
-  ReportTab,
-  Signatures,
-  type ReportControls,
-} from "../../../../../../features/report/ReportTab";
+import { type ReportControls } from "../../../../../../features/report/ReportTab";
 
 type JobSection = "details" | "checklist" | "findings" | "photos" | "wrapup";
 
@@ -164,7 +164,17 @@ export default function JobDetail() {
   const [completeAsked, setCompleteAsked] = useState<"header" | "checklist" | null>(null);
   const config = useInspectionConfig(company.id);
   const reports = useJobReports(company.id, id);
-  const offline = useSyncStatus().phase === "offline";
+  // Wrap-Up's open step (owner, 2026-10-22: the finish list), also opened by the bar.
+  const [wrapUpOpen, setWrapUpOpen] = useState<WrapUpOpen | null>(null);
+  // A done maintenance visit's Visit Report sheet (owner, 2026-10-22: "really buried").
+  const [visitSheet, setVisitSheet] = useState(false);
+  const wrap = useWrapUp(
+    id,
+    job?.type ?? "detection",
+    customer?.name ?? null,
+    insp.findings.length,
+    insp.tests.length,
+  );
   const mediaControls = useRef<MediaControls | null>(null);
   const reportControls = useRef<ReportControls | null>(null);
   const sync = usePinnedSyncBar(() => router.push("/more/sync"));
@@ -278,17 +288,28 @@ export default function JobDetail() {
     (to) => to !== "canceled" && !(to === "in_progress" && startable),
   );
 
+  // A maintenance visit's report on the bar (core visitReportBar), and its page once sent.
+  const visitLatest = reports.find((r) => r.template_key === "maintenance" && r.status === "sent");
+  const visitToken = visitLatest?.token ?? null;
+  const visitBar = maintenance
+    ? visitReportBar({
+        jobType: job.type,
+        status: job.status,
+        mode: visitReportMode(company.settings),
+        sentAt: visitLatest?.sent_at ?? null,
+        now: new Date(),
+        timeZone: company.timezone,
+      })
+    : null;
+
   // The Next Step bar: first match wins (lib/nextStep).
-  const noDraft = !reports.some(
-    (r) => r.template_key === "homeowner" && r.status === "draft" && r.final_sections,
-  );
   const steps = nextStepButtons({
     section: shown,
     status: job.status,
     jobType: job.type,
     hasTestTypes: config.testTypes.length > 0,
-    noDraft,
-    canWriteDraft: reportsOnline && !offline,
+    wrapUpAction: jobHasWrapUp(job.type) ? (wrap.next?.action ?? null) : null,
+    visitAction: visitBar?.action ?? null,
   });
   const act: Record<NextStep, () => void> = {
     start: () => changeStatus("in_progress"),
@@ -297,11 +318,18 @@ export default function JobDetail() {
     "add-finding": () => router.push(`/jobs/${job.id}/finding/new`),
     "add-photo": () => mediaControls.current?.photo(),
     "add-video": () => mediaControls.current?.video(),
-    "write-draft": () => reportControls.current?.writeDraft(),
-    review: () =>
-      reportControls.current
-        ? reportControls.current.review()
-        : router.push(`/jobs/${job.id}/review?template=homeowner`),
+    // As tapping the next row, except Review with Customer, which starts the review at once.
+    "wrap-up": () => {
+      const next = wrap.next;
+      if (!next) return;
+      if (next.step === "sign") router.push(`/jobs/${job.id}/review?template=homeowner`);
+      else setWrapUpOpen({ step: next.step, id: next.id });
+    },
+    "visit-report": () => {
+      if (visitBar?.action === "view" && visitToken && API_URL)
+        void WebBrowser.openBrowserAsync(`${API_URL}/r/${visitToken}`);
+      else setVisitSheet(true);
+    },
   };
   // Everything on the visit's checklist is done: Complete Job is the last thing (owner,
   // 2026-10-22), so the bar says so and the button scales in once.
@@ -309,7 +337,12 @@ export default function JobDetail() {
   const ready =
     maintenance && steps.includes("complete") && checklistReady(listed - tally.pending, listed);
   const barButtons: NextStepButton[] = steps.map((step, i) => ({
-    title: NEXT_STEP_LABELS[step],
+    title:
+      step === "wrap-up"
+        ? (wrap.next?.action ?? NEXT_STEP_LABELS[step])
+        : step === "visit-report"
+          ? (visitBar?.label ?? NEXT_STEP_LABELS[step])
+          : NEXT_STEP_LABELS[step],
     kind: i === 0 ? "primary" : "secondary",
     onPress: act[step],
   }));
@@ -517,29 +550,15 @@ export default function JobDetail() {
               </View>
             ) : null}
             {shown === "wrapup" ? (
-              <View style={styles.parts}>
-                <View style={styles.part}>
-                  <T variant="sectionHeading">Report and Sign-Off</T>
-                  <T variant="secondary" muted>
-                    Write Draft fills in the report from this job’s checklist, tests, and findings.
-                    Read and edit it before sending.
-                  </T>
-                  <ReportTab job={job} customer={customer} controls={reportControls} />
-                </View>
-                <View style={styles.part}>
-                  <T variant="sectionHeading">Signatures</T>
-                  <Signatures job={job} />
-                </View>
-                {job.type !== "repair" ? (
-                  <View style={styles.part}>
-                    <T variant="sectionHeading">Quotes</T>
-                    <QuoteTab job={job} />
-                  </View>
-                ) : null}
-                <View style={styles.part}>
-                  <T variant="sectionHeading">Invoice</T>
-                  <InvoiceSection job={job} customer={customer} />
-                </View>
+              <View style={styles.part}>
+                <WrapUpList
+                  job={job}
+                  customer={customer}
+                  list={wrap}
+                  open={wrapUpOpen}
+                  onOpen={setWrapUpOpen}
+                  reportControls={reportControls}
+                />
               </View>
             ) : null}
           </Reanimated.View>
@@ -556,7 +575,26 @@ export default function JobDetail() {
           </Glass>
         </Animated.View>
       ) : null}
-      <NextStepBar buttons={barButtons} note={ready ? COMPLETE_READY_LINE : null} />
+      <NextStepBar
+        buttons={barButtons}
+        note={ready ? COMPLETE_READY_LINE : null}
+        // The visit report's status, with its button or above Complete Job (Automatic shops).
+        status={
+          visitBar && (steps.includes("visit-report") || steps.includes("complete"))
+            ? { text: visitBar.line, onPress: () => setVisitSheet(true) }
+            : null
+        }
+      />
+      {maintenance ? (
+        <ModalSheet
+          visible={visitSheet}
+          onClose={() => setVisitSheet(false)}
+          title="Visit Report"
+          cancel="Done"
+        >
+          <VisitReport job={job} customer={customer} heading={false} />
+        </ModalSheet>
+      ) : null}
     </KeyboardAvoider>
   );
 }
@@ -968,7 +1006,11 @@ function Details({
       <JobTimeline jobId={job.id} />
 
       {/* A visit's report for the customer (owner, 2026-10-20), above its quotes. */}
-      {job.type === "maintenance" ? <VisitReport job={job} customer={customer} /> : null}
+      {/* Once the visit is done its report is on the Next Step bar (owner, 2026-10-22); until
+          then it stays here, so it can still be sent early. */}
+      {job.type === "maintenance" && job.status !== "done" ? (
+        <VisitReport job={job} customer={customer} />
+      ) : null}
 
       {/* A visit has no Wrap-Up; the repairs it quotes are here (owner, 2026-10-19). */}
       {jobHasWrapUp(job.type) ? null : (

@@ -1,6 +1,6 @@
 import { expect, test } from "@playwright/test";
 import { adminClient, signedInClient } from "./backend";
-import { OWNER, RUN, TECH, signIn } from "./helpers";
+import { OWNER, RUN, TECH, signIn, wrapUpStep } from "./helpers";
 import { lastEmailTo } from "./outbox";
 import { PHONE, draftQuote, sendFromOffice, sessionEvent, webhook } from "./money";
 
@@ -59,6 +59,7 @@ test("a repair is invoiced with its deposit credited, paid by check and card, wi
   // The office invoices it: the quote's work, the deposit credited, one more line.
   // Still signed in as the owner from sending the quote.
   await page.goto(`/jobs/${repairJob}`);
+  await wrapUpStep(page, "Invoice");
   await page.getByRole("button", { name: "Create Invoice" }).click();
   const panel = page.getByTestId("invoice");
   await expect(panel).toContainText("Draft");
@@ -174,6 +175,7 @@ test("the phone invoices a detection fee, and the owner voids it", async ({ page
   await expect(page.getByText("$649.00").first()).toBeVisible();
 
   await signIn(page, OWNER, `/jobs/${PARTNER_JOB}`);
+  await wrapUpStep(page, "Invoice");
   const panel = page.getByTestId("invoice");
   // Voiding asks first, in an action sheet.
   await panel.getByRole("button", { name: "Void Invoice" }).click();

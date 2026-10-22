@@ -64,7 +64,7 @@ test.describe("office edge cases", () => {
 
   test("a quote discount larger than the subtotal is refused", async ({ page }) => {
     await newJob(page, `EDGE discount ${RUN}`);
-    await page.getByRole("button", { name: "Start Quote" }).click();
+    await page.getByRole("button", { name: "New Quote" }).click();
     const custom = page.locator('input[name^="custom-"]:not([name^="custom-price"])').last();
     await expect(custom).toBeVisible();
     const quote = (await custom.getAttribute("name"))!.replace("custom-", "");

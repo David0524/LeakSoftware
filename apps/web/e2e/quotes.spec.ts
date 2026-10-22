@@ -1,6 +1,6 @@
 import { expect, test } from "@playwright/test";
 import { adminClient, signedEvent } from "./backend";
-import { OWNER, RUN, signIn } from "./helpers";
+import { OWNER, RUN, signIn, wrapUpStep } from "./helpers";
 import { PHONE, SAMPLE_JOB, draftQuote, sendFromOffice, sessionEvent, webhook } from "./money";
 
 // M8 "Done when": a customer accepts a quote and pays the deposit by card and by bank (ACH)
@@ -156,6 +156,7 @@ test("the office opens the repair job from the accepted quote and schedules it",
   page,
 }) => {
   await signIn(page, OWNER, `/jobs/${SAMPLE_JOB}`);
+  await wrapUpStep(page, `Quote #${bankQuote.number},`);
   const panel = page.getByTestId("quote").filter({ hasText: `Quote #${bankQuote.number} ·` });
   await expect(panel).toContainText("Accepted by Sam Sample");
   await panel.getByRole("link", { name: /^Repair job/ }).click();

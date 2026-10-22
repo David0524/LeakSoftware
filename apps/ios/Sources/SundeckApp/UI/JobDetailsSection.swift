@@ -78,7 +78,11 @@
                 if isManagerRole(company?.role) { JobTimeline(jobId: job.id) }
                 // A visit has no Wrap-Up: its quotes are here, before Cancel Job (owner, 2026-10-19).
                 // A visit's report (owner, 2026-10-20), above its quotes; hidden when the shop turned it off.
-                if job.type == .maintenance { VisitReportSection(job: job).padding(.top, 8) }
+                // Once the visit is done its report is on the Next Step bar (owner, 2026-10-22);
+                // until then it stays here, so it can still be sent early.
+                if job.type == .maintenance, job.status != .done {
+                    VisitReportSection(job: job).padding(.top, 8)
+                }
                 if !jobHasWrapUp(job.type.rawValue) { QuoteSection(job: job).padding(.top, 8) }
                 if jobCanCancel(job.status, type: job.type) {
                     Button("Cancel Job", role: .destructive) { confirmCancel = true }

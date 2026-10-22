@@ -75,7 +75,7 @@ export function SignOff({
       }
       const done = await finishSignOff({ reportId, jobId, customerAway });
       if (!done.ok) throw new Error(done.error);
-      router.replace(`/jobs/${jobId}#wrap-up`);
+      router.replace(`/jobs/${jobId}?tab=wrap-up`);
     } catch (e) {
       setError(isNoConnection(e) ? NO_CONNECTION : e instanceof Error ? e.message : String(e));
       setBusy(null);
