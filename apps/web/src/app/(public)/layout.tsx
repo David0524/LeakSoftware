@@ -51,6 +51,8 @@ export default function PublicLayout({ children }: LayoutProps<"/">) {
             { href: "/security", label: "Security" },
             { href: "/status", label: "Status" },
             { href: `mailto:${CONTACT_EMAIL}`, label: `Contact Us: ${CONTACT_EMAIL}` },
+            // Sundeck Pro staff (owner, 2026-10-22); others land in their own office.
+            { href: "/sign-in?next=/admin", label: "Admin Sign In" },
           ].map((l) => (
             <a key={l.href} href={l.href} className="min-h-11 content-center px-3 text-link">
               {l.label}

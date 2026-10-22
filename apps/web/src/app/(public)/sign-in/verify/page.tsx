@@ -2,7 +2,6 @@ import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 import { Suspense } from "react";
 import { safePath } from "@leakbook/core";
-import { signOut } from "@/app/actions/auth";
 import { AuthCard, FormSkeleton } from "@/components/auth-card";
 import { VerifyCodeForm } from "@/components/two-step";
 import { getUser } from "@/lib/auth";
@@ -31,7 +30,7 @@ async function VerifyBody({ searchParams }: Pick<PageProps<"/sign-in/verify">, "
   return (
     <>
       <VerifyCodeForm next={next} />
-      <form action={signOut} className="mt-4">
+      <form action="/auth/sign-out" method="post" className="mt-4">
         <button type="submit" className="mx-auto block min-h-11 px-3 text-link">
           Use a Different Account
         </button>

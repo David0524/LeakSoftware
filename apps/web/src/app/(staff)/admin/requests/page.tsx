@@ -8,7 +8,7 @@ import { adminClient } from "@/server/admin";
 import { isStaff } from "@/server/leads";
 
 export const metadata: Metadata = {
-  title: "Feature Requests · Sundeck Pro Staff",
+  title: "Feature Requests",
   robots: { index: false },
 };
 

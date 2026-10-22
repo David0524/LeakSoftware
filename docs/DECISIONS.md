@@ -2,6 +2,12 @@
 
 Newest first. Each entry: date, decision, reason.
 
+## 2026-10-22 (owner: "Build a desktop-only Admin portal")
+- **An Admin portal for Sundeck Pro staff at `/admin`**, desktop only (narrower windows get a message, not the pages; not in the apps): Overview, Shops, People, Finances, Support, Health, Leads, Feature Requests, Activity Log. Staff are still `SUNDECK_STAFF_EMAILS`, and every page needs two-step sign-in. Plan: `plans/admin-portal.md`.
+- **Admin Sign In** sits in the landing page footer with Privacy, Terms, Security and Status.
+- **Staff can open any shop's office to help, without asking the shop** (owner: "Yes, silently"): a written reason, 30 minutes to 2 hours, View Only by default or Can Make Changes, never the owner-only things. The database enforces it; staff get no membership, so they never show in a shop's team, seats or notifications. Every session and staff action is in the portal's Activity Log, which can't be edited.
+- **Money actions in the portal are Extend Trial and Make Demo Shop / End Demo.** Finances is read-only; refunds and plan changes stay in the Stripe dashboard.
+
 ## 2026-10-22 (owner: "remove dark mode on the landing page")
 - **The public site is always light:** the landing page, terms, privacy, security, status, sign-in, sign-up and invite pages, whatever the person chose in the office. Their footer has no sun/moon button. The office keeps Light | Dark as before. Replaces, for those pages only, the 2026-10-13 sun/moon button in the public footer.
 

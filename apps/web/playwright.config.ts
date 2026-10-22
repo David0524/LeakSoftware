@@ -2,6 +2,7 @@ import { generateKeyPairSync } from "node:crypto";
 import { defineConfig, devices } from "@playwright/test";
 import { E2E_CRON_SECRET, E2E_TWILIO_TOKEN, E2E_WEBHOOK_SECRET } from "./e2e/backend";
 import { OUTBOX } from "./e2e/outbox";
+import { E2E_STAFF_EMAIL } from "./e2e/staff";
 
 /**
  * End-to-end tests for the office web app (M6 "Done when").
@@ -26,6 +27,8 @@ const serverEnv = {
   // Webhooks are signed by the tests themselves; no Stripe account is called.
   STRIPE_WEBHOOK_SECRET: E2E_WEBHOOK_SECRET,
   CRON_SECRET: E2E_CRON_SECRET,
+  // The Admin portal's staff (e2e/admin-portal.spec.ts).
+  SUNDECK_STAFF_EMAILS: E2E_STAFF_EMAIL,
   STRIPE_CONNECT_WEBHOOK_SECRET: "",
   STRIPE_SECRET_KEY: "",
   // Twilio's webhooks are signed by the tests; with no account, texts aren't sent.

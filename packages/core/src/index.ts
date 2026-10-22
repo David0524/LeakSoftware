@@ -50,3 +50,4 @@ export * from "./wrap-up";
 export * from "./visit-report-bar";
 export * from "./repairs";
 export * from "./answer-icons";
+export * from "./admin";

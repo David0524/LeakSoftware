@@ -6,7 +6,6 @@ import {
   START_FROM_COPY,
   notificationOn,
 } from "@leakbook/core";
-import { signOut } from "@/app/actions/auth";
 import { DeleteAccount } from "@/components/delete-account";
 import { SignOutForm } from "@/components/sign-out-form";
 import { FeatureRequest } from "@/components/feature-request";
@@ -132,7 +131,7 @@ export default async function MorePage() {
         </Grouped>
         {/* Phones: Sign Out lives here (wider screens have it in the header), on its own
             row, centered and red, as iOS draws it. */}
-        <SignOutForm action={signOut} className="sm:hidden">
+        <SignOutForm action="/auth/sign-out" method="post" className="sm:hidden">
           <ul className="grouped">
             <li>
               <button
