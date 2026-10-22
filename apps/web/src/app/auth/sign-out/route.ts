@@ -10,7 +10,9 @@ import { createClient } from "@/lib/supabase/server";
  */
 export async function POST(request: Request) {
   const supabase = await createClient();
-  await supabase.auth.signOut();
+  // This browser only (owner, 2026-10-22: signing out of the website signed the iPhone out
+  // too, and its download failed with "permission denied for function sync_pull").
+  await supabase.auth.signOut({ scope: "local" });
   (await cookies()).delete(ACTIVE_COMPANY_COOKIE);
   // Admin Sign In's Sign Out and Switch goes on to sign-in; same-site paths only.
   const next = safePath((await request.formData().catch(() => null))?.get("next"), "/");
