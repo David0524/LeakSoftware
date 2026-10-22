@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { Suspense } from "react";
-import { AdminSidebar } from "@/components/admin/sidebar";
+import { AdminSidebar, CurrentSidebar } from "@/components/admin/sidebar";
 import { Logo } from "@/components/logo";
 import { SignOutForm } from "@/components/sign-out-form";
 import { getUser } from "@/lib/auth";
@@ -45,7 +45,10 @@ export default function StaffLayout({ children }: LayoutProps<"/">) {
               Admin
             </span>
           </Link>
-          <AdminSidebar />
+          {/* The current section is highlighted once the URL is known (it streams in). */}
+          <Suspense fallback={<AdminSidebar path={null} />}>
+            <CurrentSidebar />
+          </Suspense>
         </aside>
         <div className="flex min-w-0 flex-1 flex-col">
           <header className="glass-bar sticky top-0 z-30">

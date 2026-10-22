@@ -34,11 +34,16 @@ const SECTIONS: { title?: string; links: { href: string; label: string }[] }[] =
   },
 ];
 
+/** The sidebar with the current section highlighted. */
+export function CurrentSidebar() {
+  return <AdminSidebar path={usePathname()} />;
+}
+
 /** The portal's sidebar (sidebars.md): the sections, the current one highlighted. */
-export function AdminSidebar() {
-  const path = usePathname();
+export function AdminSidebar({ path }: { path: string | null }) {
   const current = (href: string) =>
-    href === "/admin" ? path === "/admin" : path === href || path.startsWith(`${href}/`);
+    path !== null &&
+    (href === "/admin" ? path === "/admin" : path === href || path.startsWith(`${href}/`));
   return (
     <nav aria-label="Admin" className="flex flex-col gap-5">
       {SECTIONS.map((s, i) => (
