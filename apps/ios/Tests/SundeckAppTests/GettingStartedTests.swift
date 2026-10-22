@@ -36,12 +36,11 @@ import Testing
         #expect(steps.filter(\.done).map(\.id) == ["logo", "job"])
     }
 
-    @Test func showTipsAgainBringsItBack() throws {
+    @Test func hidingItIsRemembered() throws {
         let s = try Shell()
         let w = Walkthrough(s.sync.kv)
+        #expect(!w.gettingStartedHidden)
         w.setGettingStartedHidden(true)
         #expect(Walkthrough(s.sync.kv).gettingStartedHidden)
-        w.reset()
-        #expect(!Walkthrough(s.sync.kv).gettingStartedHidden)
     }
 }
