@@ -340,11 +340,40 @@ export default async function SchedulePage({ searchParams }: PageProps<"/schedul
       }),
     );
 
+  // Previous, the date, next, Day / Week / Month and Reorder Techs. Computers: in the title's
+  // row, at its right (owner, 2026-10-22: "Close up all the empty space"); phones: a row of
+  // their own under it.
+  const controls = (phone: boolean) => (
+    <>
+      <Link
+        href={href(move(-1))}
+        className={buttonClass("secondary", "min-w-11 shrink-0 px-3")}
+        aria-label={`Previous ${view}`}
+      >
+        ‹
+      </Link>
+      <DateJump value={date} view={view} tech={tech} />
+      <Link
+        href={href(move(1))}
+        className={buttonClass("secondary", "min-w-11 shrink-0 px-3")}
+        aria-label={`Next ${view}`}
+      >
+        ›
+      </Link>
+      {viewLinks(view, date, tech)}
+      {/* Computers: Reorder Techs beside Day / Week / Month, not in a row of its own
+              (owner, 2026-10-21). Phones have it at the end of Whose schedule. */}
+      {reorder.length > 1 && !phone ? <ReorderTechs techs={reorder} /> : null}
+    </>
+  );
+
   return (
     <MapProviderScope provider={resolveMapProvider()}>
       <PageHeader
         title="Schedule"
         navAction={canAdd ? <NavPlus href="/jobs/new" label="New Job" /> : undefined}
+        actions={<div className="flex flex-wrap items-center gap-2">{controls(false)}</div>}
+        actionsClassName="max-sm:hidden"
         subtitle={
           <>
             {title}
@@ -370,29 +399,9 @@ export default async function SchedulePage({ searchParams }: PageProps<"/schedul
       </Suspense>
       {/* Swipe sideways for the previous or next day, week, or month (owner, 2026-10-20). */}
       <SwipeHrefs page={href(date)} scope="schedule" prev={href(move(-1))} next={href(move(1))}>
-        {/* One row: previous, the date, next, and Day / Week / Month at the far right. With
-            large text Day / Week / Month moves to its own row instead of off the screen. */}
-        <div className="mb-3 flex flex-wrap items-center gap-2">
-          <Link
-            href={href(move(-1))}
-            className={buttonClass("secondary", "min-w-11 shrink-0 px-3")}
-            aria-label={`Previous ${view}`}
-          >
-            ‹
-          </Link>
-          <DateJump value={date} view={view} tech={tech} />
-          <Link
-            href={href(move(1))}
-            className={buttonClass("secondary", "min-w-11 shrink-0 px-3")}
-            aria-label={`Next ${view}`}
-          >
-            ›
-          </Link>
-          {viewLinks(view, date, tech)}
-          {/* Computers: Reorder Techs beside Day / Week / Month, not in a row of its own
-              (owner, 2026-10-21). Phones have it at the end of Whose schedule. */}
-          {reorder.length > 1 ? <ReorderTechs techs={reorder} className="max-sm:hidden" /> : null}
-        </div>
+        {/* Phones: one row: previous, the date, next, and Day / Week / Month at the far right.
+            With large text Day / Week / Month moves to its own row instead of off the screen. */}
+        <div className="mb-3 flex flex-wrap items-center gap-2 sm:hidden">{controls(true)}</div>
 
         {view === "day" ? <WeekStrip date={date} today={today} tech={tech} /> : null}
 
