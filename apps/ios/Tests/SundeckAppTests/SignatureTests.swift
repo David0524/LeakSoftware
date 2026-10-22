@@ -367,6 +367,15 @@ private final class FinishCalls {
         #expect(s.blocks.contains { if case .coverage = $0 { true } else { false } })
     }
 
+    /// A repair's report is about the work (owner, 2026-10-22): the Repair Report, with no
+    /// checklist tally, as the website.
+    @Test func aRepairIsTheRepairReportWithNoChecklist() throws {
+        let b = try SignatureBench(jobType: "repair")
+        let s = try b.summary()
+        #expect(s.title == "Repair Report")
+        #expect(!s.blocks.contains { if case .coverage = $0 { true } else { false } })
+    }
+
     @Test func theSummaryShowsTheTallyFindingsTestsAndStatement() throws {
         let b = try SignatureBench()
         try b.seedInspection(allDone: false)

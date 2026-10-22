@@ -23,16 +23,21 @@ extension SignaturePurpose {
     }
 }
 
-/// The report's title: the job type's own name (`reportTitle`).
+/// The report's title: the job type's own name (`reportTitle`). A repair's report is about the
+/// work (owner, 2026-10-22).
 public func reportTitle(_ jobType: String?) -> String {
-    jobType == "inspection" ? "Pool Inspection Report" : "Leak Detection Report"
+    switch jobType {
+    case "inspection": "Pool Inspection Report"
+    case "repair": "Repair Report"
+    default: "Leak Detection Report"
+    }
 }
 
 /// The text a tech sends with the report link (`reportShareText`).
 public func reportShareText(_ shopName: String, _ link: String, withQuote: Bool = false, jobType: String? = nil)
     -> String
 {
-    let what = jobType == "inspection" ? "pool inspection report" : "leak detection report"
+    let what = reportTitle(jobType).lowercased()
     return "\(shopName): your \(what)\(withQuote ? " and repair estimate" : ""): \(link)"
 }
 

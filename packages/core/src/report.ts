@@ -108,6 +108,12 @@ export interface SnapshotSignature {
   report_version?: number | null;
 }
 
+/** One piece of a repair job's work: an accepted quote's line, or the item it was booked for. */
+export interface SnapshotWork {
+  description: string;
+  quantity: number;
+}
+
 export interface ReportSnapshot {
   company: {
     name: string;
@@ -165,6 +171,11 @@ export interface ReportSnapshot {
   sign_off?: { unsigned_reason: string } | null;
   /** All of the company's component types, so the validator can spot invented ones. */
   component_types: { key: string; name: string }[];
+  /**
+   * A repair job's work (owner, 2026-10-22): the accepted quote's lines, else the price book
+   * item it was booked for. Missing on other jobs and on reports frozen before it existed.
+   */
+  work?: SnapshotWork[] | null;
 }
 
 // ---------------------------------------------------------------------------
@@ -234,6 +245,29 @@ export const NARRATIVE_SECTIONS: Record<
     },
   ],
 };
+
+/**
+ * A repair job's report (owner, 2026-10-22: "the autofilled text should relate to the repair
+ * work that is being done - not necessarily leaks"). Same keys as the homeowner report, so saved
+ * reports and the report page place them the same way.
+ */
+export const REPAIR_SECTIONS: { key: string; title: string; brief: string }[] = [
+  {
+    key: "summary",
+    title: "Summary",
+    brief: "Two to four sentences: the repair work we did, where, and the result.",
+  },
+  {
+    key: "findings",
+    title: "What we did",
+    brief: "Each piece of work we did, and anything we found and fixed on site.",
+  },
+  {
+    key: "next_steps",
+    title: "What happens next",
+    brief: "Care after the repair, anything still to do, and when to call us.",
+  },
+];
 
 export function narrativeTemplate(key: ReportTemplateKey): "homeowner" | "partner" {
   return key === "partner" ? "partner" : "homeowner";
@@ -451,6 +485,7 @@ export function narrativeFacts(s: ReportSnapshot) {
     voice_notes: s.media
       .filter((m) => m.kind === "audio" && m.transcript)
       .map((m) => ({ id: m.id, transcript: m.transcript })),
+    work: (s.work ?? []).map((w) => ({ description: w.description, quantity: w.quantity })),
   };
 }
 
@@ -526,6 +561,7 @@ export function measurementNumbers(s: ReportSnapshot): number[] {
   visit(facts.voice_notes);
   visit(facts.findings.map((f) => [f.location, f.notes]));
   visit(facts.checklist.map((c) => c.notes));
+  visit(facts.work.map((w) => w.description));
   return [...out];
 }
 
@@ -567,6 +603,9 @@ export function validateNarrative(draft: unknown, s: ReportSnapshot): NarrativeP
   const labels = new Set(s.components.map((c) => c.label.toLowerCase()));
   const presentTypes = new Set(s.components.map((c) => c.type_key));
   const cited = new Set<string>();
+  // A repair has no checklist: a part named in its own work, notes, or findings is fine there.
+  const ownWords = s.job.type === "repair" ? repairWords(s) : "";
+  const named = (match: string) => ownWords !== "" && ownWords.includes(match.toLowerCase());
 
   n.sections.forEach((section) => {
     if (!section || !Array.isArray(section.paragraphs)) {
@@ -622,7 +661,7 @@ export function validateNarrative(draft: unknown, s: ReportSnapshot): NarrativeP
         // A numbered instance ("Return 5") must exist on this job.
         for (const m of lower.matchAll(new RegExp(`\\b${name}s? (\\d+)\\b`, "g"))) {
           const label = `${type.name.toLowerCase()} ${m[1]}`;
-          if (!labels.has(label))
+          if (!labels.has(label) && !named(m[0]))
             problems.push({
               kind: "unknown_component",
               ...where,
@@ -633,6 +672,7 @@ export function validateNarrative(draft: unknown, s: ReportSnapshot): NarrativeP
         // A component type named at all must be part of this job.
         if (!presentTypes.has(type.key) && new RegExp(`\\b${name}(e?s)?\\b`).test(lower)) {
           const found = lower.match(new RegExp(`\\b${name}(e?s)?\\b`))!;
+          if (named(found[0])) continue;
           problems.push({
             kind: "unknown_component",
             ...where,
@@ -661,6 +701,7 @@ export function validateNarrative(draft: unknown, s: ReportSnapshot): NarrativeP
 
 export function plainNarrative(s: ReportSnapshot, template: "homeowner" | "partner"): Narrative {
   if (s.job.type === "inspection") return inspectionNarrative(s);
+  if (s.job.type === "repair") return repairNarrative(s);
   const labelOf = new Map(s.components.map((c) => [c.id, c.label]));
   const failed = s.tests.filter((t) => t.outcome === "fail");
   const excluded = s.components.filter((c) => c.status === "excluded");
@@ -791,6 +832,134 @@ function inspectionNarrative(s: ReportSnapshot): Narrative {
   };
 }
 
+/** Everything a repair job's own records say, lowercased: its work, notes, and findings. */
+function repairWords(s: ReportSnapshot): string {
+  return [
+    ...(s.work ?? []).map((w) => w.description),
+    s.job.summary_notes ?? "",
+    ...Object.values(s.job.intake ?? {}).flat(),
+    ...s.findings.flatMap((f) => [f.title, f.location_text ?? "", f.notes ?? ""]),
+    ...s.media.map((m) => m.transcript ?? ""),
+  ]
+    .join("\n")
+    .toLowerCase();
+}
+
+/** "a", "a and b", "a, b, and c". */
+function listOf(items: string[]): string {
+  if (items.length <= 2) return items.join(" and ");
+  return `${items.slice(0, -1).join(", ")}, and ${items[items.length - 1]}`;
+}
+
+/** A sentence from the tech's or the price book's words: trimmed, ending in one stop. */
+function sentence(text: string): string {
+  const t = text.trim();
+  return /[.!?]$/.test(t) ? t : `${t}.`;
+}
+
+/**
+ * The work a repair job's report names, from its own records only: the accepted quote's lines or
+ * the item it was booked for (snapshot.work). Never invented.
+ */
+export function repairWork(s: Pick<ReportSnapshot, "work">): SnapshotWork[] {
+  return (s.work ?? []).filter((w) => w.description?.trim());
+}
+
+/**
+ * Write Draft on a repair job (owner, 2026-10-22): what we did, where, and the result; each piece
+ * of work (the accepted quote's lines, else what it was booked for, else the job's notes) and the
+ * findings repaired on site; then care after the repair. Leak words only when the job's own
+ * records mention a leak.
+ */
+export function repairNarrative(s: ReportSnapshot): Narrative {
+  const titleOf = (key: string) => REPAIR_SECTIONS.find((x) => x.key === key)!.title;
+  const work = repairWork(s);
+  const notes = s.job.summary_notes?.trim() || null;
+  const repaired = s.findings.filter((f) => f.status === "repaired");
+  const open = s.findings.filter((f) => f.status !== "repaired");
+  const where = s.property.address.trim();
+  const at = where ? ` at ${where}` : "";
+
+  const summary: NarrativeParagraph = {
+    text: [
+      work.length
+        ? `We did the repair work${at}: ${listOf(work.map((w) => w.description.trim()))}.`
+        : `We did repair work${at}.`,
+      repaired.length
+        ? `We also repaired ${listOf(repaired.map((f) => f.title.trim()))} on site.`
+        : "",
+      open.length
+        ? `${listOf(open.map((f) => f.title.trim()))} still ${open.length === 1 ? "needs" : "need"} attention.`
+        : "The work is finished.",
+    ]
+      .filter(Boolean)
+      .join(" "),
+    source_ids: s.findings.map((f) => f.id),
+  };
+
+  const done: NarrativeParagraph[] = [
+    ...work.map((w) => ({
+      text: sentence(`${w.description.trim()}${w.quantity !== 1 ? ` × ${w.quantity}` : ""}`),
+      source_ids: [],
+    })),
+    ...(work.length || !notes ? [] : [{ text: sentence(notes), source_ids: [] }]),
+    ...repaired.map((f) => ({
+      text: [
+        `${f.title.trim()}: repaired on site.`,
+        f.location_text?.trim() ? `Location: ${sentence(f.location_text)}` : "",
+        f.notes?.trim() ? sentence(f.notes) : "",
+      ]
+        .filter(Boolean)
+        .join(" "),
+      source_ids: [f.id],
+    })),
+    ...open.map((f) => ({
+      text: [
+        `${f.title.trim()} (${f.severity_name.toLowerCase()}): not repaired yet.`,
+        f.location_text?.trim() ? `Location: ${sentence(f.location_text)}` : "",
+        f.notes?.trim() ? sentence(f.notes) : "",
+      ]
+        .filter(Boolean)
+        .join(" "),
+      source_ids: [f.id],
+    })),
+  ];
+  const findings = done.length
+    ? done
+    : [{ text: "We did the repair work you booked.", source_ids: [] }];
+
+  const leak = /\bleak/.test(repairWords(s));
+  const steps: NarrativeParagraph[] = [
+    ...(open.length
+      ? [
+          {
+            text: "We recommend taking care of the items above. Ask us for a quote for any further repair.",
+            source_ids: open.map((f) => f.id),
+          },
+        ]
+      : []),
+    {
+      text: "Run the pool as usual and keep an eye on the repaired area over the next few days. Call us if anything doesn’t look or work right.",
+      source_ids: [],
+    },
+    ...(leak
+      ? [
+          {
+            text: "Watch the water level too, and call us if it keeps dropping.",
+            source_ids: [],
+          },
+        ]
+      : []),
+  ];
+  return {
+    sections: [
+      { key: "summary", title: titleOf("summary"), paragraphs: [summary] },
+      { key: "findings", title: titleOf("findings"), paragraphs: findings },
+      { key: "next_steps", title: titleOf("next_steps"), paragraphs: steps },
+    ],
+  };
+}
+
 // ---------------------------------------------------------------------------
 // Rendering helpers
 // ---------------------------------------------------------------------------
@@ -814,13 +983,15 @@ export function reportShareText(
   withQuote = false,
   jobType?: string | null,
 ): string {
-  const what = jobType === "inspection" ? "pool inspection report" : "leak detection report";
+  const what = reportTitle(jobType).toLowerCase();
   return `${shopName}: your ${what}${withQuote ? " and repair estimate" : ""}: ${link}`;
 }
 
 /** The report's title: the job type's own name. */
 export function reportTitle(jobType: string | null | undefined): string {
-  return jobType === "inspection" ? "Pool Inspection Report" : "Leak Detection Report";
+  if (jobType === "inspection") return "Pool Inspection Report";
+  if (jobType === "repair") return "Repair Report";
+  return "Leak Detection Report";
 }
 
 /** Block order on the report page, per template (report_template.sections). */

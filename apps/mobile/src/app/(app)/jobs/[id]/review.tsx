@@ -114,6 +114,8 @@ export default function ReviewScreen() {
   // A pool inspection's report lists the questions answered, so they don't hold up signing.
   const blocking = job.type === "inspection" ? 0 : toDo;
   const maintenance = job.type === "maintenance";
+  // A repair has no checklist (owner, 2026-10-22: its report is about the work), as the website.
+  const noChecklist = job.type === "repair" && insp.components.length === 0;
   const written = (draft?.final_sections ?? []).filter((s) => s.text.trim());
   // The draft's tests text goes with the tests themselves, as on the website's report.
   const sections = written.filter((s) => s.key !== "tests");
@@ -237,17 +239,19 @@ export default function ReviewScreen() {
         />
       ) : null}
 
-      <Card>
-        <T variant="cardTitle">Checklist</T>
-        <T>
-          {progress.inspection
-            ? `${progress.inspection.answered} of ${progress.inspection.total} answered · ${progress.inspection.attention} need attention · ${progress.inspection.leaking} leaking`
-            : maintenance
-              ? `${tally.pass} done · ${tally.attention} need attention · ${tally.notApplicable} skipped`
-              : `${tally.pass} not leaking · ${tally.attention} attention · ${tally.leaking} leaking · ${tally.notApplicable} not applicable`}
-        </T>
-        {toDo ? <T variant="secondary" muted>{`${toDo} still to do`}</T> : null}
-      </Card>
+      {noChecklist ? null : (
+        <Card>
+          <T variant="cardTitle">Checklist</T>
+          <T>
+            {progress.inspection
+              ? `${progress.inspection.answered} of ${progress.inspection.total} answered · ${progress.inspection.attention} need attention · ${progress.inspection.leaking} leaking`
+              : maintenance
+                ? `${tally.pass} done · ${tally.attention} need attention · ${tally.notApplicable} skipped`
+                : `${tally.pass} not leaking · ${tally.attention} attention · ${tally.leaking} leaking · ${tally.notApplicable} not applicable`}
+          </T>
+          {toDo ? <T variant="secondary" muted>{`${toDo} still to do`}</T> : null}
+        </Card>
+      )}
 
       {/* Tests we ran: every test, after what was checked (owner, 2026-10-19). */}
       <ReportTests

@@ -231,6 +231,8 @@ export function ReportView(p: ReportViewProps) {
   const photos = s.media.filter((m) => m.kind === "photo" && p.urls.has(m.storage_path));
   // A pool inspection has its own report: answers by section, what needs attention first.
   const inspection = s.job.type === "inspection" ? inspectionReport(s) : null;
+  // A repair job's report is about the work (owner, 2026-10-22); it has no checklist.
+  const repair = s.job.type === "repair";
   const title =
     p.templateKey === "partner" ? "Leak Detection Report (Technical)" : reportTitle(s.job.type);
 
@@ -340,7 +342,7 @@ export function ReportView(p: ReportViewProps) {
                 .join(", ") || "Pool"}
             </dd>
           </div>
-          {performed && checklist ? (
+          {performed && (checklist || repair) ? (
             <div className={PHONE_ROW}>
               <dt className={cx("text-text-muted", PHONE_LABEL)}>Date performed</dt>
               <dd className={PHONE_VALUE}>{formatDate(performed, tz)}</dd>
@@ -357,7 +359,7 @@ export function ReportView(p: ReportViewProps) {
           {s.job.fee_cents != null ? (
             <div className={PHONE_ROW}>
               <dt className={cx("text-text-muted", PHONE_LABEL)}>
-                {inspection ? "Price" : "Leak detection fee"}
+                {inspection || repair ? "Price" : "Leak detection fee"}
               </dt>
               <dd className={PHONE_VALUE}>{formatCents(s.job.fee_cents)}</dd>
             </div>
@@ -506,7 +508,7 @@ export function ReportView(p: ReportViewProps) {
         </Block>
       ) : null,
     coverage: () =>
-      inspection ? (
+      repair && !s.components.length ? null : inspection ? (
         <InspectionCoverage report={inspection} />
       ) : checklist ? (
         <Block title="What we checked">

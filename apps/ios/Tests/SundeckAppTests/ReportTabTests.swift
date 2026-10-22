@@ -214,6 +214,12 @@ private func signature(_ id: String, _ name: String, purpose: String = "inspecti
         #expect(m.pdfURL() == nil)
     }
 
+    /// A repair's report is the Repair Report (owner, 2026-10-22), as the website.
+    @Test func aRepairJobsReportIsTheRepairReport() throws {
+        #expect(try ReportJob(type: "repair").model().templateName == "Repair Report")
+        #expect(try ReportJob(type: "inspection").model().templateName == "Pool Inspection Report")
+    }
+
     @Test func withoutTheServerTheTabSaysToUseTheWebsite() throws {
         let m = try ReportJob().model(online: false)
         #expect(!m.online)

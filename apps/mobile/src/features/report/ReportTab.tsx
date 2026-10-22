@@ -434,9 +434,9 @@ export function ReportTab({
     <Card style={styles.card}>
       <View style={styles.titleRow}>
         <T variant="cardTitle" style={{ flexShrink: 1 }}>
-          {/* A pool inspection's report is named for it (2026-10-20), as the website. */}
-          {job.type === "inspection"
-            ? reportTitle("inspection")
+          {/* A pool inspection's and a repair's reports are named for them, as the website. */}
+          {job.type === "inspection" || job.type === "repair"
+            ? reportTitle(job.type)
             : (templateRow?.name ?? "Homeowner report")}
         </T>
         {finished?.token && API_URL ? (

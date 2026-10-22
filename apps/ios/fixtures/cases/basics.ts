@@ -517,6 +517,8 @@ export const basics: ModuleCases = {
       ["Blue Pools", "https://x.co/r/abc", false, "inspection"],
       ["Blue Pools", "https://x.co/r/abc", true, "inspection"],
       ["Blue Pools", "https://x.co/r/abc", false, "detection"],
+      ["Blue Pools", "https://x.co/r/abc", false, "repair"],
+      ["Blue Pools", "https://x.co/r/abc", true, "repair"],
       ["Blue Pools", "https://x.co/r/abc", false, null],
     ],
   ),

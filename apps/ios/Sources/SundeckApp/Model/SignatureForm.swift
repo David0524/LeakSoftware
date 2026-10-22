@@ -181,6 +181,8 @@ public struct ReviewSummary: Sendable {
 
     public var companyName: String
     public var maintenance: Bool
+    /// A repair job (owner, 2026-10-22): its report is about the work, with no checklist.
+    public var repair: Bool
     /// A pool inspection (2026-10-20): its progress, leaving out questions its gates folded away.
     public var inspection: InspectionChecklist?
     public var customerName: String?
@@ -209,6 +211,7 @@ public struct ReviewSummary: Sendable {
 
         self.companyName = companyName
         maintenance = view.type == .maintenance
+        repair = view.type == .repair
         inspection = view.type == .inspection ? InspectionChecklist(config: config, inspection: insp) : nil
         customerName = customer?["name"]?.string
         address = view.decodedProperty.map(formatAddress) ?? ""
@@ -256,6 +259,10 @@ public struct ReviewSummary: Sendable {
                 if let s = byKey["next_steps"] { out.append(.section(s)) }
                 out += sections.filter { !placed.contains($0.key) }.map(Block.section)
             case "coverage":
+                // A repair with no checklist has nothing checked to tally, as the website.
+                if repair && tally.pass + tally.attention + tally.leaking + tally.notApplicable + tally.pending == 0 {
+                    break
+                }
                 out.append(.coverage(tally: tallyText, pending: pendingText))
             case "tests":
                 let s = byKey["tests"]
@@ -278,7 +285,9 @@ public struct ReviewSummary: Sendable {
         "For the tech: nobody here to sign? Finish the report without a signature. It will say the customer wasn’t present."
 
     public var title: String {
-        maintenance ? "Service Report" : reportTitle(inspection != nil ? JobType.inspection.rawValue : nil)
+        maintenance
+            ? "Service Report"
+            : reportTitle(inspection != nil ? JobType.inspection.rawValue : repair ? JobType.repair.rawValue : nil)
     }
     public var customerText: String { customerName ?? "Customer" }
 

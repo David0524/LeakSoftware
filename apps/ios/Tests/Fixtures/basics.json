@@ -5018,7 +5018,7 @@
       "args": [
         "repair"
       ],
-      "result": "Leak Detection Report"
+      "result": "Repair Report"
     },
     {
       "args": [
@@ -5081,6 +5081,24 @@
         "detection"
       ],
       "result": "Blue Pools: your leak detection report: https://x.co/r/abc"
+    },
+    {
+      "args": [
+        "Blue Pools",
+        "https://x.co/r/abc",
+        false,
+        "repair"
+      ],
+      "result": "Blue Pools: your repair report: https://x.co/r/abc"
+    },
+    {
+      "args": [
+        "Blue Pools",
+        "https://x.co/r/abc",
+        true,
+        "repair"
+      ],
+      "result": "Blue Pools: your repair report and repair estimate: https://x.co/r/abc"
     },
     {
       "args": [

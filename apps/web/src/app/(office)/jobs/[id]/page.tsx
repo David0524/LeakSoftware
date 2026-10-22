@@ -939,8 +939,8 @@ async function Reports({ detail }: { detail: JobDetail }) {
         jobId={detail.job.id}
         template={key}
         name={
-          detail.job.type === "inspection"
-            ? reportTitle("inspection")
+          detail.job.type === "inspection" || detail.job.type === "repair"
+            ? reportTitle(detail.job.type)
             : (templates.find((t) => t.key === key)?.name ?? "Homeowner report")
         }
         draft={reports.find((r) => r.template_key === key && r.status === "draft") ?? null}
