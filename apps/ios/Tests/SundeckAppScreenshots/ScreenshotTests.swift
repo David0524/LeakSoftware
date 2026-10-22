@@ -561,6 +561,14 @@
                 window.layoutIfNeeded()
             }
         }
+        inspect?(window)
+        // A live map can't be drawn into a picture reliably: MapKit frees its tile images while
+        // they're being drawn and the test host crashes (CI, 2026-10-22). Live-map runs only
+        // inspect the window.
+        if liveMaps {
+            window.isHidden = true
+            return
+        }
         let image = UIGraphicsImageRenderer(bounds: window.bounds).image { context in
             if scene != nil {
                 window.drawHierarchy(in: window.bounds, afterScreenUpdates: true)
@@ -568,7 +576,6 @@
                 window.layer.render(in: context.cgContext)
             }
         }
-        inspect?(window)
         window.isHidden = true
         let png = try #require(image.pngData())
         if let folder = ProcessInfo.processInfo.environment["SCREENSHOT_DIR"], !folder.isEmpty {
