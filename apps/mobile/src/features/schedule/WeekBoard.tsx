@@ -1,3 +1,4 @@
+import { GestureDetector } from "react-native-gesture-handler";
 import { router } from "expo-router";
 import { memo } from "react";
 import { Pressable, StyleSheet, Text, View } from "react-native";
@@ -258,8 +259,9 @@ function WeekStop({
   const { slotRef } = useDropZones();
   // The schedule card (ScheduleCard.tsx); it slides aside while another stop is carried past.
   const slide = useSlide(s.id, route, n - 1);
-  // The grip drags it at once; touch and hold on the body is its menu, never a drag.
-  const { gesture, ref } = useDragSource(
+  // The grip drags it at once, and a 0.4 s touch and hold anywhere on it (owner, 2026-10-22);
+  // its menu is on "⋯".
+  const { gesture, holdGesture, ref } = useDragSource(
     item,
     () => (
       <View style={[styles.ghost, { backgroundColor: color.surface }]}>
@@ -271,7 +273,7 @@ function WeekStop({
       </View>
     ),
     undefined,
-    "grip",
+    "tile",
   );
   const slot = route ? slotRef(s.id, route) : null;
   const open = () => router.push(`/jobs/${s.id}`);
@@ -294,40 +296,41 @@ function WeekStop({
       {tile && !first ? <TileHairline /> : null}
       {/* A tap on the body does nothing (only the name opens the job); TalkBack's double
             tap opens it. */}
-      <Pressable
-        accessibilityRole="link"
-        accessibilityLabel={tile ? tileLabel(s, n, fromOffMap) : cardLabel(s, n)}
-        accessibilityHint="Opens the job"
-        accessibilityActions={[
-          { name: "activate", label: "Open Job" },
-          ...gestures.accessibilityActions,
-        ]}
-        onAccessibilityAction={(e) =>
-          e.nativeEvent.actionName === "activate" ? open() : gestures.onAccessibilityAction(e)
-        }
-        onLongPress={gestures.onLongPress}
-        style={{ backgroundColor: color.surface }}
-      >
-        {tile ? (
-          <StopTileFace
-            stop={s}
-            n={n}
-            fromOffMap={fromOffMap}
-            onOpen={open}
-            onHold={gestures.onLongPress}
-            gripGesture={item ? gesture : undefined}
-          />
-        ) : (
-          <ScheduleCardFace
-            stop={s}
-            n={n}
-            tech={tech}
-            onOpen={open}
-            onHold={gestures.onLongPress}
-            gripGesture={item ? gesture : undefined}
-          />
-        )}
-      </Pressable>
+      <GestureDetector gesture={holdGesture}>
+        <Pressable
+          accessibilityRole="link"
+          accessibilityLabel={tile ? tileLabel(s, n, fromOffMap) : cardLabel(s, n)}
+          accessibilityHint="Opens the job"
+          accessibilityActions={[
+            { name: "activate", label: "Open Job" },
+            ...gestures.accessibilityActions,
+          ]}
+          onAccessibilityAction={(e) =>
+            e.nativeEvent.actionName === "activate" ? open() : gestures.onAccessibilityAction(e)
+          }
+          style={{ backgroundColor: color.surface }}
+        >
+          {tile ? (
+            <StopTileFace
+              stop={s}
+              n={n}
+              fromOffMap={fromOffMap}
+              onOpen={open}
+              onMore={gestures.onLongPress}
+              gripGesture={item ? gesture : undefined}
+            />
+          ) : (
+            <ScheduleCardFace
+              stop={s}
+              n={n}
+              tech={tech}
+              onOpen={open}
+              onMore={gestures.onLongPress}
+              gripGesture={item ? gesture : undefined}
+            />
+          )}
+        </Pressable>
+      </GestureDetector>
     </Reanimated.View>
   );
 }

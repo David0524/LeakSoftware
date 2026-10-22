@@ -3,6 +3,7 @@
     import SundeckSync
     import SundeckTokens
     import SwiftUI
+    import UIKit
 
     /// Schedule (spec 5.6, 6.3): Day, Week and Month from the phone's synced jobs. Day shows each
     /// tech's route with drive times, Optimize, the maps link and Move…; managers also see Needs a
@@ -560,12 +561,24 @@
                 optimizing = nil
                 switch outcome {
                 case .success(let planned):
+                    // Saved on the phone at once, so the stops slide to their new order straight
+                    // away; Undo puts the day back (owner, 2026-10-22). A save that fails leaves
+                    // the old order and says so.
                     let summary = planned.summary
-                    save(
+                    let undo =
+                        planned.undo.isEmpty
+                        ? nil : PendingUndo(rows: planned.undo.map(TableUpdate.init), message: weekPlanUndone)
+                    if !save(
                         planned.updates,
                         ResultBanner(
                             kind: summary.warning == nil ? .success : .warning, title: summary.title,
-                            detail: summary.warning))
+                            detail: summary.warning, undoable: undo != nil),
+                        undo: undo)
+                    {
+                        if let error = banner, error.kind == .error {
+                            banner = ResultBanner(kind: .error, title: error.title, detail: optimizePutBack)
+                        }
+                    }
                 case .failure(let error):
                     fail(error)
                 }
@@ -1633,16 +1646,20 @@
                         drive: drive, driveHidden: driveHidden,
                         onOpen: { if opens { openRoute(.job(job.id)) } })
                 }
-                .padding(EdgeInsets(top: 8, leading: 16, bottom: 8, trailing: movable ? 0 : 16))
+                .padding(EdgeInsets(top: 8, leading: 16, bottom: 8, trailing: 0))
                 .frame(maxWidth: .infinity, minHeight: 58, alignment: .leading)
                 .contentShape(Rectangle())
-                // Touch and hold the tile (not the grip, which drags at once) for its menu.
+                // A stop that can't move keeps touch and hold for its menu; one that can lifts to
+                // drag on a hold instead (owner, 2026-10-22: "Press-and-hold-then-drag on any
+                // tile"), so its menu is on "⋯" (a context menu and a drag can't share the hold).
                 .contentShape(
                     .contextMenuPreview, RoundedRectangle(cornerRadius: CGFloat(Radius.block), style: .continuous)
                 )
-                .rowMenu(actions.title, actions.menu)
-                // The grip at the trailing edge (owner, 2026-10-20), 44 pt wide: the only place a
-                // drag starts, so the tile never fights the page's scroll.
+                .rowMenu(actions.title, movable ? [] : actions.menu)
+                StopMoreButton(actions: actions)
+                    .padding(.trailing, movable ? 0 : 8)
+                // The grip at the trailing edge (owner, 2026-10-20), 44 pt wide: a drag starts
+                // here at once, or anywhere on the tile after a hold (`RouteStops`).
                 if movable { grip() }
             }
             .zoomSource(job.id)
@@ -1655,6 +1672,26 @@
             .accessibilityAction { openRoute(.job(job.id)) }
             // Drag and drop's alternative, and the menu's actions (owner, 2026-10-20).
             .swipeAccessibilityActions(actions.accessibilityActions)
+        }
+    }
+
+    /// A stop's "⋯" (owner, 2026-10-22): its menu (Open, Move…, Lock Day, Lock Time, Take Off
+    /// Schedule, Directions) as a pull-down, with the kind of visit and the customer as its title,
+    /// since touch and hold on the tile lifts it to drag. 44 by 44 pt. Website `RowMenuButton`.
+    struct StopMoreButton: View {
+        var actions: ScheduleStopActions
+
+        var body: some View {
+            Menu {
+                RowMenu(title: actions.title, items: actions.menu)
+            } label: {
+                Image(systemName: "ellipsis")
+                    .font(.system(size: 20, weight: .semibold))
+                    .foregroundStyle(Color.link)
+                    .frame(width: 36, height: minTarget)
+                    .contentShape(Rectangle())
+            }
+            .accessibilityLabel("More: \(actions.job.customerName)")
         }
     }
 
@@ -1973,6 +2010,21 @@
                 ScheduleGrip()
                     .highPriorityGesture(grip(j.id, takeOff: stopActions.onTakeOff))
             }
+            // Touch and hold anywhere on the tile, then drag (owner, 2026-10-22: as Reminders and
+            // Things do; the grip stays). A UIKit long press, so a quick tap stays a tap and a
+            // swipe up or down still scrolls the page.
+            .gesture(
+                HoldDrag(
+                    enabled: canMoveJob(j.status),
+                    began: { follow(j.id, translation: 0, finger: $0, takeOff: stopActions.onTakeOff) },
+                    changed: { follow(j.id, translation: $0, finger: $1, takeOff: stopActions.onTakeOff) },
+                    ended: { translation, finger in
+                        guard lifted == j.id else { return }
+                        letGo(j.id, translation: translation, finger: finger, takeOff: stopActions.onTakeOff)
+                    },
+                    cancelled: { if lifted == j.id { putDown() } }
+                )
+            )
             .overlay(alignment: .bottom) {
                 if !last && !up && !gone { Hairline().padding(.leading, hairlineInset) }
             }
@@ -2005,24 +2057,29 @@
             DragGesture(minimumDistance: 0, coordinateSpace: .global)
                 .updating($inFlight) { _, state, _ in state = id }
                 .onChanged { value in
-                    // A second finger on another grip doesn't take over the first.
-                    guard lifted == nil || lifted == id else { return }
-                    if lifted != id {
-                        withAnimation(motion) { lifted = id }
-                        lifts += 1
-                    }
-                    drag?.hold(key)
-                    translation = value.translation.height
-                    let over = takeOff != nil && ScheduleReorder.isOver(tray: drag?.trayFrame, finger: value.location)
-                    if drag?.overTray != over { drag?.overTray = over }
-                    let zone =
-                        over ? nil : ScheduleReorder.zone(at: value.location, zones: drag?.zones ?? [:], from: key)
-                    if drag?.overZone != zone { drag?.overZone = zone }
+                    follow(id, translation: value.translation.height, finger: value.location, takeOff: takeOff)
                 }
                 .onEnded { value in
                     guard lifted == id else { return }
                     letGo(id, translation: value.translation.height, finger: value.location, takeOff: takeOff)
                 }
+        }
+
+        /// The lifted stop follows the finger (from the grip, or after a hold on the tile): it lifts
+        /// with a light haptic the first time, and the page holds still until it's let go.
+        private func follow(_ id: String, translation: CGFloat, finger: CGPoint, takeOff: (() -> Void)?) {
+            // A second finger on another tile doesn't take over the first.
+            guard lifted == nil || lifted == id else { return }
+            if lifted != id {
+                withAnimation(motion) { lifted = id }
+                lifts += 1
+            }
+            drag?.hold(key)
+            self.translation = translation
+            let over = takeOff != nil && ScheduleReorder.isOver(tray: drag?.trayFrame, finger: finger)
+            if drag?.overTray != over { drag?.overTray = over }
+            let zone = over ? nil : ScheduleReorder.zone(at: finger, zones: drag?.zones ?? [:], from: key)
+            if drag?.overZone != zone { drag?.overZone = zone }
         }
 
         /// Let go: it settles into the gap and the new order shows at once while it saves; a move
@@ -2096,6 +2153,61 @@
             withAnimation(motion) {
                 lifted = nil
                 translation = 0
+            }
+        }
+    }
+
+    /// Touch and hold, then drag (owner, 2026-10-22: "Press-and-hold-then-drag on any tile, keeping
+    /// the grip as a backup"): a UIKit long press of `ScheduleReorder.holdSeconds` that allows 10 pt
+    /// of drift, then follows the finger. Moving sooner fails it, so the scroll view has a swipe; a
+    /// quick tap never begins it. Locations are in the window's points (`.global`); `changed` and
+    /// `ended` get the vertical distance from where it began. A SwiftUI long press on a scroll
+    /// view's content can hold the scroll back, which a UIKit one doesn't (`SidewaysPan`).
+    struct HoldDrag: UIGestureRecognizerRepresentable {
+        var enabled = true
+        var began: (CGPoint) -> Void
+        var changed: (CGFloat, CGPoint) -> Void
+        var ended: (CGFloat, CGPoint) -> Void
+        var cancelled: () -> Void
+
+        func makeUIGestureRecognizer(context: Context) -> UILongPressGestureRecognizer {
+            let hold = UILongPressGestureRecognizer()
+            hold.minimumPressDuration = ScheduleReorder.holdSeconds
+            hold.allowableMovement = 10
+            hold.delegate = context.coordinator
+            hold.isEnabled = enabled
+            return hold
+        }
+
+        func updateUIGestureRecognizer(_ recognizer: UILongPressGestureRecognizer, context: Context) {
+            recognizer.isEnabled = enabled
+        }
+
+        func makeCoordinator(converter: CoordinateSpaceConverter) -> Coordinator { Coordinator() }
+
+        func handleUIGestureRecognizerAction(_ recognizer: UILongPressGestureRecognizer, context: Context) {
+            let at = recognizer.location(in: nil)
+            switch recognizer.state {
+            case .began:
+                context.coordinator.start = at
+                began(at)
+            case .changed: changed(at.y - context.coordinator.start.y, at)
+            case .ended: ended(at.y - context.coordinator.start.y, at)
+            case .cancelled, .failed: cancelled()
+            default: break
+            }
+        }
+
+        @MainActor final class Coordinator: NSObject, UIGestureRecognizerDelegate {
+            var start = CGPoint.zero
+
+            /// The page's scroll keeps its own pan until the hold lifts the stop (the page then
+            /// holds still: `ScheduleDragState`).
+            func gestureRecognizer(
+                _ recognizer: UIGestureRecognizer,
+                shouldRecognizeSimultaneouslyWith other: UIGestureRecognizer
+            ) -> Bool {
+                other is UIPanGestureRecognizer
             }
         }
     }
@@ -2875,8 +2987,8 @@
     }
 
     /// A schedule card's grip (owner, 2026-10-21: "I'm still struggling to scroll when I have a
-    /// page full of job tiles"): the only place a drag starts, 44 by 44 pt (or the card's height),
-    /// so the rest of the card scrolls the page.
+    /// page full of job tiles"): a drag starts here at once, and elsewhere on a stop's tile only
+    /// after a hold, so the rest of the card scrolls the page. 44 by 44 pt.
     struct ScheduleGrip: View {
         var body: some View {
             DragGrip(width: minTarget)

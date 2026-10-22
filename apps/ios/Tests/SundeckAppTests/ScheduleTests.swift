@@ -326,14 +326,59 @@ import Testing
         let optimized = try optimizeDay(
             techId: Self.me, date: ctx.today, jobs: jobs, ctx: ctx, team: team, drive: DriveTimes())
         #expect(optimized.updates == planned.updates)
-        // The same loop either way: no driving saved, so it says how much there is.
-        let parts = optimized.summary.title.components(separatedBy: " · ")
-        #expect(parts.count == 2 && parts[0] == "Optimized")
-        #expect(parts[1].hasSuffix(" driving"))
+        // Already in the best order (the same loop either way): it says so, with nothing to undo
+        // (owner, 2026-10-22).
+        #expect(optimized.summary.title == optimizeAlreadyBest)
+        #expect(optimized.undo.isEmpty)
         #expect(optimized.summary.warning == nil)
         #expect(throws: ScheduleProblem("Past days can’t be planned.")) {
             try optimizeDay(techId: Self.me, date: "2026-10-19", jobs: jobs, ctx: ctx, team: team, drive: DriveTimes())
         }
+    }
+
+    /// Optimize with Undo (owner, 2026-10-22: "Make Optimize show the new order at once, with
+    /// Undo"): Undo holds the saved values of the rows it changes, and Optimize again from the new
+    /// order says "Already the best order" with nothing to undo, as the website and Android do.
+    @Test func optimizeHasUndoAndSaysWhenTheOrderIsAlreadyBest() throws {
+        // Three stops booked far, near, far: the near one belongs first.
+        try sync.write(
+            "job", id: id(1), companyId: Self.company,
+            ["scheduled_start": "2026-10-20T15:30:00Z", "scheduled_end": "2026-10-20T16:30:00Z", "route_order": 1])
+        try sync.write(
+            "job", id: id(2), companyId: Self.company,
+            ["scheduled_start": "2026-10-20T17:00:00Z", "scheduled_end": "2026-10-20T18:00:00Z", "route_order": 2])
+        try sync.write(
+            "property", id: "00000000-0000-4000-8000-000000000403", companyId: Self.company,
+            ["latitude": 33.6252, "longitude": -111.8315])
+        try sync.write(
+            "job", id: id(3), companyId: Self.company,
+            [
+                "assigned_user_id": .string(Self.me), "scheduled_start": "2026-10-20T20:00:00Z",
+                "scheduled_end": "2026-10-20T21:00:00Z", "route_order": 3,
+            ])
+        let first = try optimizeDay(
+            techId: Self.me, date: ctx.today, jobs: jobs, ctx: ctx, team: team, drive: DriveTimes())
+        #expect(first.summary.title.hasPrefix("Optimized · "))
+        #expect(!first.undo.isEmpty)
+        #expect(Set(first.undo.map(\.id)).isSubset(of: Set(first.updates.map(\.id))))
+        for u in first.undo {
+            let was = try #require(jobs.first { $0.id == u.id })
+            #expect(u.values["route_order"] == (was.routeOrder.map { .number(Double($0)) } ?? .null))
+            #expect(Set(u.values.keys).isSubset(of: ["route_order", "scheduled_start", "scheduled_end"]))
+        }
+        if first.undo.isEmpty { #expect(first.summary.title == optimizeAlreadyBest) }
+        var after = jobs
+        for u in first.updates {
+            guard let i = after.firstIndex(where: { $0.id == u.id }) else { continue }
+            if case .number(let n)? = u.values["route_order"] { after[i].routeOrder = Int(n) }
+            if case .string(let v)? = u.values["scheduled_start"] { after[i].scheduledStart = v }
+            if case .string(let v)? = u.values["scheduled_end"] { after[i].scheduledEnd = v }
+        }
+        let again = try optimizeDay(
+            techId: Self.me, date: ctx.today, jobs: after, ctx: ctx, team: team, drive: DriveTimes())
+        #expect(again.summary.title == optimizeAlreadyBest)
+        #expect(again.undo.isEmpty)
+        #expect(optimizePutBack == "The order is as it was.")
     }
 
     @Test func poolsNeverLookedUpAreAskedForOnce() throws {

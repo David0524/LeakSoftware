@@ -53,7 +53,9 @@ import {
   startLegLabel,
   visitMovedBanner,
   weekday,
+  formatTime,
   type CleaningKind,
+  type JobChange,
   type JobLock,
   type JobStatus,
   type LatLng,
@@ -85,18 +87,29 @@ import { CleaningIcon, HouseFillIcon } from "./icons";
 import { DriveChip } from "./drive-chip";
 import { driveChipMinutes, driveFromOffMap, driveHomeLine } from "@/lib/schedule-tile";
 import { LockTag } from "./lock-tag";
-import { PlanWeek } from "./plan-week";
+import { PlanWeek, type PlanWeekPreview } from "./plan-week";
 import { dayMap, weekdayName } from "@/lib/day-map";
 import { NotOnMapTag } from "./not-on-map";
 import {
   moveJob,
   planRoute,
   suggestTimes,
+  undoPlanRoute,
+  type OptimizeResult,
   type RouteResult,
   type Suggestion,
 } from "@/app/actions/routes";
+import {
+  previewDay,
+  previewWeek,
+  relayout,
+  type Placed,
+  type PreviewContext,
+  type PreviewJob,
+} from "@/lib/schedule-preview";
 import { OpenRouteInMaps } from "./open-in-maps";
 import { Sheet, useChoice } from "./sheet";
+import { Segmented } from "./segmented";
 import { showBanner } from "./top-banner";
 import { useFlip } from "./use-flip";
 import { reducedMotion } from "./row-slide";
@@ -110,9 +123,9 @@ const DROP_SLIDE = { duration: 250, easing: "cubic-bezier(0.22, 1, 0.36, 1)" };
 /** Whether a press began on a schedule card's grip (≡). */
 const onGrip = (e: Event) => !!(e.target as Element | null)?.closest?.("[data-grip]");
 
-// A schedule card drags from its grip only, at once, by any pointer (owner, 2026-10-21: "I'm
-// still struggling to scroll when I have a page full of job tiles"): its body never drags, so
-// a page of cards always scrolls. The pointer sensor listens on the document, so a drag still
+// A schedule card drags from its grip at once, by any pointer (owner, 2026-10-21: "I'm still
+// struggling to scroll when I have a page full of job tiles"); a finger on its body drags only
+// after a hold (StopTouchSensor), so a page of cards always scrolls. The pointer sensor listens on the document, so a drag still
 // ends if the card under the finger is re-rendered away mid-drag.
 class GripSensor extends PointerSensor {
   static activators = PointerSensor.activators.map((a) => ({
@@ -121,21 +134,48 @@ class GripSensor extends PointerSensor {
       onGrip(args[0].nativeEvent) && a.handler(...args),
   }));
 }
-// Customers to Add tiles (no grip) keep their own: a mouse anywhere, a finger after a hold.
+/** Whether a press began on a stop's tile on a day (Day, Week), not Needs a Time or a customer. */
+const onStopTile = (e: Event) => !!(e.target as Element | null)?.closest?.("[data-stop-drag]");
+/** The name link and the tile's buttons: a mouse press there clicks, never drags. */
+const onControl = (e: Event) =>
+  !!(e.target as Element | null)?.closest?.("a, button:not([data-grip]), input, [role=menuitem]");
+// Press and hold, then drag, anywhere on a stop's tile (owner, 2026-10-22, as Reminders and
+// Things do; docs/design/2026-10-22-schedule-hold-drag.md), the grip kept as a backup. A mouse
+// anywhere on the tile but the name and the buttons, once it moves 6 px; a finger after a
+// 0.4 s touch and hold (a quick tap or a swipe up or down is the page's). Customers to Add
+// tiles (no grip): a mouse anywhere, a finger after a 0.25 s hold, as before.
 class TileMouseSensor extends MouseSensor {
   static activators = MouseSensor.activators.map((a) => ({
     ...a,
-    handler: (...args: Parameters<typeof a.handler>) =>
-      !onGrip(args[0].nativeEvent) && a.handler(...args),
+    handler: (...args: Parameters<typeof a.handler>) => {
+      const e = args[0].nativeEvent;
+      return !onGrip(e) && !(onStopTile(e) && onControl(e)) && a.handler(...args);
+    },
   }));
 }
 class TileTouchSensor extends TouchSensor {
   static activators = TouchSensor.activators.map((a) => ({
     ...a,
-    handler: (...args: Parameters<typeof a.handler>) =>
-      !onGrip(args[0].nativeEvent) && a.handler(...args),
+    handler: (...args: Parameters<typeof a.handler>) => {
+      const e = args[0].nativeEvent;
+      return !onGrip(e) && !onStopTile(e) && a.handler(...args);
+    },
   }));
 }
+class StopTouchSensor extends TouchSensor {
+  static activators = TouchSensor.activators.map((a) => ({
+    ...a,
+    handler: (...args: Parameters<typeof a.handler>) => {
+      const e = args[0].nativeEvent;
+      return !onGrip(e) && onStopTile(e) && a.handler(...args);
+    },
+  }));
+}
+/** The last press on a stop's tile: its pointer, and whether it was a finger. */
+const lastTouch = { id: -1, touch: false };
+
+/** How long a finger rests on a stop's tile before it lifts (as iOS's drag and drop). */
+export const HOLD_MS = 400;
 import { Button, StatusBadge, buttonClass, cx, pillClass } from "./ui";
 import { NO_CONNECTION, whenOffline } from "@/lib/offline";
 
@@ -193,6 +233,11 @@ export interface BoardStop {
    * Just This Visit already moved it (for Undo).
    */
   plan?: { id: string; status: JobStatus; moved: boolean } | null;
+  /**
+   * The job as planning reads it, so Optimize and Optimize Week show their new order at once
+   * (lib/schedule-preview.ts) while the server saves it.
+   */
+  planJob?: PreviewJob;
 }
 
 export interface BoardColumn {
@@ -224,6 +269,9 @@ export interface TrayJob extends BoardStop {
 }
 
 const TRAY = "tray";
+
+/** Optimize couldn't save: the second line of its banner. */
+const OPTIMIZE_PUT_BACK = "The order is as it was.";
 
 /**
  * What a stop's menu does (gestures.md section 12): the same as Move…, Move's Take
@@ -279,6 +327,29 @@ interface Move {
   index: number;
 }
 
+/**
+ * The board in a new order at once (Optimize, Optimize Week, their Undo): each list's ids in
+ * order, and new times shown on the stops that get one.
+ */
+interface Layout {
+  layout: Record<string, string[]>;
+  times: Record<string, string | null>;
+}
+
+function applyChange(lists: Lists, m: Move | Layout): Lists {
+  if ("job" in m) return applyMove(lists, m);
+  const all = new Map(Object.values(lists).flatMap((l) => l.map((s) => [s.id, s] as const)));
+  const next: Lists = { ...lists };
+  for (const [key, ids] of Object.entries(m.layout)) {
+    next[key] = ids.flatMap((id) => {
+      const s = all.get(id);
+      if (!s) return [];
+      return id in m.times ? [{ ...s, time: m.times[id] ?? null }] : [s];
+    });
+  }
+  return next;
+}
+
 function applyMove(lists: Lists, m: Move): Lists {
   let moving: BoardStop | null = null;
   const next: Lists = {};
@@ -324,6 +395,7 @@ export function RouteBoard({
   planWaiting = 0,
   plans = null,
   phone = false,
+  preview = null,
 }: {
   mode: "day" | "week";
   columns: BoardColumn[];
@@ -352,13 +424,15 @@ export function RouteBoard({
    * daily one"), with Needs a Time and Customers to Add above. No sidebar.
    */
   phone?: boolean;
+  /** What the browser needs to show Optimize's new order at once (null: wait for the server). */
+  preview?: PreviewContext | null;
 }) {
   const initial = useMemo(() => {
     const lists: Lists = { [TRAY]: tray ?? [] };
     for (const c of columns) lists[c.key] = c.stops;
     return lists;
   }, [columns, tray]);
-  const [lists, optimistic] = useOptimistic(initial, applyMove);
+  const [lists, optimistic] = useOptimistic(initial, applyChange);
   // Moves and Optimize run apart, so a move made while a day is optimizing isn't held up, and
   // only the day being optimized shows it.
   const [saving, start] = useTransition();
@@ -377,15 +451,18 @@ export function RouteBoard({
   const dndId = useId();
 
   const sensors = useSensors(
-    // A schedule card from its grip only, at once (GripSensor; a couple of pixels, so a click
-    // on the grip isn't a drag); its body scrolls the page and never drags. The grip doesn't
-    // scroll the page (touch-none), and while dragging the page scrolls near the screen's
-    // edges (autoScroll). The other cards in the day slide into their new places as one passes
-    // them (SORT_SLIDE), so the gap is where it lands. Customers to Add tiles: a mouse anywhere
-    // once it moves a little, a finger after a touch and hold.
+    // A schedule card from its grip at once (GripSensor; a couple of pixels, so a click on the
+    // grip isn't a drag). A stop's tile on a day also from anywhere else on it: a mouse once it
+    // moves 6 px (not from the name or a button), a finger after a 0.4 s hold (StopTouchSensor),
+    // so a quick tap or a swipe up or down still scrolls the page. The grip doesn't scroll the
+    // page (touch-none), and while dragging the page scrolls near the screen's edges
+    // (autoScroll). The other cards in the day slide into their new places as one passes them
+    // (SORT_SLIDE), so the gap is where it lands. Customers to Add tiles: a mouse anywhere once
+    // it moves a little, a finger after a touch and hold.
     useSensor(GripSensor, { activationConstraint: { distance: 2 } }),
     useSensor(TileMouseSensor, { activationConstraint: { distance: 6 } }),
     useSensor(TileTouchSensor, { activationConstraint: { delay: 250, tolerance: 8 } }),
+    useSensor(StopTouchSensor, { activationConstraint: { delay: HOLD_MS, tolerance: 8 } }),
     useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates }),
   );
   // Never stuck mid-drag (owner, 2026-10-21: "it sometimes freezes up"): a pointer let go,
@@ -397,6 +474,8 @@ export function RouteBoard({
     if (!liveDrag) return;
     let timer: ReturnType<typeof setTimeout> | undefined;
     const check = (e: Event) => {
+      // Our own pointercancel (a hold's drag taking the touch from the page swipe) isn't it.
+      if (!e.isTrusted) return;
       // Another finger lifting isn't the dragging one letting go.
       if (e instanceof PointerEvent && !e.isPrimary) return;
       if (typeof TouchEvent !== "undefined" && e instanceof TouchEvent && e.touches.length) return;
@@ -418,6 +497,9 @@ export function RouteBoard({
 
   // Phones showing one tech's day: its map and buttons lead, above Needs a Time.
   const shownOnPhone = columns.filter((c) => !c.phoneHidden);
+  // Phones' Optimize Week starts from the one tech shown, else everyone.
+  const phoneTechs = new Set(shownOnPhone.map((c) => c.techId));
+  const phoneTech = phoneTechs.size === 1 ? [...phoneTechs][0]! : null;
   const lead =
     mode === "day" && shownOnPhone.length === 1 && (lists[shownOnPhone[0]!.key] ?? []).length
       ? shownOnPhone[0]!
@@ -459,16 +541,107 @@ export function RouteBoard({
     });
   }
 
-  /** Optimize a tech's day: the button says so at once, and the rest of the page still works. */
+  /**
+   * The board as `changes` would leave it, shown at once (inside a transition, until it ends):
+   * Optimize Week, and Undo of either Optimize.
+   */
+  function showChanges(changes: readonly JobChange[]) {
+    if (!preview || !changes.length) return;
+    const placed: Record<string, Placed[]> = {};
+    for (const [key, list] of Object.entries(lists)) {
+      const [t, d] = key === TRAY ? [null, null] : (key.split("|") as [string, string]);
+      placed[key] = list.map((x) => ({
+        id: x.id,
+        key,
+        tech: key === TRAY ? x.schedule?.tech || null : t === "none" ? null : t,
+        date: key === TRAY ? (x.schedule?.date ?? null) : d,
+      }));
+    }
+    const layout = relayout(placed, changes, preview.timeZone, TRAY);
+    if (!layout) return;
+    const times: Record<string, string | null> = {};
+    for (const c of changes)
+      if ("scheduled_start" in c)
+        times[c.id] = c.scheduled_start ? formatTime(c.scheduled_start, preview.timeZone) : null;
+    optimistic({ layout, times });
+  }
+
+  /**
+   * Optimize a tech's day (owner, 2026-10-22: "Make Optimize show the new order at once, with
+   * Undo"): the stops slide into the order worked out here at once, while the server plans and
+   * saves it with the shop's drive times; its answer confirms or corrects the order. The banner
+   * says what it saved ("Optimized · 42 min less driving", or "Already the best order") with
+   * Undo; a failure puts the old order back and says so.
+   */
   function optimize(techId: string, date: string) {
-    setPlanning(`${techId}|${date}`);
+    const key = `${techId}|${date}`;
+    setPlanning(key);
     startOptimize(async () => {
-      const r = await whenOffline(planRoute(techId, date), { error: NO_CONNECTION });
+      const day = lists[key] ?? [];
+      const jobs = day.flatMap((x) => (x.planJob ? [x.planJob] : []));
+      const next =
+        preview && jobs.length === day.length ? previewDay(preview, techId, date, jobs) : null;
+      if (next) {
+        const times: Record<string, string> = {};
+        for (const [id, at] of Object.entries(next.starts))
+          times[id] = formatTime(at, preview!.timeZone);
+        optimistic({ layout: { [key]: next.order }, times });
+      }
+      const r: OptimizeResult = await whenOffline(planRoute(techId, date), {
+        error: NO_CONNECTION,
+      });
       startOptimize(() => {
-        report(r);
         setPlanning(null);
+        optimized(r, techId, date);
       });
     });
+  }
+
+  function optimized(r: OptimizeResult, techId: string, date: string) {
+    if (r.error) {
+      showBanner({ tone: "error", message: r.error, detail: OPTIMIZE_PUT_BACK });
+      return;
+    }
+    const rows = r.undo;
+    showBanner({
+      tone: r.detail ? "warning" : "success",
+      message: r.message ?? "Optimized",
+      detail: r.detail,
+      action: rows?.length
+        ? { label: "Undo", onAction: () => undoOptimize(techId, date, rows) }
+        : undefined,
+    });
+  }
+
+  /** Undo after Optimize: the old order shows at once, then it's saved. */
+  function undoOptimize(techId: string, date: string, rows: JobChange[]) {
+    start(async () => {
+      showChanges(rows);
+      const r = await whenOffline(undoPlanRoute(techId, date, rows), { error: NO_CONNECTION });
+      start(() =>
+        r.error
+          ? void showBanner({ tone: "error", message: r.error })
+          : void showBanner({ message: r.message ?? "Put back as it was." }),
+      );
+    });
+  }
+
+  /** Optimize Week (PlanWeek) and its Undo, shown at once while they save. */
+  function previewPlanWeek(
+    input: { techs: string[] | "all"; tray: boolean } | { undo: JobChange[] },
+  ) {
+    if (!preview) return;
+    if ("undo" in input) return showChanges(input.undo);
+    const { updates } = previewWeek({
+      ctx: preview,
+      dates: planDates ?? [],
+      techs: input.techs,
+      tray: input.tray,
+      team: techs.map((t) => t.id),
+      dayJobs: (t, d) => (lists[`${t}|${d}`] ?? []).flatMap((x) => (x.planJob ? [x.planJob] : [])),
+      waiting: (lists[TRAY] ?? []).flatMap((x) => (x.planJob ? [x.planJob] : [])),
+    });
+    showChanges(updates);
   }
   const optimizingKey = optimizing ? planning : null;
 
@@ -684,12 +857,25 @@ export function RouteBoard({
     lock,
     inTray: (id) => (lists[TRAY] ?? []).some((x) => x.id === id),
     dragged: () => Date.now() - dragEnd.current < 400,
-    drivesHidden: !!dragging || saving,
+    drivesHidden: !!dragging || saving || optimizing,
   };
 
   function onDragStart(e: DragStartEvent) {
     active.current = true;
     const id = String(e.active.id);
+    const ev = e.activatorEvent;
+    // A tile lifted by a touch and hold: a tap is felt, and the page's sideways swipe between
+    // days lets the touch go, so carrying it sideways never turns the page.
+    if (
+      typeof TouchEvent !== "undefined" &&
+      ev instanceof TouchEvent &&
+      !id.startsWith(PLAN_DRAG)
+    ) {
+      navigator.vibrate?.(10);
+      ev.target?.dispatchEvent(
+        new PointerEvent("pointercancel", { pointerId: lastTouch.id, bubbles: true }),
+      );
+    }
     if (id.startsWith(PLAN_DRAG)) {
       setDraggingPlan((e.active.data.current as PlanDragData | undefined) ?? null);
       return;
@@ -769,6 +955,19 @@ export function RouteBoard({
               side && "lg:grid lg:grid-cols-[280px_minmax(0,1fr)] lg:items-start lg:gap-5",
             )}
           >
+            {/* Phones' Week: Optimize Week leads, above Needs a Time. */}
+            {phone && mode === "week" && planDates?.length ? (
+              <div className="mb-5">
+                <PlanWeek
+                  dates={planDates}
+                  waiting={planWaiting}
+                  techs={techs}
+                  defaultTech={phoneTech}
+                  buttonClassName="w-full"
+                  onPreview={previewPlanWeek}
+                />
+              </div>
+            ) : null}
             {lead ? (
               <DayLead
                 column={lead}
@@ -847,31 +1046,20 @@ export function RouteBoard({
             ) : phone ? (
               <WeekDays columns={columns} lists={lists} days={weekDays ?? []} today={today} />
             ) : (
-              <div className="min-w-0">
-                <WeekMaps
-                  columns={columns}
-                  lists={lists}
-                  days={weekDays ?? []}
-                  workDates={workDates}
-                  today={today}
-                  maps={maps}
-                  planDates={planDates}
-                  planWaiting={planWaiting}
-                  optimizingKey={optimizingKey}
-                  busy={optimizing}
-                  onPlan={optimize}
-                />
-                <WeekGrid
-                  columns={columns}
-                  lists={lists}
-                  days={weekDays ?? []}
-                  workDates={workDates}
-                  today={today}
-                  optimizingKey={optimizingKey}
-                  busy={optimizing}
-                  onPlan={optimize}
-                />
-              </div>
+              <DesktopWeek
+                columns={columns}
+                lists={lists}
+                days={weekDays ?? []}
+                workDates={workDates}
+                today={today}
+                maps={maps}
+                planDates={planDates}
+                planWaiting={planWaiting}
+                optimizingKey={optimizingKey}
+                busy={optimizing}
+                onPlan={optimize}
+                onPreview={previewPlanWeek}
+              />
             )}
           </div>
         </PlanDrop>
@@ -1403,7 +1591,7 @@ function LiftedCard({ stop: s, week }: { stop: BoardStop; week: boolean }) {
 function StopTile({
   stop: s,
   position,
-  listeners,
+  gripRef,
   attributes,
   menu,
   compact = false,
@@ -1413,7 +1601,8 @@ function StopTile({
   position: number;
   /** The drive into it starts off the map (the stop before, or the start): no chip. */
   fromOffMap?: boolean;
-  listeners: ReturnType<typeof useSortable>["listeners"];
+  /** The grip: the keyboard's pick-up (the tile's own presses drag from anywhere on it). */
+  gripRef: (el: HTMLElement | null) => void;
   attributes: ReturnType<typeof useSortable>["attributes"];
   menu: Ref<RowActionsHandle>;
   /** A week cell on a computer (about 10 rem): tighter, no "⋯", the time without AM or PM. */
@@ -1432,12 +1621,11 @@ function StopTile({
   const status = s.status !== "scheduled" && s.status !== "unscheduled";
   // Week's desktop cells (owner, 2026-10-22: "This is insanely busy. It has to be cleaned
   // up"): the number, the name on one line, then the chip and the time. The status is the
-  // number's color and check; the locks, not on the map and cleanings are in the tile's hover
-  // text and read out; the grip shows on hover.
+  // number's color and check; a lock keeps its icon (it says why a stop won't move); not on
+  // the map and cleanings are in the tile's hover text and read out; the grip shows on hover.
   const quiet = compact
     ? [
         status ? JOB_STATUS_LABELS[s.status] : null,
-        s.lock && !twoTechs ? s.lock.label : null,
         missing ? "Not found on the map" : null,
         cleaning ? `${cleaning.name} due` : null,
       ].filter((t): t is string => !!t)
@@ -1449,7 +1637,9 @@ function StopTile({
       menu={stopMenu(s, actions)}
       handle={menu}
       button="none"
-      // Touch and hold on the tile opens its menu, never a drag (the grip drags).
+      // Touch and hold lifts the tile to drag (owner, 2026-10-22), so its menu is on "⋯", a
+      // right click, the menu key and Shift+F10, not the hold.
+      longPress={!s.draggable}
       className="rounded-[inherit]"
     >
       <div
@@ -1494,9 +1684,7 @@ function StopTile({
             {quiet.length ? <span className="sr-only">{`, ${quiet.join(", ")}`}</span> : null}
             {/* Exceptions only, as small icons after the name; the status at the line's end
                 when the stop isn't plain Scheduled. */}
-            {s.lock && !twoTechs && !compact ? (
-              <LockTag lock={s.lock} className="relative" />
-            ) : null}
+            {s.lock && !twoTechs ? <LockTag lock={s.lock} className="relative" /> : null}
             {missing && !compact ? <NotOnMapTag /> : null}
             {cleaning && !compact ? (
               <span
@@ -1540,7 +1728,15 @@ function StopTile({
             ) : null}
           </p>
         </div>
-        {compact ? null : <RowMenuButton visible className="relative size-9! shrink-0" />}
+        {/* Week's desktop cells: right click for a mouse; on a touch screen (an iPad), where
+            touch and hold drags, "⋯" shows so the menu is still in reach. */}
+        <RowMenuButton
+          visible
+          className={cx(
+            "relative shrink-0",
+            compact ? "hidden size-7! place-items-center [@media(hover:none)]:grid" : "size-9!",
+          )}
+        />
         {s.draggable ? (
           <Grip
             compact={compact}
@@ -1550,8 +1746,8 @@ function StopTile({
               compact &&
                 "w-5! opacity-0 group-hover/tile:opacity-100 focus-visible:opacity-100 [@media(hover:none)]:opacity-100",
             )}
+            ref={gripRef}
             {...attributes}
-            {...listeners}
           />
         ) : null}
       </div>
@@ -1571,7 +1767,15 @@ function StopCard({
   compact?: boolean;
   fromOffMap?: boolean;
 }) {
-  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    setActivatorNodeRef,
+    transform,
+    transition,
+    isDragging,
+  } = useSortable({
     id: s.id,
     disabled: !s.draggable,
     transition: reducedMotion() ? null : SORT_SLIDE,
@@ -1582,6 +1786,21 @@ function StopCard({
       ref={setNodeRef}
       style={{ transform: CSS.Translate.toString(transform), transition }}
       data-testid="stop"
+      // Press and hold, then drag, anywhere on it (owner, 2026-10-22); the grip at once. The
+      // keyboard picks it up from the grip only (its activator).
+      data-stop-drag={s.draggable ? "" : undefined}
+      {...(s.draggable ? listeners : {})}
+      onPointerDownCapture={(e) => {
+        lastTouch.id = e.pointerId;
+        lastTouch.touch = e.pointerType !== "mouse";
+      }}
+      // A finger's touch and hold lifts the tile to drag (its menu is on "⋯" and a right
+      // click), so the browser's own long-press menu doesn't show.
+      onContextMenuCapture={(e) => {
+        if (!lastTouch.touch || !s.draggable) return;
+        e.preventDefault();
+        e.stopPropagation();
+      }}
       aria-label={`${s.time ?? "No time"}, ${s.customer}, ${s.visit}`}
       // While carried, its place is an empty gap: never a tile under the one being dragged.
       className={cx("relative", isDragging && "invisible")}
@@ -1589,7 +1808,7 @@ function StopCard({
       <StopTile
         stop={s}
         position={position}
-        listeners={listeners}
+        gripRef={setActivatorNodeRef}
         attributes={attributes}
         menu={menu}
         compact={compact}
@@ -1758,6 +1977,8 @@ function WeekMaps({
   busy,
   optimizingKey,
   onPlan,
+  onPreview,
+  daysControl,
 }: {
   columns: BoardColumn[];
   lists: Lists;
@@ -1770,6 +1991,10 @@ function WeekMaps({
   busy: boolean;
   optimizingKey: string | null;
   onPlan: (techId: string, date: string) => void;
+  /** Optimize Week's new order, shown at once while it saves. */
+  onPreview: PlanWeekPreview;
+  /** 5 Days | 7 Days, at the right of the section's title (null: every day is shown anyway). */
+  daysControl: ReactNode;
 }) {
   const techs = useMemo(
     () => [...new Map(columns.map((c) => [c.techId, c.title])).entries()],
@@ -1783,7 +2008,7 @@ function WeekMaps({
   const [picked, setPicked] = useState<string | null>(null);
   const tech = picked && techs.some(([id]) => id === picked) ? picked : busiest;
   const name = techs.find(([id]) => id === tech)?.[1] ?? "";
-  if (!maps && !planDates) return null;
+  if (!maps && !planDates && !daysControl) return null;
   const shown = days.filter(
     ([d]) => workDates.includes(d) || (lists[`${tech}|${d}`] ?? []).length > 0,
   );
@@ -1795,6 +2020,7 @@ function WeekMaps({
       techs={techs.map(([id, title]) => ({ id, name: title, color: colors.get(id) }))}
       defaultTech={maps ? tech : null}
       className="contents"
+      onPreview={onPreview}
     />
   ) : null;
   return (
@@ -1804,7 +2030,12 @@ function WeekMaps({
         <h2 id="week-routes" className="font-display text-xl font-bold">
           {maps ? (techs.length > 1 ? "Maps" : `${name}’s Maps`) : "This Week"}
         </h2>
-        {planDates && !pills ? planWeek : null}
+        {/* 5 Days | 7 Days in the title's row, not a row or a column of its own (owner,
+            2026-10-22), then Optimize Week when it has no techs' row to sit at the end of. */}
+        <div className="flex items-center gap-3">
+          {daysControl}
+          {planDates && !pills ? planWeek : null}
+        </div>
       </div>
       {pills ? (
         // Optimize Week at the end of the techs' row, not in a row of its own (owner,
@@ -1908,7 +2139,7 @@ function WeekMaps({
   );
 }
 
-/** This browser shows Week's days off (desktop). */
+/** This browser shows Week's 7 days, not only the work days (desktop; "1" is 7 Days). */
 const WEEKEND_KEY = "schedule.weekend";
 const WEEKEND_EVENT = "schedule-weekend";
 let weekendHere = false;
@@ -1940,11 +2171,83 @@ function writeWeekend(next: boolean) {
   dispatchEvent(new Event(WEEKEND_EVENT));
 }
 
+type DesktopWeekProps = Omit<Parameters<typeof WeekMaps>[0], "daysControl">;
+
+/**
+ * Week on a computer: the maps, then the grid. The days across are the shop's work days, plus
+ * today and any day with something on it (owner, 2026-10-22: "We really only need Mon-Fri"),
+ * or all 7: a "5 Days | 7 Days" segmented control in the section's title row picks, and this
+ * browser remembers it (owner, 2026-10-22, replacing the narrow "Sat Sun ›" column).
+ */
+function DesktopWeek(props: DesktopWeekProps) {
+  const { columns, lists, days: allDays, workDates, today } = props;
+  const weekend = useSyncExternalStore(subscribeWeekend, readWeekend, () => false);
+  const always = ([d]: [string, string]) =>
+    workDates.includes(d) ||
+    d === today ||
+    columns.some((c) => c.date === d && (lists[c.key] ?? []).length > 0);
+  const work = allDays.filter(always);
+  const days = weekend ? allDays : work;
+  const control =
+    work.length < allDays.length ? (
+      <WeekDaysControl
+        value={weekend ? "all" : "work"}
+        work={work.length}
+        all={allDays.length}
+        onChange={(v) => writeWeekend(v === "all")}
+      />
+    ) : null;
+  return (
+    <div className="min-w-0">
+      <WeekMaps {...props} daysControl={control} />
+      <WeekGrid
+        columns={columns}
+        lists={lists}
+        days={days}
+        today={today}
+        optimizingKey={props.optimizingKey}
+        busy={props.busy}
+        onPlan={props.onPlan}
+      />
+    </div>
+  );
+}
+
+/** "5 Days | 7 Days": the segment style (Title Case), with its name for screen readers only. */
+function WeekDaysControl({
+  value,
+  work,
+  all,
+  onChange,
+}: {
+  value: "work" | "all";
+  work: number;
+  all: number;
+  onChange: (v: "work" | "all") => void;
+}) {
+  return (
+    <div
+      data-testid="week-days-control"
+      className="[&>div]:space-y-0 [&>div>p:first-child]:sr-only"
+    >
+      <Segmented
+        label="Days Shown"
+        name="week-days"
+        value={value}
+        onChange={onChange}
+        options={[
+          { value: "work", label: `${work} Days` },
+          { value: "all", label: `${all} Days` },
+        ]}
+      />
+    </div>
+  );
+}
+
 function WeekGrid({
   columns,
   lists,
-  days: allDays,
-  workDates,
+  days,
   today,
   optimizingKey,
   busy,
@@ -1952,28 +2255,14 @@ function WeekGrid({
 }: {
   columns: BoardColumn[];
   lists: Lists;
+  /** The days shown (DesktopWeek: the work days, or all 7). */
   days: [string, string][];
-  /** The shop's work days; a day off with nothing on it isn't shown. */
-  workDates: string[];
   today: string;
   optimizingKey: string | null;
   busy: boolean;
   onPlan: (techId: string, date: string) => void;
 }) {
   const rows = [...new Map(columns.map((c) => [c.techId, c])).values()];
-  // The shop's work days, plus today and any day with something on it (owner, 2026-10-22: "We
-  // really only need Mon-Fri"), so each day is wide enough for a stop's name. The days off are
-  // a narrow last column that opens them (owner: "It needs to accessible somehow"); this
-  // browser remembers it.
-  const weekend = useSyncExternalStore(subscribeWeekend, readWeekend, () => false);
-  const toggleWeekend = () => writeWeekend(!weekend);
-  const always = ([d]: [string, string]) =>
-    workDates.includes(d) ||
-    d === today ||
-    rows.some((r) => (lists[`${r.techId ?? "none"}|${d}`] ?? []).length > 0);
-  const offDays = allDays.filter((d) => !always(d));
-  const days = weekend ? allDays : allDays.filter(always);
-  const offNames = offDays.map(([d]) => weekdayName(d)).join(" and ");
   /**
    * The day's "⋯" menu (owner, 2026-10-20: "you can't optimize" on Routes): Optimize each
    * tech's route that day, and Open Day.
@@ -1996,8 +2285,7 @@ function WeekGrid({
   // fit, the table slides sideways, with a second scrollbar on top, as on Day.
   const TECH_REM = 7;
   const DAY_REM = 10.5;
-  const TOGGLE_REM = 3.5;
-  const minRem = TECH_REM + days.length * DAY_REM + (offDays.length ? TOGGLE_REM : 0);
+  const minRem = TECH_REM + days.length * DAY_REM;
   return (
     <TopScroller
       data-testid="week-grid"
@@ -2012,7 +2300,6 @@ function WeekGrid({
           {days.map(([d]) => (
             <col key={d} />
           ))}
-          {offDays.length ? <col style={{ width: `${TOGGLE_REM}rem` }} /> : null}
         </colgroup>
         <thead className="border-b border-border">
           <tr>
@@ -2059,31 +2346,6 @@ function WeekGrid({
                 </RowActions>
               </th>
             ))}
-            {offDays.length ? (
-              <th scope="col" className="px-0.5 py-1">
-                <button
-                  type="button"
-                  onClick={toggleWeekend}
-                  aria-expanded={weekend}
-                  aria-label={weekend ? `Hide ${offNames}` : `Show ${offNames}`}
-                  className="flex min-h-11 w-full flex-col items-center justify-center rounded-lg text-[0.8125rem] leading-tight font-medium text-link hover:bg-link/10"
-                >
-                  {weekend ? (
-                    <>
-                      <span aria-hidden="true">‹</span>
-                      <span>Hide</span>
-                    </>
-                  ) : (
-                    <>
-                      {offDays.map(([d, label]) => (
-                        <span key={d}>{label.split(",")[0]}</span>
-                      ))}
-                      <span aria-hidden="true">›</span>
-                    </>
-                  )}
-                </button>
-              </th>
-            ) : null}
           </tr>
         </thead>
         <tbody>
@@ -2106,7 +2368,6 @@ function WeekGrid({
                   <WeekCell key={d} column={col} stops={lists[key] ?? []} today={d === today} />
                 );
               })}
-              {offDays.length ? <td aria-hidden="true" /> : null}
             </tr>
           ))}
         </tbody>

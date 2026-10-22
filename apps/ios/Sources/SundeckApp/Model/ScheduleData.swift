@@ -462,15 +462,41 @@ public struct OptimizeSummary: Equatable, Sendable {
     public var warning: String?
 }
 
+/// The banner when Optimize keeps the order (owner, 2026-10-22), as the website and Android say.
+public let optimizeAlreadyBest = "Already the best order"
+
+/// Optimize couldn't save: the banner's second line, as the website and Android say.
+public let optimizePutBack = "The order is as it was."
+
 /// Optimize (Plan Route, renamed by the owner on 2026-10-20): the rows `planRoute` saves, with the
-/// banner's words.
+/// banner's words, and the rows that put the day back (Undo; owner, 2026-10-22: "Make Optimize show
+/// the new order at once, with Undo"). When the order stays, the banner says "Already the best
+/// order" and there's nothing to undo.
 public func optimizeDay(
     techId: String, date: String, jobs: [ScheduleJob], ctx: ScheduleContext, team: [TeamMember], drive: DriveTimes
-) throws -> (updates: [JobUpdate], summary: OptimizeSummary) {
-    let change = try planDay(
-        ctx.plan, techId, date, dayJobs(techId, date, jobs: jobs, ctx: ctx, team: team), drive: drive.drive)
+) throws -> (updates: [JobUpdate], summary: OptimizeSummary, undo: [JobUpdate]) {
+    let day = dayJobs(techId, date, jobs: jobs, ctx: ctx, team: team)
+    let change = try planDay(ctx.plan, techId, date, day, drive: drive.drive)
     let (updates, message) = try result(change)
-    return (updates, OptimizeSummary(title: message, warning: change.detail))
+    let order = Dictionary(updates.map { ($0.id, $0.values["route_order"]) }, uniquingKeysWith: { a, _ in a })
+    let own = day.map(\.id).filter { order[$0] != nil }
+    let rank: (String) -> Double = { id in
+        if case .number(let n)? = order[id] ?? nil { return n }
+        return 0
+    }
+    let same = own == own.sorted { rank($0) < rank($1) }
+    let byId = Dictionary(day.map { ($0.id, $0) }, uniquingKeysWith: { a, _ in a })
+    let undo: [JobUpdate] =
+        same
+        ? []
+        : updates.compactMap { u in
+            guard let j = byId[u.id] else { return nil }
+            let was = WeekUndoRow(j).values
+            return JobUpdate(id: u.id, values: was.filter { u.values[$0.key] != nil })
+        }
+    return (
+        updates, OptimizeSummary(title: same ? optimizeAlreadyBest : message, warning: change.detail), undo
+    )
 }
 
 /// Move…: puts a job on a tech's day at a place in the route (`tech` nil: nobody yet, it waits in

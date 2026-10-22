@@ -30,6 +30,7 @@ import {
   planDrop,
   scrolled,
   slideFor,
+  STOP_HOLD_MS,
   zoneAt,
   type DragItem,
   type DropPlan,
@@ -44,9 +45,11 @@ import { color, face, MAX_TEXT_SCALE, shape, space, tint, type } from "../../ui/
 // Schedule drag and drop (owner, 2026-10-20: "bring back drag/drop on mobile"; the website's
 // route board). Put a finger on a stop's grip (≡) to pick it up at once (a firm tap is felt;
 // owner, 2026-10-21: "I'm still struggling to scroll when I have a page full of job tiles"),
-// drag it to a place in a tech's day, a day in the week strip, or Needs a Time, and let go. The
-// card's body never drags, so a page of cards always scrolls; touch and hold on it opens its
-// menu. Customers to Add tiles (no grip) still lift after a touch and hold. The page scrolls by itself
+// drag it to a place in a tech's day, a day in the week strip, or Needs a Time, and let go. A
+// stop's tile on a day also lifts after a 0.4 s touch and hold anywhere on it (owner,
+// 2026-10-22, as Reminders and Things do), its menu then on "⋯"; a quick swipe up or down still
+// scrolls the page. Needs a Time's cards keep touch and hold for their menu. Customers to Add
+// tiles (no grip) still lift after a touch and hold. The page scrolls by itself
 // near the top and bottom. Move… in every stop's menu (and its TalkBack actions) does the
 // same, and both end in the same move (core moveJobChange, saved through the sync layer).
 //
@@ -56,7 +59,7 @@ import { color, face, MAX_TEXT_SCALE, shape, space, tint, type } from "../../ui/
 // 2026-10-21: "The cards should slide into new positions as I dangle the tile";
 // docs/design/2026-10-21-schedule-card.md). Reduce Motion: they jump.
 
-/** How long a finger rests on a stop before it lifts, as iOS's drag and drop. */
+/** How long a finger rests on a Customers to Add tile before it lifts, as iOS's drag and drop. */
 const HOLD_MS = 350;
 
 /** How far a held finger may drift and still count as "held, not dragged" (it opens the menu). */
@@ -481,9 +484,16 @@ class SourceBox {
  * The gesture and the ref callback for a stop's card. `item` null: it can't be dragged (a
  * canceled job). `ghost` draws the card under the finger.
  *
- * `"grip"` (schedule cards): the gesture goes on the grip only and picks the card up at once
+ * `"grip"` (Needs a Time cards): the gesture goes on the grip only and picks the card up at once
  * on touch down, with no hold; the card's body scrolls the page, and its touch and hold is the
  * card's menu (its own Pressable), never a drag. The ref goes on the whole card.
+ *
+ * `"tile"` (stop tiles on a day, Day and Week; owner, 2026-10-22: "Press-and-hold-then-drag on
+ * any tile, keeping the grip as a backup"): `gesture` goes on the grip and picks it up at once,
+ * as `"grip"`; `holdGesture` goes on the whole tile and lifts it after a 0.4 s touch and hold
+ * (STOP_HOLD_MS), with the same haptic, then drags it the same way. A quick tap stays a tap and
+ * a swipe up or down scrolls the page (moving before the hold ends lets the page have it). Held
+ * and let go without moving, it settles back: the tile's menu is on its "⋯" button.
  *
  * `"hold"` (Customers to Add tiles): the gesture goes on the whole tile and lifts it after a
  * touch and hold; `onHold` is its menu, opened by a hold let go without moving.
@@ -492,8 +502,8 @@ export function useDragSource(
   item: DragItem | null,
   ghost: () => ReactNode,
   onHold?: () => void,
-  mode: "grip" | "hold" = "hold",
-): { gesture: PanGesture; ref: (node: View | null) => void } {
+  mode: "grip" | "hold" | "tile" = "hold",
+): { gesture: PanGesture; holdGesture: PanGesture; ref: (node: View | null) => void } {
   const api = useContext(Api);
   const [box] = useState(() => new SourceBox());
   useEffect(() => {
@@ -502,25 +512,34 @@ export function useDragSource(
   // A card that goes away mid-drag (its list re-rendered) ends the drag with it.
   useEffect(() => () => box.finish(api), [api, box]);
   const enabled = api.enabled && item != null;
-  const gesture = useMemo(() => {
-    const pan = Gesture.Pan().runOnJS(true).enabled(enabled).shouldCancelWhenOutside(false);
-    return (
-      (mode === "grip" ? pan.minDistance(0) : pan.activateAfterLongPress(HOLD_MS))
-        .onStart((e) => {
-          box.lift(e.absoluteX, e.absoluteY);
-          box.start(api, e.absoluteX, e.absoluteY);
-        })
-        .onUpdate((e) => {
-          box.track(e.absoluteX, e.absoluteY);
-          api.move(e.absoluteX, e.absoluteY);
-        })
-        // Let go: the drop. Interrupted (another gesture or the system took the touch): nothing.
-        .onEnd((_, done) => (done ? box.release(api, mode === "hold") : box.finish(api)))
-        .onTouchesCancelled(() => box.finish(api))
-        .onFinalize(() => box.finish(api))
-    );
+  const gestures = useMemo(() => {
+    const make = (kind: "now" | "hold", holdMs: number) => {
+      const pan = Gesture.Pan().runOnJS(true).enabled(enabled).shouldCancelWhenOutside(false);
+      return (
+        (kind === "now" ? pan.minDistance(0) : pan.activateAfterLongPress(holdMs))
+          .onStart((e) => {
+            box.lift(e.absoluteX, e.absoluteY);
+            box.start(api, e.absoluteX, e.absoluteY);
+          })
+          .onUpdate((e) => {
+            box.track(e.absoluteX, e.absoluteY);
+            api.move(e.absoluteX, e.absoluteY);
+          })
+          // Let go: the drop. Interrupted (another gesture or the system took the touch):
+          // nothing.
+          .onEnd((_, done) => (done ? box.release(api, mode === "hold") : box.finish(api)))
+          .onTouchesCancelled(() => box.finish(api))
+          .onFinalize(() => box.finish(api))
+      );
+    };
+    return mode === "hold"
+      ? { gesture: make("hold", HOLD_MS), holdGesture: make("hold", HOLD_MS) }
+      : {
+          gesture: make("now", 0),
+          holdGesture: make("hold", STOP_HOLD_MS).enabled(enabled && mode === "tile"),
+        };
   }, [api, enabled, box, mode]);
-  return { gesture, ref: box.attach };
+  return { ...gestures, ref: box.attach };
 }
 
 /** A quick spring with no bounce, as Reorder Techs' rows. */

@@ -11,11 +11,21 @@ import { Sheet } from "./sheet";
 import { showBanner } from "./top-banner";
 import { TechDot } from "./tech-dot";
 import { Button, cx } from "./ui";
+import { NO_CONNECTION, whenOffline } from "@/lib/offline";
 
 // Plan Week (owner, 2026-10-20, docs/plans/route-maps.md: "build routes from scratch"): puts the
 // week's movable jobs on days for the least driving, for one tech or everyone, with one Undo for
 // the whole change. Owners and admins. Its button reads Optimize Week (owner, 2026-10-20: Week
 // took over Routes, with Optimize for each day and Optimize Week for all of them).
+
+/**
+ * Shows Optimize Week's new order on the board at once (owner, 2026-10-22: "Make Optimize show
+ * the new order at once, with Undo"), called inside the save's transition so it holds until the
+ * refreshed week arrives; a failure puts the week back as it was.
+ */
+export type PlanWeekPreview = (
+  input: { techs: string[] | "all"; tray: boolean } | { undo: WeekUndoRow[] },
+) => void;
 
 export const PLAN_WEEK_HELP =
   "Puts this week’s movable jobs on days for the least driving. Started, locked, two-tech and maintenance jobs stay where they are.";
@@ -42,6 +52,7 @@ export function PlanWeek({
   waiting = 0,
   className,
   buttonClassName,
+  onPreview,
 }: {
   /** The week on screen. */
   dates: string[];
@@ -52,6 +63,8 @@ export function PlanWeek({
   waiting?: number;
   className?: string;
   buttonClassName?: string;
+  /** The board's preview of the new order (route-board.tsx). */
+  onPreview?: PlanWeekPreview;
 }) {
   const [open, setOpen] = useState(false);
   const fallback =
@@ -73,7 +86,8 @@ export function PlanWeek({
 
   function report(r: WeekPlanResult) {
     if (r.error) {
-      showBanner({ tone: "error", message: r.error });
+      // The week went back as it was when the save failed.
+      showBanner({ tone: "error", message: r.error, detail: "The week is as it was." });
       return;
     }
     if (!r.message) return;
@@ -89,12 +103,13 @@ export function PlanWeek({
 
   function plan() {
     setOpen(false);
+    const techs = everyone ? "all" : picked;
+    const tray = waiting > 0 && withTray;
     start(async () => {
-      const r = await planWeek({
-        dates,
-        techs: everyone ? "all" : picked,
-        tray: waiting > 0 && withTray,
-      });
+      // The jobs slide to their new days and places at once; the server's plan confirms or
+      // corrects them.
+      onPreview?.({ techs, tray });
+      const r = await whenOffline(planWeek({ dates, techs, tray }), { error: NO_CONNECTION });
       // With the refreshed week, not before it.
       start(() => report(r));
     });
@@ -102,7 +117,8 @@ export function PlanWeek({
 
   function putBack(rows: WeekUndoRow[]) {
     start(async () => {
-      const r = await undoPlanWeek(rows);
+      onPreview?.({ undo: rows });
+      const r = await whenOffline(undoPlanWeek(rows), { error: NO_CONNECTION });
       if (r.error) showBanner({ tone: "error", message: r.error });
       else if (r.message) showBanner({ message: r.message });
     });

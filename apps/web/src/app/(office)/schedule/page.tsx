@@ -26,7 +26,6 @@ import {
   scheduleOrder,
 } from "@leakbook/core";
 import { lockTag } from "@/lib/day-map";
-import { PlanWeek } from "@/components/plan-week";
 import { NotOnMapTag } from "@/components/not-on-map";
 import { routingConfigured } from "@/server/routing";
 import {
@@ -129,6 +128,23 @@ function toStop(j: JobRow, ctx: RouteContext, route?: DayRoute, i = 0): BoardSto
       j.service_plan_id && asksPlanMove(j)
         ? { id: j.service_plan_id, status: j.status, moved: !!j.plan_moved }
         : null,
+    // As planning reads it, so Optimize shows its new order at once (owner, 2026-10-22).
+    planJob: {
+      id: j.id,
+      status: j.status,
+      assigned_user_id: j.assigned_user_id ?? null,
+      second_tech_id: j.second_tech_id ?? null,
+      scheduled_start: j.scheduled_start ?? null,
+      scheduled_end: j.scheduled_end ?? null,
+      route_order: j.route_order ?? null,
+      arrival_fixed: !!j.arrival_fixed,
+      lock_day: !!j.lock_day,
+      lock_time: !!j.lock_time,
+      service_plan_id: j.service_plan_id ?? null,
+      property: j.property
+        ? { latitude: j.property.latitude ?? null, longitude: j.property.longitude ?? null }
+        : null,
+    },
   };
 }
 
@@ -303,6 +319,22 @@ export default async function SchedulePage({ searchParams }: PageProps<"/schedul
   const planTechs = movers.map((t) => ({ id: t.user_id, name: t.name, color: t.color }));
   // Customers to Add: the plans, and the techs (you first, as on the rest of Schedule).
   const plans = routePlans ? { list: routePlans, workDays: ctx.settings.workDays } : null;
+  // What the browser needs to show Optimize's and Optimize Week's new order at once: the
+  // settings, the shop, and where each tech who starts at home starts (a map point only).
+  const preview = {
+    timeZone: ctx.timeZone,
+    settings: ctx.settings,
+    depot: ctx.depot,
+    today: ctx.today,
+    nowMin: ctx.nowMin,
+    homes: [
+      ...new Map(
+        columns
+          .filter((c) => c.start.label === "home" && c.start.at)
+          .map((c) => [c.techId, { techId: c.techId, at: c.start.at! }]),
+      ).values(),
+    ],
+  };
 
   const move = (n: number) =>
     view === "month" ? addMonths(date, n) : addDays(date, view === "week" ? 7 * n : n);
@@ -482,16 +514,7 @@ export default async function SchedulePage({ searchParams }: PageProps<"/schedul
           <>
             {/* Phones: the week day by day, each tech's day a block of stop tiles that drag as
                 on Day (docs/design/2026-10-21-schedule-tile.md). */}
-            <div className="space-y-5 sm:hidden">
-              {planDates.length ? (
-                <PlanWeek
-                  dates={planDates}
-                  waiting={planWaiting}
-                  techs={planTechs}
-                  defaultTech={tech === "all" ? null : tech}
-                  buttonClassName="w-full"
-                />
-              ) : null}
+            <div className="sm:hidden">
               <RouteBoard
                 mode="week"
                 phone
@@ -501,6 +524,9 @@ export default async function SchedulePage({ searchParams }: PageProps<"/schedul
                 plans={plans}
                 today={today}
                 weekDays={days.map((d) => [d, formatDay(d)])}
+                planDates={planDates.length ? planDates : null}
+                planWaiting={planWaiting}
+                preview={preview}
               />
             </div>
             <div className="hidden sm:block">
@@ -516,6 +542,7 @@ export default async function SchedulePage({ searchParams }: PageProps<"/schedul
                 workDates={days.filter((d) => ctx.settings.workDays.includes(weekday(d)))}
                 planDates={planDates.length ? planDates : null}
                 planWaiting={planWaiting}
+                preview={preview}
               />
             </div>
           </>
@@ -527,6 +554,7 @@ export default async function SchedulePage({ searchParams }: PageProps<"/schedul
             techs={planTechs}
             today={today}
             maps={maps}
+            preview={preview}
           />
         )}
         {jobsOnPhone === 0 || jobsShown === 0 ? (

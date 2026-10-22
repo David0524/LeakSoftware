@@ -9,6 +9,11 @@ import Testing
     let heights: [Double] = [64, 80, 64, 64]
     let spacing = 4.0
 
+    /// Touch and hold lifts a stop's tile after 0.4 s on every platform (owner, 2026-10-22).
+    @Test func aHoldLiftsAfterFourTenthsOfASecond() {
+        #expect(ScheduleReorder.holdSeconds == 0.4)
+    }
+
     @Test func staysPutUntilItPassesAMiddle() {
         #expect(ScheduleReorder.target(from: 0, translation: 0, heights: heights, spacing: spacing) == 0)
         // Its middle at 32 + 75 = 107: not yet past the next middle (108).

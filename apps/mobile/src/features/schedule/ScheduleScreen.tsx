@@ -80,7 +80,8 @@ import {
 } from "../../ui/components";
 import { dayMap, weekdayName } from "../../lib/dayMap";
 import { useRoutingOn } from "../../lib/routing";
-import { buildWeekPlan, planWaitingCount } from "../../lib/weekPlan";
+import { buildWeekPlan, PLAN_WEEK_UNDONE, planWaitingCount } from "../../lib/weekPlan";
+import { ALREADY_BEST, OPTIMIZE_PUT_BACK, optimizeOutcome } from "./optimize";
 import { haptics } from "../../ui/haptics";
 import { ModalSheet } from "../../ui/ModalSheet";
 import { useResultBanner } from "../../ui/ResultBanner";
@@ -527,7 +528,7 @@ export function ScheduleScreen() {
     banner.dismiss();
     afterPaint(() => {
       try {
-        save(planDay(live(), r.techId, r.date, dayJobsOf(r.techId, r.date), drive));
+        optimizeRoutes([r]);
       } finally {
         setPlanning(null);
       }
@@ -541,21 +542,64 @@ export function ScheduleScreen() {
     banner.dismiss();
     afterPaint(() => {
       try {
-        const now = live();
-        const changes = list.map((r) =>
-          planDay(now, r.techId, r.date, dayJobsOf(r.techId, r.date), drive),
-        );
-        if (changes.length === 1) return void save(changes[0]!);
-        const ok = changes.filter((c) => !c.error);
-        if (!ok.length) return void fail(changes[0]!.error!);
-        save({
-          updates: ok.flatMap((c) => c.updates),
-          message: `Optimized ${ok.length} ${ok.length === 1 ? "route" : "routes"} for ${formatDay(date, "long")}.`,
-        });
+        optimizeRoutes(list, date);
       } finally {
         setPlanning(null);
       }
     });
+  }
+
+  /**
+   * Optimize these routes (owner, 2026-10-22: "Make Optimize show the new order at once, with
+   * Undo"): worked out and saved on the phone through the sync layer in one go, so the stops
+   * slide to their new places at once; the banner says what it saved ("Optimized · 42 min less
+   * driving", or "Already the best order") with Undo. A save that fails leaves the old order and
+   * says so.
+   */
+  function optimizeRoutes(list: Route[], date?: string) {
+    const now = live();
+    const outs = list.map((r) => {
+      const day = dayJobsOf(r.techId, r.date);
+      return optimizeOutcome(planDay(now, r.techId, r.date, day, drive), day);
+    });
+    const ok = outs.filter((o) => !o.error);
+    if (!ok.length) return void fail(outs[0]!.error!);
+    const updates = ok.flatMap((o) => o.updates);
+    const undo = ok.flatMap((o) => o.undo);
+    try {
+      animateReorder(reduceMotion);
+      if (updates.length) saveJobChanges(company.id, updates);
+    } catch (e) {
+      banner.show({
+        tone: "error",
+        message: e instanceof Error ? e.message : String(e),
+        detail: OPTIMIZE_PUT_BACK,
+      });
+      return;
+    }
+    const one = outs.length === 1 ? ok[0]! : null;
+    const text = one?.message ? bannerText(one.message) : null;
+    banner.show({
+      tone: "success",
+      message:
+        text?.message ??
+        (!undo.length
+          ? ALREADY_BEST
+          : `Optimized ${ok.length} ${ok.length === 1 ? "route" : "routes"} for ${formatDay(date ?? list[0]!.date, "long")}.`),
+      detail: one ? (one.detail ?? text?.detail) : undefined,
+      undo: undo.length ? () => putBackOptimize(undo) : undefined,
+    });
+  }
+
+  /** Undo after Optimize: the saved values back, sliding to their old places. */
+  function putBackOptimize(rows: Parameters<typeof saveJobChanges>[1]) {
+    try {
+      animateReorder(reduceMotion);
+      saveJobChanges(company.id, rows);
+      banner.show({ tone: "info", message: PLAN_WEEK_UNDONE });
+    } catch (e) {
+      fail(e instanceof Error ? e.message : String(e));
+    }
   }
 
   /** Plan Week, worked out on the phone and saved in one go; its undo rows put it back. */

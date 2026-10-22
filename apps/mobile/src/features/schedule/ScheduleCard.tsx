@@ -12,8 +12,8 @@ import { WebIcon } from "../../ui/WebIcon";
 import { DriveChip } from "../../ui/DriveChip";
 import { driveChipMinutes, driveSpoken } from "../../lib/scheduleTile";
 import { useDragHover } from "./ScheduleDrag";
-import Svg, { Path } from "react-native-svg";
-import { color, font, MAX_TEXT_SCALE, space, tabular, type } from "../../ui/theme";
+import Svg, { Circle, Path } from "react-native-svg";
+import { color, font, MAX_TEXT_SCALE, minTap, space, tabular, type } from "../../ui/theme";
 import type { Stop } from "./RouteCard";
 
 // A schedule card (docs/design/2026-10-21-schedule-card.md; owner, 2026-10-21: "Redesign those
@@ -21,7 +21,8 @@ import type { Stop } from "./RouteCard";
 // and the iPhone app: two lines. The tech's color stripe and the stop's number, then the time
 // and the customer; under them the kind of visit and the street only. Trailing, small icons
 // only for exceptions (a lock, not on the map, a cleaning due), or the status when it isn't
-// plain Scheduled; then the grip, which alone drags it (at once, no hold). Only the customer's
+// plain Scheduled; then "⋯" and the grip. A day's stop drags from the grip at once, or from
+// anywhere on it after a 0.4 s touch and hold (owner, 2026-10-22); its menu is on "⋯". Only the customer's
 // name opens the job (owner, 2026-10-21: "I find myself accidentally opening jobs all the
 // time"), drawn as a link with "›". Move…, the locks, Take Off Schedule and Directions are in
 // its touch-and-hold menu and its TalkBack actions.
@@ -101,6 +102,7 @@ export function ScheduleCardFace({
   trailing,
   onOpen,
   onHold,
+  onMore,
   gripGesture,
 }: {
   stop: Stop;
@@ -116,6 +118,8 @@ export function ScheduleCardFace({
   onOpen?: () => void;
   /** The card's touch-and-hold menu, from the name too (the body has it already). */
   onHold?: () => void;
+  /** Its menu on a "⋯" button, where touch and hold lifts it to drag instead (a day's stops). */
+  onMore?: () => void;
   /** The drag, on the grip only (absent on the carried copy and stops that can't move). */
   gripGesture?: PanGesture;
 }) {
@@ -185,6 +189,7 @@ export function ScheduleCardFace({
         </View>
       )}
       {trailing}
+      {onMore ? <MoreButton customer={s.customer} onPress={onMore} /> : null}
       {s.movable && gripGesture ? (
         <GestureDetector gesture={gripGesture}>
           {/* 44 × 44 to touch; its own responder, so a touch here is never the card's tap or
@@ -243,7 +248,7 @@ export const TILE_INSET = 58;
  * iPhone app: the stop number leads; line 1 is the customer as the link (only the name opens
  * the job) with the exception icons after it, or the status at the line's end; line 2 is the
  * drive to it as a chip, the time, "With …" for a two-tech stop, and the street. The kind of
- * visit is the menu's first title line. The grip, which alone drags it, at the trailing edge.
+ * visit is the menu's first title line. "⋯" (its menu) and the grip at the trailing edge; a hold on the tile drags it too.
  * The tech's stripe is on the block (`tech` only on the carried copy).
  */
 export function StopTileFace({
@@ -253,6 +258,7 @@ export function StopTileFace({
   fromOffMap = false,
   onOpen,
   onHold,
+  onMore,
   gripGesture,
 }: {
   stop: Stop;
@@ -263,6 +269,8 @@ export function StopTileFace({
   tech?: string | null;
   onOpen?: () => void;
   onHold?: () => void;
+  /** Its menu, on "⋯": touch and hold on the tile lifts it to drag (owner, 2026-10-22). */
+  onMore?: () => void;
   gripGesture?: PanGesture;
 }) {
   const twoTechs = s.lock?.kind === "two_techs";
@@ -330,6 +338,7 @@ export function StopTileFace({
           </Text>
         </View>
       </View>
+      {onMore ? <MoreButton customer={s.customer} onPress={onMore} /> : null}
       {s.movable && gripGesture ? (
         <GestureDetector gesture={gripGesture}>
           <View
@@ -374,6 +383,29 @@ export function DriveHome({ text }: { text: string }) {
 /** The website's HouseFillIcon. */
 const HOUSE_FILL =
   "M11.3 3.3a1 1 0 0 1 1.4 0l8 7.2a.8.8 0 0 1-.5 1.4H19v7.6a1 1 0 0 1-1 1h-3.5v-5.5h-5v5.5H6a1 1 0 0 1-1-1v-7.6H3.8a.8.8 0 0 1-.5-1.4z";
+
+/**
+ * A stop's "⋯" (owner, 2026-10-22): its menu (Open, Move…, Lock Day, Lock Time, Take Off
+ * Schedule, Directions), since touch and hold on the tile lifts it to drag. 44 × 44 to touch.
+ */
+function MoreButton({ customer, onPress }: { customer: string; onPress: () => void }) {
+  return (
+    <Pressable
+      accessibilityRole="button"
+      accessibilityLabel={`More: ${customer}`}
+      testID="schedule-more"
+      onPress={onPress}
+      hitSlop={4}
+      style={({ pressed }) => [styles.more, pressed && { backgroundColor: color.iconTint }]}
+    >
+      <Svg width={22} height={22} viewBox="0 0 24 24" fill={color.link}>
+        <Circle cx={6} cy={12} r={1.8} />
+        <Circle cx={12} cy={12} r={1.8} />
+        <Circle cx={18} cy={12} r={1.8} />
+      </Svg>
+    </Pressable>
+  );
+}
 
 /** The customer's name, as a link: "Rebecca Soto ›". */
 function Name({ customer }: { customer: string }) {
@@ -450,4 +482,11 @@ const styles = StyleSheet.create({
     justifyContent: "center",
   },
   icons: { flexDirection: "row", alignItems: "center", gap: 4 },
+  more: {
+    width: minTap - 8,
+    height: minTap,
+    borderRadius: minTap / 2,
+    alignItems: "center",
+    justifyContent: "center",
+  },
 });

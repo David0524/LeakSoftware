@@ -65,6 +65,14 @@ export interface RouteResult {
   detail?: string;
 }
 
+/** Optimize's answer: and the saved values of what it changed, for Undo (none when no change). */
+export interface OptimizeResult extends RouteResult {
+  undo?: JobChange[];
+}
+
+/** The banner when Optimize keeps the order (owner, 2026-10-22). */
+const ALREADY_BEST = "Already the best order";
+
 /** Notes as sentences: "Runs 20 min late. A fixed time can’t be met." */
 function sentences(notes: (string | null)[]): string | undefined {
   const list = notes.filter((n): n is string => !!n);
@@ -112,7 +120,7 @@ function dayStops(ctx: RouteContext, techId: string, date: string, jobs: PlanJob
 // ---------------------------------------------------------------------------
 
 /** Order a tech's day for the least driving, keep promised times, and save the times. */
-export async function planRoute(techId: string, date: string): Promise<RouteResult> {
+export async function planRoute(techId: string, date: string): Promise<OptimizeResult> {
   if (!UUID.test(techId) || !isDateString(date)) return { error: "Pick a tech and a day." };
   const office = await getOffice();
   const ctx = await routeContext(office);
@@ -128,26 +136,81 @@ export async function planRoute(techId: string, date: string): Promise<RouteResu
   const before = timeRoute(stops, start, hours, drive);
   const { order, route } = optimizeRoute(stops, start, hours, drive);
   const planned = order.map((i) => stops[i]!);
-  const error = await save(
-    await createClient(),
-    office,
+  // Only what changes is saved, and its saved values come back for Undo (owner, 2026-10-22:
+  // "Make Optimize show the new order at once, with Undo").
+  const { updates, undo } = changeWithUndo(
     routeUpdates(date, ctx.timeZone, planned, route),
+    day.jobs,
   );
+  const error = await saveOrRestore(await createClient(), office, updates, undo);
   if (error) return { error };
   refresh();
 
   // One short line for the banner at the top of the screen (owner, 2026-10-20: the note under
-  // the button "looks horrible"), and what to watch for as a second line.
+  // the button "looks horrible"), and what to watch for as a second line. The order as it was:
+  // "Already the best order", with no Undo.
+  const same = order.every((i, at) => i === at);
   const saved = before.driveMin - route.driveMin;
-  const message = [
-    "Optimized",
-    saved > 0 ? `${durationLabel(saved)} less driving` : `${durationLabel(route.driveMin)} driving`,
-  ].join(" · ");
+  const message = same
+    ? ALREADY_BEST
+    : [
+        "Optimized",
+        saved > 0
+          ? `${durationLabel(saved)} less driving`
+          : `${durationLabel(route.driveMin)} driving`,
+      ].join(" · ");
   const detail = sentences([
     stops.some((s) => !s.location) ? "driving to pools not on the map isn’t counted" : null,
     !start ? "the shop has no location (Settings › Scheduling)" : null,
   ]);
-  return { message, detail };
+  return { message, detail, undo: same ? undefined : undo };
+}
+
+const OPTIMIZE_UNDO_KEYS = new Set(["id", "route_order", "scheduled_start", "scheduled_end"]);
+
+/**
+ * Undo after Optimize: put back the saved values `planRoute` returned, for jobs still on that
+ * tech's day. Only the order and the times of stops that may move, on that day.
+ */
+export async function undoPlanRoute(
+  techId: string,
+  date: string,
+  rows: JobChange[],
+): Promise<RouteResult> {
+  if (
+    !UUID.test(techId) ||
+    !isDateString(date) ||
+    !Array.isArray(rows) ||
+    rows.length === 0 ||
+    rows.length > 100
+  )
+    return { error: "That can’t be undone." };
+  const office = await getOffice();
+  const ctx = await routeContext(office);
+  if (date < ctx.today) return { error: "Past days can’t be planned." };
+  const { routes } = await loadRoutes(office, ctx, [date]);
+  const day = routes.get(routeKey(techId, date));
+  const byId = new Map((day?.jobs ?? []).map((j) => [j.id, j]));
+  const onDay = (v: unknown) =>
+    typeof v === "string" &&
+    !Number.isNaN(Date.parse(v)) &&
+    localDate(new Date(v), ctx.timeZone) === date;
+  for (const r of rows) {
+    const j = r && typeof r === "object" && UUID.test(String(r.id)) ? byId.get(r.id) : undefined;
+    if (!j || Object.keys(r).some((k) => !OPTIMIZE_UNDO_KEYS.has(k)))
+      return { error: "This stop isn’t on this day anymore. Refresh the page." };
+    const movable = lockReason(j) === null;
+    const ok =
+      (r.route_order == null ||
+        (Number.isInteger(r.route_order) && (r.route_order as number) > 0)) &&
+      (r.scheduled_start === undefined || (movable && onDay(r.scheduled_start))) &&
+      (r.scheduled_end === undefined || (movable && onDay(r.scheduled_end)));
+    if (!ok) return { error: "That can’t be undone." };
+  }
+  const error = await save(await createClient(), office, rows);
+  if (error) return { error };
+  refresh();
+  return { message: "Put back as it was." };
 }
 
 // ---------------------------------------------------------------------------

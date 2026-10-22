@@ -195,3 +195,9 @@ export function slideFor(
   if (state.target.route === route && others >= state.target.index) shift += state.openGap;
   return shift;
 }
+
+/**
+ * How long a finger rests on a stop's tile before it lifts (owner, 2026-10-22: "Press-and-hold-
+ * then-drag on any tile, keeping the grip as a backup"), the same on every platform.
+ */
+export const STOP_HOLD_MS = 400;

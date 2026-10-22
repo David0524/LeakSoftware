@@ -10,6 +10,7 @@ import {
   togglePlanTech,
   type WeekPlanOutcome,
 } from "../../lib/weekPlan";
+import { PLAN_WEEK_KEPT } from "./optimize";
 import { Button, Group, ListRow, SwitchControl, T } from "../../ui/components";
 import { ModalSheet } from "../../ui/ModalSheet";
 import { color, minTap, space } from "../../ui/theme";
@@ -65,7 +66,8 @@ export function PlanWeek({
         setTimeout(() => {
           try {
             const r = onPlan(forTechs, tray);
-            if (r.error) return onResult({ tone: "error", message: r.error });
+            if (r.error)
+              return onResult({ tone: "error", message: r.error, detail: PLAN_WEEK_KEPT });
             const rows = r.undo;
             onResult({
               tone: "success",

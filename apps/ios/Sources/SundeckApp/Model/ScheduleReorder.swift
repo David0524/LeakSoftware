@@ -7,6 +7,11 @@ import Foundation
 // the lifted card settles. Rows are measured top to bottom (`heights`), `spacing` apart.
 
 public enum ScheduleReorder {
+    /// How long a finger rests on a stop's tile before it lifts to drag (owner, 2026-10-22:
+    /// "Press-and-hold-then-drag on any tile, keeping the grip as a backup"): 0.4 s on every
+    /// platform (website `HOLD_MS`, Android `STOP_HOLD_MS`).
+    public static let holdSeconds: Double = 0.4
+
     /// Where the row at `from` lands (its index in the new order, 0 first) when it's been dragged
     /// `translation` points (down is positive): among the other rows, the ones whose middle is
     /// above the dragged row's middle come before it.
