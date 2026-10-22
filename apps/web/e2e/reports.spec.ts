@@ -12,7 +12,8 @@ async function openSampleJob(page: Page, customer = "Sam Sample", signedIn = fal
   if (!signedIn) await signIn(page, OWNER);
   await page.goto(`/jobs?status=all&q=${encodeURIComponent(customer)}`);
   await page.getByRole("row").filter({ hasText: customer }).getByRole("link").first().click();
-  await expect(page.getByRole("heading", { name: "Wrap-Up" })).toBeVisible();
+  // One tab at a time on every screen (owner, 2026-10-22): the job opens on Details.
+  await expect(page.getByRole("tablist", { name: "Job sections" })).toBeVisible();
 }
 
 async function writeDraft(page: Page, template: "homeowner" | "partner") {

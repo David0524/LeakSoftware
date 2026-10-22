@@ -94,8 +94,9 @@ test("a repair is invoiced with its deposit credited, paid by check and card, wi
     390,
   );
 
-  // A $200 check, recorded by the owner.
+  // A $200 check, recorded by the owner (a reload keeps the tab, not the open step).
   await page.reload();
+  await wrapUpStep(page, "Invoice");
   await panel.getByLabel("Amount received ($)").fill("200");
   await panel.getByRole("button", { name: "Record Payment" }).click();
   await expect(panel.getByText("Payment recorded.")).toBeVisible();

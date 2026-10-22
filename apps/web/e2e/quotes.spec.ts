@@ -1,6 +1,6 @@
 import { expect, test } from "@playwright/test";
 import { adminClient, signedEvent } from "./backend";
-import { OWNER, RUN, signIn, wrapUpStep } from "./helpers";
+import { OWNER, RUN, jobSection, signIn, wrapUpStep } from "./helpers";
 import { PHONE, SAMPLE_JOB, draftQuote, sendFromOffice, sessionEvent, webhook } from "./money";
 
 // M8 "Done when": a customer accepts a quote and pays the deposit by card and by bank (ACH)
@@ -194,8 +194,9 @@ test("the office turns a customer link off, and it stops working", async ({ page
     customer.getByRole("heading", { name: `Repair Quote #${quote.number}` }),
   ).toBeVisible();
 
-  // The newest quote link is listed first, with how long it lasts.
+  // The newest quote link is listed first, with how long it lasts (under Details).
   await page.reload();
+  await jobSection(page, "Details");
   const quoteLinks = page.getByTestId("customer-link").filter({ hasText: /^Quote/ });
   const row = quoteLinks.first();
   await expect(row).toContainText("Works until");

@@ -1,5 +1,5 @@
 import { expect, test, type Page } from "@playwright/test";
-import { OWNER, RUN, signIn } from "./helpers";
+import { OWNER, RUN, jobSection, signIn } from "./helpers";
 
 // Edge cases found by break testing (2026-10-20).
 
@@ -64,6 +64,8 @@ test.describe("office edge cases", () => {
 
   test("a quote discount larger than the subtotal is refused", async ({ page }) => {
     await newJob(page, `EDGE discount ${RUN}`);
+    // Quotes are on Wrap-Up's tab (owner, 2026-10-22: tabs on every screen).
+    await jobSection(page, "Wrap-Up");
     await page.getByRole("button", { name: "New Quote" }).click();
     const custom = page.locator('input[name^="custom-"]:not([name^="custom-price"])').last();
     await expect(custom).toBeVisible();

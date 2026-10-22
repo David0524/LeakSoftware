@@ -94,8 +94,9 @@ public struct WrapUpInput: Codable, Equatable, Sendable {
     }
 }
 
-/// One row of the list. Port of WrapUpRow.
-public struct WrapUpRow: Codable, Equatable, Sendable, Identifiable {
+/// One row of the list. Port of WrapUpRow. Not `Identifiable`: its `id` is the quote or invoice
+/// (nil for Report and Customer signs), so lists key rows by `key` (`ForEach(rows, id: \.key)`).
+public struct WrapUpRow: Codable, Equatable, Sendable {
     /// "report", "sign", "quote:<id>", "invoice:<id>" or "invoice".
     public var key: String
     public var step: WrapUpStep
@@ -114,8 +115,6 @@ public struct WrapUpRow: Codable, Equatable, Sendable, Identifiable {
     public var id: String?
     /// What VoiceOver reads: "Step 3 of 4, Customer signs, not yet, next".
     public var spoken: String
-
-    public var rowId: String { key }
 }
 
 /// The step the bottom button does. Port of WrapUpNext.

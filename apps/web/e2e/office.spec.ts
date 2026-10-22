@@ -417,7 +417,7 @@ test("the office adds a job for a new customer, with its checklist ready", async
   const name = `Web Customer ${RUN}`;
   await page.getByRole("radio", { name: "New", exact: true }).click();
   await page.getByLabel("Name").fill(name);
-  await page.getByLabel("Phone").fill("(480) 555-0199");
+  await page.getByRole("textbox", { name: "Phone" }).fill("(480) 555-0199");
   await page.getByLabel("Street address").fill("12 Office Way");
   await page.getByLabel("City").fill("Tempe");
   await page.getByLabel("State", { exact: true }).fill("az");

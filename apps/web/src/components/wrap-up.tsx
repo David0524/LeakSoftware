@@ -83,6 +83,11 @@ export function WrapUpList({
   };
   useNextStep("wrap-up", goNext);
 
+  // New Quote opens "the draft" until the new quote arrives, then keeps that quote open, so
+  // sending it (no longer a draft) doesn't lose the sheet's quote.
+  if (chosen?.step === "quote" && chosen.id === "draft" && draftQuoteId)
+    setOpen({ step: "quote", id: draftQuoteId });
+
   const newQuote = () =>
     start(async () => {
       setError(null);
