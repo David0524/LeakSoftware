@@ -51,6 +51,9 @@
         @State private var busy: String?
         @State private var choosingLogo = false
         @State private var logo: UIImage?
+        /// The logo's colors (logoPalette), and whether the main color was just filled from them.
+        @State private var logoColors: [String] = []
+        @State private var pickedFromLogo = false
         /// Each part as loaded or last saved: Back asks while any part has changes not saved.
         @State private var savedProfile = CompanyProfileForm()
         @State private var savedFollowups = FollowupsForm(nil)
@@ -212,10 +215,12 @@
                     }
                     .padding(.horizontal, CGFloat(Spacing.rowHorizontal))
                     .padding(.vertical, CGFloat(Spacing.rowVertical))
-                    LabeledFieldRow(
-                        label: "Main color", text: $branding.primary, placeholder: "#12263A", labelWidth: 132)
-                    LabeledFieldRow(
-                        label: "Accent color", text: $branding.secondary, placeholder: "Optional", labelWidth: 132)
+                    BrandColorRow(
+                        label: "Main color", hex: $branding.primary, logoColors: logoColors,
+                        note: pickedFromLogo ? "Color picked from your logo." : nil
+                    ) { pickedFromLogo = false }
+                    BrandColorRow(
+                        label: "Accent color", hex: $branding.secondary, logoColors: logoColors, optional: true)
                 }
                 SaveRow(busy: busy == "logo", result: results["branding"]) { saveBranding() }
             }
@@ -319,6 +324,7 @@
             logo = image
             pendingLogo = (encoded, mime)
             results["branding"] = nil
+            readColors(image, newLogo: true)
         }
 
         private func loadLogo() async {
@@ -328,6 +334,16 @@
                 let (data, _) = try? await URLSession.shared.data(from: url)
             else { return }
             logo = UIImage(data: data)
+            if let logo { readColors(logo, newLogo: false) }
+        }
+
+        /// The logo's colors; a new logo fills the main color, an old one only over the default.
+        private func readColors(_ image: UIImage, newLogo: Bool) {
+            logoColors = logoPalette(logoPixels(image))
+            if let next = suggestedBrandColor(logoColors, current: branding.primary, newLogo: newLogo) {
+                branding.primary = next
+                pickedFromLogo = true
+            }
         }
 
         private func saveBranding() {

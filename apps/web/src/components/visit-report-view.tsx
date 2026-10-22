@@ -78,23 +78,23 @@ export function VisitReportView({
         className="report-header -mx-4 -mt-4 flex flex-wrap items-center justify-between gap-4 px-6 py-5 max-sm:px-5 sm:mx-0 sm:mt-0 sm:rounded-lg"
         style={{ backgroundColor: brand, color: onBrand }}
       >
-        <div className="flex min-w-0 items-center gap-4">
+        <div className="flex min-w-0 flex-wrap items-center gap-4 max-sm:gap-3 sm:flex-nowrap">
           {logoUrl ? (
             // eslint-disable-next-line @next/next/no-img-element -- signed storage URL
             <img
               src={logoUrl}
               alt={`${s.company.name} logo`}
-              className="max-h-16 max-w-48 rounded bg-paper p-1"
+              className="max-h-14 max-w-48 rounded bg-paper p-1 max-sm:max-w-40"
             />
           ) : null}
-          <div className="min-w-0">
+          <div className={cx("min-w-0", logoUrl && "max-sm:basis-full")}>
             <p className="font-display text-2xl font-extrabold">{s.company.name}</p>
             <p className="text-[0.9375rem]">
               <ContactLine phone={s.company.phone} email={s.company.email} />
             </p>
           </div>
         </div>
-        <div className="flex items-center gap-4">
+        <div className="flex items-center gap-4 sm:ml-auto">
           <div className="text-[0.9375rem] sm:text-right">
             <h1 className="font-display text-xl font-bold">Pool Visit Report</h1>
             <p>

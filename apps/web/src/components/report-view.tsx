@@ -240,16 +240,16 @@ export function ReportView(p: ReportViewProps) {
         style={{ backgroundColor: brand, color: onBrand }}
       >
         {/* Phones: the PDF link ends the shop's row; wider, it sits beside the title. */}
-        <div className="flex w-full min-w-0 items-center gap-4 max-sm:gap-3 sm:w-auto">
+        <div className="flex w-full min-w-0 flex-wrap items-center gap-4 max-sm:gap-3 sm:w-auto sm:flex-nowrap">
           {p.logoUrl ? (
             // eslint-disable-next-line @next/next/no-img-element -- signed storage URL
             <img
               src={p.logoUrl}
               alt={`${s.company.name} logo`}
-              className="max-h-16 max-w-48 rounded bg-paper p-1"
+              className="max-h-14 max-w-48 rounded bg-paper p-1 max-sm:max-w-40"
             />
           ) : null}
-          <div className="min-w-0">
+          <div className={cx("min-w-0", p.logoUrl && "max-sm:order-last max-sm:basis-full")}>
             <p className="font-display text-2xl font-extrabold">{s.company.name}</p>
             <p className="text-[0.9375rem]">
               <ContactLine phone={s.company.phone} email={s.company.email} />
@@ -259,7 +259,7 @@ export function ReportView(p: ReportViewProps) {
             <PdfLink href={p.pdfHref} className="ml-auto inline-flex sm:hidden" />
           ) : null}
         </div>
-        <div className="flex items-center gap-4">
+        <div className="flex items-center gap-4 sm:ml-auto">
           <div className="text-left text-[0.9375rem] sm:text-right">
             <h1 className="font-display text-xl font-bold">{title}</h1>
             <p>

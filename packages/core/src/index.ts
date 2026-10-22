@@ -41,3 +41,5 @@ export * from "./day-map";
 export * from "./service-days";
 export * from "./download";
 export * from "./team";
+export * from "./logo-colors";
+export * from "./png";

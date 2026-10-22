@@ -11,7 +11,13 @@ import {
   type ReactNode,
 } from "react";
 import { requestFormReset } from "react-dom";
-import { contrastGrade, contrastRatio, isHexColor } from "@leakbook/core";
+import {
+  brandColorChoices,
+  isHexColor,
+  logoPalette,
+  suggestedBrandColor,
+  textOnBrand,
+} from "@leakbook/core";
 import { tokens } from "@leakbook/tokens";
 import type { FormState } from "@/app/actions/auth";
 import { orOffline } from "@/lib/offline";
@@ -264,73 +270,261 @@ export function FieldError({ name }: { name: string }) {
   ) : null;
 }
 
-/** A color input with its hex value and contrast against white and the brand navy. */
+/**
+ * The shop's logo and colors (owner, 2026-10-22: "You should auto fill company colors based on
+ * the logo, and give a picker. A hex code alone is not useful"). Choosing a logo reads its
+ * colors in the browser and fills the main color with the top one; a logo already there fills
+ * it only while the color is still the default. The logo's colors lead the swatches.
+ */
+export function BrandingFields({
+  logoUrl,
+  companyName,
+  primary,
+  secondary,
+}: {
+  logoUrl: string | null;
+  companyName: string;
+  primary: string;
+  secondary: string | null;
+}) {
+  const [preview, setPreview] = useState(logoUrl);
+  const [palette, setPalette] = useState<string[]>([]);
+  const [main, setMain] = useState(primary);
+  const [picked, setPicked] = useState(false);
+
+  function apply(colors: string[], newLogo: boolean) {
+    setPalette(colors);
+    const next = suggestedBrandColor(colors, main, newLogo);
+    if (next) {
+      setMain(next);
+      setPicked(true);
+    }
+  }
+
+  useEffect(() => {
+    if (!logoUrl) return;
+    let live = true;
+    void imagePalette(logoUrl).then((colors) => live && apply(colors, false));
+    return () => {
+      live = false;
+    };
+    // The stored logo is read once; a newly chosen one is read in onChange.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [logoUrl]);
+
+  return (
+    <>
+      <div className={cx("space-y-2", GROUP_ROW, "max-sm:py-2.5")}>
+        <label htmlFor="logo" className="block sm:font-medium">
+          Logo
+        </label>
+        {preview ? (
+          // eslint-disable-next-line @next/next/no-img-element -- signed storage URL or local file
+          <img
+            src={preview}
+            alt={`${companyName} logo`}
+            className="max-h-20 rounded-md border border-border bg-paper p-2"
+          />
+        ) : (
+          <p className="text-text-muted">No logo yet. Reports show your company name instead.</p>
+        )}
+        <input
+          id="logo"
+          name="logo"
+          type="file"
+          accept="image/png,image/jpeg,image/svg+xml"
+          onChange={(e) => {
+            const file = e.target.files?.[0];
+            if (!file) return;
+            const url = URL.createObjectURL(file);
+            setPreview(url);
+            void imagePalette(url).then((colors) => apply(colors, true));
+          }}
+          className="block w-full min-h-11 file:mr-3 file:min-h-11 file:rounded-full file:border-0 file:bg-link/12 file:px-4 file:font-semibold file:text-link"
+        />
+        <p className="text-[0.9375rem] text-text-muted">
+          PNG, JPEG, or SVG, under 2 MB. A wide logo works best.
+        </p>
+        <FieldError name="logo" />
+      </div>
+      <ColorField
+        name="brand_primary"
+        label="Main color"
+        value={main}
+        onChange={(v) => {
+          setMain(v);
+          setPicked(false);
+        }}
+        logoColors={palette}
+        note={picked ? "Color picked from your logo." : undefined}
+      />
+      <ColorField
+        name="brand_secondary"
+        label="Accent color"
+        defaultValue={secondary}
+        logoColors={palette}
+        optional
+      />
+    </>
+  );
+}
+
+function SwatchRow({
+  label,
+  quiet = false,
+  children,
+}: {
+  label: string;
+  /** Without a logo the row needs no heading: the label is for screen readers only. */
+  quiet?: boolean;
+  children: ReactNode;
+}) {
+  return (
+    <div role="group" aria-label={label}>
+      {quiet ? null : <p className="text-[0.8125rem] text-text-muted">{label}</p>}
+      <div className="-mx-1.5 flex flex-wrap items-center">{children}</div>
+    </div>
+  );
+}
+
+/** A logo's colors, read from its pixels on a small canvas. None when it can't be read. */
+async function imagePalette(src: string): Promise<string[]> {
+  try {
+    const img = new Image();
+    if (!src.startsWith("blob:")) img.crossOrigin = "anonymous";
+    img.src = src;
+    await img.decode();
+    const w = img.naturalWidth || 96;
+    const h = img.naturalHeight || 96;
+    const scale = Math.min(1, 96 / Math.max(w, h));
+    const canvas = document.createElement("canvas");
+    canvas.width = Math.max(1, Math.round(w * scale));
+    canvas.height = Math.max(1, Math.round(h * scale));
+    const ctx = canvas.getContext("2d", { willReadFrequently: true });
+    if (!ctx) return [];
+    ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+    return logoPalette(ctx.getImageData(0, 0, canvas.width, canvas.height).data);
+  } catch {
+    return [];
+  }
+}
+
+/**
+ * A color: a swatch that opens the system color picker, the hex small beside it for people who
+ * know it, and a row of swatches (the logo's colors first). Below, how a document header reads
+ * on it; documents switch to dark text on a light color by themselves (textOnBrand).
+ */
 export function ColorField({
   name,
   label,
-  defaultValue,
+  defaultValue = null,
+  value: controlled,
+  onChange,
+  logoColors = [],
+  note,
   optional = false,
   id = name,
 }: {
   name: string;
   label: string;
-  defaultValue: string | null;
+  defaultValue?: string | null;
+  value?: string;
+  onChange?: (value: string) => void;
+  logoColors?: string[];
+  note?: string;
   optional?: boolean;
   /** Unique per page when several forms share a field name (M11 review C3). */
   id?: string;
 }) {
-  const [value, setValue] = useState(defaultValue ?? "");
+  const [own, setOwn] = useState(defaultValue ?? "");
+  const value = controlled ?? own;
+  const set = (v: string) => (onChange ? onChange(v) : setOwn(v));
   const error = useFieldError(name);
   const valid = isHexColor(value);
-  // Contrast is symmetric: white text on the color equals the color on white.
-  const onWhite = valid ? contrastRatio(value, WHITE) : null;
-  const whiteOn = onWhite;
+  const upper = value.toUpperCase();
+  const logo = [...new Set(logoColors.map((c) => c.toUpperCase()))];
+  const others = brandColorChoices([], valid ? value : null).filter((c) => !logo.includes(c));
+  const onColor = valid ? textOnBrand(value, NAVY, WHITE) : WHITE;
+  const swatch = (c: string, title: string) => (
+    <button
+      key={c || "none"}
+      type="button"
+      onClick={() => set(c)}
+      aria-label={title}
+      aria-pressed={upper === c}
+      title={title}
+      className="grid size-11 shrink-0 place-items-center rounded-full"
+    >
+      <span
+        className={cx(
+          "size-8 rounded-full border border-control-border",
+          upper === c && "ring-2 ring-link ring-offset-2 ring-offset-surface",
+        )}
+        style={c ? { backgroundColor: c } : undefined}
+      >
+        {c ? null : (
+          <span className="block h-full w-full rounded-full bg-[linear-gradient(135deg,transparent_45%,var(--color-text-muted)_45%,var(--color-text-muted)_55%,transparent_55%)]" />
+        )}
+      </span>
+    </button>
+  );
   return (
     <div className={cx("space-y-2", GROUP_ROW, "max-sm:py-2.5")}>
-      <div className="flex flex-wrap items-center gap-x-3 gap-y-2 sm:block sm:space-y-2">
-        <label htmlFor={id} className="block flex-1 sm:font-medium">
+      <div className="flex items-center gap-3">
+        <span className="flex-1 sm:font-medium">
           {label}
           {optional ? <span className="text-text-muted sm:font-normal"> (optional)</span> : null}
-        </label>
-        <div className="flex items-center gap-3">
+        </span>
+        <input
+          id={id}
+          name={name}
+          value={value}
+          onChange={(e) => set(e.target.value.trim())}
+          placeholder={optional ? "None" : NAVY}
+          aria-label={`${label} hex code`}
+          aria-invalid={error ? true : undefined}
+          spellCheck={false}
+          className="min-h-11 w-[5.5rem] rounded-lg bg-transparent px-1 text-right font-mono text-[0.9375rem] uppercase text-text-muted placeholder:normal-case focus:bg-surface focus:text-text"
+        />
+        <label
+          className="relative grid size-11 shrink-0 cursor-pointer place-items-center rounded-full"
+          title={`Choose ${label.toLowerCase()}`}
+        >
+          <span
+            className="size-9 rounded-full border border-control-border shadow-sm"
+            style={{ backgroundColor: valid ? value : "transparent" }}
+          />
           <input
             type="color"
-            aria-label={`${label} picker`}
-            value={valid ? value : NAVY}
-            onChange={(e) => setValue(e.target.value.toUpperCase())}
-            className="h-11 w-14 cursor-pointer rounded-xl border border-control-border bg-surface"
+            aria-label={`Choose ${label.toLowerCase()}`}
+            value={valid ? value.toLowerCase() : NAVY.toLowerCase()}
+            onChange={(e) => set(e.target.value.toUpperCase())}
+            className="absolute inset-0 size-full cursor-pointer opacity-0"
           />
-          <input
-            id={id}
-            name={name}
-            value={value}
-            onChange={(e) => setValue(e.target.value)}
-            placeholder={optional ? "None" : NAVY}
-            aria-invalid={error ? true : undefined}
-            className="min-h-11 w-32 rounded-xl border border-control-border bg-surface px-3 font-mono uppercase"
-          />
-        </div>
+        </label>
       </div>
-      {valid ? (
-        <div className="flex flex-wrap gap-2 text-[0.9375rem]">
-          <span
-            className="rounded-md px-3 py-2 font-semibold"
-            style={{ backgroundColor: value, color: WHITE }}
-          >
-            White text {whiteOn}:1 · {contrastGrade(whiteOn!)}
-          </span>
-          <span
-            className="rounded-md border border-border bg-paper px-3 py-2 font-semibold"
-            style={{ color: value }}
-          >
-            On white {onWhite}:1 · {contrastGrade(onWhite!)}
-          </span>
-        </div>
+      {logo.length ? (
+        <SwatchRow label="From your logo">
+          {logo.map((c) => swatch(c, `${c}, from your logo`))}
+        </SwatchRow>
       ) : null}
-      {valid && onWhite! < 3 ? (
-        <p className="text-[0.9375rem] text-status-warning">
-          Too light for text on white. Fine as a fill color behind dark text.
-        </p>
+      <SwatchRow label={logo.length ? "More colors" : `${label} swatches`} quiet={!logo.length}>
+        {optional ? swatch("", "None") : null}
+        {others.map((c) => swatch(c, c))}
+      </SwatchRow>
+      {note ? <p className="text-[0.9375rem] text-text-muted">{note}</p> : null}
+      {valid && name === "brand_primary" ? (
+        <div className="flex flex-wrap items-center gap-2 text-[0.9375rem]">
+          <span
+            className="rounded-full px-3 py-1.5 font-semibold"
+            style={{ backgroundColor: value, color: onColor }}
+          >
+            Report header
+          </span>
+          {onColor === NAVY ? (
+            <span className="text-text-muted">A light color: documents use dark text on it.</span>
+          ) : null}
+        </div>
       ) : null}
       <FieldError name={name} />
     </div>

@@ -107,23 +107,23 @@ async function QuotePage({ params, searchParams }: PageProps<"/q/[token]">) {
         className="-mx-4 -mt-4 flex flex-wrap items-center justify-between gap-4 px-5 py-5 sm:mx-0 sm:mt-0 sm:rounded-lg"
         style={{ backgroundColor: c.brand_primary, color: onBrand }}
       >
-        <div className="flex items-center gap-3">
+        <div className="flex min-w-0 flex-wrap items-center gap-3 sm:flex-nowrap">
           {logo?.signedUrl ? (
             // eslint-disable-next-line @next/next/no-img-element -- signed storage URL
             <img
               src={logo.signedUrl}
               alt={`${c.name} logo`}
-              className="max-h-14 max-w-40 rounded bg-paper p-1"
+              className="max-h-14 max-w-48 rounded bg-paper p-1 max-sm:max-w-40"
             />
           ) : null}
-          <div>
+          <div className={cx("min-w-0", logo?.signedUrl && "max-sm:basis-full")}>
             <p className="font-display text-2xl font-extrabold">{c.name}</p>
             <p className="text-[0.9375rem]">
               <ContactLine phone={c.phone} email={c.email} />
             </p>
           </div>
         </div>
-        <div className="text-left sm:text-right">
+        <div className="text-left sm:ml-auto sm:text-right">
           <h1 className="font-display text-xl font-bold">
             Repair Quote{q.number ? ` #${q.number}` : ""}
           </h1>

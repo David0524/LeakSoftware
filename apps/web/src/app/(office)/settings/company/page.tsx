@@ -8,8 +8,7 @@ import {
   saveReportText,
 } from "@/app/actions/settings";
 import {
-  ColorField,
-  FieldError,
+  BrandingFields,
   SField,
   SSelect,
   STextArea,
@@ -19,7 +18,7 @@ import {
   SettingsSection,
 } from "@/components/settings-forms";
 import { ServicesForm } from "@/components/services-form";
-import { GROUP_ROW, PageHeader, cx } from "@/components/ui";
+import { PageHeader } from "@/components/ui";
 import { getOffice } from "@/lib/auth";
 import { getCompany } from "@/lib/data";
 import { createClient } from "@/lib/supabase/server";
@@ -197,44 +196,11 @@ export default async function CompanySettingsPage() {
         <SettingsSection title="Branding">
           <SettingsForm action={saveBranding} full>
             <SettingsFields className="sm:space-y-6">
-              <div className={cx("space-y-2", GROUP_ROW, "max-sm:py-2.5")}>
-                <label htmlFor="logo" className="block sm:font-medium">
-                  Logo
-                </label>
-                {logoUrl ? (
-                  // eslint-disable-next-line @next/next/no-img-element -- signed storage URL
-                  <img
-                    src={logoUrl}
-                    alt={`${company.name} logo`}
-                    className="max-h-20 rounded-md border border-border bg-paper p-2"
-                  />
-                ) : (
-                  <p className="text-text-muted">
-                    No logo yet. Reports show your company name instead.
-                  </p>
-                )}
-                <input
-                  id="logo"
-                  name="logo"
-                  type="file"
-                  accept="image/png,image/jpeg,image/svg+xml"
-                  className="block w-full min-h-11 file:mr-3 file:min-h-11 file:rounded-full file:border-0 file:bg-link/12 file:px-4 file:font-semibold file:text-link"
-                />
-                <p className="text-[0.9375rem] text-text-muted">
-                  PNG, JPEG, or SVG, under 2 MB. A wide logo works best.
-                </p>
-                <FieldError name="logo" />
-              </div>
-              <ColorField
-                name="brand_primary"
-                label="Main color"
-                defaultValue={company.brand_primary}
-              />
-              <ColorField
-                name="brand_secondary"
-                label="Accent color"
-                defaultValue={company.brand_secondary}
-                optional
+              <BrandingFields
+                logoUrl={logoUrl}
+                companyName={company.name}
+                primary={company.brand_primary}
+                secondary={company.brand_secondary}
               />
             </SettingsFields>
           </SettingsForm>

@@ -1,7 +1,13 @@
 import * as ImagePicker from "expo-image-picker";
 import { useEffect, useMemo, useState } from "react";
 import { Image, StyleSheet, View } from "react-native";
-import { isHexColor, offersLeak, parseReminderDays, type Job } from "@leakbook/core";
+import {
+  isHexColor,
+  offersLeak,
+  parseReminderDays,
+  suggestedBrandColor,
+  type Job,
+} from "@leakbook/core";
 import type { JsonValue } from "@leakbook/sync";
 import { useRows } from "../../data/hooks";
 import { useAddressSuggestions } from "../address/AddressSuggestions";
@@ -22,6 +28,7 @@ import { haptics } from "../../ui/haptics";
 import { Select } from "../../ui/Select";
 import { color, space } from "../../ui/theme";
 import { ManagersOnly } from "./SettingsList";
+import { BrandColorRow, logoColorsFrom } from "./BrandColor";
 import { formChanged } from "../../lib/discard";
 import { isWebUrl, REVIEW_URL_ERROR } from "../../lib/limits";
 import { useUnsavedChanges } from "../../ui/ModalSheet";
@@ -391,13 +398,30 @@ function Branding({ row, onSaved }: { row: Row; onSaved: Said }) {
   const [uploading, setUploading] = useState(false);
   const [logoUrl, setLogoUrl] = useState<string | null>(null);
   const logoPath = str(row, "logo_path");
+  // The logo's colors (logoPalette), and whether the main color was just filled from them.
+  const [logoColors, setLogoColors] = useState<string[]>([]);
+  const [picked, setPicked] = useState(false);
+  // `primary` here is as rendered: for the stored logo that's the saved color, and a new logo
+  // fills whatever is there.
+  function applyColors(colors: string[], newLogo: boolean) {
+    setLogoColors(colors);
+    const next = suggestedBrandColor(colors, primary, newLogo);
+    if (next) {
+      setPrimary(next);
+      setPicked(true);
+    }
+  }
   useEffect(() => {
     if (!logoPath) return;
     void getServices()
       .supabase.storage.from("company-assets")
       .createSignedUrl(logoPath, 3600)
-      .then(({ data }) => setLogoUrl(data?.signedUrl ?? null));
-  }, [logoPath]);
+      .then(async ({ data }) => {
+        setLogoUrl(data?.signedUrl ?? null);
+        if (data?.signedUrl) applyColors(await logoColorsFrom(data.signedUrl), false);
+      });
+    // Read once per logo.
+  }, [logoPath]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Unsaved entries ask before leaving (owner, 2026-10-20: "Discard changes?" everywhere).
   const entries = { primary, secondary };
@@ -446,6 +470,7 @@ function Branding({ row, onSaved }: { row: Row; onSaved: Said }) {
       write({ logo_path: path });
       haptics.success();
       onSaved("Logo saved.");
+      applyColors(await logoColorsFrom(asset.uri), true);
     } catch {
       setErrors((x) => ({ ...x, logo: "You’re offline. Try again with signal." }));
     } finally {
@@ -483,24 +508,25 @@ function Branding({ row, onSaved }: { row: Row; onSaved: Said }) {
             </T>
           ) : null}
         </View>
-        <FieldGroup labelWidth={120}>
-          <FieldRow
-            label="Main color"
-            value={primary}
-            onChangeText={setPrimary}
-            autoCapitalize="characters"
-            placeholder="#12263A"
-            error={errors.primary}
-          />
-          <FieldRow
-            label="Accent color"
-            value={secondary}
-            onChangeText={setSecondary}
-            autoCapitalize="characters"
-            placeholder="Optional"
-            error={errors.secondary}
-          />
-        </FieldGroup>
+        <BrandColorRow
+          label="Main color"
+          value={primary}
+          onChange={(v) => {
+            setPrimary(v);
+            setPicked(false);
+          }}
+          logoColors={logoColors}
+          note={picked ? "Color picked from your logo." : undefined}
+          error={errors.primary}
+        />
+        <BrandColorRow
+          label="Accent color"
+          value={secondary}
+          onChange={setSecondary}
+          logoColors={logoColors}
+          optional
+          error={errors.secondary}
+        />
         <Button title="Save" kind="secondary" onPress={save} />
       </View>
     </Section>

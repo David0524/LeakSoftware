@@ -6,6 +6,8 @@ import { publicClient } from "@/server/reports";
 
 export const maxDuration = 60;
 
+const LAYOUT = "2026-10-22";
+
 /**
  * The invoice (or receipt, once paid) as a PDF, printed from the same page. Each version of
  * the invoice is printed once and kept, so opening the link again doesn't start another
@@ -28,7 +30,12 @@ export async function GET(_request: Request, ctx: RouteContext<"/i/[token]/pdf">
   if (!i) return new Response("Not found", { status: 404 });
 
   // Everything the page shows is in `data`, so its hash names this version of the invoice.
-  const version = createHash("sha256").update(JSON.stringify(data)).digest("hex").slice(0, 16);
+  // LAYOUT changes when the printed page itself changes, so copies kept from before print again
+  // (2026-10-22: the shop's logo, which signed-out pages couldn't load until then).
+  const version = createHash("sha256")
+    .update(LAYOUT + JSON.stringify(data))
+    .digest("hex")
+    .slice(0, 16);
   const path = `${i.company_id}/${i.job_id}/invoice-${i.invoice_id}-${version}.pdf`;
   const server = adminClient();
   let pdf: Buffer | null = null;

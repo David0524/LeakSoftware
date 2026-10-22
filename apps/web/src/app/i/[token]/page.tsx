@@ -115,16 +115,16 @@ async function InvoicePage({ params, searchParams }: PageProps<"/i/[token]">) {
         style={{ backgroundColor: c.brand_primary, color: onBrand }}
       >
         {/* Phones: the PDF link sits at the end of the shop's row; wider, next to the title. */}
-        <div className="flex w-full min-w-0 items-center gap-3 sm:w-auto">
+        <div className="flex w-full min-w-0 flex-wrap items-center gap-3 sm:w-auto sm:flex-nowrap">
           {logo?.signedUrl ? (
             // eslint-disable-next-line @next/next/no-img-element -- signed storage URL
             <img
               src={logo.signedUrl}
               alt={`${c.name} logo`}
-              className="max-h-14 max-w-40 rounded bg-paper p-1"
+              className="max-h-14 max-w-48 rounded bg-paper p-1 max-sm:max-w-40"
             />
           ) : null}
-          <div className="min-w-0">
+          <div className={cx("min-w-0", logo?.signedUrl && "max-sm:order-last max-sm:basis-full")}>
             <p className="font-display text-2xl font-extrabold">{c.name}</p>
             <p className="text-[0.9375rem]">
               <ContactLine phone={c.phone} email={c.email} />
@@ -134,7 +134,7 @@ async function InvoicePage({ params, searchParams }: PageProps<"/i/[token]">) {
             <PdfLink href={`/i/${token}/pdf`} className="ml-auto inline-flex sm:hidden" />
           ) : null}
         </div>
-        <div className="flex items-center gap-4">
+        <div className="flex items-center gap-4 sm:ml-auto">
           {/* Left-aligned when it wraps under the shop on phones; right-aligned beside it. */}
           <div className="text-left sm:text-right">
             <h1 className="font-display text-xl font-bold">{title}</h1>
