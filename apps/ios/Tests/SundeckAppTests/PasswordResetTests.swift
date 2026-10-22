@@ -3,6 +3,10 @@ import Testing
 
 @testable import SundeckApp
 
+#if canImport(FoundationNetworking)
+    import FoundationNetworking
+#endif
+
 /// Forgot Password? (owner, 2026-10-22): signed out, the email goes to the website, which
 /// answers the same whether or not the address has an account.
 @Suite @MainActor struct PasswordResetTests {
