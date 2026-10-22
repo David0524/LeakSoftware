@@ -997,7 +997,14 @@
             let repair = NewJobForm(sync: env.session.sync, company: company, userId: "u1")
             repair.jobType = .repair
             repair.jobTypeChanged()
-            repair.pickRepairItem(repair.repairItems.first)
+            // Two repairs (owner, 2026-10-22: "add additional repair").
+            if let first = repair.repairItems.first {
+                repair.chooseRepair(repair.repairs[0].id, pick: first.id)
+            }
+            repair.addAdditionalRepair()
+            if let second = repair.repairItems.dropFirst().first, let entry = repair.repairs.last {
+                repair.chooseRepair(entry.id, pick: second.id)
+            }
             repair.notes = "Pump hums but won't start. Breaker trips after a minute."
             try await snapshot(
                 "08-new-job-repair", height: 2600,
