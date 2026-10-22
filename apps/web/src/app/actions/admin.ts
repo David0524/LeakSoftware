@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import { ACTIVE_COMPANY_COOKIE } from "@/lib/auth";
+import { sendPasswordReset } from "@/server/password-reset";
 import { logStaffAction, requireStaff } from "@/server/staff";
 
 // The Admin portal's actions (owner, 2026-10-22). Each checks staff and two-step, writes the
@@ -157,4 +158,23 @@ export async function turnOffTwoStep(_: AdminState, form: FormData): Promise<Adm
   return {
     message: "Two-step is off. They sign in with their password and can turn it on again.",
   };
+}
+
+/**
+ * Send Password Reset (owner, 2026-10-22): the same email the person gets from Forgot
+ * Password?, to their own address. Staff never see or set the password.
+ */
+export async function staffPasswordReset(_: AdminState, form: FormData): Promise<AdminState> {
+  const { staff, db } = await requireStaff();
+  const userId = text(form, "user_id", 40);
+  const { data: user } = await db.auth.admin.getUserById(userId);
+  const email = user.user?.email;
+  if (!email) return { error: "No such person." };
+  const outcome = await sendPasswordReset(email);
+  if (outcome === "unavailable") return { error: "Email isn’t set up on this server." };
+  if (outcome === "too_many")
+    return { error: "This address already got 3 reset emails this hour. Try again later." };
+  await logStaffAction(staff, "password_reset", { targetUser: userId, targetEmail: email });
+  revalidatePath(`/admin/people/${userId}`);
+  return { message: `Reset link sent to ${email}. It works for an hour.` };
 }

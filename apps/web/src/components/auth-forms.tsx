@@ -5,7 +5,9 @@ import { useActionState, useRef, useState, type FocusEvent } from "react";
 import {
   acceptInvite,
   createCompany,
+  requestPasswordReset,
   sendSignInLink,
+  setNewPassword,
   signIn,
   startTrial,
   type FormState,
@@ -14,7 +16,7 @@ import { captureLead } from "@/app/actions/leads";
 import { parseServices, type Services } from "@leakbook/core";
 import { Banner } from "./doc-ui";
 import { ServicesChoice } from "./services-form";
-import { Button, FieldGroup, GroupedField } from "./ui";
+import { Button, buttonClass, FieldGroup, GroupedField } from "./ui";
 import { orOffline } from "@/lib/offline";
 
 /** The browser's time zone, so a new company's schedule shows local times. */
@@ -125,8 +127,80 @@ export function SignInForm({ next }: { next: string }) {
       <Button type="submit" disabled={passwordPending} className="w-full">
         {passwordPending ? "Signing In…" : "Sign In"}
       </Button>
+      <Link href="/forgot-password" className={buttonClass("quiet", "w-full")}>
+        Forgot Password?
+      </Link>
       <Button type="button" kind="quiet" className="w-full" onClick={() => setWithLink(true)}>
         Email Me a Sign-In Link Instead
+      </Button>
+    </form>
+  );
+}
+
+/** Forgot Password? (owner, 2026-10-22): the email for a link to choose a new password. */
+export function ForgotPasswordForm() {
+  const [state, action, pending] = useActionState(orOffline(requestPasswordReset), {});
+  return (
+    <form action={action} className="space-y-4">
+      <FieldGroup labelWidth="6rem">
+        <GroupedField
+          label="Email"
+          name="email"
+          {...EMAIL}
+          required
+          defaultValue={state.values?.email}
+        />
+      </FieldGroup>
+      <Messages state={state} />
+      <Button type="submit" disabled={pending} className="w-full">
+        {pending ? "Sending…" : "Email Me a Reset Link"}
+      </Button>
+      <Link href="/sign-in" className={buttonClass("quiet", "w-full")}>
+        Back to Sign In
+      </Link>
+    </form>
+  );
+}
+
+/** The new password, typed twice, from the reset link. Done: on to the office. */
+export function NewPasswordForm() {
+  const [state, action, pending] = useActionState(orOffline(setNewPassword), {});
+  if (state.message)
+    return (
+      <div className="space-y-4">
+        <Banner tone="success">
+          {state.message} Every other device was signed out: sign in there with the new password.
+        </Banner>
+        <Link href="/home" className={buttonClass("primary", "w-full")}>
+          Continue to Sundeck Pro
+        </Link>
+      </div>
+    );
+  return (
+    <form action={action} className="space-y-4">
+      <FieldGroup labelWidth="9rem">
+        <GroupedField
+          label="New password"
+          name="password"
+          {...PASSWORD}
+          autoComplete="new-password"
+          minLength={10}
+          maxLength={72}
+          required
+          error={state.fields?.password}
+        />
+        <GroupedField
+          label="Type it again"
+          name="confirm"
+          {...PASSWORD}
+          autoComplete="new-password"
+          required
+        />
+      </FieldGroup>
+      <p className="text-[0.9375rem] text-text-muted max-sm:px-4">At least 10 characters.</p>
+      <Messages state={state} />
+      <Button type="submit" disabled={pending} className="w-full">
+        {pending ? "Saving…" : "Save New Password"}
       </Button>
     </form>
   );

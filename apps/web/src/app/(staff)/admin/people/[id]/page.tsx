@@ -3,7 +3,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { Suspense } from "react";
 import { formatPhone } from "@leakbook/core";
-import { TwoStepOff } from "@/components/admin/actions";
+import { SendPasswordReset, TwoStepOff } from "@/components/admin/actions";
 import {
   Facts,
   fmtDate,
@@ -49,7 +49,12 @@ async function Person({ params }: Pick<PageProps<"/admin/people/[id]">, "params"
         title={p.name ?? p.email}
         back={{ href: "/admin/people", label: "People" }}
         subtitle={`${p.email} · signed up ${fmtDate(p.created_at)}`}
-        actions={p.two_step ? <TwoStepOff userId={p.id} email={p.email} /> : null}
+        actions={
+          <>
+            <SendPasswordReset userId={p.id} />
+            {p.two_step ? <TwoStepOff userId={p.id} email={p.email} /> : null}
+          </>
+        }
       />
       <div className="grid grid-cols-3 gap-6">
         <Panel title="Account" className="col-span-2">
@@ -86,7 +91,8 @@ async function Person({ params }: Pick<PageProps<"/admin/people/[id]">, "params"
             </a>
           </div>
           <p className="mt-4 text-[0.9375rem] text-text-muted">
-            Forgot their password? They choose Email Me a Sign-In Link on the sign-in page.
+            Forgot their password? Send Password Reset emails them a link to choose a new one (or
+            they choose Forgot Password? on the sign-in page).
           </p>
         </Panel>
 

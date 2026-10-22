@@ -90,8 +90,8 @@ actions, each needing a reason and each logged:
   clears `profile.two_step` (today this is a manual SQL step in HANDOVER). Asks "I checked it's
   really them" and how, first.
 - **Waiting invites** with Copy Link (the app doesn't email invites; the owner sends the link).
-- No password reset: the website has no reset page. A person who forgot their password uses
-  Email Me a Sign-In Link on the sign-in page; the person's page says so.
+- **Send Password Reset** (added 2026-10-22 with Forgot Password?): the person's own reset
+  email, to their own address; logged.
 
 ### 3.4 Finances (`/admin/finances`)
 - MRR, ARR, average revenue per shop, paying shops, by package (cards and a 12-month MRR line

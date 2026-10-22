@@ -59,6 +59,7 @@ export type StaffActionKind =
   | "demo_on"
   | "demo_off"
   | "two_step_off"
+  | "password_reset"
   | "note"
   | "export";
 

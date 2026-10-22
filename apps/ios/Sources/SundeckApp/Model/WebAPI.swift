@@ -52,6 +52,15 @@ public struct WebAPI: Sendable {
         return try await send(request)
     }
 
+    /// POSTs `body` as JSON without a sign-in (Forgot Password?, before anyone is signed in).
+    public func postSignedOut(_ path: String, _ body: JSONValue = [:]) async throws -> JSONValue {
+        var request = URLRequest(url: baseURL.appendingPathComponent(path))
+        request.httpMethod = "POST"
+        request.setValue("application/json", forHTTPHeaderField: "content-type")
+        request.httpBody = try JSONEncoder().encode(body)
+        return try await send(request, signedIn: false)
+    }
+
     /// Sends `body` as JSON with another method (PUT, DELETE), and returns the JSON reply.
     public func send(_ method: String, _ path: String, _ body: JSONValue = [:]) async throws -> JSONValue {
         var request = URLRequest(url: baseURL.appendingPathComponent(path))
@@ -73,10 +82,12 @@ public struct WebAPI: Sendable {
         return try await send(request)
     }
 
-    private func send(_ prepared: URLRequest) async throws -> JSONValue {
-        guard let token = await accessToken() else { throw Failure(description: Failure.signInAgain) }
+    private func send(_ prepared: URLRequest, signedIn: Bool = true) async throws -> JSONValue {
         var request = prepared
-        request.setValue("Bearer \(token)", forHTTPHeaderField: "authorization")
+        if signedIn {
+            guard let token = await accessToken() else { throw Failure(description: Failure.signInAgain) }
+            request.setValue("Bearer \(token)", forHTTPHeaderField: "authorization")
+        }
         let data: Data
         let response: URLResponse
         do {

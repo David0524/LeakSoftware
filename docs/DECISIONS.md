@@ -2,6 +2,12 @@
 
 Newest first. Each entry: date, decision, reason.
 
+## 2026-10-22 (owner: "Add a password reset feature for our users")
+- **Forgot Password? on every sign-in screen** (website on computers and phones, iPhone app, Android app) opens **Reset Password**: the account's email, then **Email Me a Reset Link**. Every address gets the same answer ("If … has a Sundeck Pro account, a reset link is on its way. It works for an hour."), so nobody can learn who has an account.
+- **The server makes the link and emails it through Resend** ("Reset your Sundeck Pro password", from `account@send.sundeckpro.com`), not Supabase's own email. Supabase's link only works in the browser that asked for it, and the apps ask from the phone. At most 3 reset emails an hour go to one address (`take_password_reset`).
+- **The link opens Choose a New Password on the website** (new password typed twice, at least 10 characters), once, for an hour. With two-step on, the authenticator code comes first. The page only works just after a reset link (15 minutes), never from an ordinary signed-in session. Afterwards **every other device is signed out**, and the person gets "Your Sundeck Pro password was changed".
+- **Staff can send the same email** from the Admin portal (People › the person › Send Password Reset), logged in the Activity Log. Staff never see or set a password.
+
 ## 2026-10-22 (owner: "Build a desktop-only Admin portal")
 - **An Admin portal for Sundeck Pro staff at `/admin`**, desktop only (narrower windows get a message, not the pages; not in the apps): Overview, Shops, People, Finances, Support, Health, Leads, Feature Requests, Activity Log. Staff are still `SUNDECK_STAFF_EMAILS`, and every page needs two-step sign-in. Plan: `plans/admin-portal.md`.
 - **Admin Sign In** sits in the landing page footer with Privacy, Terms, Security and Status.
