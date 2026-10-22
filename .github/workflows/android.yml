@@ -1,0 +1,186 @@
+name: Android
+
+# Builds the Android app (apps/mobile, Expo) for Google Play on EAS Build and, when asked,
+# uploads it to the Play Console's internal testing track (docs/play-store/README.md). Only when
+# asked: Actions › Android › Run workflow. Not on every push: an upload per push would flood the
+# track, and EAS builds count against the Expo plan.
+#
+# Secrets (repository secrets, never in the repo):
+#   EXPO_TOKEN                         an Expo access token (expo.dev › Account settings › Access
+#                                      tokens); runs EAS Build and EAS Submit.
+#   GOOGLE_SERVICES_JSON               the whole google-services.json from the Firebase project
+#                                      (Android app com.sundeckpro.app), for push. Handed to the
+#                                      build as the EAS file variable of the same name
+#                                      (apps/mobile/app.config.js).
+#   GOOGLE_PLAY_SERVICE_ACCOUNT_JSON   the Play Console service account's JSON key. Needed only
+#                                      to upload; written to a temp file that eas.json's
+#                                      serviceAccountKeyPath names.
+# Signing: EAS keeps the upload keystore (made on the first build). Version codes: EAS counts
+# them remotely (appVersionSource "remote", autoIncrement on the production profile).
+# Google Play takes API uploads only after the app's first bundle is uploaded by hand, so the
+# first run is with "Upload to Google Play" off (README step 7).
+
+on:
+  workflow_dispatch:
+    inputs:
+      submit:
+        description: "Upload to Google Play (internal testing). Off for the first, manual upload."
+        type: boolean
+        default: true
+
+concurrency:
+  group: android
+  cancel-in-progress: false
+
+jobs:
+  build:
+    name: Build for Google Play
+    runs-on: ubuntu-24.04
+    timeout-minutes: 120
+    env:
+      EXPO_NO_TELEMETRY: "1"
+      SUBMIT: ${{ inputs.submit }}
+    defaults:
+      run:
+        working-directory: apps/mobile
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Check the secrets
+        working-directory: .
+        env:
+          EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
+          GOOGLE_SERVICES_JSON: ${{ secrets.GOOGLE_SERVICES_JSON }}
+          GOOGLE_PLAY_SERVICE_ACCOUNT_JSON: ${{ secrets.GOOGLE_PLAY_SERVICE_ACCOUNT_JSON }}
+        run: |
+          # Say what's missing up front, instead of a confusing error halfway through a build.
+          missing=()
+          [ -n "$EXPO_TOKEN" ] || missing+=("EXPO_TOKEN (expo.dev › Account settings › Access tokens)")
+          [ -n "$GOOGLE_SERVICES_JSON" ] || missing+=("GOOGLE_SERVICES_JSON (Firebase › Project settings › Your apps › google-services.json)")
+          if [ "$SUBMIT" = "true" ] && [ -z "$GOOGLE_PLAY_SERVICE_ACCOUNT_JSON" ]; then
+            missing+=("GOOGLE_PLAY_SERVICE_ACCOUNT_JSON (the Play Console service account's key; or run with \"Upload to Google Play\" off)")
+          fi
+          if [ ${#missing[@]} -gt 0 ]; then
+            for m in "${missing[@]}"; do echo "::error title=Missing secret::$m"; done
+            {
+              echo "### Missing secrets"
+              echo
+              for m in "${missing[@]}"; do echo "- $m"; done
+              echo
+              echo "Add them in GitHub › Settings › Secrets and variables › Actions (docs/play-store/README.md)."
+            } >> "$GITHUB_STEP_SUMMARY"
+            exit 1
+          fi
+          # The files must be the right ones, for the right app.
+          printf '%s' "$GOOGLE_SERVICES_JSON" | python3 -c '
+          import json, sys
+          try:
+              d = json.load(sys.stdin)
+          except ValueError:
+              sys.exit("::error::GOOGLE_SERVICES_JSON is not JSON: paste the whole google-services.json file.")
+          names = [c.get("client_info", {}).get("android_client_info", {}).get("package_name") for c in d.get("client", [])]
+          if "com.sundeckpro.app" not in names:
+              sys.exit("::error::GOOGLE_SERVICES_JSON has no Android app com.sundeckpro.app (it has: %s). Add that app in Firebase and download the file again." % (", ".join(n for n in names if n) or "none"))
+          '
+          if [ "$SUBMIT" = "true" ]; then
+            printf '%s' "$GOOGLE_PLAY_SERVICE_ACCOUNT_JSON" | python3 -c '
+          import json, sys
+          try:
+              d = json.load(sys.stdin)
+          except ValueError:
+              sys.exit("::error::GOOGLE_PLAY_SERVICE_ACCOUNT_JSON is not JSON: paste the whole key file.")
+          if d.get("type") != "service_account" or not d.get("private_key"):
+              sys.exit("::error::GOOGLE_PLAY_SERVICE_ACCOUNT_JSON is not a service account key (Google Cloud › Service accounts › Keys › Add key › JSON).")
+          '
+          fi
+
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+        working-directory: .
+
+      - name: Link the EAS project
+        env:
+          EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
+          EXPO_ACCOUNT: ${{ vars.EXPO_ACCOUNT }}
+        run: |
+          id=$(node -p 'require("./app.json").expo.extra?.eas?.projectId ?? ""')
+          if [ -n "$id" ]; then echo "EAS project $id"; exit 0; fi
+          # Not committed yet: create or link @account/sundeckpro for this run (eas init can't
+          # write through app.config.js, so it writes app.json with that file set aside), and
+          # say which id to commit (push notifications read it from app.json).
+          mv app.config.js "$RUNNER_TEMP/app.config.js"
+          npx eas-cli@latest init --non-interactive --force ${EXPO_ACCOUNT:+--account "$EXPO_ACCOUNT"}
+          mv "$RUNNER_TEMP/app.config.js" app.config.js
+          id=$(node -p 'require("./app.json").expo.extra.eas.projectId')
+          owner=$(node -p 'require("./app.json").expo.owner ?? ""')
+          echo "::warning title=EAS project not in app.json::Send Claude this: projectId $id, owner $owner"
+          {
+            echo "### EAS project linked for this run"
+            echo
+            echo "Send Claude this line so it goes into \`apps/mobile/app.json\` (push needs it): projectId \`$id\`, owner \`$owner\`."
+            echo
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Hand google-services.json to EAS
+        env:
+          EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
+          GOOGLE_SERVICES_JSON: ${{ secrets.GOOGLE_SERVICES_JSON }}
+        run: |
+          # Outside the workspace, readable only by this user; deleted in the last step. The EAS
+          # file variable is what the build server reads (a gitignored file isn't uploaded); the
+          # local path lets this runner resolve the same app config.
+          dir="$RUNNER_TEMP/android"
+          mkdir -m 700 -p "$dir"
+          umask 077
+          printf '%s\n' "$GOOGLE_SERVICES_JSON" > "$dir/google-services.json"
+          npx eas-cli@latest env:set production --name GOOGLE_SERVICES_JSON --type file \
+            --value "$dir/google-services.json" --visibility secret --non-interactive
+          echo "GOOGLE_SERVICES_JSON=$dir/google-services.json" >> "$GITHUB_ENV"
+
+      - name: Build the app bundle (EAS Build)
+        env:
+          EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
+        run: |
+          npx eas-cli@latest build --platform android --profile production --non-interactive \
+            --wait --json > "$RUNNER_TEMP/android/build.json"
+          cat "$RUNNER_TEMP/android/build.json"
+          echo "BUILD_ID=$(node -p 'require(process.argv[1])[0].id' "$RUNNER_TEMP/android/build.json")" >> "$GITHUB_ENV"
+          echo "BUILD_URL=$(node -p 'require(process.argv[1])[0].artifacts?.buildUrl ?? ""' "$RUNNER_TEMP/android/build.json")" >> "$GITHUB_ENV"
+          echo "VERSION=$(node -p 'const b = require(process.argv[1])[0]; b.appVersion + " (" + b.appBuildVersion + ")"' "$RUNNER_TEMP/android/build.json")" >> "$GITHUB_ENV"
+
+      - name: Upload to Google Play (internal testing)
+        if: inputs.submit
+        env:
+          EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
+          GOOGLE_PLAY_SERVICE_ACCOUNT_JSON: ${{ secrets.GOOGLE_PLAY_SERVICE_ACCOUNT_JSON }}
+        run: |
+          umask 077
+          printf '%s\n' "$GOOGLE_PLAY_SERVICE_ACCOUNT_JSON" > "$RUNNER_TEMP/android/play-service-account.json"
+          GOOGLE_PLAY_SERVICE_ACCOUNT_KEY_PATH="$RUNNER_TEMP/android/play-service-account.json" \
+            npx eas-cli@latest submit --platform android --profile production --id "$BUILD_ID" \
+            --non-interactive --wait
+
+      - name: Summary
+        if: success()
+        run: |
+          {
+            echo "### Android build ready"
+            echo
+            echo "Sundeck Pro **$VERSION**."
+            echo
+            if [ "$SUBMIT" = "true" ]; then
+              echo "Uploaded to Google Play's internal testing track. Play Console › Sundeck Pro › Test and release › Testing › Internal testing."
+            else
+              echo "Not uploaded. Download the app bundle (.aab) and upload it in Play Console › Sundeck Pro › Test and release › Testing › Internal testing › Create new release:"
+              echo
+              echo "$BUILD_URL"
+            fi
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Delete the keys
+        if: always()
+        run: rm -rf "$RUNNER_TEMP/android" "$RUNNER_TEMP/app.config.js"

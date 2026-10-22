@@ -3,6 +3,14 @@
 Owner, 2026-10-22: "a list of things you need from me. I'll knock them out later." Newest
 first. Tick an item off by deleting it (and tell Claude, so it can check the result).
 
+## From 2026-10-22: Android on Google Play
+
+1. **Set up Google Play, Expo and Firebase for the Android app**, in the order in
+   `docs/play-store/README.md`: D-U-N-S number (the one Apple needs too), the Play developer
+   account (organization), an Expo token, a Firebase project, the GitHub secrets, the first
+   build uploaded by hand, then a Play service account so later builds upload by themselves.
+   Each step says what to send back to Claude.
+
 ## From 2026-10-22: Admin portal, password reset, usage
 
 1. **Put David's and Cole's emails on the staff list** (needed for the Admin portal). Vercel ›

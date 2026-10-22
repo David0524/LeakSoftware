@@ -18,3 +18,8 @@ apps/ios/.build/
 apps/ios/.swiftpm/
 apps/ios/xtool/
 apps/ios/.bsp/
+
+# Android (apps/mobile): Firebase config and the Play Console key come from GitHub secrets in
+# .github/workflows/android.yml; never commit them.
+apps/mobile/google-services.json
+google-play-service-account*.json

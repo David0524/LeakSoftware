@@ -33,6 +33,7 @@
         "appleTeamId": "C7HQJY52SV"
       },
       "android": {
+        "serviceAccountKeyPath": "$GOOGLE_PLAY_SERVICE_ACCOUNT_KEY_PATH",
         "track": "internal"
       }
     }
