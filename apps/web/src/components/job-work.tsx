@@ -13,6 +13,7 @@ import {
   poolDiagram,
   previewTest,
   userTransitions,
+  verdictIcon,
   verdictOptions,
   type ChecklistItemResult,
   type ChecklistSection,
@@ -52,7 +53,8 @@ import { DiagramShapes } from "./pool-diagram";
 import { Segmented } from "./segmented";
 import { ShapePicker } from "./shape-picker";
 import { FieldError, SField, STextArea, SettingsForm } from "./settings-forms";
-import { RowActions, type MenuEntry } from "./row-actions";
+import { AnswerIconButtons } from "./answer-controls";
+import { RowActions, RowMenuButton, type MenuEntry } from "./row-actions";
 import { Sheet, useConfirm } from "./sheet";
 import { Button, Checkbox, Chip, Select, buttonClass, cx } from "./ui";
 import { SavedNote, UndoNotice, useAutosave, useUndoWindow } from "./undo";
@@ -281,9 +283,9 @@ export function JobDetailsForm({
   // Only leak detection marks a leak's location (owner, 2026-10-19: no leak checkbox on
   // maintenance visits) and calls its price a detection fee.
   const detection = jobType === "detection";
+  const repair = jobType === "repair";
   const [gallons, setGallons] = useState(pool?.gallons ? pool.gallons.toLocaleString("en-US") : "");
   return (
-  const repair = jobType === "repair";
     <SettingsForm action={saveJobDetails} submit="Save">
       <input type="hidden" name="job" value={jobId} />
       {detection ? <input type="hidden" name="detection" value="1" /> : null}
@@ -687,6 +689,14 @@ function ChecklistItem({
   }
 
   const note = [row.result?.method, row.result?.notes].filter(Boolean).join(" · ");
+  // The phone line's: the chosen answer's word first, so the icons are learnable.
+  const phoneNote = [
+    options.find((o) => o.value === shown)?.label,
+    row.photos ? `${row.photos} photo${row.photos === 1 ? "" : "s"}` : null,
+    note,
+  ]
+    .filter(Boolean)
+    .join(" · ");
   // Swipe right for the first answer (Done, No, Not Leaking); touch and hold, right-click, or
   // "⋯" for every answer and Not Done (gestures.md section 12), the same as the segments.
   const first = options[0]!;
@@ -709,20 +719,42 @@ function ChecklistItem({
             ? []
             : [{ label: first.label, tone: "green", onSelect: () => void choose(first.value) }]
         }
-        buttonClassName="absolute top-1.5 right-2"
+        button="none"
         data-no-swipe=""
       >
-        <div className="px-4 py-2">
-          <Segmented<Verdict | "">
-            label={row.label}
-            name={`verdict-${row.id}`}
-            value={shown ?? ""}
-            options={options}
-            description={note || undefined}
-            fit
-            segmentClassName="min-h-11!"
-            onChange={(v) => void choose(v === shown ? "todo" : v)}
+        <RowMenuButton className="absolute top-1.5 right-2 max-sm:hidden" />
+        {/* Phones: one line, the name and the answers as icons, one tap each (owner,
+            2026-10-22: tapping the name opened the item by accident). The name opens nothing. */}
+        <div className="flex items-center gap-1 py-1 pr-2 pl-4 sm:hidden" data-testid="answer-line">
+          <div className="min-w-0 flex-1 py-1">
+            <p className="leading-tight font-medium">{row.label}</p>
+            {phoneNote ? (
+              <p className="truncate text-[0.8125rem] text-text-muted">{phoneNote}</p>
+            ) : null}
+          </div>
+          <AnswerIconButtons
+            itemLabel={row.label}
+            choices={options.map((o) => ({
+              label: o.label,
+              icon: verdictIcon(row.type.answer, o.value),
+              chosen: shown === o.value,
+              onSelect: () => void choose(shown === o.value ? "todo" : o.value),
+            }))}
           />
+        </div>
+        <div className="px-4 py-2 max-sm:pt-0 max-sm:pb-1">
+          <div className="max-sm:hidden">
+            <Segmented<Verdict | "">
+              label={row.label}
+              name={`verdict-${row.id}`}
+              value={shown ?? ""}
+              options={options}
+              description={note || undefined}
+              fit
+              segmentClassName="min-h-11!"
+              onChange={(v) => void choose(v === shown ? "todo" : v)}
+            />
+          </div>
           {needsWhere && row.result ? (
             <WhereField
               jobId={jobId}

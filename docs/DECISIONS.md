@@ -2,6 +2,9 @@
 
 Newest first. Each entry: date, decision, reason.
 
+## 2026-10-22 (owner, of the phone checklist: "Wait hold on. I actually like your icons. Let's go with that. Consider that we'll need different icons for leaks vs maintenance vs pool inspections")
+- **Phone checklists answer in one tap from icon pills on the item's line** (sketch B, `design/2026-10-22-checklist-options.png`): the item's name opens nothing, "›" opens its screen in the apps, and the line under the name starts with the chosen answer's word. Icons per answer set (`design/2026-10-22-phone-checklist.md`): leak items ✓ drop ! –; maintenance ✓ ! ⏭ (Skipped); yes/no and pool inspection by their words. Questions with more than four answers, or answers without an icon, use a "Choose ⌄" menu pill. Computers keep the segmented control.
+
 ## 2026-10-22 (owner: "On repair jobs, (in the intake and actually working the job) we need a button to 'add additional repair'")
 - **A repair job holds several repairs**, one synced `job_repair` row each (not a list in `job.intake`, which last-writer-wins sync would lose under two phones). The job's price is their total, kept right by the server. **Add Additional Repair** is in New Job › Repair and in the job's Details (Repairs group, with Remove and Total) on every platform. The invoice bills one line per repair; the repair report lists them. Design and the open choices (price book list on the job, untaxed lines, remove-and-add to change a price): `design/2026-10-22-multiple-repairs.md`.
 

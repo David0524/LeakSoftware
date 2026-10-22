@@ -177,25 +177,67 @@
 
         private var answerRow: some View {
             VStack(alignment: .leading, spacing: 8) {
-                HStack(alignment: .top, spacing: 4) {
-                    Text(question.label)
-                        .font(.role(.bodyMedium))
-                        .foregroundStyle(Color.text)
-                        .multilineTextAlignment(.leading)
-                        .padding(.top, 11)
-                        .frame(maxWidth: .infinity, alignment: .leading)
+                if question.kind == .choice {
+                    // One line (owner, 2026-10-22): the question, its answers as icons (or one
+                    // pill and its menu when they have no clear icons), Describe and photos.
+                    HStack(spacing: 4) {
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text(question.label)
+                                .font(.role(.bodyMedium))
+                                .foregroundStyle(Color.text)
+                                .multilineTextAlignment(.leading)
+                            if let line = question.subline(photos: photos) {
+                                Text(line).textRole(.footnote).foregroundStyle(Color.textMuted).lineLimit(1)
+                            }
+                        }
+                        .frame(maxWidth: .infinity, minHeight: minTarget, alignment: .leading)
+                        .accessibilityElement(children: .combine)
                         .accessibilityAddTraits(.isHeader)
-                    if question.result != nil { describeButton }
-                    photoButton
-                }
-                switch question.kind {
-                case .text: textBox
-                default: pills
+                        answerControl
+                        if question.result != nil { describeButton }
+                        photoButton
+                    }
+                } else {
+                    HStack(alignment: .top, spacing: 4) {
+                        Text(question.label)
+                            .font(.role(.bodyMedium))
+                            .foregroundStyle(Color.text)
+                            .multilineTextAlignment(.leading)
+                            .padding(.top, 11)
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                            .accessibilityAddTraits(.isHeader)
+                        if question.result != nil { describeButton }
+                        photoButton
+                    }
+                    switch question.kind {
+                    case .text: textBox
+                    default: pills
+                    }
                 }
                 if question.result != nil && (describing || !question.notes.isEmpty) { notesBox }
             }
-            .padding(.horizontal, 16)
-            .padding(.vertical, 8)
+            .padding(.leading, 16)
+            .padding(.trailing, question.kind == .choice ? 4 : 16)
+            .padding(.vertical, question.kind == .choice ? 4 : 8)
+        }
+
+        /// A choice question's answers: icons when its options map to them, else the menu pill.
+        @ViewBuilder private var answerControl: some View {
+            if let icons = question.icons {
+                AnswerIconButtons(
+                    itemLabel: question.label,
+                    choices: zip(question.options, icons).map { option, icon in
+                        AnswerIconChoice(label: option.label, icon: icon, chosen: question.isChosen(option)) {
+                            answer(question.valueAfterTapping(option))
+                        }
+                    },
+                    selection: question.chosenLabel ?? "")
+            } else {
+                AnswerMenuPill(itemLabel: question.label, options: question.options, chosen: question.chosenLabel) {
+                    label in
+                    answer(label.map { InspectionValue.text($0) })
+                }
+            }
         }
 
         /// Opens the Describe box; tinted once it holds notes.

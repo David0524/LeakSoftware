@@ -336,10 +336,10 @@
         }
     }
 
-    /// One item: its name (opening the item's screen), then its answers as an inline segmented
-    /// control, full width and 44 tall (owner, 2026-10-20: one tap; tapping the chosen one again
-    /// clears it). "Where" under a Leaking or Attention item saves by itself 1 second after typing
-    /// stops and when it loses focus. Remove stays behind Edit and swipe to remove.
+    /// One item on one line (owner, 2026-10-22): its name, its answers as icon buttons (one tap;
+    /// tapping the chosen one again clears it), and "›" for the item's screen. "Where" under a
+    /// Leaking or Attention item saves by itself 1 second after typing stops and when it loses
+    /// focus. Remove stays behind Edit and swipe to remove.
     private struct ChecklistItemView: View {
         var jobId: String
         var item: ChecklistItemRow
@@ -421,41 +421,51 @@
             .padding(.vertical, 4)
         }
 
-        /// The name and its sub-line; tapping opens the item's screen (apps only).
+        /// The name and its sub-line (the chosen answer's word first). It opens nothing: tapping it
+        /// opened the item by accident (owner, 2026-10-22); the "›" at the row's end does.
         private var name: some View {
-            Button {
-                openRoute(.component(jobId: jobId, componentId: item.component.id))
-            } label: {
-                VStack(alignment: .leading, spacing: 2) {
-                    Text(item.component.label)
-                        .font(.role(.bodyMedium))
-                        .foregroundStyle(item.isCheck && item.isDone ? Color.textMuted : Color.text)
-                        .multilineTextAlignment(.leading)
-                    if let line = item.subline(photos: photos) {
-                        Text(line).textRole(.footnote).foregroundStyle(Color.textMuted).lineLimit(1)
-                    }
+            VStack(alignment: .leading, spacing: 2) {
+                Text(item.component.label)
+                    .font(.role(.bodyMedium))
+                    .foregroundStyle(item.isCheck && item.isDone ? Color.textMuted : Color.text)
+                    .multilineTextAlignment(.leading)
+                if let line = item.phoneSubline(photos: photos) {
+                    Text(line).textRole(.footnote).foregroundStyle(Color.textMuted).lineLimit(1)
                 }
-                .frame(maxWidth: .infinity, minHeight: minTarget, alignment: .leading)
-                .contentShape(Rectangle())
             }
-            .buttonStyle(.plain)
-            .accessibilityHint("Opens the item: method, notes, and photos")
+            .frame(maxWidth: .infinity, minHeight: minTarget, alignment: .leading)
+            .accessibilityElement(children: .combine)
         }
 
+        /// One line: the name, the answers as icons (one tap; the chosen one again clears it), and
+        /// "›" for the item's screen; Where and why it was left out under it when they apply.
         private var verdictRow: some View {
             VStack(alignment: .leading, spacing: 4) {
-                name
-                VerdictSegments(item: item, choose: choose)
+                HStack(spacing: 4) {
+                    name
+                    AnswerIconButtons(
+                        itemLabel: item.component.label,
+                        choices: zip(item.options, item.answerIcons).map { option, icon in
+                            AnswerIconChoice(
+                                label: option.label, icon: icon, chosen: option.value == item.verdict
+                            ) { choose(item.verdictAfterTap(option.value)) }
+                        },
+                        selection: item.verdict?.rawValue ?? "")
+                    ItemDetailsButton(itemLabel: item.component.label) {
+                        openRoute(.component(jobId: jobId, componentId: item.component.id))
+                    }
+                }
                 if item.needsWhere && item.result != nil {
-                    whereField
+                    whereField.padding(.trailing, 12)
                     if savedWhere { SavedLabel() }
                 }
                 if let reason = item.exclusionText {
                     Text(reason).textRole(.secondary).foregroundStyle(Color.textMuted)
                 }
             }
-            .padding(.horizontal, 16)
-            .padding(.vertical, 8)
+            .padding(.leading, 16)
+            .padding(.trailing, 4)
+            .padding(.vertical, 4)
         }
 
         private var whereField: some View {
@@ -499,60 +509,6 @@
             guard text != (item.result?.locationText ?? "") else { return }
             saveWhere(text)
             withAnimation { savedWhere = true }
-        }
-    }
-
-    /// An item's answers in one tap (owner, 2026-10-20): the core `verdictOptions` labels as a
-    /// segmented control, 44 tall and full row width; the chosen one in its status color, and
-    /// tapping it again clears it back to To do.
-    private struct VerdictSegments: View {
-        var item: ChecklistItemRow
-        var choose: (Verdict?) -> Void
-
-        var body: some View {
-            HStack(spacing: 2) {
-                ForEach(item.options, id: \.value) { option in
-                    let chosen = option.value == item.verdict
-                    Button {
-                        choose(item.verdictAfterTap(option.value))
-                    } label: {
-                        Text(option.label)
-                            .font(.role(.segment).weight(chosen ? .semibold : .medium))
-                            .foregroundStyle(chosen ? Color.onStatus : Color.text)
-                            .lineLimit(1)
-                            .minimumScaleFactor(0.7)
-                            .padding(.horizontal, 4)
-                            .frame(maxWidth: .infinity, minHeight: 40)
-                            .background {
-                                if chosen { Capsule().fill(color(option.value)) }
-                            }
-                            .contentShape(Capsule())
-                    }
-                    .buttonStyle(.plain)
-                    .accessibilityLabel(option.label)
-                    .accessibilityAddTraits(chosen ? [.isSelected] : [])
-                    .accessibilityHint(chosen ? "Tap again to clear" : "")
-                }
-            }
-            .padding(2)
-            .background(
-                RoundedRectangle(cornerRadius: CGFloat(Radius.segmentTrack), style: .continuous).fill(Color.fill)
-            )
-            .animation(Motion.bouncy, value: item.verdict)
-            .sensoryFeedback(.selection, trigger: item.verdict)
-            .keepsHorizontalDrags()
-            .accessibilityElement(children: .contain)
-            .accessibilityLabel(item.component.label)
-            .accessibilityValue(item.verdictLabel)
-        }
-
-        private func color(_ verdict: Verdict) -> Color {
-            switch verdict {
-            case .ok: .pass
-            case .leaking: .fail
-            case .attention: .warning
-            case .na: .excluded
-            }
         }
     }
 #endif

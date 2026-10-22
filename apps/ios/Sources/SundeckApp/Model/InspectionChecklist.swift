@@ -53,6 +53,22 @@ public struct InspectionQuestionRow: Identifiable, Equatable, Sendable {
         return isChosen(option) ? nil : .text(option.label)
     }
 
+    /// A choice question's options as icons on a phone's one-line row, or nil to use the answer
+    /// pill and its menu (core `choiceIcons`; owner, 2026-10-22). Multi and text never use icons.
+    public var icons: [AnswerIcon]? { kind == .choice ? choiceIcons(options) : nil }
+
+    /// The chosen option's label, for a choice question.
+    public var chosenLabel: String? { kind == .choice ? value?.text : nil }
+
+    /// The muted line under the name: the chosen answer's word and the photo count.
+    public func subline(photos: Int) -> String? {
+        let parts = [
+            icons != nil ? chosenLabel : nil, photos > 0 ? (photos == 1 ? "1 photo" : "\(photos) photos") : nil,
+        ]
+        .compactMap { $0 }
+        return parts.isEmpty ? nil : parts.joined(separator: " · ")
+    }
+
     /// "Not present: 3 questions folded away."
     public var foldedText: String? {
         guard foldedAway > 0 else { return nil }

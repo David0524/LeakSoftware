@@ -251,6 +251,24 @@ import Testing
         #expect(parts.answerText == "Pool main drain, Spa drain")
     }
 
+    /// Phones show a choice question's answers as icons on its line, or one menu pill when they
+    /// have no clear icons; multi and text questions never use icons (owner, 2026-10-22).
+    @Test func choiceQuestionsTakeIconsOrTheMenuPill() throws {
+        let jobId = try book()
+        try answer(jobId, "Is solar present?", .text("Yes"))
+        let working = try question(jobId, "Is solar working?")
+        #expect(working.icons?.map(\.symbol) == [.check, .xmark])
+        #expect(working.icons?.map(\.tone) == [.pass, .warning])
+        #expect(working.subline(photos: 0) == nil)
+        try answer(jobId, "Is solar working?", .text("No"))
+        #expect(try question(jobId, "Is solar working?").subline(photos: 2) == "No · 2 photos")
+        #expect(try question(jobId, "Does solar leak?").icons?.map(\.symbol) == [.drop, .check, .minus])
+        // A gate's plain Yes and No read their words.
+        #expect(try question(jobId, "Is solar present?").icons?.map(\.tone) == [.plain, .plain])
+        #expect(try question(jobId, "Parts that leak").icons == nil)
+        #expect(try question(jobId, "Heater make").icons == nil)
+    }
+
     @Test func textAndDescribeSaveOnlyWhenChanged() throws {
         let jobId = try book()
         let heater = try question(jobId, "Heater make")

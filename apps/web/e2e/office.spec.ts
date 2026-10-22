@@ -554,13 +554,24 @@ test("on a phone: a tech starts a job, fills the checklist, and records a test a
 
   // Checklist: one item leaking with where, the rest marked with the section shortcuts.
   await jobSection(tech, "Checklist");
-  // One tap on the item's segmented answers (owner, 2026-10-20).
-  const verdict = tech.locator("#part-checklist").getByRole("radiogroup").first();
-  const labelId = (await verdict.getAttribute("aria-labelledby"))!;
-  const itemName = (await tech.locator(`[id="${labelId}"]`).innerText()).trim();
-  const leaking = verdict.getByRole("radio", { name: "Leaking", exact: true });
+  // On a phone each item is one line: its name, then its answers as icons, one tap each
+  // (owner, 2026-10-22). The name opens nothing.
+  const itemLine = tech.locator("#part-checklist").getByTestId("answer-line").first();
+  const itemName = (await itemLine.locator("p").first().innerText()).trim();
+  const before = tech.url();
+  await itemLine.getByText(itemName, { exact: true }).click();
+  await expect(tech.getByRole("dialog")).toHaveCount(0);
+  expect(tech.url()).toBe(before);
+  const answers = itemLine.getByRole("group", { name: itemName, exact: true });
+  await expect(answers.getByRole("button")).toHaveText(["", "", "", ""]);
+  const leaking = answers.getByRole("button", { name: "Leaking", exact: true });
+  await expect(leaking).toHaveAttribute("title", "Leaking");
   await leaking.click();
-  await expect(leaking).toHaveAttribute("aria-checked", "true");
+  await expect(leaking).toHaveAttribute("aria-pressed", "true");
+  // The chosen answer's word shows under the name, so the icons are learnable.
+  await expect(itemLine.getByText(/^Leaking/)).toBeVisible();
+  // Desktop's labeled answers aren't shown on a phone.
+  await expect(tech.locator("#part-checklist").getByRole("radiogroup")).toHaveCount(0);
   const where = tech.getByLabel(`Where: ${itemName}`);
   await where.fill("Under the deck by the steps");
   await where.blur();

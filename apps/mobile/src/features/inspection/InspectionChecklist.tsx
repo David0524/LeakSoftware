@@ -13,6 +13,7 @@ import {
   CHECKLIST_SECTION_LABELS,
   INSPECTION_SECTIONS,
   NOT_PRESENT_LABEL,
+  choiceIcons,
   choiceOptions,
   foldedItems,
   inspectionProgress,
@@ -57,7 +58,8 @@ import {
   type,
 } from "../../ui/theme";
 import { WebIcon, type WebIconName } from "../../ui/WebIcon";
-import { ChipToggles, ChoicePills } from "./ChoicePills";
+import { AnswerIconButtons, AnswerMenuPill, flagTone } from "./AnswerControls";
+import { ChipToggles } from "./ChoicePills";
 
 // Pool Inspection's checklist (owner, 2026-10-20; docs/plans/pool-inspection.md), as the
 // website's inspection-checklist.tsx: Leaktronics' form, every question kept, made shorter. One
@@ -257,6 +259,15 @@ function InspectionItem({
   const [busy, setBusy] = useState(false);
   const [photoError, setPhotoError] = useState<string | null>(null);
   const menu = useMenu();
+  // A choice question's answers fit its line; multi and text keep theirs below.
+  const choice = answer !== "text" && answer !== "multi";
+  const icons = choice ? choiceIcons(options) : null;
+  const note = [
+    icons && typeof value === "string" ? value : null,
+    photos ? `${photos} photo${photos === 1 ? "" : "s"}` : null,
+  ]
+    .filter(Boolean)
+    .join(" · ");
 
   function answerWith(next: string | string[] | null) {
     saveInspectionAnswer(
@@ -335,13 +346,42 @@ function InspectionItem({
 
   return (
     <View style={styles.item}>
-      <View style={styles.itemRow}>
-        <Text
-          style={[styles.question, { flex: 1, color: color.text }]}
-          maxFontSizeMultiplier={MAX_TEXT_SCALE}
-        >
-          {component.label}
-        </Text>
+      <View style={[styles.itemRow, choice && { alignItems: "center", gap: 0 }]}>
+        <View style={{ flex: 1 }}>
+          <Text
+            style={[styles.question, { color: color.text }]}
+            maxFontSizeMultiplier={MAX_TEXT_SCALE}
+          >
+            {component.label}
+          </Text>
+          {choice && note ? (
+            <T variant="footnote" muted numberOfLines={1}>
+              {note}
+            </T>
+          ) : null}
+        </View>
+        {/* The answers on the question's line (owner, 2026-10-22): icons, or one pill and its
+            menu when they have no clear icons. */}
+        {choice ? (
+          icons ? (
+            <AnswerIconButtons
+              itemLabel={component.label}
+              choices={options.map((o, i) => ({
+                label: o.label,
+                icon: icons[i]!,
+                chosen: value === o.label,
+                onPress: () => answerWith(value === o.label ? null : o.label),
+              }))}
+            />
+          ) : (
+            <AnswerMenuPill
+              itemLabel={component.label}
+              options={options.map((o) => ({ label: o.label, tone: flagTone(o.flag) }))}
+              chosen={typeof value === "string" ? value : null}
+              onChoose={answerWith}
+            />
+          )
+        ) : null}
         {result ? (
           <IconButton
             icon="compose"
@@ -385,15 +425,7 @@ function InspectionItem({
             answerWith(toggleChoice(options, Array.isArray(value) ? value : [], label))
           }
         />
-      ) : (
-        // Tapping the chosen answer again puts the question back to do.
-        <ChoicePills
-          label={component.label}
-          options={options}
-          value={typeof value === "string" ? value : null}
-          onChange={answerWith}
-        />
-      )}
+      ) : null}
 
       {result && (describing || notes) ? (
         <SavedText

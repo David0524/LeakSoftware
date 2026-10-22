@@ -4,7 +4,7 @@ import { OWNER, RUN, jobSection, sendUnsigned, signIn, wrapUpStep } from "./help
 // Pool Inspection (owner, 2026-10-20; docs/plans/pool-inspection.md): from New Job to a sent
 // Pool Inspection Report, on the website.
 
-test("a pool inspection: New Job, answers and gates, and its report", async ({ page }) => {
+test("a pool inspection: New Job, answers and gates, and its report", async ({ page, browser }) => {
   test.setTimeout(180_000);
   const name = `Inspection Buyer ${RUN}`;
 
@@ -30,6 +30,44 @@ test("a pool inspection: New Job, answers and gates, and its report", async ({ p
   await expect(page.getByText("Spa, Deck Jets")).toBeVisible();
   // The job page shows one tab at a time on every screen (owner, 2026-10-22).
   await jobSection(page, "Checklist");
+  await expect(page.getByText(/^0 of \d+ answered · 0 need attention · 0 leaking$/)).toBeVisible();
+
+  // On a phone each question is one line (owner, 2026-10-22): Yes and No as icons, and a
+  // question whose answers have no clear icons as one pill that opens a menu.
+  const phone = await browser.newContext({
+    viewport: { width: 390, height: 844 },
+    isMobile: true,
+    hasTouch: true,
+  });
+  const tech = await phone.newPage();
+  await signIn(tech, OWNER, new URL(page.url()).pathname);
+  await jobSection(tech, "Checklist");
+  const icons = tech.getByRole("group", { name: "Does the system show visible leaking?" });
+  await expect(icons.getByRole("button", { name: "Yes", exact: true })).toBeVisible();
+  await expect(icons.getByRole("button", { name: "No", exact: true })).toBeVisible();
+  const pill = tech.getByRole("button", {
+    name: "What type of filtration system is present?, To Do",
+  });
+  await expect(pill).toHaveText(/Choose/);
+  // A scroll under an open menu closes it, so open it again if scrolling it into view did.
+  const openMenu = (button: typeof pill) =>
+    expect(async () => {
+      await button.click();
+      await expect(tech.getByRole("menu")).toBeVisible({ timeout: 2_000 });
+    }).toPass();
+  await openMenu(pill);
+  await tech.getByRole("menuitemradio", { name: "Cartridge" }).click();
+  const chosen = tech.getByRole("button", {
+    name: "What type of filtration system is present?, Cartridge",
+  });
+  await expect(chosen).toBeVisible();
+  // Not Done puts it back, so the rest of this test starts from nothing answered.
+  await openMenu(chosen);
+  await tech.getByRole("menuitem", { name: "Not Done" }).click();
+  await expect(pill).toBeVisible();
+  expect(await tech.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(390);
+  await phone.close();
+  await page.reload();
   await expect(page.getByText(/^0 of \d+ answered · 0 need attention · 0 leaking$/)).toBeVisible();
 
   // Equipment opens first; a flagged answer counts as needing attention.

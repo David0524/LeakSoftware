@@ -5,6 +5,7 @@ import {
   CHECKLIST_SECTION_LABELS,
   INSPECTION_SECTIONS,
   NOT_PRESENT_LABEL,
+  choiceIcons,
   choiceOptions,
   foldedItems,
   inspectionProgress,
@@ -19,6 +20,7 @@ import {
 } from "@leakbook/core";
 import { removeComponent, saveItemNotes, setAnswer } from "@/app/actions/inspection";
 import { ErrorText, useRun, type ChecklistRow } from "./job-work";
+import { AnswerIconButtons, AnswerMenuPill, flagTone } from "./answer-controls";
 import { uploadItemPhotos } from "./media-work";
 import { useConfirm } from "./sheet";
 import { buttonClass, cx } from "./ui";
@@ -213,6 +215,15 @@ function InspectionItem({
   const [uploading, startUpload] = useTransition();
   const [photoError, setPhotoError] = useState<string | null>(null);
   const notes = row.result?.notes ?? "";
+  // A choice question's answers fit its line on phones; multi and text keep theirs below.
+  const choice = answer !== "text" && answer !== "multi";
+  const icons = choice ? choiceIcons(options) : null;
+  const phoneNote = [
+    icons && typeof shown === "string" ? shown : null,
+    row.photos ? `${row.photos} photo${row.photos === 1 ? "" : "s"}` : null,
+  ]
+    .filter(Boolean)
+    .join(" · ");
 
   function answerWith(value: InspectionValue) {
     run(
@@ -258,10 +269,46 @@ function InspectionItem({
 
   return (
     <div className="px-4 py-2">
-      <div className="flex min-h-11 items-start gap-2">
-        <span id={`q-${row.id}`} className="min-w-0 flex-1 pt-2.5 leading-tight font-medium">
-          {row.label}
+      <div
+        className={cx(
+          "flex min-h-11 gap-2",
+          choice ? "items-start max-sm:items-center max-sm:gap-0" : "items-start",
+        )}
+      >
+        <span className="min-w-0 flex-1 pt-2.5 max-sm:py-1">
+          <span id={`q-${row.id}`} className="block leading-tight font-medium">
+            {row.label}
+          </span>
+          {choice && phoneNote ? (
+            <span className="block truncate text-[0.8125rem] text-text-muted sm:hidden">
+              {phoneNote}
+            </span>
+          ) : null}
         </span>
+        {/* Phones: the answers on the question's line (owner, 2026-10-22), as icons, or one
+            pill and its menu when they have no clear icons. */}
+        {choice ? (
+          icons ? (
+            <AnswerIconButtons
+              className="sm:hidden"
+              itemLabel={row.label}
+              choices={options.map((o, i) => ({
+                label: o.label,
+                icon: icons[i]!,
+                chosen: shown === o.label,
+                onSelect: () => answerWith(shown === o.label ? null : o.label),
+              }))}
+            />
+          ) : (
+            <AnswerMenuPill
+              className="sm:hidden"
+              itemLabel={row.label}
+              options={options.map((o) => ({ label: o.label, tone: flagTone(o.flag) }))}
+              chosen={typeof shown === "string" ? shown : null}
+              onChoose={(label) => answerWith(label)}
+            />
+          )
+        ) : null}
         {row.result ? (
           <button
             type="button"
@@ -377,7 +424,7 @@ function InspectionItem({
         <div
           role="radiogroup"
           aria-labelledby={`q-${row.id}`}
-          className="mt-1 flex flex-wrap gap-2"
+          className="mt-1 flex flex-wrap gap-2 max-sm:hidden"
         >
           {options.map((o) => {
             const on = shown === o.label;
