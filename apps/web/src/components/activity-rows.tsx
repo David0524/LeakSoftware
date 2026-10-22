@@ -20,6 +20,8 @@ const PATHS: Record<ActivitySymbol, string> = {
   person: "M12 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM4.5 20a7.5 7.5 0 0 1 15 0",
   // A calendar with an arrow.
   calendar: "M7 3v3M17 3v3M4 8h16M5 5h14v15H5zM10 14h6M13.5 11.5 16 14l-2.5 2.5",
+  // An eye (a customer opened a report).
+  opened: "M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12zM12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6z",
   // A speech bubble.
   text: "M4 5h16v11H9l-5 4z",
 };

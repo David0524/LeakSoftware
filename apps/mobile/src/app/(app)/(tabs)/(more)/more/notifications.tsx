@@ -1,18 +1,28 @@
 import { useCallback, useEffect, useState } from "react";
 import { AppState, Linking, StyleSheet, View } from "react-native";
-import { NOTIFICATION_KINDS, notificationOn } from "@leakbook/core";
+import {
+  NOTIFICATION_KINDS,
+  WEEKLY_SUMMARY_PREF,
+  isManagerRole,
+  notificationOn,
+  weeklySummaryOn,
+} from "@leakbook/core";
 import { useNotificationPrefs } from "../../../../../data/notificationPrefs";
 import { notificationsAllowed } from "../../../../../lib/push";
+import { useSession } from "../../../../../state/session";
 import { Group, ListRow, Notice, Screen, Section, T, Toggle } from "../../../../../ui/components";
 import { space } from "../../../../../ui/theme";
 
 /**
  * More › Notifications (owner, 2026-10-19), as the website's: which kinds reach this person's
  * phones. Everyone sets their own; on unless turned off. When this phone doesn't allow
- * Sundeck Pro's notifications, a row opens the system settings.
+ * Sundeck Pro's notifications, a row opens the system settings. Owners and admins also choose
+ * the weekly summary email (owner, 2026-10-22).
  */
 export default function NotificationsScreen() {
   const { prefs, set, error } = useNotificationPrefs();
+  const { membership } = useSession();
+  const role = membership?.role;
   const [allowed, setAllowed] = useState(true);
   const check = useCallback(() => void notificationsAllowed().then(setAllowed), []);
   useEffect(() => {
@@ -57,7 +67,24 @@ export default function NotificationsScreen() {
             ))}
           </Group>
         </Section>
-      ) : (
+      ) : null}
+      {prefs && isManagerRole(role) ? (
+        <Section title={WEEKLY_SUMMARY_PREF.section}>
+          <Group>
+            <View style={styles.setting}>
+              <Toggle
+                label={WEEKLY_SUMMARY_PREF.label}
+                value={weeklySummaryOn(prefs, role)}
+                onChange={(on) => void set(WEEKLY_SUMMARY_PREF.key, on)}
+              />
+              <T variant="secondary" muted>
+                {WEEKLY_SUMMARY_PREF.hint}
+              </T>
+            </View>
+          </Group>
+        </Section>
+      ) : null}
+      {prefs ? null : (
         <Notice tone="info">Your notification settings load when you’re online.</Notice>
       )}
       {error ? <Notice tone="error">{error}</Notice> : null}

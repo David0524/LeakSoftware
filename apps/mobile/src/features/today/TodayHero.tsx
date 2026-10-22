@@ -21,6 +21,7 @@ import Reanimated, {
 import { scheduleOnRN } from "react-native-worklets";
 import {
   HERO_ACTION_LABELS,
+  COMPLETE_READY_LINE,
   JOB_TYPE_LABELS,
   NOT_ON_MAP,
   formatAddress,
@@ -42,6 +43,7 @@ import { haptics } from "../../ui/haptics";
 import { NotOnMapTag } from "../../ui/NotOnMap";
 import { useNoSwipe } from "../../ui/SwipeNav";
 import { UndoRow } from "../../ui/Undo";
+import { ReadyPop } from "../../ui/ReadyPop";
 import { WebIcon } from "../../ui/WebIcon";
 import {
   color,
@@ -82,6 +84,7 @@ export const TodayHeroCard = memo(function TodayHeroCard({
   day,
   driveMin,
   notOnMap,
+  checklistDone = false,
   stopIds,
   onBrowse,
   onMessage,
@@ -98,6 +101,8 @@ export const TodayHeroCard = memo(function TodayHeroCard({
   /** The drive to the card's stop, for "14 min drive" before leaving. */
   driveMin: number | null;
   notOnMap: boolean;
+  /** The card's stop's checklist is all done (useTodayHero). */
+  checklistDone?: boolean;
   /** The day's stops in route order, for swiping and the segments. */
   stopIds: readonly string[];
   /** Show a stop (null: back to the stop the day is on). */
@@ -119,7 +124,9 @@ export const TodayHeroCard = memo(function TodayHeroCard({
   const c = hero.content;
   // The card is about one stop and its buttons are for that stop (gestures spec section 9): a
   // finished stop offers only Reopen Visit or Mark Not Complete.
-  const actions = heroActions(hero.moment, mine);
+  // The checklist all done: Mark Complete is the last thing, so it takes the row (owner,
+  // 2026-10-22).
+  const actions = heroActions(hero.moment, mine, checklistDone);
   const target = job;
   const drive = job ? heroDrive(hero.moment, driveMin) : null;
   // "Up next" (the figure says "2 of 3") or "At the pool · Stop 2 of 3"; no clock times (gestures
@@ -564,8 +571,23 @@ export const TodayHeroCard = memo(function TodayHeroCard({
                 </View>
               </View>
             ) : null}
+            {actions.ready && job ? (
+              <Text
+                testID="hero-ready"
+                style={[type.secondary, face.semiBold, styles.ready, { color: white }]}
+                maxFontSizeMultiplier={MAX_TEXT_SCALE}
+              >
+                {COMPLETE_READY_LINE}
+              </Text>
+            ) : null}
             {(target && actions.primary === "open_checklist") || (actions.complete && job) ? (
-              <View style={[styles.buttons, stacked && styles.buttonsStacked]}>
+              <View
+                style={[
+                  styles.buttons,
+                  actions.ready && styles.buttonsReady,
+                  stacked && styles.buttonsStacked,
+                ]}
+              >
                 {actions.primary === "open_checklist" && target ? (
                   <View style={stacked ? undefined : styles.slot}>
                     <Button
@@ -576,7 +598,7 @@ export const TodayHeroCard = memo(function TodayHeroCard({
                   </View>
                 ) : null}
                 {actions.complete && job ? (
-                  <View style={stacked ? undefined : styles.slot}>
+                  <ReadyPop on={actions.ready} style={stacked ? undefined : styles.slot}>
                     <TodayComplete
                       job={job}
                       customer={job.customer?.name ?? "this stop"}
@@ -584,8 +606,9 @@ export const TodayHeroCard = memo(function TodayHeroCard({
                       day={day}
                       done={false}
                       onWater
+                      filled={actions.ready}
                     />
-                  </View>
+                  </ReadyPop>
                 ) : null}
               </View>
             ) : null}
@@ -715,6 +738,9 @@ const styles = StyleSheet.create({
   buttons: { marginTop: space["4"], flexDirection: "row", gap: 10 },
   // At the largest text sizes the two buttons stack, each the full width.
   buttonsStacked: { flexDirection: "column" },
+  // "Everything's checked. Mark it complete." over the full-width Mark Complete (2026-10-22).
+  ready: { marginTop: space["4"] },
+  buttonsReady: { marginTop: space["2"] },
   slot: { flex: 1, minWidth: 0 },
   // The bar sits where it did (16 under the content, 20 over the card's edge); its 44 pt tap
   // area reaches into both.

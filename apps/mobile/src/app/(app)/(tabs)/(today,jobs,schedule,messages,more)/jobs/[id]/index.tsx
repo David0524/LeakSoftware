@@ -28,6 +28,8 @@ import {
   type Job,
   type JobStatus,
   type Property,
+  COMPLETE_READY_LINE,
+  checklistReady,
 } from "@leakbook/core";
 import type { JsonValue } from "@leakbook/sync";
 import { useRow, useSyncStatus } from "../../../../../../data/hooks";
@@ -72,6 +74,7 @@ import {
 } from "../../../../../../features/job/CompleteJob";
 import {
   NEXT_STEP_BAR_HEIGHT,
+  NEXT_STEP_NOTE_HEIGHT,
   NextStepBar,
   type NextStepButton,
 } from "../../../../../../features/job/NextStepBar";
@@ -297,6 +300,11 @@ export default function JobDetail() {
         ? reportControls.current.review()
         : router.push(`/jobs/${job.id}/review?template=homeowner`),
   };
+  // Everything on the visit's checklist is done: Complete Job is the last thing (owner,
+  // 2026-10-22), so the bar says so and the button scales in once.
+  const listed = tally.pass + tally.attention + tally.leaking + tally.notApplicable + tally.pending;
+  const ready =
+    maintenance && steps.includes("complete") && checklistReady(listed - tally.pending, listed);
   const barButtons: NextStepButton[] = steps.map((step, i) => ({
     title: NEXT_STEP_LABELS[step],
     kind: i === 0 ? "primary" : "secondary",
@@ -342,7 +350,10 @@ export default function JobDetail() {
           // The last row scrolls clear of the Next Step bar.
           barButtons.length > 0 && {
             paddingBottom:
-              (contentContainerStyle.paddingBottom as number) + NEXT_STEP_BAR_HEIGHT + space["2"],
+              (contentContainerStyle.paddingBottom as number) +
+              NEXT_STEP_BAR_HEIGHT +
+              space["2"] +
+              (ready ? NEXT_STEP_NOTE_HEIGHT : 0),
           },
         ]}
         stickyHeaderIndices={drawnChrome ? undefined : [1]}
@@ -542,7 +553,7 @@ export default function JobDetail() {
           </Glass>
         </Animated.View>
       ) : null}
-      <NextStepBar buttons={barButtons} />
+      <NextStepBar buttons={barButtons} note={ready ? COMPLETE_READY_LINE : null} />
     </KeyboardAvoider>
   );
 }

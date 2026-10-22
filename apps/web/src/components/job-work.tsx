@@ -25,6 +25,7 @@ import {
   type TestType,
   type Verdict,
   removeItemConfirm,
+  COMPLETE_READY_LINE,
 } from "@leakbook/core";
 import type { FormState } from "@/app/actions/auth";
 import { orOffline } from "@/lib/offline";
@@ -175,11 +176,33 @@ export type SendPrompt = { title: string; message: string; confirmLabel: string 
  * or In progress. The server says what's missing when the shop asks for the checklist or a
  * photo first. Phones have it in the Next Step bar instead (owner, 2026-10-20).
  */
-export function CompleteJob({ jobId, prompt }: { jobId: string; prompt: SendPrompt }) {
+export function CompleteJob({
+  jobId,
+  prompt,
+  ready = false,
+}: {
+  jobId: string;
+  prompt: SendPrompt;
+  /** The checklist is all done: Complete Job is the last thing (owner, 2026-10-22). */
+  ready?: boolean;
+}) {
   return (
     <div className="mt-6 max-w-2xl max-sm:hidden">
-      <CompleteJobButton jobId={jobId} prompt={prompt} className="w-full" />
+      {ready ? <ReadyLine /> : null}
+      <CompleteJobButton jobId={jobId} prompt={prompt} className="w-full" ready={ready} />
     </div>
+  );
+}
+
+/** "Everything's checked. Mark it complete." over Complete Job once it's the last thing. */
+export function ReadyLine({ className }: { className?: string }) {
+  return (
+    <p
+      className={cx("mb-2 text-[0.9375rem] font-semibold text-text", className)}
+      data-testid="complete-ready"
+    >
+      {COMPLETE_READY_LINE}
+    </p>
   );
 }
 
@@ -191,10 +214,13 @@ export function CompleteJobButton({
   jobId,
   prompt,
   className,
+  ready = false,
 }: {
   jobId: string;
   prompt: SendPrompt;
   className?: string;
+  /** The last thing left: a one-time scale-in (none with Reduce Motion). */
+  ready?: boolean;
 }) {
   const { pending, error, run } = useRun();
   const [confirm, confirmSheet] = useConfirm();
@@ -202,7 +228,7 @@ export function CompleteJobButton({
     <div className="space-y-2">
       <Button
         type="button"
-        className={className}
+        className={cx(className, ready && "motion-safe:animate-[ready-in_0.5s_ease-out]")}
         disabled={pending}
         onClick={async () => {
           if (prompt && !(await confirm({ ...prompt, alert: true }))) return;

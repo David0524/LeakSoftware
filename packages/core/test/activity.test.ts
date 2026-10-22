@@ -26,6 +26,7 @@ describe("activity", () => {
     );
     expect(row({ kind: "report_signed" })).toBe("Report signed · Maria Alvarez");
     expect(row({ kind: "report_sent" })).toBe("Report sent · Maria Alvarez");
+    expect(row({ kind: "report_opened" })).toBe("Report opened · Maria Alvarez");
     expect(row({ kind: "job_completed", actor_name: "Tony Reyes" })).toBe(
       "Job completed · Maria Alvarez, by Tony",
     );

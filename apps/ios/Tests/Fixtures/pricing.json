@@ -24308,6 +24308,13 @@
       ],
       "result": [
         {
+          "id": "account",
+          "label": "Account created",
+          "detail": "Your shop is on Sundeck Pro.",
+          "href": "/settings/company",
+          "done": true
+        },
+        {
           "id": "invite",
           "label": "Invite your techs",
           "detail": "They sign in on the Sundeck Pro app.",
@@ -24361,6 +24368,13 @@
       ],
       "result": [
         {
+          "id": "account",
+          "label": "Account created",
+          "detail": "Your shop is on Sundeck Pro.",
+          "href": "/settings/company",
+          "done": true
+        },
+        {
           "id": "invite",
           "label": "Invite your techs",
           "detail": "They sign in on the Sundeck Pro app.",
@@ -24414,6 +24428,13 @@
       ],
       "result": [
         {
+          "id": "account",
+          "label": "Account created",
+          "detail": "Your shop is on Sundeck Pro.",
+          "href": "/settings/company",
+          "done": true
+        },
+        {
           "id": "invite",
           "label": "Invite your techs",
           "detail": "They sign in on the Sundeck Pro app.",
@@ -24466,6 +24487,13 @@
         }
       ],
       "result": [
+        {
+          "id": "account",
+          "label": "Account created",
+          "detail": "Your shop is on Sundeck Pro.",
+          "href": "/settings/company",
+          "done": true
+        },
         {
           "id": "invite",
           "label": "Invite your techs",
@@ -24520,6 +24548,13 @@
       ],
       "result": [
         {
+          "id": "account",
+          "label": "Account created",
+          "detail": "Your shop is on Sundeck Pro.",
+          "href": "/settings/company",
+          "done": true
+        },
+        {
           "id": "invite",
           "label": "Invite your techs",
           "detail": "They sign in on the Sundeck Pro app.",
@@ -24573,6 +24608,13 @@
       ],
       "result": [
         {
+          "id": "account",
+          "label": "Account created",
+          "detail": "Your shop is on Sundeck Pro.",
+          "href": "/settings/company",
+          "done": true
+        },
+        {
           "id": "invite",
           "label": "Invite your techs",
           "detail": "They sign in on the Sundeck Pro app.",
@@ -24625,6 +24667,13 @@
         }
       ],
       "result": [
+        {
+          "id": "account",
+          "label": "Account created",
+          "detail": "Your shop is on Sundeck Pro.",
+          "href": "/settings/company",
+          "done": true
+        },
         {
           "id": "invite",
           "label": "Invite your techs",
@@ -24700,6 +24749,13 @@
       ],
       "result": [
         {
+          "id": "account",
+          "label": "Account created",
+          "detail": "Your shop is on Sundeck Pro.",
+          "href": "/settings/company",
+          "done": true
+        },
+        {
           "id": "invite",
           "label": "Invite your techs",
           "detail": "They sign in on the Sundeck Pro app.",
@@ -24773,6 +24829,13 @@
         }
       ],
       "result": [
+        {
+          "id": "account",
+          "label": "Account created",
+          "detail": "Your shop is on Sundeck Pro.",
+          "href": "/settings/company",
+          "done": true
+        },
         {
           "id": "invite",
           "label": "Invite your techs",

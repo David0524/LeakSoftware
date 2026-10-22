@@ -7,8 +7,38 @@ import {
   paymentNotification,
   quoteNotification,
   reportNotification,
+  reportOpenedNotification,
   textNotification,
+  weeklySummaryOn,
 } from "../src";
+
+describe("feedback notifications (owner, 2026-10-22)", () => {
+  it("say a customer opened the report", () => {
+    expect(reportOpenedNotification("Rebecca Soto")).toEqual({
+      title: "Report opened",
+      body: "Rebecca Soto opened the report.",
+    });
+    expect(notificationOn({}, "opened")).toBe(true);
+    expect(notificationOn({ opened: false }, "opened")).toBe(false);
+  });
+
+  it("say what a payment was, in dollars and cents", () => {
+    expect(paymentNotification("Rebecca Soto", 65000, "invoice 1042").body).toBe(
+      "Rebecca Soto paid $650.00 (invoice 1042).",
+    );
+  });
+
+  it("send the weekly summary to owners unless turned off, admins when turned on", () => {
+    expect(weeklySummaryOn({}, "owner")).toBe(true);
+    expect(weeklySummaryOn(null, "owner")).toBe(true);
+    expect(weeklySummaryOn({ weekly: false }, "owner")).toBe(false);
+    expect(weeklySummaryOn({}, "admin")).toBe(false);
+    expect(weeklySummaryOn({ weekly: true }, "admin")).toBe(true);
+    expect(weeklySummaryOn({ weekly: "no" }, "owner")).toBe(true);
+    expect(weeklySummaryOn({ weekly: true }, "tech")).toBe(false);
+    expect(weeklySummaryOn({ weekly: true }, null)).toBe(false);
+  });
+});
 
 describe("notifications", () => {
   it("are on unless turned off", () => {
@@ -18,6 +48,7 @@ describe("notifications", () => {
       "quote",
       "payment",
       "report",
+      "opened",
       "live",
     ]);
     expect(notificationOn({}, "text")).toBe(true);
@@ -89,8 +120,16 @@ describe("liveStopContent", () => {
     expect(c.figure).toBe("4 of 9");
     expect(c.figureLabel).toBe("Checklist");
     expect(c.compact).toBe("4/9");
-    expect(c.progress).toBeCloseTo(2.5 / 7);
+    // Stops done of all (owner, 2026-10-22): the two before this one.
+    expect(c.progress).toBeCloseTo(2 / 7);
     expect(c.spoken).toBe("At Smith. Checklist 4 of 9. Stop 3 of 7. Then: Jones.");
+  });
+
+  it("fills the bar with the stops done, in any order", () => {
+    // Stop 3 of 7 with four done (two later stops marked complete first).
+    expect(liveStopContent({ ...base, phase: "on_site", doneStops: 4 }).progress).toBeCloseTo(
+      4 / 7,
+    );
   });
 
   it("done: the next stop, or the end of the day", () => {

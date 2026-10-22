@@ -160,7 +160,7 @@
           "figureLabel": "Stop",
           "detail": "Stop 2 of 2 · b Palm Ln",
           "next": null,
-          "progress": 0.5,
+          "progress": 0,
           "compact": "2/2",
           "spoken": "On the way to Customer b. Stop 2 of 2.",
           "access": null,
@@ -274,7 +274,7 @@
           "figureLabel": "Stop",
           "detail": "Stop 2 of 2 · b Palm Ln",
           "next": null,
-          "progress": 0.5,
+          "progress": 0,
           "compact": "2/2",
           "spoken": "On the way to Customer b. Stop 2 of 2.",
           "access": null,
@@ -330,7 +330,7 @@
           "figureLabel": "Stop",
           "detail": "Stop 2 of 2 · b Palm Ln",
           "next": null,
-          "progress": 0.5,
+          "progress": 0,
           "compact": "2/2",
           "spoken": "On the way to Customer b. Stop 2 of 2.",
           "access": null,
@@ -560,7 +560,7 @@
           "figureLabel": "Checklist",
           "detail": "Stop 2 of 2 · b Palm Ln",
           "next": null,
-          "progress": 0.75,
+          "progress": 0,
           "compact": "4/9",
           "spoken": "At Customer b. Checklist 4 of 9. Stop 2 of 2.",
           "access": null,
@@ -616,7 +616,7 @@
           "figureLabel": "Stop",
           "detail": "Stop 2 of 2 · b Palm Ln",
           "next": null,
-          "progress": 0.5,
+          "progress": 0,
           "compact": "2/2",
           "spoken": "On the way to Customer b. Stop 2 of 2.",
           "access": null,
@@ -662,7 +662,7 @@
           "figureLabel": "",
           "detail": "Stop 1 of 1 · a Palm Ln",
           "next": null,
-          "progress": 0.5,
+          "progress": 0,
           "compact": "•",
           "spoken": "At Customer a. Stop 1 of 1.",
           "access": null,
@@ -1407,7 +1407,7 @@
           "figureLabel": "",
           "detail": "Stop 1 of 1 · a Palm Ln",
           "next": null,
-          "progress": 0.5,
+          "progress": 0,
           "compact": "•",
           "spoken": "At Customer a. Stop 1 of 1. Access: Gate",
           "access": "Gate",
@@ -1641,7 +1641,7 @@
           "figureLabel": "Stop",
           "detail": "Stop 2 of 3 · b Palm Ln",
           "next": "Then: Customer c",
-          "progress": 0.3333333333333333,
+          "progress": 0,
           "compact": "2/3",
           "spoken": "On the way to Customer b. Stop 2 of 3.",
           "access": null,
@@ -1907,7 +1907,7 @@
           "figureLabel": "Stop",
           "detail": "Stop 3 of 3 · c Palm Ln",
           "next": null,
-          "progress": 0.6666666666666666,
+          "progress": 0.3333333333333333,
           "compact": "3/3",
           "spoken": "Up next: Customer c. Stop 3 of 3. Access: Gate",
           "access": "Gate",
@@ -1975,7 +1975,7 @@
           "figureLabel": "Stop",
           "detail": "Stop 3 of 3 · c Palm Ln",
           "next": null,
-          "progress": 0.6666666666666666,
+          "progress": 0.3333333333333333,
           "compact": "3/3",
           "spoken": "Up next: Customer c. Stop 3 of 3.",
           "access": null,
@@ -2032,7 +2032,7 @@
           "figureLabel": "Stop",
           "detail": "Stop 2 of 2 · b Palm Ln",
           "next": null,
-          "progress": 0.5,
+          "progress": 0,
           "compact": "2/2",
           "spoken": "On the way to Customer b. Stop 2 of 2.",
           "access": null,
@@ -2086,7 +2086,7 @@
           "figureLabel": "Last stop",
           "detail": "Stop 1 of 2",
           "next": "That was the last stop today.",
-          "progress": 0.5,
+          "progress": 1,
           "compact": "✓",
           "spoken": "Customer a done. That was the last stop today.",
           "access": null,
@@ -2401,121 +2401,211 @@
     {
       "args": [
         "ahead",
-        true
+        true,
+        false
       ],
       "result": {
-        "primary": "start_job",
         "complete": false,
         "onMyWay": true,
-        "undo": false
+        "undo": false,
+        "ready": false,
+        "primary": "start_job"
       }
     },
     {
       "args": [
         "ahead",
+        false,
         false
       ],
       "result": {
-        "primary": null,
         "complete": false,
         "onMyWay": false,
-        "undo": false
+        "undo": false,
+        "ready": false,
+        "primary": null
+      }
+    },
+    {
+      "args": [
+        "ahead",
+        true,
+        true
+      ],
+      "result": {
+        "complete": false,
+        "onMyWay": true,
+        "undo": false,
+        "ready": false,
+        "primary": "start_job"
       }
     },
     {
       "args": [
         "driving",
-        true
+        true,
+        false
       ],
       "result": {
-        "primary": "start_job",
         "complete": false,
         "onMyWay": false,
-        "undo": false
+        "undo": false,
+        "ready": false,
+        "primary": "start_job"
       }
     },
     {
       "args": [
         "driving",
+        false,
         false
       ],
       "result": {
-        "primary": null,
         "complete": false,
         "onMyWay": false,
-        "undo": false
+        "undo": false,
+        "ready": false,
+        "primary": null
+      }
+    },
+    {
+      "args": [
+        "driving",
+        true,
+        true
+      ],
+      "result": {
+        "complete": false,
+        "onMyWay": false,
+        "undo": false,
+        "ready": false,
+        "primary": "start_job"
       }
     },
     {
       "args": [
         "on_site",
-        true
+        true,
+        false
       ],
       "result": {
-        "primary": "open_checklist",
         "complete": true,
         "onMyWay": false,
-        "undo": false
+        "undo": false,
+        "ready": false,
+        "primary": "open_checklist"
       }
     },
     {
       "args": [
         "on_site",
+        false,
         false
       ],
       "result": {
-        "primary": "open_checklist",
         "complete": true,
         "onMyWay": false,
-        "undo": false
+        "undo": false,
+        "ready": false,
+        "primary": "open_checklist"
+      }
+    },
+    {
+      "args": [
+        "on_site",
+        true,
+        true
+      ],
+      "result": {
+        "complete": true,
+        "onMyWay": false,
+        "undo": false,
+        "ready": true,
+        "primary": null
       }
     },
     {
       "args": [
         "done",
-        true
+        true,
+        false
       ],
       "result": {
-        "primary": null,
         "complete": false,
         "onMyWay": false,
-        "undo": true
+        "undo": true,
+        "ready": false,
+        "primary": null
       }
     },
     {
       "args": [
         "done",
+        false,
         false
       ],
       "result": {
-        "primary": null,
         "complete": false,
         "onMyWay": false,
-        "undo": false
+        "undo": false,
+        "ready": false,
+        "primary": null
       }
     },
     {
       "args": [
-        "day_done",
+        "done",
+        true,
         true
       ],
       "result": {
-        "primary": null,
         "complete": false,
         "onMyWay": false,
-        "undo": false
+        "undo": true,
+        "ready": false,
+        "primary": null
       }
     },
     {
       "args": [
         "day_done",
+        true,
         false
       ],
       "result": {
-        "primary": null,
         "complete": false,
         "onMyWay": false,
-        "undo": false
+        "undo": false,
+        "ready": false,
+        "primary": null
+      }
+    },
+    {
+      "args": [
+        "day_done",
+        false,
+        false
+      ],
+      "result": {
+        "complete": false,
+        "onMyWay": false,
+        "undo": false,
+        "ready": false,
+        "primary": null
+      }
+    },
+    {
+      "args": [
+        "day_done",
+        true,
+        true
+      ],
+      "result": {
+        "complete": false,
+        "onMyWay": false,
+        "undo": false,
+        "ready": false,
+        "primary": null
       }
     }
   ],

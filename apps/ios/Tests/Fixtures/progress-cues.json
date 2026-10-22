@@ -1,0 +1,759 @@
+{
+  "dayProgress": [
+    {
+      "args": [
+        []
+      ],
+      "result": {
+        "done": 0,
+        "total": 0,
+        "left": 0,
+        "fraction": 0,
+        "minutesLeft": 0,
+        "state": "start",
+        "text": null,
+        "spoken": "0 of 0 stops done"
+      }
+    },
+    {
+      "args": [
+        [
+          {
+            "done": false,
+            "durationMin": 30,
+            "driveMin": 10,
+            "onSite": false
+          },
+          {
+            "done": false,
+            "durationMin": 30,
+            "driveMin": 10,
+            "onSite": false
+          },
+          {
+            "done": false,
+            "durationMin": 30,
+            "driveMin": 10,
+            "onSite": false
+          },
+          {
+            "done": false,
+            "durationMin": 30,
+            "driveMin": 10,
+            "onSite": false
+          },
+          {
+            "done": false,
+            "durationMin": 30,
+            "driveMin": 10,
+            "onSite": false
+          },
+          {
+            "done": false,
+            "durationMin": 30,
+            "driveMin": 10,
+            "onSite": false
+          },
+          {
+            "done": false,
+            "durationMin": 30,
+            "driveMin": 10,
+            "onSite": false
+          },
+          {
+            "done": false,
+            "durationMin": 30,
+            "driveMin": 10,
+            "onSite": false
+          },
+          {
+            "done": false,
+            "durationMin": 30,
+            "driveMin": 10,
+            "onSite": false
+          },
+          {
+            "done": false,
+            "durationMin": 30,
+            "driveMin": 10,
+            "onSite": false
+          },
+          {
+            "done": false,
+            "durationMin": 30,
+            "driveMin": 10,
+            "onSite": false
+          }
+        ]
+      ],
+      "result": {
+        "done": 0,
+        "total": 11,
+        "left": 11,
+        "fraction": 0,
+        "minutesLeft": 440,
+        "state": "start",
+        "text": null,
+        "spoken": "0 of 11 stops done"
+      }
+    },
+    {
+      "args": [
+        [
+          {
+            "done": true,
+            "durationMin": 30,
+            "driveMin": 10,
+            "onSite": false
+          },
+          {
+            "done": false,
+            "durationMin": 30,
+            "driveMin": 10,
+            "onSite": false
+          },
+          {
+            "done": false,
+            "durationMin": 30,
+            "driveMin": 10,
+            "onSite": false
+          },
+          {
+            "done": false,
+            "durationMin": 30,
+            "driveMin": 10,
+            "onSite": false
+          },
+          {
+            "done": false,
+            "durationMin": 30,
+            "driveMin": 10,
+            "onSite": false
+          },
+          {
+            "done": false,
+            "durationMin": 30,
+            "driveMin": 10,
+            "onSite": false
+          },
+          {
+            "done": false,
+            "durationMin": 30,
+            "driveMin": 10,
+            "onSite": false
+          },
+          {
+            "done": false,
+            "durationMin": 30,
+            "driveMin": 10,
+            "onSite": false
+          },
+          {
+            "done": false,
+            "durationMin": 30,
+            "driveMin": 10,
+            "onSite": false
+          },
+          {
+            "done": false,
+            "durationMin": 30,
+            "driveMin": 10,
+            "onSite": false
+          },
+          {
+            "done": false,
+            "durationMin": 30,
+            "driveMin": 10,
+            "onSite": false
+          }
+        ]
+      ],
+      "result": {
+        "done": 1,
+        "total": 11,
+        "left": 10,
+        "fraction": 0.09090909090909091,
+        "minutesLeft": 400,
+        "state": "going",
+        "text": "1 of 11 stops",
+        "spoken": "1 of 11 stops done"
+      }
+    },
+    {
+      "args": [
+        [
+          {
+            "done": true,
+            "durationMin": 30,
+            "driveMin": 10,
+            "onSite": false
+          },
+          {
+            "done": true,
+            "durationMin": 30,
+            "driveMin": 10,
+            "onSite": false
+          },
+          {
+            "done": true,
+            "durationMin": 30,
+            "driveMin": 10,
+            "onSite": false
+          },
+          {
+            "done": true,
+            "durationMin": 30,
+            "driveMin": 10,
+            "onSite": false
+          },
+          {
+            "done": false,
+            "durationMin": 30,
+            "driveMin": 10,
+            "onSite": false
+          },
+          {
+            "done": false,
+            "durationMin": 30,
+            "driveMin": 10,
+            "onSite": false
+          },
+          {
+            "done": false,
+            "durationMin": 30,
+            "driveMin": 10,
+            "onSite": false
+          },
+          {
+            "done": false,
+            "durationMin": 30,
+            "driveMin": 10,
+            "onSite": false
+          },
+          {
+            "done": false,
+            "durationMin": 30,
+            "driveMin": 10,
+            "onSite": false
+          },
+          {
+            "done": false,
+            "durationMin": 30,
+            "driveMin": 10,
+            "onSite": false
+          },
+          {
+            "done": false,
+            "durationMin": 30,
+            "driveMin": 10,
+            "onSite": false
+          }
+        ]
+      ],
+      "result": {
+        "done": 4,
+        "total": 11,
+        "left": 7,
+        "fraction": 0.36363636363636365,
+        "minutesLeft": 280,
+        "state": "going",
+        "text": "4 of 11 stops",
+        "spoken": "4 of 11 stops done"
+      }
+    },
+    {
+      "args": [
+        [
+          {
+            "done": true,
+            "durationMin": 30,
+            "driveMin": 10,
+            "onSite": false
+          },
+          {
+            "done": true,
+            "durationMin": 30,
+            "driveMin": 10,
+            "onSite": false
+          },
+          {
+            "done": true,
+            "durationMin": 30,
+            "driveMin": 10,
+            "onSite": false
+          },
+          {
+            "done": true,
+            "durationMin": 30,
+            "driveMin": 10,
+            "onSite": false
+          },
+          {
+            "done": true,
+            "durationMin": 30,
+            "driveMin": 10,
+            "onSite": false
+          },
+          {
+            "done": true,
+            "durationMin": 30,
+            "driveMin": 10,
+            "onSite": false
+          },
+          {
+            "done": true,
+            "durationMin": 30,
+            "driveMin": 10,
+            "onSite": false
+          },
+          {
+            "done": true,
+            "durationMin": 30,
+            "driveMin": 10,
+            "onSite": false
+          },
+          {
+            "done": false,
+            "durationMin": 30,
+            "driveMin": 10,
+            "onSite": false
+          },
+          {
+            "done": false,
+            "durationMin": 30,
+            "driveMin": 10,
+            "onSite": false
+          },
+          {
+            "done": false,
+            "durationMin": 30,
+            "driveMin": 10,
+            "onSite": false
+          }
+        ]
+      ],
+      "result": {
+        "done": 8,
+        "total": 11,
+        "left": 3,
+        "fraction": 0.7272727272727273,
+        "minutesLeft": 120,
+        "state": "closing",
+        "text": "3 left · about 2 hr",
+        "spoken": "3 stops left, about 2 hr"
+      }
+    },
+    {
+      "args": [
+        [
+          {
+            "done": true,
+            "durationMin": 30,
+            "driveMin": 10,
+            "onSite": false
+          },
+          {
+            "done": true,
+            "durationMin": 30,
+            "driveMin": 10,
+            "onSite": false
+          },
+          {
+            "done": true,
+            "durationMin": 30,
+            "driveMin": 10,
+            "onSite": false
+          },
+          {
+            "done": true,
+            "durationMin": 30,
+            "driveMin": 10,
+            "onSite": false
+          },
+          {
+            "done": true,
+            "durationMin": 30,
+            "driveMin": 10,
+            "onSite": false
+          },
+          {
+            "done": true,
+            "durationMin": 30,
+            "driveMin": 10,
+            "onSite": false
+          },
+          {
+            "done": true,
+            "durationMin": 30,
+            "driveMin": 10,
+            "onSite": false
+          },
+          {
+            "done": true,
+            "durationMin": 30,
+            "driveMin": 10,
+            "onSite": false
+          },
+          {
+            "done": true,
+            "durationMin": 30,
+            "driveMin": 10,
+            "onSite": false
+          },
+          {
+            "done": false,
+            "durationMin": 30,
+            "driveMin": 10,
+            "onSite": false
+          },
+          {
+            "done": false,
+            "durationMin": 30,
+            "driveMin": 10,
+            "onSite": false
+          }
+        ]
+      ],
+      "result": {
+        "done": 9,
+        "total": 11,
+        "left": 2,
+        "fraction": 0.8181818181818182,
+        "minutesLeft": 80,
+        "state": "closing",
+        "text": "2 left · about 1 hr 15 min",
+        "spoken": "2 stops left, about 1 hr 15 min"
+      }
+    },
+    {
+      "args": [
+        [
+          {
+            "done": true,
+            "durationMin": 30,
+            "driveMin": 10,
+            "onSite": false
+          },
+          {
+            "done": true,
+            "durationMin": 30,
+            "driveMin": 10,
+            "onSite": false
+          },
+          {
+            "done": true,
+            "durationMin": 30,
+            "driveMin": 10,
+            "onSite": false
+          },
+          {
+            "done": true,
+            "durationMin": 30,
+            "driveMin": 10,
+            "onSite": false
+          },
+          {
+            "done": true,
+            "durationMin": 30,
+            "driveMin": 10,
+            "onSite": false
+          },
+          {
+            "done": true,
+            "durationMin": 30,
+            "driveMin": 10,
+            "onSite": false
+          },
+          {
+            "done": true,
+            "durationMin": 30,
+            "driveMin": 10,
+            "onSite": false
+          },
+          {
+            "done": true,
+            "durationMin": 30,
+            "driveMin": 10,
+            "onSite": false
+          },
+          {
+            "done": true,
+            "durationMin": 30,
+            "driveMin": 10,
+            "onSite": false
+          },
+          {
+            "done": true,
+            "durationMin": 30,
+            "driveMin": 10,
+            "onSite": false
+          },
+          {
+            "done": true,
+            "durationMin": 30,
+            "driveMin": 10,
+            "onSite": false
+          }
+        ]
+      ],
+      "result": {
+        "done": 11,
+        "total": 11,
+        "left": 0,
+        "fraction": 1,
+        "minutesLeft": 0,
+        "state": "all_done",
+        "text": "All 11 done",
+        "spoken": "All 11 done"
+      }
+    },
+    {
+      "args": [
+        [
+          {
+            "done": false,
+            "durationMin": 30,
+            "driveMin": 10,
+            "onSite": false
+          }
+        ]
+      ],
+      "result": {
+        "done": 0,
+        "total": 1,
+        "left": 1,
+        "fraction": 0,
+        "minutesLeft": 40,
+        "state": "start",
+        "text": null,
+        "spoken": "0 of 1 stop done"
+      }
+    },
+    {
+      "args": [
+        [
+          {
+            "done": true,
+            "durationMin": 30,
+            "driveMin": 10,
+            "onSite": false
+          }
+        ]
+      ],
+      "result": {
+        "done": 1,
+        "total": 1,
+        "left": 0,
+        "fraction": 1,
+        "minutesLeft": 0,
+        "state": "all_done",
+        "text": "All 1 done",
+        "spoken": "All 1 done"
+      }
+    },
+    {
+      "args": [
+        [
+          {
+            "done": true,
+            "durationMin": 30,
+            "driveMin": 10,
+            "onSite": false
+          },
+          {
+            "done": false,
+            "durationMin": 30,
+            "driveMin": 10,
+            "onSite": false
+          }
+        ]
+      ],
+      "result": {
+        "done": 1,
+        "total": 2,
+        "left": 1,
+        "fraction": 0.5,
+        "minutesLeft": 40,
+        "state": "closing",
+        "text": "1 left · about 40 min",
+        "spoken": "1 stop left, about 40 min"
+      }
+    },
+    {
+      "args": [
+        [
+          {
+            "done": true,
+            "durationMin": 30,
+            "driveMin": 10,
+            "onSite": false
+          },
+          {
+            "done": false,
+            "durationMin": 45,
+            "driveMin": null,
+            "onSite": false
+          },
+          {
+            "done": false,
+            "durationMin": 20,
+            "driveMin": 15,
+            "onSite": true
+          }
+        ]
+      ],
+      "result": {
+        "done": 1,
+        "total": 3,
+        "left": 2,
+        "fraction": 0.3333333333333333,
+        "minutesLeft": 65,
+        "state": "closing",
+        "text": "2 left · about 1 hr",
+        "spoken": "2 stops left, about 1 hr"
+      }
+    },
+    {
+      "args": [
+        [
+          {
+            "done": true,
+            "durationMin": 30,
+            "driveMin": 10,
+            "onSite": false
+          },
+          {
+            "done": false,
+            "durationMin": 0,
+            "driveMin": null,
+            "onSite": false
+          }
+        ]
+      ],
+      "result": {
+        "done": 1,
+        "total": 2,
+        "left": 1,
+        "fraction": 0.5,
+        "minutesLeft": 0,
+        "state": "closing",
+        "text": "1 left",
+        "spoken": "1 stop left"
+      }
+    },
+    {
+      "args": [
+        [
+          {
+            "done": true,
+            "durationMin": 30,
+            "driveMin": 10,
+            "onSite": false
+          },
+          {
+            "done": false,
+            "durationMin": 150,
+            "driveMin": 25,
+            "onSite": false
+          },
+          {
+            "done": false,
+            "durationMin": 150,
+            "driveMin": 40,
+            "onSite": false
+          }
+        ]
+      ],
+      "result": {
+        "done": 1,
+        "total": 3,
+        "left": 2,
+        "fraction": 0.3333333333333333,
+        "minutesLeft": 365,
+        "state": "closing",
+        "text": "2 left · about 6 hr",
+        "spoken": "2 stops left, about 6 hr"
+      }
+    }
+  ],
+  "aboutLabel": [
+    {
+      "args": [
+        0
+      ],
+      "result": "about 5 min"
+    },
+    {
+      "args": [
+        3
+      ],
+      "result": "about 5 min"
+    },
+    {
+      "args": [
+        33
+      ],
+      "result": "about 35 min"
+    },
+    {
+      "args": [
+        58
+      ],
+      "result": "about 1 hr"
+    },
+    {
+      "args": [
+        66
+      ],
+      "result": "about 1 hr"
+    },
+    {
+      "args": [
+        128
+      ],
+      "result": "about 2 hr 15 min"
+    },
+    {
+      "args": [
+        600
+      ],
+      "result": "about 10 hr"
+    }
+  ],
+  "checklistReady": [
+    {
+      "args": [
+        6,
+        7
+      ],
+      "result": false
+    },
+    {
+      "args": [
+        7,
+        7
+      ],
+      "result": true
+    },
+    {
+      "args": [
+        0,
+        0
+      ],
+      "result": false
+    },
+    {
+      "args": [
+        3,
+        2
+      ],
+      "result": true
+    }
+  ],
+  "COMPLETE_READY_LINE": [
+    {
+      "args": [],
+      "result": "Everything’s checked. Mark it complete."
+    }
+  ]
+}

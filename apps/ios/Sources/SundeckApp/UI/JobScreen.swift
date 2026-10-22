@@ -165,12 +165,25 @@
         {
             let actions = nextActions(job, current, company)
             let notice = blocked.flatMap { current == .checklist && job.status != .done ? $0 : nil }
+            // Everything on the visit's checklist is done: Complete Job is the last thing (owner,
+            // 2026-10-22), so the bar says so and the button scales in once.
+            let ready = actions.first == .completeJob && notice == nil && checklistDone(job)
             if !keyboardShown, !actions.isEmpty {
                 VStack(alignment: .leading, spacing: 8) {
                     if let notice { CompleteJobNotice(jobId: job.id, message: notice) }
+                    if ready {
+                        Text(completeReadyLine)
+                            .textRole(.secondary)
+                            .fontWeight(.semibold)
+                            .foregroundStyle(Color.text)
+                            .frame(maxWidth: .infinity)
+                            .multilineTextAlignment(.center)
+                            .fixedSize(horizontal: false, vertical: true)
+                    }
                     HStack(spacing: 12) {
                         ForEach(Array(actions.enumerated()), id: \.element) { index, action in
                             nextStepButton(action, primary: index == 0)
+                                .readyPop(ready && index == 0)
                         }
                     }
                 }
@@ -181,6 +194,15 @@
                 .overlay(alignment: .top) { Hairline() }
                 .transition(.move(edge: .bottom).combined(with: .opacity))
             }
+        }
+
+        /// A maintenance visit's checklist with every item done (core `checklistReady`).
+        private func checklistDone(_ job: JobView) -> Bool {
+            guard job.type == .maintenance else { return false }
+            let inspection = JobInspection(sync.store, jobId: job.id)
+            let tally = checklistTally(inspection.components, inspection.results)
+            let total = tally.pass + tally.attention + tally.leaking + tally.notApplicable + tally.pending
+            return checklistReady(total - tally.pending, total)
         }
 
         private func nextActions(_ job: JobView, _ current: JobPageSection, _ company: CompanyContext)

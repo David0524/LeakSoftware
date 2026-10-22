@@ -107,6 +107,7 @@ export function TodayComplete({
   pressNonce,
   onPressHandled,
   onWater = false,
+  filled = false,
 }: {
   job: Job;
   /** The customer's name, or "this stop". */
@@ -120,6 +121,8 @@ export function TodayComplete({
   trigger?: number;
   /** Beside the main button on Today's water-blue card (owner, 2026-10-20). */
   onWater?: boolean;
+  /** The last thing left on the card: the filled white button (owner, 2026-10-22). */
+  filled?: boolean;
   /** Set when the row's swipe action asks for Mark Complete (gestures spec section 5). */
   pressNonce?: number;
   /** Called once that request is handled, so it isn't pressed again. */
@@ -173,7 +176,7 @@ export function TodayComplete({
     <View style={{ gap: space["1"] }}>
       <Button
         title={label}
-        kind={onWater ? "onWaterTinted" : done ? "secondary" : "primary"}
+        kind={onWater ? (filled ? "onWater" : "onWaterTinted") : done ? "secondary" : "primary"}
         accessibilityLabel={`${label} for ${customer}`}
         onPress={press}
       />

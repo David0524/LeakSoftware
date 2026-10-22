@@ -1,5 +1,11 @@
 import type { Metadata } from "next";
-import { NOTIFICATION_KINDS, notificationOn } from "@leakbook/core";
+import {
+  NOTIFICATION_KINDS,
+  WEEKLY_SUMMARY_PREF,
+  isManagerRole,
+  notificationOn,
+  weeklySummaryOn,
+} from "@leakbook/core";
 import { saveNotificationPrefs } from "@/app/actions/notifications";
 import { SSwitch, SettingsForm } from "@/components/settings-forms";
 import { PageHeader } from "@/components/ui";
@@ -11,7 +17,8 @@ export const metadata: Metadata = { title: "Notifications · Sundeck Pro" };
 
 /**
  * More › Notifications (owner, 2026-10-19): which kinds reach this person's phones. Everyone
- * sets their own; on unless turned off.
+ * sets their own; on unless turned off. Owners and admins also choose the weekly summary email
+ * (owner, 2026-10-22): on for owners, off for admins, until they change it.
  */
 export default async function NotificationsPage() {
   const office = await getOffice();
@@ -47,6 +54,20 @@ export default async function NotificationsPage() {
               hint={k.hint}
             />
           ))}
+          {isManagerRole(office.company.role) ? (
+            <>
+              <h2 className="pt-2 text-[0.9375rem] font-semibold text-text-muted">
+                {WEEKLY_SUMMARY_PREF.section}
+              </h2>
+              <input type="hidden" name={`${WEEKLY_SUMMARY_PREF.key}_shown`} value="1" />
+              <SSwitch
+                label={WEEKLY_SUMMARY_PREF.label}
+                name={WEEKLY_SUMMARY_PREF.key}
+                defaultChecked={weeklySummaryOn(prefs, office.company.role)}
+                hint={WEEKLY_SUMMARY_PREF.hint}
+              />
+            </>
+          ) : null}
         </SettingsForm>
         <p className="px-4 text-[0.9375rem] text-text-muted sm:px-0">
           {phones === 0

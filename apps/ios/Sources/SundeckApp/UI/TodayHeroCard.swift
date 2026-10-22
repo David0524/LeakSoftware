@@ -67,9 +67,16 @@
             return job
         }
 
+        /// The card's stop's checklist is all done: Mark Complete is the last thing (owner,
+        /// 2026-10-22).
+        private var checklistDone: Bool {
+            guard let stop = day.heroStops.first(where: { $0.id == hero.stopId }) else { return false }
+            return checklistReady(stop.checklistDone, stop.checklistTotal)
+        }
+
         var body: some View {
             let c = hero.content
-            let actions = heroActions(hero.moment, mine: day.mine)
+            let actions = heroActions(hero.moment, mine: day.mine, checklistDone: checklistDone)
             let hasButtons =
                 (actions.primary != nil && target != nil) || (actions.complete && job != nil) || undoJob != nil
             // Before leaving and on the way, Start leads one row with the round buttons after it
@@ -513,14 +520,25 @@
 
         /// One row, equal widths, 50 pt capsules: style, not size, marks the main action (white
         /// with water-blue text); Mark Complete beside it is white at 18%. One button fills the row.
+        /// With the checklist all done, Mark Complete is the filled one, full width, under
+        /// "Everything's checked. Mark it complete." (owner, 2026-10-22), and scales in once.
         private func buttons(_ actions: HeroActions) -> some View {
             VStack(alignment: .leading, spacing: 6) {
+                if actions.ready, let job, !job.doneOn(day.ctx.today) {
+                    Text(completeReadyLine)
+                        .font(.role(.secondary).weight(.semibold))
+                        .foregroundStyle(Color.white)
+                        .fixedSize(horizontal: false, vertical: true)
+                        .padding(.bottom, 4)
+                }
                 HStack(spacing: 10) {
                     if let primary = actions.primary, let target {
                         primaryButton(primary, target).frame(maxWidth: .infinity)
                     }
                     if actions.complete || undoJob != nil, let job {
-                        TodayMarkButton(job: job, day: day, onCard: true).frame(maxWidth: .infinity)
+                        TodayMarkButton(job: job, day: day, onCard: true, filled: actions.ready)
+                            .frame(maxWidth: .infinity)
+                            .readyPop(actions.ready)
                     }
                 }
                 if let startError {

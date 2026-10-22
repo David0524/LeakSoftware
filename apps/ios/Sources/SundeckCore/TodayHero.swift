@@ -160,7 +160,7 @@ private func stopHero(stops: [HeroStop], at: Int, today: String, timeZone: Strin
     }
     let input = LiveStopInput(
         phase: phase, customer: s.customer, address: s.address, stop: at + 1, stops: stops.count,
-        eta: phase == .driving ? try timeOrNil(s.arriveAt, timeZone) : nil,
+        doneStops: stops.count - leftIndices.count, eta: phase == .driving ? try timeOrNil(s.arriveAt, timeZone) : nil,
         scheduled: try timeOrNil(s.scheduledStart, timeZone), checklistDone: s.checklistDone,
         checklistTotal: s.checklistTotal, next: next, access: s.access, cleanings: s.cleanings ?? [])
     return TodayHero(
@@ -210,7 +210,8 @@ private func dayHero(stops: [HeroStop], today: String, timeZone: String, justDon
         }
         let input = LiveStopInput(
             phase: .done, customer: s.customer, address: s.address, stop: at + 1, stops: stops.count,
-            eta: nil, checklistDone: s.checklistDone, checklistTotal: s.checklistTotal, next: next)
+            doneStops: doneCount, eta: nil, checklistDone: s.checklistDone, checklistTotal: s.checklistTotal, next: next
+        )
         return TodayHero(
             moment: .done, stopId: s.id, stop: at + 1, stops: stops.count, content: liveStopContent(input),
             segments: segments(current: nil), doneCount: doneCount, currentId: s.id, input: input)
@@ -225,7 +226,8 @@ private func dayHero(stops: [HeroStop], today: String, timeZone: String, justDon
     let scheduled = try timeOrNil(target.scheduledStart, timeZone)
     let input = LiveStopInput(
         phase: phase, customer: target.customer, address: target.address, stop: at + 1, stops: stops.count,
-        eta: eta, scheduled: scheduled, checklistDone: target.checklistDone, checklistTotal: target.checklistTotal,
+        doneStops: doneCount, eta: eta, scheduled: scheduled, checklistDone: target.checklistDone,
+        checklistTotal: target.checklistTotal,
         next: try nextAfter(at), access: target.access, cleanings: target.cleanings ?? [])
     return TodayHero(
         moment: HeroMoment(rawValue: phase.rawValue)!, stopId: target.id, stop: at + 1, stops: stops.count,
@@ -260,6 +262,9 @@ public struct HeroActions: Codable, Equatable, Sendable {
     /// A finished stop's one button: Reopen Visit or Mark Not Complete (owner, 2026-10-20: the
     /// card is always about one stop, and its buttons are for that stop).
     public var undo: Bool
+    /// The checklist is all done, so Mark Complete is the last thing: the filled button, full
+    /// width, under `completeReadyLine`, and Open Checklist steps aside (owner, 2026-10-22).
+    public var ready: Bool = false
 }
 
 /// The card's buttons for its moment: the main one, whether Mark Complete shows beside it,
@@ -268,11 +273,14 @@ public struct HeroActions: Codable, Equatable, Sendable {
 /// 2026-10-20: "not every tech is going to use every function all the time"). Someone looking
 /// at another tech's day (owners and admins, "Whose day") gets no On My Way, Start Job or undo:
 /// those are the tech's to press (decision 4).
-public func heroActions(_ moment: HeroMoment, mine: Bool) -> HeroActions {
+public func heroActions(_ moment: HeroMoment, mine: Bool, checklistDone: Bool = false) -> HeroActions {
     switch moment {
     case .ahead: HeroActions(primary: mine ? .startJob : nil, complete: false, onMyWay: mine, undo: false)
     case .driving: HeroActions(primary: mine ? .startJob : nil, complete: false, onMyWay: false, undo: false)
-    case .onSite: HeroActions(primary: .openChecklist, complete: true, onMyWay: false, undo: false)
+    case .onSite:
+        checklistDone
+            ? HeroActions(primary: nil, complete: true, onMyWay: false, undo: false, ready: true)
+            : HeroActions(primary: .openChecklist, complete: true, onMyWay: false, undo: false)
     case .done: HeroActions(primary: nil, complete: false, onMyWay: false, undo: mine)
     case .dayDone: HeroActions(primary: nil, complete: false, onMyWay: false, undo: false)
     }

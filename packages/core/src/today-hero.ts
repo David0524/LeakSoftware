@@ -117,6 +117,7 @@ function stopHero(
       address: s.address,
       stop: at + 1,
       stops: stops.length,
+      doneStops: stops.length - left.length,
       eta: phase === "driving" && s.arrive_at ? formatTime(s.arrive_at, timeZone) : null,
       scheduled: s.scheduled_start ? formatTime(s.scheduled_start, timeZone) : null,
       checklistDone: s.checklistDone,
@@ -202,6 +203,7 @@ function dayHero(input: {
         address: s.address,
         stop: at + 1,
         stops: stops.length,
+        doneStops: doneCount,
         eta: null,
         checklistDone: s.checklistDone,
         checklistTotal: s.checklistTotal,
@@ -237,6 +239,7 @@ function dayHero(input: {
       address: target.address,
       stop: at + 1,
       stops: stops.length,
+      doneStops: stops.length - left.length,
       eta: phase === "driving" && target.arrive_at ? formatTime(target.arrive_at, timeZone) : null,
       scheduled: target.scheduled_start ? formatTime(target.scheduled_start, timeZone) : null,
       checklistDone: target.checklistDone,
@@ -265,20 +268,27 @@ function dayHero(input: {
 export function heroActions(
   moment: HeroMoment,
   mine: boolean,
+  checklistDone = false,
 ): {
   primary: "start_job" | "open_checklist" | null;
   complete: boolean;
   onMyWay: boolean;
   undo: boolean;
+  /**
+   * The checklist is all done, so Mark Complete is the last thing: the filled button, full
+   * width, under COMPLETE_READY_LINE, and Open Checklist steps aside (owner, 2026-10-22).
+   */
+  ready: boolean;
 } {
-  if (moment === "ahead")
-    return { primary: mine ? "start_job" : null, complete: false, onMyWay: mine, undo: false };
-  if (moment === "driving")
-    return { primary: mine ? "start_job" : null, complete: false, onMyWay: false, undo: false };
+  const off = { complete: false, onMyWay: false, undo: false, ready: false };
+  if (moment === "ahead") return { ...off, primary: mine ? "start_job" : null, onMyWay: mine };
+  if (moment === "driving") return { ...off, primary: mine ? "start_job" : null };
   if (moment === "on_site")
-    return { primary: "open_checklist", complete: true, onMyWay: false, undo: false };
-  if (moment === "done") return { primary: null, complete: false, onMyWay: false, undo: mine };
-  return { primary: null, complete: false, onMyWay: false, undo: false };
+    return checklistDone
+      ? { ...off, primary: null, complete: true, ready: true }
+      : { ...off, primary: "open_checklist", complete: true };
+  if (moment === "done") return { ...off, primary: null, undo: mine };
+  return { ...off, primary: null };
 }
 
 export const HERO_ACTION_LABELS = {

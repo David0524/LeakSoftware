@@ -164,10 +164,23 @@ test("plan a tech's day, move jobs, suggest times, and give directions", async (
   // 1. Optimize (owner, 2026-10-20: was Plan Route): Goodyear no longer sits between the
   //    east-side stops, and the promised 2:00 PM stays. The result is a banner at the top of
   //    the screen.
+  //    The new order shows at once and the banner has Undo (owner, 2026-10-22: "Make Optimize
+  //    show the new order at once, with Undo"); Undo puts the old order back.
+  const booked = await routeNames(page, "Priya Shah");
   await route.getByRole("button", { name: "Optimize" }).click();
   const banner = page.getByTestId("top-banner");
   await expect(banner).toContainText(/^Optimized · .* (less driving|driving)/);
   await expect(page.getByRole("status").filter({ has: banner })).toHaveCount(1);
+  expect((await routeNames(page, "Priya Shah")).indexOf(name("goodyear"))).not.toBe(1);
+  await banner.getByRole("button", { name: "Undo" }).click();
+  await expect(banner).toContainText("Put back as it was.");
+  await expect.poll(() => routeNames(page, "Priya Shah")).toEqual(booked);
+  await route.getByRole("button", { name: "Optimize" }).click();
+  await expect(banner).toContainText(/^Optimized · /);
+  // Optimized again, the order stays: it says so, with nothing to undo.
+  await route.getByRole("button", { name: "Optimize" }).click();
+  await expect(banner).toContainText("Already the best order");
+  await expect(banner.getByRole("button", { name: "Undo" })).toHaveCount(0);
   // A tap puts it away.
   await banner.click();
   await expect(banner).toHaveCount(0);
@@ -427,6 +440,143 @@ test("on a phone, a stop drags by its grip to another place in the day", async (
   await context.close();
 });
 
+test("a stop's tile drags from anywhere on it: a mouse past 6 px, a finger after a hold", async ({
+  browser,
+}) => {
+  test.setTimeout(180_000);
+  const owner = await signedInClient(OWNER.email, OWNER.password);
+  const { data: who } = await owner.auth.getUser();
+  const { data: membership } = await owner
+    .from("membership")
+    .select("company_id")
+    .eq("user_id", who.user!.id)
+    .limit(1)
+    .single();
+  const company = membership!.company_id as string;
+  const { data: priya } = await owner
+    .from("profile")
+    .select("id")
+    .eq("email", "priya@demo.leakbook.test")
+    .single();
+  const tech = priya!.id as string;
+  const day = quietDay();
+  // This run's stops on Priya's day, in order (another run may have left some on it).
+  const mine = async (p: Page) =>
+    (await routeNames(p, "Priya Shah")).filter((n) => n.endsWith(RUN));
+  await makeJob(owner, company, "zoo", { tech, date: day, time: "08:00" });
+  await makeJob(owner, company, "scottsdale", { tech, date: day, time: "10:00" });
+  await makeJob(owner, company, "tempe", { tech, date: day, time: "12:00" });
+
+  // A computer (owner, 2026-10-22: press and hold then drag, as Reminders and Things do).
+  const desk = await browser.newContext({ viewport: { width: 1400, height: 1400 } });
+  const page = await desk.newPage();
+  await signIn(page, OWNER, "/jobs");
+  await page.goto(`/schedule?view=day&date=${day}&tech=all`);
+  const route = page.getByRole("region", { name: "Priya Shah" });
+  await expect(route.getByTestId("stop").filter({ hasText: RUN })).toHaveCount(3);
+  await route.scrollIntoViewIfNeeded();
+  const tempe = route.getByRole("article", { name: new RegExp(name("tempe")) });
+  const line = (await tempe.getByTestId("stop-line").boundingBox())!;
+  const top = (await route.getByTestId("stop").first().boundingBox())!;
+  // A click on the tile's body (by the number, not the name) neither drags nor opens it.
+  await page.mouse.click(line.x + 14, line.y + line.height - 6);
+  await page.waitForTimeout(400);
+  expect(new URL(page.url()).pathname).toBe("/schedule");
+  // Pressed on the body and moved: it lifts and the others make room; let go above the first.
+  await page.mouse.move(line.x + 14, line.y + line.height / 2);
+  await page.mouse.down();
+  await page.mouse.move(line.x + 14, line.y + line.height / 2 - 10, { steps: 4 });
+  await page.mouse.move(line.x + 14, top.y + 6, { steps: 15 });
+  await expect(route.locator("[data-testid=stop].invisible")).toHaveCount(1);
+  await page.mouse.up();
+  await expect(page.getByText("Moved.", { exact: true })).toBeVisible();
+  expect((await mine(page))[0]).toBe(name("tempe"));
+  // A press on the name that moves doesn't drag: the name is a link.
+  const link = (await route.getByRole("link", { name: name("zoo"), exact: true }).boundingBox())!;
+  await page.mouse.move(link.x + 4, link.y + link.height / 2);
+  await page.mouse.down();
+  await page.mouse.move(link.x + 4, link.y + 60, { steps: 6 });
+  await expect(route.locator("[data-testid=stop].invisible")).toHaveCount(0);
+  await page.mouse.up();
+  await desk.close();
+
+  // A phone: touch and hold the tile's body, then drag; let go above the first stop.
+  const context = await browser.newContext({
+    viewport: { width: 390, height: 844 },
+    hasTouch: true,
+    isMobile: true,
+    deviceScaleFactor: 3,
+  });
+  const phone = await context.newPage();
+  await signIn(phone, OWNER, "/jobs");
+  await phone.goto(`/schedule?view=day&date=${day}&tech=${tech}`);
+  const proute = phone.getByRole("region", { name: "Priya Shah" });
+  await expect(proute.getByTestId("stop").filter({ hasText: RUN })).toHaveCount(3);
+  await proute
+    .getByTestId("stop")
+    .nth(1)
+    .evaluate((el) => el.scrollIntoView({ block: "center" }));
+  const last = proute.getByTestId("stop").filter({ hasText: RUN }).nth(2);
+  const lastName = (await mine(phone))[2]!;
+  const b = (await last.getByTestId("stop-line").boundingBox())!;
+  const firstBox = (await proute.getByTestId("stop").first().boundingBox())!;
+  const cdp = await context.newCDPSession(phone);
+  const touch = (type: "touchStart" | "touchMove" | "touchEnd", x = 0, y = 0) =>
+    cdp.send("Input.dispatchTouchEvent", {
+      type,
+      touchPoints: type === "touchEnd" ? [] : [{ x, y }],
+    });
+  const x = b.x + 20;
+  const y0 = b.y + b.height - 8;
+  await touch("touchStart", x, y0);
+  // Held still for half a second: it lifts.
+  await phone.waitForTimeout(550);
+  await touch("touchMove", x, y0 - 2);
+  await expect(proute.locator("[data-testid=stop].invisible")).toHaveCount(1);
+  const y1 = firstBox.y + 8;
+  for (let i = 1; i <= 20; i++) {
+    await touch("touchMove", x, y0 + ((y1 - y0) * i) / 20);
+    await phone.waitForTimeout(16);
+  }
+  await touch("touchEnd");
+  await expect(phone.getByText("Moved.", { exact: true })).toBeVisible();
+  expect((await mine(phone))[0]).toBe(lastName);
+  // The hold opened no menu, the page didn't turn to another day, and nothing stays lifted.
+  await expect(phone.getByRole("menu")).toHaveCount(0);
+  expect(new URL(phone.url()).searchParams.get("date")).toBe(day);
+  await expect(proute.locator("[data-testid=stop].invisible")).toHaveCount(0);
+  await cdp.detach();
+  await context.close();
+});
+
+test("desktop Week shows the work days or all 7, remembered in this browser", async ({ page }) => {
+  test.setTimeout(120_000);
+  const day = quietDay();
+  await page.setViewportSize({ width: 1400, height: 1200 });
+  await signIn(page, OWNER, "/jobs");
+  await page.goto(`/schedule?view=week&date=${day}&tech=all`);
+  const grid = page.getByTestId("week-grid");
+  const control = page.getByTestId("week-days-control");
+  const days = grid.locator("thead th[scope=col]");
+  await expect(control.getByRole("radio", { name: "5 Days" })).toHaveAttribute(
+    "aria-checked",
+    "true",
+  );
+  // The tech column and Monday to Friday; no narrow "Sat Sun ›" column any more.
+  await expect(days).toHaveCount(6);
+  await expect(grid.getByRole("button", { name: /^Show / })).toHaveCount(0);
+  await control.getByRole("radio", { name: "7 Days" }).click();
+  await expect(days).toHaveCount(8);
+  await page.reload();
+  await expect(control.getByRole("radio", { name: "7 Days" })).toHaveAttribute(
+    "aria-checked",
+    "true",
+  );
+  await expect(days).toHaveCount(8);
+  await control.getByRole("radio", { name: "5 Days" }).click();
+  await expect(days).toHaveCount(6);
+});
+
 test("Today shows a tech's route with directions", async ({ page }) => {
   const owner = await signedInClient(OWNER.email, OWNER.password);
   const { data: who } = await owner.auth.getUser();
@@ -453,7 +603,11 @@ test("Today shows a tech's route with directions", async ({ page }) => {
   await signIn(page, OWNER, "/jobs");
   await page.goto(`/today?tech=${priya!.id}`);
   await expect(page.getByRole("heading", { name: "Today · Priya Shah" })).toBeVisible();
-  await expect(page.getByTestId("today-summary")).toContainText(/stops? · .* driving/);
+  // The plan, or once a stop is done the day's ring count (owner, 2026-10-22).
+  await expect(page.getByTestId("today-summary")).toContainText(
+    /stops? · .* driving|\d+ of \d+ stops|\d+ left|All \d+ done/,
+  );
+  await expect(page.getByTestId("day-ring")).toBeVisible();
   // The card at the top for the stop she's on (owner, 2026-10-20): the Live Activity's words and
   // a segment per stop. On My Way and Start are hers to press, so an owner doesn't get them.
   const hero = page.getByTestId("today-hero");

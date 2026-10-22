@@ -1,12 +1,17 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { after } from "next/server";
 import { Suspense } from "react";
 import type { FinalSection, ReportSnapshot, ReportTemplateKey } from "@leakbook/core";
 import { Banner, DOC_PAGE } from "@/components/doc-ui";
 import { ReportLoading } from "@/components/report-loading";
 import { ReportView } from "@/components/report-view";
 import { VisitReportView, type VisitSnapshot } from "@/components/visit-report-view";
+import { getUser } from "@/lib/auth";
+import { createClient } from "@/lib/supabase/server";
+import { adminClient } from "@/server/admin";
+import { notifyReportOpened } from "@/server/notify-events";
 import { publicClient } from "@/server/reports";
 
 export const metadata: Metadata = { title: "Leak Detection Report", robots: { index: false } };
@@ -42,6 +47,11 @@ async function Report({ params, searchParams }: PageProps<"/r/[token]">) {
   const { data } = await db.rpc("report_for_token", { link_token: token, count_view: !print });
   const r = data as TokenReport | null;
   if (!r) notFound();
+  // The team hears the first time the customer opens it (owner, 2026-10-22), not when someone
+  // from the shop looks at the link themselves. Sent after the page, so it never slows it.
+  const admin = adminClient();
+  if (!print && admin && !(await fromTheShop(r.company_id)))
+    after(() => notifyReportOpened(admin, token));
 
   const s = r.snapshot;
   const paths = [
@@ -101,4 +111,19 @@ async function Report({ params, searchParams }: PageProps<"/r/[token]">) {
       )}
     </>
   );
+}
+
+/** Whether the person looking is signed in to this shop (a teammate checking the link). */
+async function fromTheShop(companyId: string): Promise<boolean> {
+  const user = await getUser();
+  if (!user) return false;
+  const { data } = await (
+    await createClient()
+  )
+    .from("membership")
+    .select("user_id")
+    .eq("company_id", companyId)
+    .eq("user_id", user.id)
+    .maybeSingle();
+  return !!data;
 }

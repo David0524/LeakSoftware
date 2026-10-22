@@ -43,6 +43,8 @@ const events: ActivityEvent[] = [
   { ...base, kind: "payment_received", amount_cents: 123456789 },
   { ...base, kind: "report_signed" },
   { ...base, kind: "report_sent" },
+  { ...base, kind: "report_opened" },
+  { ...base, kind: "report_opened", customer_name: null },
   { ...base, kind: "report_sent", customer_name: null },
   { ...base, kind: "report_sent", customer_name: "   " },
   { ...base, kind: "job_completed", actor_name: "Tony Reyes" },

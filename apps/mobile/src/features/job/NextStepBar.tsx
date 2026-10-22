@@ -1,13 +1,15 @@
-import type { ReactNode } from "react";
-import { StyleSheet, View } from "react-native";
+import { StyleSheet, Text, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Button } from "../../ui/components";
 import { Glass } from "../../ui/Glass";
 import { useKeyboardOpen } from "../../ui/keyboard";
-import { shape, space } from "../../ui/theme";
+import { ReadyPop } from "../../ui/ReadyPop";
+import { MAX_TEXT_SCALE, color, face, shape, space, type } from "../../ui/theme";
 
 /** The bar's own height (a 44 pill and its padding), for the page's bottom room. */
 export const NEXT_STEP_BAR_HEIGHT = 44 + space["2"] * 2;
+/** The line over the buttons ("Everything's checked. Mark it complete."), for the bottom room. */
+export const NEXT_STEP_NOTE_HEIGHT = 32;
 /** The floating tab bar under it: its 56 items, border, and 8 above. */
 const TAB_BAR = 56 + 2 + 8;
 
@@ -23,7 +25,17 @@ export interface NextStepButton {
  * floating button). One pill full width, or two side by side. Hidden when there's nothing to
  * offer and while the keyboard is open.
  */
-export function NextStepBar({ buttons }: { buttons: NextStepButton[] }) {
+export function NextStepBar({
+  buttons,
+  note = null,
+}: {
+  buttons: NextStepButton[];
+  /**
+   * A short line over the buttons when the first one is the last thing left (owner,
+   * 2026-10-22: Complete Job once the checklist is all done); the button then scales in once.
+   */
+  note?: string | null;
+}) {
   const insets = useSafeAreaInsets();
   const keyboard = useKeyboardOpen();
   if (buttons.length === 0 || keyboard) return null;
@@ -33,11 +45,20 @@ export function NextStepBar({ buttons }: { buttons: NextStepButton[] }) {
       style={[styles.layer, { bottom: Math.max(12, insets.bottom) + TAB_BAR + space["2"] }]}
     >
       <Glass style={styles.bar}>
+        {note ? (
+          <Text
+            testID="complete-ready"
+            style={[type.secondary, face.semiBold, styles.note, { color: color.text }]}
+            maxFontSizeMultiplier={MAX_TEXT_SCALE}
+          >
+            {note}
+          </Text>
+        ) : null}
         <View style={styles.row}>
-          {buttons.map((b) => (
-            <Slot key={b.title}>
+          {buttons.map((b, i) => (
+            <ReadyPop key={b.title} on={!!note && i === 0} style={styles.slot}>
               <Button title={b.title} kind={b.kind} wide onPress={b.onPress} />
-            </Slot>
+            </ReadyPop>
           ))}
         </View>
       </Glass>
@@ -45,13 +66,10 @@ export function NextStepBar({ buttons }: { buttons: NextStepButton[] }) {
   );
 }
 
-function Slot({ children }: { children: ReactNode }) {
-  return <View style={styles.slot}>{children}</View>;
-}
-
 const styles = StyleSheet.create({
   layer: { position: "absolute", left: 12, right: 12 },
   bar: { borderRadius: shape.tabBar, padding: space["2"] },
   row: { flexDirection: "row", gap: space["2"] },
   slot: { flex: 1 },
+  note: { textAlign: "center", paddingTop: space["1"], paddingBottom: space["2"] },
 });

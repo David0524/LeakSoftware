@@ -228,18 +228,26 @@
             }
         }
 
-        /// "6 stops · 1 hr 15 min driving · Reorder" (Done while reordering), and
-        /// the last move's message under it.
+        /// The day's ring, then "4 of 11 stops · Reorder" (owner, 2026-10-22: goal-gradient), the
+        /// last few counting down ("2 left · about 1 hr"), then "All 11 done"; before the first
+        /// stop is done, "6 stops · 1 hr 15 min driving · Reorder" (Done while reordering). The
+        /// last move's message under it.
         private func summaryLine(_ day: TodayDay) -> some View {
             let button = reordering || day.reorderable
+            let progress = day.progress
             return VStack(alignment: .leading, spacing: 4) {
-                HStack(alignment: .firstTextBaseline, spacing: 6) {
+                HStack(alignment: .center, spacing: 6) {
+                    if let progress {
+                        DayRing(progress: progress).padding(.trailing, 4)
+                    }
                     Text(day.summaryText + (button ? " ·" : ""))
                         .textRole(.body)
                         .foregroundStyle(Color.textMuted)
                         .monospacedDigit()
                         .contentTransition(.numericText())
                         .fixedSize(horizontal: false, vertical: true)
+                        .accessibilityLabel(
+                            progress?.text != nil ? (progress?.spoken ?? "") : day.summaryText)
                     if button {
                         Button(reordering ? TodayReorderText.done : TodayReorderText.reorder) {
                             withAnimation(Motion.smooth) { reordering.toggle() }
@@ -565,9 +573,23 @@
             (route?.jobs ?? []).contains { canPlace($0, .later) || canPlace($0, .up) }
         }
 
-        /// "3 stops · 1 hr 20 min driving" (no clock times, owner 2026-10-21)
+        /// The day's ring (owner, 2026-10-22: goal-gradient): stops done of all, and what's left
+        /// (time at each pool plus the drive in). Nil without a route.
+        var progress: DayProgress? {
+            guard let route else { return nil }
+            return dayProgress(
+                route.jobs.enumerated().map { i, job in
+                    ProgressStop(
+                        done: job.doneOn(ctx.today), durationMin: job.minutes(ctx.settings),
+                        driveMin: route.summary.legs[routeIndex: i], onSite: job.status == .inProgress)
+                })
+        }
+
+        /// "3 stops · 1 hr 20 min driving" (no clock times, owner 2026-10-21) before the first stop
+        /// is done; then the ring's words: "4 of 11 stops", "2 left · about 1 hr", "All 11 done".
         var summaryText: String {
             guard let route else { return "" }
+            if let text = progress?.text { return text }
             let n = route.jobs.count
             // Someone who starts from home: their day's driving is counted from there.
             return [
@@ -853,6 +875,9 @@
         /// On Today's card: white on the water blue, and the list's row does the Live Activity's
         /// Mark Complete (so it's done once).
         var onCard = false
+        /// On the card, the last thing left (the checklist all done, owner 2026-10-22): the filled
+        /// white button.
+        var filled = false
         @Environment(Session.self) private var session
         @Environment(AppEnvironment.self) private var app
         @Environment(SyncService.self) private var sync
@@ -899,7 +924,7 @@
         /// The list's primary and secondary pills, or the card's translucent white one.
         @ViewBuilder private func styled(_ button: Button<Text>, primary: Bool) -> some View {
             if onCard {
-                button.buttonStyle(HeroButtonStyle(filled: false))
+                button.buttonStyle(HeroButtonStyle(filled: filled && primary))
             } else if primary {
                 button.buttonStyle(.primary)
             } else {

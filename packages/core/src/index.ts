@@ -34,6 +34,7 @@ export * from "./checklist-summary";
 export * from "./schedule-moves";
 export * from "./notifications";
 export * from "./today-hero";
+export * from "./progress-cues";
 export * from "./search";
 export * from "./activity";
 export * from "./week-plan";

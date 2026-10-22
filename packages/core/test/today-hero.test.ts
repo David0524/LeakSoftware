@@ -110,18 +110,21 @@ describe("the card's buttons and lines", () => {
       complete: false,
       onMyWay: true,
       undo: false,
+      ready: false,
     });
     expect(heroActions("driving", true)).toEqual({
       primary: "start_job",
       complete: false,
       onMyWay: false,
       undo: false,
+      ready: false,
     });
     expect(heroActions("on_site", true)).toEqual({
       primary: "open_checklist",
       complete: true,
       onMyWay: false,
       undo: false,
+      ready: false,
     });
     // A finished stop's card is only about it: its undo, never Start for the next one.
     expect(heroActions("done", true)).toEqual({
@@ -129,6 +132,7 @@ describe("the card's buttons and lines", () => {
       complete: false,
       onMyWay: false,
       undo: true,
+      ready: false,
     });
     expect(heroActions("done", false).undo).toBe(false);
     expect(heroActions("ahead", false).onMyWay).toBe(false);
@@ -136,6 +140,15 @@ describe("the card's buttons and lines", () => {
     expect(heroActions("ahead", false).primary).toBeNull();
     expect(heroActions("driving", false).primary).toBeNull();
     expect(heroActions("on_site", false).primary).toBe("open_checklist");
+    // The checklist all done: Mark Complete is the last thing, so it takes the card.
+    expect(heroActions("on_site", true, true)).toEqual({
+      primary: null,
+      complete: true,
+      onMyWay: false,
+      undo: false,
+      ready: true,
+    });
+    expect(heroActions("ahead", true, true).ready).toBe(false);
   });
 
   it("says the job type, the stop, and the drive", () => {

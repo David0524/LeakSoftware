@@ -29,6 +29,14 @@ export function gettingStarted(services: Services, p: ShopProgress): StartStep[]
   const pool = services !== "leak";
   const leak = services !== "pool";
   const steps: (StartStep | false)[] = [
+    // A head start (owner, 2026-10-22: goal-gradient): the list opens at 1 of N done.
+    {
+      id: "account",
+      label: "Account created",
+      detail: "Your shop is on Sundeck Pro.",
+      href: "/settings/company",
+      done: true,
+    },
     {
       id: "invite",
       label: "Invite your techs",

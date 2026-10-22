@@ -7,7 +7,7 @@
 import { cleaningDueSpoken, cleaningShortLabel, type CleaningKind } from "./maintenance";
 import { routingSettings, weekday, workDay } from "./route-plan";
 
-export type NotificationKind = "text" | "job" | "quote" | "payment" | "report" | "live";
+export type NotificationKind = "text" | "job" | "quote" | "payment" | "report" | "opened" | "live";
 
 /** Each kind a person can turn off in More › Notifications or Settings › Notifications. */
 export const NOTIFICATION_KINDS: { key: NotificationKind; label: string; hint: string }[] = [
@@ -16,6 +16,13 @@ export const NOTIFICATION_KINDS: { key: NotificationKind; label: string; hint: s
   { key: "quote", label: "Accepted quotes", hint: "A customer accepts a quote." },
   { key: "payment", label: "Payments", hint: "A customer pays a deposit or an invoice." },
   { key: "report", label: "Signed reports", hint: "A customer signs a report." },
+  // Owner, 2026-10-22: "Techs never hear the outcome." The first time a customer opens a
+  // report's link (not visit reports), to the job's techs and the owners and admins.
+  {
+    key: "opened",
+    label: "Opened reports",
+    hint: "A customer opens a report for the first time.",
+  },
   // Owner, 2026-10-20: "Add a Live Activities toggle in the notifications setting." The stop
   // you're on, on the Lock Screen during the workday (iPhone's Live Activity, Android's ongoing
   // notification).
@@ -82,6 +89,37 @@ export function reportNotification(customer: string): NotificationText {
   return { title: "Report signed", body: `${customer} signed the report.` };
 }
 
+/** The customer opened a report's link for the first time: "Rebecca Soto opened the report." */
+export function reportOpenedNotification(customer: string): NotificationText {
+  return { title: "Report opened", body: `${customer} opened the report.` };
+}
+
+// ---------------------------------------------------------------------------
+// The weekly summary email (owner, 2026-10-22: "Owners get no weekly summary")
+// ---------------------------------------------------------------------------
+
+/**
+ * The Weekly Summary switch in Notifications, for owners and admins only. It's an email, not a
+ * push, so it isn't one of NOTIFICATION_KINDS; it's kept in the same notification_prefs as
+ * "weekly".
+ */
+export const WEEKLY_SUMMARY_PREF = {
+  key: "weekly",
+  label: "Weekly summary",
+  hint: "An email on Monday morning: last week's jobs and money, and quotes waiting.",
+  section: "Email",
+} as const;
+
+/**
+ * Whether this person gets the weekly summary: their choice, else on for owners and off for
+ * admins; never techs (the database's app.wants_weekly_summary says the same).
+ */
+export function weeklySummaryOn(prefs: unknown, role: string | null | undefined): boolean {
+  if (role !== "owner" && role !== "admin") return false;
+  const p = prefs && typeof prefs === "object" ? (prefs as Record<string, unknown>) : {};
+  return typeof p.weekly === "boolean" ? p.weekly : role === "owner";
+}
+
 // ---------------------------------------------------------------------------
 // The Live Activity: the stop a tech is on
 // ---------------------------------------------------------------------------
@@ -100,6 +138,11 @@ export interface LiveStopInput {
   address: string | null;
   stop: number;
   stops: number;
+  /**
+   * How many of the day's stops are done, for the progress bar (owner, 2026-10-22: stops done
+   * of all). Without it, the stops before this one.
+   */
+  doneStops?: number;
   /** Arrival, as a time of day ("9:42 AM"), when driving. */
   eta: string | null;
   /** The stop's scheduled time of day ("9:00 AM"), shown before On My Way. */
@@ -142,7 +185,7 @@ export interface LiveStopContent {
   detail: string;
   /** "Then: Jones at 10:30 AM", or null when this is the last stop. */
   next: string | null;
-  /** 0..1 along the day's stops (done ones and this one), for the progress bar. */
+  /** 0..1: the day's stops done of all, for the progress bar. */
   progress: number;
   /** The compact Dynamic Island's few characters: "9:42", "4/9", "✓". */
   compact: string;
@@ -201,11 +244,8 @@ function liveStopBase(s: LiveStopInput): Omit<LiveStopContent, "access" | "clean
   const of = `Stop ${s.stop} of ${s.stops}`;
   const detail = [of, s.address].filter(Boolean).join(" · ");
   const next = s.next ? `Then: ${s.next.customer}` : null;
-  const doneStops = s.phase === "done" ? s.stop : s.stop - 1;
-  const progress =
-    s.stops > 0
-      ? Math.min(1, Math.max(0, (doneStops + (s.phase === "on_site" ? 0.5 : 0)) / s.stops))
-      : 0;
+  const doneStops = s.doneStops ?? (s.phase === "done" ? s.stop : s.stop - 1);
+  const progress = s.stops > 0 ? Math.min(1, Math.max(0, doneStops / s.stops)) : 0;
   const place = s.stops > 0 ? `${s.stop} of ${s.stops}` : "";
   if (s.phase === "ahead") {
     return {

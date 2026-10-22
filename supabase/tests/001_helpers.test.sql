@@ -124,6 +124,9 @@ begin
   insert into subscription (company_id) values (c);
   insert into invite (company_id, email, role) values (c, 'new-' || label || '@test.local', 'tech');
   insert into audit_log (company_id, table_name, row_id, field) values (c, 'job', j, 'status');
+  -- The owner's weekly summary email for last week (server only; owners read it).
+  insert into weekly_summary (company_id, week_of, user_id, email)
+    values (c, app.last_week_monday(current_date), o, label || '-owner@test.local');
 
   insert into storage.objects (bucket_id, name) values
     ('media', c || '/' || j || '/photo.jpg'),

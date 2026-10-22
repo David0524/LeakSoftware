@@ -32,8 +32,8 @@ import Testing
                 == ShopProgress(
                     people: 1, hasLogo: true, customers: 1, leakJobs: 1, reportsSent: 0, invoicesSent: 1))
         let steps = gettingStarted(.leak, p)
-        #expect(steps.map(\.id) == ["invite", "logo", "payments", "job", "report"])
-        #expect(steps.filter(\.done).map(\.id) == ["logo", "job"])
+        #expect(steps.map(\.id) == ["account", "invite", "logo", "payments", "job", "report"])
+        #expect(steps.filter(\.done).map(\.id) == ["account", "logo", "job"])
     }
 
     @Test func hidingItIsRemembered() throws {

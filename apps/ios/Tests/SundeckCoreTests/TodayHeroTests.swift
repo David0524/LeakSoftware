@@ -36,7 +36,7 @@ import Testing
         }
         checkRule(module, "heroActions") { c in
             guard let moment = HeroMoment(rawValue: try c.arg(0)) else { throw NotRepresentable() }
-            return heroActions(moment, mine: try c.arg(1))
+            return heroActions(moment, mine: try c.arg(1), checklistDone: try c.arg(2))
         }
         checkRule(module, "HERO_ACTION_LABELS") { _ in labelTable { (a: HeroAction) in a.label } }
         checkRule(module, "heroSubtitle") { c in

@@ -162,10 +162,12 @@ export const todayHeroCases: ModuleCases = {
     ],
   ),
   heroActions: rule(
-    (moment: HeroMoment, mine: boolean) => heroActions(moment, mine),
+    (moment: HeroMoment, mine: boolean, checklistDone: boolean) =>
+      heroActions(moment, mine, checklistDone),
     moments.flatMap((m) => [
-      [m, true] as [HeroMoment, boolean],
-      [m, false] as [HeroMoment, boolean],
+      [m, true, false] as [HeroMoment, boolean, boolean],
+      [m, false, false] as [HeroMoment, boolean, boolean],
+      [m, true, true] as [HeroMoment, boolean, boolean],
     ]),
   ),
   HERO_ACTION_LABELS: rule(() => HERO_ACTION_LABELS, [[]]),

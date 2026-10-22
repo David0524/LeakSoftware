@@ -9,7 +9,10 @@ import {
   paymentNotification,
   quoteNotification,
   reportNotification,
+  reportOpenedNotification,
   textNotification,
+  weeklySummaryOn,
+  WEEKLY_SUMMARY_PREF,
   type LiveStopInput,
   type NotificationKind,
 } from "@leakbook/core";
@@ -44,6 +47,9 @@ const stops: LiveStopInput[] = (["ahead", "driving", "on_site", "done"] as const
     { ...base, phase, stop: 7, stops: 7, next: null },
     { ...base, phase, stop: 9, stops: 7 },
     { ...base, phase, stop: 0, stops: 0 },
+    { ...base, phase, doneStops: 4 },
+    { ...base, phase, doneStops: 0, stop: 5 },
+    { ...base, phase, doneStops: 9, stops: 7 },
     { ...base, phase, scheduled: "9:00 AM" },
     { ...base, phase, scheduled: "" },
     { ...base, phase, scheduled: "1:15 pm" },
@@ -124,6 +130,17 @@ export const notifications: ModuleCases = {
     ],
   ),
   reportNotification: rule((customer: string) => reportNotification(customer), [["Smith"], [""]]),
+  reportOpenedNotification: rule(
+    (customer: string) => reportOpenedNotification(customer),
+    [["Rebecca Soto"], [""]],
+  ),
+  WEEKLY_SUMMARY_PREF: rule(() => WEEKLY_SUMMARY_PREF, [[]]),
+  weeklySummaryOn: rule(
+    (prefs: unknown, role: string | null) => weeklySummaryOn(prefs, role),
+    [null, {}, { weekly: true }, { weekly: false }, { weekly: "false" }, { text: false }].flatMap(
+      (p) => ["owner", "admin", "tech", null].map((r) => [p, r] as [unknown, string | null]),
+    ),
+  ),
   liveStopContent: rule(
     (s: LiveStopInput) => liveStopContent(s),
     stops.map((s) => [s]),

@@ -7,6 +7,8 @@ import {
   NOT_ON_MAP,
   directionsHref,
   heroActions,
+  checklistReady,
+  COMPLETE_READY_LINE,
   heroDrive,
   heroTopLine,
   heroSegmentsSpoken,
@@ -166,7 +168,14 @@ export function TodayHeroCard({
   const job = hero.stopId ? (jobs[hero.stopId] ?? null) : null;
   const c = hero.content;
   // A finished stop shows its undo (Reopen Visit, Mark Not Complete) and no Start (core).
-  const actions = heroActions(hero.moment, mine);
+  // The checklist all done: Mark Complete is the last thing, so it takes the row (owner,
+  // 2026-10-22).
+  const shown = stops.find((s) => s.id === hero.stopId);
+  const actions = heroActions(
+    hero.moment,
+    mine,
+    !!shown && checklistReady(shown.checklistDone, shown.checklistTotal),
+  );
   const drive = job ? heroDrive(hero.moment, job.driveMin) : null;
   // "Up next" (the figure says "2 of 5"), or "At the pool · Stop 2 of 5"; no clock times
   // (gestures.md section 10). Under the name, "Leak detection · 14 min drive".
@@ -375,9 +384,19 @@ export function TodayHeroCard({
 
             {/* One row, equal widths: style, not size, marks the main action (buttons.md);
               stacked when the text is too large for two side by side. */}
+            {actions.ready && job && !job.done ? (
+              <p className="mt-4 text-[0.9375rem] font-semibold" data-testid="hero-ready">
+                {COMPLETE_READY_LINE}
+              </p>
+            ) : null}
             {(actions.primary && job) ||
             ((actions.complete || actions.undo) && job && (!job.done || job.undo)) ? (
-              <div className="mt-4 flex flex-wrap gap-2.5 [&>*]:min-w-0 [&>*]:flex-[1_1_7rem]">
+              <div
+                className={cx(
+                  "flex flex-wrap gap-2.5 [&>*]:min-w-0 [&>*]:flex-[1_1_7rem]",
+                  actions.ready && !job.done ? "mt-2.5" : "mt-4",
+                )}
+              >
                 {actions.primary && job ? (
                   <div>
                     <Primary action={actions.primary} job={job} />
@@ -411,7 +430,12 @@ export function TodayHeroCard({
                         },
                       })
                     }
-                    buttonClassName={cx(BUTTON, "bg-white/18 text-white hover:bg-white/28")}
+                    buttonClassName={cx(
+                      BUTTON,
+                      actions.ready
+                        ? cx(ON_WATER, "motion-safe:animate-[ready-in_0.5s_ease-out]")
+                        : "bg-white/18 text-white hover:bg-white/28",
+                    )}
                   />
                 ) : null}
               </div>

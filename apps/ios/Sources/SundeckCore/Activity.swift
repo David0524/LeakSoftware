@@ -10,6 +10,7 @@ public enum ActivityKind: String, Codable, CaseIterable, Sendable {
     case paymentReceived = "payment_received"
     case reportSigned = "report_signed"
     case reportSent = "report_sent"
+    case reportOpened = "report_opened"
     case jobCompleted = "job_completed"
     case jobAssigned = "job_assigned"
     case jobMoved = "job_moved"
@@ -21,6 +22,7 @@ public enum ActivityKind: String, Codable, CaseIterable, Sendable {
         case .paymentReceived: .payment
         case .reportSigned: .signature
         case .reportSent: .report
+        case .reportOpened: .opened
         case .jobCompleted: .done
         case .jobAssigned: .person
         case .jobMoved: .calendar
@@ -80,7 +82,7 @@ public struct ActivityEvent: Codable, Equatable, Identifiable, Sendable {
 
 /// The round symbol for each kind; each platform draws its own (SF Symbols here).
 public enum ActivitySymbol: String, Codable, Sendable {
-    case quote, payment, signature, report, done, person, calendar, text
+    case quote, payment, signature, report, opened, done, person, calendar, text
 }
 
 /// What tapping a row opens.
@@ -205,6 +207,9 @@ public func activityRow(_ e: ActivityEvent, now: Date, timeZone: String) throws 
         title = "Report signed"
     case .reportSent:
         title = "Report sent"
+    case .reportOpened:
+        // The customer's first open of the report's link (owner, 2026-10-22).
+        title = "Report opened"
     case .jobCompleted:
         title = "Job completed"
         if let by = firstName(e.actorName) { detail = "\(customer), by \(by)" }

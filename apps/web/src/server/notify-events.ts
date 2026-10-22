@@ -7,6 +7,7 @@ import {
   paymentNotification,
   quoteNotification,
   reportNotification,
+  reportOpenedNotification,
   textNotification,
 } from "@leakbook/core";
 import { jobTechs, notify, shopManagers } from "./push";
@@ -50,28 +51,6 @@ async function notifyTextUnsafe(
     kind: "text",
     text: textNotification(name(customer, input.from), input.body),
     data: { conversation: input.conversationId },
-  });
-}
-
-/** A customer paid a deposit or an invoice: the owners and admins. */
-async function notifyPaymentUnsafe(
-  db: SupabaseClient,
-  input: {
-    companyId: string;
-    customerId: string | null;
-    amountCents: number;
-    what: string;
-    jobId?: string | null;
-  },
-) {
-  const { data: c } = input.customerId
-    ? await db.from("customer").select("name").eq("id", input.customerId).maybeSingle()
-    : { data: null };
-  await notify(db, {
-    userIds: await shopManagers(db, input.companyId),
-    kind: "payment",
-    text: paymentNotification(name(c, "A customer"), input.amountCents, input.what),
-    data: input.jobId ? { job: input.jobId } : {},
   });
 }
 
@@ -159,33 +138,59 @@ async function notifyJobChangedUnsafe(
   });
 }
 
-/** Stripe took a deposit (on a quote) or an invoice payment: who paid, and for what. */
-async function notifyPaidUnsafe(
-  db: SupabaseClient,
-  input: { table: "quote" | "invoice"; id: string; amountCents: number },
-) {
-  const { data: row } = await db
-    .from(input.table)
-    .select("company_id, job_id, number")
-    .eq("id", input.id)
-    .maybeSingle();
-  if (!row) return;
-  const { data: j } = await db
-    .from("job")
-    .select("bill_to_customer_id")
-    .eq("id", row.job_id)
-    .maybeSingle();
-  await notifyPaymentUnsafe(db, {
-    companyId: row.company_id as string,
-    customerId: (j?.bill_to_customer_id as string | null) ?? null,
-    amountCents: input.amountCents,
-    what:
-      input.table === "quote"
-        ? "deposit"
-        : row.number
-          ? `invoice ${row.number as number}`
-          : "invoice",
-    jobId: row.job_id as string,
+/**
+ * Stripe took a deposit (on a quote) or an invoice payment: the job's techs and the owners and
+ * admins (owner, 2026-10-22: "Techs never hear the outcome"), "Rebecca Soto paid $650.00
+ * (invoice 1042)." Claimed on the payment's Activity row first, so a webhook Stripe retries,
+ * or the same payment's two events, notify once (claim_payment_notification).
+ */
+async function notifyPaidUnsafe(db: SupabaseClient, input: { sessionId: string }) {
+  const { data, error } = await db.rpc("claim_payment_notification", {
+    session_id: input.sessionId,
+  });
+  if (error || !data) return;
+  const p = data as {
+    company_id: string;
+    job_id: string | null;
+    invoice_id: string | null;
+    quote_id: string | null;
+    invoice_number: number | null;
+    amount_cents: number;
+    customer_name: string | null;
+  };
+  await notify(db, {
+    userIds: [
+      ...(p.job_id ? await jobTechs(db, p.job_id) : []),
+      ...(await shopManagers(db, p.company_id)),
+    ],
+    kind: "payment",
+    text: paymentNotification(
+      p.customer_name?.trim() || "A customer",
+      p.amount_cents,
+      p.invoice_id ? (p.invoice_number ? `invoice ${p.invoice_number}` : "invoice") : "deposit",
+    ),
+    data: {
+      ...(p.job_id ? { job: p.job_id } : {}),
+      ...(p.invoice_id ? { invoice: p.invoice_id } : {}),
+    },
+  });
+}
+
+/**
+ * The customer opened a report's link (/r/<token>): the first time only, the job's techs and
+ * the owners and admins hear "Rebecca Soto opened the report." (owner, 2026-10-22). The
+ * database records it once per report (record_report_opened), so reloads and later opens
+ * don't notify. Visit reports are left out there.
+ */
+async function notifyReportOpenedUnsafe(db: SupabaseClient, token: string) {
+  const { data, error } = await db.rpc("record_report_opened", { link_token: token });
+  if (error || !data) return;
+  const r = data as { company_id: string; job_id: string; customer_name: string | null };
+  await notify(db, {
+    userIds: [...(await jobTechs(db, r.job_id)), ...(await shopManagers(db, r.company_id))],
+    kind: "opened",
+    text: reportOpenedNotification(r.customer_name?.trim() || "The customer"),
+    data: { job: r.job_id },
   });
 }
 
@@ -201,8 +206,8 @@ const quietly =
   };
 
 export const notifyText = quietly(notifyTextUnsafe);
-export const notifyPayment = quietly(notifyPaymentUnsafe);
 export const notifyQuoteAccepted = quietly(notifyQuoteAcceptedUnsafe);
 export const notifyReportSigned = quietly(notifyReportSignedUnsafe);
 export const notifyJobChanged = quietly(notifyJobChangedUnsafe);
 export const notifyPaid = quietly(notifyPaidUnsafe);
+export const notifyReportOpened = quietly(notifyReportOpenedUnsafe);

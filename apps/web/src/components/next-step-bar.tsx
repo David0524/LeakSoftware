@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useTransition } from "react";
-import type { JobStatus } from "@leakbook/core";
+import { COMPLETE_READY_LINE, type JobStatus } from "@leakbook/core";
 import { changeJobStatus } from "@/app/actions/inspection";
 import { orOffline } from "@/lib/offline";
 import { NEXT_STEP_LABELS, nextStepButtons, type NextStep } from "@/lib/next-step";
@@ -16,6 +16,8 @@ export interface NextStepJob {
   hasTestTypes: boolean;
   /** Asked before Complete Job when completing sends the visit report. */
   completePrompt: SendPrompt;
+  /** The checklist is all done: Complete Job is the last thing (owner, 2026-10-22). */
+  ready?: boolean;
 }
 
 /**
@@ -40,7 +42,15 @@ export function NextStepBar({ section, job }: { section: string; job: NextStepJo
         hidden={typing}
         className="fixed inset-x-0 bottom-[calc(var(--tab-bar-top)+var(--tab-bar-row)+2px+var(--tab-bar-bottom))] z-30 px-3 sm:hidden"
       >
-        <div className="glass flex gap-2 rounded-[28px] p-2">
+        <div className="glass flex flex-wrap gap-2 rounded-[28px] p-2">
+          {job.ready && buttons.includes("complete") ? (
+            <p
+              className="w-full px-3 pt-1 text-center text-[0.9375rem] font-semibold"
+              data-testid="complete-ready"
+            >
+              {COMPLETE_READY_LINE}
+            </p>
+          ) : null}
           {buttons.map((step, i) =>
             step === "complete" ? (
               <div key={step} className="min-w-0 flex-1">
@@ -48,6 +58,7 @@ export function NextStepBar({ section, job }: { section: string; job: NextStepJo
                   jobId={job.jobId}
                   prompt={job.completePrompt}
                   className="w-full"
+                  ready={job.ready}
                 />
               </div>
             ) : step === "start" ? (

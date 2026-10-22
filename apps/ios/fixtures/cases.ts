@@ -13,6 +13,7 @@ import { schedule } from "./cases/schedule";
 import { search } from "./cases/search";
 import { serviceDaysCases } from "./cases/service-days";
 import { todayHeroCases } from "./cases/today-hero";
+import { progressCues } from "./cases/progress-cues";
 import { weekPlan } from "./cases/week-plan";
 import { download } from "./cases/download";
 import { team } from "./cases/team";
@@ -34,6 +35,7 @@ export const modules: Record<string, ModuleCases> = {
   search,
   "service-days": serviceDaysCases,
   "today-hero": todayHeroCases,
+  "progress-cues": progressCues,
   "week-plan": weekPlan,
   download,
   team,

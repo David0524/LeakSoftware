@@ -19,6 +19,8 @@ import {
   workDay,
   startLegLabel,
   scheduleOrder,
+  dayProgress,
+  jobMinutes,
 } from "@leakbook/core";
 import { inRouteOrderViews, stopLockTag, useJobViews, type JobView } from "../../../../data/jobs";
 import { useDriveTimes, useTeam } from "../../../../data/schedule";
@@ -73,6 +75,7 @@ import { AddressLine } from "../../../../ui/NotOnMap";
 import { useRoutingOn } from "../../../../lib/routing";
 import { WebIcon } from "../../../../ui/WebIcon";
 import { DriveChip } from "../../../../ui/DriveChip";
+import { DayRing } from "../../../../ui/DayRing";
 import { driveChipMinutes, driveFromOffMap, driveHomeLine } from "../../../../lib/scheduleTile";
 import Svg, { Path } from "react-native-svg";
 import { unlessSwiping } from "../../../../ui/swipeQuiet";
@@ -210,7 +213,11 @@ export default function Today() {
   // day's stop when the app opens again, the day or whose day changes, or a stop starts or
   // completes.
   const [viewing, setViewing] = useHeroViewing(viewingResetKey(stops, today, shownTech));
-  const { hero, job: heroJob } = useTodayHero({
+  const {
+    hero,
+    job: heroJob,
+    checklistDone,
+  } = useTodayHero({
     companyId: company.id,
     stops,
     today,
@@ -266,6 +273,19 @@ export default function Today() {
   const [doneOpen, setDoneOpen] = useState(false);
   const heroAt = heroJob ? stops.indexOf(heroJob) : -1;
   const backLeg = summary.driveMin - summary.legs.reduce((a, b) => a + b, 0);
+  // The day's ring: stops done of all, and what's left (time at each pool plus the drive in).
+  const progress = useMemo(
+    () =>
+      dayProgress(
+        stops.map((j, i) => ({
+          done: stopDone(j, today),
+          durationMin: jobMinutes({ ...j, property: j.property ?? null }, settings),
+          driveMin: summary.legs[i] ?? null,
+          onSite: j.status === "in_progress",
+        })),
+      ),
+    [stops, today, settings, summary],
+  );
   const homeLine = driveHomeLine(backLeg, start.label);
   // Do Later and Reorder (owner, 2026-10-20; docs/plans/today-reorder.md): the Schedule's move,
   // from this phone's jobs, saved through the sync layer.
@@ -448,14 +468,30 @@ export default function Today() {
           </Empty>
         ) : (
           <View style={styles.route}>
-            {/* "6 stops · 1 hr 15 min driving · Reorder" (Done while reordering). */}
-            <View style={styles.dayLine}>
-              <T muted>
-                {stops.length} {stops.length === 1 ? "stop" : "stops"} ·{" "}
-                {durationLabel(summary.driveMin)} driving
-                {start.label === "home" ? ` · ${startLegLabel("home")}` : ""}
-                {reorder.canReorder || reorder.editing ? " ·" : ""}
-              </T>
+            {/* The day's ring leads the line (owner, 2026-10-22: goal-gradient): "4 of 11
+                stops · Reorder", the last few counting down ("2 left · about 1 hr"), then "All
+                11 done". Before the first stop is done the line keeps the plan, "6 stops · 1 hr
+                15 min driving · Reorder" (Done while reordering). */}
+            <View style={styles.dayLine} testID="today-summary">
+              <View style={styles.dayRing}>
+                <DayRing progress={progress} />
+              </View>
+              <View
+                accessible
+                accessibilityLabel={progress.text ? progress.spoken : undefined}
+                style={styles.dayText}
+              >
+                <T muted>
+                  {progress.text ??
+                    `${stops.length} ${stops.length === 1 ? "stop" : "stops"} · ${durationLabel(
+                      summary.driveMin,
+                    )} driving`}
+                  {progress.state === "start" && start.label === "home"
+                    ? ` · ${startLegLabel("home")}`
+                    : ""}
+                  {reorder.canReorder || reorder.editing ? " ·" : ""}
+                </T>
+              </View>
               {reorder.canReorder || reorder.editing ? (
                 <Pressable
                   accessibilityRole="button"
@@ -484,6 +520,7 @@ export default function Today() {
                 job={heroJob}
                 mine={mine}
                 day={today}
+                checklistDone={checklistDone}
                 driveMin={heroAt >= 0 ? (summary.legs[heroAt] ?? null) : null}
                 notOnMap={!!heroJob && mapStatus(heroJob.property, routing) === "missing"}
                 stopIds={stopIds}
@@ -853,6 +890,8 @@ const styles = StyleSheet.create({
     columnGap: 4,
     marginBottom: space["2"],
   },
+  dayRing: { marginRight: space["2"] - 4 },
+  dayText: { flexShrink: 1 },
   // Reorder and Done: 44 pt tall, though they read as the end of the line.
   dayLineButton: { minHeight: minTap, justifyContent: "center" },
   undo: { paddingHorizontal: space["3"], paddingBottom: space["2"] },

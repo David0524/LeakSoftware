@@ -448,6 +448,68 @@
       "args": [
         {
           "id": "e1",
+          "kind": "report_opened",
+          "created_at": "2026-10-20T16:42:00Z",
+          "job_id": "j1",
+          "conversation_id": null,
+          "customer_name": "Maria Alvarez",
+          "job_number": 1038,
+          "amount_cents": null,
+          "scheduled_at": null,
+          "preview": null,
+          "actor_name": null,
+          "assignee_name": null
+        },
+        "2026-10-20T17:00:00Z",
+        "America/Phoenix"
+      ],
+      "result": {
+        "id": "e1",
+        "symbol": "opened",
+        "title": "Report opened",
+        "detail": "Maria Alvarez",
+        "time": "9:42 AM",
+        "open": {
+          "screen": "job",
+          "id": "j1"
+        }
+      }
+    },
+    {
+      "args": [
+        {
+          "id": "e1",
+          "kind": "report_opened",
+          "created_at": "2026-10-20T16:42:00Z",
+          "job_id": "j1",
+          "conversation_id": null,
+          "customer_name": null,
+          "job_number": 1038,
+          "amount_cents": null,
+          "scheduled_at": null,
+          "preview": null,
+          "actor_name": null,
+          "assignee_name": null
+        },
+        "2026-10-20T17:00:00Z",
+        "America/Phoenix"
+      ],
+      "result": {
+        "id": "e1",
+        "symbol": "opened",
+        "title": "Report opened",
+        "detail": "A customer",
+        "time": "9:42 AM",
+        "open": {
+          "screen": "job",
+          "id": "j1"
+        }
+      }
+    },
+    {
+      "args": [
+        {
+          "id": "e1",
           "kind": "report_sent",
           "created_at": "2026-10-20T16:42:00Z",
           "job_id": "j1",
@@ -1217,14 +1279,14 @@
       "args": [
         {
           "id": "e1",
-          "kind": "job_moved",
+          "kind": "job_assigned",
           "created_at": "2026-10-20T16:42:00Z",
           "job_id": "j1",
           "conversation_id": null,
           "customer_name": "Maria Alvarez",
           "job_number": 1038,
           "amount_cents": null,
-          "scheduled_at": "2026-10-20T16:30:00Z",
+          "scheduled_at": null,
           "preview": null,
           "actor_name": null,
           "assignee_name": null
@@ -1234,8 +1296,8 @@
       ],
       "result": {
         "id": "e1",
-        "symbol": "calendar",
-        "title": "Job #1038 moved to Wed 1:30 AM",
+        "symbol": "person",
+        "title": "Job #1038 assigned",
         "detail": "Maria Alvarez",
         "time": "1:42 AM",
         "open": {

@@ -119,6 +119,21 @@ header:not(.glass-bar) :focus-visible {
     opacity: 0;
   }
 }
+/* Mark Complete once it's the last thing (owner, 2026-10-22): a one-time scale-in with a small
+   overshoot. Used with motion-safe: only, so Reduce Motion gets none. */
+@keyframes ready-in {
+  0% {
+    opacity: 0.4;
+    transform: scale(0.94);
+  }
+  60% {
+    opacity: 1;
+    transform: scale(1.03);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
 /* The result banner at the top of the screen (top-banner.tsx): it slides down from under the
    navigation bar and back up when it goes; with Reduce Motion it only fades. */
 @keyframes banner-in {

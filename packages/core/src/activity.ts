@@ -14,6 +14,7 @@ export type ActivityKind =
   | "payment_received"
   | "report_signed"
   | "report_sent"
+  | "report_opened"
   | "job_completed"
   | "job_assigned"
   | "job_moved"
@@ -37,7 +38,7 @@ export interface ActivityEvent {
 
 /** The round symbol for each kind; each platform draws its own (SF Symbols, SVG). */
 export type ActivitySymbol =
-  "quote" | "payment" | "signature" | "report" | "done" | "person" | "calendar" | "text";
+  "quote" | "payment" | "signature" | "report" | "opened" | "done" | "person" | "calendar" | "text";
 
 export interface ActivityRow {
   id: string;
@@ -73,6 +74,7 @@ const SYMBOLS: Record<ActivityKind, ActivitySymbol> = {
   payment_received: "payment",
   report_signed: "signature",
   report_sent: "report",
+  report_opened: "opened",
   job_completed: "done",
   job_assigned: "person",
   job_moved: "calendar",
@@ -161,6 +163,10 @@ export function activityRow(e: ActivityEvent, now: Date | string, timeZone: stri
       break;
     case "report_sent":
       title = "Report sent";
+      break;
+    case "report_opened":
+      // The customer's first open of the report's link (owner, 2026-10-22).
+      title = "Report opened";
       break;
     case "job_completed": {
       const by = firstName(e.actor_name);

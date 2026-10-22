@@ -143,10 +143,22 @@ public final class NotificationPrefsForm {
 
     /// Turns a kind on or off, shown at once and saved; on failure it goes back and says why.
     public func set(_ kind: NotificationKind, _ on: Bool, api: WebAPI) async {
+        await set(key: kind.rawValue, on, api: api)
+    }
+
+    /// The weekly summary email (owners and admins; owner, 2026-10-22): on for owners and off
+    /// for admins until they choose.
+    public func isWeeklyOn(role: String?) -> Bool { weeklySummaryOn(prefs, role: role) }
+
+    public func setWeekly(_ on: Bool, api: WebAPI) async {
+        await set(key: WeeklySummaryPref.key, on, api: api)
+    }
+
+    private func set(key: String, _ on: Bool, api: WebAPI) async {
         let before = prefs
         var next: [String: JSONValue] = [:]
         if case .object(let current) = prefs { next = current }
-        next[kind.rawValue] = .bool(on)
+        next[key] = .bool(on)
         prefs = .object(next)
         do {
             let reply = try await api.send("PUT", "api/push/preferences", ["prefs": .object(next)])

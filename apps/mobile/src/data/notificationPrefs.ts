@@ -1,5 +1,10 @@
 import { useCallback, useEffect, useState } from "react";
-import { NOTIFICATION_KINDS, notificationOn, type NotificationKind } from "@leakbook/core";
+import {
+  NOTIFICATION_KINDS,
+  WEEKLY_SUMMARY_PREF,
+  notificationOn,
+  type NotificationKind,
+} from "@leakbook/core";
 import { API_URL } from "../lib/config";
 import { getServices } from "../lib/services";
 import { getJson } from "./weather";
@@ -41,7 +46,10 @@ export function notificationSummary(prefs: Prefs | null): string | undefined {
   return NOTIFICATION_KINDS.some((k) => notificationOn(prefs, k.key)) ? "Some" : "Off";
 }
 
-/** The person's choices (null until loaded, or offline), and turning one kind on or off. */
+/**
+ * The person's choices (null until loaded, or offline), and turning one on or off: a push kind,
+ * or the weekly summary email ("weekly", owners and admins).
+ */
 export function useNotificationPrefs() {
   const [prefs, setPrefs] = useState<Prefs | null>(remembered);
   const [error, setError] = useState<string | null>(null);
@@ -56,11 +64,15 @@ export function useNotificationPrefs() {
     };
   }, []);
   const set = useCallback(
-    async (kind: NotificationKind, on: boolean) => {
+    async (kind: NotificationKind | typeof WEEKLY_SUMMARY_PREF.key, on: boolean) => {
       if (!prefs || !API_URL) return;
-      const next = Object.fromEntries(
+      const next: Prefs = Object.fromEntries(
         NOTIFICATION_KINDS.map((k) => [k.key, k.key === kind ? on : notificationOn(prefs, k.key)]),
       );
+      // The weekly summary keeps its own default (on for owners only) until it's chosen.
+      const weekly = WEEKLY_SUMMARY_PREF.key;
+      if (kind === weekly) next[weekly] = on;
+      else if (typeof prefs[weekly] === "boolean") next[weekly] = prefs[weekly];
       const before = prefs;
       remember(next);
       setError(null);

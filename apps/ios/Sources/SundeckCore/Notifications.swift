@@ -6,7 +6,7 @@ import Foundation
 // same thing.
 
 public enum NotificationKind: String, Codable, CaseIterable, Sendable {
-    case text, job, quote, payment, report, live
+    case text, job, quote, payment, report, opened, live
 }
 
 /// Each kind a person can turn off in More › Notifications (`NOTIFICATION_KINDS`).
@@ -16,6 +16,8 @@ public let notificationKinds: [(key: NotificationKind, label: String, hint: Stri
     (.quote, "Accepted quotes", "A customer accepts a quote."),
     (.payment, "Payments", "A customer pays a deposit or an invoice."),
     (.report, "Signed reports", "A customer signs a report."),
+    // Owner, 2026-10-22: "Techs never hear the outcome." The customer's first open of a report.
+    (.opened, "Opened reports", "A customer opens a report for the first time."),
     (.live, "Live Activity", "Your current stop on the Lock Screen during the workday."),
 ]
 
@@ -78,6 +80,30 @@ public func reportNotification(_ customer: String) -> NotificationText {
     NotificationText(title: "Report signed", body: "\(customer) signed the report.")
 }
 
+/// The customer opened a report's link for the first time: "Rebecca Soto opened the report."
+public func reportOpenedNotification(_ customer: String) -> NotificationText {
+    NotificationText(title: "Report opened", body: "\(customer) opened the report.")
+}
+
+// MARK: - The weekly summary email (owner, 2026-10-22: "Owners get no weekly summary")
+
+/// The Weekly Summary switch in Notifications, for owners and admins only (`WEEKLY_SUMMARY_PREF`):
+/// an email, kept in the same notification prefs as "weekly".
+public enum WeeklySummaryPref {
+    public static let key = "weekly"
+    public static let label = "Weekly summary"
+    public static let hint = "An email on Monday morning: last week's jobs and money, and quotes waiting."
+    public static let section = "Email"
+}
+
+/// Whether this person gets the weekly summary: their choice, else on for owners and off for
+/// admins; never techs.
+public func weeklySummaryOn(_ prefs: JSONValue?, role: String?) -> Bool {
+    guard role == "owner" || role == "admin" else { return false }
+    if case .object(let p)? = prefs, case .bool(let on)? = p[WeeklySummaryPref.key] { return on }
+    return role == "owner"
+}
+
 // MARK: - The Live Activity: the stop a tech is on
 
 /// What the Live Activity shows. No timer or stopwatch (owner, 2026-10-19): before leaving, the
@@ -108,6 +134,9 @@ public struct LiveStopInput: Codable, Hashable, Sendable {
     public var address: String?
     public var stop: Int
     public var stops: Int
+    /// How many of the day's stops are done, for the progress bar (owner, 2026-10-22: stops done
+    /// of all). Nil (and in a state saved before it existed) means the stops before this one.
+    public var doneStops: Int?
     /// Arrival, as a time of day ("9:42 AM"), when driving.
     public var eta: String?
     /// The stop's scheduled time of day ("9:00 AM"), shown before On My Way.
@@ -122,8 +151,8 @@ public struct LiveStopInput: Codable, Hashable, Sendable {
     public var cleanings: [StopCleaning]?
 
     public init(
-        phase: LiveStopPhase, customer: String, address: String?, stop: Int, stops: Int, eta: String?,
-        scheduled: String? = nil, checklistDone: Int, checklistTotal: Int, next: LiveStopNext?,
+        phase: LiveStopPhase, customer: String, address: String?, stop: Int, stops: Int, doneStops: Int? = nil,
+        eta: String?, scheduled: String? = nil, checklistDone: Int, checklistTotal: Int, next: LiveStopNext?,
         access: String? = nil, cleanings: [StopCleaning]? = nil
     ) {
         self.phase = phase
@@ -131,6 +160,7 @@ public struct LiveStopInput: Codable, Hashable, Sendable {
         self.address = address
         self.stop = stop
         self.stops = stops
+        self.doneStops = doneStops
         self.eta = eta
         self.scheduled = scheduled
         self.checklistDone = checklistDone
@@ -197,7 +227,7 @@ public struct LiveStopContent: Codable, Equatable, Sendable {
     public var detail: String
     /// "Then: Jones", or nil when this is the last stop.
     public var next: String?
-    /// 0..1 along the day's stops (done ones and this one), for the progress bar.
+    /// 0..1: the day's stops done of all, for the progress bar.
     public var progress: Double
     /// The compact Dynamic Island's few characters: "9:42", "4/9", "✓".
     public var compact: String
@@ -241,10 +271,8 @@ private func liveStopBase(_ s: LiveStopInput) -> LiveStopContent {
     let of = "Stop \(s.stop) of \(s.stops)"
     let detail = [of, s.address].compactMap { $0 }.filter { !$0.isEmpty }.joined(separator: " · ")
     let next = s.next.map { "Then: \($0.customer)" }
-    let doneStops = s.phase == .done ? s.stop : s.stop - 1
-    let progress =
-        s.stops > 0
-        ? min(1, max(0, (Double(doneStops) + (s.phase == .onSite ? 0.5 : 0)) / Double(s.stops))) : 0
+    let doneStops = s.doneStops ?? (s.phase == .done ? s.stop : s.stop - 1)
+    let progress = s.stops > 0 ? min(1, max(0, Double(doneStops) / Double(s.stops))) : 0
     let place = s.stops > 0 ? "\(s.stop) of \(s.stops)" : ""
     let compactPlace = place.isEmpty ? "…" : "\(s.stop)/\(s.stops)"
     switch s.phase {

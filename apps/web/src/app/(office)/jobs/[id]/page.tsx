@@ -12,6 +12,7 @@ import {
   POOL_TYPE_LABELS,
   SIGNATURE_PURPOSE_LABELS,
   checklistTally,
+  checklistReady,
   jobReschedulable,
   mapStatus,
   inspectionProgress,
@@ -132,6 +133,9 @@ export default async function JobPage({ params }: PageProps<"/jobs/[id]">) {
   const tz = office.company.timezone;
   const tally = checklistTally(detail.components, [...detail.results.values()]);
   const total = detail.components.length;
+  // Everything on the visit's checklist is done: Complete Job is the last thing (owner,
+  // 2026-10-22), so it stands out.
+  const ready = checklistReady(total - tally.pending, total);
   // A pool inspection counts only the questions its gates leave open (2026-10-20).
   const inspection = job.type === "inspection" ? inspectionProgress(inspectionRows(detail)) : null;
   const questions = intakeQuestionsFor(
@@ -207,6 +211,7 @@ export default async function JobPage({ params }: PageProps<"/jobs/[id]">) {
           jobType: job.type,
           hasTestTypes: [...detail.testTypes.values()].some((t) => t.active && !t.deleted_at),
           completePrompt,
+          ready: job.type === "maintenance" && ready,
         }}
         sections={[
           {
@@ -481,7 +486,7 @@ export default async function JobPage({ params }: PageProps<"/jobs/[id]">) {
                 {/* Complete Job ends a visit, right under its list (owner, 2026-10-19). */}
                 {job.type === "maintenance" &&
                 (job.status === "scheduled" || job.status === "in_progress") ? (
-                  <CompleteJob jobId={job.id} prompt={completePrompt} />
+                  <CompleteJob jobId={job.id} prompt={completePrompt} ready={ready} />
                 ) : null}
               </section>
             ),

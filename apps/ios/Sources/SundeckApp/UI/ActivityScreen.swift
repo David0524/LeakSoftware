@@ -194,6 +194,7 @@
             case .payment: "dollarsign"
             case .signature: "signature"
             case .report: "paperplane"
+            case .opened: "eye"
             case .done: "checkmark"
             case .person: "person"
             case .calendar: "calendar"

@@ -9,8 +9,8 @@ import Testing
     @Test func everyRuleIsChecked() {
         let checked: Set<String> = [
             "NOTIFICATION_KINDS", "SHOP_KINDS", "notificationOn", "textNotification", "jobNotification",
-            "quoteNotification", "paymentNotification", "reportNotification", "liveStopContent", "liveStopRuns",
-            "accessLine",
+            "quoteNotification", "paymentNotification", "reportNotification", "reportOpenedNotification",
+            "WEEKLY_SUMMARY_PREF", "weeklySummaryOn", "liveStopContent", "liveStopRuns", "accessLine",
         ]
         #expect(Fixtures.rules(module) == checked)
     }
@@ -38,6 +38,19 @@ import Testing
             paymentNotification(try c.arg(0), try c.arg(1), try c.arg(2))
         }
         checkRule(module, "reportNotification") { c in reportNotification(try c.arg(0)) }
+        checkRule(module, "reportOpenedNotification") { c in reportOpenedNotification(try c.arg(0)) }
+    }
+
+    @Test func weeklySummary() {
+        checkRule(module, "WEEKLY_SUMMARY_PREF") { _ in
+            [
+                "key": WeeklySummaryPref.key, "label": WeeklySummaryPref.label, "hint": WeeklySummaryPref.hint,
+                "section": WeeklySummaryPref.section,
+            ]
+        }
+        checkRule(module, "weeklySummaryOn") { c in
+            weeklySummaryOn(try c.arg(0, as: JSONValue?.self), role: try c.arg(1, as: String?.self))
+        }
     }
 
     @Test func liveStop() {

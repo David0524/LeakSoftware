@@ -104,6 +104,7 @@
     /// when iOS has notifications off for the app, a row that opens its Settings first.
     struct NotificationsScreen: View {
         @Environment(AppEnvironment.self) private var app
+        @Environment(Session.self) private var session
         @Environment(\.scenePhase) private var scenePhase
         @Environment(\.openURL) private var openURL
         @State private var form: NotificationPrefsForm?
@@ -136,6 +137,17 @@
                                             if kind.key == .live { app.liveStop.check() }
                                         }
                                     }))
+                        }
+                    }
+                    // The weekly summary email, for owners and admins (owner, 2026-10-22).
+                    let role = session.company?.role
+                    if role == "owner" || role == "admin" {
+                        Grouped(label: WeeklySummaryPref.section) {
+                            SwitchRow(
+                                WeeklySummaryPref.label, detail: WeeklySummaryPref.hint,
+                                isOn: Binding(
+                                    get: { form.isWeeklyOn(role: role) },
+                                    set: { on in Task { await form.setWeekly(on, api: app.api) } }))
                         }
                     }
                     if let error = form.error { Notice(kind: .error, text: error) }

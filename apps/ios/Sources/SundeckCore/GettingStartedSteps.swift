@@ -46,6 +46,10 @@ public func gettingStarted(_ services: Services, _ p: ShopProgress) -> [StartSte
     let pool = services != .leak
     let leak = services != .pool
     let steps: [StartStep?] = [
+        // A head start (owner, 2026-10-22: goal-gradient): the list opens at 1 of N done.
+        StartStep(
+            id: "account", label: "Account created", detail: "Your shop is on Sundeck Pro.",
+            href: "/settings/company", done: true),
         StartStep(
             id: "invite", label: "Invite your techs", detail: "They sign in on the Sundeck Pro app.",
             href: "/settings/team", done: p.people > 1 || p.openInvites > 0),
