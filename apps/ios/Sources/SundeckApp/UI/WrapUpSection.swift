@@ -33,7 +33,7 @@
                         .textRole(.body).foregroundStyle(Color.textMuted)
                         .padding(.horizontal, 4)
                     Grouped(separatorInset: 58) {
-                        ForEach(list.rows) { row in
+                        ForEach(list.rows, id: \.key) { row in
                             Button {
                                 open = WrapUpOpen(row: row)
                             } label: {
