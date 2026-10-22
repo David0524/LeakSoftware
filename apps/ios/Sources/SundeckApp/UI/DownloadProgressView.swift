@@ -15,7 +15,8 @@
         var download: PullProgress?
         @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
-        static let footer = "This happens once. After this, the app works without signal."
+        static let footer =
+            "This may take a while. Thank you for your patience. It happens once; after this, the app works without signal."
         static let title = "Downloading your company"
 
         var body: some View {

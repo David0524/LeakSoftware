@@ -36,6 +36,8 @@ public actor SyncEngine {
 
     /// Rows per page on a first download: the most sync_pull allows.
     public static let firstPullPage = 2000
+    /// A first download's opening page: enough for the company and the membership.
+    public static let openingPullPage = 50
 
     /// Follows a first download's progress, page by page.
     public func setProgressHandler(_ handler: (@Sendable (PullProgress) -> Void)?) { onProgress = handler }
@@ -133,14 +135,20 @@ public actor SyncEngine {
         // A first download (no cursor yet) or a restart: ask how much there is, for the
         // progress screen (never fails the sync), and take the biggest pages.
         let first = restart || cursor == .object([:])
+        // A first download's opening page is small: the company and the membership come first,
+        // so the app opens after one quick request while the rest comes down behind it (owner,
+        // 2026-10-22: "The initial app downloading screen is still taking way too long"). The
+        // count for the progress bar runs alongside it rather than before it.
+        let transport = self.transport
         var progress: PullProgress? = nil
+        var counting: Task<[String: Int]?, Never>? = nil
         if first {
-            progress = PullProgress(totals: (try? await transport.pullCount()) ?? nil)
-            if let progress { onProgress?(progress) }
+            counting = Task { (try? await transport.pullCount()) ?? nil }
+            progress = PullProgress(totals: nil)
+            onProgress?(progress!)
         }
         let size = first ? max(pullPage, Self.firstPullPage) : pullPage
-        let transport = self.transport
-        var page = try await transport.pull(cursor: cursor, pageSize: size)
+        var page = try await transport.pull(cursor: cursor, pageSize: first ? min(Self.openingPullPage, size) : size)
         while true {
             // The next page is already on its way while this one is saved.
             let next: Task<PullPage, Error>? =
@@ -158,6 +166,11 @@ public actor SyncEngine {
                 for r in page.rows { progress!.pulled[r.table, default: 0] += 1 }
                 progress!.finished = page.done
                 onProgress?(progress!)
+                if let count = counting {
+                    counting = nil
+                    progress!.totals = await count.value
+                    onProgress?(progress!)
+                }
             }
             guard let next else { break }
             page = try await next.value

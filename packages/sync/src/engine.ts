@@ -36,6 +36,8 @@ export interface DownloadState {
 
 /** Rows per page on a first download: the most sync_pull allows. */
 export const FIRST_PULL_PAGE = 2000;
+/** A first download's opening page: enough for the company and the membership. */
+export const OPENING_PULL_PAGE = 50;
 
 export interface SyncEngineOptions {
   /** Mutations per sync_push call (server limit 500). */
@@ -163,15 +165,23 @@ export class SyncEngine {
     // against the server's count.
     const first = restart || isEmptyCursor(cursor) || (this.firstDownload?.() ?? false);
     const pageSize = first ? this.firstPullPage : this.pullPage;
+    // A first download's opening page is small: the company and the membership come first, so
+    // the app opens after one quick request while the rest comes down behind it (owner,
+    // 2026-10-22: "The initial app downloading screen is still taking way too long"). The
+    // count for the progress bar runs alongside it rather than before it.
     let download: DownloadState | null = null;
+    let counting: Promise<Record<string, number> | null> | null = null;
     if (first && this.onDownload) {
-      const totals = this.transport.count ? await this.transport.count().catch(() => null) : null;
-      download = { pulled: {}, totals };
-      this.onDownload({ pulled: {}, totals });
+      download = { pulled: {}, totals: null };
+      counting = this.transport.count ? this.transport.count().catch(() => null) : null;
+      this.onDownload({ pulled: {}, totals: null });
     }
     // The next page is asked for as soon as a page arrives, while that page is being saved:
     // each request needs only the cursor the page before returned, so the order holds.
-    let next = this.transport.pull(cursor, pageSize);
+    let next = this.transport.pull(
+      cursor,
+      first ? Math.min(OPENING_PULL_PAGE, pageSize) : pageSize,
+    );
     for (;;) {
       const page = await next;
       const ahead = page.done ? null : this.transport.pull(page.cursor, pageSize);
@@ -183,6 +193,11 @@ export class SyncEngine {
       if (download) {
         for (const r of page.rows) download.pulled[r.table] = (download.pulled[r.table] ?? 0) + 1;
         this.onDownload?.({ pulled: { ...download.pulled }, totals: download.totals });
+        if (counting) {
+          download.totals = await counting;
+          counting = null;
+          this.onDownload?.({ pulled: { ...download.pulled }, totals: download.totals });
+        }
       }
       if (!ahead) break;
       next = ahead;

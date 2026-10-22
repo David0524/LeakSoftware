@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   FIRST_PULL_PAGE,
   LocalStore,
+  OPENING_PULL_PAGE,
   SupabaseTransport,
   SyncEngine,
   type DownloadState,
@@ -74,23 +75,25 @@ function setup(over: { totals?: FakeServer["totals"] } = {}) {
 }
 
 describe("the first download", () => {
-  it("counts once, then reports rows per table after each page", async () => {
+  it("counts once, alongside the first page, then reports rows per table after each page", async () => {
     const { server, seen, engine } = setup();
     const s = await engine.sync();
     expect(s.error).toBeUndefined();
     expect(server.counted).toBe(1);
     const totals = { customer: 3, property: 1 };
+    // The first page is reported before the count is waited for, so the app can open on it.
     expect(seen).toEqual([
-      { pulled: {}, totals },
+      { pulled: {}, totals: null },
+      { pulled: { customer: 2 }, totals: null },
       { pulled: { customer: 2 }, totals },
       { pulled: { customer: 3, property: 1 }, totals },
     ]);
   });
 
-  it("asks for 2,000 rows a page, and the usual size afterwards", async () => {
+  it("opens with a small page (the company first), then 2,000 rows a page, then the usual size", async () => {
     const { server, engine } = setup();
     await engine.sync();
-    expect(server.pulls.map((p) => p.size)).toEqual([FIRST_PULL_PAGE, FIRST_PULL_PAGE]);
+    expect(server.pulls.map((p) => p.size)).toEqual([OPENING_PULL_PAGE, FIRST_PULL_PAGE]);
     server.pulls = [];
     await engine.sync();
     expect(server.pulls.map((p) => p.size)).toEqual([500]);
@@ -146,7 +149,7 @@ describe("the first download", () => {
       firstDownload: () => true,
     }).sync();
     expect(seen.at(-1)).toEqual({ pulled: { customer: 1 }, totals: { customer: 1 } });
-    expect(server.pulls[0]!.size).toBe(FIRST_PULL_PAGE);
+    expect(server.pulls[0]!.size).toBe(OPENING_PULL_PAGE);
   });
 });
 

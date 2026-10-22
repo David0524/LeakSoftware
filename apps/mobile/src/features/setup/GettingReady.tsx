@@ -110,7 +110,8 @@ export function GettingReady({
         style={[type.secondary, { color: color.textMuted, textAlign: "center" }]}
         maxFontSizeMultiplier={MAX_TEXT_SCALE}
       >
-        This happens once. After this, the app works without signal.
+        This may take a while. Thank you for your patience. It happens once; after this, the app
+        works without signal.
       </Text>
     </View>
   );

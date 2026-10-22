@@ -37,10 +37,14 @@ import Testing
         let s = await engine.sync()
         #expect(s.error == nil && s.pulled == 3)
         let all = seen.all.current
-        #expect(all.first == PullProgress(totals: ["customer": 2, "job": 1]))
-        #expect(all.map(\.pulled) == [[:], ["customer": 1], ["customer": 2, "job": 1]])
+        // The first page is reported before the count is waited for, so the app can open on it.
+        #expect(all.first == PullProgress(totals: nil))
+        #expect(all.map(\.pulled) == [[:], ["customer": 1], ["customer": 1], ["customer": 2, "job": 1]])
+        #expect(all.map { $0.totals == nil } == [true, true, false, false])
+        #expect(all.last?.totals == ["customer": 2, "job": 1])
         #expect(all.last?.finished == true)
-        #expect(server.state.current.pageSizes == [SyncEngine.firstPullPage, SyncEngine.firstPullPage])
+        // A small opening page (the company first), then 2,000 rows a page.
+        #expect(server.state.current.pageSizes == [SyncEngine.openingPullPage, SyncEngine.firstPullPage])
         let progress = downloadProgress(all.last!.pulled, all.last!.totals)
         #expect(progress.percent == "100%")
 
