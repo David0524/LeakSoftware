@@ -6,7 +6,7 @@ import { REPAIR_ITEM_KEY } from "./models";
  * working the job) we need a button to 'add additional repair'. It's common to go out and repair
  * multiple parts in one job."; docs/design/2026-10-22-multiple-repairs.md).
  *
- * Each repair is a `job_repair` row (supabase/migrations/20261022000700_job_repairs.sql), so
+ * Each repair is a `job_repair` row (supabase/migrations/20261022000800_job_repairs.sql), so
  * two techs adding repairs at once each add a row and neither is lost. The job's price
  * (job.fee_cents) is the sum of its live repairs: the phones write it with each change, and the
  * server keeps it so (app.job_repair_fee). A job booked before repairs were rows has none: its

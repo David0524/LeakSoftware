@@ -9,7 +9,7 @@ rules. The rules live in `packages/core/src/repairs.ts`, ported to
 
 ## Data model: one row per repair
 
-A new synced table, `job_repair` (`supabase/migrations/20261022000700_job_repairs.sql`):
+A new synced table, `job_repair` (`supabase/migrations/20261022000800_job_repairs.sql`):
 `company_id`, `job_id`, `price_book_item_id` (optional), `description`, `price_cents`,
 `sort_order`, plus the usual sync columns. It follows the table rules: composite foreign keys,
 `app.make_synced`, registered in `app.sync_table` (members read and write, `job_ref` so phones keep

@@ -9,7 +9,7 @@
 --   report frozen from now on has no checklist (its snapshot's components are empty). Reports
 --   already sent keep the snapshot they were frozen with.
 --
--- As 20261022000700_job_repairs.sql (create_job), 20261012006700_pool_inspection.sql
+-- As 20261022000800_job_repairs.sql (create_job), 20261012006700_pool_inspection.sql
 -- (send_report_unchecked, report_preview_unchecked) otherwise.
 
 -- ---------------------------------------------------------------------------

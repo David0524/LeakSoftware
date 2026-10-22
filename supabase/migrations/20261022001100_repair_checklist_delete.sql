@@ -1,5 +1,5 @@
 -- Older repair jobs' checklists are deleted (owner, 2026-10-22, of the rows kept by
--- 20261022000800_repair_no_checklist.sql: "delete"). Soft deletes, so phones drop them on
+-- 20261022000900_repair_no_checklist.sql: "delete"). Soft deletes, so phones drop them on
 -- their next sync: every checklist answer on a repair job, and its checklist items, except an
 -- item a live finding, test or photo still points to (it names that finding's part). Reports
 -- already sent keep the snapshot they were frozen with.

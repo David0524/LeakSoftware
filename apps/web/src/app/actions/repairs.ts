@@ -18,7 +18,7 @@ import type { FormState } from "./auth";
 // A repair job's repairs, from the job page (owner, 2026-10-22: "add additional repair";
 // packages/core/src/repairs.ts). The same rows and rules as the phones, written as the signed-in
 // member (row security applies). The server keeps the job's price at their sum
-// (supabase/migrations/20261022000700_job_repairs.sql).
+// (supabase/migrations/20261022000800_job_repairs.sql).
 
 const text = (f: FormData, k: string) => String(f.get(k) ?? "").trim();
 
