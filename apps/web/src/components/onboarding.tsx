@@ -86,9 +86,42 @@ export function Onboarding({
   const shown = useRef(step);
 
   const index = STEPS.indexOf(step);
-  const go = (to: Step) => setStep(to);
+  // Each step is its own page in the browser's history, so the phone's Back (or a swipe)
+  // goes to the step before, not out of setup to an empty sign-up form (owner, 2026-10-22:
+  // "you just loop back to the name your company page"). The demo takes Saving's place, so
+  // Back from it goes to the choices, not to saving again.
+  const depth = useRef(0);
+  const go = (to: Step) => {
+    const replace = step === "saving";
+    if (!replace) depth.current += 1;
+    window.history[replace ? "replaceState" : "pushState"](
+      { ...window.history.state, onboardingStep: to, onboardingDepth: depth.current },
+      "",
+    );
+    setStep(to);
+  };
   const next = () => go(STEPS[index + 1]!);
-  const back = () => go(STEPS[step === "demo" ? STEPS.indexOf("setup") : index - 1]!);
+  const back = () => {
+    if (depth.current > 0) return window.history.back();
+    // Opened partway (back from the card page): there's no step before in the history.
+    const to = STEPS[step === "demo" ? STEPS.indexOf("setup") : index - 1]!;
+    window.history.replaceState({ ...window.history.state, onboardingStep: to }, "");
+    setStep(to);
+  };
+  useEffect(() => {
+    window.history.replaceState(
+      { ...window.history.state, onboardingStep: shown.current, onboardingDepth: 0 },
+      "",
+    );
+    const onPop = (e: PopStateEvent) => {
+      const to = (e.state as { onboardingStep?: unknown } | null)?.onboardingStep;
+      if (!STEPS.includes(to as Step)) return;
+      depth.current = Number((e.state as { onboardingDepth?: unknown }).onboardingDepth) || 0;
+      setStep(to === "saving" ? "setup" : (to as Step));
+    };
+    window.addEventListener("popstate", onPop);
+    return () => window.removeEventListener("popstate", onPop);
+  }, []);
   const set = (patch: Partial<OnboardingAnswers>) => setAnswers((a) => ({ ...a, ...patch }));
 
   // Each new step starts at the top with its title read out, like a pushed screen. Not the
