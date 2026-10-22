@@ -229,11 +229,12 @@
         }
 
         /// The customer of the invoice Send Receipt is for (its email and phone to start).
-        private var receiptContact: JSONValue? {
+        private var receiptContact: Row? {
             guard let receipt, let company = session.company,
-                let item = list.first(where: { $0.invoice.id == receipt.invoiceId })
+                let item = list.first(where: { $0.invoice.id == receipt.invoiceId }),
+                let view = try? jobView(sync.store, companyId: company.id, jobId: item.invoice.jobId)
             else { return nil }
-            return (try? jobView(sync.store, companyId: company.id, jobId: item.invoice.jobId))?.customer
+            return view.customer
         }
 
         /// The card's Void Invoice, after the same question.
