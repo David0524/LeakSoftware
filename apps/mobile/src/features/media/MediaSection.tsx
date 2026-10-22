@@ -34,7 +34,7 @@ import {
   MediaError,
   askLocationOnce,
   captureWithCamera,
-  chooseFromLibrary,
+  chooseManyFromLibrary,
   currentPosition,
   type CapturedFile,
 } from "../../lib/media";
@@ -175,12 +175,17 @@ export function MediaSection({
     try {
       if (source === "library") {
         // Taken earlier, maybe elsewhere: where the phone is now isn't where it was taken.
-        const file = await chooseFromLibrary(kind);
-        if (file)
+        // Several photos at once, saved in the order picked (owner, 2026-10-22).
+        const files = await chooseManyFromLibrary(kind);
+        for (const file of files)
           await save(
             file,
             Promise.resolve(null),
-            kind === "photo" ? "Photo added." : "Video added.",
+            kind === "video"
+              ? "Video added."
+              : files.length === 1
+                ? "Photo added."
+                : `${files.length} photos added.`,
             to,
           );
         return;

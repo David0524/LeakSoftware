@@ -74,18 +74,21 @@
 #if os(iOS)
     import PhotosUI
 
-    /// The photo library, for one photo or one video. The system picker needs no Photos
-    /// permission (Expo's photosPermission is off too). Photos come as their original file, with
-    /// EXIF, so the capture time can be read; videos as a copy of the file. Calls `onDone` with
-    /// nil when the tech backs out or the file can't be read.
+    /// The photo library: up to `limit` photos (owner, 2026-10-22: "you need to be able to select
+    /// multiple photos at once") or one video. The system picker needs no Photos permission
+    /// (Expo's photosPermission is off too). Photos come as their original file, with EXIF, so
+    /// the capture time can be read; videos as a copy of the file. Calls `onDone` once, with what
+    /// could be read in the order picked: empty when the tech backs out.
     struct LibraryPicker: UIViewControllerRepresentable {
         var kind: MediaKind
-        var onDone: @MainActor @Sendable (CameraPicker.Result?) -> Void
+        var limit = 1
+        var onDone: @MainActor @Sendable ([CameraPicker.Result]) -> Void
 
         func makeUIViewController(context: Context) -> PHPickerViewController {
             var config = PHPickerConfiguration()
             config.filter = kind == .video ? .videos : .images
-            config.selectionLimit = 1
+            config.selectionLimit = kind == .video ? 1 : limit
+            config.selection = .ordered
             config.preferredAssetRepresentationMode = .current
             let picker = PHPickerViewController(configuration: config)
             picker.delegate = context.coordinator
@@ -96,11 +99,29 @@
 
         func makeCoordinator() -> Coordinator { Coordinator(kind: kind, onDone: onDone) }
 
+        /// The picked files as they arrive, handed on once all are in.
+        @MainActor final class Gathered {
+            private var results: [Int: CameraPicker.Result] = [:]
+            private var left: Int
+            private let done: @MainActor @Sendable ([CameraPicker.Result]) -> Void
+
+            init(count: Int, done: @escaping @MainActor @Sendable ([CameraPicker.Result]) -> Void) {
+                left = count
+                self.done = done
+            }
+
+            func add(_ index: Int, _ result: CameraPicker.Result?) {
+                if let result { results[index] = result }
+                left -= 1
+                if left == 0 { done(results.keys.sorted().compactMap { results[$0] }) }
+            }
+        }
+
         final class Coordinator: NSObject, PHPickerViewControllerDelegate {
             let kind: MediaKind
-            let onDone: @MainActor @Sendable (CameraPicker.Result?) -> Void
+            let onDone: @MainActor @Sendable ([CameraPicker.Result]) -> Void
 
-            init(kind: MediaKind, onDone: @escaping @MainActor @Sendable (CameraPicker.Result?) -> Void) {
+            init(kind: MediaKind, onDone: @escaping @MainActor @Sendable ([CameraPicker.Result]) -> Void) {
                 self.kind = kind
                 self.onDone = onDone
             }
@@ -113,16 +134,19 @@
             }
 
             func picker(_ picker: PHPickerViewController, didFinishPicking results: [PHPickerResult]) {
-                guard let provider = results.first?.itemProvider else { return onDone(nil) }
+                guard !results.isEmpty else { return onDone([]) }
                 let type: UTType = kind == .video ? .movie : .image
-                let done = onDone
-                // The provider's file is removed when this returns: keep a copy (or the bytes).
-                // @Sendable: the provider calls back on a background queue. Without it the closure
-                // is taken as main-actor code and Swift 6 stops the app there (picking any photo
-                // crashed, 2026-10-21).
-                provider.loadFileRepresentation(forTypeIdentifier: type.identifier) { @Sendable url, _ in
-                    let result = url.flatMap { Self.keep($0, type) }
-                    Task { @MainActor in done(result) }
+                let gathered = Gathered(count: results.count, done: onDone)
+                for (index, result) in results.enumerated() {
+                    // The provider's file is removed when this returns: keep a copy (or the bytes).
+                    // @Sendable: the provider calls back on a background queue. Without it the
+                    // closure is taken as main-actor code and Swift 6 stops the app there (picking
+                    // any photo crashed, 2026-10-21).
+                    result.itemProvider.loadFileRepresentation(forTypeIdentifier: type.identifier) {
+                        @Sendable url, _ in
+                        let kept = url.flatMap { Self.keep($0, type) }
+                        Task { @MainActor in gathered.add(index, kept) }
+                    }
                 }
             }
         }

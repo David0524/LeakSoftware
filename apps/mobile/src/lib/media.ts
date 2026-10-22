@@ -188,6 +188,37 @@ export async function chooseFromLibrary(kind: "photo" | "video"): Promise<Captur
   return prepareCapture(kind, asset, exifTime(asset.exif) ?? new Date().toISOString());
 }
 
+/** Photos picked from the library at once (owner, 2026-10-22); the iPhone app's is the same. */
+export const LIBRARY_PHOTO_LIMIT = 20;
+
+/**
+ * Several photos from the library at once (owner, 2026-10-22: "you need to be able to select
+ * multiple photos at once"), in the order picked, each with its own capture time; one video.
+ * Empty when the tech backs out.
+ */
+export async function chooseManyFromLibrary(kind: "photo" | "video"): Promise<CapturedFile[]> {
+  if (kind === "video") {
+    const one = await chooseFromLibrary("video");
+    return one ? [one] : [];
+  }
+  const result = await ImagePicker.launchImageLibraryAsync({
+    mediaTypes: ["images"],
+    quality: 1,
+    exif: true,
+    allowsMultipleSelection: true,
+    selectionLimit: LIBRARY_PHOTO_LIMIT,
+    orderedSelection: true,
+  });
+  if (result.canceled) return [];
+  const files: CapturedFile[] = [];
+  for (const asset of result.assets) {
+    files.push(
+      await prepareCapture("photo", asset, exifTime(asset.exif) ?? new Date().toISOString()),
+    );
+  }
+  return files;
+}
+
 /**
  * Android can close the app while the camera or the library is open (low memory); the photo or
  * video the tech took is then handed back on the next start (owner request, 2026-10-20). Null

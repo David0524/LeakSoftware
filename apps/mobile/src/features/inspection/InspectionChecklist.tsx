@@ -37,7 +37,7 @@ import { saveCapture } from "../../data/media";
 import {
   MediaError,
   askLocationOnce,
-  chooseFromLibrary,
+  chooseManyFromLibrary,
   captureWithCamera,
   currentPosition,
 } from "../../lib/media";
@@ -284,8 +284,9 @@ function InspectionItem({
     try {
       if (source === "library") {
         // Taken earlier, maybe elsewhere: where the phone is now isn't where it was taken.
-        const file = await chooseFromLibrary("photo");
-        if (file) await saveCapture(job.company_id, target, file, Promise.resolve(null));
+        // Several photos at once, in the order picked (owner, 2026-10-22).
+        for (const file of await chooseManyFromLibrary("photo"))
+          await saveCapture(job.company_id, target, file, Promise.resolve(null));
         return;
       }
       await askLocationOnce();

@@ -250,11 +250,13 @@
                 .sheet(
                     isPresented: Binding(get: { capture.library != nil }, set: { if !$0 { capture.library = nil } })
                 ) {
-                    LibraryPicker(kind: capture.library ?? .photo) { result in
+                    // Several photos at once, saved in the order picked (owner, 2026-10-22).
+                    LibraryPicker(kind: capture.library ?? .photo, limit: CaptureRules.libraryPhotoLimit) { results in
                         let kind = capture.library ?? .photo
                         capture.library = nil
-                        if let result {
-                            Task {
+                        guard !results.isEmpty else { return }
+                        Task {
+                            for result in results {
                                 if let file = await capture.picked(result, kind) { await save(file, nil) }
                             }
                         }

@@ -12,6 +12,9 @@ public enum CaptureRules {
     /// Voice notes are AAC in an .m4a container (Expo's high-quality recording preset).
     public static let voiceMime = "audio/mp4"
 
+    /// Photos picked from the library at once (owner, 2026-10-22); Android's is the same.
+    public static let libraryPhotoLimit = 20
+
     /// The size a photo is saved at: its long edge at most `MediaLimits.photoLongEdge`, or nil
     /// when it's already small enough (then it's only re-encoded).
     public static func photoSize(width: Double, height: Double) -> MediaSize? {

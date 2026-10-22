@@ -79,9 +79,9 @@
             .discardOnBack(dirty: dirty)
             .onAppear(perform: load)
             .sheet(isPresented: $choosingLogo) {
-                LibraryPicker(kind: .photo) { result in
+                LibraryPicker(kind: .photo) { results in
                     choosingLogo = false
-                    if case .photo(let data)? = result { pickLogo(data) }
+                    if case .photo(let data)? = results.first { pickLogo(data) }
                 }
                 .ignoresSafeArea()
             }
