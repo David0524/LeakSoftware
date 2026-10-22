@@ -18,7 +18,6 @@ import { FlatGroupedRow } from "../../../../features/more/FlatGroupedRow";
 import { useCompany } from "../../../../state/session";
 import { Empty, SearchField, T, useScreenChrome } from "../../../../ui/components";
 import { Select } from "../../../../ui/Select";
-import { ScreenTip } from "../../../../ui/Tip";
 import { color, MAX_TEXT_SCALE, space, type } from "../../../../ui/theme";
 
 /**
@@ -82,7 +81,6 @@ export default function Customers() {
   const top = (
     <View style={styles.top}>
       {header}
-      <ScreenTip screen="customers" />
       {menu.element}
       <SearchField
         value={search}

@@ -19,7 +19,6 @@ import { Card, Group, ListRow, Screen, Section, T } from "../../../../ui/compone
 import { confirmDestructive } from "../../../../ui/confirm";
 import { Glass } from "../../../../ui/Glass";
 import { ModalSheet } from "../../../../ui/ModalSheet";
-import { ScreenTip } from "../../../../ui/Tip";
 import { color, face, MAX_TEXT_SCALE, minTap, space, tabular, type } from "../../../../ui/theme";
 
 // The pool chemical calculator's own screen (spec 5.11; owner, 2026-10-16), from More and a
@@ -61,7 +60,6 @@ export default function Chemicals() {
   return (
     <View style={{ flex: 1 }}>
       <Screen title="Chemical" subtitle={pool ? formatAddress(pool) : undefined}>
-        <ScreenTip screen="chemicals" />
         <Card style={{ gap: space["4"] }}>
           <T variant="cardTitle">Pool</T>
           <GallonsInput calc={calc} />

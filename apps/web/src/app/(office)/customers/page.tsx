@@ -6,8 +6,6 @@ import { CustomerFilters } from "@/components/customer-filters";
 import { Empty, Grouped, PageHeader, RowContent } from "@/components/ui";
 import { getOffice } from "@/lib/auth";
 import { CUSTOMER_SORTS, getCompany, listCustomers, type CustomerSort } from "@/lib/data";
-import { Suspense } from "react";
-import { ScreenTip } from "@/components/screen-tip";
 
 export const metadata: Metadata = { title: "Customers · Sundeck Pro" };
 
@@ -63,9 +61,6 @@ export default async function CustomersPage({ searchParams }: PageProps<"/custom
           </span>
         }
       />
-      <Suspense fallback={null}>
-        <ScreenTip screen="customers" />
-      </Suspense>
       <CustomerFilters
         search={search}
         sort={sort}

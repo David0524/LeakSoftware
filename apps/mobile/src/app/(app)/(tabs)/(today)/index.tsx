@@ -52,7 +52,6 @@ import { useLocateMissing } from "../../../../lib/locate";
 import { useFirstLoad } from "../../../../data/hooks";
 import { SkeletonCards } from "../../../../ui/Skeleton";
 import { useCompany, useSession } from "../../../../state/session";
-import { useWalkthrough } from "../../../../state/walkthrough";
 import { openDirections, useDirectionsChoice } from "../../../../state/directions";
 import {
   Button,
@@ -72,7 +71,6 @@ import { LockTag } from "../../../../ui/LockTag";
 import { UndoRow } from "../../../../ui/Undo";
 import { AddressLine } from "../../../../ui/NotOnMap";
 import { useRoutingOn } from "../../../../lib/routing";
-import { ScreenTip } from "../../../../ui/Tip";
 import { WebIcon } from "../../../../ui/WebIcon";
 import { DriveChip } from "../../../../ui/DriveChip";
 import { driveChipMinutes, driveFromOffMap, driveHomeLine } from "../../../../lib/scheduleTile";
@@ -95,9 +93,8 @@ import {
 /**
  * Today (spec 5.1): your day stop by stop, from the jobs on this phone. Stops are in route
  * order with drive estimates from the shared routing rules; the server's drive times, the
- * weather and On My Way come with the full route (S8). The sync bar stays pinned under the bar
- * and the tip comes after the stops, so the first stop's buttons are in view at launch (owner,
- * 2026-10-20). It opens with a card for the stop you're on, from the same rule as the current-
+ * weather and On My Way come with the full route (S8). The sync bar stays pinned under the bar,
+ * so the first stop's buttons are in view at launch (owner, 2026-10-20). It opens with a card for the stop you're on, from the same rule as the current-
  * stop notification; done stops fold into one "N done" row, and the card's stop is one row
  * marked Now (owner, 2026-10-20; docs/plans/today-hero.md).
  */
@@ -118,15 +115,6 @@ export default function Today() {
   const tz = company.timezone;
   const now = new Date();
   const today = localDate(now, tz);
-
-  // The first time the app opens: the three welcome cards (walkthrough, 2026-10-16).
-  const { launchSeen } = useWalkthrough();
-  const welcomed = useRef(false);
-  useEffect(() => {
-    if (launchSeen || welcomed.current) return;
-    welcomed.current = true;
-    router.push("/welcome");
-  }, [launchSeen]);
 
   const dayJobs = useMemo(
     () =>
@@ -566,8 +554,6 @@ export default function Today() {
           </View>
         )}
       </>
-      {/* After the stops, so the first stop's buttons are on screen at launch (2026-10-20). */}
-      <ScreenTip screen="today" />
     </Screen>
   );
 }

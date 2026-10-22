@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { companyServices, gettingStarted } from "@leakbook/core";
-import { hideGettingStarted } from "@/app/actions/walkthrough";
+import { hideGettingStarted } from "@/app/actions/getting-started";
 import { GettingStartedDock } from "@/components/getting-started-dock";
 import { getOffice, getUser } from "@/lib/auth";
 import { getCompany } from "@/lib/data";

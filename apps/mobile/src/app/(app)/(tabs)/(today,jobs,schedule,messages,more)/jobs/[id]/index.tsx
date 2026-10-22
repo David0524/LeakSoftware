@@ -85,7 +85,6 @@ import { TechValue } from "../../../../../../ui/TechDot";
 import { PoolForm } from "../../../../../../features/pool/PoolForm";
 import { AccessNotesRow } from "../../../../../../features/pool/AccessNotes";
 import { useRoutingOn } from "../../../../../../lib/routing";
-import { ScreenTip } from "../../../../../../ui/Tip";
 import {
   color,
   drawnChrome,
@@ -461,9 +460,6 @@ export default function JobDetail() {
                           : `${tally.pass} not leaking · ${tally.attention} attention · ${tally.leaking} leaking · ${tally.notApplicable} not applicable · ${tally.pending} to do`}
                   </T>
                 </View>
-                {job.type === "repair" ? null : (
-                  <ScreenTip screen="job" pkg={maintenance ? "pool" : "leak"} />
-                )}
                 <ChecklistTab job={job} property={property} />
                 {/* Complete Job is in the Next Step bar (owner, 2026-10-20); what stops it shows
                   here, under the list. */}
@@ -514,7 +510,6 @@ export default function JobDetail() {
                     Write Draft fills in the report from this job’s checklist, tests, and findings.
                     Read and edit it before sending.
                   </T>
-                  {job.type === "detection" ? <ScreenTip screen="report" pkg="leak" /> : null}
                   <ReportTab job={job} customer={customer} controls={reportControls} />
                 </View>
                 <View style={styles.part}>

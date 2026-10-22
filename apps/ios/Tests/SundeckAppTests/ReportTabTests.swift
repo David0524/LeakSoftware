@@ -212,7 +212,6 @@ private func signature(_ id: String, _ name: String, purpose: String = "inspecti
         #expect(m.finishedTitle == nil)
         #expect(m.versions.isEmpty)
         #expect(m.pdfURL() == nil)
-        #expect(m.showsTip)
     }
 
     @Test func withoutTheServerTheTabSaysToUseTheWebsite() throws {
@@ -330,10 +329,9 @@ private func signature(_ id: String, _ name: String, purpose: String = "inspecti
         #expect(s.model().templates.isEmpty)
     }
 
-    @Test func theShopsWorkAuthorizationAddsTheSignButtonAndTheTipIsForDetection() throws {
+    @Test func theShopsWorkAuthorizationAddsTheSignButton() throws {
         let s = try ReportJob(type: "maintenance")
         #expect(!s.model().ownSheet)
-        #expect(!s.model().showsTip)
         let on: JSONValue = ["signature_purposes": ["inspection_ack": true, "work_authorization": true]]
         #expect(s.model(settings: on).ownSheet)
         #expect(ReportTabModel.signWorkAuthorization == "Sign Work Authorization")

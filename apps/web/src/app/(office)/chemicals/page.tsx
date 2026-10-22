@@ -1,9 +1,7 @@
 import type { Metadata } from "next";
-import { Suspense } from "react";
 import { formatAddress, formatSchedule, readingSummary } from "@leakbook/core";
 import { ChemCalculator } from "@/components/chem-calculator";
 import { RemoveReading } from "@/components/chem-log";
-import { ScreenTip } from "@/components/screen-tip";
 import { Grouped, PageHeader, Row } from "@/components/ui";
 import { getOffice } from "@/lib/auth";
 import { getChemicalPool, getChemicalReadings, getTeam } from "@/lib/data";
@@ -42,9 +40,6 @@ export default async function ChemicalsPage({ searchParams }: PageProps<"/chemic
         title="Chemical"
         subtitle={pool ? [name, formatAddress(pool)].filter(Boolean).join(" · ") : undefined}
       />
-      <Suspense fallback={null}>
-        <ScreenTip screen="chemicals" />
-      </Suspense>
       <ChemCalculator
         initialGallons={startGallons}
         pool={pool ? { propertyId: pool.id, jobId, name: name ?? "this pool" } : null}

@@ -3,7 +3,7 @@
     import SundeckSync
     import SwiftUI
 
-    /// The job page's Checklist section (spec 5.4): the tally, the job's tip, one folding block per
+    /// The job page's Checklist section (spec 5.4): the tally, one folding block per
     /// checklist section with each item's answers in one tap, and "Add an item". Complete Job is on
     /// the job page's Next Step bar (owner, 2026-10-20). Works offline; every
     /// write goes through the sync layer. Port of ChecklistEditor in apps/web/src/components/job-work.tsx.
@@ -72,9 +72,6 @@
                         .foregroundStyle(Color.textMuted)
                         .rollingNumber(model.tallyText)
                         .padding(.bottom, 12)
-                    if let tip = app.walkthrough.tip(screen: "job", company: company, pkg: tipPackage) {
-                        TipRow(tip: tip) { app.walkthrough.dismiss(tip.id) }.padding(.bottom, 20)
-                    }
                     if model.isEmpty {
                         Button("Set Up Checklist") { setUp(config.componentTypes) }.buttonStyle(.secondary)
                     } else {
@@ -107,10 +104,6 @@
                     Text(saveError ?? "")
                 }
             }
-        }
-
-        private var tipPackage: TipPackage? {
-            job.type == .maintenance ? .pool : job.type == .repair ? nil : .leak
         }
 
         /// Photos on each item, for "2 photos" on its line.

@@ -25,8 +25,6 @@ const ICONS = {
   upload: { sf: "icloud.and.arrow.up", ion: "cloud-upload-outline" },
   play: { sf: "play.fill", ion: "play" },
   pause: { sf: "pause.fill", ion: "pause" },
-  // Tips and the first launch (walkthrough, 2026-10-16).
-  lightbulb: { sf: "lightbulb", ion: "bulb-outline" },
   close: { sf: "xmark", ion: "close" },
   calendar: { sf: "calendar", ion: "calendar-outline" },
   checklist: { sf: "checklist", ion: "list-outline" },

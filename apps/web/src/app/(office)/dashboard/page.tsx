@@ -14,7 +14,6 @@ import { Card, Empty, Grouped, PageHeader, Row } from "@/components/ui";
 import { getOffice } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import { Suspense, cache } from "react";
-import { ScreenTip } from "@/components/screen-tip";
 import { GettingStarted } from "@/components/getting-started";
 import { ActivityItem } from "@/components/activity-rows";
 import { ActivityMenu } from "@/components/activity-menu";
@@ -49,9 +48,6 @@ export default async function DashboardPage() {
         <Suspense fallback={null}>
           <GettingStarted />
         </Suspense>
-        <Suspense fallback={null}>
-          <ScreenTip screen="dashboard" />
-        </Suspense>
         <Empty>The dashboard isn’t available until the database is updated.</Empty>
       </>
     );
@@ -76,9 +72,6 @@ export default async function DashboardPage() {
       />
       <Suspense fallback={null}>
         <GettingStarted />
-      </Suspense>
-      <Suspense fallback={null}>
-        <ScreenTip screen="dashboard" />
       </Suspense>
 
       <dl className="grid grid-cols-2 gap-4 lg:grid-cols-4">

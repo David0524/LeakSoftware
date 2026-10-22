@@ -68,8 +68,6 @@ public struct ReportTabModel: Equatable, Sendable {
     public var template: ReportRecord.Template
     /// Reports are written on the server; without one the tab says to use the website.
     public var online: Bool
-    /// The job's detection tip shows on leak detection jobs.
-    public var showsTip: Bool
     public var signatures: [SignatureRow]
     /// The shop uses its own work authorization sheet: the header offers Sign Work Authorization.
     public var ownSheet: Bool
@@ -108,7 +106,6 @@ public struct ReportTabModel: Equatable, Sendable {
             }
         self.template = template
         self.online = online
-        showsTip = job.type == .detection
 
         let signatureRecords = jobSignatures(store, jobId: job.id)
         signatures = signatureRecords.map { s in

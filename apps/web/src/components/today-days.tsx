@@ -35,7 +35,6 @@ export function TodayDays({
   subtitle,
   intro,
   aside,
-  footer,
 }: {
   days: TodayDay[];
   initial: string;
@@ -45,8 +44,6 @@ export function TodayDays({
   intro?: ReactNode;
   /** Computers: under the map in the right column (Activity). */
   aside?: ReactNode;
-  /** Under the day, in its column (the screen tip). */
-  footer?: ReactNode;
 }) {
   const [shown, setShown] = useState(initial);
   const at = Math.max(
@@ -91,7 +88,6 @@ export function TodayDays({
         {/* No page-wide swipe between techs' days: Whose Day is the way (owner, 2026-10-21:
             "too many gestures"). */}
         <div key={day.id}>{day.content}</div>
-        {footer}
       </div>
       {/* Under the desktop bar (3.5rem) and the page's top space, staying in view. */}
       <aside

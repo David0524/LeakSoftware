@@ -31,8 +31,6 @@ import { JobActions, type JobRowData } from "@/components/list-actions";
 import { RowMenuButton } from "@/components/row-actions";
 import { JobsTabs } from "@/components/jobs-tabs";
 import { NavPlus } from "@/components/nav-bar";
-import { Suspense } from "react";
-import { ScreenTip } from "@/components/screen-tip";
 import { SortMenu } from "@/components/sort-menu";
 import { PhoneSearch } from "@/components/shop-search";
 
@@ -120,9 +118,6 @@ export default async function JobsPage({ searchParams }: PageProps<"/jobs">) {
           list's place while in use. Wider screens search jobs here. Sort stays on both. */}
       <PhoneSearch userId={office.user.id}>
         <JobsTabs current="jobs" />
-        <Suspense fallback={null}>
-          <ScreenTip screen="jobs" />
-        </Suspense>
         <nav
           aria-label="Filter jobs by status"
           className="-mx-4 mb-5 flex gap-2 overflow-x-auto px-4 whitespace-nowrap sm:mx-0 sm:flex-wrap sm:px-0"

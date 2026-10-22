@@ -28,8 +28,6 @@ import type { InvoiceListRow } from "@/lib/data";
 import { getOffice } from "@/lib/auth";
 import { listInvoices, unbilledMaintenance, getCompany } from "@/lib/data";
 import { MonthlyBilling } from "@/components/monthly-billing";
-import { Suspense } from "react";
-import { ScreenTip } from "@/components/screen-tip";
 
 export const metadata: Metadata = { title: "Invoices · Sundeck Pro" };
 
@@ -111,9 +109,6 @@ export default async function InvoicesPage({ searchParams }: PageProps<"/invoice
           ) : null
         }
       />
-      <Suspense fallback={null}>
-        <ScreenTip screen="invoices" />
-      </Suspense>
       {offersPool(company.settings) ? (
         <MonthlyBilling months={unbilled} thisMonth={thisMonth} />
       ) : null}

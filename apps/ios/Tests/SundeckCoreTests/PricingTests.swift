@@ -2,7 +2,7 @@ import Foundation
 import SundeckCore
 import Testing
 
-/// quote.ts, invoice.ts, chemistry.ts and walkthrough.ts.
+/// quote.ts, invoice.ts, chemistry.ts and getting-started.ts.
 @Suite struct PricingTests {
     let module = "pricing"
 
@@ -11,8 +11,8 @@ import Testing
             "QUOTE_STATUS_LABELS", "lineTotal", "quoteTotals", "discountAllowed", "suggestItems", "lineFromItem",
             "quoteShareText", "INVOICE_STATUS_LABELS", "invoiceTotals", "invoiceBalance", "invoiceShareText",
             "CHLORINE_PRODUCTS", "ACID_PRODUCTS", "targets", "fluidAmount", "gallonMeasure", "dryMeasure",
-            "weightAmount", "saturationIndex", "calculateChemistry", "doseSummary", "launchCards", "seenTips",
-            "tipFor", "gettingStarted", "READING_LABELS", "READING_LIMITS", "readingSummary",
+            "weightAmount", "saturationIndex", "calculateChemistry", "doseSummary", "gettingStarted", "READING_LABELS",
+            "READING_LIMITS", "readingSummary",
             "waterTestRows", "INVOICE_FILTERS", "INVOICE_SORTS", "invoiceOverdue", "filterInvoices",
             "monthLabel", "acceptanceRate", "dashboardTotals",
         ]
@@ -108,24 +108,7 @@ import Testing
         checkRule(module, "doseSummary") { c in doseSummary(calculateChemistry(try c.arg(0)), try c.arg(1)) }
     }
 
-    /// tipFor's options object.
-    struct TipOptions: Decodable {
-        let platform: TipPlatform
-        let screen: String
-        let role: String?
-        let services: Services
-        let seen: [String]
-        let pkg: TipPackage?
-    }
-
-    @Test func walkthrough() {
-        checkRule(module, "launchCards") { c in launchCards(try c.arg(0)) }
-        checkRule(module, "seenTips") { c in seenTips(try c.arg(0)) }
-        checkRule(module, "tipFor") { c in
-            let o = try c.arg(0, as: TipOptions.self)
-            return tipFor(
-                platform: o.platform, screen: o.screen, role: o.role, services: o.services, seen: o.seen, pkg: o.pkg)
-        }
+    @Test func gettingStartedSteps() {
         checkRule(module, "gettingStarted") { c in gettingStarted(try c.arg(0), try c.arg(1, as: Progress.self).value) }
     }
 

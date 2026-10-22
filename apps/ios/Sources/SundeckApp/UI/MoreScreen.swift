@@ -44,7 +44,7 @@
             case .settingsPage(.reports): ReportTemplatesScreen()
             case .settingsPage(.phone): PhoneSettingsScreen()
             case .settingsPage(let page): SettingsListScreen(page: page)
-            case .sync: SettingsView(showWelcome: {}, showReauth: showReauth)
+            case .sync: SettingsView(showReauth: showReauth)
             case .myPhone: MyPhoneScreen()
             case .myProfile: MyProfileScreen()
             case .notifications: NotificationsScreen()
@@ -71,7 +71,6 @@
     /// More (spec 5.8; website app/(office)/more): the sections that don't fit in the tab bar, the
     /// person's account, this phone, sync, help, and signing out.
     struct MoreScreen: View {
-        var showWelcome: () -> Void
         var showReauth: () -> Void
         @Environment(Session.self) private var session
         @Environment(SyncService.self) private var sync
@@ -247,16 +246,6 @@
                 ActionRow(FeatureRequestForm.title) { requesting = true }
                     .surfaceRow()
                     .listRowInsets(EdgeInsets())
-                ActionRow("Show Tips Again") {
-                    app.walkthrough.reset()
-                    Task {
-                        try? await app.client.auth.update(
-                            user: UserAttributes(data: ["getting_started_hidden": .bool(false)]))
-                    }
-                    showWelcome()
-                }
-                .surfaceRow()
-                .listRowInsets(EdgeInsets())
                 ListRow(
                     versionText(
                         Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String,

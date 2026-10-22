@@ -55,8 +55,6 @@ import {
   type RouteContext,
 } from "@/server/route-days";
 import { NavPlus } from "@/components/nav-bar";
-import { Suspense } from "react";
-import { ScreenTip } from "@/components/screen-tip";
 import { scheduleDate } from "@/lib/limits";
 import { redirect } from "next/navigation";
 import { loadRouteCustomers } from "@/app/actions/service-days";
@@ -394,9 +392,6 @@ export default async function SchedulePage({ searchParams }: PageProps<"/schedul
       />
       {/* Day and Week use the whole window on a computer (the office layout widens <main>). */}
       {view !== "month" ? <span data-wide-page="" hidden /> : null}
-      <Suspense fallback={null}>
-        <ScreenTip screen="schedule" />
-      </Suspense>
       {/* Swipe sideways for the previous or next day, week, or month (owner, 2026-10-20). */}
       <SwipeHrefs page={href(date)} scope="schedule" prev={href(move(-1))} next={href(move(1))}>
         {/* Phones: one row: previous, the date, next, and Day / Week / Month at the far right.

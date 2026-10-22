@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useSyncExternalStore } from "react";
-import { hideGettingStarted } from "@/app/actions/walkthrough";
+import { hideGettingStarted } from "@/app/actions/getting-started";
 import { cx } from "./ui";
 
 export interface Step {

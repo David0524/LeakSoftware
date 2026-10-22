@@ -8,8 +8,6 @@ import { ButtonLink, PageHeader } from "@/components/ui";
 import { getOffice } from "@/lib/auth";
 import { getLine, listConversations } from "@/lib/messages";
 import { formatPhone } from "@leakbook/core";
-import { Suspense } from "react";
-import { ScreenTip } from "@/components/screen-tip";
 
 export const metadata: Metadata = { title: "Messages · Sundeck Pro" };
 
@@ -33,9 +31,6 @@ export default async function MessagesPage({ searchParams }: PageProps<"/message
         subtitle={active ? `Your company number: ${formatPhone(line.number)}` : undefined}
         actions={active ? <ButtonLink href="/messages/new">New Message</ButtonLink> : undefined}
       />
-      <Suspense fallback={null}>
-        <ScreenTip screen="messages" />
-      </Suspense>
       <div className="grid max-w-5xl gap-6 md:grid-cols-[minmax(0,22rem)_minmax(0,1fr)]">
         <div className="min-w-0 space-y-4">
           <LineNotice line={line} isOwner={office.isManager} />

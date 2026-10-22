@@ -27,7 +27,7 @@ export * from "./plans";
 export * from "./chemistry";
 export * from "./texting";
 export * from "./onboarding";
-export * from "./walkthrough";
+export * from "./getting-started";
 export * from "./leads";
 export * from "./import";
 export * from "./checklist-summary";

@@ -46,7 +46,6 @@
             store: store, kv: kv, transport: SilentTransport(), auth: auth, media: MediaFiles(root: files))
         if signedIn {
             kv.setJSON(KVKey.user, SignedInUser(id: "u1", email: "tech@demo.leakbook.test"))
-            kv.set(KVKey.launchSeen, "1")
             kv.set(KVKey.lastSyncedAt, String(Date().addingTimeInterval(-120).timeIntervalSince1970))
             kv.setTeam([
                 TeamProfile(id: "u1", fullName: "Dana Tech", email: "tech@demo.leakbook.test"),
@@ -952,11 +951,6 @@
                 "49-settings-team", height: 1600, NavigationStack { SettingsListScreen(page: .team) }.app(env))
         }
 
-        @Test func welcome() async throws {
-            let env = try sampleEnvironment()
-            try await snapshot("06-welcome", WelcomeView().app(env))
-        }
-
         @Test func code() async throws {
             let env = try sampleEnvironment()
             try await snapshot("07-code", CodeView().app(env))
@@ -1052,10 +1046,10 @@
         @Test func more() async throws {
             let env = try sampleEnvironment()
             try await snapshot(
-                "43-more-owner", height: 2000, NavigationStack { MoreScreen(showWelcome: {}, showReauth: {}) }.app(env))
+                "43-more-owner", height: 2000, NavigationStack { MoreScreen(showReauth: {}) }.app(env))
             try await snapshot(
                 "43-more-owner-dark", dark: true, height: 2000,
-                NavigationStack { MoreScreen(showWelcome: {}, showReauth: {}) }.app(env))
+                NavigationStack { MoreScreen(showReauth: {}) }.app(env))
             let tech = try sampleEnvironment()
             try tech.session.sync.store.applyPage(
                 PullPage(
@@ -1068,8 +1062,8 @@
                     ], done: true, cursor: [:], serverHLC: "1760000000009-0000-srv"))
             tech.session.reloadCompanies()
             try await snapshot(
-                "43-more-tech", height: 2000, NavigationStack { MoreScreen(showWelcome: {}, showReauth: {}) }.app(tech))
-            try await snapshot("48-sync", NavigationStack { SettingsView(showWelcome: {}, showReauth: {}) }.app(env))
+                "43-more-tech", height: 2000, NavigationStack { MoreScreen(showReauth: {}) }.app(tech))
+            try await snapshot("48-sync", NavigationStack { SettingsView(showReauth: {}) }.app(env))
         }
 
         @Test func customers() async throws {

@@ -3,7 +3,7 @@
     import SundeckSync
     import SwiftUI
 
-    // Cards, headings, chips, notices, empty states, tips and the sync bar (spec 3.1, 3.3, 3.5,
+    // Cards, headings, chips, notices, empty states and the sync bar (spec 3.1, 3.3, 3.5,
     // 3.6, 3.11, 3.12, 3.13, 3.17).
 
     // MARK: - Screen layout
@@ -519,57 +519,6 @@
                 .padding(24)
                 .background(
                     RoundedRectangle(cornerRadius: CGFloat(Radius.block), style: .continuous).fill(Color.emptyFill))
-        }
-    }
-
-    // MARK: - Tips
-
-    /// A one-time tip as a card (spec 3.11): lightbulb, title over message, a 44 close button in
-    /// the corner. 20 below it to the next block.
-    struct TipCard: View {
-        var title: String
-        var message: String
-        var close: () -> Void
-
-        var body: some View {
-            HStack(alignment: .top, spacing: 12) {
-                Image(systemName: "lightbulb")
-                    .font(.system(size: 20, weight: .medium))
-                    .foregroundStyle(Color.link)
-                    .frame(width: 24, height: 24)
-                    .padding(.top, 2)
-                    .accessibilityHidden(true)
-                VStack(alignment: .leading, spacing: 2) {
-                    Text(title).textRole(.bodyEmphasis).foregroundStyle(Color.text)
-                    Text(message).textRole(.secondary).foregroundStyle(Color.textMuted)
-                }
-                .padding(.vertical, 2)
-                Spacer(minLength: 0)
-                Button {
-                    withAnimation(Motion.smooth) { close() }
-                } label: {
-                    Image(systemName: "xmark")
-                        .font(.system(size: 14, weight: .semibold))
-                        .foregroundStyle(Color.textMuted)
-                        .frame(width: minTarget, height: minTarget)
-                        .contentShape(Rectangle())
-                }
-                .buttonStyle(.plain)
-                .accessibilityLabel("Close Tip")
-            }
-            .card(EdgeInsets(top: 12, leading: 16, bottom: 12, trailing: 4))
-            .transition(.opacity.combined(with: .scale(scale: 0.95)))
-            .accessibilityElement(children: .contain)
-        }
-    }
-
-    /// A tip from the walkthrough. Port of apps/mobile/src/ui/Tip.tsx.
-    struct TipRow: View {
-        var tip: Tip
-        var close: () -> Void
-
-        var body: some View {
-            TipCard(title: tip.title, message: tip.message, close: close)
         }
     }
 

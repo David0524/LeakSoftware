@@ -27,7 +27,7 @@
                 NavigationStack { JobScreen(jobId: ids.job, section: .checklist) }.app(job))
             try await snapshot(
                 "64-more-ax", largeText: true, height: 2600,
-                NavigationStack { MoreScreen(showWelcome: {}, showReauth: {}) }.app(env))
+                NavigationStack { MoreScreen(showReauth: {}) }.app(env))
             let messages = try sampleEnvironment()
             _ = try seedMessages(messages.session.sync.store)
             try await snapshot("65-messages-ax", largeText: true, NavigationStack { MessagesScreen() }.app(messages))

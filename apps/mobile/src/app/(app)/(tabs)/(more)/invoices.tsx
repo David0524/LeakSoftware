@@ -51,7 +51,6 @@ import {
 } from "../../../../ui/components";
 import { useMenu } from "../../../../ui/Select";
 import { WebIcon } from "../../../../ui/WebIcon";
-import { ScreenTip } from "../../../../ui/Tip";
 import { color, face, MAX_TEXT_SCALE, minTap, space, tabular, type } from "../../../../ui/theme";
 
 /**
@@ -204,7 +203,6 @@ export default function Invoices() {
         ListHeaderComponent={
           <View style={styles.top}>
             {header}
-            <ScreenTip screen="invoices" />
             {invoices.length ? (
               <View style={styles.tools}>
                 <FilterPills

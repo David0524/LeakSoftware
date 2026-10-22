@@ -2,7 +2,7 @@ import Foundation
 import SundeckStorage
 
 /// Small app settings kept in the phone's database (`app_kv`, the same table as the Expo app):
-/// the remembered user, the chosen company, sync markers, team names, the tips seen. Port of
+/// the remembered user, the chosen company, sync markers, team names. Port of
 /// the KeyValue store in apps/mobile/src/lib/database.ts.
 public final class KeyValue: Sendable {
     private let database: Database
@@ -45,8 +45,6 @@ public enum KVKey {
     public static let lastSyncedAt = "sync:last_synced_at"
     public static let initialSyncDone = "sync:initial_done"
     public static let teamProfiles = "team_profiles"
-    public static let tipsSeen = "walkthrough:tips_seen"
-    public static let launchSeen = "walkthrough:launch_seen"
     public static let gettingStartedHidden = "walkthrough:getting_started_hidden"
     /// The signed-in person's notification choices (More › Notifications), and the stop the
     /// Live Activity is for.
@@ -59,7 +57,7 @@ public enum KVKey {
 
     /// Cleared when someone signs out (the device id and clock stay in the store).
     public static let signOutClears = [
-        activeCompany, lastSyncedAt, initialSyncDone, teamProfiles, tipsSeen, launchSeen, gettingStartedHidden,
+        activeCompany, lastSyncedAt, initialSyncDone, teamProfiles, gettingStartedHidden,
         notificationPrefs, liveStopTarget, liveStopDismissed, liveStopStarted,
         // Search's Recent is the person's own (docs/plans/search-and-activity.md).
         searchRecent,

@@ -7,7 +7,6 @@
     /// the changes the server refused (each can be discarded), and this phone. The sync bar opens
     /// it too (its `Route.settings`); the account, help and signing out moved to More.
     struct SettingsView: View {
-        var showWelcome: () -> Void
         var showReauth: () -> Void
         @Environment(Session.self) private var session
         @Environment(SyncService.self) private var sync
@@ -110,76 +109,4 @@
         }
     }
 
-    /// The three welcome cards for the shop's package, then straight to work (app-only first
-    /// launch). Port of apps/mobile/src/app/(app)/welcome.tsx, in the website's look: soft cards
-    /// on the grouped gray, Barlow titles, one primary button.
-    struct WelcomeView: View {
-        @Environment(Session.self) private var session
-        @Environment(AppEnvironment.self) private var app
-        @Environment(\.dismiss) private var dismiss
-        @State private var page = 0
-
-        var body: some View {
-            let cards = launchCards(session.company?.services ?? .both)
-            NavigationStack {
-                VStack(spacing: 24) {
-                    TabView(selection: $page) {
-                        ForEach(Array(cards.enumerated()), id: \.offset) { index, card in
-                            VStack(spacing: 20) {
-                                Image(systemName: symbol(card.icon))
-                                    .font(.system(size: 40, weight: .medium))
-                                    .foregroundStyle(Color.link)
-                                    .frame(width: 96, height: 96)
-                                    .background(Circle().fill(Color.iconTint))
-                                    .accessibilityHidden(true)
-                                Text(card.title)
-                                    .textRole(.sectionHeading)
-                                    .foregroundStyle(Color.text)
-                                    .multilineTextAlignment(.center)
-                                Text(card.message)
-                                    .textRole(.body)
-                                    .foregroundStyle(Color.textMuted)
-                                    .multilineTextAlignment(.center)
-                            }
-                            .padding(.vertical, 32)
-                            .padding(.horizontal, 8)
-                            .card()
-                            .padding(.horizontal, CGFloat(Spacing.pageMargin))
-                            .accessibilityElement(children: .combine)
-                            .accessibilityLabel("\(card.title). \(card.message) Card \(index + 1) of \(cards.count).")
-                            .tag(index)
-                        }
-                    }
-                    .tabViewStyle(.page(indexDisplayMode: .always))
-                    .indexViewStyle(.page(backgroundDisplayMode: .always))
-                    Button(page >= cards.count - 1 ? "Get Started" : "Continue") {
-                        if page >= cards.count - 1 { dismiss() } else { withAnimation { page += 1 } }
-                    }
-                    .buttonStyle(.primary(fullWidth: true, size: .field))
-                    .padding(.horizontal, CGFloat(Spacing.pageMargin))
-                    .padding(.bottom, 16)
-                }
-                .background(Color.bg)
-                .navigationTitle("Welcome")
-                .navigationBarTitleDisplayMode(.inline)
-                .toolbar {
-                    ToolbarItem(placement: .cancellationAction) { Button("Skip") { dismiss() } }
-                }
-            }
-            .sheetPresentation()
-            // Opening it counts as seen, however it's closed.
-            .onAppear { app.walkthrough.finishLaunch() }
-        }
-
-        private func symbol(_ icon: LaunchCard.Icon) -> String {
-            switch icon {
-            case .calendar: "calendar"
-            case .checklist: "checklist"
-            case .chemistry: "drop"
-            case .search: "magnifyingglass"
-            case .report: "doc.text"
-            case .offline: "wifi.slash"
-            }
-        }
-    }
 #endif

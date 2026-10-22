@@ -5,8 +5,7 @@
     import SwiftUI
 
     // Small pieces the Messages and More screens share: the in-app browser for website pages,
-    // the share sheet for exported files, and a screen's tip (the app's own, else the website's
-    // words for the same screen, spec 3.11).
+    // and the share sheet for exported files.
 
     /// A website page to open in the in-app browser.
     struct BrowserPage: Identifiable, Hashable {
@@ -53,20 +52,6 @@
         }
 
         func updateUIViewController(_ controller: UIActivityViewController, context: Context) {}
-    }
-
-    /// A screen's one-time tip as a card, closing for good when closed. Uses the app's tip for
-    /// the screen, else the website's.
-    struct ScreenTip: View {
-        var screen: String
-        @Environment(Session.self) private var session
-        @Environment(AppEnvironment.self) private var app
-
-        var body: some View {
-            if let company = session.company, let tip = screenTip(screen, company: company, app: app) {
-                TipCard(title: tip.title, message: tip.message) { app.walkthrough.dismiss(tip.id) }
-            }
-        }
     }
 
     /// A sheet's frame (spec 3.15): Cancel on the left, the title in the middle, the form on the

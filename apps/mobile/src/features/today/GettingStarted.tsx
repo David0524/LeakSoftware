@@ -28,8 +28,7 @@ function useHidden(): [boolean, () => void] {
     },
     () => kv.get(HIDDEN_KEY) === "1",
   );
-  // The account's own setting wins once it's known (hidden on the website, or brought back by
-  // Show Tips Again).
+  // The account's own setting wins once it's known (hidden on the website).
   useEffect(() => {
     void supabase.auth.getSession().then(({ data }) => {
       const v = data.session?.user.user_metadata?.getting_started_hidden;
@@ -211,11 +210,3 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
   },
 });
-
-/** More › Show Tips Again brings Getting Started back too, as on the website. */
-export function showGettingStartedAgain() {
-  const { kv, supabase } = getServices();
-  kv.remove(HIDDEN_KEY);
-  for (const l of listeners) l();
-  void supabase.auth.updateUser({ data: { getting_started_hidden: false } }).catch(() => {});
-}

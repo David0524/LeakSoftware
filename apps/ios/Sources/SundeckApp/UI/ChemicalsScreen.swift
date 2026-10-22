@@ -33,9 +33,6 @@
             let pool = target.flatMap { chemicalPool(sync.store, $0) }
             ScreenScroll {
                 if let pool { PageHeader(subtitle: pool.subtitle) }
-                if let company = session.company, let tip = screenTip("chemicals", company: company, app: app) {
-                    TipCard(title: tip.title, message: tip.message) { app.walkthrough.dismiss(tip.id) }
-                }
                 VStack(alignment: .leading, spacing: 16) {
                     CardTitle("Pool")
                     OutlinedField(

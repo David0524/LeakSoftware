@@ -47,12 +47,6 @@
                     }
                     .plainListRow()
                 }
-                if let company, let tip = screenTip("invoices", company: company, app: app) {
-                    Section {
-                        TipCard(title: tip.title, message: tip.message) { app.walkthrough.dismiss(tip.id) }
-                            .plainListRow()
-                    }
-                }
                 if manager, company?.services != .leak, !unbilled.isEmpty {
                     Section {
                         ForEach(unbilled) { month in

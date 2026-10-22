@@ -510,9 +510,6 @@ export class SyncService {
       "report_request:queue",
       "visit_report:queue",
       "capture:pending",
-      // A different person on this phone gets the tips and welcome cards fresh.
-      "walkthrough:tips_seen",
-      "walkthrough:launch_seen",
       // Recent in search: what this person opened (lib/shopSearch RECENT_KEY).
       "search:recent",
     ]) {

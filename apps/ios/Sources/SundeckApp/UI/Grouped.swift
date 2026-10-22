@@ -174,7 +174,7 @@
         }
     }
 
-    /// A row that does something: `link` text ("Show Tips Again"), or with `role: .destructive`
+    /// A row that does something: `link` text ("Set Up Checklist"), or with `role: .destructive`
     /// centered `fail` text ("Sign Out").
     struct ActionRow: View {
         var title: String

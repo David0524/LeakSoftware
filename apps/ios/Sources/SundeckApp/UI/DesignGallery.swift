@@ -41,9 +41,6 @@
                     SyncBar(
                         message: SyncBarMessage(text: "All changes saved to the office · just now", tone: .good),
                         action: {})
-                    TipCard(
-                        title: "Your day, in order",
-                        message: "Stops are in route order. Tap one to open the job.", close: {})
                     type
                     colors
                     chips

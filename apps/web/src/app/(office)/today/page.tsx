@@ -64,7 +64,6 @@ import {
 import { getLine } from "@/lib/messages";
 import { loadRoutes, routeContext, routeKey, shopToday } from "@/server/route-days";
 import { NavPlus } from "@/components/nav-bar";
-import { ScreenTip } from "@/components/screen-tip";
 import { GettingStarted } from "@/components/getting-started";
 
 export const metadata: Metadata = { title: "Today · Sundeck Pro" };
@@ -515,15 +514,6 @@ export default async function TodayPage({ searchParams }: PageProps<"/today">) {
           <Suspense fallback={<TodayActivityLoading />}>
             <TodayActivity />
           </Suspense>
-        }
-        footer={
-          // After the stops, so the first stop's buttons are on screen at launch (owner,
-          // 2026-10-20).
-          <div className="mt-6">
-            <Suspense fallback={null}>
-              <ScreenTip screen="today" />
-            </Suspense>
-          </div>
         }
       />
     </MapProviderScope>

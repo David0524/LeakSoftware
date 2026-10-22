@@ -105,7 +105,7 @@
             }
         }
 
-        /// Today as it usually is: the header, whose day, the card and the stops, and the tip.
+        /// Today as it usually is: the header, whose day, the card and the stops.
         private var page: some View {
             ScreenScroll {
                 // Only this flag, not the whole sync status: Today doesn't redraw on every sync.
@@ -135,14 +135,6 @@
                     // No sideways swipe between teammates' days (owner, 2026-10-21): the Whose Day
                     // pills above are the way to switch.
                     route(day)
-                    // The tip comes after the stops, so the first stop's buttons are on screen at
-                    // launch (owner, 2026-10-20).
-                    if let tip = tipFor(
-                        platform: .web, screen: "today", role: company.role, services: company.services,
-                        seen: app.walkthrough.seen)
-                    {
-                        TipCard(title: tip.title, message: tip.message) { app.walkthrough.dismiss(tip.id) }
-                    }
                 }
             }
             .rootTitleScroll()

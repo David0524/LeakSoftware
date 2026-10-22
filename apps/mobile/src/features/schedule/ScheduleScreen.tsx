@@ -85,7 +85,6 @@ import { haptics } from "../../ui/haptics";
 import { ModalSheet } from "../../ui/ModalSheet";
 import { useResultBanner } from "../../ui/ResultBanner";
 import { SkeletonCards } from "../../ui/Skeleton";
-import { ScreenTip } from "../../ui/Tip";
 import { color, face, minTap, space, type } from "../../ui/theme";
 import { DatePicker, MonthCalendar, monthTitle } from "./Calendar";
 import { MoveSheet, SuggestSheet, type MoveTarget } from "./MoveSheet";
@@ -872,7 +871,6 @@ export function ScheduleScreen() {
         headerRight={newJob}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => void refresh()} />}
       >
-        <ScreenTip screen="schedule" />
         <View style={styles.controls}>
           <RoundButton icon="back" label={`Previous ${view}`} onPress={() => setDate(move(-1))} />
           <RoundButton icon="calendar" label="Go to Date" onPress={() => setGoTo(true)} />

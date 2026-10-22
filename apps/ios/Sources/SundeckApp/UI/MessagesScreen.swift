@@ -35,12 +35,6 @@
                         PageHeader(subtitle: "Your company number: \(formatPhone(line.number))").plainListRow()
                     }
                 }
-                if let company, let tip = screenTip("messages", company: company, app: app) {
-                    Section {
-                        TipCard(title: tip.title, message: tip.message) { app.walkthrough.dismiss(tip.id) }
-                            .plainListRow()
-                    }
-                }
                 if loaded, let notice = lineNotice(line, manager: isManagerRole(company?.role)) {
                     Section {
                         Notice(kind: .info, text: notice.text, link: notice.link) {
@@ -214,14 +208,5 @@
             .accessibilityHint("Opens the conversation")
             .accessibilityAddTraits(.isButton)
         }
-    }
-
-    /// A screen's tip: the app's own, else the website's for the same screen (spec 3.11).
-    @MainActor
-    func screenTip(_ screen: String, company: CompanyContext, app: AppEnvironment) -> Tip? {
-        app.walkthrough.tip(screen: screen, company: company)
-            ?? tipFor(
-                platform: .web, screen: screen, role: company.role, services: company.services,
-                seen: app.walkthrough.seen)
     }
 #endif

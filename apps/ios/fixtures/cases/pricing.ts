@@ -25,17 +25,14 @@ import {
   invoiceBalance,
   invoiceShareText,
   invoiceTotals,
-  launchCards,
   lineFromItem,
   lineTotal,
   quoteShareText,
   quoteTotals,
   readingSummary,
   saturationIndex,
-  seenTips,
   suggestItems,
   targets,
-  tipFor,
   weightAmount,
   type AcidProduct,
   type ChemistryInput,
@@ -47,7 +44,6 @@ import {
   type Readings,
   type Services,
   type ShopProgress,
-  type TipPackage,
 } from "@leakbook/core";
 import { rule, type ModuleCases } from "../case";
 
@@ -206,52 +202,7 @@ readingSets.forEach((readings, i) => {
     ]);
 });
 
-const tipCases: [unknown][] = [];
-for (const platform of ["web", "app"])
-  for (const screen of [
-    "today",
-    "schedule",
-    "messages",
-    "customers",
-    "invoices",
-    "dashboard",
-    "chemicals",
-    "jobs",
-    "job",
-    "report",
-    "nowhere",
-  ])
-    for (const role of ["owner", "admin", "tech", null, "stranger"])
-      for (const services of ["pool", "leak", "both"] as Services[])
-        // The screens with package-specific tips also get a narrowing package.
-        for (const pkg of (screen === "job" || screen === "chemicals"
-          ? [undefined, "pool", "leak"]
-          : [undefined]) as (TipPackage | undefined)[])
-          tipCases.push([{ platform, screen, role, services, seen: [], ...(pkg ? { pkg } : {}) }]);
-tipCases.push(
-  [
-    {
-      platform: "app",
-      screen: "job",
-      role: "tech",
-      services: "both",
-      seen: ["app-inspection"],
-      pkg: "leak",
-    },
-  ],
-  [{ platform: "app", screen: "job", role: "tech", services: "both", seen: ["app-visit"] }],
-  [
-    {
-      platform: "web",
-      screen: "invoices",
-      role: "owner",
-      services: "both",
-      seen: ["web-invoices-pool"],
-    },
-  ],
-);
-
-// quote.ts, invoice.ts, chemistry.ts and walkthrough.ts.
+// quote.ts, invoice.ts, chemistry.ts and getting-started.ts.
 /** Newest first, as the list comes from the server. */
 const invoiceList: InvoiceListItem[] = [
   {
@@ -515,21 +466,6 @@ export const pricing: ModuleCases = {
       ...chemistryCases.map(([input]) => [input, true] as [ChemistryInput, boolean]),
       [chemistryCases[0]![0], false],
     ],
-  ),
-  launchCards: rule((s: Services) => launchCards(s), [["pool"], ["leak"], ["both"]]),
-  seenTips: rule(
-    (v: unknown) => seenTips(v),
-    [
-      [["a", 2, null, "b"]],
-      ["nope"],
-      [null],
-      [{ a: "b" }],
-      [Array.from({ length: 205 }, (_, i) => `tip-${i}`)],
-    ],
-  ),
-  tipFor: rule(
-    (o: Parameters<typeof tipFor>[0]) => tipFor(o),
-    tipCases as [Parameters<typeof tipFor>[0]][],
   ),
   gettingStarted: rule(
     (s: Services, p: ShopProgress) => gettingStarted(s, p),

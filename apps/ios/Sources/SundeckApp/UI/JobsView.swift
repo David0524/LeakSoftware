@@ -69,7 +69,7 @@
     }
 
     /// Jobs (spec 5.2) and Reports (5.3) in one screen: the search field, the segmented control,
-    /// the sync bar, the tip, filter pills, and the list. Port of apps/web/src/app/(office)/jobs.
+    /// the sync bar, filter pills, and the list. Port of apps/web/src/app/(office)/jobs.
     /// The search field under the title searches the whole shop on this phone (owner, 2026-10-20;
     /// docs/plans/search-and-activity.md); while it is in use its results take the list's place.
     struct JobsView: View {
@@ -188,7 +188,7 @@
             }
         }
 
-        /// The list's part of the page: Jobs | Reports, the sync bar, the tip, filters, the list.
+        /// The list's part of the page: Jobs | Reports, the sync bar, filters, the list.
         @ViewBuilder private func jobsAndReports(_ company: CompanyContext?) -> some View {
             Segmented(
                 selection: $mode, options: JobsMode.allCases, label: \.title, title: "Jobs and Reports",
@@ -196,10 +196,6 @@
             )
             .padding(.horizontal, 16)
             SyncBarRow().padding(.horizontal, 16)
-            if mode == .jobs, let company, let tip = tip(company) {
-                TipCard(title: tip.title, message: tip.message) { app.walkthrough.dismiss(tip.id) }
-                    .padding(.horizontal, 16)
-            }
             if mode == .jobs {
                 FilterPills(selection: $filter, options: JobFilter.allCases, label: \.title)
                 jobsList.padding(.horizontal, 16)
@@ -256,14 +252,6 @@
             case .job(let id): openRoute(.job(id))
             case .jobSection(let id, let section): openRoute(.jobSection(id, section))
             }
-        }
-
-        /// The website's tip ("Every job, start to finish"). The app's own Jobs tip ("Today comes
-        /// first") describes the old list with today's jobs on top, which this screen no longer is.
-        private func tip(_ company: CompanyContext) -> Tip? {
-            tipFor(
-                platform: .web, screen: "jobs", role: company.role, services: company.services,
-                seen: app.walkthrough.seen)
         }
 
         @ViewBuilder private var jobsList: some View {

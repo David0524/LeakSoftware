@@ -56,11 +56,6 @@ export default function AppLayout() {
           options={{ title: "Report", headerLargeTitleEnabled: false }}
         />
         <Stack.Screen
-          name="welcome"
-          // The first-launch cards (walkthrough, 2026-10-16): a sheet on iPhone.
-          options={{ title: "Welcome", headerLargeTitleEnabled: false, ...sheet }}
-        />
-        <Stack.Screen
           name="reauth"
           options={{
             title: "Sign In Again",

@@ -174,12 +174,12 @@ struct Shell {
         try s.seedCompany(userId: "u-tech@shop.test")
         s.session.reloadCompanies()
         let device = s.sync.store.deviceId
-        s.sync.kv.set(KVKey.launchSeen, "1")
+        s.sync.kv.set(KVKey.gettingStartedHidden, "1")
         await s.session.signOut()
         #expect(s.session.route == .signedOut)
         #expect(try s.sync.store.list("company").isEmpty)
         #expect(s.sync.kv.get(KVKey.user) == nil)
-        #expect(s.sync.kv.get(KVKey.launchSeen) == nil)
+        #expect(s.sync.kv.get(KVKey.gettingStartedHidden) == nil)
         #expect(s.sync.store.deviceId == device)
         #expect(s.auth.signOuts == 1)
     }
@@ -376,24 +376,6 @@ struct Shell {
         #expect(today.numberText == "New")
         #expect(jobWhen(today, now: now, timeZone: "America/Phoenix") == "In progress")
         #expect(jobWhen(sections[2].jobs[0], now: now, timeZone: "America/Phoenix") == "Not scheduled")
-    }
-}
-
-@Suite @MainActor struct WalkthroughTests {
-    @Test func closedTipsAndTheWelcomeStaySeenUntilReset() throws {
-        let s = try Shell()
-        let company = CompanyContext(
-            id: "c1", name: "Shop", timeZone: "America/Phoenix", settings: ["services": "leak"], role: "tech")
-        let w = Walkthrough(s.sync.kv)
-        let tip = try #require(w.tip(screen: "jobs", company: company))
-        w.dismiss(tip.id)
-        w.finishLaunch()
-        let again = Walkthrough(s.sync.kv)
-        #expect(again.tip(screen: "jobs", company: company)?.id != tip.id)
-        #expect(again.launchSeen)
-        again.reset()
-        #expect(Walkthrough(s.sync.kv).tip(screen: "jobs", company: company)?.id == tip.id)
-        #expect(!Walkthrough(s.sync.kv).launchSeen)
     }
 }
 

@@ -83,12 +83,6 @@
                                 .padding(.vertical, -12)
                         }
                     }
-                    if let tip = tipFor(
-                        platform: .web, screen: "schedule", role: company.role, services: company.services,
-                        seen: app.walkthrough.seen)
-                    {
-                        TipCard(title: tip.title, message: tip.message) { app.walkthrough.dismiss(tip.id) }
-                    }
                     controls(board)
                     if view == .day {
                         WeekStrip(

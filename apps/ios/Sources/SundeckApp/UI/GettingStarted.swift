@@ -127,8 +127,7 @@
         }
 
         private func loadServer() async {
-            // The account's own setting wins once it's known (hidden on the website, or brought
-            // back by Show Tips Again there).
+            // The account's own setting wins once it's known (hidden on the website).
             if case .bool(let hidden) = app.client.auth.currentSession?.user.userMetadata["getting_started_hidden"] {
                 app.walkthrough.setGettingStartedHidden(hidden)
             }

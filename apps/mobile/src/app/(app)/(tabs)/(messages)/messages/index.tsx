@@ -16,7 +16,6 @@ import { useResultBanner } from "../../../../../ui/ResultBanner";
 import { rowGestures, useRowMenu } from "../../../../../ui/RowMenu";
 import { SwipeActions } from "../../../../../ui/SwipeRow";
 import { color, face, MAX_TEXT_SCALE, space, type } from "../../../../../ui/theme";
-import { ScreenTip } from "../../../../../ui/Tip";
 
 /**
  * The shop's shared inbox (spec 5.7; company texting, owner 2026-10-16): every text and call
@@ -79,7 +78,6 @@ export default function Messages() {
       refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => void refresh()} />}
       overlay={banner.element}
     >
-      <ScreenTip screen="messages" />
       {line?.status === "pending" ? (
         <Notice>
           {`${formatPhone(line.number)} is being set up for texting. It usually takes a few days; texts and calls will appear here once it’s ready.`}

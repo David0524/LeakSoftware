@@ -56,7 +56,6 @@ import { useMenu } from "../../../../../ui/Select";
 import { SwipeActions } from "../../../../../ui/SwipeRow";
 import { WebIcon } from "../../../../../ui/WebIcon";
 import { SyncBar } from "../../../../../ui/SyncBar";
-import { ScreenTip } from "../../../../../ui/Tip";
 import { color, face, MAX_TEXT_SCALE, minTap, shape, space, type } from "../../../../../ui/theme";
 
 const OPEN: JobStatus[] = [
@@ -279,7 +278,6 @@ export default function Jobs() {
           <SyncBar onPress={() => router.push("/more/sync")} />
           {view === "jobs" ? (
             <>
-              <ScreenTip screen="jobs" />
               <FilterPills label="Status" options={FILTERS} value={filter} onChange={setFilter} />
               {/* Sort, as Invoices sorts; the search across the shop above replaces the old
                   jobs-only search. */}

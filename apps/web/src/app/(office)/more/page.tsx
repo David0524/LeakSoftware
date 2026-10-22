@@ -7,7 +7,6 @@ import {
   notificationOn,
 } from "@leakbook/core";
 import { signOut } from "@/app/actions/auth";
-import { showTipsAgain } from "@/app/actions/walkthrough";
 import { DeleteAccount } from "@/components/delete-account";
 import { SignOutForm } from "@/components/sign-out-form";
 import { FeatureRequest } from "@/components/feature-request";
@@ -129,17 +128,6 @@ export default async function MorePage() {
           ))}
           <li>
             <FeatureRequest />
-          </li>
-          <li>
-            {/* Every screen's tip, and Getting Started, come back (owner, 2026-10-16). */}
-            <form action={showTipsAgain}>
-              <button
-                type="submit"
-                className="flex min-h-11 w-full items-center px-4 py-2.5 text-left text-link hover:bg-text/[0.03] active:bg-text/[0.06]"
-              >
-                Show Tips Again
-              </button>
-            </form>
           </li>
         </Grouped>
         {/* Phones: Sign Out lives here (wider screens have it in the header), on its own

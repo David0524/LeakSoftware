@@ -16,8 +16,6 @@ import { useActivityUnread } from "../../../../../data/activity";
 import { API_URL } from "../../../../../lib/config";
 import { useMemberStart } from "../../../../../data/memberStarts";
 import { useSession, useSyncStatus } from "../../../../../state/session";
-import { useWalkthrough } from "../../../../../state/walkthrough";
-import { showGettingStartedAgain } from "../../../../../features/today/GettingStarted";
 import { FeatureRequestRow } from "../../../../../features/more/FeatureRequest";
 import { useDirectionsChoice, type DirectionsChoice } from "../../../../../state/directions";
 import {
@@ -54,7 +52,6 @@ const DIRECTIONS: { value: DirectionsChoice; label: string }[] = [
 export default function More() {
   const { services, user, company, companies, membership, setActiveCompany, signOut } =
     useSession();
-  const walkthrough = useWalkthrough();
   const status = useSyncStatus();
   const sync = syncSummary(status);
   const manager = isManagerRole(membership?.role);
@@ -257,16 +254,6 @@ export default function More() {
           ) : null}
           {/* A text box, saved like the website's (owner, 2026-10-19). */}
           <FeatureRequestRow />
-          {/* Every tip comes back, starting with the welcome cards (walkthrough, 2026-10-16). */}
-          <ListRow
-            title="Show Tips Again"
-            tone="link"
-            onPress={() => {
-              walkthrough.reset();
-              showGettingStartedAgain();
-              router.push("/welcome");
-            }}
-          />
           <ListRow title="Version" detail={build ? `${version} (${build})` : version} />
         </Group>
       </Section>

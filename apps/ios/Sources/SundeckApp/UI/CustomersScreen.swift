@@ -31,12 +31,6 @@
             let services = company?.services ?? .both
             let shows = customerShows(services)
             List {
-                if let company, let tip = screenTip("customers", company: company, app: app) {
-                    Section {
-                        TipCard(title: tip.title, message: tip.message) { app.walkthrough.dismiss(tip.id) }
-                            .plainListRow()
-                    }
-                }
                 Section {
                     VStack(alignment: .leading, spacing: 16) {
                         SearchField(text: $search, placeholder: "Name, phone, or email")

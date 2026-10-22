@@ -39,10 +39,6 @@
                 VStack(alignment: .leading, spacing: 32) {
                     VStack(alignment: .leading, spacing: 12) {
                         SectionHeading("Report and Sign-Off")
-                        if model.showsTip, let tip = app.walkthrough.tip(screen: "report", company: company, pkg: .leak)
-                        {
-                            TipRow(tip: tip) { app.walkthrough.dismiss(tip.id) }
-                        }
                         if model.templates.isEmpty {
                             EmptyState(text: "The shop turned off the homeowner report.")
                         } else {

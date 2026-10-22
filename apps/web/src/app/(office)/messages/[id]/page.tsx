@@ -5,7 +5,6 @@ import { notFound } from "next/navigation";
 import { isUuid } from "@/lib/uuid";
 import { JOB_TYPE_LABELS, dateFormat, formatAddress, formatPhone } from "@leakbook/core";
 import { ConversationList, Thread, conversationName } from "@/components/inbox";
-import { ScreenTip } from "@/components/screen-tip";
 import {
   AutoRefresh,
   CallButton,
@@ -75,9 +74,6 @@ export default async function ConversationPage({ params }: PageProps<"/messages/
       <div className="grid gap-6 md:h-[calc(100dvh-11.5rem)] md:min-h-[28rem] md:grid-cols-[minmax(0,22rem)_minmax(0,1fr)] xl:grid-cols-[minmax(0,20rem)_minmax(0,1fr)_minmax(0,18rem)]">
         <div className="min-w-0 max-md:hidden md:flex md:min-h-0 md:flex-col">
           <PageHeader title="Messages" />
-          <Suspense fallback={null}>
-            <ScreenTip screen="messages" />
-          </Suspense>
           <div className="md:min-h-0 md:flex-1 md:overflow-y-auto">
             <ConversationList
               conversations={conversations}
