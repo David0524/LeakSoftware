@@ -304,3 +304,45 @@ export async function loadSupportSessions(limit = 200): Promise<SupportRow[]> {
     ({ company, ...s }) => ({ ...s, company_name: company?.name ?? null }),
   );
 }
+
+export interface Usage {
+  days: number;
+  people_active: number;
+  sessions: number;
+  screen_ms: number;
+  person_days: number;
+  by_day: { day: string; people: number; ms: number }[];
+  platforms: { platform: "web" | "ios" | "android"; people: number; ms: number }[];
+  versions: { platform: string; version: string; people: number; last_at: string }[];
+  screens: { screen: string; ms: number; views: number; people: number }[];
+  features: { feature: string; n: number; people: number; shops: number; last_at: string }[];
+  errors: {
+    screen: string;
+    detail: string | null;
+    platform: string;
+    n: number;
+    people: number;
+    last_at: string;
+  }[];
+  people: {
+    user_id: string;
+    email: string;
+    name: string | null;
+    ms: number;
+    active_days: number;
+    sessions: number;
+    last_at: string;
+    platforms: string[] | null;
+    actions: number;
+    shops: string | null;
+  }[];
+}
+
+/** Usage (owner, 2026-10-22): screen time, screens, features, versions, errors. */
+export function loadUsage(days: number, scope: { companyId?: string; userId?: string } = {}) {
+  return rpc<Usage>("admin_usage", {
+    days,
+    target_company: scope.companyId ?? null,
+    target_user: scope.userId ?? null,
+  });
+}

@@ -125,6 +125,10 @@ row security, not by signing in as the owner, so every change shows as the staff
 - **Support list** (`/admin/support`): sessions open now, and the full history (who, shop,
   reason, access, started, ended).
 
+### 3.5b Usage (`/admin/usage`, added 2026-10-22)
+Screen time, screens, what people did (from the audit log), app versions and errors, for
+everyone, a shop or a person, over 7, 30 or 90 days. See DECISIONS 2026-10-22.
+
 ### 3.6 Health (`/admin/health`)
 For tech help across shops: the `/status` checks (database, email, payments configured); failed
 emails and texts in the last 24 hours by shop; Stripe webhook events that failed; shops at or near

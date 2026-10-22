@@ -5,6 +5,7 @@ import { VisitReportQueue } from "../../features/maintenance/VisitReport";
 import { RecoverCapture } from "../../features/media/MediaSection";
 import { ReportRequestQueue } from "../../features/report/ReportTab";
 import { LiveStopNotification } from "../../features/today/LiveStop";
+import { UsageTracker } from "../../features/usage/UsageTracker";
 import { HeaderButton } from "../../ui/components";
 import { stackScreenOptions } from "../../ui/navigation";
 import { ios } from "../../ui/theme";
@@ -20,6 +21,8 @@ export default function AppLayout() {
   const sheet = { presentation: ios ? ("modal" as const) : ("card" as const) };
   return (
     <>
+      {/* Screen time for the Admin portal's Usage (owner, 2026-10-22). */}
+      <UsageTracker />
       {/* Notifications and the current stop's ongoing notification (owner, 2026-10-19). */}
       <PushSetup />
       <LiveStopNotification />

@@ -41,6 +41,8 @@ export async function GET(request: Request) {
       // Tried again tomorrow while the visit is within two days.
     }
   }
+  // Usage events older than 180 days (Admin portal Usage, owner 2026-10-22).
+  const usage = await admin.rpc("prune_usage");
   // The weekly summary has its own hourly run, /api/cron/weekly (7 AM Monday, shop time).
   return Response.json({
     followups,
@@ -49,5 +51,6 @@ export async function GET(request: Request) {
     maintenanceVisits: error ? error.message : visits,
     monthlyInvoices: billed.error ? billed.error.message : billed.data,
     visitReports: due.error ? due.error.message : visitReports,
+    usagePruned: usage.error ? usage.error.message : usage.data,
   });
 }

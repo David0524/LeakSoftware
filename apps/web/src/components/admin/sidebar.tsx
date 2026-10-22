@@ -10,6 +10,7 @@ const SECTIONS: { title?: string; links: { href: string; label: string }[] }[] =
       { href: "/admin", label: "Overview" },
       { href: "/admin/shops", label: "Shops" },
       { href: "/admin/people", label: "People" },
+      { href: "/admin/usage", label: "Usage" },
       { href: "/admin/finances", label: "Finances" },
     ],
   },

@@ -45,6 +45,10 @@ entries in `docs/DECISIONS.md` (2026-10-15 and 2026-10-16 cover everything below
 - **Password reset (2026-10-22):** Forgot Password? on every sign-in screen; the server emails
   the link through Resend (`RESEND_API_KEY` and `SUPABASE_SERVICE_ROLE_KEY` on Vercel are needed),
   and it opens `/reset-password` on the website. 3 emails an hour per address.
+- **Usage (2026-10-22):** Admin portal › Usage, from `POST /api/usage` (website, iPhone,
+  Android) and the audit log. Kept 180 days. The App Store and Play privacy forms need
+  "Product interaction" and "Other diagnostic data", linked to the person, used for analytics
+  and app functionality, not tracking.
 - **Admin portal (2026-10-22):** `/admin`, desktop only, from Admin Sign In in the landing
   footer. Staff are `SUNDECK_STAFF_EMAILS` on Vercel and need two-step sign-in. Overview, Shops
   (Extend Trial, Make Demo Shop, Open Shop for support), People (Turn Off Two-Step), Finances,

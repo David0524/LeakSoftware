@@ -2,6 +2,14 @@
 
 Newest first. Each entry: date, decision, reason.
 
+## 2026-10-22 (owner: "In the admin page, can we track screen time, how users use the app, things like that?")
+- **Usage, per person, in our own database** (owner chose per person over per shop or overall, and our database over PostHog): the website and both apps send which screen is open and for how long, their platform and app version, and errors people hit, to `POST /api/usage` every minute and when the app goes to the background. **What people do** (jobs made, started and completed, photos, quotes, invoices, reports, chemicals, texts...) comes from the audit log the database already keeps, so it's the same on every platform without counting taps.
+- **Screen time counts only while Sundeck Pro is in front:** on the phones, while the app is open; on the website, while the tab is showing and someone touched it in the last 5 minutes. A screen left open counts at most 30 minutes. A new session starts after 30 minutes away.
+- **Errors** are error screens and changes that didn't save (the website's forms, the apps' server calls).
+- **Admin portal › Usage** (7 / 30 / 90 days): people active, screen time, a person's day, sessions and platforms, daily charts, screens by time, what they did, app versions in use, errors, and people by screen time. Each person's and each shop's page has the same, for them.
+- **Not counted:** Sundeck Pro staff helping a shop (they aren't its members). At most 5,000 events a person a day; events are kept 180 days (the daily cron prunes them).
+- **The privacy policy says so** (What we keep), and its "Who owns it" now matches staff support access (to help the shop and its people, logged), rather than "only when the shop asks".
+
 ## 2026-10-22 (owner: "Add a password reset feature for our users")
 - **Forgot Password? on every sign-in screen** (website on computers and phones, iPhone app, Android app) opens **Reset Password**: the account's email, then **Email Me a Reset Link**. Every address gets the same answer ("If … has a Sundeck Pro account, a reset link is on its way. It works for an hour."), so nobody can learn who has an account.
 - **The server makes the link and emails it through Resend** ("Reset your Sundeck Pro password", from `account@send.sundeckpro.com`), not Supabase's own email. Supabase's link only works in the browser that asked for it, and the apps ask from the phone. At most 3 reset emails an hour go to one address (`take_password_reset`).

@@ -100,9 +100,12 @@ public struct WebAPI: Sendable {
         guard (200..<300).contains(status) else {
             var fields: [String: String] = [:]
             if case .object(let f)? = reply["fields"] { for (k, v) in f { fields[k] = v.string } }
-            throw Failure(
-                description: reply["error"]?.string ?? fields.values.sorted().first ?? "The server said \(status).",
-                fields: fields, status: status)
+            // An error people saw: counted in the Admin portal's Usage (not usage's own sends).
+            let message = reply["error"]?.string ?? fields.values.sorted().first ?? "The server said \(status)."
+            if request.url?.path.hasSuffix("/api/usage") == false {
+                await MainActor.run { UsageRecorder.shared.error(message) }
+            }
+            throw Failure(description: message, fields: fields, status: status)
         }
         return reply
     }

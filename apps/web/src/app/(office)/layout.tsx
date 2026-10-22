@@ -6,6 +6,7 @@ import { DesktopNav, TabBar } from "@/components/nav-links";
 import { AccountMenu } from "@/components/account-menu";
 import { BannerHost } from "@/components/top-banner";
 import { SupportBanner } from "@/components/support-banner";
+import { UsageTracker } from "@/components/usage-tracker";
 import { InstantProvider } from "@/components/instant";
 import { PullToRefresh } from "@/components/pull-to-refresh";
 import { accessNotice } from "@leakbook/core";
@@ -57,6 +58,10 @@ export default function OfficeLayout({ children }: LayoutProps<"/">) {
       <Suspense fallback={null}>
         <PhoneTabs />
       </Suspense>
+      {/* Screen time for the Admin portal's Usage (not while staff help a shop). */}
+      <Suspense fallback={null}>
+        <Usage />
+      </Suspense>
       {/* Sundeck Pro staff helping this shop (Admin portal). */}
       <Suspense fallback={null}>
         <SupportBanner />
@@ -85,6 +90,11 @@ export default function OfficeLayout({ children }: LayoutProps<"/">) {
       </main>
     </div>
   );
+}
+
+async function Usage() {
+  const office = await getOffice();
+  return office.support ? null : <UsageTracker companyId={office.company.id} />;
 }
 
 async function PhoneTabs() {

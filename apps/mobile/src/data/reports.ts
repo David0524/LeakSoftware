@@ -1,6 +1,7 @@
 import { useMemo } from "react";
 import type { FinalSection, NarrativeProblem } from "@leakbook/core";
 import { API_URL } from "../lib/config";
+import { noteError } from "../lib/usage-errors";
 import { getServices } from "../lib/services";
 import { useJobRows } from "./hooks";
 
@@ -113,8 +114,10 @@ export async function call<T>(path: string, body: unknown): Promise<T> {
     throw new ReportServerError("No connection. Try again when you have signal.");
   }
   const data = (await res.json().catch(() => ({}))) as T & { error?: string };
-  if (!res.ok)
+  if (!res.ok) {
+    noteError(data.error ?? `The server said ${res.status}.`);
     throw new ReportServerError(data.error ?? `The server said ${res.status}.`, res.status);
+  }
   return data;
 }
 

@@ -214,6 +214,11 @@
                 if session.route == .setup { session.reloadCompanies() }
             }
             .onChange(of: scenePhase) { _, phase in
+                // Screen time counts only while the app is in front (Admin portal Usage).
+                UsageRecorder.shared.foreground(phase == .active)
+                if phase != .active {
+                    Task { await UsageRecorder.shared.flush(app.api, companyId: session.company?.id) }
+                }
                 guard phase == .active else { return }
                 sync.appBecameActive()
                 Task { await session.checkSession() }
@@ -224,6 +229,14 @@
                 DayStartNotifications.check(session)
             }
             .onChange(of: session.user) { app.walkthrough.reload() }
+            .task(id: "\(session.user?.id ?? "")|\(session.company?.id ?? "")") {
+                // Usage for the Admin portal (owner, 2026-10-22): sent every minute while signed in.
+                guard session.user != nil else { return }
+                while !Task.isCancelled {
+                    try? await Task.sleep(for: .seconds(60))
+                    await UsageRecorder.shared.flush(app.api, companyId: session.company?.id)
+                }
+            }
             .task(id: session.user?.id) {
                 // Signed in: send a token the phone couldn't file offline, and ask iOS for a fresh one.
                 guard let id = session.user?.id else { return }
