@@ -10,6 +10,8 @@ import {
   invoiceOverdue,
   invoiceShareText,
   isManagerRole,
+  latestReceiptPayment,
+  receiptSummary,
 } from "@leakbook/core";
 import { useMemo, useState } from "react";
 import {
@@ -31,7 +33,9 @@ import {
   type InvoiceListRow,
   type PaymentRow,
 } from "../../../../data/invoice-list";
-import { RecordPayment, voidInvoice } from "../../../../features/invoice/InvoiceSection";
+import { voidInvoice } from "../../../../features/invoice/InvoiceSection";
+import { RecordPayment, SendReceiptSheet } from "../../../../features/invoice/Receipt";
+import { useLine } from "../../../../data/texting";
 import { API_URL } from "../../../../lib/config";
 import { invoiceRowActions, menuTitle, type InvoiceActionId } from "../../../../lib/rowActions";
 import { confirmDestructive } from "../../../../ui/confirm";
@@ -76,6 +80,14 @@ export default function Invoices() {
   const rowMenu = useRowMenu();
   const banner = useResultBanner();
   const [paying, setPaying] = useState<InvoiceListRow | null>(null);
+  // Send Receipt (2026-10-22): right after Record Payment (that payment), or the latest.
+  const [receipt, setReceipt] = useState<{
+    invoice: InvoiceListRow;
+    paymentId: string | null;
+    status: string | null;
+    summary: string;
+  } | null>(null);
+  const line = useLine(company.id);
   const open = invoices.filter((i) => i.status === "sent" || i.status === "partially_paid");
   const owed = open.reduce((sum, i) => sum + invoiceBalance(i), 0);
   const tz = company.timezone;
@@ -164,6 +176,9 @@ export default function Invoices() {
           (p.status === "succeeded" || p.status === "pending"),
       ),
       hasLink: Boolean(link),
+      hasReceipt: payments.some(
+        (p) => p.invoice_id === i.id && !p.deleted_at && p.status === "succeeded",
+      ),
     });
     const name = `Invoice #${i.number ?? ""}`;
     const run = (id: InvoiceActionId) => {
@@ -171,6 +186,17 @@ export default function Invoices() {
       if (id === "share" && link)
         void Share.share({ message: invoiceShareText(company.name, link) });
       if (id === "record") setPaying(i);
+      if (id === "receipt") {
+        const p = latestReceiptPayment(
+          payments.filter((x) => x.invoice_id === i.id && !x.deleted_at),
+        );
+        setReceipt({
+          invoice: i,
+          paymentId: null,
+          status: null,
+          summary: p ? receiptSummary(p, i) : "",
+        });
+      }
       if (id === "void")
         confirmDestructive({
           title: "Void this invoice? The customer's link will show it as void.",
@@ -315,13 +341,36 @@ export default function Invoices() {
           <RecordPayment
             invoice={paying}
             balance={invoiceBalance(paying)}
-            onRecorded={(text) => {
+            onRecorded={(r) => {
+              const invoice = paying;
               setPaying(null);
-              banner.show({ tone: "success", message: `Invoice #${paying.number ?? ""}: ${text}` });
+              setReceipt({ invoice, paymentId: r.paymentId, status: r.status, summary: r.summary });
             }}
           />
         ) : null}
       </ModalSheet>
+      {receipt ? (
+        <SendReceiptSheet
+          visible
+          invoiceId={receipt.invoice.id}
+          paymentId={receipt.paymentId}
+          summary={receipt.summary}
+          justRecorded={receipt.status}
+          contact={(() => {
+            const c = jobs.find((j) => j.id === receipt.invoice.job_id)?.customer;
+            return {
+              email: c?.email ?? null,
+              phone: c?.phone ?? null,
+              texting: line?.status === "active",
+            };
+          })()}
+          onClose={() => setReceipt(null)}
+          onSent={(message) => {
+            setReceipt(null);
+            banner.show({ tone: "success", message });
+          }}
+        />
+      ) : null}
       {banner.element}
     </View>
   );

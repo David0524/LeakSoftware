@@ -15,6 +15,7 @@ public enum ActivityKind: String, Codable, CaseIterable, Sendable {
     case jobAssigned = "job_assigned"
     case jobMoved = "job_moved"
     case textReceived = "text_received"
+    case receiptSent = "receipt_sent"
 
     var symbol: ActivitySymbol {
         switch self {
@@ -27,6 +28,7 @@ public enum ActivityKind: String, Codable, CaseIterable, Sendable {
         case .jobAssigned: .person
         case .jobMoved: .calendar
         case .textReceived: .text
+        case .receiptSent: .payment
         }
     }
 }
@@ -232,6 +234,11 @@ public func activityRow(_ e: ActivityEvent, now: Date, timeZone: String) throws 
         } else {
             title = "\(jobLabel(e.jobNumber)) moved"
         }
+    case .receiptSent:
+        // A receipt for a cash or check payment (owner, 2026-10-22); preview holds how it went.
+        let how = e.preview == "text" ? "texted" : "emailed"
+        title = "Receipt sent"
+        detail = "\(customer)\(money), \(how)" + (firstName(e.actorName).map { " by \($0)" } ?? "")
     case .textReceived:
         title = "Text from \(customer)"
         let preview = ECMA.trim(e.preview ?? "")

@@ -51,6 +51,8 @@ public struct PaymentRecord: Decodable, Equatable, Sendable, Identifiable {
     public var quoteId: String?
     public var amountCents: Cents
     public var method: String
+    /// A check's number (2026-10-22).
+    public var checkNumber: String?
     public var status: String
     public var paidAt: String?
 
@@ -59,7 +61,14 @@ public struct PaymentRecord: Decodable, Equatable, Sendable, Identifiable {
         case invoiceId = "invoice_id"
         case quoteId = "quote_id"
         case amountCents = "amount_cents"
+        case checkNumber = "check_number"
         case paidAt = "paid_at"
+    }
+
+    /// As the receipt rules take it.
+    public var receipt: ReceiptPayment {
+        ReceiptPayment(
+            id: id, amountCents: amountCents, method: method, checkNumber: checkNumber, status: status, paidAt: paidAt)
     }
 }
 

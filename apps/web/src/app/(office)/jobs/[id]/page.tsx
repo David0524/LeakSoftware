@@ -1274,11 +1274,12 @@ const INVOICEABLE = ["in_progress", "report_sent", "quote_sent", "quote_accepted
 async function Invoices({ detail, only }: { detail: JobDetail; only?: string }) {
   const office = await getOffice();
   const { job } = detail;
-  const [invoices, company, origin] = await Promise.all([
+  const [invoices, company, origin, line] = await Promise.all([
     // Until the invoices migration reaches a database, the rest of the page still works.
     getInvoices(office, job.id).catch(() => null),
     getCompany(office),
     siteOrigin(),
+    getLine(office),
   ]);
   if (!invoices) {
     return <Notice tone="warning">Invoicing isn’t available until the database is updated.</Notice>;
@@ -1297,6 +1298,8 @@ async function Invoices({ detail, only }: { detail: JobDetail; only?: string }) 
             origin={origin}
             taxRateBps={rate}
             customerEmail={job.customer?.email ?? null}
+            customerPhone={job.customer?.phone ?? null}
+            texting={line?.status === "active"}
             emailReady={emailConfigured()}
             isOwner={office.isManager}
           />

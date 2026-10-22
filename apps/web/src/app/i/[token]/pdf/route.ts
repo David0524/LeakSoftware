@@ -6,7 +6,7 @@ import { publicClient } from "@/server/reports";
 
 export const maxDuration = 60;
 
-const LAYOUT = "2026-10-22";
+const LAYOUT = "2026-10-22b";
 
 /**
  * The invoice (or receipt, once paid) as a PDF, printed from the same page. Each version of
@@ -31,7 +31,8 @@ export async function GET(_request: Request, ctx: RouteContext<"/i/[token]/pdf">
 
   // Everything the page shows is in `data`, so its hash names this version of the invoice.
   // LAYOUT changes when the printed page itself changes, so copies kept from before print again
-  // (2026-10-22: the shop's logo, which signed-out pages couldn't load until then).
+  // (2026-10-22: the shop's logo, which signed-out pages couldn't load until then; 2026-10-22b:
+  // each payment's method and check number, and a part payment's thank-you).
   const version = createHash("sha256")
     .update(LAYOUT + JSON.stringify(data))
     .digest("hex")

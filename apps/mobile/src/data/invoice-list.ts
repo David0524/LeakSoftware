@@ -91,12 +91,14 @@ export function invoicesCsv(list: InvoiceListRow[]): string {
 }
 
 export interface PaymentRow {
+  id: string;
   created_at?: string | null;
   paid_at: string | null;
   invoice_id: string | null;
   quote_id: string | null;
   amount_cents: number;
   method: string;
+  check_number?: string | null;
   status: string;
   stripe_payment_intent_id?: string | null;
   deleted_at?: string | null;
@@ -107,7 +109,13 @@ export function paymentsCsv(
   invoiceNumbers: Map<string, number | null | undefined>,
   quoteNumbers: Map<string, number | null | undefined>,
 ): string {
-  const method: Record<string, string> = { card: "Card", ach: "Bank (ACH)", other: "Recorded" };
+  const method: Record<string, string> = {
+    card: "Card",
+    ach: "Bank (ACH)",
+    cash: "Cash",
+    check: "Check",
+    other: "Recorded",
+  };
   return toCsv([
     ["Date", "For", "Number", "Amount", "Method", "Status", "Stripe payment"],
     ...payments
@@ -122,7 +130,9 @@ export function paymentsCsv(
             ? (quoteNumbers.get(p.quote_id) ?? "")
             : "",
         centsToDollars(p.amount_cents),
-        method[p.method] ?? p.method,
+        p.method === "check" && p.check_number
+          ? `Check #${p.check_number}`
+          : (method[p.method] ?? p.method),
         p.status,
         p.stripe_payment_intent_id ?? "",
       ]),

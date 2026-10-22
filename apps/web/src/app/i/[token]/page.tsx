@@ -1,7 +1,15 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { Suspense } from "react";
-import { cardFeeChoice, formatCents, lineTotal, textOnBrand, dateFormat } from "@leakbook/core";
+import {
+  cardFeeChoice,
+  formatCents,
+  latestReceiptPayment,
+  lineTotal,
+  paymentMethodLabel,
+  textOnBrand,
+  dateFormat,
+} from "@leakbook/core";
 import { tokens } from "@leakbook/tokens";
 import { PayInvoiceForm } from "@/components/invoice-actions";
 import { cx } from "@/components/ui";
@@ -60,7 +68,14 @@ interface TokenInvoice {
     quantity: number;
     unit_price_cents: number;
   }[];
-  payments: { amount_cents: number; method: string; status: string; paid_at: string | null }[];
+  payments: {
+    id: string;
+    amount_cents: number;
+    method: string;
+    check_number: string | null;
+    status: string;
+    paid_at: string | null;
+  }[];
   can_pay: boolean;
 }
 
@@ -79,8 +94,6 @@ const date = (iso: string, timeZone: string) =>
   dateFormat("en-US", { dateStyle: "long", timeZone }).format(
     new Date(iso.length === 10 ? `${iso}T12:00:00Z` : iso),
   );
-
-const METHOD: Record<string, string> = { card: "Card", ach: "Bank account", other: "Payment" };
 
 async function InvoicePage({ params, searchParams }: PageProps<"/i/[token]">) {
   const { token } = await params;
@@ -104,6 +117,8 @@ async function InvoicePage({ params, searchParams }: PageProps<"/i/[token]">) {
   const processing = i.payments.find((p) => p.status === "pending");
   const received = i.payments.filter((p) => p.status === "succeeded");
   const isReceipt = i.status === "paid";
+  // Part paid (cash or a check, say): the page is that payment's receipt too (2026-10-22).
+  const lastPaid = i.status === "partially_paid" ? latestReceiptPayment(received) : null;
   const isPrint = !!print;
   const title = `${isReceipt ? "Receipt" : "Invoice"}${i.number ? ` #${i.number}` : ""}`;
 
@@ -252,7 +267,7 @@ async function InvoicePage({ params, searchParams }: PageProps<"/i/[token]">) {
           {received.map((p, n) => (
             <Row
               key={n}
-              label={`${METHOD[p.method] ?? "Payment"}${p.paid_at ? `, ${date(p.paid_at, tz)}` : ""}`}
+              label={`${paymentMethodLabel(p.method, p.check_number)}${p.paid_at ? `, ${date(p.paid_at, tz)}` : ""}`}
               value={`−${formatCents(p.amount_cents)}`}
             />
           ))}
@@ -268,6 +283,14 @@ async function InvoicePage({ params, searchParams }: PageProps<"/i/[token]">) {
           <h2 id="pay" className="mb-3 font-display text-2xl font-bold">
             {isReceipt ? "Paid in Full" : "Pay This Invoice"}
           </h2>
+          {lastPaid ? (
+            <p className="mb-4" data-testid="payment-received">
+              Thank you for your payment of {formatCents(lastPaid.amount_cents)} (
+              {paymentMethodLabel(lastPaid.method, lastPaid.check_number)}
+              {lastPaid.paid_at ? `, ${date(lastPaid.paid_at, tz)}` : ""}). The balance due is{" "}
+              {formatCents(i.balance_cents)}.
+            </p>
+          ) : null}
           {isReceipt ? (
             <p>Paid{i.paid_at ? ` on ${date(i.paid_at, tz)}` : ""}. Thank you for your business!</p>
           ) : processing ? (

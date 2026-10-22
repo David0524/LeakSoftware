@@ -216,11 +216,12 @@ export function customerRowActions(c: {
 // Invoices
 // ---------------------------------------------------------------------------
 
-export type InvoiceActionId = "open" | "share" | "record" | "void";
+export type InvoiceActionId = "open" | "share" | "record" | "receipt" | "void";
 
 /**
  * Invoices: swipe right Record Payment (unpaid, managers); hold for Open, Share Payment Link,
- * Record Payment and Void…, each as the invoice's own card offers it. Left out: Send Reminder
+ * Record Payment, Send Receipt (a payment received, 2026-10-22) and Void…, each as the invoice's
+ * own card offers it. Left out: Send Reminder
  * (the app sends no reminders by hand) and Copy Payment Link (no copy button; Share Link's
  * sheet has Copy).
  */
@@ -231,6 +232,8 @@ export function invoiceRowActions(i: {
   /** A payment succeeded or is pending: no Void. */
   hasPayments: boolean;
   hasLink: boolean;
+  /** A payment was received, so a receipt can be sent. */
+  hasReceipt?: boolean;
 }): RowActions<InvoiceActionId> {
   const issued = i.status !== "draft" && i.status !== "void";
   const record = i.manager &&
@@ -243,6 +246,7 @@ export function invoiceRowActions(i: {
       OPEN,
       issued && i.hasLink && { id: "share", label: "Share Payment Link" },
       record,
+      issued && i.hasReceipt && { id: "receipt", label: "Send Receipt" },
       i.manager && issued && !i.hasPayments && { id: "void", label: "Void…", destructive: true },
     ],
   );

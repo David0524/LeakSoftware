@@ -1,9 +1,15 @@
 "use client";
 
-import { useActionState } from "react";
+import { useActionState, useState, useTransition } from "react";
 import {
   INVOICE_STATUS_LABELS,
+  SEND_RECEIPT,
+  canSendReceipt,
   formatCents,
+  latestReceiptPayment,
+  parseDollars,
+  paymentMethodLabel,
+  receiptSummary,
   invoiceBalance,
   invoiceTotals,
   lineTotal,
@@ -11,7 +17,6 @@ import {
 import {
   addInvoiceLine,
   createInvoiceAction,
-  recordPaymentAction,
   removeInvoiceLine,
   saveInvoiceDetails,
   sendInvoiceAction,
@@ -21,12 +26,12 @@ import type { InvoiceRow } from "@/lib/data";
 import { CopyLink, SField, STextArea, SettingsForm } from "./settings-forms";
 import { Button, Checkbox, Field, Notice } from "./ui";
 import { orOffline } from "@/lib/offline";
-
-const METHOD: Record<string, string> = {
-  card: "Card",
-  ach: "Bank",
-  other: "Recorded by the office",
-};
+import {
+  RecordPaymentFields,
+  SendReceiptSheet,
+  recordPayment,
+  type ReceiptContact,
+} from "./payment-receipt";
 const PAYMENT_STATUS: Record<string, string> = {
   pending: "processing",
   succeeded: "received",
@@ -105,6 +110,8 @@ export function InvoicePanel({
   origin,
   taxRateBps,
   customerEmail,
+  customerPhone = null,
+  texting = false,
   emailReady,
   isOwner,
 }: {
@@ -113,6 +120,9 @@ export function InvoicePanel({
   origin: string;
   taxRateBps: number;
   customerEmail: string | null;
+  customerPhone?: string | null;
+  /** The shop has a working company number, so receipts can be texted. */
+  texting?: boolean;
   emailReady: boolean;
   isOwner: boolean;
 }) {
@@ -264,7 +274,8 @@ export function InvoicePanel({
             <ul className="space-y-1 text-[0.9375rem]">
               {invoice.payments.map((p) => (
                 <li key={p.id}>
-                  {formatCents(p.amount_cents)} · {METHOD[p.method] ?? p.method} ·{" "}
+                  {formatCents(p.amount_cents)} ·{" "}
+                  {paymentMethodLabel(p.method, p.check_number, "office")} ·{" "}
                   {PAYMENT_STATUS[p.status] ?? p.status}
                   {p.paid_at
                     ? ` · ${new Date(p.paid_at).toLocaleDateString("en-US", { dateStyle: "medium" })}`
@@ -274,19 +285,13 @@ export function InvoicePanel({
             </ul>
           ) : null}
           {link && invoice.status !== "void" ? <CopyLink url={link} label="Customer link" /> : null}
-          {isOwner && balance > 0 && invoice.status !== "void" ? (
-            <SettingsForm action={recordPaymentAction} submit="Record Payment">
-              <input type="hidden" name="invoice" value={invoice.id} />
-              <input type="hidden" name="job" value={jobId} />
-              <SField
-                label="Amount received ($)"
-                name="amount"
-                inputMode="decimal"
-                defaultValue={dollars(balance)}
-                hint="A check, cash, or anything paid outside Sundeck Pro."
-              />
-            </SettingsForm>
-          ) : null}
+          <InvoiceReceipts
+            invoice={invoice}
+            jobId={jobId}
+            balance={balance}
+            canRecord={isOwner && balance > 0 && invoice.status !== "void"}
+            contact={{ email: customerEmail, phone: customerPhone, texting }}
+          />
           {isOwner && !hasPayments && invoice.status !== "void" ? (
             <SettingsForm
               action={voidInvoiceAction}
@@ -301,5 +306,103 @@ export function InvoicePanel({
         </div>
       ) : null}
     </section>
+  );
+}
+
+/**
+ * Record Payment (managers, while something is owed) and Send Receipt (2026-10-22): recording
+ * opens Send Receipt for that payment; an invoice with a payment received can send one again.
+ */
+function InvoiceReceipts({
+  invoice,
+  jobId,
+  balance,
+  canRecord,
+  contact,
+}: {
+  invoice: InvoiceRow;
+  jobId: string;
+  balance: number;
+  canRecord: boolean;
+  contact: ReceiptContact;
+}) {
+  const [errors, setErrors] = useState<Record<string, string> | undefined>();
+  const [pending, start] = useTransition();
+  // The sheet: the payment just recorded (with the invoice's status after it), or the latest.
+  const [sheet, setSheet] = useState<{
+    paymentId: string | null;
+    status: string | null;
+    /** What was just recorded, until the page has the payment. */
+    summary?: string;
+  } | null>(null);
+  // Form fields reset after a payment by remounting them.
+  const [round, setRound] = useState(0);
+  const payment = sheet?.paymentId
+    ? invoice.payments.find((p) => p.id === sheet.paymentId)
+    : latestReceiptPayment(invoice.payments);
+  const canSend = canSendReceipt(invoice, invoice.payments);
+  return (
+    <>
+      {canRecord ? (
+        <form
+          key={round}
+          className="space-y-4"
+          data-testid="record-payment"
+          onSubmit={(e) => {
+            e.preventDefault();
+            const form = new FormData(e.currentTarget);
+            start(async () => {
+              const r = await recordPayment(form);
+              if ("errors" in r) return setErrors(r.errors);
+              setErrors(undefined);
+              setRound((n) => n + 1);
+              const amount = parseDollars(String(form.get("amount") ?? "")) ?? 0;
+              setSheet({
+                paymentId: r.recorded.paymentId,
+                status: r.recorded.status,
+                summary: receiptSummary(
+                  {
+                    amount_cents: amount,
+                    method: String(form.get("method") ?? "other"),
+                    check_number: String(form.get("check_number") ?? "") || null,
+                  },
+                  {
+                    total_cents: invoice.total_cents,
+                    amount_paid_cents: invoice.amount_paid_cents + amount,
+                  },
+                ),
+              });
+            });
+          }}
+        >
+          <input type="hidden" name="invoice" value={invoice.id} />
+          <input type="hidden" name="job" value={jobId} />
+          <RecordPaymentFields balance={balance} errors={errors} />
+          <Button type="submit" kind="secondary" disabled={pending}>
+            {pending ? "Saving…" : "Record Payment"}
+          </Button>
+        </form>
+      ) : null}
+      {canSend ? (
+        <Button
+          type="button"
+          kind="secondary"
+          onClick={() => setSheet({ paymentId: null, status: null })}
+        >
+          {SEND_RECEIPT}
+        </Button>
+      ) : null}
+      {sheet ? (
+        <SendReceiptSheet
+          invoiceId={invoice.id}
+          jobId={jobId}
+          paymentId={sheet.paymentId ?? payment?.id ?? null}
+          summary={sheet.summary ?? (payment ? receiptSummary(payment, invoice) : "")}
+          justRecorded={sheet.status}
+          contact={contact}
+          onClose={() => setSheet(null)}
+        />
+      ) : null}
+    </>
   );
 }

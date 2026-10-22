@@ -37,7 +37,12 @@ public struct InvoiceCardModel: Equatable, Sendable {
     public var balanceText: String
     /// Managers: Void Invoice while nothing is paid.
     public var canVoid: Bool
+    /// Send Receipt: a payment was received (2026-10-22).
+    public var canSendReceipt: Bool
+    /// Its sheet's line for the latest payment: "$200.00 · Check #1234 · Balance remaining $449.00".
+    public var receiptSummary: String
     public var customerEmail: String
+    public var customerPhone: String
     /// The draft's Details as saved.
     public var discountText: String
     public var dueDate: String?
@@ -89,7 +94,7 @@ public struct InvoiceSectionModel: Equatable, Sendable {
             state = .invoice(
                 Self.card(
                     current, settings: settings, manager: isManagerRole(role),
-                    customerEmail: job.customer?["email"]?.string,
+                    customerEmail: job.customer?["email"]?.string, customerPhone: job.customer?["phone"]?.string,
                     timeZone: timeZone, webURL: webURL))
         } else if job.type == .maintenance {
             state = .empty(job.job["billed_invoice_id"]?.string != nil ? Self.onMonthly : Self.monthly)
@@ -107,8 +112,8 @@ public struct InvoiceSectionModel: Equatable, Sendable {
     }
 
     static func card(
-        _ inv: JobInvoice, settings: JSONValue?, manager: Bool, customerEmail: String?, timeZone: String,
-        webURL: URL?
+        _ inv: JobInvoice, settings: JSONValue?, manager: Bool, customerEmail: String?, customerPhone: String? = nil,
+        timeZone: String, webURL: URL?
     ) -> InvoiceCardModel {
         let invoice = inv.invoice
         let rate = settings?["tax_rate_bps"]?.number.map { Int($0) } ?? 0
@@ -155,14 +160,21 @@ public struct InvoiceSectionModel: Equatable, Sendable {
             totalRows: rows, isDraft: draft,
             payments: inv.payments.map { p in
                 [
-                    formatCents(p.amountCents), paymentMethod(p.method), paymentStatus(p.status),
+                    formatCents(p.amountCents), paymentMethodLabel(p.method, checkNumber: p.checkNumber, office: true),
+                    paymentStatus(p.status),
                 ].joined(separator: " · ") + (p.paidAt.map { " · " + mediumDate($0, timeZone: timeZone) } ?? "")
             },
             link: live ? inv.token.flatMap { token in webURL.map { invoiceURL($0, token) } } : nil,
             canRecordPayment: rules.canRecordPayment,
             balanceText: centsFieldText(invoice.balanceCents),
             canVoid: rules.canVoid,
+            canSendReceipt: canSendReceipt(status: invoice.status.rawValue, payments: inv.payments.map(\.receipt)),
+            receiptSummary: latestReceiptPayment(inv.payments.map(\.receipt)).map {
+                SundeckCore.receiptSummary(
+                    $0, totalCents: invoice.totalCents, amountPaidCents: invoice.amountPaidCents)
+            } ?? "",
             customerEmail: customerEmail ?? "",
+            customerPhone: customerPhone ?? "",
             discountText: invoice.discountCents > 0 ? centsFieldText(invoice.discountCents) : "",
             dueDate: invoice.dueDate, notes: invoice.notes ?? "")
     }
@@ -180,15 +192,6 @@ public struct InvoiceActionRules: Equatable, Sendable {
         let paidSomething = payments.contains { $0.status == "succeeded" || $0.status == "pending" }
         canRecordPayment = open && invoice.balanceCents > 0
         canVoid = open && !paidSomething
-    }
-}
-
-func paymentMethod(_ method: String) -> String {
-    switch method {
-    case "card": "Card"
-    case "ach": "Bank"
-    case "other": "Recorded by the office"
-    default: method
     }
 }
 
@@ -293,7 +296,7 @@ public enum InvoiceWrites {
 /// The server's side of the invoice: create, send, record a payment, void or delete a draft.
 @MainActor @Observable
 public final class InvoiceFlow {
-    public enum Action: Equatable, Sendable { case create, email, withoutEmail, payment, void }
+    public enum Action: Equatable, Sendable { case create, email, withoutEmail, payment, void, receipt }
 
     public var busy: Action?
     public var error: String?
@@ -302,6 +305,9 @@ public final class InvoiceFlow {
     public var message: String?
     /// After Send Without Email: the text message with the link, to copy or share.
     public var shareText: String?
+    /// Send Receipt's sheet, opened right after Record Payment (that payment) or from the
+    /// invoice (the latest).
+    public var receipt: ReceiptStart?
 
     public let sync: SyncService
     public let companyId: String
@@ -367,17 +373,37 @@ public final class InvoiceFlow {
         }
     }
 
-    /// Managers: a check, cash or anything paid outside Sundeck Pro.
-    public func recordPayment(_ invoiceId: String, amount: String, rpc: any RPCClient) async {
+    /// Managers: cash, a check (with its number), or anything paid outside Sundeck Pro. Opens
+    /// Send Receipt for that payment once it's saved. `paidCents` is what was paid before.
+    public func recordPayment(
+        _ invoiceId: String, amount: String, method: ManualPaymentMethod = .other, checkNumber: String = "",
+        totalCents: Cents = 0, paidCents: Cents = 0, rpc: any RPCClient
+    ) async {
         guard let cents = parseDollars(amount), cents > 0 else {
             error = "Enter an amount like 649."
             return
         }
+        let number = method == .check ? cleanCheckNumber(checkNumber) : nil
+        if method == .check, let problem = checkNumberError(checkNumber) {
+            error = problem
+            return
+        }
         await run(.payment) {
             let reply = try await rpc.call(
-                "record_invoice_payment", ["target_invoice": .string(invoiceId), "amount": .number(Double(cents))])
-            await sync.syncNow()
-            message = reply["status"]?.string == "paid" ? "Paid in full." : "Payment recorded."
+                "record_invoice_payment",
+                [
+                    "target_invoice": .string(invoiceId), "amount": .number(Double(cents)),
+                    "method": .string(method.rawValue), "check_number": number.map(JSONValue.string) ?? .null,
+                ])
+            let status = reply["status"]?.string ?? ""
+            message = status == "paid" ? "Paid in full." : "Payment recorded."
+            receipt = ReceiptStart(
+                invoiceId: invoiceId, paymentId: reply["payment_id"]?.string, status: status,
+                summary: receiptSummary(
+                    ReceiptPayment(
+                        id: "", amountCents: cents, method: method.rawValue, checkNumber: number, status: "succeeded"),
+                    totalCents: totalCents, amountPaidCents: paidCents + cents))
+            Task { await sync.syncNow() }
         }
     }
 
@@ -389,5 +415,68 @@ public final class InvoiceFlow {
             await sync.syncNow()
             message = draft ? "Draft deleted." : "Invoice voided."
         }
+    }
+}
+
+/// Send Receipt's sheet: which invoice and payment, what was just recorded, and its line.
+public struct ReceiptStart: Equatable, Sendable, Identifiable {
+    public var invoiceId: String
+    /// The payment just recorded; nil for the latest received.
+    public var paymentId: String?
+    /// The invoice's status right after Record Payment; nil when opened from the invoice.
+    public var status: String?
+    public var summary: String
+    public var id: String { invoiceId + (paymentId ?? "") }
+
+    public init(invoiceId: String, paymentId: String? = nil, status: String? = nil, summary: String) {
+        self.invoiceId = invoiceId
+        self.paymentId = paymentId
+        self.status = status
+        self.summary = summary
+    }
+}
+
+/// Send Receipt's form (2026-10-22): Email or Text (Text only with a company number), the
+/// customer's address or number to start, and the server's send. Linux-tested.
+@MainActor @Observable
+public final class ReceiptForm {
+    public let start: ReceiptStart
+    public let texting: Bool
+    public var channel: ReceiptChannel
+    public var email: String
+    public var phone: String
+    public var busy = false
+    public var error: String?
+
+    public init(start: ReceiptStart, email: String?, phone: String?, texting: Bool) {
+        self.start = start
+        self.texting = texting
+        let email = email ?? ""
+        let phone = phone.map { formatPhone(toE164($0) ?? $0) } ?? ""
+        self.email = email
+        self.phone = phone
+        channel = email.isEmpty && texting && !phone.isEmpty ? .text : .email
+    }
+
+    public var to: String { channel == .email ? email : phone }
+
+    /// Sends it; returns the result line ("Receipt emailed to …") or nil with `error` set.
+    public func send(server: MoneyServer) async -> String? {
+        if let problem = receiptRecipientError(channel, to) {
+            error = problem
+            return nil
+        }
+        busy = true
+        error = nil
+        defer { busy = false }
+        do {
+            try await server.sendReceipt(start.invoiceId, channel: channel, to: to, paymentId: start.paymentId)
+            return receiptSentMessage(channel, to)
+        } catch let failure as WebAPI.Failure {
+            error = failure.offline ? ReceiptText.offline : failure.description
+        } catch {
+            self.error = String(describing: error)
+        }
+        return nil
     }
 }

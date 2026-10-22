@@ -2,14 +2,19 @@ import { useState } from "react";
 import { Share, StyleSheet, Text, View } from "react-native";
 import {
   INVOICE_STATUS_LABELS,
+  SEND_RECEIPT,
+  canSendReceipt,
   formatCents,
+  latestReceiptPayment,
+  paymentMethodLabel,
+  parseDollars,
+  receiptSummary,
   jobFeeLabel,
   invoiceBalance,
   invoiceShareText,
   invoiceTotals,
   isManagerRole,
   lineTotal,
-  parseDollars,
   type Customer,
   type Job,
 } from "@leakbook/core";
@@ -33,14 +38,11 @@ import { Divider } from "../report/ReportTab";
 import { DateField } from "../schedule/DateField";
 import { LinkRow } from "../quote/QuoteTab";
 import { useUnsavedChanges } from "../../ui/ModalSheet";
+import { useLine } from "../../data/texting";
+import { RecordPayment, SendReceiptSheet } from "./Receipt";
 
 const INVOICEABLE = ["in_progress", "report_sent", "quote_sent", "quote_accepted", "invoiced"];
 
-const METHOD: Record<string, string> = {
-  card: "Card",
-  ach: "Bank",
-  other: "Recorded by the office",
-};
 const PAYMENT_STATUS: Record<string, string> = {
   pending: "processing",
   succeeded: "received",
@@ -132,6 +134,14 @@ function InvoiceCard({ invoice, customer }: { invoice: JobInvoice; customer?: Cu
     (p) => p.status === "succeeded" || p.status === "pending",
   );
   const link = invoice.token && API_URL ? `${API_URL}/i/${invoice.token}` : null;
+  // Send Receipt (2026-10-22): right after Record Payment (that payment), or the latest.
+  const [receipt, setReceipt] = useState<{
+    paymentId: string | null;
+    status: string | null;
+    summary: string;
+  } | null>(null);
+  const line = useLine(company.id);
+  const [sent, setSent] = useState<string | null>(null);
 
   function removeLine(id: string) {
     services.sync.write("invoice_line_item", id, company.id, {
@@ -202,6 +212,25 @@ function InvoiceCard({ invoice, customer }: { invoice: JobInvoice; customer?: Cu
         ) : null}
       </View>
 
+      {receipt ? (
+        <SendReceiptSheet
+          visible
+          invoiceId={invoice.id}
+          paymentId={receipt.paymentId}
+          summary={receipt.summary}
+          justRecorded={receipt.status}
+          contact={{
+            email: customer?.email ?? null,
+            phone: customer?.phone ?? null,
+            texting: line?.status === "active",
+          }}
+          onClose={() => setReceipt(null)}
+          onSent={(message) => {
+            setReceipt(null);
+            setSent(message);
+          }}
+        />
+      ) : null}
       {draft ? (
         <DraftParts invoice={invoice} customer={customer} />
       ) : (
@@ -210,7 +239,7 @@ function InvoiceCard({ invoice, customer }: { invoice: JobInvoice; customer?: Cu
             <View style={{ gap: 4 }}>
               {invoice.payments.map((p) => (
                 <T key={p.id} variant="secondary">
-                  {`${formatCents(p.amount_cents)} · ${METHOD[p.method] ?? p.method} · ${PAYMENT_STATUS[p.status] ?? p.status}${
+                  {`${formatCents(p.amount_cents)} · ${paymentMethodLabel(p.method, p.check_number, "office")} · ${PAYMENT_STATUS[p.status] ?? p.status}${
                     p.paid_at
                       ? ` · ${new Date(p.paid_at).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}`
                       : ""
@@ -223,8 +252,31 @@ function InvoiceCard({ invoice, customer }: { invoice: JobInvoice; customer?: Cu
             <LinkRow url={link} message={invoiceShareText(company.name, link)} />
           ) : null}
           {manager && balance > 0 && invoice.status !== "void" ? (
-            <RecordPayment invoice={invoice} balance={balance} />
+            <RecordPayment
+              invoice={invoice}
+              balance={balance}
+              onRecorded={(r) => {
+                setSent(r.message);
+                setReceipt({ paymentId: r.paymentId, status: r.status, summary: r.summary });
+              }}
+            />
           ) : null}
+          {canSendReceipt(invoice, invoice.payments) ? (
+            <Button
+              title={SEND_RECEIPT}
+              kind="secondary"
+              onPress={() => {
+                setSent(null);
+                const p = latestReceiptPayment(invoice.payments);
+                setReceipt({
+                  paymentId: null,
+                  status: null,
+                  summary: p ? receiptSummary(p, invoice) : "",
+                });
+              }}
+            />
+          ) : null}
+          {sent ? <Notice tone="success">{sent}</Notice> : null}
           {manager && !hasPayments && invoice.status !== "void" ? (
             <VoidButton
               invoiceId={invoice.id}
@@ -469,74 +521,7 @@ function DraftParts({ invoice, customer }: { invoice: JobInvoice; customer?: Cus
   );
 }
 
-/**
- * Managers: a check, cash, or anything paid outside Sundeck Pro. The Invoices list's Record
- * Payment opens this same form in a sheet (gestures spec section 12).
- */
-export function RecordPayment({
-  invoice,
-  balance,
-  onRecorded,
-}: {
-  invoice: Pick<JobInvoice, "id">;
-  balance: number;
-  /** Called with the result once the payment is saved. */
-  onRecorded?: (text: string) => void;
-}) {
-  const [amount, setAmount] = useState<string | null>(null);
-  // An amount typed but not recorded asks before leaving (owner, 2026-10-20).
-  useUnsavedChanges(Boolean(amount?.trim()));
-  const [busy, setBusy] = useState(false);
-  const [message, setMessage] = useState<Message>(null);
-
-  async function record() {
-    const cents = parseDollars(amount ?? dollars(balance));
-    if (cents === null || cents <= 0)
-      return setMessage({ tone: "error", text: "Enter an amount like 649." });
-    setBusy(true);
-    setMessage(null);
-    try {
-      const { supabase, sync } = getServices();
-      const { data, error } = await supabase.rpc("record_invoice_payment", {
-        target_invoice: invoice.id,
-        amount: cents,
-      });
-      if (error) throw new Error(error.message);
-      await sync.syncNow();
-      setAmount(null);
-      const text =
-        (data as { status?: string } | null)?.status === "paid"
-          ? "Paid in full."
-          : "Payment recorded.";
-      setMessage({ tone: "success", text });
-      haptics.success();
-      onRecorded?.(text);
-    } catch (e) {
-      setMessage({ tone: "error", text: e instanceof Error ? e.message : String(e) });
-    } finally {
-      setBusy(false);
-    }
-  }
-
-  return (
-    <View style={styles.stack}>
-      <Field
-        label="Amount received ($)"
-        keyboardType="decimal-pad"
-        value={amount ?? dollars(balance)}
-        onChangeText={setAmount}
-        hint="A check, cash, or anything paid outside Sundeck Pro."
-      />
-      <Button
-        title={busy ? "Saving…" : "Record Payment"}
-        kind="secondary"
-        disabled={busy}
-        onPress={() => void record()}
-      />
-      {message ? <Notice tone={message.tone}>{message.text}</Notice> : null}
-    </View>
-  );
-}
+export { RecordPayment } from "./Receipt";
 
 /** The server voids the invoice (or deletes a draft); it syncs down. */
 export async function voidInvoice(invoiceId: string) {

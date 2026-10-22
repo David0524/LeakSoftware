@@ -1,0 +1,583 @@
+{
+  "constants": [
+    {
+      "args": [],
+      "result": {
+        "PAYMENT_METHOD_CHOICES": [
+          {
+            "value": "cash",
+            "label": "Cash"
+          },
+          {
+            "value": "check",
+            "label": "Check"
+          },
+          {
+            "value": "other",
+            "label": "Other"
+          }
+        ],
+        "PAYMENT_METHOD_LABEL": "Paid by",
+        "CHECK_NUMBER_LABEL": "Check number",
+        "CHECK_NUMBER_HINT": "Optional. It shows on the receipt.",
+        "CHECK_NUMBER_MAX": 20,
+        "SEND_RECEIPT": "Send Receipt",
+        "RECEIPT_NOT_NOW": "Not Now",
+        "RECEIPT_CHANNELS": [
+          {
+            "value": "email",
+            "label": "Email"
+          },
+          {
+            "value": "text",
+            "label": "Text"
+          }
+        ],
+        "RECEIPT_EMAIL_LABEL": "Customer email",
+        "RECEIPT_PHONE_LABEL": "Mobile number",
+        "RECEIPT_TEXT_HINT": "Texted from your company number.",
+        "RECEIPT_OFFLINE": "Sending a receipt needs a connection. Use Send Receipt on the invoice when you’re back online."
+      }
+    }
+  ],
+  "cleanCheckNumber": [
+    {
+      "args": [
+        " #1234 "
+      ],
+      "result": "1234"
+    },
+    {
+      "args": [
+        "##12"
+      ],
+      "result": "12"
+    },
+    {
+      "args": [
+        "  "
+      ],
+      "result": null
+    },
+    {
+      "args": [
+        ""
+      ],
+      "result": null
+    },
+    {
+      "args": [
+        null
+      ],
+      "result": null
+    },
+    {
+      "args": [
+        "A-77"
+      ],
+      "result": "A-77"
+    }
+  ],
+  "checkNumberError": [
+    {
+      "args": [
+        "1234"
+      ],
+      "result": null
+    },
+    {
+      "args": [
+        "11111111111111111111"
+      ],
+      "result": null
+    },
+    {
+      "args": [
+        "111111111111111111111"
+      ],
+      "result": "Enter a check number up to 20 characters."
+    },
+    {
+      "args": [
+        "#11111111111111111111"
+      ],
+      "result": null
+    },
+    {
+      "args": [
+        null
+      ],
+      "result": null
+    }
+  ],
+  "paymentMethodLabel": [
+    {
+      "args": [
+        "cash",
+        null,
+        "customer"
+      ],
+      "result": "Cash"
+    },
+    {
+      "args": [
+        "check",
+        "1234",
+        "customer"
+      ],
+      "result": "Check #1234"
+    },
+    {
+      "args": [
+        "check",
+        " #77 ",
+        "office"
+      ],
+      "result": "Check #77"
+    },
+    {
+      "args": [
+        "check",
+        null,
+        "customer"
+      ],
+      "result": "Check"
+    },
+    {
+      "args": [
+        "card",
+        null,
+        "customer"
+      ],
+      "result": "Card"
+    },
+    {
+      "args": [
+        "ach",
+        null,
+        "customer"
+      ],
+      "result": "Bank account"
+    },
+    {
+      "args": [
+        "ach",
+        null,
+        "office"
+      ],
+      "result": "Bank"
+    },
+    {
+      "args": [
+        "other",
+        null,
+        "customer"
+      ],
+      "result": "Other payment"
+    },
+    {
+      "args": [
+        "other",
+        null,
+        "office"
+      ],
+      "result": "Recorded by the office"
+    },
+    {
+      "args": [
+        "barter",
+        null,
+        "customer"
+      ],
+      "result": "barter"
+    }
+  ],
+  "latestReceiptPayment": [
+    {
+      "args": [
+        [
+          {
+            "id": "p1",
+            "amount_cents": 20000,
+            "method": "cash",
+            "check_number": null,
+            "status": "succeeded",
+            "paid_at": "2026-10-21T17:00:00Z"
+          },
+          {
+            "id": "p2",
+            "amount_cents": 20000,
+            "method": "check",
+            "check_number": "1234",
+            "status": "succeeded",
+            "paid_at": "2026-10-22T17:00:00Z"
+          },
+          {
+            "id": "p3",
+            "amount_cents": 20000,
+            "method": "check",
+            "check_number": "1234",
+            "status": "pending",
+            "paid_at": "2026-10-23T17:00:00Z"
+          }
+        ]
+      ],
+      "result": "p2"
+    },
+    {
+      "args": [
+        [
+          {
+            "id": "p2",
+            "amount_cents": 20000,
+            "method": "check",
+            "check_number": "1234",
+            "status": "succeeded",
+            "paid_at": "2026-10-22T17:00:00Z"
+          },
+          {
+            "id": "p1",
+            "amount_cents": 20000,
+            "method": "cash",
+            "check_number": null,
+            "status": "succeeded",
+            "paid_at": "2026-10-21T17:00:00Z"
+          }
+        ]
+      ],
+      "result": "p2"
+    },
+    {
+      "args": [
+        [
+          {
+            "id": "p3",
+            "amount_cents": 20000,
+            "method": "check",
+            "check_number": "1234",
+            "status": "pending",
+            "paid_at": "2026-10-23T17:00:00Z"
+          }
+        ]
+      ],
+      "result": null
+    },
+    {
+      "args": [
+        []
+      ],
+      "result": null
+    },
+    {
+      "args": [
+        [
+          {
+            "id": "p1",
+            "amount_cents": 20000,
+            "method": "cash",
+            "check_number": null,
+            "status": "succeeded",
+            "paid_at": null
+          }
+        ]
+      ],
+      "result": "p1"
+    }
+  ],
+  "canSendReceipt": [
+    {
+      "args": [
+        "partially_paid",
+        [
+          {
+            "id": "p2",
+            "amount_cents": 20000,
+            "method": "check",
+            "check_number": "1234",
+            "status": "succeeded",
+            "paid_at": "2026-10-22T17:00:00Z"
+          }
+        ]
+      ],
+      "result": true
+    },
+    {
+      "args": [
+        "paid",
+        [
+          {
+            "id": "p1",
+            "amount_cents": 20000,
+            "method": "cash",
+            "check_number": null,
+            "status": "succeeded",
+            "paid_at": "2026-10-21T17:00:00Z"
+          }
+        ]
+      ],
+      "result": true
+    },
+    {
+      "args": [
+        "void",
+        [
+          {
+            "id": "p2",
+            "amount_cents": 20000,
+            "method": "check",
+            "check_number": "1234",
+            "status": "succeeded",
+            "paid_at": "2026-10-22T17:00:00Z"
+          }
+        ]
+      ],
+      "result": false
+    },
+    {
+      "args": [
+        "draft",
+        [
+          {
+            "id": "p2",
+            "amount_cents": 20000,
+            "method": "check",
+            "check_number": "1234",
+            "status": "succeeded",
+            "paid_at": "2026-10-22T17:00:00Z"
+          }
+        ]
+      ],
+      "result": false
+    },
+    {
+      "args": [
+        "sent",
+        [
+          {
+            "id": "p3",
+            "amount_cents": 20000,
+            "method": "check",
+            "check_number": "1234",
+            "status": "pending",
+            "paid_at": "2026-10-23T17:00:00Z"
+          }
+        ]
+      ],
+      "result": false
+    },
+    {
+      "args": [
+        "sent",
+        []
+      ],
+      "result": false
+    }
+  ],
+  "receiptBalanceText": [
+    {
+      "args": [
+        64900,
+        20000
+      ],
+      "result": "Balance remaining $449.00"
+    },
+    {
+      "args": [
+        64900,
+        64900
+      ],
+      "result": "Paid in full"
+    },
+    {
+      "args": [
+        100,
+        200
+      ],
+      "result": "Paid in full"
+    }
+  ],
+  "receiptSummary": [
+    {
+      "args": [
+        {
+          "id": "p2",
+          "amount_cents": 20000,
+          "method": "check",
+          "check_number": "1234",
+          "status": "succeeded",
+          "paid_at": "2026-10-22T17:00:00Z"
+        },
+        64900,
+        20000
+      ],
+      "result": "$200.00 · Check #1234 · Balance remaining $449.00"
+    },
+    {
+      "args": [
+        {
+          "id": "p1",
+          "amount_cents": 20000,
+          "method": "cash",
+          "check_number": null,
+          "status": "succeeded",
+          "paid_at": "2026-10-21T17:00:00Z"
+        },
+        64900,
+        64900
+      ],
+      "result": "$200.00 · Cash · Paid in full"
+    },
+    {
+      "args": [
+        {
+          "id": "p2",
+          "amount_cents": 20000,
+          "method": "other",
+          "check_number": "1234",
+          "status": "succeeded",
+          "paid_at": "2026-10-22T17:00:00Z"
+        },
+        1000,
+        0
+      ],
+      "result": "$200.00 · Other payment · Balance remaining $10.00"
+    }
+  ],
+  "receiptPrompt": [
+    {
+      "args": [
+        "paid"
+      ],
+      "result": "Paid in full. Send the customer a receipt?"
+    },
+    {
+      "args": [
+        "partially_paid"
+      ],
+      "result": "Payment recorded. Send the customer a receipt?"
+    }
+  ],
+  "receiptRecipientError": [
+    {
+      "args": [
+        "email",
+        "sam@example.com"
+      ],
+      "result": null
+    },
+    {
+      "args": [
+        "email",
+        " sam@example.com "
+      ],
+      "result": null
+    },
+    {
+      "args": [
+        "email",
+        "sam"
+      ],
+      "result": "Enter the customer’s email."
+    },
+    {
+      "args": [
+        "email",
+        ""
+      ],
+      "result": "Enter the customer’s email."
+    },
+    {
+      "args": [
+        "text",
+        "602 555 0142"
+      ],
+      "result": null
+    },
+    {
+      "args": [
+        "text",
+        "+1 (602) 555-0142"
+      ],
+      "result": null
+    },
+    {
+      "args": [
+        "text",
+        "555-0142"
+      ],
+      "result": "Enter a mobile number like (602) 555-0142."
+    },
+    {
+      "args": [
+        "text",
+        ""
+      ],
+      "result": "Enter a mobile number like (602) 555-0142."
+    }
+  ],
+  "receiptSentMessage": [
+    {
+      "args": [
+        "email",
+        " sam@example.com "
+      ],
+      "result": "Receipt emailed to sam@example.com."
+    },
+    {
+      "args": [
+        "text",
+        "6025550142"
+      ],
+      "result": "Receipt texted to (602) 555-0142."
+    },
+    {
+      "args": [
+        "text",
+        "+44 20 7946 0958"
+      ],
+      "result": "Receipt texted to +442079460958."
+    }
+  ],
+  "receiptTextMessage": [
+    {
+      "args": [
+        "Blue Wave Pools",
+        {
+          "id": "p2",
+          "amount_cents": 20000,
+          "method": "check",
+          "check_number": "1234",
+          "status": "succeeded",
+          "paid_at": "2026-10-22T17:00:00Z"
+        },
+        {
+          "number": 1042,
+          "status": "partially_paid",
+          "total_cents": 64900,
+          "amount_paid_cents": 20000
+        }
+      ],
+      "result": "Blue Wave Pools: Thank you for your $200.00 payment (Check #1234). Balance remaining on Invoice #1042: $449.00. Your receipt: https://x/i/t"
+    },
+    {
+      "args": [
+        "Blue Wave Pools",
+        {
+          "id": "p1",
+          "amount_cents": 20000,
+          "method": "cash",
+          "check_number": null,
+          "status": "succeeded",
+          "paid_at": "2026-10-21T17:00:00Z"
+        },
+        {
+          "number": null,
+          "status": "paid",
+          "total_cents": 64900,
+          "amount_paid_cents": 64900
+        }
+      ],
+      "result": "Blue Wave Pools: Thank you for your $200.00 payment (Cash). Invoice is paid in full. Your receipt: https://x/i/t"
+    }
+  ]
+}

@@ -1,10 +1,21 @@
 import "server-only";
 import type { SupabaseClient } from "@supabase/supabase-js";
-import { formatCents, invoiceShareText } from "@leakbook/core";
+import {
+  dateFormat,
+  formatCents,
+  invoiceShareText,
+  latestReceiptPayment,
+  receiptRecipientError,
+  receiptRows,
+  receiptTextMessage,
+  type ReceiptChannel,
+  type ReceiptPayment,
+} from "@leakbook/core";
 import { adminClient } from "./admin";
 import { EmailNotConfigured, emailConfigured, fromAddress, sendEmail } from "./email";
 import { ccList, emailRefusal } from "./usage";
 import { Refusal, dbFailure } from "./failures";
+import { TextingError, activeLine, sendCompanyText } from "./texting";
 
 // Invoices (M9): sending and receipts, shared by the office (cookie session), the phone
 // (bearer token), and Stripe webhooks (service role). `db` acts as whoever is calling; the
@@ -195,4 +206,118 @@ export async function sendReceipt(
   } catch {
     return false;
   }
+}
+
+// ---------------------------------------------------------------------------
+// Receipts for cash and check (owner, 2026-10-22: "A receipt for cash or check")
+// ---------------------------------------------------------------------------
+
+export interface SendPaymentReceiptResult {
+  channel: ReceiptChannel;
+  to: string;
+  link: string;
+  paymentId: string;
+}
+
+/**
+ * Sends the receipt for one payment (the latest received when none is named), as the signed-in
+ * member, by email or by text from the shop's company number. The receipt is the invoice's own
+ * page: its payments and what's left. Logged on the job and in Activity (log_receipt).
+ */
+export async function sendPaymentReceipt(
+  db: SupabaseClient,
+  userId: string,
+  invoiceId: string,
+  opts: { channel: ReceiptChannel; to: string; paymentId?: string | null; origin: string },
+): Promise<SendPaymentReceiptResult> {
+  const channel: ReceiptChannel = opts.channel === "text" ? "text" : "email";
+  const to = (opts.to ?? "").trim();
+  const problem = receiptRecipientError(channel, to);
+  if (problem) throw new Refusal(problem);
+  if (channel === "email" && !emailConfigured()) throw new EmailNotConfigured();
+
+  const d = await rpc<MailDetails>(db, "invoice_mail_details", { target_invoice: invoiceId });
+  if (!d.token || d.status === "draft" || d.status === "void")
+    throw new Refusal("Send the invoice before sending a receipt.");
+  const { data: rows, error } = await db
+    .from("payment")
+    .select("id, amount_cents, method, check_number, status, paid_at, company_id")
+    .eq("invoice_id", invoiceId)
+    .is("deleted_at", null);
+  if (error) throw dbFailure(error);
+  const payments = (rows ?? []) as (ReceiptPayment & { company_id: string })[];
+  const payment = opts.paymentId
+    ? payments.find((p) => p.id === opts.paymentId && p.status === "succeeded")
+    : latestReceiptPayment(payments);
+  if (!payment) throw new Refusal("Record a payment before sending a receipt.");
+  const companyId = payment.company_id;
+  const { data: co } = await db.from("company").select("timezone").eq("id", companyId).single();
+  const timeZone = (co?.timezone as string | undefined) ?? "America/Phoenix";
+
+  const shop = d.company.name;
+  const link = `${opts.origin}/i/${d.token}`;
+  const log = (via: "email" | "sms", sentTo: string, delivery: "sent" | "failed", extra = {}) =>
+    db.rpc("log_receipt", {
+      target_payment: payment.id,
+      via,
+      sent_to: sentTo,
+      delivery,
+      ...extra,
+    });
+
+  if (channel === "text") {
+    const line = await activeLine(db, companyId);
+    if (line?.status !== "active")
+      throw new Refusal("Texting isn’t set up. Send the receipt by email instead.");
+    const body = receiptTextMessage(shop, payment, d, link);
+    try {
+      await sendCompanyText(
+        db,
+        userId,
+        { companyId, phone: to, body, jobId: d.job_id },
+        opts.origin,
+      );
+    } catch (e) {
+      const failure = e instanceof Error ? e.message : String(e);
+      await log("sms", to, "failed", { failure });
+      if (e instanceof TextingError) throw new Refusal(e.message);
+      throw e;
+    }
+    await log("sms", to, "sent");
+    return { channel, to, link, paymentId: payment.id };
+  }
+
+  const cc = ccFor(d, to);
+  const refusal = await emailRefusal(db, companyId, 1 + cc.length);
+  if (refusal) throw new Refusal(refusal);
+  const paidOn = payment.paid_at
+    ? dateFormat("en-US", { dateStyle: "long", timeZone }).format(new Date(payment.paid_at))
+    : null;
+  const lines = receiptRows(d, payment, paidOn);
+  const greeting = d.customer?.name ? `Hi ${d.customer.name},` : "Hello,";
+  const sentTo = [to, ...cc].join(", ");
+  try {
+    const email = await sendEmail({
+      from: fromAddress(shop),
+      to,
+      cc,
+      replyTo: d.company.email,
+      subject: `Receipt from ${shop}`,
+      text: `${greeting}\n\nThank you for your payment.\n\n${lines.map((l) => `${l.label}: ${l.value}`).join("\n")}\n\nYour receipt:\n${link}\n\n${shop}${d.company.phone ? `\n${d.company.phone}` : ""}`,
+      html: `<p>${escapeHtml(greeting)}</p><p>Thank you for your payment.</p><table cellpadding="4" style="border-collapse:collapse">${lines
+        .map(
+          (l) =>
+            `<tr><td style="color:#555">${escapeHtml(l.label)}</td><td style="text-align:right;font-weight:600">${escapeHtml(l.value)}</td></tr>`,
+        )
+        .join(
+          "",
+        )}</table><p><a href="${link}">View your receipt</a></p><p>${escapeHtml(shop)}${d.company.phone ? `<br>${escapeHtml(d.company.phone)}` : ""}</p>`,
+    });
+    await log("email", sentTo, "sent", { provider: email.id });
+  } catch (e) {
+    const failure = e instanceof Error ? e.message : String(e);
+    await log("email", sentTo, "failed", { failure });
+    throw new Error(`The receipt email failed: ${failure}. Try again, or text it instead.`);
+  }
+  return { channel, to, link, paymentId: payment.id };
 }

@@ -586,16 +586,48 @@ private func invoiceRows(status: String, paid: Int = 0) -> [(String, JSONValue)]
         #expect(flow.error == nil)
         #expect(flow.message == "Paid in full.")
         #expect(rpc.calls.last?.0 == "record_invoice_payment")
-        #expect(rpc.calls.last?.1 == ["target_invoice": "i1", "amount": 45600])
-        rpc.reply = ["status": "partially_paid"]
-        await flow.recordPayment("i1", amount: "10", rpc: rpc)
+        #expect(
+            rpc.calls.last?.1 == ["target_invoice": "i1", "amount": 45600, "method": "other", "check_number": .null])
+        // A check with its number (2026-10-22): Send Receipt opens for that payment.
+        rpc.reply = ["status": "partially_paid", "payment_id": "p9"]
+        await flow.recordPayment(
+            "i1", amount: "10", method: .check, checkNumber: " #1234 ", totalCents: 64900, paidCents: 0, rpc: rpc)
         #expect(flow.message == "Payment recorded.")
+        #expect(
+            rpc.calls.last?.1 == ["target_invoice": "i1", "amount": 1000, "method": "check", "check_number": "1234"])
+        #expect(
+            flow.receipt
+                == ReceiptStart(
+                    invoiceId: "i1", paymentId: "p9", status: "partially_paid",
+                    summary: "$10.00 · Check #1234 · Balance remaining $639.00"))
+        await flow.recordPayment(
+            "i1", amount: "10", method: .check, checkNumber: String(repeating: "1", count: 21), rpc: rpc)
+        #expect(flow.error == "Enter a check number up to 20 characters.")
 
         await flow.void("i1", draft: false, rpc: rpc)
         #expect(rpc.calls.last?.0 == "void_invoice")
         #expect(flow.message == "Invoice voided.")
         await flow.void("i1", draft: true, rpc: rpc)
         #expect(flow.message == "Draft deleted.")
+    }
+
+    @Test func sendReceiptGoesToTheServerAndSaysWhereItWent() async throws {
+        let s = try MoneyJob()
+        let start = ReceiptStart(
+            invoiceId: "i1", paymentId: "p9", status: "paid", summary: "$10.00 · Cash · Paid in full")
+        let form = ReceiptForm(start: start, email: nil, phone: "6025550142", texting: true)
+        #expect(form.channel == .text)
+        #expect(form.phone == "(602) 555-0142")
+        form.phone = "555"
+        #expect(await form.send(server: s.server) == nil)
+        #expect(form.error == "Enter a mobile number like (602) 555-0142.")
+        form.phone = "(602) 555-0142"
+        StubServer.set(s.host, "/api/invoices/i1/receipt", 200, ["channel": "text", "to": "(602) 555-0142"])
+        #expect(await form.send(server: s.server) == "Receipt texted to (602) 555-0142.")
+        #expect(
+            StubServer.calls(s.host).last?.body == ["channel": "text", "to": "(602) 555-0142", "paymentId": "p9"])
+        let emailOnly = ReceiptForm(start: start, email: "sam@example.com", phone: "6025550142", texting: false)
+        #expect(emailOnly.channel == .email)
     }
 
     @Test func sendingByEmailNeedsAnAddressAndWithoutEmailGivesTheText() async throws {

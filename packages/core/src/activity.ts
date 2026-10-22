@@ -19,7 +19,8 @@ export type ActivityKind =
   | "job_completed"
   | "job_assigned"
   | "job_moved"
-  | "text_received";
+  | "text_received"
+  | "receipt_sent";
 
 /** One event as activity_feed() returns it. */
 export interface ActivityEvent {
@@ -90,6 +91,7 @@ const SYMBOLS: Record<ActivityKind, ActivitySymbol> = {
   job_assigned: "person",
   job_moved: "calendar",
   text_received: "text",
+  receipt_sent: "payment",
 };
 
 /** "Tony Reyes" -> "Tony". */
@@ -197,6 +199,14 @@ export function activityRow(e: ActivityEvent, now: Date | string, timeZone: stri
         ? `${jobLabel(e.job_number)} moved to ${movedTo(e.scheduled_at, at, timeZone)}`
         : `${jobLabel(e.job_number)} moved`;
       break;
+    case "receipt_sent": {
+      // A receipt for a cash or check payment (owner, 2026-10-22); preview holds how it went.
+      const by = firstName(e.actor_name);
+      const how = e.preview === "text" ? "texted" : "emailed";
+      title = "Receipt sent";
+      detail = `${customer}${money}, ${how}${by ? ` by ${by}` : ""}`;
+      break;
+    }
     case "text_received":
       title = `Text from ${customer}`;
       detail = e.preview?.trim() || "Sent a picture";

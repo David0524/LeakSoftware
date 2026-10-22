@@ -254,6 +254,18 @@ public struct MoneyServer {
         public var emailed: Bool
     }
 
+    /// Sends the receipt for a payment (the latest received when none is named), by email or by
+    /// text from the shop's company number (2026-10-22). Needs a connection.
+    public func sendReceipt(_ invoiceId: String, channel: ReceiptChannel, to: String, paymentId: String?) async throws {
+        _ = try await api.post(
+            "api/invoices/\(invoiceId)/receipt",
+            [
+                "channel": .string(channel.rawValue), "to": .string(to.trimmingCharacters(in: .whitespaces)),
+                "paymentId": paymentId.map(JSONValue.string) ?? .null,
+            ])
+        Task { await sync.syncNow() }
+    }
+
     /// Sends the invoice by email, or for the tech to text.
     public func sendInvoice(_ invoiceId: String, channel: ReportServer.Channel, to: String?) async throws
         -> InvoiceSent

@@ -202,6 +202,23 @@ describe("Invoices", () => {
     const paid = invoiceRowActions({ ...sent, status: "paid", balanceCents: 0, hasLink: true });
     expect(paid.leading).toBeNull();
   });
+
+  it("offers Send Receipt once a payment is received, to anyone who sees the invoice", () => {
+    const partly = { ...sent, status: "partially_paid", hasPayments: true, hasReceipt: true };
+    expect(ids(invoiceRowActions({ ...partly, hasLink: true })).menu).toEqual([
+      "open",
+      "share",
+      "record",
+      "receipt",
+    ]);
+    expect(ids(invoiceRowActions({ ...partly, manager: false, hasLink: false })).menu).toEqual([
+      "open",
+      "receipt",
+    ]);
+    expect(
+      ids(invoiceRowActions({ ...partly, status: "void", hasLink: false })).menu,
+    ).not.toContain("receipt");
+  });
 });
 
 describe("Reports, settings lists, findings, photos", () => {

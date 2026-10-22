@@ -2,14 +2,19 @@
 
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
-import { parseDollars } from "@leakbook/core";
+import {
+  checkNumberError,
+  parseDollars,
+  receiptSentMessage,
+  type ReceiptChannel,
+} from "@leakbook/core";
 import { getOffice } from "@/lib/auth";
 import { discountTooLarge, friendlyDbError, lineDescriptionError } from "@/lib/limits";
 import { parseQuantity } from "@/lib/quantity";
 import { siteOrigin } from "@/lib/origin";
 import { createClient } from "@/lib/supabase/server";
 import { EmailNotConfigured } from "@/server/email";
-import { createInvoice, sendInvoice, sendReceipt } from "@/server/invoices";
+import { createInvoice, sendInvoice, sendPaymentReceipt } from "@/server/invoices";
 import {
   CheckoutRefused,
   PaymentsNotConfigured,
@@ -146,26 +151,61 @@ export async function sendInvoiceAction(
   }
 }
 
-/** Owners: a check, cash, or other payment outside Stripe. Emails the receipt when paid. */
-export async function recordPaymentAction(_: FormState, form: FormData): Promise<FormState> {
+export interface RecordPaymentState extends FormState {
+  /** The payment just recorded and the invoice's status after it, for Send Receipt. */
+  recorded?: { paymentId: string; status: string };
+}
+
+/**
+ * Managers: cash, a check (with its number), or another payment outside Stripe. The office then
+ * offers Send Receipt (2026-10-22), so nothing is emailed by itself.
+ */
+export async function recordPaymentAction(
+  _: RecordPaymentState,
+  form: FormData,
+): Promise<RecordPaymentState> {
   await getOffice();
   const amount = parseDollars(text(form, "amount"));
   if (amount === null || amount <= 0) return { fields: { amount: "Enter an amount like 649." } };
+  const method = ["cash", "check", "other"].includes(text(form, "method"))
+    ? text(form, "method")
+    : "other";
+  const checkNumber = method === "check" ? text(form, "check_number") : "";
+  const bad = checkNumberError(checkNumber);
+  if (bad) return { fields: { check_number: bad } };
   const supabase = await createClient();
   const { data, error } = await supabase.rpc("record_invoice_payment", {
     target_invoice: text(form, "invoice"),
     amount,
+    method,
+    check_number: checkNumber || null,
   });
   if (error) return { fields: { amount: friendlyDbError(error.message) } };
-  const r = data as { status: string; paid_now: boolean };
-  let receipt = false;
-  if (r.paid_now) receipt = await sendReceipt(text(form, "invoice"), await siteOrigin(), supabase);
-  return done(
-    form,
-    r.status === "paid"
-      ? `Paid in full.${receipt ? " Receipt emailed." : ""}`
-      : "Payment recorded.",
-  );
+  const r = data as { status: string; paid_now: boolean; payment_id: string };
+  refresh(form);
+  return {
+    message: r.status === "paid" ? "Paid in full." : "Payment recorded.",
+    recorded: { paymentId: r.payment_id, status: r.status },
+  };
+}
+
+/** Send Receipt: the receipt for a payment (the latest when none is named), by email or text. */
+export async function sendReceiptAction(_: FormState, form: FormData): Promise<FormState> {
+  const office = await getOffice();
+  const channel: ReceiptChannel = text(form, "channel") === "text" ? "text" : "email";
+  try {
+    await sendPaymentReceipt(await createClient(), office.user.id, text(form, "invoice"), {
+      channel,
+      to: text(form, "to"),
+      paymentId: text(form, "payment") || null,
+      origin: await siteOrigin(),
+    });
+  } catch (e) {
+    if (e instanceof EmailNotConfigured) return { fields: { to: e.message } };
+    return { fields: { to: e instanceof Error ? e.message : String(e) } };
+  }
+  refresh(form);
+  return { message: receiptSentMessage(channel, text(form, "to")) };
 }
 
 export async function voidInvoiceAction(_: FormState, form: FormData): Promise<FormState> {

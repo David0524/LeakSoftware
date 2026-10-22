@@ -98,8 +98,12 @@ test("a repair is invoiced with its deposit credited, paid by check and card, wi
   await page.reload();
   await wrapUpStep(page, "Invoice");
   await panel.getByLabel("Amount received ($)").fill("200");
+  await panel.getByRole("radio", { name: "Check" }).click();
   await panel.getByRole("button", { name: "Record Payment" }).click();
-  await expect(panel.getByText("Payment recorded.")).toBeVisible();
+  // Send Receipt is offered at once (2026-10-22; receipts.spec.ts sends one).
+  const receipt = page.getByRole("dialog", { name: "Send Receipt" });
+  await expect(receipt).toContainText("Payment recorded. Send the customer a receipt?");
+  await receipt.getByRole("button", { name: "Not Now" }).click();
   await expect(panel).toContainText("Partly paid");
   await customer.reload();
   await expect(customer.getByRole("button", { name: "Pay $350.00" })).toBeVisible();
@@ -140,7 +144,7 @@ test("a repair is invoiced with its deposit credited, paid by check and card, wi
     .eq("invoice_id", inv!.invoice_id)
     .order("amount_cents");
   expect(payments).toEqual([
-    { amount_cents: 20_000, method: "other", status: "succeeded" },
+    { amount_cents: 20_000, method: "check", status: "succeeded" },
     { amount_cents: 35_000, method: "card", status: "succeeded" },
   ]);
 

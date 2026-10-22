@@ -23,10 +23,11 @@
         /// Each row's link, Record Payment and Void, read with the list (gestures spec section 12).
         @State private var rowActions: [String: InvoiceRowActions] = [:]
         @State private var banner: ResultBanner?
-        /// Record Payment from a row: the invoice and the amount typed (the balance at first).
+        /// Record Payment from a row, in a sheet (amount, Paid by, a check's number).
         @State private var paying: InvoiceListItem?
-        @State private var amount = ""
         @State private var voiding: InvoiceListItem?
+        /// Send Receipt: after Record Payment (that payment), or from a row's menu (the latest).
+        @State private var receipt: ReceiptStart?
 
         /// `filter` opens on one (the dashboard's Owed to you opens Unpaid); All by default.
         init(filter: InvoiceFilter = .all) { _filter = State(initialValue: filter) }
@@ -139,18 +140,27 @@
             }
             .sheet(item: $shared) { FileShareSheet(url: $0.url) }
             .resultBanner($banner)
-            .alert(
-                "Record Payment", isPresented: Binding(get: { paying != nil }, set: { if !$0 { paying = nil } }),
-                presenting: paying
-            ) { item in
-                TextField("Amount received ($)", text: $amount)
-                    .keyboardType(.decimalPad)
-                Button("Cancel", role: .cancel) {}
-                Button("Record Payment") { Task { await recordPayment(item) } }
-                    .keyboardShortcut(.defaultAction)
-            } message: { _ in
-                Text(InvoiceCardModel.paymentHint)
+            .sheet(item: $paying) { item in
+                if let company = session.company {
+                    RecordPaymentSheet(
+                        title: menuTitle(item), invoice: item.invoice,
+                        flow: InvoiceFlow(sync: sync, companyId: company.id, jobId: item.invoice.jobId)
+                    ) { flow in
+                        paying = nil
+                        guard let flow else { return }
+                        if let message = flow.message { banner = ResultBanner(kind: .success, title: message) }
+                        // Send Receipt once Record Payment's sheet has gone.
+                        Task {
+                            try? await Task.sleep(for: .milliseconds(450))
+                            receipt = flow.receipt
+                        }
+                    }
+                }
             }
+            .sendReceiptSheet(
+                $receipt, email: receiptContact?["email"]?.string, phone: receiptContact?["phone"]?.string,
+                texting: session.company.map { companyLine(sync.store, companyId: $0.id)?.status == "active" } ?? false
+            ) { sent in banner = ResultBanner(kind: .success, title: sent) }
             .confirmationDialog(
                 InvoiceCardModel.voidTitle,
                 isPresented: Binding(get: { voiding != nil }, set: { if !$0 { voiding = nil } }),
@@ -199,6 +209,12 @@
                         startPayment(item)
                     })
             }
+            if let summary = actions?.receiptSummary {
+                list.append(
+                    SwipeAction(title: ReceiptText.send, systemImage: "doc.text", tint: Color.link) {
+                        receipt = ReceiptStart(invoiceId: item.invoice.id, summary: summary)
+                    })
+            }
             if actions?.rules.canVoid == true {
                 list.append(
                     SwipeAction(title: "Void…", systemImage: "xmark.circle", tint: Color.fail, role: .destructive) {
@@ -209,16 +225,15 @@
         }
 
         private func startPayment(_ item: InvoiceListItem) {
-            amount = rowActions[item.id]?.balanceText ?? ""
             paying = item
         }
 
-        /// The card's Record Payment, through the same server call.
-        private func recordPayment(_ item: InvoiceListItem) async {
-            guard let company = session.company else { return }
-            let flow = InvoiceFlow(sync: sync, companyId: company.id, jobId: item.invoice.jobId)
-            await flow.recordPayment(item.invoice.id, amount: amount, rpc: LenientRPC(client: app.client))
-            show(flow)
+        /// The customer of the invoice Send Receipt is for (its email and phone to start).
+        private var receiptContact: JSONValue? {
+            guard let receipt, let company = session.company,
+                let item = list.first(where: { $0.invoice.id == receipt.invoiceId })
+            else { return nil }
+            return (try? jobView(sync.store, companyId: company.id, jobId: item.invoice.jobId))?.customer
         }
 
         /// The card's Void Invoice, after the same question.

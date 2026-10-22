@@ -73,6 +73,8 @@ public struct InvoiceRowActions: Equatable, Sendable {
     public var rules: InvoiceActionRules
     /// The balance, prefilled in Record Payment's amount.
     public var balanceText: String
+    /// Send Receipt's line for the latest payment, when one was received (2026-10-22).
+    public var receiptSummary: String?
 }
 
 /// Every invoice's row actions, read once for the list (payments and links in one pass each).
@@ -97,9 +99,19 @@ public func invoiceRowActions(
                 InvoiceRowActions(
                     link: i.status == .void ? nil : tokens[i.id].flatMap { t in webURL.map { invoiceURL($0, t) } },
                     rules: InvoiceActionRules(invoice: i, payments: payments[i.id] ?? [], manager: manager),
-                    balanceText: centsFieldText(i.balanceCents))
+                    balanceText: centsFieldText(i.balanceCents),
+                    receiptSummary: receiptLine(i, payments[i.id] ?? []))
             )
         }, uniquingKeysWith: { a, _ in a })
+}
+
+/// Send Receipt's line for an invoice's latest payment, or nil when it can't send one.
+func receiptLine(_ invoice: InvoiceRecord, _ payments: [PaymentRecord]) -> String? {
+    let receipts = payments.map(\.receipt)
+    guard canSendReceipt(status: invoice.status.rawValue, payments: receipts),
+        let latest = latestReceiptPayment(receipts)
+    else { return nil }
+    return receiptSummary(latest, totalCents: invoice.totalCents, amountPaidCents: invoice.amountPaidCents)
 }
 
 /// "2 open · $750.00 owed", or "Nothing owed right now."
@@ -182,16 +194,18 @@ public func paymentsCSV(_ store: LocalStore, companyId: String) -> String {
     let quotes = Dictionary(
         rowsOf("quote").map { ($0.id, $0["number"]?.number.map { String(Int($0)) } ?? "") },
         uniquingKeysWith: { a, _ in a })
-    let method = ["card": "Card", "ach": "Bank (ACH)", "other": "Recorded"]
+    let method = ["card": "Card", "ach": "Bank (ACH)", "cash": "Cash", "check": "Check", "other": "Recorded"]
     let payments = rowsOf("payment").sorted { ($0["created_at"]?.string ?? "") < ($1["created_at"]?.string ?? "") }
     let rows = payments.map { p -> [String] in
         let invoice = p["invoice_id"]?.string
         let m = p["method"]?.string ?? ""
+        let checkNumber = m == "check" ? p["check_number"]?.string : nil
         return [
             String((p["paid_at"]?.string ?? p["created_at"]?.string ?? "").prefix(10)),
             invoice != nil ? "Invoice" : "Quote deposit",
             invoice.flatMap { invoices[$0] } ?? p["quote_id"]?.string.flatMap { quotes[$0] } ?? "",
-            dollars(Int(p["amount_cents"]?.number ?? 0)), method[m] ?? m, p["status"]?.string ?? "",
+            dollars(Int(p["amount_cents"]?.number ?? 0)), checkNumber.map { "Check #\($0)" } ?? method[m] ?? m,
+            p["status"]?.string ?? "",
             p["stripe_payment_intent_id"]?.string ?? "",
         ]
     }

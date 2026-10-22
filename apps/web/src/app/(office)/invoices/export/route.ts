@@ -67,7 +67,7 @@ export async function GET(request: Request) {
       supabase
         .from("payment")
         .select(
-          "created_at, paid_at, invoice_id, quote_id, amount_cents, method, status, stripe_payment_intent_id",
+          "created_at, paid_at, invoice_id, quote_id, amount_cents, method, check_number, status, stripe_payment_intent_id",
         )
         .eq("company_id", office.company.id)
         .is("deleted_at", null)
@@ -77,7 +77,13 @@ export async function GET(request: Request) {
     ]);
     const inv = new Map((invoices ?? []).map((r) => [r.id as string, r.number as number]));
     const quo = new Map((quotes ?? []).map((r) => [r.id as string, r.number as number]));
-    const method: Record<string, string> = { card: "Card", ach: "Bank (ACH)", other: "Recorded" };
+    const method: Record<string, string> = {
+      card: "Card",
+      ach: "Bank (ACH)",
+      cash: "Cash",
+      check: "Check",
+      other: "Recorded",
+    };
     rows = [
       ["Date", "For", "Number", "Amount", "Method", "Status", "Stripe payment"],
       ...(payments ?? []).map((p) => [
@@ -87,7 +93,9 @@ export async function GET(request: Request) {
           ? (inv.get(p.invoice_id as string) ?? "")
           : (quo.get(p.quote_id as string) ?? ""),
         centsToDollars(p.amount_cents as number),
-        method[p.method as string] ?? (p.method as string),
+        p.method === "check" && p.check_number
+          ? `Check #${p.check_number as string}`
+          : (method[p.method as string] ?? (p.method as string)),
         p.status as string,
         (p.stripe_payment_intent_id as string | null) ?? "",
       ]),

@@ -1,9 +1,23 @@
 "use client";
 
 import { useState, useTransition, type ReactNode } from "react";
-import { directionsHref, type LatLng } from "@leakbook/core";
+import {
+  SEND_RECEIPT,
+  directionsHref,
+  formatCents,
+  parseDollars,
+  receiptBalanceText,
+  receiptSummary,
+  type LatLng,
+} from "@leakbook/core";
 import { changeJobStatus } from "@/app/actions/inspection";
-import { recordPaymentAction, voidInvoiceAction } from "@/app/actions/invoices";
+import { voidInvoiceAction } from "@/app/actions/invoices";
+import {
+  RecordPaymentFields,
+  SendReceiptSheet,
+  recordPayment,
+  type ReceiptContact,
+} from "./payment-receipt";
 import { sendReportAction, sendVisitReportAction } from "@/app/actions/reports";
 import { CheckIcon, DirectionsIcon, MessageIcon, PhoneIcon } from "./icons";
 import {
@@ -18,7 +32,7 @@ import { Sheet, useConfirm } from "./sheet";
 import { saveFailed, useJobStatus, useSetJobStatus } from "./instant";
 import { showBanner } from "./top-banner";
 import { NO_CONNECTION, whenOffline } from "@/lib/offline";
-import { Button, Field } from "./ui";
+import { Button } from "./ui";
 
 // The office lists' swipe actions and menus (gestures.md section 12): Jobs, Invoices, Reports,
 // and Customers. Each list page is a server component; these are its rows' small client parts.
@@ -168,6 +182,11 @@ export interface InvoiceRowData {
   canManage: boolean;
   /** Nothing paid yet, so it can be voided. */
   unpaid: boolean;
+  /** The total and what's paid, in cents, for Send Receipt's line. */
+  total: number;
+  paid: number;
+  /** Where Send Receipt goes. */
+  contact: ReceiptContact;
 }
 
 /** An invoice in Invoices: swipe Record Payment (right), and its menu. */
@@ -185,10 +204,17 @@ export function InvoiceActions({
   const [pending, start] = useTransition();
   const [confirm, confirmSheet] = useConfirm();
   const [paying, setPaying] = useState(false);
+  // Send Receipt: right after Record Payment (that payment), or later (the latest).
+  const [receipt, setReceipt] = useState<{
+    paymentId: string | null;
+    status: string | null;
+    summary: string;
+  } | null>(null);
   const title = `${i.customer}${i.number ? ` · Invoice #${i.number}` : ""}`;
   const live = i.status !== "draft" && i.status !== "void";
   const canPay = i.canManage && live && i.balance > 0;
   const canVoid = i.canManage && live && i.unpaid;
+  const canReceipt = live && i.paid > 0;
 
   async function voidIt() {
     const ok = await confirm({
@@ -214,6 +240,15 @@ export function InvoiceActions({
         onSelect: () => copyWithBanner(i.link!, "Copied the payment link."),
       },
     recordPayment && { label: "Record Payment…", onSelect: () => setPaying(true) },
+    canReceipt && {
+      label: `${SEND_RECEIPT}…`,
+      onSelect: () =>
+        setReceipt({
+          paymentId: null,
+          status: null,
+          summary: `${formatCents(i.paid)} paid · ${receiptBalanceText({ total_cents: i.total, amount_paid_cents: i.paid })}`,
+        }),
+    },
     canVoid && "separator",
     canVoid && { label: "Void…", destructive: true, onSelect: () => void voidIt() },
   ];
@@ -233,52 +268,79 @@ export function InvoiceActions({
       </RowActions>
       {confirmSheet}
       {paying ? (
-        <RecordPaymentSheet invoice={i} title={title} onClose={() => setPaying(false)} />
+        <RecordPaymentSheet
+          invoice={i}
+          title={title}
+          onClose={() => setPaying(false)}
+          onRecorded={(r) => {
+            setPaying(false);
+            setReceipt(r);
+          }}
+        />
+      ) : null}
+      {receipt ? (
+        <SendReceiptSheet
+          invoiceId={i.id}
+          jobId={i.jobId}
+          paymentId={receipt.paymentId}
+          summary={receipt.summary}
+          justRecorded={receipt.status}
+          contact={i.contact}
+          onClose={() => setReceipt(null)}
+        />
       ) : null}
     </>
   );
 }
 
-/** Record Payment, as on the job page: the amount received, the balance to start. */
+/**
+ * Record Payment, as on the job page: the amount received (the balance to start), how it was
+ * paid, and a check's number. Then Send Receipt for that payment.
+ */
 function RecordPaymentSheet({
   invoice: i,
   title,
   onClose,
+  onRecorded,
 }: {
   invoice: InvoiceRowData;
   title: string;
   onClose: () => void;
+  onRecorded: (r: { paymentId: string; status: string; summary: string }) => void;
 }) {
   const [pending, start] = useTransition();
-  const [error, setError] = useState<string | undefined>();
+  const [errors, setErrors] = useState<Record<string, string> | undefined>();
   return (
     <Sheet open onClose={onClose} title="Record Payment">
       <form
         className="space-y-4"
+        data-testid="record-payment"
         onSubmit={(e) => {
           e.preventDefault();
           const form = new FormData(e.currentTarget);
           start(async () => {
-            const r = await recordPaymentAction({}, form);
-            const problem = r.error ?? r.fields?.amount;
-            if (problem) return setError(problem);
-            onClose();
-            bannerFor(r, "Payment recorded.");
+            const r = await recordPayment(form);
+            if ("errors" in r) return setErrors(r.errors);
+            const amount = parseDollars(String(form.get("amount") ?? "")) ?? 0;
+            onRecorded({
+              paymentId: r.recorded.paymentId,
+              status: r.recorded.status,
+              summary: receiptSummary(
+                {
+                  amount_cents: amount,
+                  method: String(form.get("method") ?? "other"),
+                  check_number: String(form.get("check_number") ?? "") || null,
+                },
+                { total_cents: i.total, amount_paid_cents: i.paid + amount },
+              ),
+            });
           });
         }}
       >
         <p className="text-center text-[0.9375rem] text-text-muted">{title}</p>
         <input type="hidden" name="invoice" value={i.id} />
         <input type="hidden" name="job" value={i.jobId} />
-        <Field
-          label="Amount received ($)"
-          name="amount"
-          inputMode="decimal"
-          defaultValue={(i.balance / 100).toFixed(2)}
-          hint="A check, cash, or anything paid outside Sundeck Pro."
-          error={error}
-          autoFocus
-        />
+        <RecordPaymentFields balance={i.balance} errors={errors} autoFocus />
         <Button type="submit" className="w-full" disabled={pending}>
           {pending ? "Saving…" : "Record Payment"}
         </Button>

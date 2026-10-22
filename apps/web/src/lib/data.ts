@@ -892,6 +892,8 @@ export interface QuoteRow {
     id: string;
     amount_cents: number;
     method: string;
+    /** A check's number (2026-10-22); invoices only. */
+    check_number?: string | null;
     status: string;
     paid_at: string | null;
   }[];
@@ -1040,7 +1042,7 @@ export const getInvoices = cache(async function getInvoices(
       .order("sort_order"),
     supabase
       .from("payment")
-      .select("id, invoice_id, amount_cents, method, status, paid_at")
+      .select("id, invoice_id, amount_cents, method, check_number, status, paid_at")
       .in("invoice_id", ids)
       .is("deleted_at", null)
       .order("created_at"),
@@ -1079,6 +1081,9 @@ export interface InvoiceListRow {
   period_month: string | null;
   jobNumber: number | null;
   customer: string | null;
+  /** Where Send Receipt goes (2026-10-22). */
+  customerEmail: string | null;
+  customerPhone: string | null;
   /** The customer's link (/i/<token>) once sent, for Copy Payment Link. */
   token: string | null;
 }
@@ -1096,7 +1101,10 @@ export async function listInvoices(office: Office): Promise<InvoiceListRow[]> {
       .is("deleted_at", null)
       .order("created_at", { ascending: false })
       .limit(500),
-  ) as Omit<InvoiceListRow, "jobNumber" | "customer" | "token">[];
+  ) as Omit<
+    InvoiceListRow,
+    "jobNumber" | "customer" | "customerEmail" | "customerPhone" | "token"
+  >[];
   const jobIds = [...new Set(invoices.map((i) => i.job_id))];
   const [jobs, links] = await Promise.all([
     jobIds.length
@@ -1124,6 +1132,8 @@ export async function listInvoices(office: Office): Promise<InvoiceListRow[]> {
     ...i,
     jobNumber: byId.get(i.job_id)?.number ?? null,
     customer: byId.get(i.job_id)?.customer?.name ?? null,
+    customerEmail: byId.get(i.job_id)?.customer?.email ?? null,
+    customerPhone: byId.get(i.job_id)?.customer?.phone ?? null,
     token: tokenOf.get(i.id) ?? null,
   }));
 }

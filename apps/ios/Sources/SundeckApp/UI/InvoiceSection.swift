@@ -82,6 +82,8 @@
         @State private var notes = ""
         @State private var to: String?
         @State private var amount: String?
+        @State private var method = ManualPaymentMethod.cash
+        @State private var checkNumber = ""
         @State private var savedDetails = false
 
         private var server: MoneyServer { MoneyServer(sync: sync, api: app.api) }
@@ -114,6 +116,10 @@
             // A line typed but not added, or details not saved: leaving the job asks first (owner,
             // 2026-10-20).
             .tracksUnsaved("job:\(flow.jobId)", dirty: card.isDraft && unsaved)
+            .sendReceiptSheet(
+                $flow.receipt, email: card.customerEmail, phone: card.customerPhone,
+                texting: companyLine(sync.store, companyId: companyId)?.status == "active"
+            ) { sent in flow.message = sent }
             .onAppear(perform: resetDetails)
             .onChange(of: card.invoice.invoice) { resetDetails() }
             .confirmationDialog(
@@ -311,10 +317,18 @@
                         label: "Amount received ($)",
                         text: Binding(get: { amount ?? card.balanceText }, set: { amount = $0 }),
                         hint: InvoiceCardModel.paymentHint, keyboard: .decimalPad, numeric: true)
+                    PaymentMethodFields(method: $method, checkNumber: $checkNumber)
                     Button {
                         Task {
-                            await flow.recordPayment(card.invoice.id, amount: amount ?? card.balanceText, rpc: rpc)
-                            amount = nil
+                            let invoice = card.invoice.invoice
+                            await flow.recordPayment(
+                                card.invoice.id, amount: amount ?? card.balanceText, method: method,
+                                checkNumber: checkNumber, totalCents: invoice.totalCents,
+                                paidCents: invoice.amountPaidCents, rpc: rpc)
+                            if flow.error == nil {
+                                amount = nil
+                                checkNumber = ""
+                            }
                         }
                     } label: {
                         BusyButtonLabel("Record Payment", busy: flow.busy == .payment, busyTitle: "Recording…")
@@ -322,6 +336,14 @@
                     .buttonStyle(.secondary)
                     .disabled(flow.busy != nil)
                 }
+            }
+            if card.canSendReceipt {
+                Button(ReceiptText.send) {
+                    flow.message = nil
+                    flow.receipt = ReceiptStart(invoiceId: card.invoice.id, summary: card.receiptSummary)
+                }
+                .buttonStyle(.secondary)
+                .disabled(flow.busy != nil)
             }
             if card.canVoid {
                 Button("Void Invoice") { confirmVoid = true }

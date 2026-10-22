@@ -22,6 +22,7 @@ import {
   pillClass,
 } from "@/components/ui";
 import { InvoiceActions, type InvoiceRowData } from "@/components/list-actions";
+import { getLine } from "@/lib/messages";
 import { RowMenuButton } from "@/components/row-actions";
 import { siteOrigin } from "@/lib/origin";
 import type { InvoiceListRow } from "@/lib/data";
@@ -35,11 +36,12 @@ export default async function InvoicesPage({ searchParams }: PageProps<"/invoice
   const office = await getOffice();
   const params = await searchParams;
   const one = (k: string) => (typeof params[k] === "string" ? (params[k] as string) : "");
-  const [all, unbilled, company, origin] = await Promise.all([
+  const [all, unbilled, company, origin, line] = await Promise.all([
     listInvoices(office),
     unbilledMaintenance(office),
     getCompany(office),
     siteOrigin(),
+    getLine(office),
   ]);
   // A row's swipe actions and menu (gestures.md section 12), from what the job page offers.
   const actions = (i: InvoiceListRow): InvoiceRowData => ({
@@ -52,6 +54,9 @@ export default async function InvoicesPage({ searchParams }: PageProps<"/invoice
     link: i.token ? `${origin}/i/${i.token}` : null,
     canManage: office.isManager,
     unpaid: i.amount_paid_cents === 0,
+    total: i.total_cents,
+    paid: i.amount_paid_cents,
+    contact: { email: i.customerEmail, phone: i.customerPhone, texting: line?.status === "active" },
   });
   const open = all.filter((i) => i.status === "sent" || i.status === "partially_paid");
   const owed = open.reduce((sum, i) => sum + invoiceBalance(i), 0);

@@ -16,6 +16,7 @@ interface PaymentRow {
   invoice_id: string | null;
   amount_cents: number;
   method: string;
+  check_number?: string | null;
   status: string;
   paid_at: string | null;
 }
