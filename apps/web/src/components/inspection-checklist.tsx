@@ -203,7 +203,7 @@ function InspectionItem({
   row: ChecklistRow;
   editing: boolean;
 }) {
-  const { error, run } = useRun();
+  const { error, run } = useRun({ instant: true });
   const [confirm, confirmSheet] = useConfirm();
   const answer = row.type.answer ?? "choice";
   const options = choiceOptions(row.type.options);

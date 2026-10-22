@@ -20,6 +20,7 @@ import {
   actionCardClass,
 } from "@/components/doc-ui";
 import { PdfLink } from "@/components/pdf-link";
+import { DocSkeleton } from "@/components/page-skeleton";
 
 export const metadata: Metadata = { title: "Invoice", robots: { index: false } };
 
@@ -67,9 +68,7 @@ interface TokenInvoice {
 export default function CustomerInvoicePage({ params, searchParams }: PageProps<"/i/[token]">) {
   return (
     <main className={DOC_PAGE}>
-      <Suspense
-        fallback={<p className="p-8 text-center text-neutral-500">Loading your invoice…</p>}
-      >
+      <Suspense fallback={<DocSkeleton label="your invoice" />}>
         <InvoicePage params={params} searchParams={searchParams} />
       </Suspense>
     </main>

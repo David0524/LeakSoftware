@@ -1,4 +1,5 @@
 import type { ReactNode } from "react";
+import { Bone } from "./page-skeleton";
 
 /**
  * Sign In, Sign Up, setup, and invite. Phones: an iOS form straight on the grouped gray page,
@@ -37,11 +38,20 @@ export function AuthCard({
   );
 }
 
+/** A sign-in form while it loads: two fields and the button, as gray shapes (no spinner). */
 export function FormSkeleton() {
   return (
-    <div
-      className="h-64 animate-pulse rounded-xl bg-bg motion-reduce:animate-none max-sm:bg-surface"
-      aria-label="Loading"
-    />
+    <div className="h-64 space-y-4 pt-1" aria-busy="true">
+      <p className="sr-only" role="status">
+        Loading…
+      </p>
+      {[0, 1].map((i) => (
+        <div key={i} className="space-y-2" aria-hidden="true">
+          <Bone className="h-4 w-24" />
+          <Bone className="h-11 w-full rounded-[10px]" />
+        </div>
+      ))}
+      <Bone className="h-12 w-full" />
+    </div>
   );
 }

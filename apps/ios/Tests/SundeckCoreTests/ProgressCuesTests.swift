@@ -8,7 +8,10 @@ import Testing
 
     @Test func everyRuleIsChecked() {
         #expect(
-            Fixtures.rules(module) == ["dayProgress", "aboutLabel", "checklistReady", "COMPLETE_READY_LINE"])
+            Fixtures.rules(module) == [
+                "dayProgress", "aboutLabel", "checklistReady", "COMPLETE_READY_LINE", "techDayProgress",
+                "lastDoneLine", "TEAM_TODAY_TITLE",
+            ])
     }
 
     @Test func ring() {
@@ -19,5 +22,11 @@ import Testing
     @Test func markCompleteLast() {
         checkRule(module, "checklistReady") { c in checklistReady(try c.arg(0), try c.arg(1)) }
         checkRule(module, "COMPLETE_READY_LINE") { _ in completeReadyLine }
+    }
+
+    @Test func ownersTeam() {
+        checkRule(module, "techDayProgress") { c in techDayProgress(try c.arg(0)) }
+        checkRule(module, "lastDoneLine") { c in lastDoneLine(try c.arg(0), try c.arg(1)) }
+        checkRule(module, "TEAM_TODAY_TITLE") { _ in teamTodayTitle }
     }
 }

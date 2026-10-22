@@ -189,6 +189,8 @@ public struct ScheduleJob: Equatable, Sendable, Identifiable, PlanJobFields {
     public var createdAt: String?
     public var customerId: String?
     public var customerName: String
+    /// The shop's sample job (owner, 2026-10-22): a Sample pill on its tile and page.
+    public var sample = false
     public var customerPhone: String?
     public var address: String
     public var location: LatLng?
@@ -200,6 +202,8 @@ public struct ScheduleJob: Equatable, Sendable, Identifiable, PlanJobFields {
     public var planDate: String?
     /// Today's Mark Complete on a leak or repair job: the shop-local day its stop was done.
     public var stopDoneOn: String?
+    /// When the stop was finished (job.stop_done_at; the owner's Team on Today, 2026-10-22).
+    public var stopDoneAt: String?
     /// On My Way: when it was sent, and the arrival it promised (synced, owner 2026-10-20).
     public var onMyWayAt: String?
     public var arriveAt: String?
@@ -215,6 +219,7 @@ public struct ScheduleJob: Equatable, Sendable, Identifiable, PlanJobFields {
     public init(_ v: JobView) {
         let j = v.job
         stopDoneOn = j["stop_done_on"]?.string.map { String($0.prefix(10)) }
+        stopDoneAt = j["stop_done_at"]?.string
         servicePlanId = j["service_plan_id"]?.string
         onMyWayAt = j["on_my_way_at"]?.string
         arriveAt = j["arrive_at"]?.string
@@ -234,6 +239,7 @@ public struct ScheduleJob: Equatable, Sendable, Identifiable, PlanJobFields {
         createdAt = j["created_at"]?.string
         customerId = v.customer?.id
         customerName = v.customer?["name"]?.string ?? "Customer"
+        sample = j["sample"]?.bool ?? false
         customerPhone = v.customer?["phone"]?.string.flatMap { $0.isEmpty ? nil : $0 }
         address = addressText(v.property)
         if let lat = v.property?["latitude"]?.number, let lng = v.property?["longitude"]?.number {

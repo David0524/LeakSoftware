@@ -110,6 +110,7 @@ import { TestsTab } from "../../../../../../features/inspection/TestsTab";
 import { JobSchedule, showsJobSchedule } from "../../../../../../features/job/JobSchedule";
 import { JobTimeline } from "../../../../../../features/job/Timeline";
 import { useRememberOpened } from "../../../../../../features/search/useRememberOpened";
+import { SampleJob } from "../../../../../../features/sample/SampleJob";
 import { MediaSection, type MediaControls } from "../../../../../../features/media/MediaSection";
 import { InvoiceSection } from "../../../../../../features/invoice/InvoiceSection";
 import { QuoteTab } from "../../../../../../features/quote/QuoteTab";
@@ -239,6 +240,8 @@ export default function JobDetail() {
       </Screen>
     );
   }
+  // The sample job opens to its finished report (owner, 2026-10-22: first win).
+  if (job.sample) return <SampleJob job={job} customer={customer?.name ?? "Sample Customer"} />;
 
   const maintenance = job.type === "maintenance";
   const { tally, inspection } = progress;

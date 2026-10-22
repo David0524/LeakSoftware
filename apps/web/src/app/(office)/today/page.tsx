@@ -1,3 +1,4 @@
+import { SamplePill } from "@/components/sample-pill";
 import type { Metadata } from "next";
 import Link from "next/link";
 import {
@@ -24,6 +25,9 @@ import {
   scheduleOrder,
   dayProgress,
   jobMinutes,
+  techDayProgress,
+  lastDoneLine,
+  scheduleBounds,
 } from "@leakbook/core";
 import { TodayHeroCard, type HeroJob } from "@/components/today-hero";
 import { TodayDays } from "@/components/today-days";
@@ -68,6 +72,7 @@ import { loadRoutes, routeContext, routeKey, shopToday } from "@/server/route-da
 import { NavPlus } from "@/components/nav-bar";
 import { GettingStarted } from "@/components/getting-started";
 import { DayRing } from "@/components/day-ring";
+import { LiveRefresh } from "@/components/live-refresh";
 
 export const metadata: Metadata = { title: "Today · Sundeck Pro" };
 
@@ -203,6 +208,7 @@ export default async function TodayPage({ searchParams }: PageProps<"/today">) {
           : null,
         driveMin: route?.summary.legs[i] ?? null,
         done: stopDone(j, ctx.today),
+        maintenance: j.type === "maintenance",
         undo: todayUndo(j, ctx.today)?.label ?? null,
         prompt: completeSendPrompt({ jobType: j.type, reportMode, customer: j.customer?.name }),
       };
@@ -278,8 +284,9 @@ export default async function TodayPage({ searchParams }: PageProps<"/today">) {
               ),
             )}
             pills={
-              isNext || (j.status !== "scheduled" && !isNext) || lock ? (
+              isNext || (j.status !== "scheduled" && !isNext) || lock || j.sample ? (
                 <>
+                  {j.sample ? <SamplePill /> : null}
                   {isNext ? (
                     <span className="rounded-full bg-water px-2.5 py-0.5 text-[0.8125rem] font-semibold text-white">
                       Now
@@ -324,6 +331,7 @@ export default async function TodayPage({ searchParams }: PageProps<"/today">) {
                 jobId={j.id}
                 customer={j.customer?.name ?? "this stop"}
                 done={done}
+                maintenance={j.type === "maintenance"}
                 undo={todayUndo(j, ctx.today)?.label ?? null}
                 prompt={completeSendPrompt({
                   jobType: j.type,
@@ -393,8 +401,35 @@ export default async function TodayPage({ searchParams }: PageProps<"/today">) {
           })
         : null;
 
+    // The owner's Team row (owner, 2026-10-22: techs' progress live): the same ring, the stop
+    // they're on, and the last one done with its time.
+    const teamDay = techDayProgress(
+      jobs.map((j, i) => ({
+        customer: j.customer?.name ?? "Customer",
+        done: stopDone(j, ctx.today),
+        durationMin: jobMinutes(j, ctx.settings),
+        driveMin: route?.summary.legs[i] ?? null,
+        onSite: j.status === "in_progress",
+        doneAt: j.stop_done_at ?? null,
+      })),
+    );
+
     return {
       id: dayTech,
+      mine,
+      team: jobs.length
+        ? {
+            progress: teamDay.progress,
+            line: teamDay.line,
+            current: teamDay.current,
+            lastDone: teamDay.lastDone
+              ? lastDoneLine(
+                  teamDay.lastDone.customer,
+                  teamDay.lastDone.at ? formatTime(teamDay.lastDone.at, ctx.timeZone) : null,
+                )
+              : null,
+          }
+        : undefined,
       label: dayTech === office.user.id ? "Me" : (tech?.name ?? "Teammate"),
       color: tech?.color ?? null,
       title: mine ? "Today" : `Today · ${tech?.name ?? "Teammate"}`,
@@ -517,8 +552,11 @@ export default async function TodayPage({ searchParams }: PageProps<"/today">) {
     };
   };
 
+  // Live (owner, 2026-10-22): a stop started or done on a phone shows here within seconds.
+  const live = scheduleBounds([ctx.today], ctx.timeZone);
   return (
     <MapProviderScope provider={resolveMapProvider()}>
+      <LiveRefresh from={live.from} to={live.to} />
       <TodayDays
         days={dayIds.map(dayFor)}
         initial={techId}

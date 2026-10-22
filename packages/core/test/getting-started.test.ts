@@ -47,3 +47,29 @@ describe("getting started", () => {
     expect(done).toEqual(["account", "invite", "customers"]);
   });
 });
+
+describe("the sample report step (owner, 2026-10-22: first win)", () => {
+  it("comes right after the account, while the shop has its sample", () => {
+    const steps = gettingStarted("leak", { ...fresh, sample: { jobId: "j1", done: false } });
+    expect(steps.map((s) => s.id).slice(0, 3)).toEqual(["account", "sample", "invite"]);
+    expect(steps[1]).toMatchObject({
+      label: "Send yourself the sample report",
+      href: "/jobs/j1",
+      done: false,
+    });
+  });
+
+  it("is done once sent, or once the sample is deleted", () => {
+    const sent = gettingStarted("leak", { ...fresh, sample: { jobId: "j1", done: true } });
+    expect(sent.find((s) => s.id === "sample")?.done).toBe(true);
+    const deleted = gettingStarted("leak", { ...fresh, sample: { jobId: null, done: true } });
+    expect(deleted.find((s) => s.id === "sample")).toMatchObject({ done: true, href: "/jobs" });
+  });
+
+  it("is left out for shops without a sample", () => {
+    expect(gettingStarted("leak", fresh).some((s) => s.id === "sample")).toBe(false);
+    expect(gettingStarted("pool", { ...fresh, sample: null }).some((s) => s.id === "sample")).toBe(
+      false,
+    );
+  });
+});

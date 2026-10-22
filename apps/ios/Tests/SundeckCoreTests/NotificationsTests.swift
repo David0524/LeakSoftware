@@ -11,6 +11,7 @@ import Testing
             "NOTIFICATION_KINDS", "SHOP_KINDS", "notificationOn", "textNotification", "jobNotification",
             "quoteNotification", "paymentNotification", "reportNotification", "reportOpenedNotification",
             "WEEKLY_SUMMARY_PREF", "weeklySummaryOn", "liveStopContent", "liveStopRuns", "accessLine",
+            "dayStartNotification", "dayStartAlert",
         ]
         #expect(Fixtures.rules(module) == checked)
     }
@@ -56,6 +57,14 @@ import Testing
     @Test func liveStop() {
         checkRule(module, "liveStopContent") { c in liveStopContent(try c.arg(0)) }
         checkRule(module, "accessLine") { c in accessLine(try c.arg(0, as: String?.self)) }
+        checkRule(module, "dayStartNotification") { c in
+            dayStartNotification(try c.arg(0), customer: try c.arg(1), address: try c.arg(2, as: String?.self))
+        }
+        checkRule(module, "dayStartAlert") { c in
+            dayStartAlert(
+                settings: try c.arg(0), timeZone: try c.arg(1), today: try c.arg(2), nowMin: try c.arg(3),
+                days: try c.arg(4, as: [DayStartDay].self))
+        }
         checkRule(module, "liveStopRuns") { c in
             liveStopRuns(settings: try c.arg(0), date: try c.arg(1), nowMin: try c.arg(2), stopsLeft: try c.arg(3))
         }

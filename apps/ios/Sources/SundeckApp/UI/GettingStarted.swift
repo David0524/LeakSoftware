@@ -111,6 +111,8 @@
             case "/jobs": openTab(.jobs)
             case "/customers": openRoute(.more(.customers))
             case "/invoices": openRoute(.more(.invoices))
+            // The sample job (owner, 2026-10-22): its finished report.
+            case let href where href.hasPrefix("/jobs/"): openRoute(.job(String(href.dropFirst("/jobs/".count))))
             case "/settings/team": openRoute(.more(.settingsPage(.team)))
             case "/settings/company": openRoute(.more(.settingsPage(.company)))
             case "/settings/import": openRoute(.more(.settingsPage(.importCustomers)))

@@ -1,5 +1,6 @@
 "use client";
 
+import { SamplePill } from "./sample-pill";
 import {
   DndContext,
   DragOverlay,
@@ -191,6 +192,8 @@ export interface BoardStop {
   id: string;
   number: number | null;
   customer: string;
+  /** The shop's sample job (owner, 2026-10-22): a Sample pill by the name. */
+  sample?: boolean;
   address: string;
   location: LatLng | null;
   /** "8:15 AM", or null with no time. */
@@ -1502,6 +1505,7 @@ function ScheduleCard({
               )}
             >
               <span className="min-w-0 truncate">{s.customer}</span>
+              {s.sample ? <SamplePill className="ml-1 shrink-0 self-center" /> : null}
               <span aria-hidden="true" className="shrink-0">
                 ›
               </span>
@@ -1675,6 +1679,7 @@ function StopTile({
               {/* In Week's narrow desktop cells the name takes two lines rather than being cut
                   to a few letters. */}
               <span className="min-w-0 truncate">{s.customer}</span>
+              {s.sample ? <SamplePill className="ml-1 shrink-0 self-center" /> : null}
               {compact ? null : (
                 <span aria-hidden="true" className="shrink-0">
                   ›

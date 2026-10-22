@@ -512,6 +512,27 @@ export const pricing: ModuleCases = {
           invoicesSent: 0,
         },
       ],
+      // The sample report step (owner, 2026-10-22): there, sent, deleted.
+      ...[
+        { jobId: "j1", done: false },
+        { jobId: "j1", done: true },
+        { jobId: null, done: true },
+        { jobId: null, done: false },
+      ].map((sample): [Services, ShopProgress] => [
+        s,
+        {
+          people: 1,
+          openInvites: 0,
+          hasLogo: false,
+          paymentsReady: false,
+          customers: 0,
+          visitPlans: 0,
+          leakJobs: 0,
+          reportsSent: 0,
+          invoicesSent: 0,
+          sample,
+        },
+      ]),
     ]),
   ),
   // A visit report's water test (owner, 2026-10-20).

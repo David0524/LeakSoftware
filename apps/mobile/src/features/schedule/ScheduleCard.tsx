@@ -3,7 +3,7 @@ import { Pressable, StyleSheet, Text, View } from "react-native";
 import { GestureDetector, type PanGesture } from "react-native-gesture-handler";
 import { JOB_STATUS_LABELS, NOT_ON_MAP, type JobStatus } from "@leakbook/core";
 import { CleaningIcon } from "../maintenance/Cleanings";
-import { StatusChip } from "../../ui/components";
+import { SamplePill, StatusChip } from "../../ui/components";
 import { Grip } from "../../ui/Grip";
 import { LockTag } from "../../ui/LockTag";
 import { NotOnMapTag } from "../../ui/NotOnMap";
@@ -163,6 +163,7 @@ export function ScheduleCardFace({
               <Name customer={s.customer} />
             </View>
           )}
+          {s.sample ? <SamplePill /> : null}
         </View>
         {second ? (
           <Text
@@ -307,6 +308,7 @@ export function StopTileFace({
               <Name customer={s.customer} />
             </View>
           )}
+          {s.sample ? <SamplePill /> : null}
           {s.lock && !twoTechs ? <LockTag lock={s.lock} /> : null}
           {missing ? <NotOnMapTag size={17} /> : null}
           {cleaning ? (

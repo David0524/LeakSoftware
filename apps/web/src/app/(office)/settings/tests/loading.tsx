@@ -1,5 +1,5 @@
-import { PageSkeleton } from "@/components/page-skeleton";
+import { SettingsSkeleton } from "@/components/page-skeleton";
 
 export default function Loading() {
-  return <PageSkeleton />;
+  return <SettingsSkeleton title="Test Types" />;
 }

@@ -38,7 +38,7 @@
                             }
                         }
                     } else {
-                        Text("Loading…").foregroundStyle(Color.textMuted)
+                        SkeletonLines(count: 3, label: "Loading the timeline")
                     }
                 }
                 .textRole(.body)

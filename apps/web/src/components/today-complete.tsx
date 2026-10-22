@@ -1,10 +1,11 @@
 "use client";
 
-import Link from "next/link";
-import { useState, useTransition } from "react";
+import { useRouter } from "next/navigation";
+import { useOptimistic, useTransition } from "react";
 import { markStop } from "@/app/actions/inspection";
 import { orOffline } from "@/lib/offline";
 import type { SendPrompt } from "./job-work";
+import { saveFailed, useSetJobStatus } from "./instant";
 import { useConfirm } from "./sheet";
 import { buttonClass, cx } from "./ui";
 
@@ -20,6 +21,7 @@ export function TodayComplete({
   jobId,
   customer,
   done,
+  maintenance,
   undo,
   prompt = null,
   buttonClassName,
@@ -35,52 +37,57 @@ export function TodayComplete({
   jobId: string;
   customer: string;
   done: boolean;
+  /** A maintenance visit (completing it completes the job). */
+  maintenance: boolean;
   /** What a done stop offers here: Reopen Visit, Mark Not Complete, or nothing. */
   undo: "Reopen Visit" | "Mark Not Complete" | null;
   /** Asked before completing a visit whose report goes out by itself. */
   prompt?: SendPrompt;
 }) {
-  const [pending, start] = useTransition();
-  const [error, setError] = useState<string | null>(null);
+  const router = useRouter();
+  const [, start] = useTransition();
+  // Done shows at once, the way the phones do (owner, 2026-10-22): the button turns into its
+  // undo and the banner says so. A save that fails puts it back and says why, with the job.
+  const [shown, show] = useOptimistic(done);
+  const setStatus = useSetJobStatus();
   const [confirm, confirmSheet] = useConfirm();
-  if (done && !undo) return null;
+  // What the stop offers once done: the server's answer, or while it saves, what it will say
+  // (core todayUndo: a visit reopens; a leak or repair stop is marked not complete).
+  const after =
+    shown && !done ? (undo ?? (maintenance ? "Reopen Visit" : "Mark Not Complete")) : undo;
+  if (shown && !after) return null;
   const run = (complete: boolean) =>
     start(async () => {
+      show(complete);
+      // A visit's status changes with it (Jobs, the job page).
+      if (maintenance) setStatus(jobId, complete ? "done" : "in_progress");
+      if (complete) onCompleted?.();
       const form = new FormData();
       form.set("job", jobId);
       form.set("complete", String(complete));
       const result = await orOffline(markStop)({}, form);
-      setError(result.error ?? null);
-      if (complete && !result.error) onCompleted?.();
+      if (result.error)
+        saveFailed(result.error, {
+          label: "Open Job",
+          onAction: () => router.push(`/jobs/${jobId}`),
+        });
     });
   return (
     <div className="space-y-1">
       <button
         type="button"
-        disabled={pending}
-        aria-label={`${done ? undo : "Mark Complete"} for ${customer}`}
+        aria-label={`${shown ? after : "Mark Complete"} for ${customer}`}
         onClick={async () => {
-          if (!done && prompt && !(await confirm({ ...prompt, alert: true }))) return;
-          if (!done) onCompleting?.();
-          run(!done);
+          if (!shown && prompt && !(await confirm({ ...prompt, alert: true }))) return;
+          if (!shown) onCompleting?.();
+          run(!shown);
         }}
         className={
-          buttonClassName ?? cx(buttonClass(done ? "secondary" : "primary", "min-h-11 px-5"))
+          buttonClassName ?? cx(buttonClass(shown ? "secondary" : "primary", "min-h-11 px-5"))
         }
       >
-        {pending ? "Saving…" : done ? undo : "Mark Complete"}
+        {shown ? after : "Mark Complete"}
       </button>
-      {error ? (
-        <p
-          role="alert"
-          className={cx("text-[0.9375rem]", buttonClassName ? "font-semibold" : "text-status-fail")}
-        >
-          {error}{" "}
-          <Link href={`/jobs/${jobId}`} className="font-semibold text-link underline">
-            Open Job
-          </Link>
-        </p>
-      ) : null}
       {confirmSheet}
     </div>
   );

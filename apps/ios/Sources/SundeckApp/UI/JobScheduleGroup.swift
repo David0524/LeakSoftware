@@ -244,7 +244,7 @@
                             }
                         })
                 } else {
-                    ProgressView().frame(maxWidth: .infinity, minHeight: 200)
+                    SkeletonRows(count: 4, label: "Loading the schedule")
                 }
             }
             .planMoveDialog($planMove) { m, schedule in resolve(m, changeSchedule: schedule) }

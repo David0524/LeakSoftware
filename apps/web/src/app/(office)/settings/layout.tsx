@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { Suspense } from "react";
-import { PageSkeleton } from "@/components/page-skeleton";
+import { SettingsShellSkeleton } from "@/components/page-skeleton";
 import { SettingsNav } from "@/components/settings-nav";
 import { Notice } from "@/components/ui";
 import { getOffice } from "@/lib/auth";
@@ -12,7 +12,7 @@ export const metadata: Metadata = { title: "Settings · Sundeck Pro" };
 
 export default function SettingsLayout({ children }: LayoutProps<"/settings">) {
   return (
-    <Suspense fallback={<PageSkeleton />}>
+    <Suspense fallback={<SettingsShellSkeleton />}>
       <OwnersOnly>{children}</OwnersOnly>
     </Suspense>
   );

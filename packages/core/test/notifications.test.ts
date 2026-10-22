@@ -50,6 +50,7 @@ describe("notifications", () => {
       "report",
       "opened",
       "live",
+      "day",
     ]);
     expect(notificationOn({}, "text")).toBe(true);
     expect(notificationOn(null, "job")).toBe(true);
@@ -263,5 +264,60 @@ describe("cleanings on the Live Activity", () => {
     expect(c.spoken).toMatch(/Clean filter overdue, Clean salt cell due in 2 weeks\.$/);
     expect(liveStopContent({ ...base, phase: "done", cleanings }).cleanings).toEqual([]);
     expect(liveStopContent({ ...base, phase: "on_site" }).cleanings).toEqual([]);
+  });
+});
+
+describe("the start of the day (owner, 2026-10-22: first stop in one tap)", () => {
+  const smith = { id: "j1", customer: "Smith", address: "123 Palm Ln" };
+  const jones = { id: "j2", customer: "Jones", address: null };
+  // Thursday 2026-10-22, Friday 23, Saturday 24 (not a default work day), Monday 26.
+  const base = { settings: {}, timeZone: "America/Phoenix", today: "2026-10-22", nowMin: 6 * 60 };
+
+  it("words the day and its first stop", async () => {
+    const { dayStartNotification } = await import("../src");
+    expect(dayStartNotification(5, smith)).toEqual({
+      title: "5 stops today",
+      body: "First: Smith, 123 Palm Ln",
+    });
+    expect(dayStartNotification(1, jones)).toEqual({ title: "1 stop today", body: "First: Jones" });
+  });
+
+  it("is today's, at the start of the working day, before it starts", async () => {
+    const { dayStartAlert } = await import("../src");
+    const a = dayStartAlert({ ...base, days: [{ date: "2026-10-22", stops: [smith, jones] }] });
+    expect(a).toMatchObject({ date: "2026-10-22", jobId: "j1", text: { title: "2 stops today" } });
+    // 8:00 in Phoenix (UTC-7) is 15:00 UTC: the default day start.
+    expect(a?.at).toBe("2026-10-22T15:00:00.000Z");
+  });
+
+  it("moves to the next work day with stops once the day has begun", async () => {
+    const { dayStartAlert } = await import("../src");
+    const days = [
+      { date: "2026-10-22", stops: [smith] },
+      { date: "2026-10-23", stops: [] },
+      { date: "2026-10-24", stops: [jones] },
+      { date: "2026-10-26", stops: [jones, smith] },
+    ];
+    const a = dayStartAlert({ ...base, nowMin: 9 * 60, days });
+    expect(a).toMatchObject({ date: "2026-10-26", jobId: "j2" });
+    // A Saturday counts when the shop works Saturdays.
+    const sat = dayStartAlert({
+      ...base,
+      nowMin: 9 * 60,
+      settings: { routing: { work_days: [1, 2, 3, 4, 5, 6] } },
+      days,
+    });
+    expect(sat?.date).toBe("2026-10-24");
+  });
+
+  it("is nothing without stops ahead", async () => {
+    const { dayStartAlert } = await import("../src");
+    expect(dayStartAlert({ ...base, days: [] })).toBeNull();
+    expect(dayStartAlert({ ...base, days: [{ date: "2026-10-21", stops: [smith] }] })).toBeNull();
+  });
+
+  it("has its own switch, on by default", () => {
+    expect(NOTIFICATION_KINDS.map((k) => k.key)).toContain("day");
+    expect(notificationOn({}, "day")).toBe(true);
   });
 });

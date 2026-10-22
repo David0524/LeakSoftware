@@ -165,6 +165,13 @@
                 path.append(MessagesRoute.conversation(id))
                 paths[.messages] = path
                 tab = .messages
+            case .dayStart(let id):
+                // The start of the day: Today, then its first stop when it's still on the phone.
+                paths[.today] = NavigationPath()
+                tab = .today
+                if let row = (try? sync.store.get("job", id)) ?? nil, row["deleted_at"]?.string == nil {
+                    paths[.today, default: NavigationPath()].append(Route.job(id))
+                }
             case .stop(let id, let action):
                 // A Live Activity button: Today, on that stop, which does it there (owner, 2026-10-20).
                 paths[.today] = NavigationPath()

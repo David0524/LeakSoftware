@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { ActivityIndicator, Animated, RefreshControl, StyleSheet, View } from "react-native";
+import { Animated, RefreshControl, StyleSheet, View } from "react-native";
 import {
   ACTIVITY_EMPTY,
   ACTIVITY_OFFLINE,
@@ -16,6 +16,7 @@ import { getServices } from "../../../../lib/services";
 import { useCompany } from "../../../../state/session";
 import { Button, Empty, T, useScreenChrome } from "../../../../ui/components";
 import { color, space } from "../../../../ui/theme";
+import { SkeletonRows } from "../../../../ui/Skeleton";
 
 /**
  * More › Activity (owner, 2026-10-20; docs/plans/search-and-activity.md section 2), as the
@@ -108,7 +109,7 @@ export default function ActivityScreen() {
           <Button title="Try Again" kind="secondary" onPress={() => void loadFirst()} />
         </View>
       ) : (
-        <ActivityIndicator color={color.textMuted} style={styles.spinner} />
+        <SkeletonRows count={6} dot label="Loading activity" />
       )
     ) : (
       <Empty>{ACTIVITY_EMPTY}</Empty>
@@ -170,7 +171,6 @@ const styles = StyleSheet.create({
   day: { marginBottom: space["2"] },
   dayGap: { marginTop: space["6"] },
   gap: { gap: space["3"] },
-  spinner: { marginTop: space["6"] },
   footer: { gap: space["2"], alignItems: "center", marginTop: space["5"] },
   center: { textAlign: "center" },
 });

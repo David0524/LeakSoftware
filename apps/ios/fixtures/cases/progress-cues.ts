@@ -1,9 +1,13 @@
 import {
   COMPLETE_READY_LINE,
+  TEAM_TODAY_TITLE,
   aboutLabel,
   checklistReady,
   dayProgress,
+  lastDoneLine,
+  techDayProgress,
   type ProgressStop,
+  type TeamStop,
 } from "@leakbook/core";
 import { rule, type ModuleCases } from "../case";
 
@@ -11,6 +15,15 @@ import { rule, type ModuleCases } from "../case";
 
 const s = (done: boolean, durationMin = 30, driveMin: number | null = 10, onSite = false) =>
   ({ done, durationMin, driveMin, onSite }) satisfies ProgressStop;
+const t = (customer: string, done: boolean, o: Partial<TeamStop> = {}): TeamStop => ({
+  customer,
+  done,
+  durationMin: 30,
+  driveMin: 10,
+  onSite: false,
+  doneAt: null,
+  ...o,
+});
 const day = (done: number, total: number): ProgressStop[] =>
   Array.from({ length: total }, (_, i) => s(i < done));
 
@@ -44,4 +57,37 @@ export const progressCues: ModuleCases = {
     ],
   ),
   COMPLETE_READY_LINE: rule(() => COMPLETE_READY_LINE, [[]]),
+  techDayProgress: rule(
+    (stops: TeamStop[]) => techDayProgress(stops),
+    [
+      [[]],
+      [[t("Ames", false), t("Baker", false)]],
+      [[t("Ames", false)]],
+      [
+        [
+          t("Ames", true, { doneAt: "2026-10-22T15:10:00Z" }),
+          t("Cole", true, { doneAt: "2026-10-22T16:42:00.123Z" }),
+          t("Baker", false),
+          t("Diaz", false, { onSite: true }),
+          t("Ely", false),
+          t("Ford", false),
+          t("Gray", false),
+          t("Hale", false),
+        ],
+      ],
+      [[t("Ames", true), t("Baker", true), t("Cole", false)]],
+      [[t("Ames", true, { doneAt: "2026-10-22T15:00:00Z" }), t("Baker", true)]],
+      [[t("Ames", true), t("Baker", true, { doneAt: "2026-10-22T15:00:00+00:00" })]],
+      [[t("Ames", true, { doneAt: "2026-10-22T15:00:00Z" }), t("Baker", false, { onSite: true })]],
+      [[t("Ames", true), t("Baker", true)]],
+    ],
+  ),
+  lastDoneLine: rule(
+    (customer: string, time: string | null) => lastDoneLine(customer, time),
+    [
+      ["Baker", "10:42 AM"],
+      ["Baker", null],
+    ],
+  ),
+  TEAM_TODAY_TITLE: rule(() => TEAM_TODAY_TITLE, [[]]),
 };

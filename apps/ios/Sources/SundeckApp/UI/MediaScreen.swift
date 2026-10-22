@@ -195,10 +195,13 @@
         private func viewer(_ media: Media) -> some View {
             switch source {
             case .loading:
-                VStack(spacing: 8) {
-                    ProgressView().tint(Color.white)
-                    Text(MediaDetail.loadingText(media.kind)).textRole(.secondary).foregroundStyle(Color.white)
-                }
+                // The picture's place, still on its way (no spinner).
+                RoundedRectangle(cornerRadius: 16, style: .continuous)
+                    .fill(Color.white.opacity(0.12))
+                    .aspectRatio(4 / 3, contentMode: .fit)
+                    .shimmer()
+                    .padding(.horizontal, 16)
+                    .accessibilityLabel(MediaDetail.loadingText(media.kind))
             case .unavailable:
                 VStack(spacing: 12) {
                     Text(MediaDetail.unavailableText(media.kind))
@@ -299,7 +302,7 @@
                         } else if phase.error != nil {
                             Image(systemName: "photo").foregroundStyle(Color.muted)
                         } else {
-                            ProgressView()
+                            Rectangle().fill(Color.fill).shimmer()
                         }
                     }
                 }

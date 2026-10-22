@@ -39,8 +39,7 @@
                 }
                 .frame(maxWidth: .infinity, alignment: .leading)
             } else if let company = session.company {
-                ProgressView()
-                    .frame(maxWidth: .infinity, minHeight: minTarget)
+                SkeletonCard(label: "Loading quotes")
                     .onAppear {
                         flow = QuoteFlow(
                             sync: sync, companyId: company.id, jobId: job.id, role: company.role,

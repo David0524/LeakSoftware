@@ -51,7 +51,12 @@ function useHidden(): [boolean, () => void] {
 /** Where a step leads in the app; anything else opens the website. */
 function open(step: StartStep) {
   const href = step.href;
-  if (href === "/jobs/new" || href === "/jobs" || href === "/customers") {
+  if (
+    href === "/jobs/new" ||
+    href === "/jobs" ||
+    href.startsWith("/jobs/") ||
+    href === "/customers"
+  ) {
     router.push(href);
     return;
   }
@@ -67,10 +72,20 @@ function open(step: StartStep) {
 export function GettingStarted({ company }: { company: Company }) {
   const [hidden, hide] = useHidden();
   const members = useRows<{ status: string }>("membership", company.id);
-  const customers = useRows<{ deleted_at?: string | null }>("customer", company.id);
+  const customers = useRows<{ id: string; deleted_at?: string | null }>("customer", company.id);
   const plans = useRows<{ deleted_at?: string | null }>("service_plan", company.id);
-  const jobs = useRows<{ type: string; deleted_at?: string | null }>("job", company.id);
-  const reports = useRows<{ sent_at: string | null }>("report", company.id);
+  const jobs = useRows<{
+    id: string;
+    type: string;
+    sample?: boolean;
+    bill_to_customer_id?: string | null;
+    deleted_at?: string | null;
+  }>("job", company.id);
+  const reports = useRows<{ sent_at: string | null; job_id: string }>("report", company.id);
+  const messages = useRows<{ job_id: string | null; channel: string; status: string }>(
+    "message",
+    company.id,
+  );
   const invoices = useRows<{ sent_at: string | null }>("invoice", company.id);
   // Invites and the Stripe account aren't on the phone: asked when there's a signal.
   const [server, setServer] = useState<{ invites: number; payments: boolean }>({
@@ -105,16 +120,29 @@ export function GettingStarted({ company }: { company: Company }) {
   if (hidden) return null;
   const live = <T extends { deleted_at?: string | null }>(rows: T[]) =>
     rows.filter((r) => !r.deleted_at);
+  // The sample job (owner, 2026-10-22) is never counted: its job, made-up customer and report.
+  const sample = jobs.find((j) => j.sample);
+  const sampleLive = sample && !sample.deleted_at ? sample : null;
   const steps = gettingStarted(companyServices(company.settings), {
     people: members.filter((m) => m.status === "active").length || 1,
     openInvites: server.invites,
     hasLogo: Boolean(company.logo_path),
     paymentsReady: server.payments,
-    customers: live(customers).length,
+    customers: live(customers).filter((c) => c.id !== sampleLive?.bill_to_customer_id).length,
     visitPlans: live(plans).length,
-    leakJobs: live(jobs).filter((j) => j.type === "detection").length,
-    reportsSent: reports.filter((r) => r.sent_at).length,
+    leakJobs: live(jobs).filter((j) => j.type === "detection" && !j.sample).length,
+    reportsSent: reports.filter((r) => r.sent_at && r.job_id !== sample?.id).length,
     invoicesSent: invoices.filter((i) => i.sent_at).length,
+    sample: sample
+      ? {
+          jobId: sampleLive?.id ?? null,
+          done:
+            !sampleLive ||
+            messages.some(
+              (m) => m.job_id === sample.id && m.channel === "email" && m.status === "sent",
+            ),
+        }
+      : null,
   });
   const done = steps.filter((s) => s.done).length;
   if (done === steps.length) return null;

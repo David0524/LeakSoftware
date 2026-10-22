@@ -15,13 +15,14 @@ export async function GET(_request: Request, ctx: RouteContext<"/r/[token]/pdf">
     report_id: string;
     company_id: string;
     job_id: string;
-    snapshot: { company: { name: string }; job?: { type?: string } };
+    snapshot: { company: { name: string }; job?: { type?: string; sample?: boolean } };
   } | null;
   if (!r) return new Response("Not found", { status: 404 });
   const pdf = await reportPdf(await siteOrigin(), token, {
     companyId: r.company_id,
     jobId: r.job_id,
     reportId: r.report_id,
+    sample: r.snapshot.job?.sample === true,
   });
   const name =
     `${r.snapshot.company.name} ${reportTitle(r.snapshot.job?.type).toLowerCase()}.pdf`.replace(

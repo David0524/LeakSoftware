@@ -63,16 +63,8 @@ import {
   TestsEditor,
   type ChecklistRow,
 } from "@/components/job-work";
-import {
-  Card,
-  Empty,
-  Grouped,
-  Notice,
-  PageHeader,
-  Row,
-  StatusBadge,
-  iconButtonClass,
-} from "@/components/ui";
+import { Card, Empty, Grouped, Notice, PageHeader, Row, iconButtonClass } from "@/components/ui";
+import { LiveStatusBadge } from "@/components/instant";
 import { getOffice } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import {
@@ -108,6 +100,7 @@ import { routingConfigured } from "@/server/routing";
 import { NotOnMapRow, NotOnMapTag } from "@/components/not-on-map";
 import { AccessNotesForm, PoolDetailsForm } from "@/components/pool-details";
 import { SheetRow } from "@/components/settings-list";
+import { SampleJob } from "@/components/sample-job";
 
 export const metadata: Metadata = { title: "Job · Sundeck Pro" };
 
@@ -130,6 +123,8 @@ export default async function JobPage({ params }: PageProps<"/jobs/[id]">) {
   ]);
   if (!detail) notFound();
   const { job } = detail;
+  // The sample job opens to its finished report (owner, 2026-10-22: first win).
+  if (job.sample) return <SampleJob office={office} job={job} />;
   const tz = office.company.timezone;
   const tally = checklistTally(detail.components, [...detail.results.values()]);
   const total = detail.components.length;
@@ -176,7 +171,7 @@ export default async function JobPage({ params }: PageProps<"/jobs/[id]">) {
         subtitle={
           <span className="flex flex-wrap items-center gap-3">
             {job.customer && job.number ? <span>Job #{job.number}</span> : null}
-            <StatusBadge status={job.status} />
+            <LiveStatusBadge jobId={job.id} status={job.status} />
             {job.service_plan_id && job.customer ? (
               <Link
                 href={`/customers/${job.customer.id}`}

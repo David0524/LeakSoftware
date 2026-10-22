@@ -755,5 +755,426 @@
       "args": [],
       "result": "Everything’s checked. Mark it complete."
     }
+  ],
+  "techDayProgress": [
+    {
+      "args": [
+        []
+      ],
+      "result": {
+        "progress": {
+          "done": 0,
+          "total": 0,
+          "left": 0,
+          "fraction": 0,
+          "minutesLeft": 0,
+          "state": "start",
+          "text": null,
+          "spoken": "0 of 0 stops done"
+        },
+        "line": "0 stops",
+        "current": null,
+        "lastDone": null
+      }
+    },
+    {
+      "args": [
+        [
+          {
+            "customer": "Ames",
+            "done": false,
+            "durationMin": 30,
+            "driveMin": 10,
+            "onSite": false,
+            "doneAt": null
+          },
+          {
+            "customer": "Baker",
+            "done": false,
+            "durationMin": 30,
+            "driveMin": 10,
+            "onSite": false,
+            "doneAt": null
+          }
+        ]
+      ],
+      "result": {
+        "progress": {
+          "done": 0,
+          "total": 2,
+          "left": 2,
+          "fraction": 0,
+          "minutesLeft": 80,
+          "state": "start",
+          "text": null,
+          "spoken": "0 of 2 stops done"
+        },
+        "line": "2 stops",
+        "current": {
+          "customer": "Ames",
+          "started": false
+        },
+        "lastDone": null
+      }
+    },
+    {
+      "args": [
+        [
+          {
+            "customer": "Ames",
+            "done": false,
+            "durationMin": 30,
+            "driveMin": 10,
+            "onSite": false,
+            "doneAt": null
+          }
+        ]
+      ],
+      "result": {
+        "progress": {
+          "done": 0,
+          "total": 1,
+          "left": 1,
+          "fraction": 0,
+          "minutesLeft": 40,
+          "state": "start",
+          "text": null,
+          "spoken": "0 of 1 stop done"
+        },
+        "line": "1 stop",
+        "current": {
+          "customer": "Ames",
+          "started": false
+        },
+        "lastDone": null
+      }
+    },
+    {
+      "args": [
+        [
+          {
+            "customer": "Ames",
+            "done": true,
+            "durationMin": 30,
+            "driveMin": 10,
+            "onSite": false,
+            "doneAt": "2026-10-22T15:10:00Z"
+          },
+          {
+            "customer": "Cole",
+            "done": true,
+            "durationMin": 30,
+            "driveMin": 10,
+            "onSite": false,
+            "doneAt": "2026-10-22T16:42:00.123Z"
+          },
+          {
+            "customer": "Baker",
+            "done": false,
+            "durationMin": 30,
+            "driveMin": 10,
+            "onSite": false,
+            "doneAt": null
+          },
+          {
+            "customer": "Diaz",
+            "done": false,
+            "durationMin": 30,
+            "driveMin": 10,
+            "onSite": true,
+            "doneAt": null
+          },
+          {
+            "customer": "Ely",
+            "done": false,
+            "durationMin": 30,
+            "driveMin": 10,
+            "onSite": false,
+            "doneAt": null
+          },
+          {
+            "customer": "Ford",
+            "done": false,
+            "durationMin": 30,
+            "driveMin": 10,
+            "onSite": false,
+            "doneAt": null
+          },
+          {
+            "customer": "Gray",
+            "done": false,
+            "durationMin": 30,
+            "driveMin": 10,
+            "onSite": false,
+            "doneAt": null
+          },
+          {
+            "customer": "Hale",
+            "done": false,
+            "durationMin": 30,
+            "driveMin": 10,
+            "onSite": false,
+            "doneAt": null
+          }
+        ]
+      ],
+      "result": {
+        "progress": {
+          "done": 2,
+          "total": 8,
+          "left": 6,
+          "fraction": 0.25,
+          "minutesLeft": 230,
+          "state": "going",
+          "text": "2 of 8 stops",
+          "spoken": "2 of 8 stops done"
+        },
+        "line": "2 of 8 stops",
+        "current": {
+          "customer": "Diaz",
+          "started": true
+        },
+        "lastDone": {
+          "customer": "Cole",
+          "at": "2026-10-22T16:42:00.123Z"
+        }
+      }
+    },
+    {
+      "args": [
+        [
+          {
+            "customer": "Ames",
+            "done": true,
+            "durationMin": 30,
+            "driveMin": 10,
+            "onSite": false,
+            "doneAt": null
+          },
+          {
+            "customer": "Baker",
+            "done": true,
+            "durationMin": 30,
+            "driveMin": 10,
+            "onSite": false,
+            "doneAt": null
+          },
+          {
+            "customer": "Cole",
+            "done": false,
+            "durationMin": 30,
+            "driveMin": 10,
+            "onSite": false,
+            "doneAt": null
+          }
+        ]
+      ],
+      "result": {
+        "progress": {
+          "done": 2,
+          "total": 3,
+          "left": 1,
+          "fraction": 0.6666666666666666,
+          "minutesLeft": 40,
+          "state": "closing",
+          "text": "1 left · about 40 min",
+          "spoken": "1 stop left, about 40 min"
+        },
+        "line": "1 left · about 40 min",
+        "current": {
+          "customer": "Cole",
+          "started": false
+        },
+        "lastDone": {
+          "customer": "Baker",
+          "at": null
+        }
+      }
+    },
+    {
+      "args": [
+        [
+          {
+            "customer": "Ames",
+            "done": true,
+            "durationMin": 30,
+            "driveMin": 10,
+            "onSite": false,
+            "doneAt": "2026-10-22T15:00:00Z"
+          },
+          {
+            "customer": "Baker",
+            "done": true,
+            "durationMin": 30,
+            "driveMin": 10,
+            "onSite": false,
+            "doneAt": null
+          }
+        ]
+      ],
+      "result": {
+        "progress": {
+          "done": 2,
+          "total": 2,
+          "left": 0,
+          "fraction": 1,
+          "minutesLeft": 0,
+          "state": "all_done",
+          "text": "All 2 done",
+          "spoken": "All 2 done"
+        },
+        "line": "All 2 done",
+        "current": null,
+        "lastDone": {
+          "customer": "Ames",
+          "at": "2026-10-22T15:00:00Z"
+        }
+      }
+    },
+    {
+      "args": [
+        [
+          {
+            "customer": "Ames",
+            "done": true,
+            "durationMin": 30,
+            "driveMin": 10,
+            "onSite": false,
+            "doneAt": null
+          },
+          {
+            "customer": "Baker",
+            "done": true,
+            "durationMin": 30,
+            "driveMin": 10,
+            "onSite": false,
+            "doneAt": "2026-10-22T15:00:00+00:00"
+          }
+        ]
+      ],
+      "result": {
+        "progress": {
+          "done": 2,
+          "total": 2,
+          "left": 0,
+          "fraction": 1,
+          "minutesLeft": 0,
+          "state": "all_done",
+          "text": "All 2 done",
+          "spoken": "All 2 done"
+        },
+        "line": "All 2 done",
+        "current": null,
+        "lastDone": {
+          "customer": "Baker",
+          "at": "2026-10-22T15:00:00+00:00"
+        }
+      }
+    },
+    {
+      "args": [
+        [
+          {
+            "customer": "Ames",
+            "done": true,
+            "durationMin": 30,
+            "driveMin": 10,
+            "onSite": false,
+            "doneAt": "2026-10-22T15:00:00Z"
+          },
+          {
+            "customer": "Baker",
+            "done": false,
+            "durationMin": 30,
+            "driveMin": 10,
+            "onSite": true,
+            "doneAt": null
+          }
+        ]
+      ],
+      "result": {
+        "progress": {
+          "done": 1,
+          "total": 2,
+          "left": 1,
+          "fraction": 0.5,
+          "minutesLeft": 30,
+          "state": "closing",
+          "text": "1 left · about 30 min",
+          "spoken": "1 stop left, about 30 min"
+        },
+        "line": "1 left · about 30 min",
+        "current": {
+          "customer": "Baker",
+          "started": true
+        },
+        "lastDone": {
+          "customer": "Ames",
+          "at": "2026-10-22T15:00:00Z"
+        }
+      }
+    },
+    {
+      "args": [
+        [
+          {
+            "customer": "Ames",
+            "done": true,
+            "durationMin": 30,
+            "driveMin": 10,
+            "onSite": false,
+            "doneAt": null
+          },
+          {
+            "customer": "Baker",
+            "done": true,
+            "durationMin": 30,
+            "driveMin": 10,
+            "onSite": false,
+            "doneAt": null
+          }
+        ]
+      ],
+      "result": {
+        "progress": {
+          "done": 2,
+          "total": 2,
+          "left": 0,
+          "fraction": 1,
+          "minutesLeft": 0,
+          "state": "all_done",
+          "text": "All 2 done",
+          "spoken": "All 2 done"
+        },
+        "line": "All 2 done",
+        "current": null,
+        "lastDone": {
+          "customer": "Baker",
+          "at": null
+        }
+      }
+    }
+  ],
+  "lastDoneLine": [
+    {
+      "args": [
+        "Baker",
+        "10:42 AM"
+      ],
+      "result": "Last done: Baker at 10:42 AM"
+    },
+    {
+      "args": [
+        "Baker",
+        null
+      ],
+      "result": "Last done: Baker"
+    }
+  ],
+  "TEAM_TODAY_TITLE": [
+    {
+      "args": [],
+      "result": "Team"
+    }
   ]
 }

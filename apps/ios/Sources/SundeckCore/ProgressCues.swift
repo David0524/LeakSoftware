@@ -86,3 +86,100 @@ public func checklistReady(_ done: Int, _ total: Int) -> Bool {
 
 /// The line over Mark Complete once everything else is done.
 public let completeReadyLine = "Everything’s checked. Mark it complete."
+
+// The owner's Team on Today (owner, 2026-10-22: "The owner sees techs' progress live"; docs/
+// design/2026-10-22-owner-live-today.md): each tech's day as one row, with the ring above, the
+// stop they're on, and the last stop done with its time.
+
+/// One stop of a tech's day, in route order, as the Team list reads it. Port of TeamStop.
+public struct TeamStop: Codable, Equatable, Sendable {
+    public var done: Bool
+    public var durationMin: Int
+    public var driveMin: Int?
+    public var onSite: Bool?
+    /// The customer's name.
+    public var customer: String
+    /// When it was finished (job.stop_done_at), when known.
+    public var doneAt: String?
+
+    public init(
+        customer: String, done: Bool, durationMin: Int, driveMin: Int?, onSite: Bool = false, doneAt: String? = nil
+    ) {
+        self.customer = customer
+        self.done = done
+        self.durationMin = durationMin
+        self.driveMin = driveMin
+        self.onSite = onSite
+        self.doneAt = doneAt
+    }
+}
+
+/// The stop a tech is on. Port of TechDayProgress.current.
+public struct TeamCurrentStop: Codable, Equatable, Sendable {
+    public var customer: String
+    /// Started (In progress); else it's the next to do (Now).
+    public var started: Bool
+}
+
+/// The last stop a tech finished. Port of TechDayProgress.lastDone.
+public struct TeamLastDone: Codable, Equatable, Sendable {
+    public var customer: String
+    public var at: String?
+}
+
+/// A tech's day on the owner's Today. Port of TechDayProgress.
+public struct TechDayProgress: Codable, Equatable, Sendable {
+    public var progress: DayProgress
+    /// The row's words beside the name: the ring's ("4 of 11 stops"), else "11 stops".
+    public var line: String
+    /// The stop they're on; nil once every stop is done.
+    public var current: TeamCurrentStop?
+    /// The last stop done, by its time (else the last done in route order).
+    public var lastDone: TeamLastDone?
+}
+
+/// The Team list's section title.
+public let teamTodayTitle = "Team"
+
+/// When a stop was finished, for comparing (ISO 8601, with or without fractional seconds).
+private func doneInstant(_ iso: String) -> Double? {
+    ECMA.parseDate(iso)
+}
+
+/// A tech's day on the owner's Today: the ring, the stop they're on, and the last one done. Port
+/// of techDayProgress.
+public func techDayProgress(_ stops: [TeamStop]) -> TechDayProgress {
+    let progress = dayProgress(
+        stops.map {
+            ProgressStop(done: $0.done, durationMin: $0.durationMin, driveMin: $0.driveMin, onSite: $0.onSite ?? false)
+        })
+    let total = stops.count
+    let left = stops.filter { !$0.done }
+    let on = left.first { $0.onSite ?? false } ?? left.first
+    var last: TeamStop?
+    for s in stops where s.done {
+        guard let l = last else {
+            last = s
+            continue
+        }
+        if let at = s.doneAt.flatMap(doneInstant) {
+            if let lat = l.doneAt.flatMap(doneInstant) {
+                if at >= lat { last = s }
+            } else {
+                last = s
+            }
+        } else if l.doneAt == nil {
+            last = s
+        }
+    }
+    return TechDayProgress(
+        progress: progress,
+        line: progress.text ?? "\(total) \(total == 1 ? "stop" : "stops")",
+        current: on.map { TeamCurrentStop(customer: $0.customer, started: $0.onSite ?? false) },
+        lastDone: last.map { TeamLastDone(customer: $0.customer, at: $0.doneAt) })
+}
+
+/// "Last done: Jones at 10:42 AM", or "Last done: Jones" with no time.
+public func lastDoneLine(_ customer: String, _ time: String?) -> String {
+    "Last done: \(customer)\(time.map { " at \($0)" } ?? "")"
+}

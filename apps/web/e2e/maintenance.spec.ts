@@ -93,6 +93,8 @@ test("a weekly cleaning plan puts visits on the route, and a visit is marked don
   await expect(ask.or(reopen)).toBeVisible();
   if (await ask.isVisible()) await ask.getByRole("button", { name: "Complete and Send" }).click();
   await expect(reopen).toBeVisible();
+  // Reopen Visit shows at once (owner, 2026-10-22); let the save finish before leaving.
+  await page.waitForLoadState("networkidle");
   await page.goto(`/customers/${job!.bill_to_customer_id}`);
   await expect(page.getByTestId("plan")).toContainText("1 done");
 

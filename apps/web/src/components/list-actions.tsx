@@ -15,6 +15,9 @@ import {
   type SwipeAction,
 } from "./row-actions";
 import { Sheet, useConfirm } from "./sheet";
+import { saveFailed, useJobStatus, useSetJobStatus } from "./instant";
+import { showBanner } from "./top-banner";
+import { NO_CONNECTION, whenOffline } from "@/lib/offline";
 import { Button, Field } from "./ui";
 
 // The office lists' swipe actions and menus (gestures.md section 12): Jobs, Invoices, Reports,
@@ -77,28 +80,38 @@ export function JobActions({
   className?: string;
   children: ReactNode;
 }) {
-  const [pending, start] = useTransition();
+  const [, start] = useTransition();
   const [confirm, confirmSheet] = useConfirm();
   const title = `${j.customer}${j.number ? ` · Job #${j.number}` : ""}`;
+  const setStatus = useSetJobStatus();
+  const done = useJobStatus(j.id, null) === "done";
 
+  // Completed at once (owner, 2026-10-22): the row's status changes and the banner says so;
+  // a failed save puts it back and says why.
   async function complete() {
     if (j.completePrompt && !(await confirm({ ...j.completePrompt, alert: true }))) return;
     start(async () => {
-      const r = await changeJobStatus({}, formOf({ job: j.id, to: "done" }));
-      bannerFor(r, "Completed.");
+      setStatus(j.id, "done");
+      showBanner({ message: "Completed." });
+      const r = await whenOffline(changeJobStatus({}, formOf({ job: j.id, to: "done" })), {
+        error: NO_CONNECTION,
+      });
+      const error = r.error ?? Object.values(r.fields ?? {})[0];
+      if (error) saveFailed(error);
     });
   }
 
   const call = j.phone ? callAction(j.phone) : null;
   const directions = j.address ? directionsAction(j.address, j.location) : null;
-  const markComplete: SwipeAction | null = j.canComplete
-    ? {
-        label: "Mark Complete",
-        tone: "green",
-        icon: <CheckIcon />,
-        onSelect: () => void complete(),
-      }
-    : null;
+  const markComplete: SwipeAction | null =
+    j.canComplete && !done
+      ? {
+          label: "Mark Complete",
+          tone: "green",
+          icon: <CheckIcon />,
+          onSelect: () => void complete(),
+        }
+      : null;
 
   const menu: MenuEntry[] = [
     { label: "Open", href: `/jobs/${j.id}` },
@@ -125,7 +138,6 @@ export function JobActions({
         as={as}
         title={title}
         menu={menu}
-        disabled={pending}
         leading={markComplete ? [markComplete] : []}
         trailing={[call, directions].filter((a): a is SwipeAction => !!a)}
         button={as === "tr" ? "none" : "overlay"}

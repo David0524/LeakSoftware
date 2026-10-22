@@ -1,4 +1,5 @@
 import {
+  SAMPLE_TEXT,
   POOL_TYPE_LABELS,
   REPORT_BLOCKS,
   SIGNATURE_PURPOSE_LABELS,
@@ -235,42 +236,55 @@ export function ReportView(p: ReportViewProps) {
 
   const render: Record<string, () => ReactNode> = {
     header: () => (
-      <header
-        className="report-header -mx-4 -mt-4 flex flex-wrap items-center justify-between gap-4 px-6 py-5 max-sm:px-5 sm:mx-0 sm:mt-0 sm:rounded-lg"
-        style={{ backgroundColor: brand, color: onBrand }}
-      >
-        {/* Phones: the PDF link ends the shop's row; wider, it sits beside the title. */}
-        <div className="flex w-full min-w-0 flex-wrap items-center gap-4 max-sm:gap-3 sm:w-auto sm:flex-nowrap">
-          {p.logoUrl ? (
-            // eslint-disable-next-line @next/next/no-img-element -- signed storage URL
-            <img
-              src={p.logoUrl}
-              alt={`${s.company.name} logo`}
-              className="max-h-14 max-w-48 rounded bg-paper p-1 max-sm:max-w-40"
-            />
-          ) : null}
-          <div className={cx("min-w-0", p.logoUrl && "max-sm:order-last max-sm:basis-full")}>
-            <p className="font-display text-2xl font-extrabold">{s.company.name}</p>
-            <p className="text-[0.9375rem]">
-              <ContactLine phone={s.company.phone} email={s.company.email} />
-            </p>
+      <>
+        <header
+          className="report-header -mx-4 -mt-4 flex flex-wrap items-center justify-between gap-4 px-6 py-5 max-sm:px-5 sm:mx-0 sm:mt-0 sm:rounded-lg"
+          style={{ backgroundColor: brand, color: onBrand }}
+        >
+          {/* Phones: the PDF link ends the shop's row; wider, it sits beside the title. */}
+          <div className="flex w-full min-w-0 flex-wrap items-center gap-4 max-sm:gap-3 sm:w-auto sm:flex-nowrap">
+            {p.logoUrl ? (
+              // eslint-disable-next-line @next/next/no-img-element -- signed storage URL
+              <img
+                src={p.logoUrl}
+                alt={`${s.company.name} logo`}
+                className="max-h-14 max-w-48 rounded bg-paper p-1 max-sm:max-w-40"
+              />
+            ) : null}
+            <div className={cx("min-w-0", p.logoUrl && "max-sm:order-last max-sm:basis-full")}>
+              <p className="font-display text-2xl font-extrabold">{s.company.name}</p>
+              <p className="text-[0.9375rem]">
+                <ContactLine phone={s.company.phone} email={s.company.email} />
+              </p>
+            </div>
+            {p.pdfHref ? (
+              <PdfLink href={p.pdfHref} className="ml-auto inline-flex sm:hidden" />
+            ) : null}
           </div>
-          {p.pdfHref ? (
-            <PdfLink href={p.pdfHref} className="ml-auto inline-flex sm:hidden" />
-          ) : null}
-        </div>
-        <div className="flex items-center gap-4 sm:ml-auto">
-          <div className="text-left text-[0.9375rem] sm:text-right">
-            <h1 className="font-display text-xl font-bold">{title}</h1>
-            <p>
-              {p.sentAt ? formatDate(p.sentAt, tz) : "Draft"}
-              {p.version > 1 ? ` · version ${p.version}` : ""}
-            </p>
+          <div className="flex items-center gap-4 sm:ml-auto">
+            <div className="text-left text-[0.9375rem] sm:text-right">
+              <h1 className="font-display text-xl font-bold">{title}</h1>
+              <p>
+                {p.sentAt ? formatDate(p.sentAt, tz) : "Draft"}
+                {p.version > 1 ? ` · version ${p.version}` : ""}
+              </p>
+            </div>
+            {p.pdfHref ? <PdfLink href={p.pdfHref} className="hidden sm:inline-flex" /> : null}
           </div>
-          {p.pdfHref ? <PdfLink href={p.pdfHref} className="hidden sm:inline-flex" /> : null}
-        </div>
-      </header>
+        </header>
+        {/* The sample job's report says so, on screen and in the PDF (owner, 2026-10-22). */}
+        {s.job.sample ? (
+          <p
+            role="note"
+            data-testid="sample-report-banner"
+            className="mt-4 rounded-2xl bg-status-warning/15 px-4 py-3 text-[0.9375rem] font-semibold"
+          >
+            {SAMPLE_TEXT.reportBanner}
+          </p>
+        ) : null}
+      </>
     ),
+
     summary: () => (
       // Wider and printed: the job details as a strip under the header, then the summary at full
       // width. Phones: the summary card first, then the details as grouped rows.

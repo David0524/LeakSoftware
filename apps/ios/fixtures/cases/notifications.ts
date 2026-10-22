@@ -1,5 +1,8 @@
 import {
   NOTIFICATION_KINDS,
+  dayStartAlert,
+  dayStartNotification,
+  type DayStartDay,
   SHOP_KINDS,
   jobNotification,
   accessLine,
@@ -144,6 +147,39 @@ export const notifications: ModuleCases = {
   liveStopContent: rule(
     (s: LiveStopInput) => liveStopContent(s),
     stops.map((s) => [s]),
+  ),
+  // The start of the day (owner, 2026-10-22): the first stop in one tap.
+  dayStartNotification: rule(
+    (stops: number, customer: string, address: string | null) =>
+      dayStartNotification(stops, { customer, address }),
+    [
+      [5, "Smith", "123 Palm Ln"],
+      [1, "Jones", null],
+      [2, "Lee", ""],
+    ],
+  ),
+  dayStartAlert: rule(
+    (settings: unknown, timeZone: string, today: string, nowMin: number, days: DayStartDay[]) =>
+      dayStartAlert({ settings, timeZone, today, nowMin, days }),
+    (() => {
+      const smith = { id: "j1", customer: "Smith", address: "123 Palm Ln" };
+      const jones = { id: "j2", customer: "Jones", address: null };
+      const days: DayStartDay[] = [
+        { date: "2026-10-22", stops: [smith, jones] },
+        { date: "2026-10-23", stops: [] },
+        { date: "2026-10-24", stops: [jones] },
+        { date: "2026-10-26", stops: [jones, smith] },
+      ];
+      const sat = { routing: { work_days: [1, 2, 3, 4, 5, 6], day_start: "07:30" } };
+      return [
+        [{}, "America/Phoenix", "2026-10-22", 6 * 60, days],
+        [{}, "America/Phoenix", "2026-10-22", 8 * 60, days],
+        [sat, "America/Phoenix", "2026-10-22", 9 * 60, days],
+        [{}, "America/New_York", "2026-10-25", 0, days],
+        [{}, "America/Phoenix", "2026-10-22", 0, []],
+        [{}, "America/Phoenix", "2026-10-27", 0, days],
+      ] as [unknown, string, string, number, DayStartDay[]][];
+    })(),
   ),
   liveStopRuns: rule(
     (settings: unknown, date: string, nowMin: number, stopsLeft: number) =>

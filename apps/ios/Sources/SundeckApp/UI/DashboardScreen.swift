@@ -43,7 +43,9 @@
                     Notice(kind: .warning, text: failed)
                     Button("Try Again") { Task { await load() } }.buttonStyle(.secondary)
                 } else {
-                    ProgressSteps(steps: DashboardText.steps, current: step).card()
+                    // The page's shape while it loads (owner, 2026-10-22: "Skeleton screens, not
+                    // spinners").
+                    SkeletonDashboard()
                 }
             }
             .refreshable {

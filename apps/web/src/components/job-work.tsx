@@ -56,15 +56,21 @@ import { RowActions, type MenuEntry } from "./row-actions";
 import { Sheet, useConfirm } from "./sheet";
 import { Button, Checkbox, Chip, Select, buttonClass, cx } from "./ui";
 import { SavedNote, UndoNotice, useAutosave, useUndoWindow } from "./undo";
+import { saveFailed, useJobStatus, useSetJobStatus } from "./instant";
 
 // Working a job on the website (M9.5): the phone's job screen, for a browser.
 
 type Action = (state: FormState, form: FormData) => Promise<FormState>;
 
-/** Run a server action from a button, outside a form. Shows the error, if any. */
-export function useRun() {
+/**
+ * Run a server action from a button, outside a form. Shows the error, if any: beside the
+ * button, or with `instant` (the change already shows; owner, 2026-10-22) in the top banner,
+ * as the change goes back.
+ */
+export function useRun({ instant = false }: { instant?: boolean } = {}) {
   const [pending, start] = useTransition();
-  const [error, setError] = useState<string | null>(null);
+  const [inlineError, setError] = useState<string | null>(null);
+  const error = instant ? null : inlineError;
   /**
    * As `run`, and resolves with what the action returned. `after` runs before the button
    * stops being busy, so what it shows next (an Undo) is on screen without a gap.
@@ -83,7 +89,9 @@ export function useRun() {
         // No signal: the request never reached the server. Say so here instead of the
         // whole page giving way to the error screen.
         const result = await orOffline(action)({}, form);
-        setError(result.error ?? Object.values(result.fields ?? {})[0] ?? null);
+        const failed = result.error ?? Object.values(result.fields ?? {})[0] ?? null;
+        setError(failed);
+        if (instant && failed) saveFailed(failed);
         after?.(result);
         resolve(result);
       }),
@@ -125,9 +133,12 @@ export function JobStatusActions({
    */
   cancel?: boolean;
 }) {
-  const { pending, error, run } = useRun();
+  // The new status shows at once (owner, 2026-10-22); a failed save puts it back.
+  const { error, run } = useRun({ instant: true });
+  const shown = useJobStatus(jobId, status);
+  const setStatus = useSetJobStatus();
   const [confirm, confirmSheet] = useConfirm();
-  const next = userTransitions(status, jobType).filter((to) => (to === "canceled") === cancel);
+  const next = userTransitions(shown, jobType).filter((to) => (to === "canceled") === cancel);
   if (next.length === 0) return null;
   return (
     <div className="space-y-2">
@@ -136,11 +147,10 @@ export function JobStatusActions({
           <Button
             key={to}
             type="button"
-            disabled={pending}
             kind={to === "in_progress" ? "primary" : to === "canceled" ? "danger" : "secondary"}
             // Phones start a job from the Next Step bar instead (owner, 2026-10-20).
             className={
-              to === "in_progress" && (status === "scheduled" || status === "unscheduled")
+              to === "in_progress" && (shown === "scheduled" || shown === "unscheduled")
                 ? "max-sm:hidden"
                 : undefined
             }
@@ -155,10 +165,10 @@ export function JobStatusActions({
               )
                 return;
               if (to === "done" && prompt && !(await confirm({ ...prompt, alert: true }))) return;
-              run(changeJobStatus, { job: jobId, to });
+              run(changeJobStatus, { job: jobId, to }, () => setStatus(jobId, to));
             }}
           >
-            {jobActionLabel(status, to)}
+            {jobActionLabel(shown, to)}
           </Button>
         ))}
       </div>
@@ -186,6 +196,8 @@ export function CompleteJob({
   /** The checklist is all done: Complete Job is the last thing (owner, 2026-10-22). */
   ready?: boolean;
 }) {
+  // Gone the moment the job is completed (owner, 2026-10-22), as it is once saved.
+  if (useJobStatus(jobId, null) === "done") return null;
   return (
     <div className="mt-6 max-w-2xl max-sm:hidden">
       {ready ? <ReadyLine /> : null}
@@ -222,7 +234,8 @@ export function CompleteJobButton({
   /** The last thing left: a one-time scale-in (none with Reduce Motion). */
   ready?: boolean;
 }) {
-  const { pending, error, run } = useRun();
+  const { pending, error, run } = useRun({ instant: true });
+  const setStatus = useSetJobStatus();
   const [confirm, confirmSheet] = useConfirm();
   return (
     <div className="space-y-2">
@@ -232,10 +245,10 @@ export function CompleteJobButton({
         disabled={pending}
         onClick={async () => {
           if (prompt && !(await confirm({ ...prompt, alert: true }))) return;
-          run(changeJobStatus, { job: jobId, to: "done" });
+          run(changeJobStatus, { job: jobId, to: "done" }, () => setStatus(jobId, "done"));
         }}
       >
-        {pending ? "Completing…" : "Complete Job"}
+        Complete Job
       </Button>
       <ErrorText error={error} />
       {confirmSheet}
@@ -616,7 +629,7 @@ function ChecklistItem({
   row: ChecklistRow;
   editing: boolean;
 }) {
-  const { error, run } = useRun();
+  const { error, run } = useRun({ instant: true });
   const [confirm, confirmSheet] = useConfirm();
   const saved = currentVerdict(row.result ?? undefined);
   const [shown, show] = useOptimistic(saved);

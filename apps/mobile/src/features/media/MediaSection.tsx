@@ -51,6 +51,7 @@ import { color, face, MAX_TEXT_SCALE, shape, space, tabular } from "../../ui/the
 import { WebIcon, type WebIconName } from "../../ui/WebIcon";
 import { confirmDeleteMedia } from "./remove";
 import { VoiceRecorder } from "./VoiceRecorder";
+import { Bone } from "../../ui/Skeleton";
 
 /** What a capture is attached to, in words ("Finding title", "Skimmer 1", "Test", "Job"). */
 export function useAttachedTo(media: Media | undefined): string {
@@ -425,7 +426,7 @@ function MediaCard({ media }: { media: Media }) {
           style={[styles.missing, { backgroundColor: color.bg }]}
         >
           {source.state === "loading" ? (
-            <ActivityIndicator color={color.textMuted} />
+            <Bone width="100%" height="100%" radius={0} style={StyleSheet.absoluteFill} />
           ) : (
             <T muted style={{ textAlign: "center" }}>
               {media.upload_state === "pending"

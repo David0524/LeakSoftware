@@ -2,6 +2,7 @@
 
 import { useState, type ReactNode } from "react";
 import { TechDot } from "./tech-dot";
+import { TeamToday, type TeamRow } from "./team-today";
 import { PageHeader, cx, pillClass } from "./ui";
 
 export interface TodayDay {
@@ -16,6 +17,13 @@ export interface TodayDay {
   content: ReactNode;
   /** Computers: Today's Map for this day, at the top of the right column. */
   map?: ReactNode;
+  /**
+   * The owner's Team row for this tech (owner, 2026-10-22: progress live): their ring, the stop
+   * they're on and the last one done. Only for days with stops, on owners' and admins' Today.
+   */
+  team?: TeamRow;
+  /** The signed-in person's own day. */
+  mine?: boolean;
 }
 
 /**
@@ -51,6 +59,8 @@ export function TodayDays({
     days.findIndex((d) => d.id === shown),
   );
   const day = days[at]!;
+  // The Team list shows once another tech has stops today (owner, 2026-10-22).
+  const team = days.length > 1 && days.some((d) => d.team && !d.mine);
   const pick = (i: number) => {
     const d = days[i];
     if (!d) return;
@@ -65,6 +75,15 @@ export function TodayDays({
       <div className="min-w-0">
         <PageHeader title={day.title} navAction={navAction} subtitle={subtitle} />
         {intro}
+        {team ? (
+          // Phones and tablets: above Whose Day. Computers have it at the top of the right column.
+          <TeamToday
+            days={days}
+            shown={day.id}
+            onPick={(id) => pick(days.findIndex((d) => d.id === id))}
+            className="mb-5 lg:hidden"
+          />
+        ) : null}
         {days.length > 1 ? (
           <nav aria-label="Whose day" className="-mx-4 mb-5 flex gap-2 overflow-x-auto px-4">
             {days.map((d, i) => (
@@ -97,6 +116,14 @@ export function TodayDays({
         // divider").
         className="sticky top-[5.5rem] hidden min-w-0 lg:block lg:border-l lg:border-separator lg:pl-8"
       >
+        {team ? (
+          <TeamToday
+            days={days}
+            shown={day.id}
+            onPick={(id) => pick(days.findIndex((d) => d.id === id))}
+            className="mb-6"
+          />
+        ) : null}
         <section aria-labelledby="today-map-title">
           <h2 id="today-map-title" className="mb-2 px-4 text-[0.8125rem] text-text-muted uppercase">
             Today’s Map

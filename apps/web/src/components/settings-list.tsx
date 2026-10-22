@@ -1,10 +1,21 @@
 "use client";
 
-import { createContext, use, useCallback, useState, useTransition, type ReactNode } from "react";
+import {
+  createContext,
+  use,
+  useCallback,
+  useOptimistic,
+  useState,
+  useTransition,
+  type ReactNode,
+} from "react";
 import { removeConfigRow } from "@/app/actions/settings";
 import { Banner } from "./doc-ui";
 import { NavPlus } from "./nav-bar";
-import { RowActions, bannerFor, formOf, type MenuEntry, type SwipeAction } from "./row-actions";
+import { RowActions, formOf, type MenuEntry, type SwipeAction } from "./row-actions";
+import { saveFailed } from "./instant";
+import { showBanner } from "./top-banner";
+import { NO_CONNECTION, whenOffline } from "@/lib/offline";
 import { SheetDone } from "./settings-forms";
 import { Sheet, useConfirm } from "./sheet";
 import { Button, PageHeader } from "./ui";
@@ -156,7 +167,9 @@ export function SheetRow({
 }) {
   const notify = use(Notify);
   const [open, setOpen] = useState(false);
-  const [removing, startRemove] = useTransition();
+  const [, startRemove] = useTransition();
+  // Gone from the list at once (owner, 2026-10-22); a failed delete brings it back.
+  const [gone, setGone] = useOptimistic(false);
   const [confirm, confirmSheet] = useConfirm();
   const close = useCallback(() => setOpen(false), []);
   const done = useCallback(
@@ -195,11 +208,14 @@ export function SheetRow({
       )
         return;
       startRemove(async () => {
-        const r = await removeConfigRow(
-          {},
-          formOf({ table: remove.table, id: remove.id, path: remove.path }),
+        setGone(true);
+        showBanner({ message: "Removed." });
+        const r = await whenOffline(
+          removeConfigRow({}, formOf({ table: remove.table, id: remove.id, path: remove.path })),
+          { error: NO_CONNECTION },
         );
-        bannerFor(r, "Removed.");
+        const error = r.error ?? Object.values(r.fields ?? {})[0];
+        if (error) saveFailed(error);
       });
     };
     const swipe: SwipeAction = { label: "Delete…", tone: "red", onSelect: () => void del() };
@@ -208,17 +224,11 @@ export function SheetRow({
       "separator",
       { label: "Delete…", destructive: true, onSelect: () => void del() },
     ];
+    if (gone) return null;
     // The sheets sit beside the row, not in it: a click in a sheet isn't a click on the row.
     return (
       <>
-        <RowActions
-          as="li"
-          title={title}
-          menu={menu}
-          trailing={[swipe]}
-          disabled={removing}
-          data-testid={testId}
-        >
+        <RowActions as="li" title={title} menu={menu} trailing={[swipe]} data-testid={testId}>
           <button
             type="button"
             aria-haspopup="dialog"

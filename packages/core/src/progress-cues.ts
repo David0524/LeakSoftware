@@ -78,3 +78,59 @@ export function checklistReady(done: number, total: number): boolean {
 
 /** The line over Mark Complete once everything else is done. */
 export const COMPLETE_READY_LINE = "Everything’s checked. Mark it complete.";
+
+// The owner's Team on Today (owner, 2026-10-22: "The owner sees techs' progress live"; docs/
+// design/2026-10-22-owner-live-today.md): each tech's day as one row, with the ring above, the
+// stop they're on, and the last stop done with its time.
+
+/** One stop of a tech's day, in route order, as the Team list reads it. */
+export interface TeamStop extends ProgressStop {
+  /** The customer's name. */
+  customer: string;
+  /** When it was finished (job.stop_done_at), when known. */
+  doneAt?: string | null;
+}
+
+export interface TechDayProgress {
+  progress: DayProgress;
+  /** The row's words beside the name: the ring's ("4 of 11 stops"), else "11 stops". */
+  line: string;
+  /**
+   * The stop they're on: the one started (In progress), else the first still to do (Now). Null
+   * once every stop is done.
+   */
+  current: { customer: string; started: boolean } | null;
+  /** The last stop done, by its time (else the last done in route order). */
+  lastDone: { customer: string; at: string | null } | null;
+}
+
+/** The Team list's section title. */
+export const TEAM_TODAY_TITLE = "Team";
+
+/** A tech's day on the owner's Today: the ring, the stop they're on, and the last one done. */
+export function techDayProgress(stops: TeamStop[]): TechDayProgress {
+  const progress = dayProgress(stops);
+  const total = stops.length;
+  const left = stops.filter((s) => !s.done);
+  const on = left.find((s) => s.onSite) ?? left[0] ?? null;
+  const done = stops.filter((s) => s.done);
+  // Latest by time; a stop without a time counts as earlier than one with.
+  let last: TeamStop | null = null;
+  for (const s of done) {
+    if (!last) last = s;
+    else if (s.doneAt && (!last.doneAt || Date.parse(s.doneAt) >= Date.parse(last.doneAt)))
+      last = s;
+    else if (!s.doneAt && !last.doneAt) last = s;
+  }
+  return {
+    progress,
+    line: progress.text ?? `${total} ${total === 1 ? "stop" : "stops"}`,
+    current: on ? { customer: on.customer, started: !!on.onSite } : null,
+    lastDone: last ? { customer: last.customer, at: last.doneAt ?? null } : null,
+  };
+}
+
+/** "Last done: Jones at 10:42 AM", or "Last done: Jones" with no time. */
+export function lastDoneLine(customer: string, time: string | null): string {
+  return `Last done: ${customer}${time ? ` at ${time}` : ""}`;
+}

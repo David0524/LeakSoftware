@@ -79,6 +79,16 @@
             .task(id: "\(sync.revision)|\(session.company?.id ?? "")|\(techId ?? "")|\(drive.known.count)") {
                 await reload()
             }
+            .task(id: "\(day?.showTeam == true)|\(scenePhase == .active)") {
+                // The owner's Team live (owner, 2026-10-22): teammates' changes come down every 15
+                // seconds while it shows (the app otherwise syncs every minute).
+                guard day?.showTeam == true, scenePhase == .active else { return }
+                while !Task.isCancelled {
+                    try? await Task.sleep(for: .seconds(teamSyncSeconds))
+                    if Task.isCancelled { return }
+                    await sync.syncNow()
+                }
+            }
             .task(id: flash) {
                 guard flash != nil else { return }
                 try? await Task.sleep(for: .seconds(0.6))
@@ -122,6 +132,9 @@
                     // Getting Started is off on the phone for now: inside the tab view it stops Today
                     // drawing in the simulator screenshots, cause not found yet (docs/plans/swift-app.md).
                     if day.ctx.isManager && GettingStartedCard.enabled { GettingStartedCard(company: company) }
+                    if day.showTeam {
+                        TeamToday(rows: day.teamRows, shown: day.techId) { pickTech($0) }
+                    }
                     if day.ctx.isManager && day.techs.count > 1 {
                         FilterPills(
                             selection: Binding(get: { day.techId }, set: { pickTech($0) }),
@@ -448,6 +461,10 @@
         var team: [TeamMember]
         var techId: String
         var route: DayRoute?
+        /// The owner's Team on Today: each tech with stops today (owner, 2026-10-22).
+        var teamRows: [TeamTodayRow] = []
+        /// Whether the Team shows: another tech has stops today.
+        var showTeam: Bool { teamRows.contains { $0.id != ctx.userId } }
         var mapsApp: MapsApp
         var lineActive: Bool
         /// The cleanings due soon at each stop, by job (owner, 2026-10-19).
@@ -479,6 +496,26 @@
             let pick = wanted ?? userId
             techId = ctx.isManager && techs.contains { $0.id == pick } ? pick : userId
             route = loaded.routes[routeKey(techId, ctx.today)]
+            // The owner's Team (owner, 2026-10-22: techs' progress live): each tech with stops
+            // today, their ring, the stop they're on and the last one done.
+            if ctx.isManager && techs.count > 1 {
+                let c = ctx
+                teamRows = techs.compactMap { m -> TeamTodayRow? in
+                    guard let r = loaded.routes[routeKey(m.id, today)], !r.jobs.isEmpty else { return nil }
+                    let day = techDayProgress(
+                        r.jobs.enumerated().map { i, job in
+                            TeamStop(
+                                customer: job.customerName, done: job.doneOn(today),
+                                durationMin: job.minutes(c.settings), driveMin: r.summary.legs[routeIndex: i],
+                                onSite: job.status == .inProgress, doneAt: job.stopDoneAt)
+                        })
+                    let last = day.lastDone.map { l in
+                        lastDoneLine(l.customer, l.at.map { formatTime($0, timeZone: c.timeZone) })
+                    }
+                    return TeamTodayRow(
+                        id: m.id, label: m.id == userId ? "Me" : m.name, color: m.color, day: day, lastDone: last)
+                }
+            }
             cleanings = dayCleanings(store, companyId: company.id, stops: route?.jobs ?? [], today: ctx.today)
             mapsApp = MapsApp(kv)
             lineActive = companyLine(store, companyId: company.id)?.status == "active"
@@ -706,10 +743,11 @@
                 let status = !isNext && job.status != .scheduled
                 // The lock shows on the Now stop too, as on the website and Android.
                 let lock = lockTag(job)
-                if isNext || status || lock != nil || note != nil {
+                if isNext || status || lock != nil || note != nil || job.sample {
                     HStack(alignment: .firstTextBaseline, spacing: 6) {
-                        if isNext || status || lock != nil {
+                        if isNext || status || lock != nil || job.sample {
                             HStack(alignment: .firstTextBaseline, spacing: 6) {
+                                if job.sample { SamplePill() }
                                 if isNext { NowPill() }
                                 // Most stops are scheduled; the chip shows other states. The Now
                                 // row shows only "Now": the card above says the rest
@@ -1153,6 +1191,7 @@
             .foregroundStyle(Color.textMuted)
             .redacted(reason: .placeholder)
             .accessibilityElement(children: .ignore)
+            .shimmer()
             .accessibilityLabel("Loading today")
         }
     }

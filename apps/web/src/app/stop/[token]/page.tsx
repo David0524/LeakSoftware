@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 import { Suspense } from "react";
 import { StopForm } from "@/components/stop-form";
 import { publicClient } from "@/server/reports";
+import { CardSkeleton } from "@/components/page-skeleton";
 
 export const metadata: Metadata = { title: "Email Preferences", robots: { index: false } };
 
@@ -10,7 +11,7 @@ export const metadata: Metadata = { title: "Email Preferences", robots: { index:
 export default function StopPage({ params }: PageProps<"/stop/[token]">) {
   return (
     <main className="lb-light min-h-full flex-1 bg-bg text-text">
-      <Suspense fallback={<p className="p-8 text-center text-neutral-500">Loading…</p>}>
+      <Suspense fallback={<CardSkeleton />}>
         <Stop params={params} />
       </Suspense>
     </main>

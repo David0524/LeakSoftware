@@ -689,7 +689,7 @@
                         }
                         myMobile(model)
                     } else {
-                        ProgressView().frame(maxWidth: .infinity)
+                        SkeletonRows(count: 4, label: "Loading \(PhoneText.title)")
                     }
                 }
             }

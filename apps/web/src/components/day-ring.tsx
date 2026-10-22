@@ -41,6 +41,8 @@ export function DayRing({ progress, className }: { progress: DayProgress; classN
             fill="none"
             stroke="var(--color-primary)"
             strokeWidth="4"
+            // No round cap at 0 (it drew a dot at the top of an empty track), as the apps.
+            strokeOpacity={progress.fraction > 0 ? 1 : 0}
             strokeLinecap="round"
             strokeDasharray={`${c * progress.fraction} ${c}`}
             transform="rotate(-90 14 14)"

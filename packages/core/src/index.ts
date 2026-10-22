@@ -44,3 +44,4 @@ export * from "./download";
 export * from "./team";
 export * from "./logo-colors";
 export * from "./png";
+export * from "./sample";

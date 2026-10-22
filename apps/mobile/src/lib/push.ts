@@ -167,6 +167,7 @@ export function handleResponse(response: Notifications.NotificationResponse) {
   if (handled.has(tap)) return;
   handled.add(tap);
   const data = (response.notification.request.content.data ?? {}) as {
+    kind?: string;
     job?: string;
     conversation?: string;
     phone?: string;
@@ -181,6 +182,14 @@ export function handleResponse(response: Notifications.NotificationResponse) {
   }
   if (response.actionIdentifier === "call" && data.phone) {
     void Linking.openURL(`tel:${data.phone}`);
+    return;
+  }
+  // The start of the day (owner, 2026-10-22): its first stop in one tap, or Today when that
+  // job is gone (deleted, or moved off the phone).
+  if (data.kind === "day") {
+    const job = data.job ? getServices().sync.get("job", data.job) : null;
+    router.navigate("/");
+    if (job && !job.deleted_at) router.push(`/jobs/${data.job}`);
     return;
   }
   if (data.conversation) router.push(`/messages/${data.conversation}`);

@@ -1,16 +1,7 @@
 import { Stack, router, useLocalSearchParams } from "expo-router";
 import { useVideoPlayer, VideoView } from "expo-video";
 import { useState } from "react";
-import {
-  ActivityIndicator,
-  Image,
-  Pressable,
-  ScrollView,
-  Share,
-  StyleSheet,
-  Text,
-  View,
-} from "react-native";
+import { Image, Pressable, ScrollView, Share, StyleSheet, Text, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import {
   MEDIA_KIND_LABELS,
@@ -35,6 +26,7 @@ import { MarkupEditor } from "../../../../../features/media/MarkupEditor";
 import { MarkupLayer } from "../../../../../ui/MarkupLayer";
 import { color, face, ios, minTap, shape, space, type } from "../../../../../ui/theme";
 import { WebIcon } from "../../../../../ui/WebIcon";
+import { Bone } from "../../../../../ui/Skeleton";
 
 /**
  * The photo viewer (spec 6.5): full screen over the tab bar on black, the photo fitted with
@@ -283,12 +275,15 @@ function SourceState({
   return (
     <View style={[styles.center, { gap: space["3"], paddingHorizontal: space["5"] }]}>
       {state === "loading" ? (
-        <>
-          <ActivityIndicator color={color.paper} />
-          <Text
-            style={[type.body, { color: color.paper }]}
-          >{`Loading the ${kind.toLowerCase()}…`}</Text>
-        </>
+        // The picture's place, still on its way (no spinner).
+        <View
+          accessible
+          accessibilityRole="progressbar"
+          accessibilityLabel={`Loading the ${kind.toLowerCase()}`}
+          style={styles.loadingFrame}
+        >
+          <Bone width="100%" height="100%" radius={shape.block} style={styles.onDark} />
+        </View>
       ) : (
         <>
           <Text style={[type.body, { color: color.paper, textAlign: "center" }]}>
@@ -380,6 +375,9 @@ const styles = StyleSheet.create({
   // The viewer's black: the navy token's darkest use, or black for photos (spec 6.5).
   screen: { flex: 1, backgroundColor: "black" },
   center: { flex: 1, alignItems: "center", justifyContent: "center" },
+  // A photo's place while it loads: 4:3, the width of the screen less its margins.
+  loadingFrame: { width: "100%", aspectRatio: 4 / 3 },
+  onDark: { backgroundColor: "rgba(255, 255, 255, 0.12)" },
   stage: { flex: 1 },
   topBar: { position: "absolute", left: 0, right: 0, top: 0 },
   bar: {

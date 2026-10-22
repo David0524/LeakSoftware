@@ -6,6 +6,7 @@ import { ButtonLink, Row } from "@/components/ui";
 import { getOffice } from "@/lib/auth";
 import { getAccess, getCompany } from "@/lib/data";
 import { confirmCheckout } from "@/server/billing";
+import { createClient } from "@/lib/supabase/server";
 
 export const metadata: Metadata = { title: "You’re All Set · Sundeck Pro" };
 
@@ -33,7 +34,19 @@ async function DoneBody({
       // The webhook links it in a moment; the page below says so if it hasn't yet.
     }
   }
-  const [access, company] = await Promise.all([getAccess(office), getCompany(office)]);
+  const [access, company, sample] = await Promise.all([
+    getAccess(office),
+    getCompany(office),
+    // The first win (owner, 2026-10-22): the sample job's finished report, then Send Yourself.
+    (await createClient())
+      .from("job")
+      .select("id")
+      .eq("company_id", office.company.id)
+      .eq("sample", true)
+      .is("deleted_at", null)
+      .limit(1)
+      .maybeSingle(),
+  ]);
   if (access?.needs_card) redirect("/welcome?step=card");
   const pkg = onboardingPackage(companyServices(company.settings));
   const steps =
@@ -89,9 +102,23 @@ async function DoneBody({
           <Row key={s.href} href={s.href} label={s.label} detail={s.detail} />
         ))}
       </ul>
-      <ButtonLink href="/home" className="mt-8 w-full">
-        Start Using Sundeck Pro
-      </ButtonLink>
+      {sample.data ? (
+        <>
+          <p className="mt-8 text-center text-text-muted">
+            Today’s schedule has a sample job with a finished report.
+          </p>
+          <ButtonLink href={`/jobs/${sample.data.id}`} className="mt-3 w-full">
+            See Your Sample Report
+          </ButtonLink>
+          <ButtonLink href="/home" kind="quiet" className="mt-2 w-full">
+            Start Using Sundeck Pro
+          </ButtonLink>
+        </>
+      ) : (
+        <ButtonLink href="/home" className="mt-8 w-full">
+          Start Using Sundeck Pro
+        </ButtonLink>
+      )}
     </div>
   );
 }

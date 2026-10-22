@@ -24,6 +24,7 @@
         @Environment(\.openRoute) private var openRoute
         @Environment(\.openURL) private var openURL
         @Environment(\.accessibilityReduceMotion) private var reduceMotion
+        @Environment(\.scenePhase) private var scenePhase
         @State private var view = ScheduleView.day
         @State private var date: String?
         /// A tech's id, "all", or nil for the default (the first person with work in view).
@@ -174,6 +175,16 @@
                     "\(sync.revision)|\(session.company?.id ?? "")|\(view)|\(date ?? "")|\(tech ?? "")|\(drive.known.count)"
             ) {
                 await reload()
+            }
+            .task(id: "\(board?.ctx.isManager == true)|\(scenePhase == .active)") {
+                // Live for owners and admins (owner, 2026-10-22: "Week updates as stops
+                // complete"): techs' changes come down every 15 seconds while the Schedule shows.
+                guard board?.ctx.isManager == true, scenePhase == .active else { return }
+                while !Task.isCancelled {
+                    try? await Task.sleep(for: .seconds(teamSyncSeconds))
+                    if Task.isCancelled { return }
+                    await sync.syncNow()
+                }
             }
             .task(id: session.company?.id) {
                 guard let company = session.company, let user = session.user else { return }
@@ -1763,7 +1774,15 @@
             job.scheduledStart == nil ? "No time" : formatTime(job.scheduledStart, timeZone: timeZone)
         }
 
-        @ViewBuilder private var name: some View {
+        /// The name, with the sample job's pill after it (owner, 2026-10-22).
+        private var name: some View {
+            HStack(alignment: .firstTextBaseline, spacing: 6) {
+                nameLink
+                if job.sample { SamplePill().layoutPriority(1) }
+            }
+        }
+
+        @ViewBuilder private var nameLink: some View {
             if let onOpen {
                 Button(action: onOpen) {
                     // The "›" stays when a long name is cut short, as on the website.
@@ -3036,6 +3055,7 @@
             .foregroundStyle(Color.textMuted)
             .redacted(reason: .placeholder)
             .accessibilityElement(children: .ignore)
+            .shimmer()
             .accessibilityLabel("Loading the schedule")
         }
     }

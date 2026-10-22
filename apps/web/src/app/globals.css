@@ -166,6 +166,39 @@ header:not(.glass-bar) :focus-visible {
     }
   }
 }
+/* Skeleton screens (owner, 2026-10-22: "Skeleton screens, not spinners"): gray shapes where
+   the content will be, with a soft highlight that sweeps across every 1.6 s. Reduce Motion
+   keeps the shapes and drops the sweep. The same look on both phone apps
+   (docs/design/2026-10-22-instant-and-skeletons.md). */
+:root {
+  --shimmer: rgb(255 255 255 / 0.6);
+}
+[data-theme="dark"] {
+  --shimmer: rgb(255 255 255 / 0.08);
+}
+.shimmer {
+  position: relative;
+  overflow: hidden;
+  isolation: isolate;
+}
+.shimmer::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(100deg, transparent 20%, var(--shimmer) 50%, transparent 80%);
+  transform: translateX(-100%);
+  animation: shimmer 1.6s ease-in-out infinite;
+}
+@keyframes shimmer {
+  to {
+    transform: translateX(100%);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .shimmer::after {
+    display: none;
+  }
+}
 /* Phones: day maps folded on this device stay folded from the first frame (day-map.tsx). */
 @media (width < 40rem) {
   html[data-maps-folded] .day-map-box {

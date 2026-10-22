@@ -25,6 +25,7 @@ import { color, MAX_TEXT_SCALE, space, type } from "../../ui/theme";
 import { ManagersOnly } from "./SettingsList";
 import { formChanged } from "../../lib/discard";
 import { useUnsavedChanges } from "../../ui/ModalSheet";
+import { SkeletonRows } from "../../ui/Skeleton";
 
 // Settings › Phone and Texting (the website's settings/phone): a company number is needed to
 // text customers. Get a new one (area code, then pick), or use the shop's own; then the line's
@@ -128,6 +129,7 @@ function PhonePage() {
     >
       {notice ? <Notice tone={notice.tone}>{notice.text}</Notice> : null}
       {loadError ? <Notice tone="warning">{loadError}</Notice> : null}
+      {!state && !loadError ? <SkeletonRows count={4} label="Loading Phone and Texting" /> : null}
       {state && !state.configured ? (
         <Notice tone="info">Texting isn’t switched on for Sundeck Pro yet.</Notice>
       ) : null}

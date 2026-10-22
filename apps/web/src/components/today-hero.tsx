@@ -1,7 +1,14 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useMemo, useState, useTransition, type KeyboardEvent } from "react";
+import {
+  useEffect,
+  useMemo,
+  useOptimistic,
+  useState,
+  useTransition,
+  type KeyboardEvent,
+} from "react";
 import {
   HERO_ACTION_LABELS,
   NOT_ON_MAP,
@@ -18,6 +25,7 @@ import {
   type OnMyWayVia,
 } from "@leakbook/core";
 import { changeJobStatus } from "@/app/actions/inspection";
+import { orOffline } from "@/lib/offline";
 import {
   CleaningIcon,
   KeyIcon,
@@ -31,6 +39,7 @@ import { OnMyWayMessage } from "./on-my-way";
 import { TodayComplete } from "./today-complete";
 import { DoLaterButton } from "./today-reorder";
 import type { SendPrompt } from "./job-work";
+import { saveFailed, useSetJobStatus } from "./instant";
 import { showBanner } from "./top-banner";
 import { cx } from "./ui";
 import { useSwipe } from "./use-swipe";
@@ -57,6 +66,8 @@ export interface HeroJob {
   textHref: string | null;
   driveMin: number | null;
   done: boolean;
+  /** A maintenance visit (completing it completes the job). */
+  maintenance: boolean;
   undo: "Reopen Visit" | "Mark Not Complete" | null;
   /** Asked before completing a visit whose report goes out by itself. */
   prompt: SendPrompt;
@@ -407,6 +418,7 @@ export function TodayHeroCard({
                     jobId={job.id}
                     customer={job.customer}
                     done={job.done}
+                    maintenance={job.maintenance}
                     undo={job.undo}
                     prompt={job.prompt}
                     onCompleting={() => {
@@ -554,38 +566,35 @@ function Primary({
   /** Beside the round buttons: their 44 pt height, so the row lines up. */
   inline?: boolean;
 }) {
-  const [pending, start] = useTransition();
-  const [error, setError] = useState<string | null>(null);
+  const [, start] = useTransition();
+  // Started at once (owner, 2026-10-22): the card offers the checklist while the save goes
+  // through; a failed save puts Start Job back and says why in the top banner.
+  const [started, setStarted] = useOptimistic(false);
+  const setStatus = useSetJobStatus();
   const button = cx(BUTTON, ON_WATER, inline && "min-h-11");
-  if (action === "open_checklist")
+  if (action === "open_checklist" || started)
     return (
       <Link href={`/jobs/${job.id}#checklist`} className={button}>
         {HERO_ACTION_LABELS.open_checklist}
       </Link>
     );
   return (
-    <span className="block">
-      <button
-        type="button"
-        disabled={pending}
-        className={button}
-        onClick={() =>
-          start(async () => {
-            const form = new FormData();
-            form.set("job", job.id);
-            form.set("to", "in_progress");
-            const r = await changeJobStatus({}, form);
-            setError(r.error ?? null);
-          })
-        }
-      >
-        {pending ? "Starting…" : HERO_ACTION_LABELS.start_job}
-      </button>
-      {error ? (
-        <span role="alert" className="mt-1 block text-[0.9375rem] font-semibold">
-          {error}
-        </span>
-      ) : null}
-    </span>
+    <button
+      type="button"
+      className={button}
+      onClick={() =>
+        start(async () => {
+          setStarted(true);
+          setStatus(job.id, "in_progress");
+          const form = new FormData();
+          form.set("job", job.id);
+          form.set("to", "in_progress");
+          const r = await orOffline(changeJobStatus)({}, form);
+          if (r.error) saveFailed(r.error);
+        })
+      }
+    >
+      {HERO_ACTION_LABELS.start_job}
+    </button>
   );
 }

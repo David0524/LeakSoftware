@@ -28,6 +28,7 @@ import { useRouteStart } from "../../../../data/memberStarts";
 import { useLine } from "../../../../data/texting";
 import { useWeather } from "../../../../data/weather";
 import { GettingStarted } from "../../../../features/today/GettingStarted";
+import { TeamToday, useTeamSync, useTeamToday } from "../../../../features/today/TeamToday";
 import { CleaningsDue } from "../../../../features/maintenance/Cleanings";
 import { TodayComplete, undoStopDone } from "../../../../features/job/CompleteJob";
 import { OnMyWayTrigger } from "../../../../features/today/OnMyWay";
@@ -66,6 +67,7 @@ import {
   Screen,
   StatusChip,
   T,
+  SamplePill,
 } from "../../../../ui/components";
 import { haptics } from "../../../../ui/haptics";
 import { usePinnedSyncBar } from "../../../../ui/SyncBar";
@@ -163,6 +165,18 @@ export default function Today() {
   const myName = meProfile?.full_name || meProfile?.email || "your tech";
 
   const settings = useMemo(() => routingSettings(company.settings), [company.settings]);
+  // The owner's Team (owner, 2026-10-22: techs' progress live): each tech's ring, the stop
+  // they're on and the last one done, kept fresh every 15 seconds while it shows.
+  const teamRows = useTeamToday({
+    company,
+    dayJobs,
+    people,
+    today,
+    settings,
+    enabled: manager && people.length > 1,
+  });
+  const showTeam = teamRows.some((r) => r.value !== me);
+  useTeamSync(showTeam);
   // Where this tech's day starts and ends: the shop, or their home (owner, 2026-10-21).
   const start = useRouteStart(company, shownTech);
   const depot = start.at;
@@ -433,6 +447,16 @@ export default function Today() {
     >
       {sync.inline}
       {manager ? <GettingStarted company={company} /> : null}
+      {showTeam ? (
+        <TeamToday
+          rows={teamRows}
+          shown={shownTech}
+          onPick={(v) => {
+            if (asked) clearStopAction(asked.nonce);
+            setTechId(v);
+          }}
+        />
+      ) : null}
       {manager && people.length > 1 ? (
         <FilterPills
           label="Whose day"
@@ -684,7 +708,7 @@ const Stop = memo(function Stop({
   }, [expanded, turn]);
   const lock = stopLockTag(job);
   const status = job.status !== "scheduled" && !next;
-  const pills = next || status || !!lock;
+  const pills = next || status || !!lock || job.sample === true;
   const note = (!done && job.property?.access_notes?.trim()) || null;
   const name = job.customer?.name ?? "Customer";
   const phone = job.customer?.phone;
@@ -782,6 +806,7 @@ const Stop = memo(function Stop({
         <View style={[styles.line2, done && { opacity: 0.7 }]}>
           {pills ? (
             <View style={styles.pills}>
+              {job.sample ? <SamplePill /> : null}
               {next ? <Pill label="Now" color={color.water} /> : null}
               {/* Most stops are scheduled; the chip shows other states. The Now row leaves it to
                   the card, which already says it (2026-10-20). */}

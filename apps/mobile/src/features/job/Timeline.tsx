@@ -14,6 +14,7 @@ import { getServices } from "../../lib/services";
 import { useCompany, useSession } from "../../state/session";
 import { Section, T } from "../../ui/components";
 import { color, MAX_TEXT_SCALE, minTap, shape, space, type } from "../../ui/theme";
+import { SkeletonLines } from "../../ui/Skeleton";
 
 // Job › Details › Timeline (spec 5.4, managers): who changed what on the job, newest first,
 // from the server's audit log (owners and admins only; RLS gives techs nothing). The audit log
@@ -89,7 +90,7 @@ export function JobTimeline({ jobId }: { jobId: string }) {
       : "System";
 
   let body;
-  if (rows === null) body = <T muted>Loading…</T>;
+  if (rows === null) body = <SkeletonLines count={3} label="Loading the timeline" />;
   else if (rows === "offline") body = <T muted>The timeline shows when you’re online.</T>;
   else {
     const events = timeline(rows, label);

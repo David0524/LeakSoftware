@@ -8,7 +8,9 @@ import { cx } from "./ui";
 
 /** The token's CSS color for a palette key ("blue"); slate when there's none yet. */
 export function techCss(color: string | null | undefined): string {
-  return `var(--color-tech-${color && /^[a-z]+$/.test(color) ? color : "slate"})`;
+  // The token itself (--lb-tech-*, light and dark): Tailwind's `@theme inline` emits
+  // --color-tech-* only for colors a class uses, so an inline style naming it drew nothing.
+  return `var(--lb-tech-${color && /^[a-z]+$/.test(color) ? color : "slate"})`;
 }
 
 export function TechDot({

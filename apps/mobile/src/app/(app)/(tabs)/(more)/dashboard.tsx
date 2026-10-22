@@ -27,7 +27,7 @@ import { ManagersOnly } from "../../../../features/settings/SettingsList";
 import { Button, Card, Empty, Group, ListRow, Notice, Screen, T } from "../../../../ui/components";
 import { ModalSheet } from "../../../../ui/ModalSheet";
 import { WebIcon } from "../../../../ui/WebIcon";
-import { StepList } from "../../../../ui/Progress";
+import { SkeletonDashboard } from "../../../../ui/Skeleton";
 import { color, face, minTap, space, tabular } from "../../../../ui/theme";
 
 // Dashboard (owner, 2026-10-20: "Dashboard should be in the apps"; reverses decision 12), as
@@ -37,11 +37,6 @@ import { color, face, minTap, space, tabular } from "../../../../ui/theme";
 const MONTHS = 6;
 // The jobs list groups these as "Waiting on Customer".
 const WAITING: string[] = ["report_sent", "quote_sent", "quote_accepted", "invoiced"];
-const STEPS = [
-  "Connecting to the office",
-  `Adding up the last ${MONTHS} months`,
-  "Getting it ready",
-];
 
 type Load =
   | { at: "loading"; step: number }
@@ -122,9 +117,8 @@ function DashboardPage() {
     >
       <LatestActivity open={activityOpen} onClose={() => setActivityOpen(false)} pulled={pulled} />
       {load.at === "loading" ? (
-        <Card>
-          <StepList steps={STEPS} at={load.step} label="Loading the dashboard" />
-        </Card>
+        // The page's shape while it loads (owner, 2026-10-22: "Skeleton screens, not spinners").
+        <SkeletonDashboard />
       ) : load.at === "error" ? (
         <>
           <Notice tone="warning">{load.message}</Notice>

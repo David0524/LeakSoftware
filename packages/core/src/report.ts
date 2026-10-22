@@ -148,6 +148,8 @@ export interface ReportSnapshot {
     completed_at?: string | null;
     /** Detection fee, shown on the report. */
     fee_cents?: number | null;
+    /** The shop's sample job (owner, 2026-10-22): the report says it's a sample. */
+    sample?: boolean;
     location_marked?: boolean | null;
     /** Markup drawn on the pool diagram (2026-10-19), as media markup. */
     diagram_markup?: unknown;

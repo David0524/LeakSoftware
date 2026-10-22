@@ -98,6 +98,7 @@ import { DragScope, useScheduleDrag } from "./ScheduleDrag";
 import { usePlanMove } from "./planMove";
 import { useCustomersToAdd } from "./CustomersToAdd";
 import { WeekDay } from "./WeekBoard";
+import { useTeamSync } from "../today/TeamToday";
 import { SwipePager } from "../../ui/SwipeNav";
 import { WeekStrip } from "./WeekStrip";
 
@@ -137,6 +138,9 @@ export function ScheduleScreen() {
   const me = user?.id ?? "";
   const role = membership?.role;
   const manager = isManagerRole(role);
+  // Live for owners and admins (owner, 2026-10-22: "Week updates as stops complete"): techs'
+  // changes come down every 15 seconds while the Schedule shows.
+  useTeamSync(manager);
   const canAdd = canMakeJobs(role, company.settings);
   const seesAll = seesAllJobs(role, company.settings);
   // The shop's planning context, kept between renders; planning reads a fresh one (with now).
@@ -308,6 +312,7 @@ export function ScheduleScreen() {
       id: j.id,
       number: j.number ?? null,
       customer: j.customer?.name ?? "Customer",
+      sample: j.sample === true,
       address: j.property ? formatAddress(j.property) : "",
       location: propertyLocation(j.property),
       time: j.scheduled_start ? formatTime(j.scheduled_start, tz) : null,

@@ -5,6 +5,7 @@ import { Logo, Mark } from "@/components/logo";
 import { DesktopNav, TabBar } from "@/components/nav-links";
 import { AccountMenu } from "@/components/account-menu";
 import { BannerHost } from "@/components/top-banner";
+import { InstantProvider } from "@/components/instant";
 import { PullToRefresh } from "@/components/pull-to-refresh";
 import { accessNotice } from "@leakbook/core";
 import { cx } from "@/components/ui";
@@ -74,7 +75,8 @@ export default function OfficeLayout({ children }: LayoutProps<"/">) {
         tabIndex={-1}
         className="mx-auto w-full max-w-7xl flex-1 px-4 pt-[calc(2.75rem+env(safe-area-inset-top))] pb-32 outline-none sm:py-8 has-[[data-wide-page]]:max-w-none lg:has-[[data-wide-page]]:px-8"
       >
-        {children}
+        {/* Changes show at once; the server catches up (owner, 2026-10-22). */}
+        <InstantProvider>{children}</InstantProvider>
       </main>
     </div>
   );

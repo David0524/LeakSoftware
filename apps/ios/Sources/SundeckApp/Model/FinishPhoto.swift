@@ -116,13 +116,18 @@ public enum StopWrites {
                 return nil
             }
             if let block = statusChangeBlock(.done, sync.store, settings: settings, jobId: jobId) { return block }
-            try sync.write("job", id: jobId, companyId: companyId, jobStatusValues(.done, job: row))
+            // With this phone's time, so the owner's Team says when even if it syncs later.
+            var values = jobStatusValues(.done, job: row)
+            values["stop_done_at"] = .string(isoTimestamp(milliseconds: Date().timeIntervalSince1970 * 1000))
+            try sync.write("job", id: jobId, companyId: companyId, values)
             visitReports?.completed(jobType: .maintenance, jobId: jobId, settings: settings)
             return nil
         }
-        try sync.write(
-            "job", id: jobId, companyId: companyId,
-            complete ? markCompleteValues(type: type, day: day) : ["stop_done_on": .null])
+        var values = complete ? markCompleteValues(type: type, day: day) : ["stop_done_on": .null]
+        if complete {
+            values["stop_done_at"] = .string(isoTimestamp(milliseconds: Date().timeIntervalSince1970 * 1000))
+        }
+        try sync.write("job", id: jobId, companyId: companyId, values)
         return nil
     }
 

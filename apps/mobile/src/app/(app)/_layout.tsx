@@ -1,3 +1,4 @@
+import { DayStartNotification } from "../../features/notifications/DayStart";
 import { router, Stack } from "expo-router";
 import { PushSetup } from "../../features/notifications/PushSetup";
 import { VisitReportQueue } from "../../features/maintenance/VisitReport";
@@ -22,6 +23,7 @@ export default function AppLayout() {
       {/* Notifications and the current stop's ongoing notification (owner, 2026-10-19). */}
       <PushSetup />
       <LiveStopNotification />
+      <DayStartNotification />
       <VisitReportQueue />
       {/* Finish Report and sending tapped offline go once the signal is back (2026-10-20). */}
       <ReportRequestQueue />

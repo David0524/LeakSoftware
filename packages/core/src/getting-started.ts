@@ -15,6 +15,12 @@ export interface ShopProgress {
   leakJobs: number;
   reportsSent: number;
   invoicesSent: number;
+  /**
+   * The shop's sample job (owner, 2026-10-22: first win): its id while it's there, and whether
+   * the owner sent its report to themselves (or deleted it, which also ends the step). Absent
+   * for shops that never had one (pool care, and shops from before).
+   */
+  sample?: { jobId: string | null; done: boolean } | null;
 }
 
 export interface StartStep {
@@ -37,6 +43,16 @@ export function gettingStarted(services: Services, p: ShopProgress): StartStep[]
       href: "/settings/company",
       done: true,
     },
+    // The first win (owner, 2026-10-22): a finished report with the shop's own logo, sent to
+    // themselves, before anything else.
+    !!p.sample &&
+      (p.sample.jobId !== null || p.sample.done) && {
+        id: "sample",
+        label: "Send yourself the sample report",
+        detail: "See what your customers get, with your shop's name and logo.",
+        href: p.sample.jobId ? `/jobs/${p.sample.jobId}` : "/jobs",
+        done: p.sample.done,
+      },
     {
       id: "invite",
       label: "Invite your techs",

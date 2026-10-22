@@ -72,7 +72,7 @@
                 } else if failed {
                     EmptyState(text: ActivityText.offline)
                 } else {
-                    ProgressView().frame(maxWidth: .infinity).padding(.top, 24)
+                    SkeletonRows(count: 6, dot: true, label: "Loading activity")
                 }
             }
             .refreshable { await load() }
@@ -309,7 +309,7 @@
                 } else if failed {
                     EmptyState(text: ActivityText.offline)
                 } else {
-                    ProgressView().frame(maxWidth: .infinity, minHeight: minTarget)
+                    SkeletonRows(count: 3, dot: true, label: "Loading activity")
                 }
                 Button(SearchText.seeAll) { open(.more(.activity)) }
                     .buttonStyle(.quiet)

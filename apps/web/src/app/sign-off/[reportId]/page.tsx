@@ -13,6 +13,7 @@ import { SignOff } from "@/components/sign-off";
 import { getOffice } from "@/lib/auth";
 import { getCompany, signedMediaUrls } from "@/lib/data";
 import { createClient } from "@/lib/supabase/server";
+import { ReportLoading } from "@/components/report-loading";
 
 export const metadata: Metadata = { title: "Review and Sign · Sundeck Pro" };
 
@@ -36,7 +37,7 @@ export default function SignOffPage({ params }: PageProps<"/sign-off/[reportId]"
   // Phones: the iOS grouped gray, matching the report's cards.
   return (
     <main className="lb-light min-h-full flex-1 bg-paper text-text max-sm:bg-bg">
-      <Suspense fallback={<p className="p-8 text-center text-text-muted">Loading the report…</p>}>
+      <Suspense fallback={<ReportLoading title="Getting the report ready to sign" />}>
         <Review params={params} />
       </Suspense>
     </main>

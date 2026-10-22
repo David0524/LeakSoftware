@@ -135,6 +135,7 @@
                                             // Live Activity: ends it, or starts it at once during
                                             // the workday.
                                             if kind.key == .live { app.liveStop.check() }
+                                            if kind.key == .day { DayStartNotifications.check(session) }
                                         }
                                     }))
                         }

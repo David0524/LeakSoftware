@@ -43,7 +43,8 @@ import { Stack } from "expo-router";
 import type { NativeStackNavigationOptions } from "expo-router/native-stack";
 import { useNavigationState, useRoute, useScrollToTop } from "expo-router/react-navigation";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { JOB_STATUS_LABELS, type JobStatus } from "@leakbook/core";
+import { JOB_STATUS_LABELS, SAMPLE_PILL, type JobStatus } from "@leakbook/core";
+import { tokens as sampleTokens } from "@leakbook/tokens";
 import {
   cardShadow,
   color,
@@ -2175,3 +2176,14 @@ const styles = StyleSheet.create({
     borderTopWidth: StyleSheet.hairlineWidth,
   },
 });
+
+/**
+ * The sample job's pill (owner, 2026-10-22: "clearly marked 'Sample' everywhere it shows"), on
+ * its Today row, Jobs row, Schedule card and page, as the website.
+ */
+/** The Sample pill's fill: the status warning color, as the website's pill. */
+const sampleColor = sampleTokens.color.status.warning;
+
+export function SamplePill({ style }: { style?: StyleProp<ViewStyle> }) {
+  return <Pill label={SAMPLE_PILL} color={sampleColor} style={style} />;
+}

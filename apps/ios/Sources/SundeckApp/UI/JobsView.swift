@@ -523,7 +523,10 @@
         var body: some View {
             HStack(spacing: 12) {
                 VStack(alignment: .leading, spacing: 2) {
-                    Text(row.customer).textRole(.bodyEmphasis).foregroundStyle(Color.text)
+                    HStack(alignment: .firstTextBaseline, spacing: 6) {
+                        Text(row.customer).textRole(.bodyEmphasis).foregroundStyle(Color.text)
+                        if row.sample { SamplePill() }
+                    }
                     Text(row.kind).textRole(.secondary).foregroundStyle(Color.textMuted)
                     if let address = row.address {
                         Text(address).textRole(.secondary).foregroundStyle(Color.textMuted).lineLimit(1)

@@ -19,6 +19,7 @@ import {
   PHONE_VALUE,
   actionCardClass,
 } from "@/components/doc-ui";
+import { DocSkeleton } from "@/components/page-skeleton";
 
 export const metadata: Metadata = { title: "Repair Quote", robots: { index: false } };
 
@@ -65,7 +66,7 @@ interface TokenQuote {
 export default function CustomerQuotePage({ params, searchParams }: PageProps<"/q/[token]">) {
   return (
     <main className={DOC_PAGE}>
-      <Suspense fallback={<p className="p-8 text-center text-neutral-500">Loading your quote…</p>}>
+      <Suspense fallback={<DocSkeleton label="your quote" />}>
         <QuotePage params={params} searchParams={searchParams} />
       </Suspense>
     </main>

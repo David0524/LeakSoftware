@@ -32,7 +32,8 @@ import {
 } from "@/components/settings-forms";
 import { SheetNotices, SheetRow } from "@/components/settings-list";
 import { ContactButtons } from "@/components/contact-buttons";
-import { Empty, Grouped, PageHeader, Row, StatusBadge } from "@/components/ui";
+import { Empty, Grouped, PageHeader, Row } from "@/components/ui";
+import { LiveStatusBadge } from "@/components/instant";
 import { getOffice } from "@/lib/auth";
 import {
   getChemicalReadings,
@@ -307,7 +308,7 @@ export default async function CustomerPage({ params }: PageProps<"/customers/[id
                             {j.techName ? ` · ${j.techName}` : ""}
                           </>
                         }
-                        value={<StatusBadge status={j.status} />}
+                        value={<LiveStatusBadge jobId={j.id} status={j.status} />}
                       />
                     ))
                   )}

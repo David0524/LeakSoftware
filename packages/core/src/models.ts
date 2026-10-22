@@ -377,6 +377,10 @@ export interface Job extends Base {
   /** On My Way: when it was sent, and the arrival it promised (owner, 2026-10-20). */
   on_my_way_at?: string | null;
   arrive_at?: string | null;
+  /** When the stop was finished (set by the server, or the phone's time; owner, 2026-10-22). */
+  stop_done_at?: string | null;
+  /** The shop's sample job (set by the server; owner, 2026-10-22). Never counted. */
+  sample?: boolean;
   created_at?: string;
 }
 

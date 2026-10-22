@@ -24473,6 +24473,283 @@
     },
     {
       "args": [
+        "pool",
+        {
+          "people": 1,
+          "openInvites": 0,
+          "hasLogo": false,
+          "paymentsReady": false,
+          "customers": 0,
+          "visitPlans": 0,
+          "leakJobs": 0,
+          "reportsSent": 0,
+          "invoicesSent": 0,
+          "sample": {
+            "jobId": "j1",
+            "done": false
+          }
+        }
+      ],
+      "result": [
+        {
+          "id": "account",
+          "label": "Account created",
+          "detail": "Your shop is on Sundeck Pro.",
+          "href": "/settings/company",
+          "done": true
+        },
+        {
+          "id": "sample",
+          "label": "Send yourself the sample report",
+          "detail": "See what your customers get, with your shop's name and logo.",
+          "href": "/jobs/j1",
+          "done": false
+        },
+        {
+          "id": "invite",
+          "label": "Invite your techs",
+          "detail": "They sign in on the Sundeck Pro app.",
+          "href": "/settings/team",
+          "done": false
+        },
+        {
+          "id": "customers",
+          "label": "Add your customers and their pools",
+          "detail": "Import a spreadsheet, or add them one by one.",
+          "href": "/settings/import",
+          "done": false
+        },
+        {
+          "id": "plans",
+          "label": "Give each pool a visit plan",
+          "detail": "The day, how often, and the price per visit.",
+          "href": "/customers",
+          "done": false
+        },
+        {
+          "id": "payments",
+          "label": "Set up customer payments",
+          "detail": "Card, Apple Pay, or bank, paid to your own Stripe account.",
+          "href": "/settings/payments",
+          "done": false
+        },
+        {
+          "id": "invoices",
+          "label": "Send your first invoices",
+          "detail": "Monthly billing is drafted from finished visits.",
+          "href": "/invoices",
+          "done": false
+        }
+      ]
+    },
+    {
+      "args": [
+        "pool",
+        {
+          "people": 1,
+          "openInvites": 0,
+          "hasLogo": false,
+          "paymentsReady": false,
+          "customers": 0,
+          "visitPlans": 0,
+          "leakJobs": 0,
+          "reportsSent": 0,
+          "invoicesSent": 0,
+          "sample": {
+            "jobId": "j1",
+            "done": true
+          }
+        }
+      ],
+      "result": [
+        {
+          "id": "account",
+          "label": "Account created",
+          "detail": "Your shop is on Sundeck Pro.",
+          "href": "/settings/company",
+          "done": true
+        },
+        {
+          "id": "sample",
+          "label": "Send yourself the sample report",
+          "detail": "See what your customers get, with your shop's name and logo.",
+          "href": "/jobs/j1",
+          "done": true
+        },
+        {
+          "id": "invite",
+          "label": "Invite your techs",
+          "detail": "They sign in on the Sundeck Pro app.",
+          "href": "/settings/team",
+          "done": false
+        },
+        {
+          "id": "customers",
+          "label": "Add your customers and their pools",
+          "detail": "Import a spreadsheet, or add them one by one.",
+          "href": "/settings/import",
+          "done": false
+        },
+        {
+          "id": "plans",
+          "label": "Give each pool a visit plan",
+          "detail": "The day, how often, and the price per visit.",
+          "href": "/customers",
+          "done": false
+        },
+        {
+          "id": "payments",
+          "label": "Set up customer payments",
+          "detail": "Card, Apple Pay, or bank, paid to your own Stripe account.",
+          "href": "/settings/payments",
+          "done": false
+        },
+        {
+          "id": "invoices",
+          "label": "Send your first invoices",
+          "detail": "Monthly billing is drafted from finished visits.",
+          "href": "/invoices",
+          "done": false
+        }
+      ]
+    },
+    {
+      "args": [
+        "pool",
+        {
+          "people": 1,
+          "openInvites": 0,
+          "hasLogo": false,
+          "paymentsReady": false,
+          "customers": 0,
+          "visitPlans": 0,
+          "leakJobs": 0,
+          "reportsSent": 0,
+          "invoicesSent": 0,
+          "sample": {
+            "jobId": null,
+            "done": true
+          }
+        }
+      ],
+      "result": [
+        {
+          "id": "account",
+          "label": "Account created",
+          "detail": "Your shop is on Sundeck Pro.",
+          "href": "/settings/company",
+          "done": true
+        },
+        {
+          "id": "sample",
+          "label": "Send yourself the sample report",
+          "detail": "See what your customers get, with your shop's name and logo.",
+          "href": "/jobs",
+          "done": true
+        },
+        {
+          "id": "invite",
+          "label": "Invite your techs",
+          "detail": "They sign in on the Sundeck Pro app.",
+          "href": "/settings/team",
+          "done": false
+        },
+        {
+          "id": "customers",
+          "label": "Add your customers and their pools",
+          "detail": "Import a spreadsheet, or add them one by one.",
+          "href": "/settings/import",
+          "done": false
+        },
+        {
+          "id": "plans",
+          "label": "Give each pool a visit plan",
+          "detail": "The day, how often, and the price per visit.",
+          "href": "/customers",
+          "done": false
+        },
+        {
+          "id": "payments",
+          "label": "Set up customer payments",
+          "detail": "Card, Apple Pay, or bank, paid to your own Stripe account.",
+          "href": "/settings/payments",
+          "done": false
+        },
+        {
+          "id": "invoices",
+          "label": "Send your first invoices",
+          "detail": "Monthly billing is drafted from finished visits.",
+          "href": "/invoices",
+          "done": false
+        }
+      ]
+    },
+    {
+      "args": [
+        "pool",
+        {
+          "people": 1,
+          "openInvites": 0,
+          "hasLogo": false,
+          "paymentsReady": false,
+          "customers": 0,
+          "visitPlans": 0,
+          "leakJobs": 0,
+          "reportsSent": 0,
+          "invoicesSent": 0,
+          "sample": {
+            "jobId": null,
+            "done": false
+          }
+        }
+      ],
+      "result": [
+        {
+          "id": "account",
+          "label": "Account created",
+          "detail": "Your shop is on Sundeck Pro.",
+          "href": "/settings/company",
+          "done": true
+        },
+        {
+          "id": "invite",
+          "label": "Invite your techs",
+          "detail": "They sign in on the Sundeck Pro app.",
+          "href": "/settings/team",
+          "done": false
+        },
+        {
+          "id": "customers",
+          "label": "Add your customers and their pools",
+          "detail": "Import a spreadsheet, or add them one by one.",
+          "href": "/settings/import",
+          "done": false
+        },
+        {
+          "id": "plans",
+          "label": "Give each pool a visit plan",
+          "detail": "The day, how often, and the price per visit.",
+          "href": "/customers",
+          "done": false
+        },
+        {
+          "id": "payments",
+          "label": "Set up customer payments",
+          "detail": "Card, Apple Pay, or bank, paid to your own Stripe account.",
+          "href": "/settings/payments",
+          "done": false
+        },
+        {
+          "id": "invoices",
+          "label": "Send your first invoices",
+          "detail": "Monthly billing is drafted from finished visits.",
+          "href": "/invoices",
+          "done": false
+        }
+      ]
+    },
+    {
+      "args": [
         "leak",
         {
           "people": 1,
@@ -24648,6 +24925,283 @@
           "detail": "Finished on site and sent to the homeowner.",
           "href": "/jobs",
           "done": true
+        }
+      ]
+    },
+    {
+      "args": [
+        "leak",
+        {
+          "people": 1,
+          "openInvites": 0,
+          "hasLogo": false,
+          "paymentsReady": false,
+          "customers": 0,
+          "visitPlans": 0,
+          "leakJobs": 0,
+          "reportsSent": 0,
+          "invoicesSent": 0,
+          "sample": {
+            "jobId": "j1",
+            "done": false
+          }
+        }
+      ],
+      "result": [
+        {
+          "id": "account",
+          "label": "Account created",
+          "detail": "Your shop is on Sundeck Pro.",
+          "href": "/settings/company",
+          "done": true
+        },
+        {
+          "id": "sample",
+          "label": "Send yourself the sample report",
+          "detail": "See what your customers get, with your shop's name and logo.",
+          "href": "/jobs/j1",
+          "done": false
+        },
+        {
+          "id": "invite",
+          "label": "Invite your techs",
+          "detail": "They sign in on the Sundeck Pro app.",
+          "href": "/settings/team",
+          "done": false
+        },
+        {
+          "id": "logo",
+          "label": "Add your logo",
+          "detail": "It goes on every report, quote, and invoice.",
+          "href": "/settings/company",
+          "done": false
+        },
+        {
+          "id": "payments",
+          "label": "Set up customer payments",
+          "detail": "Card, Apple Pay, or bank, paid to your own Stripe account.",
+          "href": "/settings/payments",
+          "done": false
+        },
+        {
+          "id": "job",
+          "label": "Book your first leak job",
+          "detail": "Inspect it on the phone.",
+          "href": "/jobs/new",
+          "done": false
+        },
+        {
+          "id": "report",
+          "label": "Send your first report",
+          "detail": "Finished on site and sent to the homeowner.",
+          "href": "/jobs",
+          "done": false
+        }
+      ]
+    },
+    {
+      "args": [
+        "leak",
+        {
+          "people": 1,
+          "openInvites": 0,
+          "hasLogo": false,
+          "paymentsReady": false,
+          "customers": 0,
+          "visitPlans": 0,
+          "leakJobs": 0,
+          "reportsSent": 0,
+          "invoicesSent": 0,
+          "sample": {
+            "jobId": "j1",
+            "done": true
+          }
+        }
+      ],
+      "result": [
+        {
+          "id": "account",
+          "label": "Account created",
+          "detail": "Your shop is on Sundeck Pro.",
+          "href": "/settings/company",
+          "done": true
+        },
+        {
+          "id": "sample",
+          "label": "Send yourself the sample report",
+          "detail": "See what your customers get, with your shop's name and logo.",
+          "href": "/jobs/j1",
+          "done": true
+        },
+        {
+          "id": "invite",
+          "label": "Invite your techs",
+          "detail": "They sign in on the Sundeck Pro app.",
+          "href": "/settings/team",
+          "done": false
+        },
+        {
+          "id": "logo",
+          "label": "Add your logo",
+          "detail": "It goes on every report, quote, and invoice.",
+          "href": "/settings/company",
+          "done": false
+        },
+        {
+          "id": "payments",
+          "label": "Set up customer payments",
+          "detail": "Card, Apple Pay, or bank, paid to your own Stripe account.",
+          "href": "/settings/payments",
+          "done": false
+        },
+        {
+          "id": "job",
+          "label": "Book your first leak job",
+          "detail": "Inspect it on the phone.",
+          "href": "/jobs/new",
+          "done": false
+        },
+        {
+          "id": "report",
+          "label": "Send your first report",
+          "detail": "Finished on site and sent to the homeowner.",
+          "href": "/jobs",
+          "done": false
+        }
+      ]
+    },
+    {
+      "args": [
+        "leak",
+        {
+          "people": 1,
+          "openInvites": 0,
+          "hasLogo": false,
+          "paymentsReady": false,
+          "customers": 0,
+          "visitPlans": 0,
+          "leakJobs": 0,
+          "reportsSent": 0,
+          "invoicesSent": 0,
+          "sample": {
+            "jobId": null,
+            "done": true
+          }
+        }
+      ],
+      "result": [
+        {
+          "id": "account",
+          "label": "Account created",
+          "detail": "Your shop is on Sundeck Pro.",
+          "href": "/settings/company",
+          "done": true
+        },
+        {
+          "id": "sample",
+          "label": "Send yourself the sample report",
+          "detail": "See what your customers get, with your shop's name and logo.",
+          "href": "/jobs",
+          "done": true
+        },
+        {
+          "id": "invite",
+          "label": "Invite your techs",
+          "detail": "They sign in on the Sundeck Pro app.",
+          "href": "/settings/team",
+          "done": false
+        },
+        {
+          "id": "logo",
+          "label": "Add your logo",
+          "detail": "It goes on every report, quote, and invoice.",
+          "href": "/settings/company",
+          "done": false
+        },
+        {
+          "id": "payments",
+          "label": "Set up customer payments",
+          "detail": "Card, Apple Pay, or bank, paid to your own Stripe account.",
+          "href": "/settings/payments",
+          "done": false
+        },
+        {
+          "id": "job",
+          "label": "Book your first leak job",
+          "detail": "Inspect it on the phone.",
+          "href": "/jobs/new",
+          "done": false
+        },
+        {
+          "id": "report",
+          "label": "Send your first report",
+          "detail": "Finished on site and sent to the homeowner.",
+          "href": "/jobs",
+          "done": false
+        }
+      ]
+    },
+    {
+      "args": [
+        "leak",
+        {
+          "people": 1,
+          "openInvites": 0,
+          "hasLogo": false,
+          "paymentsReady": false,
+          "customers": 0,
+          "visitPlans": 0,
+          "leakJobs": 0,
+          "reportsSent": 0,
+          "invoicesSent": 0,
+          "sample": {
+            "jobId": null,
+            "done": false
+          }
+        }
+      ],
+      "result": [
+        {
+          "id": "account",
+          "label": "Account created",
+          "detail": "Your shop is on Sundeck Pro.",
+          "href": "/settings/company",
+          "done": true
+        },
+        {
+          "id": "invite",
+          "label": "Invite your techs",
+          "detail": "They sign in on the Sundeck Pro app.",
+          "href": "/settings/team",
+          "done": false
+        },
+        {
+          "id": "logo",
+          "label": "Add your logo",
+          "detail": "It goes on every report, quote, and invoice.",
+          "href": "/settings/company",
+          "done": false
+        },
+        {
+          "id": "payments",
+          "label": "Set up customer payments",
+          "detail": "Card, Apple Pay, or bank, paid to your own Stripe account.",
+          "href": "/settings/payments",
+          "done": false
+        },
+        {
+          "id": "job",
+          "label": "Book your first leak job",
+          "detail": "Inspect it on the phone.",
+          "href": "/jobs/new",
+          "done": false
+        },
+        {
+          "id": "report",
+          "label": "Send your first report",
+          "detail": "Finished on site and sent to the homeowner.",
+          "href": "/jobs",
+          "done": false
         }
       ]
     },
@@ -24884,6 +25438,367 @@
           "detail": "Finished on site and sent to the homeowner.",
           "href": "/jobs",
           "done": true
+        },
+        {
+          "id": "invoices",
+          "label": "Send your first invoices",
+          "detail": "Monthly billing is drafted from finished visits.",
+          "href": "/invoices",
+          "done": false
+        }
+      ]
+    },
+    {
+      "args": [
+        "both",
+        {
+          "people": 1,
+          "openInvites": 0,
+          "hasLogo": false,
+          "paymentsReady": false,
+          "customers": 0,
+          "visitPlans": 0,
+          "leakJobs": 0,
+          "reportsSent": 0,
+          "invoicesSent": 0,
+          "sample": {
+            "jobId": "j1",
+            "done": false
+          }
+        }
+      ],
+      "result": [
+        {
+          "id": "account",
+          "label": "Account created",
+          "detail": "Your shop is on Sundeck Pro.",
+          "href": "/settings/company",
+          "done": true
+        },
+        {
+          "id": "sample",
+          "label": "Send yourself the sample report",
+          "detail": "See what your customers get, with your shop's name and logo.",
+          "href": "/jobs/j1",
+          "done": false
+        },
+        {
+          "id": "invite",
+          "label": "Invite your techs",
+          "detail": "They sign in on the Sundeck Pro app.",
+          "href": "/settings/team",
+          "done": false
+        },
+        {
+          "id": "logo",
+          "label": "Add your logo",
+          "detail": "It goes on every report, quote, and invoice.",
+          "href": "/settings/company",
+          "done": false
+        },
+        {
+          "id": "customers",
+          "label": "Add your customers and their pools",
+          "detail": "Import a spreadsheet, or add them one by one.",
+          "href": "/settings/import",
+          "done": false
+        },
+        {
+          "id": "plans",
+          "label": "Give each pool a visit plan",
+          "detail": "The day, how often, and the price per visit.",
+          "href": "/customers",
+          "done": false
+        },
+        {
+          "id": "payments",
+          "label": "Set up customer payments",
+          "detail": "Card, Apple Pay, or bank, paid to your own Stripe account.",
+          "href": "/settings/payments",
+          "done": false
+        },
+        {
+          "id": "job",
+          "label": "Book your first leak job",
+          "detail": "Inspect it on the phone.",
+          "href": "/jobs/new",
+          "done": false
+        },
+        {
+          "id": "report",
+          "label": "Send your first report",
+          "detail": "Finished on site and sent to the homeowner.",
+          "href": "/jobs",
+          "done": false
+        },
+        {
+          "id": "invoices",
+          "label": "Send your first invoices",
+          "detail": "Monthly billing is drafted from finished visits.",
+          "href": "/invoices",
+          "done": false
+        }
+      ]
+    },
+    {
+      "args": [
+        "both",
+        {
+          "people": 1,
+          "openInvites": 0,
+          "hasLogo": false,
+          "paymentsReady": false,
+          "customers": 0,
+          "visitPlans": 0,
+          "leakJobs": 0,
+          "reportsSent": 0,
+          "invoicesSent": 0,
+          "sample": {
+            "jobId": "j1",
+            "done": true
+          }
+        }
+      ],
+      "result": [
+        {
+          "id": "account",
+          "label": "Account created",
+          "detail": "Your shop is on Sundeck Pro.",
+          "href": "/settings/company",
+          "done": true
+        },
+        {
+          "id": "sample",
+          "label": "Send yourself the sample report",
+          "detail": "See what your customers get, with your shop's name and logo.",
+          "href": "/jobs/j1",
+          "done": true
+        },
+        {
+          "id": "invite",
+          "label": "Invite your techs",
+          "detail": "They sign in on the Sundeck Pro app.",
+          "href": "/settings/team",
+          "done": false
+        },
+        {
+          "id": "logo",
+          "label": "Add your logo",
+          "detail": "It goes on every report, quote, and invoice.",
+          "href": "/settings/company",
+          "done": false
+        },
+        {
+          "id": "customers",
+          "label": "Add your customers and their pools",
+          "detail": "Import a spreadsheet, or add them one by one.",
+          "href": "/settings/import",
+          "done": false
+        },
+        {
+          "id": "plans",
+          "label": "Give each pool a visit plan",
+          "detail": "The day, how often, and the price per visit.",
+          "href": "/customers",
+          "done": false
+        },
+        {
+          "id": "payments",
+          "label": "Set up customer payments",
+          "detail": "Card, Apple Pay, or bank, paid to your own Stripe account.",
+          "href": "/settings/payments",
+          "done": false
+        },
+        {
+          "id": "job",
+          "label": "Book your first leak job",
+          "detail": "Inspect it on the phone.",
+          "href": "/jobs/new",
+          "done": false
+        },
+        {
+          "id": "report",
+          "label": "Send your first report",
+          "detail": "Finished on site and sent to the homeowner.",
+          "href": "/jobs",
+          "done": false
+        },
+        {
+          "id": "invoices",
+          "label": "Send your first invoices",
+          "detail": "Monthly billing is drafted from finished visits.",
+          "href": "/invoices",
+          "done": false
+        }
+      ]
+    },
+    {
+      "args": [
+        "both",
+        {
+          "people": 1,
+          "openInvites": 0,
+          "hasLogo": false,
+          "paymentsReady": false,
+          "customers": 0,
+          "visitPlans": 0,
+          "leakJobs": 0,
+          "reportsSent": 0,
+          "invoicesSent": 0,
+          "sample": {
+            "jobId": null,
+            "done": true
+          }
+        }
+      ],
+      "result": [
+        {
+          "id": "account",
+          "label": "Account created",
+          "detail": "Your shop is on Sundeck Pro.",
+          "href": "/settings/company",
+          "done": true
+        },
+        {
+          "id": "sample",
+          "label": "Send yourself the sample report",
+          "detail": "See what your customers get, with your shop's name and logo.",
+          "href": "/jobs",
+          "done": true
+        },
+        {
+          "id": "invite",
+          "label": "Invite your techs",
+          "detail": "They sign in on the Sundeck Pro app.",
+          "href": "/settings/team",
+          "done": false
+        },
+        {
+          "id": "logo",
+          "label": "Add your logo",
+          "detail": "It goes on every report, quote, and invoice.",
+          "href": "/settings/company",
+          "done": false
+        },
+        {
+          "id": "customers",
+          "label": "Add your customers and their pools",
+          "detail": "Import a spreadsheet, or add them one by one.",
+          "href": "/settings/import",
+          "done": false
+        },
+        {
+          "id": "plans",
+          "label": "Give each pool a visit plan",
+          "detail": "The day, how often, and the price per visit.",
+          "href": "/customers",
+          "done": false
+        },
+        {
+          "id": "payments",
+          "label": "Set up customer payments",
+          "detail": "Card, Apple Pay, or bank, paid to your own Stripe account.",
+          "href": "/settings/payments",
+          "done": false
+        },
+        {
+          "id": "job",
+          "label": "Book your first leak job",
+          "detail": "Inspect it on the phone.",
+          "href": "/jobs/new",
+          "done": false
+        },
+        {
+          "id": "report",
+          "label": "Send your first report",
+          "detail": "Finished on site and sent to the homeowner.",
+          "href": "/jobs",
+          "done": false
+        },
+        {
+          "id": "invoices",
+          "label": "Send your first invoices",
+          "detail": "Monthly billing is drafted from finished visits.",
+          "href": "/invoices",
+          "done": false
+        }
+      ]
+    },
+    {
+      "args": [
+        "both",
+        {
+          "people": 1,
+          "openInvites": 0,
+          "hasLogo": false,
+          "paymentsReady": false,
+          "customers": 0,
+          "visitPlans": 0,
+          "leakJobs": 0,
+          "reportsSent": 0,
+          "invoicesSent": 0,
+          "sample": {
+            "jobId": null,
+            "done": false
+          }
+        }
+      ],
+      "result": [
+        {
+          "id": "account",
+          "label": "Account created",
+          "detail": "Your shop is on Sundeck Pro.",
+          "href": "/settings/company",
+          "done": true
+        },
+        {
+          "id": "invite",
+          "label": "Invite your techs",
+          "detail": "They sign in on the Sundeck Pro app.",
+          "href": "/settings/team",
+          "done": false
+        },
+        {
+          "id": "logo",
+          "label": "Add your logo",
+          "detail": "It goes on every report, quote, and invoice.",
+          "href": "/settings/company",
+          "done": false
+        },
+        {
+          "id": "customers",
+          "label": "Add your customers and their pools",
+          "detail": "Import a spreadsheet, or add them one by one.",
+          "href": "/settings/import",
+          "done": false
+        },
+        {
+          "id": "plans",
+          "label": "Give each pool a visit plan",
+          "detail": "The day, how often, and the price per visit.",
+          "href": "/customers",
+          "done": false
+        },
+        {
+          "id": "payments",
+          "label": "Set up customer payments",
+          "detail": "Card, Apple Pay, or bank, paid to your own Stripe account.",
+          "href": "/settings/payments",
+          "done": false
+        },
+        {
+          "id": "job",
+          "label": "Book your first leak job",
+          "detail": "Inspect it on the phone.",
+          "href": "/jobs/new",
+          "done": false
+        },
+        {
+          "id": "report",
+          "label": "Send your first report",
+          "detail": "Finished on site and sent to the homeowner.",
+          "href": "/jobs",
+          "done": false
         },
         {
           "id": "invoices",

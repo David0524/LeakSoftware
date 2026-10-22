@@ -1,12 +1,13 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useTransition } from "react";
 import { COMPLETE_READY_LINE, type JobStatus } from "@leakbook/core";
 import { changeJobStatus } from "@/app/actions/inspection";
 import { orOffline } from "@/lib/offline";
 import { NEXT_STEP_LABELS, nextStepButtons, type NextStep } from "@/lib/next-step";
 import { CompleteJobButton, type SendPrompt } from "./job-work";
 import { requestNextStep, useDraftWritable, useTyping } from "./next-step-events";
+import { saveFailed, useJobStatus, useSetJobStatus } from "./instant";
 import { buttonClass } from "./ui";
 
 export interface NextStepJob {
@@ -30,7 +31,9 @@ export interface NextStepJob {
 export function NextStepBar({ section, job }: { section: string; job: NextStepJob }) {
   const canWriteDraft = useDraftWritable();
   const typing = useTyping();
-  const buttons: NextStep[] = nextStepButtons({ ...job, section, canWriteDraft });
+  // A status change shows here at once (owner, 2026-10-22).
+  const status = useJobStatus(job.jobId, job.status);
+  const buttons: NextStep[] = nextStepButtons({ ...job, status, section, canWriteDraft });
   if (buttons.length === 0) return null;
   return (
     <>
@@ -83,27 +86,23 @@ export function NextStepBar({ section, job }: { section: string; job: NextStepJo
   );
 }
 
-/** Start Job, as in the header (same action and errors). */
+/** Start Job, as in the header (same action; it shows started at once, owner 2026-10-22). */
 function StartJob({ jobId }: { jobId: string }) {
   const [pending, start] = useTransition();
-  const [error, setError] = useState<string | null>(null);
+  const setStatus = useSetJobStatus();
   return (
-    <div className="min-w-0 flex-1 space-y-1">
-      {error ? (
-        <p role="alert" className="px-2 text-[0.9375rem] text-status-fail">
-          {error}
-        </p>
-      ) : null}
+    <div className="min-w-0 flex-1">
       <button
         type="button"
         disabled={pending}
         onClick={() =>
           start(async () => {
+            setStatus(jobId, "in_progress");
             const form = new FormData();
             form.set("job", jobId);
             form.set("to", "in_progress");
             const result = await orOffline(changeJobStatus)({}, form);
-            setError(result.error ?? null);
+            if (result.error) saveFailed(result.error);
           })
         }
         className={buttonClass("primary", "w-full")}

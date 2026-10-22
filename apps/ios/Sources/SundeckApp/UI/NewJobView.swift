@@ -21,7 +21,7 @@
                         form: form, back: back, onCreated: { replaceRoute(.job($0)) },
                         onPlanStarted: { replaceRoute(.more(.customer($0))) })
                 } else {
-                    ProgressView()
+                    SkeletonCard(label: "Loading New Job").padding(16).frame(maxHeight: .infinity, alignment: .top)
                 }
             }
             .onAppear {

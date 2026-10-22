@@ -143,7 +143,11 @@ export function TodayComplete({
     if (job.type === "maintenance" && blocker) return setAsked(true);
     setAsked(false);
     const complete = () => {
-      sync.write("job", job.id, job.company_id, markCompleteValues(job, day));
+      // With this phone's time, so the owner's Team says when even if it syncs later.
+      sync.write("job", job.id, job.company_id, {
+        ...markCompleteValues(job, day),
+        stop_done_at: new Date().toISOString(),
+      });
       // A light tap on Today's card (docs/design/2026-10-20-today-card.md).
       if (onWater) haptics.light();
       else haptics.success();

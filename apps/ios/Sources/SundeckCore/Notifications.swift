@@ -6,7 +6,7 @@ import Foundation
 // same thing.
 
 public enum NotificationKind: String, Codable, CaseIterable, Sendable {
-    case text, job, quote, payment, report, opened, live
+    case text, job, quote, payment, report, opened, live, day
 }
 
 /// Each kind a person can turn off in More › Notifications (`NOTIFICATION_KINDS`).
@@ -19,6 +19,8 @@ public let notificationKinds: [(key: NotificationKind, label: String, hint: Stri
     // Owner, 2026-10-22: "Techs never hear the outcome." The customer's first open of a report.
     (.opened, "Opened reports", "A customer opens a report for the first time."),
     (.live, "Live Activity", "Your current stop on the Lock Screen during the workday."),
+    // Owner, 2026-10-22: "Techs: the first stop of the day opens in one tap from the notification."
+    (.day, "Start of the day", "Your first stop, when your workday starts."),
 ]
 
 /// Whether a person gets a kind: on unless their notification prefs turn it off.
@@ -309,4 +311,67 @@ public func liveStopRuns(settings: JSONValue?, date: String, nowMin: Int, stopsL
     let r = routingSettings(settings)
     guard let day = weekday(date), r.workDays.contains(day) else { return false }
     return nowMin >= workDay(r).startMin && stopsLeft > 0
+}
+
+// MARK: - The start of the day (owner, 2026-10-22: "Techs: the first stop of the day opens in one
+// tap from the notification"; docs/design/2026-10-22-first-win.md)
+
+/// "5 stops today" · "First: Smith, 123 Palm Ln". Port of dayStartNotification.
+public func dayStartNotification(_ stops: Int, customer: String, address: String?) -> NotificationText {
+    NotificationText(
+        title: stops == 1 ? "1 stop today" : "\(stops) stops today",
+        body: "First: " + [customer, address].compactMap { $0 }.filter { !$0.isEmpty }.joined(separator: ", "))
+}
+
+/// One day of a person's stops that aren't done, in route order. Port of DayStartDay.
+public struct DayStartDay: Codable, Equatable, Sendable {
+    public struct Stop: Codable, Equatable, Sendable {
+        public var id: String
+        public var customer: String
+        public var address: String?
+
+        public init(id: String, customer: String, address: String?) {
+            self.id = id
+            self.customer = customer
+            self.address = address
+        }
+    }
+
+    /// The shop's local date ("2026-10-23").
+    public var date: String
+    public var stops: [Stop]
+
+    public init(date: String, stops: [Stop]) {
+        self.date = date
+        self.stops = stops
+    }
+}
+
+/// The start-of-day notification to schedule. Port of DayStartAlert.
+public struct DayStartAlert: Codable, Equatable, Sendable {
+    public var date: String
+    /// When to show it: the start of the shop's working day.
+    public var at: String
+    /// The first stop, which a tap opens (Today when it's gone).
+    public var jobId: String
+    public var text: NotificationText
+}
+
+/// The next start-of-day notification the phone schedules for itself: the first work day, from
+/// today if the working day hasn't started yet, on which the person has stops. Port of
+/// dayStartAlert.
+public func dayStartAlert(
+    settings: JSONValue?, timeZone: String, today: String, nowMin: Int, days: [DayStartDay]
+) -> DayStartAlert? {
+    let r = routingSettings(settings)
+    let startMin = workDay(r).startMin
+    for d in days.sorted(by: { $0.date < $1.date }) {
+        if d.date < today || (d.date == today && nowMin >= startMin) { continue }
+        guard let day = weekday(d.date), r.workDays.contains(day), let first = d.stops.first else { continue }
+        guard let at = try? zonedMinutesToIso(d.date, startMin, timeZone) else { continue }
+        return DayStartAlert(
+            date: d.date, at: at, jobId: first.id,
+            text: dayStartNotification(d.stops.count, customer: first.customer, address: first.address))
+    }
+    return nil
 }

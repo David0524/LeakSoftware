@@ -75,14 +75,14 @@ export function ReportLoading({ title = "Getting your report ready" }: { title?:
       </ol>
       {/* The report's outline, shimmering into place. */}
       <div aria-hidden="true" className="card mt-8 space-y-3 p-5">
-        <div className="h-5 w-2/3 animate-pulse rounded bg-fill motion-reduce:animate-none" />
-        <div className="h-3 w-full animate-pulse rounded bg-fill motion-reduce:animate-none" />
-        <div className="h-3 w-5/6 animate-pulse rounded bg-fill motion-reduce:animate-none" />
-        <div className="mt-4 h-32 animate-pulse rounded-lg bg-fill motion-reduce:animate-none" />
+        <div className="shimmer h-5 w-2/3 rounded bg-fill" />
+        <div className="shimmer h-3 w-full rounded bg-fill" />
+        <div className="shimmer h-3 w-5/6 rounded bg-fill" />
+        <div className="shimmer mt-4 h-32 rounded-lg bg-fill" />
         <div className="grid grid-cols-3 gap-2">
-          <div className="aspect-square animate-pulse rounded bg-fill motion-reduce:animate-none" />
-          <div className="aspect-square animate-pulse rounded bg-fill motion-reduce:animate-none" />
-          <div className="aspect-square animate-pulse rounded bg-fill motion-reduce:animate-none" />
+          <div className="shimmer aspect-square rounded bg-fill" />
+          <div className="shimmer aspect-square rounded bg-fill" />
+          <div className="shimmer aspect-square rounded bg-fill" />
         </div>
       </div>
     </div>

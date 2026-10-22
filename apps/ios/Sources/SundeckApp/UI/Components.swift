@@ -386,6 +386,14 @@
         }
     }
 
+    /// The sample job's pill (owner, 2026-10-22: "clearly marked 'Sample' everywhere it shows"),
+    /// on its Today row, Schedule card, Jobs row and page, as the website.
+    struct SamplePill: View {
+        var body: some View {
+            Chip(text: samplePill, tone: .warning).accessibilityLabel("Sample job")
+        }
+    }
+
     /// A job's status as a solid chip, colored per spec 3.6. `StatusChip(status: job.status)`
     struct StatusChip: View {
         var status: JobStatus

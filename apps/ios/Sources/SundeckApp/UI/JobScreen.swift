@@ -57,7 +57,10 @@
 
         var body: some View {
             Group {
-                if let job, let company = session.company {
+                if let job, job.job["sample"]?.bool == true {
+                    // The sample job opens to its finished report (owner, 2026-10-22: first win).
+                    SampleJobScreen(job: job)
+                } else if let job, let company = session.company {
                     content(job, company)
                 } else {
                     ContentUnavailableView("This job isn’t on this phone.", systemImage: "questionmark.folder")

@@ -1,3 +1,4 @@
+import { SamplePill } from "@/components/sample-pill";
 import type { Metadata } from "next";
 import Link from "next/link";
 import {
@@ -19,10 +20,10 @@ import {
   Grouped,
   PageHeader,
   RowContent,
-  StatusBadge,
   buttonClass,
   pillClass,
 } from "@/components/ui";
+import { LiveStatusBadge } from "@/components/instant";
 import { getOffice } from "@/lib/auth";
 import { OPEN_STATUSES, getCompany, listJobs, mayMakeJobs, type JobRow } from "@/lib/data";
 import { getLine } from "@/lib/messages";
@@ -176,11 +177,17 @@ export default async function JobsPage({ searchParams }: PageProps<"/jobs">) {
                 <JobActions key={j.id} as="li" job={actions(j)}>
                   <RowContent
                     href={`/jobs/${j.id}`}
-                    label={<span className="font-semibold">{j.customer?.name ?? "Customer"}</span>}
+                    label={
+                      <span className="font-semibold">
+                        {j.customer?.name ?? "Customer"}
+                        {j.sample ? <SamplePill className="ml-2 align-middle" /> : null}
+                      </span>
+                    }
                     detail={
                       <>
                         <span className="block">
-                          {j.number ? `#${j.number}` : "New job"} · {JOB_TYPE_LABELS[j.type]}
+                          {j.number ? `#${j.number}` : j.sample ? "Sample job" : "New job"} ·{" "}
+                          {JOB_TYPE_LABELS[j.type]}
                         </span>
                         {j.property ? (
                           <span className="block truncate">{formatAddress(j.property)}</span>
@@ -198,7 +205,7 @@ export default async function JobsPage({ searchParams }: PageProps<"/jobs">) {
                         </span>
                       </>
                     }
-                    value={<StatusBadge status={j.status} />}
+                    value={<LiveStatusBadge jobId={j.id} status={j.status} />}
                   />
                 </JobActions>
               ))}
@@ -237,20 +244,23 @@ export default async function JobsPage({ searchParams }: PageProps<"/jobs">) {
                           href={`/jobs/${j.id}`}
                           className="font-semibold text-link underline-offset-4 hover:underline"
                         >
-                          {j.number ? `#${j.number}` : "New job"}
+                          {j.number ? `#${j.number}` : j.sample ? "Sample job" : "New job"}
                         </Link>
                         <div className="text-[0.9375rem] text-text-muted">
                           {JOB_TYPE_LABELS[j.type]}
                         </div>
                       </td>
                       <td className="px-4 py-3 align-top">
-                        <div className="font-medium">{j.customer?.name ?? "Customer"}</div>
+                        <div className="font-medium">
+                          {j.customer?.name ?? "Customer"}
+                          {j.sample ? <SamplePill className="ml-2 align-middle" /> : null}
+                        </div>
                         <div className="text-[0.9375rem] text-text-muted">
                           {j.property ? formatAddress(j.property) : ""}
                         </div>
                       </td>
                       <td className="px-4 py-3 align-top">
-                        <StatusBadge status={j.status} />
+                        <LiveStatusBadge jobId={j.id} status={j.status} />
                       </td>
                       <td className="px-4 py-3 align-top whitespace-nowrap">
                         {j.status === "in_progress" && j.started_at

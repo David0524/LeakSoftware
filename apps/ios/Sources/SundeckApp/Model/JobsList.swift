@@ -140,6 +140,8 @@ public struct JobListRow: Identifiable, Equatable, Sendable {
     public var place: MapPlace? = nil
     public var completable = false
     public var movable = false
+    /// The shop's sample job (owner, 2026-10-22): a Sample pill by the name.
+    public var sample = false
 }
 
 /// The Jobs list for a filter, search and sort: deleted jobs left out, a limited tech's own jobs
@@ -176,9 +178,11 @@ public func jobList(
             ? "Started"
             : (try? formatSchedule(v.job["scheduled_start"]?.string, now, timeZone)) ?? "Not scheduled"
         let address = v.property.map { addressText($0) }.flatMap { $0.isEmpty ? nil : $0 }
-        return JobListRow(
+        let sample = v.job["sample"]?.bool == true
+        let number = v.number.map { "#\($0)" } ?? (sample ? "Sample job" : "New job")
+        var row = JobListRow(
             id: v.id, customer: v.customerName,
-            kind: "\(v.number.map { "#\($0)" } ?? "New job") · \(jobTypeLabel(v.type))", address: address,
+            kind: "\(number) · \(jobTypeLabel(v.type))", address: address,
             when: "\(when) · \(tech)", status: v.status, customerId: v.customer?.id,
             phone: v.customer?["phone"]?.string.flatMap { $0.isEmpty ? nil : $0 }, number: v.number,
             place: address.map { a in
@@ -191,6 +195,8 @@ public func jobList(
             },
             completable: jobHeaderPhoneActions(v.status, type: v.type).contains(.done) || checklistShowsCompleteJob(v),
             movable: canMoveJob(v.status) && jobReschedulable(type: v.type.rawValue, status: v.status.rawValue))
+        row.sample = sample
+        return row
     }
 }
 

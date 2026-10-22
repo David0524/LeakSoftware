@@ -69,3 +69,57 @@ describe("Mark Complete as the last thing", () => {
     expect(COMPLETE_READY_LINE).toBe("Everything’s checked. Mark it complete.");
   });
 });
+
+describe("the owner's Team on Today", () => {
+  const t = (
+    customer: string,
+    done: boolean,
+    o: Partial<import("../src").TeamStop> = {},
+  ): import("../src").TeamStop => ({ customer, done, durationMin: 30, driveMin: 10, ...o });
+
+  it("before the first stop: the plan's count and the first stop, nothing done", async () => {
+    const { techDayProgress } = await import("../src");
+    expect(techDayProgress([t("Ames", false), t("Baker", false)])).toMatchObject({
+      line: "2 stops",
+      current: { customer: "Ames", started: false },
+      lastDone: null,
+    });
+    expect(techDayProgress([t("Ames", false)]).line).toBe("1 stop");
+  });
+
+  it("the stop they started, and the last one done by its time", async () => {
+    const { techDayProgress } = await import("../src");
+    const day = [
+      t("Ames", true, { doneAt: "2026-10-22T15:10:00Z" }),
+      // Done out of order, later.
+      t("Cole", true, { doneAt: "2026-10-22T16:42:00Z" }),
+      t("Baker", false),
+      t("Diaz", false, { onSite: true }),
+      ...Array.from({ length: 4 }, (_, i) => t(`Stop ${i}`, false)),
+    ];
+    expect(techDayProgress(day)).toMatchObject({
+      line: "2 of 8 stops",
+      current: { customer: "Diaz", started: true },
+      lastDone: { customer: "Cole", at: "2026-10-22T16:42:00Z" },
+    });
+  });
+
+  it("without times, the last done in route order; a timed one beats an untimed one", async () => {
+    const { techDayProgress } = await import("../src");
+    expect(techDayProgress([t("Ames", true), t("Baker", true), t("Cole", false)]).lastDone).toEqual(
+      { customer: "Baker", at: null },
+    );
+    expect(
+      techDayProgress([t("Ames", true, { doneAt: "2026-10-22T15:00:00Z" }), t("Baker", true)])
+        .lastDone,
+    ).toEqual({ customer: "Ames", at: "2026-10-22T15:00:00Z" });
+  });
+
+  it("all done: no stop on, the ring's words", async () => {
+    const { techDayProgress, lastDoneLine } = await import("../src");
+    const p = techDayProgress([t("Ames", true), t("Baker", true)]);
+    expect(p).toMatchObject({ line: "All 2 done", current: null });
+    expect(lastDoneLine("Baker", "10:42 AM")).toBe("Last done: Baker at 10:42 AM");
+    expect(lastDoneLine("Baker", null)).toBe("Last done: Baker");
+  });
+});

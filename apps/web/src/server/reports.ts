@@ -100,8 +100,11 @@ export function publicClient(): SupabaseClient {
 export async function reportPdf(
   origin: string,
   token: string,
-  ids: { companyId: string; jobId: string; reportId: string },
+  ids: { companyId: string; jobId: string; reportId: string; sample?: boolean },
 ): Promise<Buffer> {
+  // The sample's report follows the shop's logo and name (owner, 2026-10-22), so it's drawn
+  // fresh each time instead of kept.
+  if (ids.sample) return renderPdf(`${origin}/r/${token}?print=1`);
   const path = reportPdfPath(ids.companyId, ids.jobId, ids.reportId);
   const stored = await publicClient().storage.from("documents").download(path);
   if (stored.data) return Buffer.from(await stored.data.arrayBuffer());
@@ -291,7 +294,16 @@ async function finishedToken(db: SupabaseClient, reportId: string): Promise<stri
 export async function sendReport(
   db: SupabaseClient,
   reportId: string,
-  opts: { channel: Channel; to?: string | null; origin: string },
+  opts: {
+    channel: Channel;
+    to?: string | null;
+    origin: string;
+    /**
+     * The sample job's Send Yourself This Report (owner, 2026-10-22): to the signed-in person
+     * only (never the customer's other addresses), worded for them.
+     */
+    self?: { name: string | null };
+  },
 ): Promise<SendResult> {
   const to = opts.to?.trim() || null;
   if (opts.channel === "email") {
@@ -326,7 +338,7 @@ export async function sendReport(
   }
 
   // The customer's other addresses get the report too, once each.
-  const cc = ccList(snapshot.customer?.cc_emails, to!);
+  const cc = opts.self ? [] : ccList(snapshot.customer?.cc_emails, to!);
   const refusal = await emailRefusal(db, report.company_id as string, 1 + cc.length);
   if (refusal) throw new Refusal(refusal);
   let pdf: Buffer | null = null;
@@ -335,22 +347,28 @@ export async function sendReport(
       companyId: report.company_id,
       jobId: report.job_id,
       reportId,
+      sample: snapshot.job.sample === true,
     });
   } catch {
     // The link still works; the PDF can be downloaded from the report page.
   }
   const attach = pdf && pdf.length < 5 * 1024 * 1024;
-  const greeting = snapshot.customer?.name ? `Hi ${snapshot.customer.name},` : "Hello,";
+  const name = opts.self ? opts.self.name : snapshot.customer?.name;
+  const greeting = name ? `Hi ${name},` : "Hello,";
   const sentTo = [to!, ...cc].join(", ");
+  // Sent to yourself: the sample, as your customers get it.
+  const lead = opts.self
+    ? `Here’s your sample ${what}, the way your customers get it.`
+    : `Your ${what} for ${snapshot.property.address} is ready.`;
   try {
     const sent = await sendEmail({
       from: fromAddress(shop),
       to: to!,
       cc,
       replyTo: snapshot.company.email,
-      subject: `Your ${what} from ${shop}`,
-      text: `${greeting}\n\nYour ${what} for ${snapshot.property.address} is ready:\n${link}\n\n${shop}${snapshot.company.phone ? `\n${snapshot.company.phone}` : ""}`,
-      html: `<p>${escapeHtml(greeting)}</p><p>Your ${what} for ${escapeHtml(snapshot.property.address)} is ready.</p><p><a href="${link}">View your report</a></p><p>${escapeHtml(shop)}${snapshot.company.phone ? `<br>${escapeHtml(snapshot.company.phone)}` : ""}</p>`,
+      subject: opts.self ? `Sample: your ${what} from ${shop}` : `Your ${what} from ${shop}`,
+      text: `${greeting}\n\n${lead.replace(/\.$/, ":")}\n${link}\n\n${shop}${snapshot.company.phone ? `\n${snapshot.company.phone}` : ""}`,
+      html: `<p>${escapeHtml(greeting)}</p><p>${escapeHtml(lead)}</p><p><a href="${link}">View your report</a></p><p>${escapeHtml(shop)}${snapshot.company.phone ? `<br>${escapeHtml(snapshot.company.phone)}` : ""}</p>`,
       attachments: attach ? [{ filename: `${shop} ${what}.pdf`, content: pdf! }] : [],
     });
     await db.rpc("log_message", {

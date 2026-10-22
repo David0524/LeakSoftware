@@ -1,3 +1,4 @@
+import { LiveRefresh } from "@/components/live-refresh";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { SegmentedLinks, SwipeHrefs } from "@/components/gestures";
@@ -24,6 +25,7 @@ import {
   jobLock,
   asksPlanMove,
   scheduleOrder,
+  scheduleBounds,
 } from "@leakbook/core";
 import { lockTag } from "@/lib/day-map";
 import { NotOnMapTag } from "@/components/not-on-map";
@@ -105,6 +107,7 @@ function toStop(j: JobRow, ctx: RouteContext, route?: DayRoute, i = 0): BoardSto
     id: j.id,
     number: j.number ?? null,
     customer: j.customer?.name ?? "Customer",
+    sample: j.sample === true,
     address: j.property ? formatAddress(j.property) : "",
     location: propertyLocation(j.property),
     time: j.scheduled_start ? formatTime(j.scheduled_start, ctx.timeZone) : null,
@@ -397,8 +400,12 @@ export default async function SchedulePage({ searchParams }: PageProps<"/schedul
     </>
   );
 
+  // Live (owner, 2026-10-22: "desktop Week updates as stops complete"): a job started, done or
+  // moved elsewhere shows here within seconds, without a reload.
+  const live = scheduleBounds(days, ctx.timeZone);
   return (
     <MapProviderScope provider={resolveMapProvider()}>
+      <LiveRefresh from={live.from} to={live.to} />
       <PageHeader
         title="Schedule"
         navAction={canAdd ? <NavPlus href="/jobs/new" label="New Job" /> : undefined}

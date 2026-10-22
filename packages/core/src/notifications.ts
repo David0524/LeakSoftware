@@ -5,9 +5,10 @@
  */
 
 import { cleaningDueSpoken, cleaningShortLabel, type CleaningKind } from "./maintenance";
-import { routingSettings, weekday, workDay } from "./route-plan";
+import { routingSettings, weekday, workDay, zonedMinutesToIso } from "./route-plan";
 
-export type NotificationKind = "text" | "job" | "quote" | "payment" | "report" | "opened" | "live";
+export type NotificationKind =
+  "text" | "job" | "quote" | "payment" | "report" | "opened" | "live" | "day";
 
 /** Each kind a person can turn off in More › Notifications or Settings › Notifications. */
 export const NOTIFICATION_KINDS: { key: NotificationKind; label: string; hint: string }[] = [
@@ -30,6 +31,13 @@ export const NOTIFICATION_KINDS: { key: NotificationKind; label: string; hint: s
     key: "live",
     label: "Live Activity",
     hint: "Your current stop on the Lock Screen during the workday.",
+  },
+  // Owner, 2026-10-22: "Techs: the first stop of the day opens in one tap from the
+  // notification." Shown by the phone itself at the start of the workday, so it needs no signal.
+  {
+    key: "day",
+    label: "Start of the day",
+    hint: "Your first stop, when your workday starts.",
   },
 ];
 
@@ -92,6 +100,69 @@ export function reportNotification(customer: string): NotificationText {
 /** The customer opened a report's link for the first time: "Rebecca Soto opened the report." */
 export function reportOpenedNotification(customer: string): NotificationText {
   return { title: "Report opened", body: `${customer} opened the report.` };
+}
+
+// ---------------------------------------------------------------------------
+// The start of the day (owner, 2026-10-22: "Techs: the first stop of the day opens in one tap
+// from the notification"; docs/design/2026-10-22-first-win.md)
+// ---------------------------------------------------------------------------
+
+/** "5 stops today" · "First: Smith, 123 Palm Ln". */
+export function dayStartNotification(
+  stops: number,
+  first: { customer: string; address: string | null },
+): NotificationText {
+  return {
+    title: stops === 1 ? "1 stop today" : `${stops} stops today`,
+    body: `First: ${[first.customer, first.address].filter(Boolean).join(", ")}`,
+  };
+}
+
+/** One day of a person's stops that aren't done, in route order. */
+export interface DayStartDay {
+  /** The shop's local date ("2026-10-23"). */
+  date: string;
+  stops: { id: string; customer: string; address: string | null }[];
+}
+
+export interface DayStartAlert {
+  date: string;
+  /** When to show it: the start of the shop's working day (Settings › Scheduling). */
+  at: string;
+  /** The first stop, which a tap opens (Today when it's gone). */
+  jobId: string;
+  text: NotificationText;
+}
+
+/**
+ * The next start-of-day notification the phone schedules for itself: the first work day, from
+ * today if the working day hasn't started yet, on which the person has stops. One at a time;
+ * the phone replaces it whenever its stops change.
+ */
+export function dayStartAlert(input: {
+  settings: unknown;
+  timeZone: string;
+  /** The shop's local date now, and minutes since its midnight. */
+  today: string;
+  nowMin: number;
+  days: DayStartDay[];
+}): DayStartAlert | null {
+  const r = routingSettings(input.settings);
+  const startMin = workDay(r).startMin;
+  const days = [...input.days].sort((a, b) => (a.date < b.date ? -1 : a.date > b.date ? 1 : 0));
+  for (const d of days) {
+    if (d.date < input.today || (d.date === input.today && input.nowMin >= startMin)) continue;
+    if (!r.workDays.includes(weekday(d.date))) continue;
+    const first = d.stops[0];
+    if (!first) continue;
+    return {
+      date: d.date,
+      at: zonedMinutesToIso(d.date, startMin, input.timeZone),
+      jobId: first.id,
+      text: dayStartNotification(d.stops.length, first),
+    };
+  }
+  return null;
 }
 
 // ---------------------------------------------------------------------------

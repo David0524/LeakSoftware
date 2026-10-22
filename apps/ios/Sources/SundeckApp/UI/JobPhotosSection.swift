@@ -215,7 +215,9 @@
                             } else if source == .unavailable {
                                 stillUploading
                             } else {
-                                ProgressView()
+                                // The photo's place while it's read (no spinner).
+                                Rectangle().fill(Color.fill).shimmer()
+                                    .accessibilityLabel("Loading the photo")
                             }
                         }
                         .contentShape(Rectangle())
@@ -248,7 +250,7 @@
                 } else if source == .unavailable {
                     stillUploading.frame(minHeight: 88)
                 } else {
-                    ProgressView().frame(maxWidth: .infinity, minHeight: 88)
+                    SkeletonLines(count: 2, label: "Loading the voice note").padding(16).frame(minHeight: 88)
                 }
             }
         }

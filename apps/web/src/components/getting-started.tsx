@@ -17,28 +17,53 @@ export async function GettingStarted() {
   const co = office.company.id;
   const count = (table: string) =>
     supabase.from(table).select("id", { count: "exact", head: true }).eq("company_id", co);
-  const [company, people, invites, customers, plans, leakJobs, reports, invoices, stripe] =
+  const [company, people, invites, customers, plans, leakJobs, reports, invoices, stripe, sample] =
     await Promise.all([
       getCompany(office),
       count("membership").eq("status", "active"),
       count("invite").is("accepted_at", null).is("revoked_at", null),
       count("customer").is("deleted_at", null),
       count("service_plan").is("deleted_at", null),
-      count("job").eq("type", "detection").is("deleted_at", null),
+      count("job").eq("type", "detection").eq("sample", false).is("deleted_at", null),
       count("report").not("sent_at", "is", null),
       count("invoice").not("sent_at", "is", null),
       supabase.from("stripe_account").select("charges_enabled").eq("company_id", co).maybeSingle(),
+      // The sample job (owner, 2026-10-22), deleted or not: a shop gets one, ever.
+      supabase
+        .from("job")
+        .select("id, deleted_at")
+        .eq("company_id", co)
+        .eq("sample", true)
+        .limit(1)
+        .maybeSingle(),
     ]);
+  // The sample is never counted: its made-up customer and its finished report.
+  const sampleLive = Boolean(sample.data && !sample.data.deleted_at);
+  const sampleSent = sample.data
+    ? sampleLive
+      ? ((
+          await supabase
+            .from("message")
+            .select("id", { count: "exact", head: true })
+            .eq("job_id", sample.data.id)
+            .eq("channel", "email")
+            .eq("status", "sent")
+        ).count ?? 0) > 0
+      : true
+    : false;
   const steps = gettingStarted(companyServices(company.settings), {
     people: people.count ?? 1,
     openInvites: invites.count ?? 0,
     hasLogo: Boolean(company.logo_path),
     paymentsReady: Boolean(stripe.data?.charges_enabled),
-    customers: customers.count ?? 0,
+    customers: Math.max(0, (customers.count ?? 0) - (sampleLive ? 1 : 0)),
     visitPlans: plans.count ?? 0,
     leakJobs: leakJobs.count ?? 0,
-    reportsSent: reports.count ?? 0,
+    reportsSent: Math.max(0, (reports.count ?? 0) - (sampleLive ? 1 : 0)),
     invoicesSent: invoices.count ?? 0,
+    sample: sample.data
+      ? { jobId: sampleLive ? (sample.data.id as string) : null, done: sampleSent }
+      : null,
   });
   const done = steps.filter((s) => s.done).length;
   if (done === steps.length) return null;

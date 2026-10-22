@@ -43,6 +43,7 @@ import {
   StatusChip,
   T,
   useScreenChrome,
+  SamplePill,
 } from "../../../../../ui/components";
 import {
   ShopSearchField,
@@ -486,11 +487,15 @@ function JobRowFace({
       gestures={g}
     >
       <View style={styles.rowBody}>
-        <T variant="bodyEmphasis" numberOfLines={1}>
-          {job.customer?.name ?? "Customer"}
-        </T>
+        <View style={styles.nameRow}>
+          <T variant="bodyEmphasis" numberOfLines={1} style={{ flexShrink: 1 }}>
+            {job.customer?.name ?? "Customer"}
+          </T>
+          {job.sample ? <SamplePill /> : null}
+        </View>
         <T variant="secondary" muted>
-          {job.number ? `#${job.number}` : "New job"} · {JOB_TYPE_LABELS[job.type]}
+          {job.number ? `#${job.number}` : job.sample ? "Sample job" : "New job"} ·{" "}
+          {JOB_TYPE_LABELS[job.type]}
         </T>
         {job.property ? (
           <T variant="secondary" muted numberOfLines={1}>
@@ -576,6 +581,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: space["4"],
   },
   rowBody: { flex: 1, gap: 2 },
+  nameRow: { flexDirection: "row", alignItems: "center", gap: 8 },
   searchRow: {
     flexDirection: "row",
     alignItems: "center",

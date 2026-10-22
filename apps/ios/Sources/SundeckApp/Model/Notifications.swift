@@ -14,10 +14,15 @@ public enum AppLink: Equatable, Sendable {
     /// A Live Activity button (owner, 2026-10-20): Today, on that stop, doing On My Way or Mark
     /// Complete there (with its Undo).
     case stop(String, LiveStopAction)
+    /// The start-of-day notification (owner, 2026-10-22): the first stop's job from Today, or
+    /// Today alone when that job is gone.
+    case dayStart(String)
 
     /// From a push's custom data: `{"job": id}` or `{"conversation": id}` (website notify-events).
     public init?(push userInfo: [AnyHashable: Any]) {
-        if let id = userInfo["job"] as? String, !id.isEmpty {
+        if userInfo["kind"] as? String == "day", let id = userInfo["job"] as? String, !id.isEmpty {
+            self = .dayStart(id)
+        } else if let id = userInfo["job"] as? String, !id.isEmpty {
             self = .job(id)
         } else if let id = userInfo["conversation"] as? String, !id.isEmpty {
             self = .conversation(id)

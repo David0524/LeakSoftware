@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 import { Suspense } from "react";
 import { WeeklySummaryOffForm } from "@/components/weekly-summary-off-form";
 import { publicClient } from "@/server/reports";
+import { CardSkeleton } from "@/components/page-skeleton";
 
 export const metadata: Metadata = { title: "Weekly Summary", robots: { index: false } };
 
@@ -14,7 +15,7 @@ export const metadata: Metadata = { title: "Weekly Summary", robots: { index: fa
 export default function WeeklySummaryPage({ params }: PageProps<"/weekly-summary/[token]">) {
   return (
     <main className="lb-light min-h-full flex-1 bg-bg text-text">
-      <Suspense fallback={<p className="p-8 text-center text-neutral-500">Loading…</p>}>
+      <Suspense fallback={<CardSkeleton />}>
         <WeeklySummary params={params} />
       </Suspense>
     </main>

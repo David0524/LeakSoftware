@@ -37,6 +37,11 @@
           "key": "live",
           "label": "Live Activity",
           "hint": "Your current stop on the Lock Screen during the workday."
+        },
+        {
+          "key": "day",
+          "label": "Start of the day",
+          "hint": "Your first stop, when your workday starts."
         }
       ]
     }
@@ -101,6 +106,13 @@
     },
     {
       "args": [
+        null,
+        "day"
+      ],
+      "result": true
+    },
+    {
+      "args": [
         {},
         "text"
       ],
@@ -145,6 +157,13 @@
       "args": [
         {},
         "live"
+      ],
+      "result": true
+    },
+    {
+      "args": [
+        {},
+        "day"
       ],
       "result": true
     },
@@ -214,6 +233,15 @@
     {
       "args": [
         {
+          "text": false
+        },
+        "day"
+      ],
+      "result": true
+    },
+    {
+      "args": [
+        {
           "text": true,
           "job": false
         },
@@ -284,6 +312,16 @@
     {
       "args": [
         {
+          "text": true,
+          "job": false
+        },
+        "day"
+      ],
+      "result": true
+    },
+    {
+      "args": [
+        {
           "payment": "false"
         },
         "text"
@@ -347,6 +385,15 @@
     {
       "args": [
         {
+          "payment": "false"
+        },
+        "day"
+      ],
+      "result": true
+    },
+    {
+      "args": [
+        {
           "quote": 0
         },
         "text"
@@ -409,6 +456,15 @@
     },
     {
       "args": [
+        {
+          "quote": 0
+        },
+        "day"
+      ],
+      "result": true
+    },
+    {
+      "args": [
         "x",
         "text"
       ],
@@ -458,6 +514,13 @@
     },
     {
       "args": [
+        "x",
+        "day"
+      ],
+      "result": true
+    },
+    {
+      "args": [
         [
           false
         ],
@@ -516,6 +579,15 @@
           false
         ],
         "live"
+      ],
+      "result": true
+    },
+    {
+      "args": [
+        [
+          false
+        ],
+        "day"
       ],
       "result": true
     }
@@ -4062,6 +4134,372 @@
         "access": null,
         "cleanings": []
       }
+    }
+  ],
+  "dayStartNotification": [
+    {
+      "args": [
+        5,
+        "Smith",
+        "123 Palm Ln"
+      ],
+      "result": {
+        "title": "5 stops today",
+        "body": "First: Smith, 123 Palm Ln"
+      }
+    },
+    {
+      "args": [
+        1,
+        "Jones",
+        null
+      ],
+      "result": {
+        "title": "1 stop today",
+        "body": "First: Jones"
+      }
+    },
+    {
+      "args": [
+        2,
+        "Lee",
+        ""
+      ],
+      "result": {
+        "title": "2 stops today",
+        "body": "First: Lee"
+      }
+    }
+  ],
+  "dayStartAlert": [
+    {
+      "args": [
+        {},
+        "America/Phoenix",
+        "2026-10-22",
+        360,
+        [
+          {
+            "date": "2026-10-22",
+            "stops": [
+              {
+                "id": "j1",
+                "customer": "Smith",
+                "address": "123 Palm Ln"
+              },
+              {
+                "id": "j2",
+                "customer": "Jones",
+                "address": null
+              }
+            ]
+          },
+          {
+            "date": "2026-10-23",
+            "stops": []
+          },
+          {
+            "date": "2026-10-24",
+            "stops": [
+              {
+                "id": "j2",
+                "customer": "Jones",
+                "address": null
+              }
+            ]
+          },
+          {
+            "date": "2026-10-26",
+            "stops": [
+              {
+                "id": "j2",
+                "customer": "Jones",
+                "address": null
+              },
+              {
+                "id": "j1",
+                "customer": "Smith",
+                "address": "123 Palm Ln"
+              }
+            ]
+          }
+        ]
+      ],
+      "result": {
+        "date": "2026-10-22",
+        "at": "2026-10-22T15:00:00.000Z",
+        "jobId": "j1",
+        "text": {
+          "title": "2 stops today",
+          "body": "First: Smith, 123 Palm Ln"
+        }
+      }
+    },
+    {
+      "args": [
+        {},
+        "America/Phoenix",
+        "2026-10-22",
+        480,
+        [
+          {
+            "date": "2026-10-22",
+            "stops": [
+              {
+                "id": "j1",
+                "customer": "Smith",
+                "address": "123 Palm Ln"
+              },
+              {
+                "id": "j2",
+                "customer": "Jones",
+                "address": null
+              }
+            ]
+          },
+          {
+            "date": "2026-10-23",
+            "stops": []
+          },
+          {
+            "date": "2026-10-24",
+            "stops": [
+              {
+                "id": "j2",
+                "customer": "Jones",
+                "address": null
+              }
+            ]
+          },
+          {
+            "date": "2026-10-26",
+            "stops": [
+              {
+                "id": "j2",
+                "customer": "Jones",
+                "address": null
+              },
+              {
+                "id": "j1",
+                "customer": "Smith",
+                "address": "123 Palm Ln"
+              }
+            ]
+          }
+        ]
+      ],
+      "result": {
+        "date": "2026-10-26",
+        "at": "2026-10-26T15:00:00.000Z",
+        "jobId": "j2",
+        "text": {
+          "title": "2 stops today",
+          "body": "First: Jones"
+        }
+      }
+    },
+    {
+      "args": [
+        {
+          "routing": {
+            "work_days": [
+              1,
+              2,
+              3,
+              4,
+              5,
+              6
+            ],
+            "day_start": "07:30"
+          }
+        },
+        "America/Phoenix",
+        "2026-10-22",
+        540,
+        [
+          {
+            "date": "2026-10-22",
+            "stops": [
+              {
+                "id": "j1",
+                "customer": "Smith",
+                "address": "123 Palm Ln"
+              },
+              {
+                "id": "j2",
+                "customer": "Jones",
+                "address": null
+              }
+            ]
+          },
+          {
+            "date": "2026-10-23",
+            "stops": []
+          },
+          {
+            "date": "2026-10-24",
+            "stops": [
+              {
+                "id": "j2",
+                "customer": "Jones",
+                "address": null
+              }
+            ]
+          },
+          {
+            "date": "2026-10-26",
+            "stops": [
+              {
+                "id": "j2",
+                "customer": "Jones",
+                "address": null
+              },
+              {
+                "id": "j1",
+                "customer": "Smith",
+                "address": "123 Palm Ln"
+              }
+            ]
+          }
+        ]
+      ],
+      "result": {
+        "date": "2026-10-24",
+        "at": "2026-10-24T14:30:00.000Z",
+        "jobId": "j2",
+        "text": {
+          "title": "1 stop today",
+          "body": "First: Jones"
+        }
+      }
+    },
+    {
+      "args": [
+        {},
+        "America/New_York",
+        "2026-10-25",
+        0,
+        [
+          {
+            "date": "2026-10-22",
+            "stops": [
+              {
+                "id": "j1",
+                "customer": "Smith",
+                "address": "123 Palm Ln"
+              },
+              {
+                "id": "j2",
+                "customer": "Jones",
+                "address": null
+              }
+            ]
+          },
+          {
+            "date": "2026-10-23",
+            "stops": []
+          },
+          {
+            "date": "2026-10-24",
+            "stops": [
+              {
+                "id": "j2",
+                "customer": "Jones",
+                "address": null
+              }
+            ]
+          },
+          {
+            "date": "2026-10-26",
+            "stops": [
+              {
+                "id": "j2",
+                "customer": "Jones",
+                "address": null
+              },
+              {
+                "id": "j1",
+                "customer": "Smith",
+                "address": "123 Palm Ln"
+              }
+            ]
+          }
+        ]
+      ],
+      "result": {
+        "date": "2026-10-26",
+        "at": "2026-10-26T12:00:00.000Z",
+        "jobId": "j2",
+        "text": {
+          "title": "2 stops today",
+          "body": "First: Jones"
+        }
+      }
+    },
+    {
+      "args": [
+        {},
+        "America/Phoenix",
+        "2026-10-22",
+        0,
+        []
+      ],
+      "result": null
+    },
+    {
+      "args": [
+        {},
+        "America/Phoenix",
+        "2026-10-27",
+        0,
+        [
+          {
+            "date": "2026-10-22",
+            "stops": [
+              {
+                "id": "j1",
+                "customer": "Smith",
+                "address": "123 Palm Ln"
+              },
+              {
+                "id": "j2",
+                "customer": "Jones",
+                "address": null
+              }
+            ]
+          },
+          {
+            "date": "2026-10-23",
+            "stops": []
+          },
+          {
+            "date": "2026-10-24",
+            "stops": [
+              {
+                "id": "j2",
+                "customer": "Jones",
+                "address": null
+              }
+            ]
+          },
+          {
+            "date": "2026-10-26",
+            "stops": [
+              {
+                "id": "j2",
+                "customer": "Jones",
+                "address": null
+              },
+              {
+                "id": "j1",
+                "customer": "Smith",
+                "address": "123 Palm Ln"
+              }
+            ]
+          }
+        ]
+      ],
+      "result": null
     }
   ],
   "liveStopRuns": [

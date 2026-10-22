@@ -51,8 +51,7 @@
                 .frame(maxWidth: .infinity, alignment: .leading)
             } else if let company = session.company {
                 // SwiftUI never runs onAppear on an empty view, so loading shows a real view.
-                ProgressView()
-                    .frame(maxWidth: .infinity, minHeight: minTarget)
+                SkeletonCard(label: "Loading the report")
                     .onAppear {
                         ownFlow = ReportFlow(
                             sync: sync, companyId: company.id, jobId: job.id, settings: company.settings,

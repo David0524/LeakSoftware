@@ -40,6 +40,8 @@ export interface Stop {
   id: string;
   number: number | null;
   customer: string;
+  /** The shop's sample job (owner, 2026-10-22): a Sample pill by the name. */
+  sample?: boolean;
   address: string;
   location: LatLng | null;
   time: string | null;

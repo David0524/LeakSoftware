@@ -1,5 +1,5 @@
-import { PageSkeleton } from "@/components/page-skeleton";
+import { ListSkeleton } from "@/components/page-skeleton";
 
 export default function Loading() {
-  return <PageSkeleton />;
+  return <ListSkeleton title="Jobs" filters={4} search pill />;
 }

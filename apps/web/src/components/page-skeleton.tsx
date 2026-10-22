@@ -1,16 +1,19 @@
+import Link from "next/link";
 import type { ReactNode } from "react";
+import { NavBar } from "./nav-bar";
 import { PageHeader, cx } from "./ui";
 
 /**
- * A soft placeholder shape: no spinner, a slow pulse (none with Reduce Motion). Never wider
- * than its column, so a fixed width in rem can't push the page sideways at large text sizes.
+ * A soft placeholder shape: no spinner, a highlight that sweeps across it (globals.css ›
+ * .shimmer; none with Reduce Motion). Never wider than its column, so a fixed width in rem
+ * can't push the page sideways at large text sizes.
  */
 export function Bone({ className, onWater = false }: { className?: string; onWater?: boolean }) {
   return (
     <span
       aria-hidden="true"
       className={cx(
-        "block max-w-full animate-pulse motion-reduce:animate-none",
+        "shimmer block max-w-full",
         // Pills unless the caller gives a shape.
         !/(^|\s)rounded-/.test(className ?? "") && "rounded-full",
         onWater ? "bg-water/20" : "bg-text/[0.07]",
@@ -20,11 +23,221 @@ export function Bone({ className, onWater = false }: { className?: string; onWat
   );
 }
 
+/**
+ * Any office page while it loads (owner, 2026-10-22: "Skeleton screens, not spinners"): a
+ * large title, then a grouped list of rows, the shape most pages have.
+ */
 export function PageSkeleton() {
   return (
-    <div aria-label="Loading" aria-busy="true">
-      <div className="h-9 w-48 max-w-full animate-pulse motion-reduce:animate-none rounded-md bg-surface" />
-      <div className="mt-6 h-64 animate-pulse motion-reduce:animate-none rounded-lg bg-surface" />
+    <div aria-busy="true">
+      <p className="sr-only" role="status">
+        Loading…
+      </p>
+      <div className="mb-4 sm:mb-6">
+        <Bone className="h-10 w-48 rounded-xl" />
+        <Bone className="mt-2 h-4 w-40" />
+      </div>
+      <div className="max-w-3xl space-y-6">
+        <GroupBone rows={4} />
+        <GroupBone rows={3} />
+      </div>
+    </div>
+  );
+}
+
+/** One row of a grouped list: one or two lines, and a pill at the end when the rows have one. */
+function RowBone({ i, pill = false, dot = false }: { i: number; pill?: boolean; dot?: boolean }) {
+  // Widths vary row to row, as real names do.
+  const w = ["w-2/5", "w-1/2", "w-1/3", "w-3/5", "w-2/5", "w-1/2"][i % 6];
+  return (
+    <li className="flex min-h-11 items-center gap-3 px-4 py-3">
+      {dot ? <Bone className="size-2.5 shrink-0" /> : null}
+      <span className="min-w-0 flex-1 space-y-2">
+        <Bone className={cx("h-4", w)} />
+        <Bone className={cx("h-3.5", i % 2 ? "w-3/4" : "w-2/3")} />
+      </span>
+      {pill ? <Bone className="h-6 w-20 shrink-0" /> : null}
+    </li>
+  );
+}
+
+/** A grouped list's shape: an optional section title, then its rows on one rounded block. */
+export function GroupBone({
+  rows,
+  title = false,
+  pill = false,
+  dot = false,
+  className,
+}: {
+  rows: number;
+  title?: boolean;
+  pill?: boolean;
+  dot?: boolean;
+  className?: string;
+}) {
+  return (
+    <div className={className} aria-hidden="true">
+      {title ? <Bone className="mb-2 ml-4 h-3 w-24" /> : null}
+      <ul className="grouped">
+        {Array.from({ length: rows }, (_, i) => (
+          <RowBone key={i} i={i} pill={pill} dot={dot} />
+        ))}
+      </ul>
+    </div>
+  );
+}
+
+/** Pills in a row: filters, or a job's sections on phones. */
+function PillsBone({ count, className }: { count: number; className?: string }) {
+  return (
+    <div className={cx("flex gap-2 overflow-hidden", className)} aria-hidden="true">
+      {Array.from({ length: count }, (_, i) => (
+        <Bone key={i} className={cx("h-11 shrink-0", i === 0 ? "w-24" : "w-20")} />
+      ))}
+    </div>
+  );
+}
+
+/**
+ * A list page (Jobs, Customers): its real title, the filters and search when it has them, then
+ * rows as the list draws them.
+ */
+export function ListSkeleton({
+  title,
+  filters = 0,
+  search = false,
+  pill = false,
+}: {
+  title: string;
+  filters?: number;
+  search?: boolean;
+  /** The rows end in a status pill (Jobs). */
+  pill?: boolean;
+}) {
+  return (
+    <Skeleton title={title}>
+      {filters ? <PillsBone count={filters} className="mb-5" /> : null}
+      {search ? (
+        <div className="mb-5 flex gap-3" aria-hidden="true">
+          <Bone className="h-11 flex-1 rounded-[10px] max-md:hidden" />
+          <Bone className="h-11 w-24" />
+        </div>
+      ) : null}
+      <GroupBone rows={7} pill={pill} className="max-w-3xl" />
+    </Skeleton>
+  );
+}
+
+/**
+ * A pushed page (a job, a customer) whose title is still on its way: Back, a title-sized
+ * shape, then the page's groups.
+ */
+function DetailSkeleton({
+  back,
+  label,
+  children,
+}: {
+  back: { href: string; label: string };
+  label: string;
+  children: ReactNode;
+}) {
+  return (
+    <div aria-busy="true">
+      <NavBar title="" titleId="title-loading" back={back} />
+      <p className="mb-2 max-sm:hidden">
+        <Link
+          href={back.href}
+          className="inline-flex min-h-11 items-center gap-1 text-link underline-offset-4 hover:underline"
+        >
+          ← {back.label}
+        </Link>
+      </p>
+      <p className="sr-only" role="status">
+        Loading {label}…
+      </p>
+      <div id="title-loading" className="mb-4 sm:mb-6" aria-hidden="true">
+        <Bone className="h-10 w-56 rounded-xl" />
+        <div className="mt-2 flex gap-3">
+          <Bone className="h-6 w-20" />
+          <Bone className="h-6 w-24" />
+          <Bone className="h-6 w-32" />
+        </div>
+      </div>
+      {children}
+    </div>
+  );
+}
+
+/** A job: Back to Jobs, the sections on phones, then Details' groups (two columns when wide). */
+export function JobSkeleton() {
+  return (
+    <DetailSkeleton back={{ href: "/jobs", label: "Jobs" }} label="the job">
+      <PillsBone count={5} className="mb-4 sm:hidden" />
+      <div className="grid grid-cols-[minmax(0,1fr)] items-start gap-6 lg:grid-cols-2">
+        <div className="space-y-6">
+          <GroupBone rows={3} title />
+          <GroupBone rows={2} title />
+        </div>
+        <div className="space-y-6">
+          <GroupBone rows={4} title />
+        </div>
+      </div>
+    </DetailSkeleton>
+  );
+}
+
+/** A customer: Back to Customers, then Contact, the pool, and their jobs (three columns wide). */
+export function CustomerSkeleton() {
+  return (
+    <DetailSkeleton back={{ href: "/customers", label: "Customers" }} label="the customer">
+      <div className="grid items-start gap-8 lg:grid-cols-3">
+        <GroupBone rows={3} title />
+        <GroupBone rows={3} title />
+        <GroupBone rows={3} title pill />
+      </div>
+    </DetailSkeleton>
+  );
+}
+
+/** Messages: the conversations (an unread dot, the name, the last line), the thread beside. */
+export function MessagesSkeleton() {
+  return (
+    <Skeleton title="Messages">
+      <div className="grid max-w-5xl gap-6 md:grid-cols-[minmax(0,22rem)_minmax(0,1fr)]">
+        <GroupBone rows={7} dot />
+        <div className="card space-y-4 p-5 max-md:hidden" aria-hidden="true">
+          <Bone className="h-10 w-3/5 rounded-2xl" />
+          <Bone className="ml-auto h-10 w-1/2 rounded-2xl" />
+          <Bone className="h-16 w-2/3 rounded-2xl" />
+          <Bone className="ml-auto h-10 w-2/5 rounded-2xl" />
+        </div>
+      </div>
+    </Skeleton>
+  );
+}
+
+/** A settings section: its real title, then a grouped list. */
+export function SettingsSkeleton({ title }: { title: string }) {
+  return (
+    <Skeleton title={title}>
+      <div className="max-w-2xl space-y-6">
+        <GroupBone rows={5} />
+        <GroupBone rows={2} />
+      </div>
+    </Skeleton>
+  );
+}
+
+/** Settings before it knows who's looking: the sections' sidebar when wide, and a section. */
+export function SettingsShellSkeleton() {
+  return (
+    <div className="grid grid-cols-[minmax(0,1fr)] gap-8 md:grid-cols-[232px_minmax(0,1fr)]">
+      <div className="space-y-3 max-md:hidden" aria-hidden="true">
+        {Array.from({ length: 9 }, (_, i) => (
+          <Bone key={i} className={cx("h-5", i % 3 === 0 ? "w-32" : "w-40")} />
+        ))}
+      </div>
+      <PageSkeleton />
     </div>
   );
 }
@@ -142,5 +355,56 @@ export function ScheduleSkeleton() {
         ))}
       </div>
     </Skeleton>
+  );
+}
+
+/**
+ * A customer's quote or invoice while it loads: the shop's header, the line items and the
+ * total on one card, then the pay button's place.
+ */
+export function DocSkeleton({ label }: { label: string }) {
+  return (
+    <div aria-busy="true" className="mx-auto w-full max-w-2xl px-4 py-6 sm:py-10">
+      <p className="sr-only" role="status">
+        Loading {label}…
+      </p>
+      <div className="card space-y-4 p-5 sm:p-8" aria-hidden="true">
+        <div className="flex items-center gap-3">
+          <Bone className="size-12 shrink-0 rounded-xl" />
+          <span className="flex-1 space-y-2">
+            <Bone className="h-5 w-1/2" />
+            <Bone className="h-3.5 w-1/3" />
+          </span>
+        </div>
+        <Bone className="h-7 w-2/3 rounded-lg" />
+        {[0, 1, 2, 3].map((i) => (
+          <div key={i} className="flex items-center gap-3">
+            <Bone className={cx("h-4 flex-1", i % 2 ? "max-w-[55%]" : "max-w-[70%]")} />
+            <Bone className="ml-auto h-4 w-16" />
+          </div>
+        ))}
+        <div className="flex justify-end pt-2">
+          <Bone className="h-6 w-28" />
+        </div>
+      </div>
+      <Bone className="mt-5 h-12 w-full" />
+    </div>
+  );
+}
+
+/** A one-card page (email preferences): a title, two lines, and its button. */
+export function CardSkeleton() {
+  return (
+    <div aria-busy="true" className="mx-auto max-w-lg p-4 sm:p-10">
+      <p className="sr-only" role="status">
+        Loading…
+      </p>
+      <div className="card space-y-4 p-5" aria-hidden="true">
+        <Bone className="h-7 w-4/5 rounded-lg" />
+        <Bone className="h-4 w-full" />
+        <Bone className="h-4 w-3/4" />
+        <Bone className="h-11 w-48" />
+      </div>
+    </div>
   );
 }

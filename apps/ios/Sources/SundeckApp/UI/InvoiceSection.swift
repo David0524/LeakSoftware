@@ -53,8 +53,7 @@
                 }
                 .frame(maxWidth: .infinity, alignment: .leading)
             } else if let company = session.company {
-                ProgressView()
-                    .frame(maxWidth: .infinity, minHeight: minTarget)
+                SkeletonCard(label: "Loading the invoice")
                     .onAppear { flow = InvoiceFlow(sync: sync, companyId: company.id, jobId: job.id) }
             }
         }

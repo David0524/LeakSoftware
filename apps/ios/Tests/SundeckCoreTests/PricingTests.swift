@@ -116,12 +116,13 @@ import Testing
     struct Progress: Decodable {
         let people, openInvites, customers, visitPlans, leakJobs, reportsSent, invoicesSent: Int
         let hasLogo, paymentsReady: Bool
+        let sample: SampleProgress?
 
         var value: ShopProgress {
             ShopProgress(
                 people: people, openInvites: openInvites, hasLogo: hasLogo, paymentsReady: paymentsReady,
                 customers: customers, visitPlans: visitPlans, leakJobs: leakJobs, reportsSent: reportsSent,
-                invoicesSent: invoicesSent)
+                invoicesSent: invoicesSent, sample: sample)
         }
     }
 }

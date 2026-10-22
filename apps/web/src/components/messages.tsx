@@ -2,6 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import { useActionState, useEffect, useId, useRef, useState, useTransition } from "react";
+import { saveFailed } from "./instant";
 import {
   callCustomer,
   markRead,
@@ -168,26 +169,25 @@ export function CallButton({ conversationId, name }: { conversationId: string; n
 export function MarkUnreadButton({ conversationId }: { conversationId: string }) {
   const router = useRouter();
   const [pending, start] = useTransition();
-  const [error, setError] = useState<string | null>(null);
   return (
-    <div className="flex flex-col items-end gap-2">
-      <Button
-        type="button"
-        kind="secondary"
-        disabled={pending}
-        onClick={() =>
-          start(async () => {
-            const r = await whenOffline(setUnread(conversationId, true), { error: NO_CONNECTION });
-            if (r.error) setError("Couldn’t mark it unread. Try again.");
-            else if (window.matchMedia("(min-width: 768px)").matches) router.refresh();
-            else router.push("/messages?list=1");
-          })
-        }
-      >
-        Mark as Unread
-      </Button>
-      {error ? <Banner tone="error">{error}</Banner> : null}
-    </div>
+    <Button
+      type="button"
+      kind="secondary"
+      disabled={pending}
+      onClick={() => {
+        // Phones go back to the list at once (owner, 2026-10-22: changes show instantly); the
+        // save follows, and one that fails says so in the top banner.
+        const phone = !window.matchMedia("(min-width: 768px)").matches;
+        if (phone) router.push("/messages?list=1");
+        start(async () => {
+          const r = await whenOffline(setUnread(conversationId, true), { error: NO_CONNECTION });
+          if (r.error) saveFailed("Couldn’t mark it unread. Try again.");
+          else if (!phone) router.refresh();
+        });
+      }}
+    >
+      Mark as Unread
+    </Button>
   );
 }
 

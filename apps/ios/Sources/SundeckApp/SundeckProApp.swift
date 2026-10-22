@@ -221,6 +221,7 @@
             .onChange(of: sync.revision) {
                 session.reloadCompanies()
                 app.liveStop.check()
+                DayStartNotifications.check(session)
             }
             .onChange(of: session.user) { app.walkthrough.reload() }
             .task(id: session.user?.id) {
@@ -236,10 +237,12 @@
                 // change, above), which keeps a removal.
                 guard scenePhase == .active, session.user != nil, session.company != nil else { return }
                 app.liveStop.foregrounded()
+                DayStartNotifications.check(session)
                 while !Task.isCancelled {
                     try? await Task.sleep(for: .seconds(60))
                     guard !Task.isCancelled else { return }
                     app.liveStop.check()
+                    DayStartNotifications.check(session)
                 }
             }
             .onOpenURL { url in

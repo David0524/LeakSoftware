@@ -9,6 +9,7 @@ import {
 import { ActivityItem } from "@/components/activity-rows";
 import { Dot } from "@/components/nav-links";
 import { Empty } from "@/components/ui";
+import { GroupBone } from "@/components/page-skeleton";
 import { activityPage, activityUnread } from "@/lib/activity";
 import { getOffice } from "@/lib/auth";
 
@@ -61,12 +62,7 @@ export async function TodayActivity() {
   );
 }
 
-/** The box Activity takes while it loads, so the map above it stays put. */
+/** Activity's rows while they load, so the map above it stays put. */
 export function TodayActivityLoading() {
-  return (
-    <div aria-hidden="true" className="mt-6">
-      <div className="mb-2 h-5 px-4" />
-      <div className="grouped h-56" />
-    </div>
-  );
+  return <GroupBone rows={4} title dot className="mt-6" />;
 }
