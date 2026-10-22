@@ -47,7 +47,7 @@
                     if list.canStartQuote {
                         Button {
                             // New Quote opens the quote it started.
-                            let id = quoteFlow().start()
+                            let id = startingQuoteFlow().start()
                             open = WrapUpOpen(step: .quote, refId: id ?? "draft")
                         } label: {
                             Label(newQuoteLabel, systemImage: "plus")
@@ -67,7 +67,7 @@
             }
         }
 
-        private func quoteFlow() -> QuoteFlow {
+        private func startingQuoteFlow() -> QuoteFlow {
             if let quoteFlow, quoteFlow.jobId == job.id { return quoteFlow }
             let company = session.company!
             let made = QuoteFlow(
