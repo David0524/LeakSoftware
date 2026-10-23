@@ -7,9 +7,10 @@ that you will make their lives easier, save them time, and show them a vision of
 successful future. No time limit … Use real screens from the iOS app to show off the tech's uses
 and the desktop version to show off the owner's uses. 16:9. Show off all of it."
 
-This is a third video, beside the two 45-second demos (`demo-videos.md`). It reuses their
-pipeline: the seeded video shops, the iPhone screen captures from CI, the website captures, and
-the Remotion project in `apps/video`.
+A new video, built from scratch (owner, 2026-10-23: "Please don't build on top of the other
+video. I didn't like it at all"). Nothing is reused from the two 45-second demos
+(`demo-videos.md`): not their code, music, look or edit. Only the shop names and the photos and
+logos the owner made carry over.
 
 Status: **decided (section 7); building.** The owner generates the narration from the script in
 section 8; the music is made in code and cut to it.
@@ -189,7 +190,7 @@ shared demo company never shows. 5 to 15 seconds each is plenty; take two of eac
 9. **Swiping stop to stop on Today,** slowly, so the cards are readable.
 
 If any of these are a hassle, skip them: I'll rebuild the Live Activity and Dynamic Island as
-motion graphics from the real layout, like the 45-second videos did.
+motion graphics from the real layout.
 
 ## 6. Images to make in ChatGPT
 
@@ -250,8 +251,8 @@ Paste this style line in front of each prompt:
 
 1. **An AI voice, with captions kept on.** I write the script (section 8); the owner generates it
    in ElevenLabs and sends the audio files. Captions carry the key lines for muted viewing.
-2. **Music made in code** (`apps/video/audio/score.py`), extended to the full length and built
-   around the narration: quiet under the voice, lifting at every chapter break.
+2. **Music made in code,** written new for this film (not the 45-second videos' tracks) and
+   built around the narration: quiet under the voice, lifting at every chapter break.
 3. **Both shops:** Canyon State Leak Detection for the leak chapters, Blue Mesa Pool Co. for the
    pool chapters.
 4. **About 4 minutes, then a 60-second hype cut** from the same project once the long one is

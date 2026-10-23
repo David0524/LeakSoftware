@@ -4,7 +4,7 @@ Newest first. Each entry: date, decision, reason.
 
 ## 2026-10-23 (owner: "I need to build a video for this app that hypes it up but also demonstrates the full functionality")
 - **A third video: a launch film of about 4 minutes, 16:9**, half SaaS launch and half blue collar, for owners of pool and leak detection companies. It tours everything: tech side on the iPhone app's real screens, owner side on the desktop website's real screens. Then a 60-second hype cut from the same project. Plan, storyboard, iPhone shot list and image prompts in `docs/plans/launch-video.md`.
-- **An AI voice narrates it** (the owner generates it in ElevenLabs from the script in the plan's section 8), with captions kept on. **The music is made in code**, as for the 45-second videos. **Both video shops appear:** Canyon State Leak Detection in the leak chapters, Blue Mesa Pool Co. in the pool chapters.
+- **An AI voice narrates it** (the owner generates it in ElevenLabs from the script in the plan's section 8), with captions kept on. **The music is made in code**, written new. **Built from scratch** (owner: "Please don't build on top of the other video. I didn't like it at all"): nothing is reused from the 45-second videos' code, music, look or edit; only the shop names and the owner's photos and logos carry over. **Both video shops appear:** Canyon State Leak Detection in the leak chapters, Blue Mesa Pool Co. in the pool chapters.
 
 ## 2026-10-22 (owner: "There are issues downloading my company on iOS … Let run via the internet for the beginning")
 - **A new phone's first download leaves out deleted rows** (all four platforms' phones; the website doesn't download). On the dev project's demo company it was ~70,000 rows, 83% of them deleted by demo resets and tests (jobs 745 live of 4,253, checklists 5,765 of 30,135); now it is 13,900 rows in 8 pages of 2,000 (about 11 MB instead of ~72 MB). A pull from no cursor is a first download; the server marks its cursors (`"first": true`) so every page, and a download resumed after the app was killed, skips deleted rows. Changes and deletes made while it runs reach the phone with the next pull as before. Older app builds work unchanged (same calls; they pass the cursor back as it came). Discarding a rejected change now pulls from `{"from": "0"}`, which still includes deletes. Migration `20261022001900_first_download.sql`.
@@ -135,8 +135,6 @@ Newest first. Each entry: date, decision, reason.
 
 ## 2026-10-21 (owner: "Downloading your company takes a very long time. This needs to run in the background or something. You can't hold up new users this long")
 - **A new phone opens as soon as its company arrives** (the first page of the first download); the rest downloads behind the app. The sync bar says "Downloading your company · 42%", and the screens fill in every two seconds as rows land. iPhone and Android (the website doesn't download).
-## 2026-10-21 (owner, demo videos: "I can't listen right now. Just go with it.")
-- **The demo videos' music drafts stand as they are** (`apps/video/audio/score.py`); the video is built on their 24-bar grid. Changes to the music can still come after the owner listens.
 
 ## 2026-10-21 (owner: "The logo needs to park over the title"; "I can't scroll on a Scheduling tile"; "The cards should slide into new positions as I dangle the tile. Redesign those tiles too. They look super busy")
 - **The logo sits right above the large title** on the five tab pages and scrolls away with it; the bar keeps only its buttons. Every platform.
