@@ -1,4 +1,6 @@
-"""Screens for the laminate card, cut from the film's captures (run from apps/video/card after a capture; the results are committed, since captures/ is not).
+"""Screens for the laminate card, cut from the film's captures (run from apps/video/card after a
+capture; the results are committed, since captures/ is not). findings.png is the top of the
+iPhone suite's lv-findings capture (LaunchVideoShots.swift), cut by hand.
 
 quote-accepted.png: the customer's quote page after accepting, with the "Prepared for" card
 left out (as if scrolled under the shop's header) so the deposit line fits on the phone.

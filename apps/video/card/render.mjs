@@ -1,6 +1,8 @@
 // Renders the laminate card (run from apps/video): node card/render.mjs [front|back] [scale]
-// Writes out/card-<side>.png (trimmed, for sharing) and out/card-<side>-bleed.png; card/pdf.py
-// turns the bleed PNG into the print PDF (6.25 x 8.25 in, 0.125 in bleed).
+// At the default scale 4: out/card-<side>-ultra.png (7200 x 9600, the trimmed card, sharp
+// blown up to poster size) and out/card-<side>-bleed.png; then python3 card/finish.py <side>
+// makes the share JPEG and the print PDF. card/bg.png must be made at the same scale
+// (python3 card/background.py card/bg.png 7500 10000 for scale 4).
 import { chromium } from "playwright-core";
 import { mkdirSync } from "node:fs";
 import { dirname, resolve } from "node:path";
@@ -8,7 +10,7 @@ import { fileURLToPath } from "node:url";
 
 const here = dirname(fileURLToPath(import.meta.url));
 const side = process.argv[2] ?? "front";
-const scale = Number(process.argv[3] ?? 2);
+const scale = Number(process.argv[3] ?? 4);
 const out = resolve(here, "../out");
 mkdirSync(out, { recursive: true });
 const browser = await chromium.launch({
@@ -23,8 +25,8 @@ await page.evaluate(() => document.fonts.ready);
 await page.waitForLoadState("networkidle");
 await page.screenshot({ path: `${out}/card-${side}-bleed.png` });
 await page.screenshot({
-  path: `${out}/card-${side}.png`,
+  path: `${out}/card-${side}-ultra.png`,
   clip: { x: 37.5, y: 37.5, width: 1800, height: 2400 },
 });
 await browser.close();
-console.log(`out/card-${side}.png`);
+console.log(`out/card-${side}-ultra.png`);
