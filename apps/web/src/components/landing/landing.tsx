@@ -17,6 +17,7 @@ import {
   ReportDemo,
   ServiceChecklistDemo,
 } from "./demos";
+import { ClosingClip } from "./closing-clip";
 import { Hero, PackageProvider, signUpHref, usePackage } from "./hero";
 import { Reveal } from "./reveal";
 import { Pricing } from "./pricing";
@@ -24,12 +25,14 @@ import { Pricing } from "./pricing";
 // The home page's body. Everything follows the package switch (Pool Maintenance first, owner
 // 2026-10-15): each package shows only what applies to it. Section backgrounds alternate
 // (plain, a pale water tint, one navy band) so the long page reads in chapters, and the page
-// closes on water like it opens (owner, 2026-10-18: "a tad more interesting", not busy).
+// closes on water like it opens (owner, 2026-10-18: "a tad more interesting", not busy): the
+// 3D mark over the night sea.
 
 export function Landing() {
   return (
     <PackageProvider>
       <Hero />
+      <Facts />
       <Body />
     </PackageProvider>
   );
@@ -185,20 +188,23 @@ function Body() {
         </div>
       </Section>
 
+      {/* The close: the 3D mark over the night sea beside the last call to action (owner,
+          2026-10-23). The clip sits above the text on phones and fades in from the right on
+          wide screens; the words and buttons stay real text. */}
       <section className="relative overflow-hidden bg-header text-on-header">
-        <Water />
-        <div className="relative mx-auto flex max-w-6xl flex-col items-center px-4 py-20 text-center">
-          <h2 className="max-w-3xl font-display text-5xl leading-none font-extrabold tracking-tight sm:text-6xl">
+        <ClosingClip />
+        <div className="relative mx-auto flex max-w-6xl flex-col items-center px-4 pt-6 pb-20 text-center lg:items-start lg:py-36 lg:text-left">
+          <h2 className="max-w-3xl font-display text-5xl leading-none font-extrabold tracking-tight sm:text-6xl lg:max-w-[34rem]">
             {leak ? "Find it. Report it." : "Clean it. Bill it."}{" "}
             {/* Phones: "Get paid." on a line of its own, never split. */}
             <br className="sm:hidden" />
             <span className="whitespace-nowrap text-safety">Get paid.</span>
           </h2>
-          <p className="mt-5 max-w-xl text-[1.1875rem] text-neutral-200">
+          <p className="mt-5 max-w-xl text-[1.1875rem] text-neutral-200 lg:max-w-[30rem]">
             Try Sundeck Pro free for 30 days with your whole crew. Cancel before then and you pay
             nothing.
           </p>
-          <div className="mt-8 flex flex-wrap justify-center gap-3">
+          <div className="mt-8 flex flex-wrap justify-center gap-3 lg:justify-start">
             <ButtonLink
               href={signUpHref(leak ? "leak" : "maintenance")}
               kind="accent"
@@ -213,6 +219,54 @@ function Body() {
         </div>
       </section>
     </>
+  );
+}
+
+/**
+ * Three things that are true of every shop, right under the hero (owner, 2026-10-23: "A small
+ * strip of facts that are already true"). Each matches the FAQ's longer answer.
+ */
+const FACTS: { text: string; icon: ReactNode }[] = [
+  {
+    text: "Payments go straight to your Stripe account",
+    icon: <path d="M3 7.5h18v10H3zM3 11h18M7 15h3" />,
+  },
+  {
+    text: "Works with no signal",
+    icon: (
+      <>
+        <path d="M2 9a15 15 0 0 1 20 0M5.5 12.5a10 10 0 0 1 13 0M9 16a5 5 0 0 1 6 0" />
+        <path d="M3 3l18 18" />
+      </>
+    ),
+  },
+  { text: "Cancel any time", icon: <path d="M5 12.5l4.5 4.5L19 7.5" /> },
+];
+
+function Facts() {
+  return (
+    <section aria-label="Good to know" className="border-y border-separator">
+      <ul className="mx-auto flex w-fit max-w-6xl flex-col items-start gap-3 px-4 py-5 sm:w-auto sm:flex-row sm:items-center sm:justify-center sm:gap-10">
+        {FACTS.map((f) => (
+          <li
+            key={f.text}
+            className="flex items-start gap-2.5 text-[1.0625rem] font-semibold sm:items-center"
+          >
+            <svg
+              aria-hidden="true"
+              viewBox="0 0 24 24"
+              className="mt-0.5 size-5 flex-none fill-none stroke-link sm:mt-0"
+              strokeWidth="2.2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            >
+              {f.icon}
+            </svg>
+            {f.text}
+          </li>
+        ))}
+      </ul>
+    </section>
   );
 }
 
@@ -263,34 +317,6 @@ const FAQ: Record<PlanId, [string, string][]> = {
     ...SHARED,
   ],
 };
-
-/** Slow water lines drifting across the closing band, like the hero's pool. Still with Reduce Motion. */
-function Water() {
-  // One wave, drawn twice side by side, so sliding it half its width loops without a seam.
-  const wave = (y: number, amp: number) =>
-    Array.from({ length: 2 }, (_, k) => {
-      const x = k * 1200;
-      return `M${x} ${y} q150 -${amp} 300 0 t300 0 t300 0 t300 0`;
-    }).join(" ");
-  return (
-    <div aria-hidden="true" className="pointer-events-none absolute inset-0">
-      {[
-        { y: 30, amp: 14, speed: "lp-drift-slow", top: "top-[18%]", tone: "stroke-white/[0.07]" },
-        { y: 30, amp: 20, speed: "lp-drift", top: "top-[52%]", tone: "stroke-water/40" },
-        { y: 30, amp: 10, speed: "lp-drift-slow", top: "top-[78%]", tone: "stroke-white/[0.06]" },
-      ].map((w) => (
-        <svg
-          key={w.top}
-          viewBox="0 0 2400 60"
-          preserveAspectRatio="none"
-          className={`absolute left-0 h-16 w-[200%] max-w-none ${w.top} ${w.speed}`}
-        >
-          <path d={wave(w.y, w.amp)} className={`fill-none ${w.tone}`} strokeWidth="2" />
-        </svg>
-      ))}
-    </div>
-  );
-}
 
 type Tone = "plain" | "tint" | "dark";
 

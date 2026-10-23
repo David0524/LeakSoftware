@@ -23,9 +23,10 @@ const BUTTON: Record<ButtonKind, string> = {
   danger: "bg-status-fail/12 text-status-fail hover:bg-status-fail/18 active:bg-status-fail/24",
   // On the navy brand band (the home page hero).
   onDark: "border border-on-header text-on-header hover:bg-white/10",
-  // The brand's safety orange, for the marketing site's Start Free Trial only (one per
-  // screenful). Navy text: white on orange is too faint (brand/BRAND.md).
-  accent: "bg-safety text-navy hover:brightness-95",
+  // The marketing site's Start Free Trial only (one per screenful): white text (owner,
+  // 2026-10-23) on the brand's deep orange, which keeps white readable (4.8:1; white on the
+  // logo's safety orange is 3.1:1, brand/BRAND.md).
+  accent: "bg-safety-deep text-white hover:brightness-110 active:brightness-95",
 };
 
 export function buttonClass(kind: ButtonKind = "primary", extra?: string) {

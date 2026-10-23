@@ -3,6 +3,7 @@
   --lb-navy: #12263A;
   --lb-water: #1F6FAE;
   --lb-safety: #EE6A1F;
+  --lb-safety-deep: #C64B0C;
   --lb-concrete: #E9ECEF;
   --lb-paper: #FFFFFF;
   --lb-pass: #1B7D45;
@@ -207,6 +208,7 @@
   --color-navy: var(--lb-navy);
   --color-water: var(--lb-water);
   --color-safety: var(--lb-safety);
+  --color-safety-deep: var(--lb-safety-deep);
   --color-concrete: var(--lb-concrete);
   --color-paper: var(--lb-paper);
   --color-status-pass: var(--lb-pass);

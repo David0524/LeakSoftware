@@ -525,22 +525,14 @@ input[type="time"]::-webkit-date-and-time-value {
     animation: none;
   }
 }
-/* The closing band's water: lines drifting sideways, slowly (transform only, so it's cheap). */
-@keyframes lp-drift {
-  to {
-    transform: translateX(-50%);
-  }
+/* The closing band's clip: faded into the navy band, from below on phones, from the left on
+   wide screens (components/landing/closing-clip.tsx). */
+.lp-clip {
+  mask-image: linear-gradient(to bottom, #000 68%, transparent);
 }
-.lp-drift {
-  animation: lp-drift 38s linear infinite;
-}
-.lp-drift-slow {
-  animation: lp-drift 60s linear infinite;
-}
-@media (prefers-reduced-motion: reduce) {
-  .lp-drift,
-  .lp-drift-slow {
-    animation: none;
+@media (min-width: 64rem) {
+  .lp-clip {
+    mask-image: linear-gradient(to right, transparent, #000 38%);
   }
 }
 /* The signature's reveal: a clip that widens left to right, as if written. */

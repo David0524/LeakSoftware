@@ -27,13 +27,14 @@ Reports, quotes, invoices, and the customer payment page carry the **shop's** lo
 |---|---|---|
 | Navy | `#12263A` | Headers, primary text, app icon background |
 | Water | `#1F6FAE` | Info, logo pin. Links and focus rings use a slightly deeper `#1A63A0` so small text passes 4.5:1 on the page background (M11 review) |
-| Safety | `#EE6A1F` | Logo dot and brand accents: a display highlight, the marketing site's Start Free Trial. Use sparingly. |
+| Safety | `#EE6A1F` | Logo dot and brand accents: a display highlight. Use sparingly. |
+| Safety Deep | `#C64B0C` | The marketing site's Start Free Trial button, white text. |
 | Concrete | `#E9ECEF` | App background |
 | Paper | `#FFFFFF` | Cards, surfaces, documents |
 
 **Buttons (owner, 2026-10-15):** primary buttons in the app and on customer pages are filled blue with white text (`#1A63A0`, 6.3:1; dark mode `#2B78B8`, 4.7:1), the same blue as links and tinted buttons, as on iOS: one accent color, filled for the main action and tinted for the rest. Orange stays the brand accent: the logo dot, a display highlight, and on the marketing site the Start Free Trial button, at most one per screenful.
 
-**Contrast rule:** never put white text on Safety orange (3.1:1, too faint in sun). Orange buttons carry **navy** text (4.9:1).
+**Contrast rule:** never put white text on Safety orange (3.1:1, too faint in sun). The marketing site's Start Free Trial buttons are white text on **Safety Deep** `#C64B0C` (4.8:1; owner, 2026-10-23: white text on the orange buttons). Safety itself stays the logo dot and display highlights.
 
 ### Status colors (fixed, never rebranded)
 

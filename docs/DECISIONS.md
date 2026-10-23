@@ -2,6 +2,11 @@
 
 Newest first. Each entry: date, decision, reason.
 
+## 2026-10-23 (owner, of the home page: "put it in the closing band just like the mockup"; "white texts on those orange buttons"; "A small strip of facts that are already true")
+- **The closing band shows the 3D mark clip** (apps/video/logo3d) fading in from the right on wide screens and above the text on phones; the headline and buttons stay real text. It loads only near the band, plays muted and looping, and holds its still for Reduce Motion. The band's drifting water lines are gone (the clip has the water).
+- **Start Free Trial is white text on a deeper orange**, Safety Deep `#C64B0C` (4.8:1), on the marketing site; white on the logo's Safety orange (3.1:1) stays ruled out (brand/BRAND.md).
+- **Three facts under the hero:** payments go straight to your Stripe account, works with no signal, cancel any time. App Store and Google Play badges join them once the apps are live. Website only: the home page exists only there.
+
 ## 2026-10-23 (owner: "I need to build a video for this app that hypes it up but also demonstrates the full functionality")
 - **A third video: a launch film of about 4 minutes, 16:9**, half SaaS launch and half blue collar, for owners of pool and leak detection companies. It tours everything: tech side on the iPhone app's real screens, owner side on the desktop website's real screens. Then a 60-second hype cut from the same project. Plan, storyboard, iPhone shot list and image prompts in `docs/plans/launch-video.md`.
 - **An AI voice narrates it** (the owner generates it in ElevenLabs from the script in the plan's section 8), with captions kept on. **The music is made in code**, written new. **Built from scratch** (owner: "Please don't build on top of the other video. I didn't like it at all"): nothing is reused from the 45-second videos' code, music, look or edit; only the shop names and the owner's photos and logos carry over. **Both video shops appear:** Canyon State Leak Detection in the leak chapters, Blue Mesa Pool Co. in the pool chapters.
