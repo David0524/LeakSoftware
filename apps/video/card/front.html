@@ -95,9 +95,14 @@
         );
       }
       .glass.white {
-        background: linear-gradient(180deg, rgba(255, 255, 255, 0.86), rgba(255, 255, 255, 0.72));
-        border-color: rgba(255, 255, 255, 0.9);
+        background: #fff;
+        backdrop-filter: none;
+        border: 0;
+        box-shadow: 0 24px 60px rgba(2, 10, 22, 0.3);
         color: #12263a;
+      }
+      .glass.white::before {
+        display: none;
       }
       .glass.white .contact span {
         color: #46535f;
