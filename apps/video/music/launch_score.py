@@ -4,7 +4,7 @@ Built around the narration's timeline (build/timeline.json, from src/prepare.ts)
   - the cold open: a low drone and a ticking clock, a riser into silence;
   - "Not anymore.": a hard hit;
   - the tour: a driving, gritty groove at the timeline's tempo (heavy drums, palm-muted bass
-    and guitar chugs, a little saturation), ducked under the voice;
+    and guitar chugs, a chord pad and a held bass under them), ducked under the voice;
   - every chapter card: a fill and a crash, the band at full level while nobody talks;
   - the vision: a big swell, open chords and a lead, into an end hit on the logo.
 
@@ -14,6 +14,7 @@ timeline) and build/mix.wav (both, at about -14 LUFS with true peaks under -1 dB
     python3 music/launch_score.py
 
 Needs numpy and ffmpeg. Everything is synthesized here; no samples or loops from anywhere else.
+When a licensed track is in audio/track/ (music/track.py), it plays from the hit instead.
 """
 
 import json
@@ -23,12 +24,17 @@ import sys
 
 import numpy as np
 
+import track
+
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 BUILD = os.path.join(ROOT, "build")
 SR = 48000
 # Mix levels: the voice bus, and the music bus under it (music/check_mix.py checks the gap).
 VOICE_LUFS = -16.0
-MUSIC_LUFS = -29.0
+MUSIC_LUFS = -27.0
+# With the licensed track: the music's level where nobody talks (after the hit), short-term.
+TRACK_GAP_LUFS = -15.0
+HIT_TRIM = 0.7
 RNG = np.random.default_rng(20261023)
 
 
@@ -279,8 +285,62 @@ def envelope(x, attack=0.03, release=0.35, win=0.02):
 # ---------------------------------------------------------------------------
 
 
+def track_score(timeline):
+    """The long film on the licensed track (music/track.py): the track's stop-start intro under
+    the cold open, dead air from just before "Not anymore." to the hit, the band entry on the hit
+    with the hype cut's hit layered on it (same sounds, same levels), the track on to the end,
+    faded over the last two bars. Ducked like the hype cut: 9 dB under each line (never less than
+    7), fast ramps, the 1-4 kHz band dipped under the voice, full between lines."""
+    import hype_score as H
+
+    n = seconds(timeline["total"])
+    hit = timeline["hit"]
+    lines = {l["n"]: l for l in timeline["lines"]}
+    silence = lines[6]["start"] - 0.25
+    print("  track: " + track.info("launch")["file"])
+    music = track.launch_bed(SR, n, hit, timeline["total"], silence)
+    band, air, verb = (np.zeros((2, n)) for _ in range(3))
+    H.hit_kit(band, air, verb, hit, H.kick(1.6), H.snare())
+    # The same hit as the hype cut, trimmed so it measures as loud there as in the hype mix (the
+    # long film's bed sits 1 dB lower, so the master gain is a little higher).
+    music = music + (band + air + H.reverb(verb, 2.2, 0.45)) * HIT_TRIM
+
+    voice = voice_track(timeline, n)
+    voice2 = np.vstack([voice, voice])
+    vp = H.k_weighted_power(voice2)
+    speech = np.zeros(n, bool)
+    for l in timeline["lines"]:
+        speech[seconds(l["start"]) : seconds(l["end"])] = True
+    v_lufs = -0.691 + 10 * np.log10(vp[speech].mean())
+    v_gain = 10 ** ((VOICE_LUFS - v_lufs) / 20)
+    voice2 *= v_gain
+    vp *= v_gain**2
+    print("  ducking…")
+    music, depths = H.duck_to_voice(
+        timeline, n, music, voice2, vp, speech, TRACK_GAP_LUFS, H.TRACK_DUCK_TARGET, track_ramps=True
+    )
+    print("  ducks (dB): " + ", ".join(f"{l['n']}: {d:.0f}" for l, d in zip(timeline["lines"], depths)))
+    music_path = os.path.join(BUILD, "music.wav")
+    voice_path = os.path.join(BUILD, "voice.wav")
+    H.write_wav(music_path, music)
+    H.write_wav(voice_path, voice2)
+    # Written at the gains they're heard at (music/check_mix.py measures them as they are).
+    with open(os.path.join(BUILD, "stems.json"), "w") as f:
+        f.write('{ "as_heard": true }\n')
+    print("  mixing…")
+    H.BUILD = BUILD
+    H.mix(music_path, voice_path)
+    lufs, peak = loudness(os.path.join(BUILD, "mix.wav"))
+    print(f"Wrote build/mix.wav: {lufs:.1f} LUFS integrated, true peak {peak:.1f} dBFS")
+
+
 def main():
     timeline = json.load(open(os.path.join(BUILD, "timeline.json")))
+    if track.info("launch"):
+        return track_score(timeline)
+    marker = os.path.join(BUILD, "stems.json")
+    if os.path.exists(marker):
+        os.remove(marker)
     total = timeline["total"]
     n = seconds(total)
     beat = timeline["beat"]
@@ -299,7 +359,12 @@ def main():
     open_end = hit - 1.2
     d = drone(open_end + 0.4)
     d *= np.minimum(1, (open_end + 0.4 - np.arange(len(d)) / SR) / 0.4).clip(0, 1)
-    place(band, d, 0, 0.5)
+    place(band, d, 0, 1.2)
+    # A dark Em pad over the drone, so the open is felt on a phone or laptop speaker too.
+    op = pad([note("E3"), note("B3"), note("G3")], open_end + 0.4)
+    op *= np.minimum(1, (open_end + 0.4 - np.arange(op.shape[-1]) / SR) / 0.6).clip(0, 1)
+    place(air, op, 0, 0.9)
+    place(verb_send, op, 0, 0.3)
     t = 0.6
     k = 0
     while t < open_end:
@@ -322,6 +387,9 @@ def main():
     bass_notes = {r: bass(note(r.replace("2", "1")), beat / 2 * 0.95) for r in progression}
     chugs = {r: power_chord(r, beat / 2 * 0.95) for r in progression}
     rings = {r: power_chord(r, bar, mute=False) for r in progression}
+    chords = {"E2": ("E3", "G3", "B3"), "C2": ("C3", "E3", "G3"), "G2": ("G2", "B2", "D3"), "D2": ("D3", "F#3", "A3")}
+    groove_pads = {r: pad([note(x) for x in chords[r]], bar + 0.6) for r in progression}
+    subs = {r: bass(note(r.replace("2", "1")), bar * 0.98) for r in progression}
     chug_pattern = [1, 1, 0, 1, 1, 1, 0, 1]
     kick_pattern = [1, 0, 0, 1, 1, 0, 0, 0]
     snare_pattern = [0, 0, 1, 0, 0, 0, 1, 0]
@@ -346,6 +414,11 @@ def main():
             place(band, chugs[root], t + 0.012, 0.36, pan=0.45)
         if step == 0 and bar_i % 4 == 0:
             place(band, rings[root], t, 0.18, pan=0.0)
+        if step == 0:
+            # A chord pad on every bar and a held sub note: a full bed under the groove.
+            place(band, groove_pads[root], t, 0.5, pan=-0.15 if bar_i % 2 else 0.15)
+            place(verb_send, groove_pads[root], t, 0.25)
+            place(band, subs[root], t, 0.55)
         t += beat / 2
         eighth += 1
 
@@ -410,6 +483,15 @@ def main():
     place(verb_send, final, end_hit, 0.5)
     place(air, rings["E2"] * 1.0, end_hit, 0.35)
 
+    # The licensed track, when there is one (music/track.py): it takes over from the hit, its
+    # downbeat on the hit; the cold open stays the code score's.
+    parts = track.aligned(SR, n, hit)
+    if parts:
+        print("  track: " + ", ".join(parts))
+        cut = seconds(hit)
+        for bus in (band, air, verb_send):
+            bus[:, cut:] = 0
+
     print("  reverb…")
     wet = reverb(verb_send, 2.6, 0.5)
 
@@ -419,31 +501,42 @@ def main():
     if np.any(voice):
         # The music steps back a quarter second before each word (look-ahead) and stays down
         # through the pauses inside a line.
-        level = envelope(voice, release=0.8)
+        level = envelope(voice, release=0.5)
         ahead = seconds(0.25)
         level = np.maximum(level, np.concatenate([level[ahead:], np.full(ahead, level[-1])]))
-        duck = 1 / (1 + (level / 0.02) ** 1.5)
-        duck = 0.14 + 0.86 * duck  # ~ -17 dB while talking
+        # Fully down at a soft word as well as a loud one (a shallow curve left the bed half up).
+        duck = 1 / (1 + (level / 0.004) ** 2)
+        duck = 0.3 + 0.7 * duck  # about -9 dB while talking
     else:
         duck = np.ones(n)
         for l in timeline["lines"]:
             a, b = seconds(l["start"] - 0.1), seconds(l["end"] + 0.25)
             duck[a:b] = 0.3
     band_duck = duck
-    air_duck = 0.15 + 0.85 * duck
+    air_duck = duck
 
     music = band * band_duck + (air + wet) * air_duck
+    if parts:
+        # Under the voice the guitars step back furthest, the drums least.
+        free = np.clip((duck - 0.3) / 0.7, 0, 1)
+        floors = {"drums": 0.5, "bass": 0.4, "guitars": 0.22, "other": 0.28, "track": 0.32}
+        for name, x in parts.items():
+            music = music + x * (floors[name] + (1 - floors[name]) * free)
     # The vision lifts: about 5 dB up between lines, and further under the voice while it speaks.
     if np.any(voice):
-        free = np.clip((duck - 0.14) / 0.86, 0, 1)
+        free = np.clip((duck - 0.3) / 0.7, 0, 1)
         a, b = seconds(lines[38]["start"] - 1.0), seconds(end_hit)
         lift = np.ones(n)
-        lift[a:b] = 0.5 + 1.3 * free[a:b]
+        # Up 2 dB under the voice and 6 dB between lines: the vision lifts.
+        lift[a:b] = 1.25 + 0.75 * free[a:b]
         music = music * lift
     # Fade the very end.
     tail = seconds(1.2)
     music[:, -tail:] *= np.linspace(1, 0, tail)
-    music = drive(music * 0.7, 1.2) * 0.6
+    # A light saturation only: a heavy one squashed the ducks back up (the bed has to step back
+    # under each line and come up between them).
+    music = music * (0.8 / np.percentile(np.abs(music), 99.95))
+    music = drive(music, 0.7) * 0.9
 
     write_wav(os.path.join(BUILD, "music.wav"), music)
     write_wav(os.path.join(BUILD, "voice.wav"), np.vstack([voice, voice]))
@@ -479,7 +572,7 @@ def mix():
     out = os.path.join(BUILD, "mix.wav")
     has_voice = loudness(voice)[0] > -70
     if has_voice:
-        # The voice bus at about -16 LUFS; the music under it (at least 12 dB under each line,
+        # The voice bus at about -16 LUFS; the music under it (at least 7 dB under each line,
         # music/check_mix.py); then the whole at -14.
         v_lufs, _ = loudness(voice)
         m_lufs, _ = loudness(music)
@@ -504,7 +597,7 @@ def mix():
     subprocess.run(
         [
             "ffmpeg", "-v", "error", "-y", "-i", pre, "-af",
-            f"volume={gain:.2f}dB,alimiter=limit=0.7:attack=2:release=60:level=false",
+            f"volume={gain:.2f}dB,alimiter=limit=0.84:attack=2:release=60:level=false",
             "-ar", str(SR), "-c:a", "pcm_s24le", out,
         ],
         check=True,

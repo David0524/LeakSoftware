@@ -2,3 +2,6 @@
 build/
 out/
 captures/
+# The licensed music track and its stems (music/track.py): licensed, never committed (public repo).
+audio/track/*
+!audio/track/track.json

@@ -379,7 +379,9 @@ async function main() {
     }
 
     const from = Math.round(Number(opt("--from") ?? 0) * tl.fps);
-    const to = Math.min(total, Math.round(Number(opt("--to") ?? tl.total) * tl.fps));
+    // The whole cut unless --to says otherwise (its last frame is total's ceiling, not a rounding).
+    const toOpt = opt("--to");
+    const to = toOpt ? Math.min(total, Math.round(Number(toOpt) * tl.fps)) : total;
     const workers = Math.max(1, Number(opt("--workers") ?? 4));
     const per = Math.ceil((to - from) / workers);
     const segs: string[] = [];

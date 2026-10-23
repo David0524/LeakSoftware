@@ -2,13 +2,14 @@
 build/mix.wav), and for every narration line how far the music sits under the voice.
 
     python3 music/check_mix.py [out/sundeck-pro-launch.mp4]
+    python3 music/check_mix.py --hype [out/sundeck-pro-hype.mp4]
 
 The voice and music stems are measured as heard: each at the gain the mix gives it
 (launch_score.py's VOICE_LUFS and MUSIC_LUFS); the master then moves both alike. Both are read as EBU R128 short-term loudness (3-second windows, every 0.1 s). For
 each line, every window that lies inside the line gives voice minus music (a line shorter than
 3 seconds uses momentary loudness, 0.4-second windows); the line's figure is the smallest of
 those taken while the voice speaks (within 8 dB of the line's loudest window). Prints a table
-and fails when any line's music is less than 10 dB under its voice.
+and fails when any line's music is less than 7 dB under its voice.
 """
 
 import json
@@ -21,7 +22,7 @@ from launch_score import MUSIC_LUFS, VOICE_LUFS  # noqa: E402
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 BUILD = os.path.join(ROOT, "build")
-TARGET_GAP = 10.0
+TARGET_GAP = 7.0
 WINDOW = 3.0
 
 
@@ -59,28 +60,36 @@ def short_term(path, gain, key="S"):
 
 
 def main():
-    film = sys.argv[1] if len(sys.argv) > 1 else os.path.join(BUILD, "mix.wav")
+    args = [a for a in sys.argv[1:] if a != "--hype"]
+    build = os.path.join(BUILD, "hype") if "--hype" in sys.argv else BUILD
+    film = args[0] if args else os.path.join(build, "mix.wav")
     lufs, peak = loudness(film)
     print(f"{os.path.relpath(film, ROOT)}: {lufs:.1f} LUFS integrated, true peak {peak:.1f} dBTP")
 
-    voice = os.path.join(BUILD, "voice.wav")
-    music = os.path.join(BUILD, "music.wav")
-    v_gain = VOICE_LUFS - loudness(voice)[0]
-    m_gain = MUSIC_LUFS - loudness(music)[0]
+    voice = os.path.join(build, "voice.wav")
+    music = os.path.join(build, "music.wav")
+    # Stems written at the gain they're heard at (the hype cut; the long film with its licensed
+    # track: build/stems.json says so) are measured as they are; the code score's stems get the
+    # mix's gains.
+    marker = os.path.join(build, "stems.json")
+    as_heard = build != BUILD or (os.path.exists(marker) and json.load(open(marker)).get("as_heard"))
+    v_gain = 0.0 if as_heard else VOICE_LUFS - loudness(voice)[0]
+    m_gain = 0.0 if as_heard else MUSIC_LUFS - loudness(music)[0]
     # The master's gain moves both stems alike, so the gap is the same before and after it.
     sv = short_term(voice, v_gain)
     sm = short_term(music, m_gain)
     mv = short_term(voice, v_gain, "M")
     mm = short_term(music, m_gain, "M")
-    with open(os.path.join(BUILD, "timeline.json")) as f:
+    with open(os.path.join(build, "timeline.json")) as f:
         lines = json.load(f)["lines"]
 
     worst = None
     print("line  voice  music  gap   (short-term, as heard; smallest window in the line)")
     for line in lines:
         a, b = line["start"], line["end"]
-        if b - a <= WINDOW:
-            # A short line ("Not anymore."): its own momentary windows (0.4 s) instead.
+        if b - a <= WINDOW + 0.2:
+            # A short line ("Not anymore.", or one barely longer than a window): its own momentary
+            # windows (0.4 s) instead.
             ends = [round(e / 10, 1) for e in range(int((a + 0.4) * 10) + 1, int(b * 10) + 1)]
             rows = [(mv[e], mm[e]) for e in ends if e in mv and e in mm]
         else:

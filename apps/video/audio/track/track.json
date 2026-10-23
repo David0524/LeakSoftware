@@ -1,0 +1,14 @@
+{
+  "launch": {
+    "file": "combined.wav",
+    "bpm": 128.0,
+    "band_entry": 12.748,
+    "intro_loop": [5.248, 9.0]
+  },
+  "hype": {
+    "file": "hard-yards.mp3",
+    "bpm": 128.0,
+    "band_entry": 12.748,
+    "final_chord": 57.736
+  }
+}

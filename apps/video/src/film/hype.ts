@@ -1030,54 +1030,40 @@ export function buildHype(stage: Stage, manifest: HypeManifest) {
   // The vision ----------------------------------------------------------------------------------
   const g2 = L(39) + 1.22;
   const g3 = L(39) + 2.42;
-  const g4 = L(40);
-  const g5 = L(40) + 1.35;
   const end = tl.endHit;
   add(photoShot(g1, g2, photoRef("08"), [1.45, 78, 62], [1.55, 80, 62], { shade: 0.18 }));
   add(photoShot(g2, g3, photoRef("09"), [1.06, 50, 45], [1.14, 52, 45], { shade: 0.2 }));
-  add(photoShot(g3, g4, photoRef("08"), [1.16, 60, 55], [1.02, 50, 50], { shade: 0.2 }));
-  add(photoShot(g4, g5, photoRef("10"), [1.04, 50, 50], [1.12, 46, 50], { shade: 0.2 }));
-  // The lake runs on under the end hit: darker, the logo slams in, then the line. At "Start
-  // your free trial" it cuts to the end card.
+  // The fleet at sunrise runs on under the end hit: darker, the logo slams in, then the line
+  // (line 40 and its driveway and lake photos are cut). At "Start your free trial" it cuts to
+  // the end card.
   const card = L(43) - 0.25;
   add(
-    scene(g5, card, 10, (el) => {
-      const ph = photo(el, photoRef("11"), [1.04, 55, 50], [1.2, 62, 47]);
+    scene(g3, card, 10, (el) => {
+      const ph = photo(el, photoRef("08"), [1.16, 60, 55], [1.02, 50, 50]);
       const dark = div("fill", el);
       css(dark, { background: "var(--navy)" });
       const logo = img("/brand/logo/sundeck-logo-reverse.svg", el, "abs");
       css(logo, { width: 860, left: COL.x - 6, top: 300, "transform-origin": "0 50%" });
-      const hitAt = end - g5;
+      const hitAt = end - g3;
       return (t, d) => {
         ph(t, d);
-        dark.style.opacity = String(0.2 + 0.4 * expoOut(ramp(t, hitAt, hitAt + 0.5)));
+        dark.style.opacity = String(0.2 + 0.45 * expoOut(ramp(t, hitAt, hitAt + 0.5)));
         const p = ramp(t, hitAt, hitAt + 0.26);
         logo.style.opacity = String(ramp(t, hitAt, hitAt + 0.04));
         logo.style.transform = `scale(${lerp(1.4, 1, slam(p))})`;
       };
     }),
   );
-  caps.push(
-    {
-      place: "photo",
-      size: 128,
-      until: g4,
-      items: [
-        { lines: ["Another truck."], at: L(39) + 0.08 },
-        { lines: ["Another crew."], at: L(39) + 1.29 },
-        { lines: ["A bigger name in town."], at: L(39) + 2.49 },
-      ],
-    },
-    {
-      place: "photo",
-      size: 128,
-      until: end,
-      items: [
-        { lines: ["Home for dinner."], at: L(40) + 0.09 },
-        { lines: ["Saturdays at the lake."], at: L(40) + 1.42 },
-      ],
-    },
-  );
+  caps.push({
+    place: "photo",
+    size: 128,
+    until: end,
+    items: [
+      { lines: ["Another truck."], at: L(39) + 0.08 },
+      { lines: ["Another crew."], at: L(39) + 1.29 },
+      { lines: ["A bigger name in town."], at: L(39) + 2.49 },
+    ],
+  });
 
   // The end card, centered: the logo, the line, Start Your Free Trial, sundeckpro.com.
   add(

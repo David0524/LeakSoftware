@@ -419,16 +419,45 @@ PW_CHROMIUM_PATH=/opt/pw-browsers/chromium` to the capture):
    1.0 s before a chapter (its card plays there, about 1.2 to 1.6 s with the beat; the vision has
    no card), 1.2 s of silence before "Not anymore.", and 0.5 s extra after lines 19, 29 and 33.
    The hit lands just after "Not anymore."; after it every line starts on the music's beat
-   (92 BPM). The end card holds about 5 seconds. Writes `build/timeline.json`.
-4. `python3 music/launch_score.py`: the score, built on that timeline (drone and clock, the hit,
-   the groove, a fill and crash into every chapter card, the vision's swell, the end hit). It
-   steps back a quarter second before each word and stays down through a line's pauses; the
-   vision comes up about 5 dB between lines and goes further down under the voice. Writes
-   `build/mix.wav`: the voice at about -16 LUFS, the music at -29 LUFS integrated under it, the
-   whole at -14 LUFS with true peaks under -1 dBFS. `python3 music/check_mix.py [film.mp4]`
-   measures the film's loudness and true peak, and for every line the music under the voice as
-   heard: short-term loudness (3 s windows; momentary for a line under 3 s), the smallest gap
-   while the voice speaks. It fails when any line's music is less than 10 dB under.
+   (92 BPM, or the licensed track's tempo). Line 40 ("Home for dinner. Saturdays at the lake.")
+   and its photos are cut from both films (owner, 2026-10-23). The end card holds about 5 seconds. Writes `build/timeline.json`.
+4. `python3 music/launch_score.py`: the score, built on that timeline (drone, a dark pad and the
+   clock in the open, the hit, the groove with a chord pad and a held bass under it, a fill and
+   crash into every chapter card, the vision's swell, the end hit). It steps back a quarter
+   second before each word, about 9 dB down under the voice, and comes back up within half a
+   second between lines and over cards and photos; the vision sits 2 dB higher under the voice
+   and 6 dB higher between lines. Writes `build/mix.wav`: the voice at about -16 LUFS, the music
+   so it sits 8 to 11 dB under each line (about -27 LUFS short-term as heard under the voice,
+   -19 to -22 over the cards), the whole at -14 LUFS with true peaks under -1 dBFS.
+   `python3 music/check_mix.py [film.mp4]` measures the film's loudness and true peak, and for
+   every line the music under the voice as heard: short-term loudness (3 s windows; momentary
+   for a line under 3 s), the smallest gap while the voice speaks. It fails when any line's
+   music is less than 7 dB under.
+
+   **The licensed tracks** (owner, 2026-10-23). `audio/track/track.json` (committed) names
+   each film's file and its beats; the files themselves are licensed and git-ignored (this
+   repository is public). With a film's file there it replaces that film's code score:
+   - Long film: `combined.wav` (Hard Yards' stop-start intro spliced into Hard Yakka Anthem,
+     128 BPM, the band entering at 12.748 s). The intro plays under the cold open, its two-bar
+     loop (5.248 to 9.0 s) repeated on whole bars to cover it, then dead air from a quarter
+     second before "Not anymore." (the picture goes black) to the hit, which is the band entry,
+     with the hype cut's hit (boom, crash, big kick, snare) layered on it. Lines and chapter
+     cards start on the track's beats (cards cut in on the beat after the line before and hold
+     three beats), line 7 starts at least a second after the hit, the end card starts on a
+     downbeat, and the film ends on a bar line, the track faded over its last two bars.
+   - Hype cut: `hard-yards.mp3` as it is, from the top: the cold open starts late enough that
+     "Not anymore." ends on its band entry, the lines sit on its beats (`TRACK_BEATS` in
+     `src/hype-timing.ts`), the end hit on the downbeat of line 42, and line 43 ends on the
+     final chord (57.736 s), which rings out under the end card.
+   - Both are ducked line by line until the music sits 9 dB under the voice (as
+     `check_mix.py` reads it; never less than 7), with 80 ms / 300 ms ramps and the music's
+     1 to 4 kHz band 3 dB lower under the voice; between lines, over cards and photos it's at
+     full level (-15 LUFS short-term in the long film, -14 in the hype cut). The hit after
+     "Not anymore." measures within 1 dB in both films (RMS of its first half second).
+   - Tempo: the tracks are 128.0 BPM (an onset autocorrelation over 32 beats; 129.2 is
+     librosa's frame-rate rounding). `python3 music/track.py <file>` prints a file's tempo and
+     the beat nearest 12.748 s.
+
 5. `node src/render.ts`: the film, `out/sundeck-pro-launch.mp4` (1920 × 1080, 60 fps, H.264,
    AAC), in 4 parallel segments (`--workers`). Every frame waits for its images to decode, so a
    scene never opens on a blank frame. `--stills 12.5,40` writes single frames to

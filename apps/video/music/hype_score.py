@@ -32,6 +32,8 @@ import sys
 
 import numpy as np
 
+import track
+
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 BUILD = os.path.join(ROOT, "build", "hype")
 SR = 48000
@@ -44,6 +46,11 @@ VOICE_LUFS = -15.0
 GAP_MUSIC_LUFS = -13.0
 DUCK_TARGET = 14.5
 MIN_GAP = 12.0
+# With the licensed track (owner, 2026-10-23): a present bed, 8 to 10 dB under the voice and
+# never less than 7, up to full between lines.
+GAP_MUSIC_LUFS_TRACK = -14.0
+TRACK_DUCK_TARGET = 9.0
+TRACK_MIN_GAP = 7.0
 TARGET_LUFS = -14.0
 PEAK_CEILING = -1.0
 
@@ -329,6 +336,22 @@ def short_term_gap(vp, mp, start, end):
     return worst
 
 
+def line_gap(vp, mp, start, end):
+    """The line's gap as music/check_mix.py reads it: short-term (3 s windows), or for a line
+    under about 3 s momentary windows (0.4 s) while the voice speaks (within 8 dB of its loudest)."""
+    if end - start > 3.2:
+        return short_term_gap(vp, mp, start, end)[0]
+    w = seconds(0.4)
+    rows = [
+        (window_lufs(vp, i, i + w), window_lufs(mp, i, i + w))
+        for i in range(seconds(start), seconds(end) - w + 1, seconds(0.1))
+    ]
+    if not rows:
+        return short_term_gap(vp, mp, start, end)[0]
+    loudest = max(v for v, _ in rows)
+    return min(v - m for v, m in rows if v >= loudest - 8)
+
+
 def ebur128(path):
     """Integrated loudness and true peak by ffmpeg's EBU R128 meter."""
     out = subprocess.run(
@@ -347,8 +370,20 @@ def ebur128(path):
 # ---------------------------------------------------------------------------
 
 
-def compose(tl, n):
-    """The band (ducked under the voice), the air (hits, crashes, swells) and a reverb send."""
+def hit_kit(band, air, verb, hit, k_big, s_s):
+    """The hit after "Not anymore.": the boom, a crash, the big kick and a snare (the long
+    film's score uses it too, at the same levels)."""
+    hb = boom()
+    place(air, hb, hit, 0.85)
+    place(verb, hb, hit, 0.45)
+    place(air, crash(4.0), hit, 0.65)
+    place(band, k_big, hit, 1.0)
+    place(band, s_s, hit, 0.6)
+
+
+def compose(tl, n, hit_only=False):
+    """The band (ducked under the voice), the air (hits, crashes, swells) and a reverb send.
+    `hit_only`: just the hit after "Not anymore." (the licensed track plays everything else)."""
     beat = tl["beat"]
     bar = beat * 4
     hit = tl["hit"]
@@ -362,6 +397,10 @@ def compose(tl, n):
     air = np.zeros((2, n))
     verb = np.zeros((2, n))
     k_s, k_big, s_s, h_s, h_o = kick(), kick(1.6), snare(), hat(), hat(True)
+
+    if hit_only:
+        hit_kit(band, air, verb, hit, k_big, s_s)
+        return band, air, verb
 
     # Cold open: drone, the clock on every beat, a muffled pulse on 1 and 3, the riser.
     d = drone(silence)
@@ -382,12 +421,7 @@ def compose(tl, n):
         bus[:, seconds(silence) : seconds(hit)] = 0
 
     # The hit, just after "Not anymore.".
-    hb = boom()
-    place(air, hb, hit, 0.85)
-    place(verb, hb, hit, 0.45)
-    place(air, crash(4.0), hit, 0.65)
-    place(band, k_big, hit, 1.0)
-    place(band, s_s, hit, 0.6)
+    hit_kit(band, air, verb, hit, k_big, s_s)
 
     # The groove: from the hit to the vision, eighths at 120 BPM.
     prog = ["E2", "E2", "C2", "D2"]
@@ -506,7 +540,7 @@ def voice_track(tl, n):
     return v
 
 
-def duck_curve(tl, n, depths):
+def duck_curve(tl, n, depths, attack=0.05, release=0.22):
     """The music's gain: down by each line's depth (dB) while it talks, with quick ramps."""
     g_db = np.zeros(n)
     for line, depth in zip(tl["lines"], depths):
@@ -517,8 +551,8 @@ def duck_curve(tl, n, depths):
     coarse = g_db[::hop]
     out = np.zeros_like(coarse)
     level = 0.0
-    down = 1 - np.exp(-hop / SR / 0.05)
-    up = 1 - np.exp(-hop / SR / 0.22)
+    down = 1 - np.exp(-hop / SR / attack)
+    up = 1 - np.exp(-hop / SR / release)
     # Look ahead so the duck is down when the first word lands.
     lead = int(0.05 * SR / hop)
     coarse = np.concatenate([coarse[lead:], np.zeros(lead)])
@@ -534,10 +568,20 @@ def main():
     total = tl["total"]
     n = seconds(total)
     print("  composing…")
-    band, air, verb = compose(tl, n)
+    meta = track.info("hype")
+    band, air, verb = compose(tl, n, hit_only=bool(meta))
+    if meta:
+        # The licensed track (music/track.py) plays the whole cut: its stop-start intro under the
+        # cold open, dead air before "Not anymore.", the band entry on the hit (with the hit
+        # layered on it), its final chord under the end card.
+        print(f"  track: {meta['file']}")
+        silence = next(l for l in tl["lines"] if l["n"] == 6)["start"] - 0.25
+        band += track.hype_bed(SR, n, tl["hit"], silence)
     wet = reverb(verb, 2.2, 0.45)
     music = band + air + wet
-    music = drive(music * 0.8, 1.15)
+    if not meta:
+        # The code score's grit (a mastered track gets none).
+        music = drive(music * 0.8, 1.15)
     # Ends clean: nothing rings past the last frame, and the reverb tail is faded with it.
     end_fade = seconds(1.0)
     music[:, -end_fade:] *= np.linspace(1, 0, end_fade) ** 2
@@ -554,31 +598,12 @@ def main():
     voice2 *= v_gain
     vp *= v_gain**2
 
-    # The music bus to GAP_MUSIC_LUFS where nobody talks (after the hit).
-    mp = k_weighted_power(music)
-    gaps = ~speech
-    gaps[: seconds(tl["hit"])] = False
-    m_lufs = -0.691 + 10 * np.log10(mp[gaps].mean())
-    m_gain = 10 ** ((GAP_MUSIC_LUFS - m_lufs) / 20)
-    music *= m_gain
-    mp *= m_gain**2
-
-    # Duck each line until the music sits DUCK_TARGET dB under the voice (a few passes, since
-    # the ramps and the 3 s windows interact).
-    depths = [0.0] * len(tl["lines"])
-    for _ in range(6):
-        g = duck_curve(tl, n, depths)
-        mpd = mp * g**2
-        worst = 99.0
-        for i, l in enumerate(tl["lines"]):
-            gap = short_term_gap(vp, mpd, l["start"], l["end"])[0]
-            worst = min(worst, gap)
-            if gap < DUCK_TARGET:
-                depths[i] = max(-45.0, depths[i] - (DUCK_TARGET - gap) - 0.3)
-        if worst >= DUCK_TARGET:
-            break
-    g = duck_curve(tl, n, depths)
-    music *= g
+    music, depths = duck_to_voice(
+        tl, n, music, voice2, vp, speech,
+        GAP_MUSIC_LUFS_TRACK if meta else GAP_MUSIC_LUFS,
+        TRACK_DUCK_TARGET if meta else DUCK_TARGET,
+        track_ramps=bool(meta),
+    )
 
     os.makedirs(BUILD, exist_ok=True)
     music_path = os.path.join(BUILD, "music.wav")
@@ -590,10 +615,51 @@ def main():
     return check()
 
 
+def duck_to_voice(tl, n, music, voice2, vp, speech, gap_lufs, target, track_ramps=False):
+    """Sets the music to `gap_lufs` where nobody talks (after the hit), then ducks each line
+    until the music sits `target` dB under the voice (short-term, as heard). With a dense,
+    compressed track the ducks are faster (80 ms down, 300 ms up) and the music's 1-4 kHz band
+    dips a further 3 dB under the voice, where the words are. Returns the music and the depths.
+    """
+    if track_ramps:
+        talk = speech.astype(float)
+        k = seconds(0.08)
+        talk = np.convolve(talk, np.ones(k) / k, mode="same")
+        mid = np.vstack([fft_filter(music[c], low=1000, high=4000, slope=2.0) for c in range(2)])
+        music = music - mid * (1 - 10 ** (-3 / 20)) * talk
+    mp = k_weighted_power(music)
+    gaps = ~speech
+    gaps[: seconds(tl["hit"])] = False
+    m_lufs = -0.691 + 10 * np.log10(mp[gaps].mean())
+    m_gain = 10 ** ((gap_lufs - m_lufs) / 20)
+    music = music * m_gain
+    mp = mp * m_gain**2
+    ramps = (0.08, 0.3) if track_ramps else (0.05, 0.22)
+    # A few passes, since the ramps and the 3 s windows interact.
+    depths = [0.0] * len(tl["lines"])
+    for _ in range(8):
+        g = duck_curve(tl, n, depths, *ramps)
+        mpd = mp * g**2
+        worst = 99.0
+        for i, l in enumerate(tl["lines"]):
+            gap = (line_gap if track_ramps else lambda *a: short_term_gap(*a)[0])(
+                vp, mpd, l["start"], l["end"]
+            )
+            worst = min(worst, gap)
+            if gap < target:
+                depths[i] = max(-45.0, depths[i] - (target - gap) - 0.3)
+        if worst >= target:
+            break
+    return music * duck_curve(tl, n, depths, *ramps), depths
+
+
 def mix(music_path, voice_path):
-    """Sums the stems, sets -14 LUFS, and limits true peaks under -1 dBTP (4× oversampled)."""
+    """Sums the stems, sets -14 LUFS, and limits true peaks under -1 dBTP (4× oversampled),
+    checked after an AAC encode like the film's (a dense rock mix overshoots there), with the
+    ceiling lowered until the encode stays under."""
     pre = os.path.join(BUILD, "mix-pre.wav")
     out = os.path.join(BUILD, "mix.wav")
+    probe = os.path.join(BUILD, "mix-probe.m4a")
     subprocess.run(
         [
             "ffmpeg", "-v", "error", "-y", "-i", voice_path, "-i", music_path, "-filter_complex",
@@ -601,28 +667,37 @@ def mix(music_path, voice_path):
         ],
         check=True,
     )
-    gain = 0.0
-    for _ in range(4):
+    gain, limit = 0.0, 0.79
+    for _ in range(8):
         subprocess.run(
             [
                 "ffmpeg", "-v", "error", "-y", "-i", pre, "-af",
                 f"volume={gain:.2f}dB,aresample=192000,"
-                "alimiter=limit=0.79:attack=1:release=50:level=false,aresample=48000",
+                f"alimiter=limit={limit:.3f}:attack=1:release=50:level=false,aresample=48000",
                 "-c:a", "pcm_s24le", out,
             ],
             check=True,
         )
         lufs, peak = ebur128(out)
-        if abs(lufs - TARGET_LUFS) < 0.15:
+        subprocess.run(
+            ["ffmpeg", "-v", "error", "-y", "-i", out, "-c:a", "aac", "-b:a", "256k", probe],
+            check=True,
+        )
+        _, coded = ebur128(probe)
+        if abs(lufs - TARGET_LUFS) < 0.15 and coded < PEAK_CEILING - 0.1:
             break
         gain += TARGET_LUFS - lufs
+        if coded >= PEAK_CEILING - 0.1:
+            limit *= 10 ** (-(coded - PEAK_CEILING + 0.3) / 20)
     os.remove(pre)
+    os.remove(probe)
 
 
 def check(film=None):
     path = film or os.path.join(BUILD, "mix.wav")
     lufs, peak = ebur128(path)
     ok = abs(lufs - TARGET_LUFS) <= 1.0 and peak < PEAK_CEILING
+    floor = TRACK_MIN_GAP if track.info("hype") else MIN_GAP
     print(f"{os.path.relpath(path, ROOT)}: {lufs:.1f} LUFS integrated, true peak {peak:.1f} dBTP")
     tl = json.load(open(os.path.join(BUILD, "timeline.json")))
     vp = k_weighted_power(load_audio(os.path.join(BUILD, "voice.wav"), 2))
@@ -631,12 +706,12 @@ def check(film=None):
     worst = None
     for l in tl["lines"]:
         gap, v, m = short_term_gap(vp, mp, l["start"], l["end"])
-        flag = "" if gap >= MIN_GAP else "  < 12 dB"
+        flag = "" if gap >= floor else f"  < {floor:.0f} dB"
         print(f"{l['n']:>4}  {l['start']:5.2f}  {v:6.1f} {m:6.1f}  {gap:5.1f}{flag}")
         if worst is None or gap < worst[1]:
             worst = (l["n"], gap)
     print(f"Smallest gap: line {worst[0]}, {worst[1]:.1f} dB")
-    if worst[1] < MIN_GAP:
+    if worst[1] < floor:
         ok = False
     if not ok:
         print("The mix fails its check.")

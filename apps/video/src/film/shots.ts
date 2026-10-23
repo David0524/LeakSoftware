@@ -49,7 +49,8 @@ let tl: Timeline;
 const line = (n: number) => tl.lines.find((l) => l.n === n)!;
 /** When line n's shot ends: the next line, or the chapter card before it. */
 function shotEnd(n: number) {
-  const next = tl.lines.find((l) => l.n === n + 1);
+  // The next line in the film (numbers can skip: line 40 is cut).
+  const next = tl.lines.find((l) => l.n > n);
   if (!next) return tl.total;
   const card = tl.cards.find((c) => c.chapter === next.chapter && c.end === next.start);
   return card ? card.start : next.start;
@@ -494,13 +495,20 @@ export function buildFilm(stage: Stage, timeline: Timeline) {
 
   // The turn ---------------------------------------------------------------------------
   add(
-    shot(6, (el) => {
-      const bg = surface(el, "steel", false);
+    scene(line(6).start - 0.25, line(6).start, 11, (el) => {
+      css(div("fill", el), { background: "#000" });
+      return () => {};
+    }),
+  );
+  add(
+    scene(line(6).start, tl.hit, 10, (el) => {
+      // Black, as the music cuts to dead air (a quarter second before the words), then the
+      // words; the hit cuts to the logo.
+      css(div("fill", el), { background: "#000" });
       const text = slamText(el, ["Not anymore."], { size: 280, align: "center" });
       // The hit lands just after the words.
       const hitAt = tl.hit - line(6).start;
       return (t) => {
-        bg(t);
         text.draw(t, [0, 0]);
         const k = shake(t, hitAt, 20);
         text.box.style.transform = `translate(${k.x}px, ${k.y}px)`;
@@ -508,7 +516,9 @@ export function buildFilm(stage: Stage, timeline: Timeline) {
     }),
   );
   add(
-    shot(7, (el) => {
+    // From the hit itself (the logo slams in on it), the montage timed from line 7's start.
+    scene(tl.hit, shotEnd(7), 10, (el) => {
+      const lead = line(7).start - tl.hit;
       const bg = surface(el, "navy", false);
       const logo = img("/brand/logo/sundeck-logo-reverse.svg", el, "abs");
       css(logo, { width: 1000, left: W / 2 - 500, top: H / 2 - 170 });
@@ -551,14 +561,15 @@ export function buildFilm(stage: Stage, timeline: Timeline) {
       const words = slamText(el, ["Your whole shop."], { size: 130, align: "center", y: 850 });
       const words2 = slamText(el, ["In your pocket."], { size: 130, align: "center", y: 850 });
       const words3 = slamText(el, ["On every truck."], { size: 130, align: "center", y: 850 });
-      return (t) => {
-        bg(t);
+      return (t0) => {
+        bg(t0);
+        const t = t0 - lead;
         const beat = tl.beat;
         const m0 = 2 * beat;
         const starts = [0, 2, 3, 5, 6].map((k) => m0 + k * beat);
-        const p = slam(ramp(t, 0, 0.3));
+        const p = slam(ramp(t0, 0, 0.3));
         logo.style.transform = `scale(${lerp(1.5, 1, p)})`;
-        logo.style.opacity = String(ramp(t, 0, 0.06) * (t < m0 ? 1 : 0));
+        logo.style.opacity = String(ramp(t0, 0, 0.06) * (t < m0 ? 1 : 0));
         let i = -1;
         starts.forEach((st, k) => {
           if (t >= st) i = k;
@@ -844,19 +855,17 @@ export function buildFilm(stage: Stage, timeline: Timeline) {
       const top = Math.max(0, p.phone.h - (height * p.phone.w) / width);
       css(p.phone.screen, { background: "var(--navy)" });
       css(l.el, { top });
-      const at0 = p.at(width * 0.5, height * 0.72, 0, width);
-      // Framed so its title sits low in the frame and the line under it ("Stop 1 of 2", the
-      // recording's own day) stays below the frame, beside the app's "1 of 3".
-      const activity = { x: at0.x, y: at0.y + top - 332 };
+      // The whole Live Activity card (title, stop, next, progress bar), with margin around it.
+      const at0 = p.at(width * 0.5, height * 0.765, 0, width);
+      const activity = { x: at0.x, y: at0.y + top };
       const cap = keyCaption(el, "Your crew knows\nexactly where to be.");
       return (t, d) => {
         l.set(0);
         setCam(
           r,
           camAt(t, [
-            // The lock screen's clock down to the Live Activity's title, its "1 of 2" below.
-            [0, rightOf(on(activity, 1.5), p.x)],
-            [d, rightOf(on(activity, 1.5), p.x)],
+            [0, rightOf(on(activity, 1.75), p.x)],
+            [d, rightOf(on(activity, 1.9), p.x)],
           ]),
           t,
         );
@@ -1688,27 +1697,9 @@ export function buildFilm(stage: Stage, timeline: Timeline) {
     }),
   );
   add(
-    shot(40, (el) => {
-      const a = photo(el, photoRef("10"), [1.02, 50, 50], [1.08, 50, 50], 0.2);
-      const bw = div("fill", el);
-      const b = photo(bw, photoRef("11"), [1.02, 50, 50], [1.08, 50, 50], 0.2);
-      const t1 = slamText(el, ["Home for dinner."], { size: 170, x: 110, y: 720 });
-      const t2 = slamText(el, ["Saturdays", "at the lake."], { size: 170, x: 110, y: 560 });
-      for (const x of [t1, t2]) x.box.style.zIndex = "4";
-      return (t, d) => {
-        a(t, d);
-        bw.style.display = t >= 1.5 ? "" : "none";
-        b(t - 1.5, d + 6);
-        t1.box.style.display = t < 1.5 ? "" : "none";
-        t2.box.style.display = t >= 1.5 ? "" : "none";
-        t1.draw(t, spread(3, 0.05, 0.6));
-        t2.draw(t, spread(t2.words, 1.5, 2.3));
-      };
-    }),
-  );
-  add(
     shot(41, (el) => {
-      const a = photo(el, photoRef("11"), [1.08, 50, 50], [1.16, 50, 50], 0.35);
+      // The fleet at sunrise again, pushing in (the lake and the driveway went with line 40).
+      const a = photo(el, photoRef("08"), [1.12, 52, 50], [1.24, 56, 52], 0.35);
       const text = slamText(el, ["You started it", "to build something."], {
         size: 160,
         x: 110,

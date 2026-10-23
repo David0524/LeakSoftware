@@ -216,7 +216,7 @@ export const lines: Line[] = [
   },
   { n: 38, chapter: "vision", text: "Think about what you'd do with those hours back." },
   { n: 39, chapter: "vision", text: "Another truck. Another crew. A bigger name in town." },
-  { n: 40, chapter: "vision", text: "Home for dinner. Saturdays at the lake." },
+  // Line 40 ("Home for dinner. Saturdays at the lake.") is cut (owner, 2026-10-23).
   {
     n: 41,
     chapter: "vision",
