@@ -202,19 +202,45 @@
                 }
             }
             try store.applyPage(PullPage(rows: rows, done: true, cursor: [:], serverHLC: "1760000000001-0000-srv"))
+            // The visit's equipment item, and the price book's pump work for it.
+            let equipment = try store.insert(
+                "job_component", companyId: "c1",
+                [
+                    "job_id": .string(visit), "component_type_id": "a0133e78-a118-42d6-9a1a-9c891372096d",
+                    "instance_number": 1, "label": "Equipment", "sort_order": 99,
+                ])
+            try store.applyPage(
+                PullPage(
+                    rows: [
+                        PulledRow(
+                            table: "price_book_item", xid: "5",
+                            row: [
+                                "id": "pbp1", "company_id": "c1", "name": "Replace pump motor (1.5 HP)", "unit": "each",
+                                "price_cents": 69500, "taxable": true, "sort_order": 1, "active": true,
+                                "component_type_key": "svc_equipment",
+                            ]),
+                        PulledRow(
+                            table: "price_book_item", xid: "5",
+                            row: [
+                                "id": "pbp2", "company_id": "c1", "name": "Pump labor", "unit": "each",
+                                "price_cents": 15000, "taxable": false, "sort_order": 2, "active": true,
+                                "component_type_key": "svc_equipment",
+                            ]),
+                    ], done: true, cursor: [:], serverHLC: "1760000000004-0000-srv"))
             let finding = try InspectionWrites.saveFinding(
-                sync, companyId: "c1", jobId: visit, existing: nil, title: "Pump bearing noise", componentId: nil,
+                sync, companyId: "c1", jobId: visit, existing: nil, title: "Pump bearing noise", componentId: equipment,
                 severityKey: "moderate", location: "Equipment pad", pin: nil, status: .open,
                 notes: "Loud grinding at startup. Motor is 9 years old; recommend replacing before it fails.")
             try await snapshot(
                 "lv-pump-finding", height: 2400, FindingEditor(jobId: visit, findingId: finding).app(env))
-            func line(_ id: String, _ description: String, _ cents: Int, _ order: Int) -> PulledRow {
+            func line(_ id: String, _ item: String, _ description: String, _ cents: Int, _ order: Int) -> PulledRow {
                 PulledRow(
                     table: "quote_line_item", xid: "5",
                     row: [
                         "id": .string(id), "company_id": "c1", "quote_id": "pq1", "description": .string(description),
                         "quantity": 1, "unit_price_cents": .number(Double(cents)), "taxable": false,
-                        "sort_order": .number(Double(order)),
+                        "sort_order": .number(Double(order)), "price_book_item_id": .string(item),
+                        "finding_id": .string(finding),
                     ])
             }
             try store.applyPage(
@@ -227,8 +253,8 @@
                                 "subtotal_cents": 84500, "discount_cents": 0, "tax_cents": 0, "total_cents": 84500,
                                 "deposit_cents": 0,
                             ]),
-                        line("pql1", "Replace pump motor (1.5 HP, variable speed)", 69500, 1),
-                        line("pql2", "Labor", 15000, 2),
+                        line("pql1", "pbp1", "Replace pump motor (1.5 HP)", 69500, 1),
+                        line("pql2", "pbp2", "Pump labor", 15000, 2),
                     ], done: true, cursor: [:], serverHLC: "1760000000005-0000-srv"))
             let job = try #require(try jobViews(store, companyId: "c1").first { $0.id == visit })
             let list = wrapUp(wrapUpInput(store: store, companyId: "c1", settings: nil, job: job))
