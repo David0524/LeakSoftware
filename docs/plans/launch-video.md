@@ -164,33 +164,40 @@ Photos again, warm golden-hour light, the music at full lift.
 ### End card
 The logo, then **Start your free trial**, the only orange button in the video, and sundeckpro.com.
 
-## 5. Shots I'd like you to record on your iPhone
+## 5. Shots to record on the iPhone
 
-The CI simulator captures every app screen cleanly. It can't film the things that happen
-outside the app, and those land best from a real phone. Record with the iPhone's Screen
-Recording (Control Center), portrait, with Do Not Disturb on so no personal notifications
-appear. Sign in as **dana@canyonstate.video.test** for leak detection and
-**luis@bluemesa.video.test** for pool service (password `sundeck-video`), so the
-shared demo company never shows. 5 to 15 seconds each is plenty; take two of each if you can.
+All inside the app (owner, 2026-10-23: "Rewire the screen recordings to demo stuff inside the
+app"). Recorded on the owner's phone with the shared demo account (Canyon State Leak
+Detections), so a real finger drives real screens. No Maps, Lock Screen or Dynamic Island shots
+(the owner is in New York, and screen recording covers the Island); the Lock Screen Live Activity
+is the owner's screenshot (`assets/owner/01-lock-screen-live-activity.jpg`).
 
-1. **On My Way → Live Activity:** tap On My Way on Today's first stop, then lock the phone so
-   the Lock Screen shows the Live Activity.
-2. **Dynamic Island:** the same, unlocked, in another app (the Home Screen is fine), so the
-   Island shows the stop.
-3. **Directions:** tap Directions on a stop and let Apple Maps open with the route.
-4. **Taking a photo:** Add Photo on a finding, the camera, the shot, back in the app. Point it
-   at a pool, equipment or anything wet.
-5. **Voice note:** record a 5-second note on a finding ("Dye pulling hard at the light niche,
-   recommend re-seal").
-6. **Signature:** have someone sign on the phone, or sign it yourself.
-7. **Offline:** turn on Airplane Mode, mark a stop complete, then turn it off and let the sync
-   bar catch up.
-8. **The customer's text:** on a second phone, the text that arrives when the tech taps On My
-   Way, and the report link opening in Safari.
-9. **Swiping stop to stop on Today,** slowly, so the cards are readable.
+Before recording:
+- **Phoenix time:** Settings › General › Date & Time, turn off Set Automatically and pick
+  Phoenix, so the app's times (On My Way, arrival) match the clock. Turn it back after.
+- Do Not Disturb on; screen recording from Control Center; portrait.
+- Move slowly and pause about a second on each screen before and after each tap, so the viewer
+  can read it. Each clip 5 to 20 seconds; two takes of anything fiddly.
 
-If any of these are a hassle, skip them: I'll rebuild the Live Activity and Dynamic Island as
-motion graphics from the real layout.
+| # | Chapter | What to record |
+|---|---|---|
+| 1 | On the road | ✓ Done: Today's card, the On My Way text, back to "On the way" (`01-on-my-way.mov`). |
+| 2 | On the road | Today: swipe the top card from stop to stop and back; open a stop's access notes. |
+| 3 | On the road | Schedule › Week: touch and hold a job's grip and drag it to another day or tech; tap Optimize. |
+| 4 | Find the leak | A leak detection job: Start, then the checklist: mark a pressure test "Dropped", add a dye test. |
+| 5 | Find the leak | The pool diagram: draw or pick the shape, then drop a finding pin on the light niche. |
+| 6 | Find the leak | Add Photo on that finding: the camera, take the shot (any water or pipe), back in the job. |
+| 7 | Find the leak | Voice Note on the finding: about 5 seconds ("Dye pulling hard at the light niche, recommend re-seal"). |
+| 8 | Prove it | Write Draft: the report fills in; scroll slowly through it; the customer signs; Send Report. |
+| 9 | Close it | New Quote from that job: add two price book items, the total, Send Quote. |
+| 10 | Pool service | A pool cleaning visit: chlorine and pH readings, the chemical calculator's "add" line, the filter cleaning, before and after photos, Complete. |
+| 11 | Spot the upsell | On a pool visit: Add Finding (pump noise), then Quote from it. |
+| 12 | Get paid | An invoice: Record Payment, Cash (or Check with a number), Send Receipt. |
+| 13 | Built for the backyard | Airplane Mode on, complete a stop or answer a checklist item (the sync bar says it's waiting), Airplane Mode off, the bar catches up. |
+| 14 | Built for the backyard | Any busy screen in dark mode (Control Center › Dark Mode), scrolling. |
+
+If one is a hassle, skip it: the simulator screenshots cover every screen as stills, and the
+desktop website covers the owner's side.
 
 ## 6. Images to make in ChatGPT
 
