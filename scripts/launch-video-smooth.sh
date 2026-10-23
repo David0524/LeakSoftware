@@ -3,13 +3,13 @@
 # frames iOS writes when the recorder stalls (at most 10 in a row, so a still screen keeps
 # a real frame every 1/6 s and never morphs), then fills those gaps with
 # motion-interpolated frames, at a steady 60 fps.
-# Usage: scripts/launch-video-smooth.sh [recording.mov ...]  (default: every new .mov)
+# Usage: scripts/launch-video-smooth.sh [recording.mov ...]  (default: every new .mov and .mp4)
 # Writes apps/video/assets/owner/smooth/<name>.mp4; skips ones already made.
 set -euo pipefail
 dir="$(cd "$(dirname "$0")/.." && pwd)/apps/video/assets/owner"
 mkdir -p "$dir/smooth"
 files=("$@")
-[ ${#files[@]} -eq 0 ] && files=("$dir"/*.mov)
+[ ${#files[@]} -eq 0 ] && files=("$dir"/*.mov "$dir"/*.mp4)
 for f in "${files[@]}"; do
   out="$dir/smooth/$(basename "${f%.*}").mp4"
   [ -f "$out" ] && { echo "have $out"; continue; }
