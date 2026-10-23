@@ -107,6 +107,14 @@
         }
     }
 
+    /// A time this morning in Phoenix, as the server stores it: Rebecca's job runs 8:10 to 9:50 AM
+    /// whatever time the capture runs.
+    private func phoenixMorning(_ hour: Int, _ minute: Int) -> JSONValue {
+        let zone = "America/Phoenix"
+        return .string(
+            zonedInstant(localDay(Date(), timeZone: zone), hour * 60 + minute, timeZone: zone).map(isoString) ?? "")
+    }
+
     /// Rebecca Quinn's leak detection in progress, for the inspection helpers: numbered #1042 as they
     /// expect, then #5163 (the job in the owner's recording) once they've run.
     private func launchLeakJob(_ store: LocalStore) throws {
@@ -123,7 +131,7 @@
             [
                 "property_id": .string(pool), "bill_to_customer_id": .string(rebecca.id), "status": "in_progress",
                 "type": "detection",
-                "started_at": .string(isoTimestamp(milliseconds: (Date().timeIntervalSince1970 - 1800) * 1000)),
+                "started_at": phoenixMorning(8, 10),
                 "assigned_user_id": "u1", "number": 1042, "fee_cents": 37500,
             ])
     }
@@ -182,6 +190,7 @@
         let test = try InspectionWrites.saveTest(
             sync, companyId: "c1", jobId: job, existing: nil, type: pressure, componentId: returns.id, data: data,
             outcome: calculate(pressure, data).suggested, notes: "")
+        try sync.store.write("test_result", id: test, companyId: "c1", ["performed_at": phoenixMorning(8, 42)])
         let returnFinding = try InspectionWrites.saveFinding(
             sync, companyId: "c1", jobId: job, existing: nil, title: "Return line break", componentId: returns.id,
             severityKey: "major", location: "Under the deck, 6 ft from the pool wall", pin: (0.55, 0.06),
@@ -397,9 +406,10 @@
             try await snapshot(
                 "lv-review-sign", height: 3600, WrapUpStepSheet(job: job, step: sign, title: sign.title(list)).app(env))
             // Rebecca signs on the tech's phone.
-            try SignatureWrites.save(
+            let signature = try SignatureWrites.save(
                 sync, companyId: "c1", jobId: job.id, purpose: .inspectionAck, signerName: "Rebecca Quinn",
                 signerRole: "Homeowner", strokes: rebeccaSignature(), at: nil)
+            try store.write("signature", id: signature, companyId: "c1", ["signed_at": phoenixMorning(9, 42)])
             try markSynced(store)
             list = wrapUp(wrapUpInput(store: store, companyId: "c1", settings: nil, job: job))
             try await snapshot(
