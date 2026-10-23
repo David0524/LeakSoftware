@@ -182,6 +182,61 @@
             }
         }
 
+        /// The upsell on a pool visit: the tech hears the pump going and adds a finding, then
+        /// quotes the replacement from the price book.
+        @Test func pumpUpsell() async throws {
+            let env = try launchEnvironment()
+            let sync = env.session.sync
+            let store = sync.store
+            try launchRoute(store)
+            env.session.reloadCompanies()
+            let visit = try #require(try seedCleanings(store))
+            let url = try #require(Bundle.module.url(forResource: "config", withExtension: "json"))
+            let config = try JSONDecoder().decode([String: [Row]].self, from: Data(contentsOf: url))
+            var rows: [PulledRow] = []
+            for (table, list) in config {
+                for row in list {
+                    var r = row
+                    r["company_id"] = "c1"
+                    rows.append(PulledRow(table: table, xid: "2", row: r))
+                }
+            }
+            try store.applyPage(PullPage(rows: rows, done: true, cursor: [:], serverHLC: "1760000000001-0000-srv"))
+            let finding = try InspectionWrites.saveFinding(
+                sync, companyId: "c1", jobId: visit, existing: nil, title: "Pump bearing noise", componentId: nil,
+                severityKey: "moderate", location: "Equipment pad", pin: nil, status: .open,
+                notes: "Loud grinding at startup. Motor is 9 years old; recommend replacing before it fails.")
+            try await snapshot(
+                "lv-pump-finding", height: 2400, FindingEditor(jobId: visit, findingId: finding).app(env))
+            func line(_ id: String, _ description: String, _ cents: Int, _ order: Int) -> PulledRow {
+                PulledRow(
+                    table: "quote_line_item", xid: "5",
+                    row: [
+                        "id": .string(id), "company_id": "c1", "quote_id": "pq1", "description": .string(description),
+                        "quantity": 1, "unit_price_cents": .number(Double(cents)), "taxable": false,
+                        "sort_order": .number(Double(order)),
+                    ])
+            }
+            try store.applyPage(
+                PullPage(
+                    rows: [
+                        PulledRow(
+                            table: "quote", xid: "5",
+                            row: [
+                                "id": "pq1", "company_id": "c1", "job_id": .string(visit), "status": "draft",
+                                "subtotal_cents": 84500, "discount_cents": 0, "tax_cents": 0, "total_cents": 84500,
+                                "deposit_cents": 0,
+                            ]),
+                        line("pql1", "Replace pump motor (1.5 HP, variable speed)", 69500, 1),
+                        line("pql2", "Labor", 15000, 2),
+                    ], done: true, cursor: [:], serverHLC: "1760000000005-0000-srv"))
+            let job = try #require(try jobViews(store, companyId: "c1").first { $0.id == visit })
+            let list = wrapUp(wrapUpInput(store: store, companyId: "c1", settings: nil, job: job))
+            let step = WrapUpOpen(step: .quote, refId: "pq1")
+            try await snapshot(
+                "lv-pump-quote", height: 3600, WrapUpStepSheet(job: job, step: step, title: step.title(list)).app(env))
+        }
+
         /// What to Add from the visit's readings, and a cash payment with its receipt by text.
         @Test func poolAndMoney() async throws {
             let env = try launchEnvironment()
