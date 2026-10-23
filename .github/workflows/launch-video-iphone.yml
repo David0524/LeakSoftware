@@ -1,0 +1,50 @@
+name: Launch video iPhone screens
+
+# The launch film's iPhone screens (docs/plans/launch-video.md, "How it's made"): the
+# LaunchVideoShots suite renders the app's real screens with the film's shop in the iPhone
+# simulator and saves them as the `launch-video-iphone` artifact (lv-*.png). Run it by hand from
+# the Actions tab; nothing else starts it. Then, in apps/video:
+#   gh run download <run id> -n launch-video-iphone -D <folder>
+#   node src/capture-iphone.ts <folder>
+
+on:
+  workflow_dispatch:
+
+concurrency:
+  group: launch-video-iphone-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  screens:
+    name: iPhone screens for the launch film
+    runs-on: macos-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+      - run: xcodebuild -version && swift --version
+      - name: Launch film screens in the iPhone simulator
+        working-directory: apps/ios
+        run: |
+          device=$(xcrun simctl list devices available -j | python3 -c '
+          import json, sys
+          devices = json.load(sys.stdin)["devices"]
+          runtimes = sorted((k for k in devices if "iOS" in k), reverse=True)
+          print(next(d["udid"] for k in runtimes for d in devices[k] if d["name"].startswith("iPhone")))')
+          mkdir -p "$RUNNER_TEMP/launch-video"
+          TEST_RUNNER_SCREENSHOT_DIR="$RUNNER_TEMP/launch-video" TEST_RUNNER_LAUNCH_VIDEO_SHOTS=1 \
+            xcodebuild test -scheme SundeckPro-Package -destination "id=$device" \
+            -only-testing:SundeckAppScreenshots/LaunchVideoShots \
+            -skipPackagePluginValidation CODE_SIGNING_ALLOWED=NO
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: launch-video-iphone
+          path: ${{ runner.temp }}/launch-video
+          retention-days: 14
+      - uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: launch-video-iphone-crash-reports
+          path: ~/Library/Logs/DiagnosticReports/xctest*
+          if-no-files-found: ignore
+          retention-days: 14
