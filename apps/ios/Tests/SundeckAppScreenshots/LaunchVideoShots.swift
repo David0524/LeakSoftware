@@ -39,10 +39,13 @@
         let kv = try KeyValue(db)
         let auth = LaunchAuth()
         let files = FileManager.default.temporaryDirectory.appendingPathComponent("launch-media-\(UUID())")
-        let sync = SyncService(
-            store: store, kv: kv, transport: SilentTransport(), auth: auth, media: MediaFiles(root: files))
+        // Synced two minutes ago, set before the sync service reads it, so no screen shows "Not
+        // synced yet".
         kv.setJSON(KVKey.user, SignedInUser(id: "u1", email: "dana@canyonstate.example"))
         kv.set(KVKey.lastSyncedAt, String(Date().addingTimeInterval(-120).timeIntervalSince1970))
+        kv.set(KVKey.initialSyncDone, "1")
+        let sync = SyncService(
+            store: store, kv: kv, transport: SilentTransport(), auth: auth, media: MediaFiles(root: files))
         kv.setTeam([
             TeamProfile(id: "u1", fullName: "Dana Owner", email: "dana@canyonstate.example"),
             TeamProfile(id: "u2", fullName: "Jake Turner", email: nil),
