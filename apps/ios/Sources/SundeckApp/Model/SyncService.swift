@@ -4,6 +4,10 @@ import SundeckCore
 import SundeckStorage
 import SundeckSync
 
+#if canImport(UIKit)
+    import UIKit
+#endif
+
 /// Where syncing stands. Port of SyncPhase in apps/mobile/src/lib/sync-service.ts.
 public enum SyncPhase: String, Sendable {
     case idle, syncing, offline, signedOut, error, readOnly
@@ -69,6 +73,14 @@ public final class SyncService {
     @ObservationIgnored private var timer: Task<Void, Never>?
     @ObservationIgnored private var soon: Task<Void, Never>?
     @ObservationIgnored private var noteTimer: Task<Void, Never>?
+    /// Bumped by `stop()`, so a sync still running when the phone signs out is ignored.
+    @ObservationIgnored private var epoch = 0
+    /// The server refused this phone's sign-in and a refresh didn't help: `Session` signs out on
+    /// this phone and shows Sign In, keeping the phone's data for the same account.
+    @ObservationIgnored public var sessionEnded: (@MainActor () async -> Void)?
+    /// Asks iOS for time to finish a sync when the screen locks or the app is switched away, so a
+    /// first download isn't cut off part way (owner, 2026-10-22). The app turns it on; tests don't.
+    @ObservationIgnored public var holdsBackgroundTime = false
     /// Runs after each successful sync (teammates' names).
     @ObservationIgnored public var afterSync: (@MainActor () async -> Void)?
     /// Runs for each voice note whose file just uploaded (asks the server for a transcript).
@@ -76,7 +88,8 @@ public final class SyncService {
 
     public init(
         store: LocalStore, kv: KeyValue, transport: any SyncTransport, auth: any AuthBackend,
-        uploader: (any Uploader)? = nil, media: MediaFiles? = nil, now: @escaping @Sendable () -> Date = { Date() }
+        uploader: (any Uploader)? = nil, media: MediaFiles? = nil,
+        pullRetryDelays: [Double] = SyncEngine.pullRetryDelays, now: @escaping @Sendable () -> Date = { Date() }
     ) {
         self.store = store
         self.kv = kv
@@ -84,7 +97,7 @@ public final class SyncService {
         self.auth = auth
         self.now = now
         self.media = media
-        engine = SyncEngine(store: store, transport: transport, now: now)
+        engine = SyncEngine(store: store, transport: transport, pullRetryDelays: pullRetryDelays, now: now)
         uploads = uploader.map {
             UploadQueue(store: store, uploader: $0) { Int64((now().timeIntervalSince1970 * 1000).rounded(.down)) }
         }
@@ -111,6 +124,7 @@ public final class SyncService {
 
     public func stop() {
         started = false
+        epoch += 1
         timer?.cancel()
         soon?.cancel()
         timer = nil
@@ -153,7 +167,9 @@ public final class SyncService {
     private func downloaded(_ progress: PullProgress) {
         status.download = progress
         let at = now()
-        if !status.initialSyncDone, at.timeIntervalSince(lastDownloadRefresh) >= 2 {
+        // Nothing has landed before the first page, so that call doesn't start the two seconds:
+        // the first page (the company, so the app opens) is read at once.
+        if !status.initialSyncDone, !progress.pulled.isEmpty, at.timeIntervalSince(lastDownloadRefresh) >= 2 {
             lastDownloadRefresh = at
             revision += 1
         }
@@ -166,28 +182,47 @@ public final class SyncService {
         }
         if status.phase == .signedOut, await auth.currentSession() == nil { return }
         status.phase = .syncing
+        let background = holdsBackgroundTime ? BackgroundTime("Sync") : nil
+        defer { background?.end() }
         if !progressWired {
             progressWired = true
             await engine.setProgressHandler { [weak self] progress in
                 Task { @MainActor in self?.downloaded(progress) }
             }
         }
+        let run = epoch
         var summary = await engine.sync()
-        if summary.authFailed {
-            // An expired token: refresh once, then try again.
-            if (try? await auth.refresh()) != nil {
+        // Stopped meanwhile (signed out): a late answer changes nothing.
+        guard run == epoch else { return }
+        if summary.authFailed || looksSignedOut(summary.error) {
+            // No valid sign-in reached the server (expired, revoked, or no user token at all, which
+            // Postgres answers with "permission denied for function sync_pull"). Refresh once and
+            // try again; if the refresh is refused, this phone signs out (owner, 2026-10-22).
+            switch await renewSignIn() {
+            case .renewed:
                 summary = await engine.sync()
+                guard run == epoch else { return }
+            case .offline:
+                status.phase = .offline
+                status.error = nil
+                refreshCounts()
+                return
+            case .ended:
+                summary.authFailed = true
             }
             if summary.authFailed {
                 status.phase = .signedOut
+                status.error = nil
                 refreshCounts()
+                await sessionEnded?()
                 return
             }
         }
         if let error = summary.error {
             let offline = error.firstMatch(of: Self.networkPattern) != nil
             status.phase = offline ? .offline : .error
-            status.error = offline ? nil : error
+            // Plain words only, never the server's message (owner, 2026-10-22).
+            status.error = offline ? nil : syncErrorText(error)
         } else {
             let at = now()
             status.lastSyncedAt = at
@@ -226,6 +261,22 @@ public final class SyncService {
     public func retryUploads() {
         try? uploads?.retryNow()
         syncSoon(0)
+    }
+
+    enum Renewal { case renewed, offline, ended }
+
+    /// One refresh of the sign-in: renewed, only offline (keep the sign-in), or refused.
+    private func renewSignIn() async -> Renewal {
+        do {
+            try await auth.refresh()
+            return .renewed
+        } catch {
+            let text = String(describing: error)
+            if error is URLError || isConnectionError(text) || text.firstMatch(of: Self.networkPattern) != nil {
+                return .offline
+            }
+            return .ended
+        }
     }
 
     /// Errors that mean the phone couldn't reach the server.
@@ -387,4 +438,26 @@ public final class SyncService {
 private func sqlText(_ value: SQLValue?) -> String? {
     if case .text(let text)? = value { return text }
     return nil
+}
+
+/// Time iOS gives the app to finish what it started after it leaves the screen (about 30
+/// seconds); ended when the sync finishes or when iOS says time is up. Nothing on other systems.
+@MainActor final class BackgroundTime {
+    #if canImport(UIKit)
+        private var id: UIBackgroundTaskIdentifier = .invalid
+    #endif
+
+    init(_ name: String) {
+        #if canImport(UIKit)
+            id = UIApplication.shared.beginBackgroundTask(withName: name) { [weak self] in self?.end() }
+        #endif
+    }
+
+    func end() {
+        #if canImport(UIKit)
+            guard id != .invalid else { return }
+            UIApplication.shared.endBackgroundTask(id)
+            id = .invalid
+        #endif
+    }
 }

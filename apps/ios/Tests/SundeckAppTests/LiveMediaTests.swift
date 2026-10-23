@@ -42,7 +42,8 @@ struct LiveMediaTests {
                 accessToken: token, files: media.source, http: client)
         }
         let sync = SyncService(
-            store: store, kv: kv, transport: transport, auth: LiveAuth(), uploader: uploader(http), media: media)
+            store: store, kv: kv, transport: transport, auth: LiveAuth(), uploader: uploader(http), media: media,
+            pullRetryDelays: [])
         await sync.syncNow()
         #expect(sync.status.error == nil)
         let company = try #require(try store.list("company").first?["id"]?.string)
@@ -114,7 +115,7 @@ struct LiveMediaTests {
         let relaunched = try LocalStore.open(db)
         let sync2 = SyncService(
             store: relaunched, kv: kv, transport: transport, auth: LiveAuth(),
-            uploader: uploader(URLSessionHTTPClient()), media: media)
+            uploader: uploader(URLSessionHTTPClient()), media: media, pullRetryDelays: [])
         try db.execute("update upload_queue set next_attempt_at = 0")
         await sync2.syncNow()  // uploads the three
         #expect(sync2.status.uploadsWaiting == 0, "\(sync2.status.lastUploadError ?? "")")

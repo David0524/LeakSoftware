@@ -1,16 +1,19 @@
 import { router } from "expo-router";
 import { useRef, useState } from "react";
+import { SIGNED_OUT_MESSAGE, signedOutNote } from "@leakbook/core";
 import { Linking, Text, type TextInput } from "react-native";
 import { AuthFrame } from "../../features/auth/AuthFrame";
 import { API_URL } from "../../lib/config";
-import { useSession } from "../../state/session";
+import { useSession, useSyncStatus } from "../../state/session";
 import { Button, FieldGroup, FieldRow, Notice } from "../../ui/components";
 import { color, ios, MAX_TEXT_SCALE, type } from "../../ui/theme";
 
 /** Sign In (spec 5.13; the website's sign-in page). */
 export default function SignIn() {
-  const { signIn } = useSession();
-  const [email, setEmail] = useState("");
+  const { signIn, signedOut } = useSession();
+  const { pending } = useSyncStatus();
+  // Signed out by the server (owner, 2026-10-22): the same account picks up where it left off.
+  const [email, setEmail] = useState(signedOut?.email ?? "");
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
@@ -53,6 +56,11 @@ export default function SignIn() {
         </Text>
       }
     >
+      {signedOut ? (
+        <Notice tone="warning">
+          {[SIGNED_OUT_MESSAGE, signedOutNote(pending, signedOut.email)].filter(Boolean).join(" ")}
+        </Notice>
+      ) : null}
       <FieldGroup labelWidth={96}>
         <FieldRow
           label="Email"

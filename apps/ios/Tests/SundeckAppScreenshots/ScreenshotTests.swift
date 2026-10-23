@@ -35,12 +35,21 @@
     }
 
     @MainActor
-    func sampleEnvironment(signedIn: Bool = true, jobs: Bool = true) throws -> AppEnvironment {
+    func sampleEnvironment(signedIn: Bool = true, jobs: Bool = true, endedByServer: Bool = false) throws
+        -> AppEnvironment
+    {
         let path = FileManager.default.temporaryDirectory.appendingPathComponent("shots-\(UUID()).db").path
         let db = try Database(path: path, key: String(repeating: "ab", count: 32))
         let store = try LocalStore.open(db, deviceId: "shots")
         let kv = try KeyValue(db)
         let auth = SampleAuth()
+        if endedByServer {
+            // The server ended the sign-in with 3 changes unsent (owner, 2026-10-22).
+            kv.setJSON(KVKey.signedOutUser, SignedInUser(id: "u1", email: "tech@demo.leakbook.test"))
+            for name in ["Maria", "Tony", "Lee"] {
+                _ = try store.insert("customer", companyId: "c1", ["name": .string(name)])
+            }
+        }
         let files = FileManager.default.temporaryDirectory.appendingPathComponent("shots-media-\(UUID())")
         let sync = SyncService(
             store: store, kv: kv, transport: SilentTransport(), auth: auth, media: MediaFiles(root: files))
@@ -652,6 +661,10 @@
             // Forgot Password? (owner, 2026-10-22).
             try await snapshot(
                 "01-forgot-password", NavigationStack { ForgotPasswordView(email: "dana@bluewave.test") }.app(env))
+            // Signed out by the server, with unsent changes kept (owner, 2026-10-22).
+            let ended = try sampleEnvironment(signedIn: false, endedByServer: true)
+            try await snapshot("01-sign-in-signed-out", SignInFlow().app(ended))
+            try await snapshot("01-sign-in-signed-out-dark", dark: true, SignInFlow().app(ended))
         }
 
         @Test func jobs() async throws {

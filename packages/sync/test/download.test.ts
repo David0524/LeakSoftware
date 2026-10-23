@@ -153,6 +153,40 @@ describe("the first download", () => {
   });
 });
 
+describe("a first download picked up again", () => {
+  it("counts what is already on the phone and asks the server for the rest, as a first download", async () => {
+    const store = LocalStore.open(memoryDb());
+    const server = new FakeServer();
+    server.totals = { customer: 4 };
+    // An earlier run saved two customers and the server's marked cursor, then lost its signal.
+    store.applyPage({
+      rows: [row("customer", 1), row("customer", 2)],
+      done: false,
+      cursor: { first: true, from: "0", high: "9", after: ["2", "customer", "customer2", 2] },
+      server_hlc: HLC,
+    });
+    server.pages = [
+      {
+        rows: [row("customer", 3), row("customer", 4)],
+        done: true,
+        cursor: { from: "9" },
+        server_hlc: HLC,
+      },
+    ];
+    const seen: DownloadState[] = [];
+    await new SyncEngine(store, server, { onDownload: (d) => seen.push(d) }).sync();
+    // It goes on from 50%, not from 0%.
+    expect(seen[0]).toEqual({ pulled: { customer: 2 }, totals: null });
+    expect(seen.at(-1)).toEqual({ pulled: { customer: 4 }, totals: { customer: 4 } });
+    expect(server.pulls[0]!.cursor).toMatchObject({
+      first: true,
+      after: ["2", "customer", "customer2", 2],
+    });
+    expect(server.pulls[0]!.size).toBe(OPENING_PULL_PAGE);
+    expect(server.counted).toBe(1);
+  });
+});
+
 describe("SupabaseTransport.count", () => {
   it("reads sync_pull_count, and null on any failure", async () => {
     const ok = new SupabaseTransport({

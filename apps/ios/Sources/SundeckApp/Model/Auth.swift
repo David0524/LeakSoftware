@@ -29,7 +29,8 @@ public protocol AuthBackend: Sendable {
     /// False when the account must confirm its email first (no session yet).
     func signUp(name: String, email: String, password: String) async throws -> Bool
     func verifyCode(_ code: String) async throws
-    /// Refreshes the access token; throws when the sign-in is no longer accepted.
+    /// Refreshes the access token; throws when the sign-in is no longer accepted, or an error
+    /// whose text `isConnectionError` matches when only the network failed.
     func refresh() async throws
     /// Ends this phone's session only.
     func signOut() async
@@ -40,6 +41,9 @@ public struct AuthMessage: Error, Equatable, CustomStringConvertible {
     public let description: String
 
     public init(_ text: String) { description = text }
+
+    /// The phone couldn't reach the server (`isConnectionError` matches it).
+    public static let noConnection = AuthMessage("No connection. Connect to the internet to sign in.")
 
     /// Supabase's messages, reworded (`friendlyAuthError` in session.tsx).
     public static func friendly(_ message: String) -> AuthMessage {
@@ -117,7 +121,18 @@ public struct SupabaseAuthBackend: AuthBackend {
     }
 
     public func refresh() async throws {
-        _ = try await client.auth.refreshSession()
+        do {
+            _ = try await client.auth.refreshSession()
+        } catch let error as Supabase.AuthError {
+            // A server hiccup or a refresh overtaken by a sign-out isn't a refusal: try later.
+            if case .api(_, _, _, let response) = error, response.statusCode >= 500 {
+                throw AuthMessage.noConnection
+            }
+            if case .refreshDiscarded = error { throw AuthMessage.noConnection }
+            throw error
+        } catch is URLError {
+            throw AuthMessage.noConnection
+        }
     }
 
     public func signOut() async {

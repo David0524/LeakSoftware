@@ -310,15 +310,26 @@ export class LocalStore {
     );
   }
 
-  /** Drop a rejected change and restore the server's value on the next pull. */
+  /**
+   * Drop a rejected change and restore the server's value on the next pull: everything again
+   * from the start, deletes included (`{}` would be a first download, which leaves them out).
+   */
   discardProblem(seq: number): void {
     this.db.run("delete from sync_outbox where seq = ? and status = 'rejected'", [seq]);
-    this.setCursor({});
+    this.setCursor({ from: "0" });
   }
 
   // ---------------------------------------------------------------------------
   // Pull
   // ---------------------------------------------------------------------------
+
+  /** Rows on the phone per table, deleted ones left out (a resumed download's progress). */
+  liveCounts(): Record<string, number> {
+    const rows = this.db.all<{ t: string; n: number }>(
+      "select table_name as t, count(*) as n from sync_records where deleted = 0 group by table_name",
+    );
+    return Object.fromEntries(rows.map((r) => [r.t, Number(r.n)]));
+  }
 
   getCursor(): PullCursor {
     const v = this.db.get<{ value: string }>(

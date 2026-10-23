@@ -33,10 +33,16 @@ export interface PushResponse {
   results: MutationResult[];
 }
 
+/**
+ * The server's pull cursor, passed back as it came. `first` marks a first download's pages
+ * (20261022001900_first_download.sql): the server leaves out deleted rows until it's done, and
+ * its `after` carries the table's place in the download as a fourth item.
+ */
 export interface PullCursor {
   from?: string;
   high?: string;
-  after?: [string, string, string];
+  after?: [string, string, string] | [string, string, string, number];
+  first?: boolean;
 }
 
 export interface PulledRow {

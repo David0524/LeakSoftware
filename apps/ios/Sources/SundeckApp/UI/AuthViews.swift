@@ -194,6 +194,11 @@
                 // Buying happens on the website (App Store rule 3.1.1, spec 8.4).
                 InlineLinkText(text: "New to Sundeck Pro?", link: "Start a free trial.") { browser = .site("sign-up") }
             } content: {
+                // The server ended this phone's sign-in (owner, 2026-10-22); its work waits here.
+                if let notice = session.signedOutNotice {
+                    Notice(
+                        kind: .warning, text: [notice.message, notice.note].compactMap { $0 }.joined(separator: " "))
+                }
                 Grouped {
                     LabeledFieldRow(
                         label: "Email", text: $email, placeholder: "name@example.com", keyboard: .emailAddress,
@@ -230,6 +235,7 @@
             }
             .toolbar(.hidden, for: .navigationBar)
             .browserSheet($browser)
+            .onAppear { if email.isEmpty, let signedOut = session.signedOutUser { email = signedOut.email } }
         }
 
         private func signIn() async {

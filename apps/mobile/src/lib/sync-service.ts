@@ -1,7 +1,7 @@
 import NetInfo from "@react-native-community/netinfo";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { AppState, type NativeEventSubscription } from "react-native";
-import { uuidv7 } from "@leakbook/core";
+import { isConnectionError, looksSignedOut, syncErrorText, uuidv7 } from "@leakbook/core";
 import { Paths } from "expo-file-system";
 import {
   LocalStore,
@@ -91,6 +91,13 @@ export class SyncService {
   private interval: ReturnType<typeof setInterval> | null = null;
   private appStateSub: NativeEventSubscription | null = null;
   private netUnsub: (() => void) | null = null;
+  /** Bumped by stop(), so a sync still running when the phone signs out is ignored. */
+  private epoch = 0;
+  /**
+   * The server refused this phone's sign-in and a refresh didn't help: the session signs out
+   * on this phone and shows Sign In (state/session.tsx).
+   */
+  onSessionEnded: (() => void) | null = null;
 
   constructor(
     store: LocalStore,
@@ -338,6 +345,7 @@ export class SyncService {
   }
 
   stop() {
+    this.epoch += 1;
     this.appStateSub?.remove();
     this.netUnsub?.();
     if (this.interval) clearInterval(this.interval);
@@ -361,29 +369,55 @@ export class SyncService {
       this.setStatus({ phase: "offline" });
       return;
     }
-    const { data } = await this.supabase.auth.getSession();
+    const run = this.epoch;
+    const { data, error: sessionError } = await this.supabase.auth.getSession();
+    if (run !== this.epoch) return;
     if (!data.session) {
-      this.setStatus({ phase: "signed_out" });
+      // Offline with an expired token: the session is kept and refreshes once back online.
+      if (sessionError && connectionFailure(sessionError)) {
+        this.setStatus({ phase: "offline" });
+        return;
+      }
+      // supabase-js drops a session whose refresh the server refused (owner, 2026-10-22).
+      this.setStatus({ phase: "signed_out", error: null });
+      this.onSessionEnded?.();
       return;
     }
 
     this.setStatus({ phase: "syncing", error: null });
     let summary = await this.engine.sync();
-    if (summary.authFailed) {
-      // The saved sign-in was refused (expired or revoked). Try a fresh token once; if that
-      // fails too, ask the tech to sign in again. Everything stays on the phone meanwhile.
+    // Stopped meanwhile (signed out): a late answer changes nothing.
+    if (run !== this.epoch) return;
+    if (summary.authFailed || looksSignedOut(summary.error)) {
+      // No valid sign-in reached the server (expired, revoked, or no user token at all, which
+      // Postgres answers with "permission denied for function sync_pull"). Try a fresh token
+      // once; if the server refuses it, this phone signs out and shows Sign In, keeping its
+      // data and unsent changes for the same account (owner, 2026-10-22).
       const refreshed = await this.supabase.auth.refreshSession();
+      if (run !== this.epoch) return;
+      if (refreshed.error && connectionFailure(refreshed.error)) {
+        this.setStatus({ phase: "offline", error: null });
+        return;
+      }
       if (refreshed.error || !refreshed.data.session) {
         this.setStatus({ phase: "signed_out", error: null });
+        this.onSessionEnded?.();
         return;
       }
       summary = await this.engine.sync();
+      if (run !== this.epoch) return;
+      if (summary.authFailed) {
+        this.setStatus({ phase: "signed_out", error: null });
+        this.onSessionEnded?.();
+        return;
+      }
     }
     if (summary.error) {
       const offline = /network|fetch|offline|timed? ?out/i.test(summary.error);
       this.setStatus({
         phase: offline ? "offline" : "error",
-        error: offline ? null : summary.error,
+        // Plain words only, never the server's message (owner, 2026-10-22).
+        error: offline ? null : syncErrorText(summary.error),
       });
       this.emit(summary.pulled > 0);
       return;
@@ -534,4 +568,14 @@ export class SyncService {
     };
     this.emit(true);
   }
+}
+
+/** A refresh or session read that failed only for want of a connection (try again later). */
+function connectionFailure(error: { name?: string; message?: string; status?: number }): boolean {
+  return (
+    error.name === "AuthRetryableFetchError" ||
+    error.name === "AuthRefreshDiscardedError" ||
+    (error.status ?? 0) >= 500 ||
+    isConnectionError(error.message)
+  );
 }

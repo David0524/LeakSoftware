@@ -29,6 +29,9 @@ public actor SyncEngine {
     private let transport: any SyncTransport
     private let pushBatch: Int
     private let pullPage: Int
+    private let firstPage: Int
+    private let retryDelays: [Double]
+    private let sleep: @Sendable (Double) async -> Void
     private let now: @Sendable () -> Date
     private var running: Task<SyncSummary, Never>?
     /// Told as each page of a first download is applied (`PullProgress`).
@@ -36,6 +39,10 @@ public actor SyncEngine {
 
     /// Rows per page on a first download: the most sync_pull allows.
     public static let firstPullPage = 2000
+    /// Seconds before each retry of a pull page that failed on the network (owner, 2026-10-22: the
+    /// first download "stops around 40% with 'not connected to the internet'"). After the last the
+    /// sync fails, and the next one carries on from the saved cursor.
+    public static let pullRetryDelays: [Double] = [1, 3, 8]
     /// A first download's opening page: enough for the company and the membership.
     public static let openingPullPage = 50
 
@@ -43,15 +50,22 @@ public actor SyncEngine {
     public func setProgressHandler(_ handler: (@Sendable (PullProgress) -> Void)?) { onProgress = handler }
 
     /// `pushBatch` is mutations per sync_push call (server limit 500); `pullPage` rows per page;
-    /// `now` is the clock for which jobs have aged off phones (tests set it).
+    /// `firstPullPage` rows per page on a first download (tests make it small); `now` is the clock
+    /// for which jobs have aged off phones (tests set it); `pullRetryDelays` and `sleep` are how a
+    /// pull page that failed on the network is asked for again (tests shorten them).
     public init(
         store: LocalStore, transport: any SyncTransport, pushBatch: Int = 200, pullPage: Int = 500,
+        firstPullPage: Int = SyncEngine.firstPullPage, pullRetryDelays: [Double] = SyncEngine.pullRetryDelays,
+        sleep: @escaping @Sendable (Double) async -> Void = { try? await Task.sleep(for: .seconds($0)) },
         now: @escaping @Sendable () -> Date = { Date() }
     ) {
+        retryDelays = pullRetryDelays
+        self.sleep = sleep
         self.store = store
         self.transport = transport
         self.pushBatch = min(pushBatch, 500)
         self.pullPage = pullPage
+        firstPage = min(firstPullPage, Self.firstPullPage)
         self.now = now
     }
 
@@ -132,9 +146,10 @@ public actor SyncEngine {
         let restart = scope != nil && last != nil && scope != last
         var seen: Set<String>? = restart ? [] : nil
         let cursor: PullCursor = restart ? .object([:]) : try store.cursor()
-        // A first download (no cursor yet) or a restart: ask how much there is, for the
-        // progress screen (never fails the sync), and take the biggest pages.
-        let first = restart || cursor == .object([:])
+        // A first download (no cursor yet, a restart, or one the app was closed during, whose
+        // cursor the server marked): ask how much there is, for the progress screen (never fails
+        // the sync), and take the biggest pages.
+        let first = restart || cursor == .object([:]) || isFirstDownload(cursor)
         // A first download's opening page is small: the company and the membership come first,
         // so the app opens after one quick request while the rest comes down behind it (owner,
         // 2026-10-22: "The initial app downloading screen is still taking way too long"). The
@@ -144,16 +159,26 @@ public actor SyncEngine {
         var counting: Task<[String: Int]?, Never>? = nil
         if first {
             counting = Task { (try? await transport.pullCount()) ?? nil }
-            progress = PullProgress(totals: nil)
+            // A download picked up again after a failure counts what is already on the phone, so
+            // the bar carries on from where it was instead of starting at 0%.
+            let already = restart || cursor == .object([:]) ? [:] : try store.liveCounts()
+            progress = PullProgress(totals: nil, pulled: already)
             onProgress?(progress!)
         }
-        let size = first ? max(pullPage, Self.firstPullPage) : pullPage
-        var page = try await transport.pull(cursor: cursor, pageSize: first ? min(Self.openingPullPage, size) : size)
+        let size = first ? firstPage : pullPage
+        let delays = retryDelays
+        let sleep = self.sleep
+        var page = try await pullWithRetry(
+            transport, cursor: cursor, size: first ? min(Self.openingPullPage, size) : size, delays: delays,
+            sleep: sleep)
         while true {
             // The next page is already on its way while this one is saved.
             let next: Task<PullPage, Error>? =
                 page.done
-                ? nil : Task { [cursor = page.cursor] in try await transport.pull(cursor: cursor, pageSize: size) }
+                ? nil
+                : Task { [cursor = page.cursor] in
+                    try await pullWithRetry(transport, cursor: cursor, size: size, delays: delays, sleep: sleep)
+                }
             do {
                 try store.applyPage(page)
             } catch {
@@ -185,6 +210,40 @@ public actor SyncEngine {
             return jobOnPhones(dates, now: date, extraDays: phoneHistoryMarginDays)
         }
     }
+}
+
+/// One pull page, asked for again after each of `delays` when it fails on the network.
+func pullWithRetry(
+    _ transport: any SyncTransport, cursor: PullCursor, size: Int, delays: [Double],
+    sleep: @Sendable (Double) async -> Void
+) async throws -> PullPage {
+    var attempt = 0
+    while true {
+        do {
+            return try await transport.pull(cursor: cursor, pageSize: size)
+        } catch {
+            guard attempt < delays.count, isNetworkFailure(error), !Task.isCancelled else { throw error }
+            await sleep(delays[attempt])
+            attempt += 1
+        }
+    }
+}
+
+/// Errors that mean the request didn't get through (worth asking again), not a refusal. Port of
+/// isNetworkFailure in packages/sync/src/engine.ts.
+public func isNetworkFailure(_ error: Error) -> Bool {
+    if error is AuthError { return false }
+    return String(describing: error).firstMatch(of: networkFailurePattern) != nil
+}
+
+nonisolated(unsafe) let networkFailurePattern =
+    /(?i)network|fetch|offline|timed? ?out|timeout|could not connect|internet connection|connection (was )?(reset|lost|closed|refused|aborted)|socket|ECONN|ETIMEDOUT|EAI_AGAIN|NSURLErrorDomain|URLError|\b50[234]\b|gateway/
+
+/// The server marks a first download's cursors (`"first": true`,
+/// 20261022001900_first_download.sql): it leaves out deleted rows until the download is done.
+func isFirstDownload(_ cursor: PullCursor) -> Bool {
+    if case .object(let fields) = cursor, fields["first"] == .bool(true) { return true }
+    return false
 }
 
 public struct SyncFailure: Error, CustomStringConvertible {

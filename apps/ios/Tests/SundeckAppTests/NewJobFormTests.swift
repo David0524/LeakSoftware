@@ -55,7 +55,9 @@ import Testing
         let path = FileManager.default.temporaryDirectory.appendingPathComponent("newjob-\(UUID()).db").path
         let database = try Database(path: path, key: String(repeating: "4d", count: 32))
         let store = try LocalStore.open(database)
-        sync = SyncService(store: store, kv: try KeyValue(database), transport: NeverTransport(), auth: NoAuth())
+        sync = SyncService(
+            store: store, kv: try KeyValue(database), transport: NeverTransport(), auth: NoAuth(),
+            pullRetryDelays: [])
         try seedServerRows()
     }
 

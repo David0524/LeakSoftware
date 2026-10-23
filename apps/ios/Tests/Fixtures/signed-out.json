@@ -1,0 +1,321 @@
+{
+  "SIGNED_OUT_MESSAGE": [
+    {
+      "args": [],
+      "result": "You were signed out. Sign in again to keep going."
+    }
+  ],
+  "signedOutNote": [
+    {
+      "args": [
+        0,
+        "tech@shop.test"
+      ],
+      "result": null
+    },
+    {
+      "args": [
+        -2,
+        "tech@shop.test"
+      ],
+      "result": null
+    },
+    {
+      "args": [
+        1,
+        "tech@shop.test"
+      ],
+      "result": "1 change on this phone will sync once you sign in as tech@shop.test. Signing in with another account removes them."
+    },
+    {
+      "args": [
+        3,
+        " owner@shop.test "
+      ],
+      "result": "3 changes on this phone will sync once you sign in as owner@shop.test. Signing in with another account removes them."
+    },
+    {
+      "args": [
+        12,
+        ""
+      ],
+      "result": "12 changes on this phone will sync once you sign in. Signing in with another account removes them."
+    }
+  ],
+  "looksSignedOut": [
+    {
+      "args": [
+        "permission denied for function sync_pull"
+      ],
+      "result": true
+    },
+    {
+      "args": [
+        "permission denied for function sync_pull_count"
+      ],
+      "result": true
+    },
+    {
+      "args": [
+        "Sign in to sync"
+      ],
+      "result": true
+    },
+    {
+      "args": [
+        "Invalid Refresh Token: Refresh Token Not Found"
+      ],
+      "result": true
+    },
+    {
+      "args": [
+        "Auth session missing!"
+      ],
+      "result": true
+    },
+    {
+      "args": [
+        "JWT expired"
+      ],
+      "result": true
+    },
+    {
+      "args": [
+        "new row violates row-level security policy, code 42501"
+      ],
+      "result": false
+    },
+    {
+      "args": [
+        "TypeError: Network request failed"
+      ],
+      "result": false
+    },
+    {
+      "args": [
+        "The Internet connection appears to be offline."
+      ],
+      "result": false
+    },
+    {
+      "args": [
+        "The request timed out."
+      ],
+      "result": false
+    },
+    {
+      "args": [
+        "database or disk is full"
+      ],
+      "result": false
+    },
+    {
+      "args": [
+        "500 upstream broke"
+      ],
+      "result": false
+    },
+    {
+      "args": [
+        "relation \"job\" does not exist"
+      ],
+      "result": false
+    },
+    {
+      "args": [
+        ""
+      ],
+      "result": false
+    },
+    {
+      "args": [
+        null
+      ],
+      "result": false
+    }
+  ],
+  "isConnectionError": [
+    {
+      "args": [
+        "permission denied for function sync_pull"
+      ],
+      "result": false
+    },
+    {
+      "args": [
+        "permission denied for function sync_pull_count"
+      ],
+      "result": false
+    },
+    {
+      "args": [
+        "Sign in to sync"
+      ],
+      "result": false
+    },
+    {
+      "args": [
+        "Invalid Refresh Token: Refresh Token Not Found"
+      ],
+      "result": false
+    },
+    {
+      "args": [
+        "Auth session missing!"
+      ],
+      "result": false
+    },
+    {
+      "args": [
+        "JWT expired"
+      ],
+      "result": false
+    },
+    {
+      "args": [
+        "new row violates row-level security policy, code 42501"
+      ],
+      "result": false
+    },
+    {
+      "args": [
+        "TypeError: Network request failed"
+      ],
+      "result": true
+    },
+    {
+      "args": [
+        "The Internet connection appears to be offline."
+      ],
+      "result": true
+    },
+    {
+      "args": [
+        "The request timed out."
+      ],
+      "result": true
+    },
+    {
+      "args": [
+        "database or disk is full"
+      ],
+      "result": false
+    },
+    {
+      "args": [
+        "500 upstream broke"
+      ],
+      "result": false
+    },
+    {
+      "args": [
+        "relation \"job\" does not exist"
+      ],
+      "result": false
+    },
+    {
+      "args": [
+        ""
+      ],
+      "result": false
+    },
+    {
+      "args": [
+        null
+      ],
+      "result": false
+    }
+  ],
+  "syncErrorText": [
+    {
+      "args": [
+        "permission denied for function sync_pull"
+      ],
+      "result": "The server didn’t accept this phone’s sign-in. Sign out and sign in again if this keeps happening."
+    },
+    {
+      "args": [
+        "permission denied for function sync_pull_count"
+      ],
+      "result": "The server didn’t accept this phone’s sign-in. Sign out and sign in again if this keeps happening."
+    },
+    {
+      "args": [
+        "Sign in to sync"
+      ],
+      "result": "The server didn’t accept this phone’s sign-in. Sign out and sign in again if this keeps happening."
+    },
+    {
+      "args": [
+        "Invalid Refresh Token: Refresh Token Not Found"
+      ],
+      "result": "The server didn’t accept this phone’s sign-in. Sign out and sign in again if this keeps happening."
+    },
+    {
+      "args": [
+        "Auth session missing!"
+      ],
+      "result": "The server didn’t accept this phone’s sign-in. Sign out and sign in again if this keeps happening."
+    },
+    {
+      "args": [
+        "JWT expired"
+      ],
+      "result": "The server didn’t accept this phone’s sign-in. Sign out and sign in again if this keeps happening."
+    },
+    {
+      "args": [
+        "new row violates row-level security policy, code 42501"
+      ],
+      "result": "Couldn’t sync with the server. Sundeck Pro will try again in a minute."
+    },
+    {
+      "args": [
+        "TypeError: Network request failed"
+      ],
+      "result": "No connection. Changes are saved on this phone and sync when it’s back."
+    },
+    {
+      "args": [
+        "The Internet connection appears to be offline."
+      ],
+      "result": "No connection. Changes are saved on this phone and sync when it’s back."
+    },
+    {
+      "args": [
+        "The request timed out."
+      ],
+      "result": "No connection. Changes are saved on this phone and sync when it’s back."
+    },
+    {
+      "args": [
+        "database or disk is full"
+      ],
+      "result": "Phone storage is full. Free up some space; nothing already saved is lost."
+    },
+    {
+      "args": [
+        "500 upstream broke"
+      ],
+      "result": "Couldn’t sync with the server. Sundeck Pro will try again in a minute."
+    },
+    {
+      "args": [
+        "relation \"job\" does not exist"
+      ],
+      "result": "Couldn’t sync with the server. Sundeck Pro will try again in a minute."
+    },
+    {
+      "args": [
+        ""
+      ],
+      "result": "Couldn’t sync with the server. Sundeck Pro will try again in a minute."
+    },
+    {
+      "args": [
+        null
+      ],
+      "result": "Couldn’t sync with the server. Sundeck Pro will try again in a minute."
+    }
+  ]
+}

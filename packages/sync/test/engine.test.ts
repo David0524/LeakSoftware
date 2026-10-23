@@ -1,5 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
+  AuthError,
+  isNetworkFailure,
   LocalStore,
   SyncEngine,
   type Mutation,
@@ -21,6 +23,9 @@ class FakeServer implements SyncTransport {
   cursors: PullCursor[] = [];
   scopeValue = "c1:all";
   failPullAt = -1;
+  /** The next this many pulls fail with this error. */
+  failingPulls = 0;
+  pullError: Error = new Error("network down");
 
   async scope(): Promise<string> {
     return this.scopeValue;
@@ -47,6 +52,10 @@ class FakeServer implements SyncTransport {
   async pull(cursor: PullCursor): Promise<PullPage> {
     this.cursors.push(cursor);
     if (this.cursors.length - 1 === this.failPullAt) throw new Error("network down");
+    if (this.failingPulls > 0) {
+      this.failingPulls -= 1;
+      throw this.pullError;
+    }
     return (
       this.pages.shift() ?? {
         rows: [],
@@ -213,11 +222,11 @@ describe("SyncEngine", () => {
     it("starts over again when the full pull is interrupted", async () => {
       const store = LocalStore.open(memoryDb());
       const server = new FakeServer();
-      const engine = new SyncEngine(store, server);
+      const engine = new SyncEngine(store, server, { pullRetryDelays: [0, 0, 0] });
       server.pages = [page([row("job", J1), row("job", J2)])];
       await engine.sync();
       server.scopeValue = "c1:own3";
-      server.failPullAt = server.cursors.length; // the next pull fails
+      server.failingPulls = 4; // the next pull fails, and its three retries
       const failed = await engine.sync();
       expect(failed.error).toBe("network down");
       expect(store.getScope()).toBe("c1:all");
@@ -226,6 +235,84 @@ describe("SyncEngine", () => {
       await engine.sync();
       expect(server.cursors.at(-1)).toEqual({});
       expect(store.get("job", J2)).toBeUndefined();
+    });
+  });
+
+  describe("a pull page that fails on the network", () => {
+    const J1 = "00000000-0000-4000-8000-0000000000a1";
+    const row = (table: string, id: string) => ({ table, xid: "5", row: { id, company_id: C } });
+    const page = (rows: ReturnType<typeof row>[]): PullPage => ({
+      rows,
+      done: true,
+      cursor: { from: "9" },
+      server_hlc: "1800000000000-0000-server",
+    });
+    function setup() {
+      const store = LocalStore.open(memoryDb());
+      const server = new FakeServer();
+      const waits: number[] = [];
+      const engine = new SyncEngine(store, server, {
+        sleep: async (ms) => {
+          waits.push(ms);
+        },
+      });
+      return { store, server, waits, engine };
+    }
+
+    it("is asked for again after 1, 3 and 8 seconds, from the same cursor", async () => {
+      const { store, server, waits, engine } = setup();
+      server.pages = [page([row("job", J1)])];
+      server.failingPulls = 3;
+      const s = await engine.sync();
+      expect(s.error).toBeUndefined();
+      expect(waits).toEqual([1000, 3000, 8000]);
+      expect(server.cursors).toEqual([{}, {}, {}, {}]);
+      expect(store.get("job", J1)).toBeTruthy();
+    });
+
+    it("fails the sync after three retries, and the next sync carries on", async () => {
+      const { store, server, waits, engine } = setup();
+      server.pages = [page([row("job", J1)])];
+      server.failingPulls = 4;
+      const s = await engine.sync();
+      expect(s.error).toBe("network down");
+      expect(waits).toEqual([1000, 3000, 8000]);
+      expect(store.get("job", J1)).toBeUndefined();
+      expect((await engine.sync()).error).toBeUndefined();
+      expect(store.get("job", J1)).toBeTruthy();
+    });
+
+    it("is not retried when the sign-in is refused or the server says no", async () => {
+      for (const error of [
+        new AuthError("JWT expired"),
+        new Error("permission denied for table job"),
+      ]) {
+        const { server, waits, engine } = setup();
+        server.failingPulls = 1;
+        server.pullError = error;
+        const s = await engine.sync();
+        expect(s.error).toBe(error.message);
+        expect(waits).toEqual([]);
+        expect(server.cursors.length).toBe(1);
+      }
+    });
+
+    it("tells network failures from other errors", () => {
+      for (const m of [
+        "TypeError: Network request failed",
+        "FetchError: request to https://x failed",
+        "The Internet connection appears to be offline.",
+        "The request timed out.",
+        "connection reset",
+        "Error Domain=NSURLErrorDomain Code=-1005",
+        "504 Gateway Timeout",
+      ]) {
+        expect(isNetworkFailure(new Error(m))).toBe(true);
+      }
+      for (const m of ["permission denied for table job", "duplicate key value"]) {
+        expect(isNetworkFailure(new Error(m))).toBe(false);
+      }
+      expect(isNetworkFailure(new AuthError("network"))).toBe(false);
     });
   });
 });

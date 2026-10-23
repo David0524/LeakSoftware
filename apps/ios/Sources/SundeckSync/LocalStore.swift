@@ -276,13 +276,25 @@ public final class LocalStore: @unchecked Sendable {
             [.text(error)] + seqs.map(sqlInt))
     }
 
-    /// Drops a rejected change and restores the server's value on the next pull.
+    /// Drops a rejected change and restores the server's value on the next pull: everything again
+    /// from the start, deletes included (`{}` would be a first download, which leaves them out).
     public func discardProblem(_ seq: Int) throws {
         try database.query("delete from sync_outbox where seq = ? and status = 'rejected'", [sqlInt(seq)])
-        try setCursor(.object([:]))
+        try setCursor(.object(["from": .string("0")]))
     }
 
     // MARK: - Pull
+
+    /// Rows on the phone per table, deleted ones left out (a resumed download's progress).
+    public func liveCounts() throws -> [String: Int] {
+        var counts: [String: Int] = [:]
+        for r in try database.query(
+            "select table_name, count(*) as n from sync_records where deleted = 0 group by table_name")
+        {
+            counts[r["table_name"]?.text ?? ""] = Int(r["n"]?.integer ?? 0)
+        }
+        return counts
+    }
 
     public func cursor() throws -> PullCursor {
         guard let text = try meta("pull_cursor") else { return .object([:]) }

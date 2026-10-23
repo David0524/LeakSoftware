@@ -69,7 +69,8 @@ public struct PushResponse: Codable, Equatable, Sendable {
     }
 }
 
-/// The server's pull cursor (`{from, high, after}`), passed back as it came.
+/// The server's pull cursor (`{from, high, after}`, plus `first` on a first download's pages),
+/// passed back as it came.
 public typealias PullCursor = JSONValue
 
 public struct PulledRow: Codable, Equatable, Sendable {

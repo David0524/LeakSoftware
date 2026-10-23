@@ -43,6 +43,11 @@ final class FakeAuth: AuthBackend, @unchecked Sendable {
     var stored: SignInResult?
     var codeOwed = false
     var refreshWorks = true
+    /// The refresh fails only for want of a connection.
+    var refreshOffline = false
+    var refreshes = 0
+    /// Runs on each refresh that works (the server accepts the fresh token).
+    var onRefresh: (@Sendable () -> Void)?
     var signOuts = 0
 
     func currentSession() async -> SignInResult? { lock.withLock { stored } }
@@ -67,7 +72,13 @@ final class FakeAuth: AuthBackend, @unchecked Sendable {
     }
 
     func refresh() async throws {
-        try lock.withLock { if !refreshWorks { throw AuthError("JWT expired") } }
+        let then = try lock.withLock { () throws -> (@Sendable () -> Void)? in
+            refreshes += 1
+            if refreshOffline { throw AuthMessage.noConnection }
+            if !refreshWorks { throw AuthError("Invalid Refresh Token: Refresh Token Not Found") }
+            return onRefresh
+        }
+        then?()
     }
 
     func signOut() async {
@@ -89,7 +100,8 @@ struct Shell {
         let path = FileManager.default.temporaryDirectory.appendingPathComponent("shell-\(UUID()).db").path
         let db = try Database(path: path, key: String(repeating: "ab", count: 32))
         let store = try LocalStore.open(db)
-        sync = SyncService(store: store, kv: try KeyValue(db), transport: transport, auth: auth)
+        sync = SyncService(
+            store: store, kv: try KeyValue(db), transport: transport, auth: auth, pullRetryDelays: [])
         session = Session(sync: sync, auth: auth)
     }
 
@@ -184,6 +196,59 @@ struct Shell {
         #expect(s.auth.signOuts == 1)
     }
 
+    /// The owner's phone (2026-10-22): the website's Sign Out ended every session, so the phone's
+    /// calls reached Postgres without a user token ("permission denied for function sync_pull").
+    @Test func aSignInTheServerEndedGoesToSignInAndKeepsTheWork() async throws {
+        let s = try Shell()
+        try await s.session.signIn(email: "tech@shop.test", password: "right")
+        try s.seedCompany(userId: "u-tech@shop.test")
+        s.session.reloadCompanies()
+        try s.sync.insert("customer", companyId: "c1", ["name": "Maria"])
+        s.transport.failure = SyncFailure("permission denied for function sync_pull")
+        s.auth.refreshWorks = false
+        await s.sync.syncNow()
+        #expect(s.session.route == .signedOut)
+        #expect(s.auth.signOuts == 1)
+        #expect(s.session.signedOutUser?.email == "tech@shop.test")
+        #expect(s.session.signedOutNotice?.message == "You were signed out. Sign in again to keep going.")
+        #expect(
+            s.session.signedOutNotice?.note
+                == "1 change on this phone will sync once you sign in as tech@shop.test. Signing in with another account removes them."
+        )
+        #expect(try s.sync.store.list("customer").count == 1)
+        #expect(s.sync.status.pending == 1)
+        // A new launch still shows it.
+        let relaunched = Session(sync: s.sync, auth: s.auth)
+        #expect(relaunched.route == .signedOut)
+        #expect(relaunched.signedOutUser?.email == "tech@shop.test")
+
+        // Signing in again as the same person sends the waiting change.
+        s.transport.failure = nil
+        s.auth.refreshWorks = true
+        try await s.session.signIn(email: "tech@shop.test", password: "right")
+        #expect(s.session.route == .ready)
+        #expect(s.session.signedOutNotice == nil)
+        #expect(s.sync.kv.get(KVKey.signedOutUser) == nil)
+        await s.sync.syncNow()
+        #expect(s.sync.status.pending == 0)
+        #expect(s.transport.pushes == 1)
+    }
+
+    @Test func anotherPersonAfterTheServerEndedASignInNeverSendsItsChanges() async throws {
+        let s = try Shell()
+        try await s.session.signIn(email: "first@shop.test", password: "right")
+        try s.seedCompany(userId: "u-first@shop.test")
+        try s.sync.insert("customer", companyId: "c1", ["name": "First's customer"])
+        s.transport.failure = AuthError("JWT expired")
+        s.auth.refreshWorks = false
+        await s.sync.syncNow()
+        #expect(s.session.route == .signedOut)
+        try await s.session.signIn(email: "second@shop.test", password: "right")
+        #expect(try s.sync.store.list("customer").isEmpty)
+        #expect(try s.sync.store.pendingCount() == 0)
+        #expect(s.session.signedOutUser == nil)
+    }
+
     @Test func theChosenCompanyIsKept() async throws {
         let s = try Shell()
         try await s.session.signIn(email: "tech@shop.test", password: "right")
@@ -248,7 +313,8 @@ struct Shell {
         s.transport.failure = SyncFailure("500 upstream broke")
         await s.sync.syncNow()
         #expect(s.sync.status.phase == .error)
-        #expect(s.sync.status.error == "500 upstream broke")
+        // Plain words, never the server's (owner, 2026-10-22).
+        #expect(s.sync.status.error == "Couldn’t sync with the server. Sundeck Pro will try again in a minute.")
     }
 
     @Test func anExpiredSignInIsRefreshedOnceThenReportedAsSignedOut() async throws {
@@ -259,6 +325,49 @@ struct Shell {
         await s.sync.syncNow()
         #expect(s.sync.status.phase == .signedOut)
         #expect(s.sync.status.pending == 1)
+    }
+
+    @Test func aPermissionErrorWithARefusedRefreshIsReportedAsSignedOut() async throws {
+        let s = try Shell()
+        s.transport.failure = SyncFailure("permission denied for function sync_pull")
+        s.auth.refreshWorks = false
+        await s.sync.syncNow()
+        #expect(s.sync.status.phase == .signedOut)
+        #expect(s.sync.status.error == nil)
+        #expect(s.auth.refreshes == 1)
+    }
+
+    @Test func aPermissionErrorThatARefreshFixesSyncsAgain() async throws {
+        let s = try Shell()
+        try s.sync.insert("customer", companyId: "c1", ["name": "Maria"])
+        s.transport.failure = SyncFailure("permission denied for function sync_pull")
+        s.auth.onRefresh = { [transport = s.transport] in transport.lock.withLock { transport.failure = nil } }
+        await s.sync.syncNow()
+        #expect(s.sync.status.phase == .idle)
+        #expect(s.sync.status.pending == 0)
+        #expect(s.auth.refreshes == 1)
+    }
+
+    @Test func aPermissionErrorThatOutlastsARefreshReadsInPlainWords() async throws {
+        let s = try Shell()
+        s.transport.failure = SyncFailure("permission denied for function sync_pull")
+        await s.sync.syncNow()
+        #expect(s.sync.status.phase == .error)
+        #expect(
+            s.sync.status.error
+                == "The server didn’t accept this phone’s sign-in. Sign out and sign in again if this keeps happening.")
+        #expect(s.auth.refreshes == 1)
+    }
+
+    @Test func aRefreshWithoutSignalKeepsTheSignIn() async throws {
+        let s = try Shell()
+        try await s.session.signIn(email: "tech@shop.test", password: "right")
+        s.transport.failure = AuthError("JWT expired")
+        s.auth.refreshOffline = true
+        await s.sync.syncNow()
+        #expect(s.sync.status.phase == .offline)
+        #expect(s.session.user?.email == "tech@shop.test")
+        #expect(s.auth.signOuts == 0)
     }
 
     @Test func clearingLocalDataLeavesNothingBehind() throws {

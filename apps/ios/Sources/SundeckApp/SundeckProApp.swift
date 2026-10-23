@@ -119,6 +119,7 @@
                 let sync = SyncService(
                     store: store, kv: kv, transport: SupabaseTransport(SupabaseRPC(client)), auth: auth,
                     uploader: uploader, media: media)
+                sync.holdsBackgroundTime = true
                 let session = Session(sync: sync, auth: auth)
                 let environment = AppEnvironment(client: client, session: session, walkthrough: Walkthrough(kv))
                 sync.afterSync = { [weak environment] in await environment?.afterSync() }
@@ -216,6 +217,13 @@
             .onChange(of: scenePhase) { _, phase in
                 // Screen time counts only while the app is in front (Admin portal Usage).
                 UsageRecorder.shared.foreground(phase == .active)
+                // The sign-in's token refreshes while the app is open and again on return to the
+                // front (supabase-swift's autoRefreshToken does this too; said here so it holds).
+                if phase == .active {
+                    app.client.auth.startAutoRefresh()
+                } else if phase == .background {
+                    app.client.auth.stopAutoRefresh()
+                }
                 if phase != .active {
                     Task { await UsageRecorder.shared.flush(app.api, companyId: session.company?.id) }
                 }

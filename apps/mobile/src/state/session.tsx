@@ -11,19 +11,29 @@ import { AppState } from "react-native";
 import type { Session, User } from "@supabase/supabase-js";
 import type { Company, Membership } from "@leakbook/core";
 import { endLiveStop } from "../lib/liveStop";
+import {
+  endSignIn,
+  forgetSignIn,
+  rememberSignIn,
+  signedInUser,
+  signedOutUser,
+  type SignedInUser,
+} from "../lib/signedOut";
 import { unregisterPush } from "../lib/push";
 import { getServices, type Services } from "../lib/services";
 import { useRows, useSyncStatus } from "../data/hooks";
 
-export interface SignedInUser {
-  id: string;
-  email: string;
-}
+export type { SignedInUser };
 
 interface SessionValue {
   services: Services;
   /** Remembered on the device; an expired token offline does not sign the tech out. */
   user: SignedInUser | null;
+  /**
+   * The account the server signed out on this phone (owner, 2026-10-22), while its work and
+   * unsent changes wait here for it to sign in again. Sign In says so and fills in its email.
+   */
+  signedOut: SignedInUser | null;
   companies: Company[];
   company: Company | null;
   membership: Membership | null;
@@ -46,33 +56,53 @@ interface SessionValue {
 }
 
 const SessionContext = createContext<SessionValue | null>(null);
-const USER_KEY = "session:user";
 
 export function SessionProvider({ children }: { children: ReactNode }) {
   const services = useMemo(() => getServices(), []);
   const { supabase, sync, kv } = services;
-  const [user, setUser] = useState<SignedInUser | null>(() => {
-    const raw = kv.get(USER_KEY);
-    return raw ? (JSON.parse(raw) as SignedInUser) : null;
-  });
+  const [user, setUser] = useState<SignedInUser | null>(() => signedInUser(kv));
+  const [signedOut, setSignedOut] = useState<SignedInUser | null>(() => signedOutUser(kv));
   const [activeId, setActiveId] = useState<string | null>(() => kv.get("active_company"));
   const [needsCode, setNeedsCode] = useState(false);
 
   const remember = useCallback(
     (u: SignedInUser) => {
-      const previous = kv.get(USER_KEY);
-      // A different account on this device must never see the previous account's data.
-      if (previous && (JSON.parse(previous) as SignedInUser).id !== u.id) sync.clearLocalData();
-      kv.set(USER_KEY, JSON.stringify(u));
+      // A different account on this device must never see the previous account's data, nor
+      // send its unsent changes (including one the server signed out).
+      rememberSignIn(kv, sync, u);
+      setSignedOut(null);
       setUser(u);
       sync.start();
     },
     [kv, sync],
   );
 
+  /**
+   * The server refused this phone's sign-in and a refresh didn't help (owner, 2026-10-22):
+   * end the session on this phone only and show Sign In, keeping the phone's data and unsent
+   * changes for the same account.
+   */
+  const sessionEnded = useCallback(() => {
+    const ended = endSignIn(kv, sync);
+    if (!ended) return;
+    setSignedOut(ended);
+    setUser(null);
+    setNeedsCode(false);
+    // After this turn: it may run inside onAuthStateChange, where auth calls must not wait.
+    setTimeout(() => void supabase.auth.signOut({ scope: "local" }).catch(() => undefined), 0);
+  }, [kv, sync, supabase]);
+
   useEffect(() => {
     if (user) sync.start();
-    const { data } = supabase.auth.onAuthStateChange((_event, session) => {
+    // The sync service reports a sign-in the server ended (lib/sync-service.ts).
+    const service = getServices().sync;
+    service.onSessionEnded = sessionEnded;
+    const { data } = supabase.auth.onAuthStateChange((event, session) => {
+      // supabase-js dropped a session whose refresh the server refused.
+      if (event === "SIGNED_OUT") {
+        sessionEnded();
+        return;
+      }
       if (!session?.user) return;
       // A session still waiting on its code isn't let in yet (two-step sign-in).
       if (waitingOnCode(session)) {
@@ -97,6 +127,7 @@ export function SessionProvider({ children }: { children: ReactNode }) {
       if (state === "active") void check();
     });
     return () => {
+      service.onSessionEnded = null;
       data.subscription.unsubscribe();
       app.remove();
     };
@@ -114,6 +145,7 @@ export function SessionProvider({ children }: { children: ReactNode }) {
   const value: SessionValue = {
     services,
     user,
+    signedOut,
     companies,
     company,
     membership,
@@ -169,8 +201,9 @@ export function SessionProvider({ children }: { children: ReactNode }) {
       await unregisterPush().catch(() => undefined);
       await endLiveStop().catch(() => undefined);
       sync.clearLocalData();
-      kv.remove(USER_KEY);
+      forgetSignIn(kv);
       setUser(null);
+      setSignedOut(null);
       setActiveId(null);
       await supabase.auth.signOut({ scope: "local" }).catch(() => undefined);
     },

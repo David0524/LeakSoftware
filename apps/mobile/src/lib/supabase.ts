@@ -21,6 +21,8 @@ export function createSupabase(kv: KeyValue): SupabaseClient {
     },
   });
 
+  // Open now (the listener only hears changes), so the token refreshes from the start.
+  if (AppState.currentState === "active") void client.auth.startAutoRefresh();
   AppState.addEventListener("change", (state) => {
     if (state === "active") void client.auth.startAutoRefresh();
     else void client.auth.stopAutoRefresh();

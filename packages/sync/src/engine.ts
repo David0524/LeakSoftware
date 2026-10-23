@@ -1,6 +1,6 @@
 import { AuthError } from "./errors";
 import type { LocalStore } from "./store";
-import type { PullCursor, SyncTransport } from "./types";
+import type { PullCursor, PullPage, SyncTransport } from "./types";
 import { jobOnPhones, PHONE_HISTORY_MARGIN_DAYS } from "@leakbook/core";
 
 export interface SyncSummary {
@@ -58,6 +58,29 @@ export interface SyncEngineOptions {
   firstDownload?: () => boolean;
   /** The clock, for which jobs have aged off phones (tests set it). */
   now?: () => Date;
+  /**
+   * Waits before each retry of a pull page that failed on the network (ms; tests shorten it).
+   * After the last, the sync fails and the next one carries on from the saved cursor.
+   */
+  pullRetryDelays?: number[];
+  /** How a retry waits (tests replace it). */
+  sleep?: (ms: number) => Promise<void>;
+}
+
+/**
+ * A pull page that fails on the network is asked for again after 1, 3 and 8 seconds before the
+ * sync gives up (owner, 2026-10-22: the first download "stops around 40% with 'not connected to
+ * the internet'"): one dropped request no longer ends a long download.
+ */
+export const PULL_RETRY_DELAYS = [1000, 3000, 8000];
+
+/** Errors that mean the request didn't get through (worth asking again), not a refusal. */
+export function isNetworkFailure(e: unknown): boolean {
+  if (e instanceof AuthError) return false;
+  const text = e instanceof Error ? `${e.name} ${e.message}` : String(e);
+  return /network|fetch|offline|timed? ?out|timeout|could not connect|internet connection|connection (was )?(reset|lost|closed|refused|aborted)|socket|ECONN|ETIMEDOUT|EAI_AGAIN|NSURLErrorDomain|URLError|\b50[234]\b|gateway/i.test(
+    text,
+  );
 }
 
 /**
@@ -73,6 +96,8 @@ export class SyncEngine {
   private readonly onDownload: ((state: DownloadState) => void) | undefined;
   private readonly firstDownload: (() => boolean) | undefined;
   private readonly now: () => Date;
+  private readonly pullRetryDelays: number[];
+  private readonly sleep: (ms: number) => Promise<void>;
 
   constructor(
     private readonly store: LocalStore,
@@ -85,6 +110,21 @@ export class SyncEngine {
     this.onDownload = opts.onDownload;
     this.firstDownload = opts.firstDownload;
     this.now = opts.now ?? (() => new Date());
+    this.pullRetryDelays = opts.pullRetryDelays ?? PULL_RETRY_DELAYS;
+    this.sleep = opts.sleep ?? ((ms) => new Promise((resolve) => setTimeout(resolve, ms)));
+  }
+
+  /** One pull page, asked for again on a network failure (PULL_RETRY_DELAYS). */
+  private async fetchPage(cursor: PullCursor, size: number): Promise<PullPage> {
+    for (let attempt = 0; ; attempt++) {
+      try {
+        return await this.transport.pull(cursor, size);
+      } catch (e) {
+        const wait = this.pullRetryDelays[attempt];
+        if (wait === undefined || !isNetworkFailure(e)) throw e;
+        await this.sleep(wait);
+      }
+    }
   }
 
   sync(): Promise<SyncSummary> {
@@ -161,9 +201,13 @@ export class SyncEngine {
     const restart = scope !== null && last !== null && scope !== last;
     const seen = restart ? new Set<string>() : null;
     const cursor = restart ? {} : this.store.getCursor();
-    // A first download (nothing stored yet, or a scope restart): bigger pages, and progress
-    // against the server's count.
-    const first = restart || isEmptyCursor(cursor) || (this.firstDownload?.() ?? false);
+    // A first download (nothing stored yet, a scope restart, or one the app was closed during,
+    // whose cursor the server marked): bigger pages, and progress against the server's count.
+    const first =
+      restart ||
+      isEmptyCursor(cursor) ||
+      cursor.first === true ||
+      (this.firstDownload?.() ?? false);
     const pageSize = first ? this.firstPullPage : this.pullPage;
     // A first download's opening page is small: the company and the membership come first, so
     // the app opens after one quick request while the rest comes down behind it (owner,
@@ -172,19 +216,19 @@ export class SyncEngine {
     let download: DownloadState | null = null;
     let counting: Promise<Record<string, number> | null> | null = null;
     if (first && this.onDownload) {
-      download = { pulled: {}, totals: null };
+      // A download picked up again after a failure counts what is already on the phone, so the
+      // bar carries on from where it was instead of starting at 0%.
+      const already = restart || isEmptyCursor(cursor) ? {} : this.store.liveCounts();
+      download = { pulled: already, totals: null };
       counting = this.transport.count ? this.transport.count().catch(() => null) : null;
-      this.onDownload({ pulled: {}, totals: null });
+      this.onDownload({ pulled: { ...already }, totals: null });
     }
     // The next page is asked for as soon as a page arrives, while that page is being saved:
     // each request needs only the cursor the page before returned, so the order holds.
-    let next = this.transport.pull(
-      cursor,
-      first ? Math.min(OPENING_PULL_PAGE, pageSize) : pageSize,
-    );
+    let next = this.fetchPage(cursor, first ? Math.min(OPENING_PULL_PAGE, pageSize) : pageSize);
     for (;;) {
       const page = await next;
-      const ahead = page.done ? null : this.transport.pull(page.cursor, pageSize);
+      const ahead = page.done ? null : this.fetchPage(page.cursor, pageSize);
       // Saving can fail; a failed request ahead is then not worth reporting.
       ahead?.catch(() => undefined);
       this.store.applyPage(page);

@@ -74,6 +74,9 @@ final class FakeServer: SyncTransport, @unchecked Sendable {
         var cursors: [PullCursor] = []
         var scopeValue: String? = "c1:all"
         var failPullAt = -1
+        /// The next this many pulls fail with `pullError`.
+        var failingPulls = 0
+        var pullError: any Error & Sendable = TestError("network down")
         /// Holds each pull this long, so overlapping syncs can be seen.
         var pullDelay: Duration = .zero
         /// public.sync_pull_count's answer (nil: an older server).
@@ -125,6 +128,10 @@ final class FakeServer: SyncTransport, @unchecked Sendable {
             s.cursors.append(cursor)
             s.pageSizes.append(pageSize)
             if s.cursors.count - 1 == s.failPullAt { throw TestError("network down") }
+            if s.failingPulls > 0 {
+                s.failingPulls -= 1
+                throw s.pullError
+            }
             if !s.pages.isEmpty { return s.pages.removeFirst() }
             return PullPage(rows: [], done: true, cursor: .object(["from": .string("1")]), serverHLC: fakeServerHLC)
         }

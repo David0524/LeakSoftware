@@ -41,6 +41,9 @@ public final class KeyValue: Sendable {
 /// The keys, shared with the Expo app's names so S9 can carry them over.
 public enum KVKey {
     public static let user = "session:user"
+    /// Whose work stays on the phone after the server ended the sign-in (owner, 2026-10-22): the
+    /// same account signing in again keeps it and its unsent changes; another account clears it.
+    public static let signedOutUser = "session:signed_out_user"
     public static let activeCompany = "active_company"
     public static let lastSyncedAt = "sync:last_synced_at"
     public static let initialSyncDone = "sync:initial_done"
@@ -57,7 +60,7 @@ public enum KVKey {
 
     /// Cleared when someone signs out (the device id and clock stay in the store).
     public static let signOutClears = [
-        activeCompany, lastSyncedAt, initialSyncDone, teamProfiles, gettingStartedHidden,
+        signedOutUser, activeCompany, lastSyncedAt, initialSyncDone, teamProfiles, gettingStartedHidden,
         notificationPrefs, liveStopTarget, liveStopDismissed, liveStopStarted,
         // Search's Recent is the person's own (docs/plans/search-and-activity.md).
         searchRecent,

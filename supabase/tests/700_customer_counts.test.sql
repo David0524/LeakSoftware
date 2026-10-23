@@ -14,6 +14,10 @@ create temp table ids as select
   gen_random_uuid() as gone
   from fx;
 grant select on ids to authenticated;
+-- The shop's own today, as customer_counts reads it (UTC's date differs in the evening).
+create temp table shop as select (now() at time zone coalesce(
+  (select timezone from company where id = (select ca from ids)), 'UTC'))::date as today;
+grant select on shop to authenticated;
 
 -- Shop a: make_company's customer (a paused plan), a builder added 40 days ago with no plan,
 -- a homeowner whose plan ended yesterday, and a deleted customer.
@@ -24,8 +28,8 @@ insert into customer (id, company_id, name, kind) select ended, ca, 'Ended Plan'
 insert into property (company_id, customer_id, address_line1)
   select ca, ended, '1 Ended Way' from ids;
 insert into service_plan (company_id, customer_id, property_id, starts_on, ends_on)
-  select ca, ended, (select id from property where customer_id = ended), current_date - 60,
-         current_date - 1 from ids;
+  select ca, ended, (select id from property where customer_id = ended), (select today from shop) - 60,
+         (select today from shop) - 1 from ids;
 insert into customer (id, company_id, name, kind, deleted_at)
   select gone, ca, 'Gone', 'insurer', now() from ids;
 
@@ -45,7 +49,7 @@ select is((pg_temp.counts('  ') ->> 'all')::int, 3, 'a blank search counts every
 
 -- Plan ends today: still on it.
 reset role;
-update service_plan set ends_on = current_date where customer_id = (select ended from ids);
+update service_plan set ends_on = (select today from shop) where customer_id = (select ended from ids);
 select tests.authenticate_as((select owner_a from ids));
 select is((pg_temp.counts() ->> 'plan')::int, 2, 'a plan ending today still counts');
 

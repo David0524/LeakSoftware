@@ -37,12 +37,25 @@ public final class Session {
     @ObservationIgnored public let sync: SyncService
     @ObservationIgnored private let auth: any AuthBackend
 
+    /// The account the server signed out on this phone, while its work waits here for it to sign
+    /// in again (owner, 2026-10-22). Sign In shows `signedOutMessage` and fills in its email.
+    public private(set) var signedOutUser: SignedInUser?
+
     public init(sync: SyncService, auth: any AuthBackend) {
         self.sync = sync
         self.auth = auth
         user = sync.kv.getJSON(KVKey.user, as: SignedInUser.self)
+        signedOutUser = user == nil ? sync.kv.getJSON(KVKey.signedOutUser, as: SignedInUser.self) : nil
         activeCompanyId = sync.kv.get(KVKey.activeCompany)
         reloadCompanies()
+        sync.sessionEnded = { [weak self] in await self?.sessionEnded() }
+    }
+
+    /// Sign In's notice after the server ended this phone's sign-in, with what happens to unsent
+    /// changes; nil otherwise.
+    public var signedOutNotice: (message: String, note: String?)? {
+        guard let signedOutUser, user == nil else { return nil }
+        return (signedOutMessage, signedOutNote(pending: sync.status.pending, email: signedOutUser.email))
     }
 
     public var route: AppRoute {
@@ -124,7 +137,25 @@ public final class Session {
         sync.clearLocalData()
         sync.kv.remove(KVKey.user)
         user = nil
+        signedOutUser = nil
         activeCompanyId = nil
+        companies = []
+        await auth.signOut()
+    }
+
+    /// The server refused this phone's sign-in and a refresh didn't help (signed out on the
+    /// website before 2026-10-22, a changed password, a removed account): end the session on this
+    /// phone only and show Sign In. The phone's data and unsent changes stay for the same account,
+    /// which sends them after signing in; another account's sign-in clears them first, so one
+    /// person's changes never go up as someone else's.
+    public func sessionEnded() async {
+        guard let current = user else { return }
+        sync.stop()
+        sync.kv.setJSON(KVKey.signedOutUser, current)
+        sync.kv.remove(KVKey.user)
+        signedOutUser = current
+        user = nil
+        needsCode = false
         companies = []
         await auth.signOut()
     }
@@ -162,8 +193,12 @@ public final class Session {
     }
 
     private func remember(_ newUser: SignedInUser) {
-        // Someone else signing in on this phone never sees the last person's work.
-        if let user, user.id != newUser.id { sync.clearLocalData() }
+        // Someone else signing in on this phone never sees the last person's work, nor sends its
+        // unsent changes (including the work of one the server signed out).
+        let previous = user ?? signedOutUser ?? sync.kv.getJSON(KVKey.signedOutUser, as: SignedInUser.self)
+        if let previous, previous.id != newUser.id { sync.clearLocalData() }
+        sync.kv.remove(KVKey.signedOutUser)
+        signedOutUser = nil
         user = newUser
         sync.kv.setJSON(KVKey.user, newUser)
         reloadCompanies()

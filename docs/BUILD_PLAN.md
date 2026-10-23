@@ -149,6 +149,7 @@ Pull uses a **transaction-ID watermark**, not timestamps or a plain sequence. A 
   - `high = pg_snapshot_xmin(pg_current_snapshot())`. Every transaction with an ID below `high` has finished.
   - Return rows from all synced tables where `cursor ≤ sync_xid < high`, ordered by `(sync_xid, table_name, id)`, up to `limit`. Use the ordering key to page within a range.
   - Return the next cursor. The client stores it only after applying the page in one local transaction.
+- **First download (2026-10-22):** a pull from no cursor leaves out deleted rows and orders by `(first_download_rank, sync_xid, table_name, id)` so the company comes first; its cursors carry `"first": true` until it is done (migration `20261022001900_first_download.sql`).
 - **Applying a pulled row:** write the server row, then re-apply any pending outbox patches for that row on top, so unpushed local edits are never overwritten on screen.
 - **Scope (built 2026-10-15):** each device pulls all customers, pools, plans, and config, plus every **open** job and every job scheduled, finished, or changed in the **last 90 days**, with everything under those jobs (not media files). A job that changes again comes back whole (`app.job_resend`). Phones drop jobs a week after they leave the window, unless they hold unsent changes. The website keeps the full history. Media files download on demand and are cached. (The plan first said 12 months; three years of a busy shop was 89 MB on a new phone, 15 MB with 90 days.)
 

@@ -91,7 +91,12 @@ export interface Device {
 export function device(name: string, user: TestUser, pullPage = 500): Device {
   const store = LocalStore.open(memoryDb(), { deviceId: name });
   const transport = new PgTransport(user);
-  return { name, store, transport, engine: new SyncEngine(store, transport, { pullPage }) };
+  return {
+    name,
+    store,
+    transport,
+    engine: new SyncEngine(store, transport, { pullPage, pullRetryDelays: [0, 0, 0] }),
+  };
 }
 
 export interface TestCompany {
