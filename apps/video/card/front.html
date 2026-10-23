@@ -15,25 +15,29 @@
         font-weight: 700;
       }
       @font-face {
-        font-family: Barlow;
-        src: url(../../../brand/fonts/BarlowSemiCondensed-SemiBold.ttf);
-        font-weight: 600;
-      }
-      @font-face {
         font-family: Public;
         src: url("../../../brand/fonts/PublicSans[wght].ttf");
         font-weight: 100 900;
       }
+      @font-face {
+        font-family: UI;
+        src: url(/usr/share/fonts/opentype/inter/Inter-Medium.otf);
+        font-weight: 500;
+      }
+      @font-face {
+        font-family: UI;
+        src: url(/usr/share/fonts/opentype/inter/Inter-SemiBold.otf);
+        font-weight: 600;
+      }
 
       /* Design units: the trimmed card is 1800 x 2400 (6 x 8 in at 300 per inch); the bleed adds
-     37.5 on every side. Everything that matters stays 75 (0.25 in) inside the trim. */
+         37.5 on every side. Everything that matters stays 75 (0.25 in) inside the trim. */
       :root {
         --bleed: 37.5px;
         --navy: #12263a;
         --water: #1f6fae;
         --blue: #1a63a0;
         --safety: #ee6a1f;
-        --paper: #fff;
         --pass: #1b7d45;
       }
       * {
@@ -48,10 +52,7 @@
       }
       body {
         background: #12263a url(bg.png) center / cover no-repeat;
-        font-family:
-          Public,
-          -apple-system,
-          sans-serif;
+        font-family: Public, sans-serif;
         color: #fff;
         -webkit-font-smoothing: antialiased;
         position: relative;
@@ -68,16 +69,17 @@
         position: absolute;
       }
 
-      /* Liquid Glass: a clear lens that blurs and brightens what's behind it, a bright rim, a
-     specular sheen along the top edge and a soft shadow under it. */
+      /* Liquid Glass: a clear lens that blurs and lifts what's behind it, a bright rim catching
+         light along the top, and a soft shadow under it. Over light content it tints dark so
+         its text stays readable (.dark). */
       .glass {
-        background: linear-gradient(180deg, rgba(255, 255, 255, 0.2), rgba(255, 255, 255, 0.08));
-        backdrop-filter: blur(26px) saturate(1.8) brightness(1.08);
-        border: 2px solid rgba(255, 255, 255, 0.34);
+        background: linear-gradient(180deg, rgba(255, 255, 255, 0.2), rgba(255, 255, 255, 0.07));
+        backdrop-filter: blur(28px) saturate(1.8);
+        border: 1.5px solid rgba(255, 255, 255, 0.3);
         box-shadow:
-          inset 0 2px 0 rgba(255, 255, 255, 0.55),
-          inset 0 -2px 6px rgba(255, 255, 255, 0.1),
-          0 24px 60px rgba(4, 12, 24, 0.45);
+          inset 0 1.5px 0 rgba(255, 255, 255, 0.6),
+          inset 0 -1px 0 rgba(255, 255, 255, 0.12),
+          0 30px 70px rgba(2, 10, 22, 0.45);
         overflow: hidden;
       }
       .glass::before {
@@ -87,91 +89,119 @@
         border-radius: inherit;
         pointer-events: none;
         background: radial-gradient(
-          120% 60% at 20% -10%,
-          rgba(255, 255, 255, 0.3),
-          rgba(255, 255, 255, 0) 55%
+          120% 70% at 15% -20%,
+          rgba(255, 255, 255, 0.28),
+          rgba(255, 255, 255, 0) 60%
         );
+      }
+      .glass.dark {
+        background: linear-gradient(180deg, rgba(28, 56, 86, 0.66), rgba(10, 24, 40, 0.74));
       }
 
       /* Header */
       .logo {
         left: 75px;
-        top: 82px;
-        height: 92px;
+        top: 80px;
+        height: 88px;
       }
       h1 {
         font-family: Barlow;
         font-weight: 800;
-        font-size: 150px;
-        line-height: 0.92;
+        font-size: 196px;
+        line-height: 0.86;
         letter-spacing: -1px;
-        left: 75px;
-        top: 214px;
-        width: 1650px;
+        left: 72px;
+        top: 222px;
       }
       h1 .o {
         color: var(--safety);
       }
       .sub {
-        left: 79px;
-        top: 515px;
-        font-size: 50px;
-        line-height: 1.25;
-        color: rgba(255, 255, 255, 0.86);
-        width: 1500px;
+        left: 78px;
+        top: 572px;
+        font-family: Barlow;
+        font-weight: 700;
+        font-size: 64px;
+        color: rgba(255, 255, 255, 0.9);
       }
 
-      /* Devices */
+      /* Safari on macOS 26: a large-radius window, the page running up under a Liquid Glass
+         toolbar of floating controls. */
       .browser {
         left: 360px;
-        top: 650px;
+        top: 712px;
         width: 1365px;
-        height: 800px;
-        border-radius: 30px;
-        background: #f2f4f6;
+        height: 770px;
+        border-radius: 34px;
+        background: #f5f6f8;
         overflow: hidden;
         box-shadow:
-          0 0 0 2px rgba(255, 255, 255, 0.25),
-          0 40px 100px rgba(0, 8, 20, 0.6);
-      }
-      .bar {
-        height: 64px;
-        background: #e6e9ed;
-        display: flex;
-        align-items: center;
-        padding: 0 26px;
-        gap: 13px;
-      }
-      .dot {
-        width: 20px;
-        height: 20px;
-        border-radius: 50%;
-      }
-      .url {
-        margin-left: 120px;
-        width: 900px;
-        height: 40px;
-        border-radius: 20px;
-        background: #fff;
-        color: #46535f;
-        font-size: 24px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
+          0 0 0 1.5px rgba(255, 255, 255, 0.3),
+          0 46px 110px rgba(0, 8, 20, 0.6);
       }
       .browser .shot {
         position: absolute;
         left: 0;
-        top: 64px;
+        top: 62px;
         width: 1365px;
       }
+      .toolbar {
+        position: absolute;
+        left: 0;
+        right: 0;
+        top: 0;
+        height: 76px;
+        display: flex;
+        align-items: center;
+        gap: 14px;
+        padding: 0 22px;
+        background: rgba(255, 255, 255, 0.72);
+        backdrop-filter: blur(24px) saturate(1.6);
+      }
+      .lights {
+        display: flex;
+        gap: 11px;
+        margin-right: 10px;
+      }
+      .lights i {
+        width: 17px;
+        height: 17px;
+        border-radius: 50%;
+        display: block;
+      }
+      .cap {
+        height: 46px;
+        border-radius: 23px;
+        background: rgba(255, 255, 255, 0.85);
+        box-shadow:
+          0 0 0 1px rgba(0, 0, 0, 0.06),
+          0 3px 10px rgba(0, 0, 0, 0.06),
+          inset 0 1px 0 #fff;
+        display: flex;
+        align-items: center;
+        gap: 22px;
+        padding: 0 18px;
+        color: #3c3c43;
+      }
+      .cap svg {
+        width: 22px;
+        height: 22px;
+      }
+      .address {
+        flex: 1;
+        justify-content: center;
+        font: 500 22px UI;
+        color: #1d1d1f;
+        margin: 0 60px;
+      }
 
+      /* iPhone 17 Pro */
       .phone {
         width: 380px;
         height: 826px;
         border-radius: 70px;
         background: #0a0f14;
-        padding: 14px;
+        padding: 13px;
         box-shadow:
           0 0 0 3px #3a4048,
           0 0 0 5px #1a1e23,
@@ -180,147 +210,157 @@
       .screen {
         width: 100%;
         height: 100%;
-        border-radius: 57px;
+        border-radius: 58px;
         overflow: hidden;
         position: relative;
         background: #000;
-      }
-      .island {
-        left: 50%;
-        top: 16px;
-        width: 112px;
-        height: 33px;
-        margin-left: -56px;
-        background: #000;
-        border-radius: 20px;
-        z-index: 3;
       }
       .screen img {
         position: absolute;
         left: 0;
         width: 100%;
       }
+      .island {
+        left: 50%;
+        top: 15px;
+        width: 108px;
+        height: 32px;
+        margin-left: -54px;
+        background: #000;
+        border-radius: 20px;
+        z-index: 3;
+      }
       .status {
         position: absolute;
         left: 0;
         right: 0;
         top: 0;
-        height: 64px;
+        height: 62px;
         z-index: 2;
         display: flex;
         justify-content: space-between;
         align-items: center;
-        padding: 4px 40px 0 48px;
-        font:
-          600 21px -apple-system,
-          Public;
+        padding: 4px 38px 0 50px;
+        font: 600 21px UI;
         color: #fff;
       }
-
       .p1 {
         left: 85px;
-        top: 870px;
+        top: 880px;
         transform: rotate(-4deg);
       }
       .p2 {
         left: 1335px;
-        top: 900px;
+        top: 905px;
         transform: rotate(4deg);
       }
 
-      /* Callouts on the hero */
-      .chip {
-        border-radius: 999px;
-        padding: 18px 34px 18px 22px;
+      /* Callouts: small glass cards, an icon tile, a title and one line. */
+      .callout {
+        border-radius: 32px;
+        padding: 22px 34px 22px 22px;
         display: flex;
         align-items: center;
-        gap: 18px;
-        font-size: 36px;
-        font-weight: 600;
+        gap: 22px;
         white-space: nowrap;
       }
-      .chip b {
-        font-weight: 800;
-      }
-      .ic {
-        width: 58px;
-        height: 58px;
-        border-radius: 50%;
+      .tile {
+        width: 80px;
+        height: 80px;
+        border-radius: 22px;
         display: grid;
         place-items: center;
         flex: none;
+        box-shadow: inset 0 1.5px 0 rgba(255, 255, 255, 0.35);
       }
-      .ic svg {
-        width: 32px;
-        height: 32px;
+      .tile svg {
+        width: 44px;
+        height: 44px;
+      }
+      .callout .t {
+        font-family: Barlow;
+        font-weight: 700;
+        font-size: 46px;
+        line-height: 1;
+      }
+      .callout .d {
+        font-size: 36px;
+        font-weight: 500;
+        color: rgba(255, 255, 255, 0.84);
+        margin-top: 8px;
       }
       .c1 {
-        left: 520px;
-        top: 1478px;
+        right: 50px;
+        top: 650px;
       }
       .c2 {
-        left: 470px;
-        top: 1592px;
+        left: 505px;
+        top: 1505px;
       }
       .c3 {
-        left: 760px;
-        top: 1706px;
-      }
-      /* Over light screens Liquid Glass darkens, so the callouts stay readable. */
-      .chip.glass {
-        background: linear-gradient(180deg, rgba(30, 60, 92, 0.62), rgba(12, 28, 46, 0.7));
+        left: 845px;
+        top: 1648px;
       }
 
-      /* Everything else, in one app */
-      .pills {
+      /* Everything else in the box: one glass panel, a 4 x 2 grid. */
+      .features {
         left: 75px;
-        top: 1836px;
+        top: 1800px;
         width: 1650px;
-        display: flex;
-        flex-direction: column;
-        gap: 20px;
+        height: 270px;
+        border-radius: 40px;
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        grid-template-rows: 1fr 1fr;
       }
-      .row {
-        display: flex;
-        justify-content: space-between;
-      }
-      .pill {
-        border-radius: 999px;
-        height: 100px;
+      .f {
         display: flex;
         align-items: center;
-        gap: 16px;
-        padding: 0 30px 0 19px;
-        font-size: 38px;
-        font-weight: 650;
+        gap: 20px;
+        padding: 0 26px;
+        font-family: Barlow;
+        font-weight: 700;
+        font-size: 44px;
         white-space: nowrap;
+        border-color: rgba(255, 255, 255, 0.16);
+        border-style: solid;
+        border-width: 0;
       }
-      .pill .ic {
-        width: 62px;
-        height: 62px;
-        background: rgba(255, 255, 255, 0.16);
+      .f:nth-child(-n + 4) {
+        border-bottom-width: 1.5px;
       }
-      .pill .ic svg {
-        width: 34px;
-        height: 34px;
+      .f:not(:nth-child(4n + 1)) {
+        border-left-width: 1.5px;
       }
+      .f .tile {
+        width: 66px;
+        height: 66px;
+        border-radius: 18px;
+        background: rgba(255, 255, 255, 0.14);
+      }
+      .f .tile svg {
+        width: 36px;
+        height: 36px;
+      }
+
+      /* Sign up */
       .foot {
         left: 75px;
-        top: 2100px;
+        top: 2105px;
         width: 1650px;
-        height: 240px;
-        border-radius: 44px;
+        height: 220px;
+        border-radius: 40px;
         display: flex;
         align-items: center;
-        padding: 24px 40px 24px 24px;
+        padding: 0 46px 0 22px;
         gap: 34px;
       }
       .qr {
-        width: 192px;
-        height: 192px;
-        border-radius: 26px;
+        width: 176px;
+        height: 176px;
+        border-radius: 24px;
         background: #fff;
-        padding: 16px;
+        padding: 15px;
         flex: none;
       }
       .qr img {
@@ -331,7 +371,7 @@
       .cta {
         display: flex;
         flex-direction: column;
-        gap: 14px;
+        gap: 12px;
       }
       .btn {
         background: var(--safety);
@@ -340,10 +380,10 @@
         font-weight: 700;
         font-size: 50px;
         border-radius: 999px;
-        padding: 12px 40px 14px;
+        padding: 10px 40px 12px;
         align-self: flex-start;
       }
-      .url2 {
+      .url {
         font-family: Barlow;
         font-weight: 700;
         font-size: 52px;
@@ -363,17 +403,83 @@
   <body>
     <div class="card">
       <img class="abs logo" src="../../../brand/logo/sundeck-logo-reverse.svg" />
-      <h1 class="abs">One app for the <span class="o">whole</span><br />pool shop.</h1>
-      <p class="abs sub">Office, truck and customer, in sync. From dispatch to paid.</p>
+      <h1 class="abs">Find it. Fix it.<br /><span class="o">Get paid.</span></h1>
+      <p class="abs sub">One app for the whole pool shop.</p>
 
       <div class="abs browser">
-        <div class="bar">
-          <div class="dot" style="background: #ff5f57"></div>
-          <div class="dot" style="background: #febc2e"></div>
-          <div class="dot" style="background: #28c840"></div>
-          <div class="url">sundeckpro.com/schedule</div>
-        </div>
         <img class="shot" src="screens/schedule-optimized.png" />
+        <div class="toolbar">
+          <div class="lights">
+            <i style="background: #ff5f57"></i><i style="background: #febc2e"></i
+            ><i style="background: #28c840"></i>
+          </div>
+          <div class="cap">
+            <svg
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+            >
+              <rect x="3" y="5" width="18" height="14" rx="3" />
+              <path d="M9 5v14" />
+            </svg>
+          </div>
+          <div class="cap">
+            <svg
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2.4"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            >
+              <path d="M15 5l-7 7 7 7" />
+            </svg>
+            <svg
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="#b0b0b5"
+              stroke-width="2.4"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            >
+              <path d="M9 5l7 7-7 7" />
+            </svg>
+          </div>
+          <div class="cap address">sundeckpro.com</div>
+          <div class="cap">
+            <svg
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            >
+              <path d="M12 3v12M8 7l4-4 4 4M6 11v9h12v-9" />
+            </svg>
+            <svg
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2.2"
+              stroke-linecap="round"
+            >
+              <path d="M12 5v14M5 12h14" />
+            </svg>
+            <svg
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linejoin="round"
+            >
+              <rect x="3" y="7" width="14" height="14" rx="2.5" />
+              <path d="M7 3h11.5A2.5 2.5 0 0 1 21 5.5V17" />
+            </svg>
+          </div>
+        </div>
       </div>
 
       <div class="abs phone p1">
@@ -386,18 +492,31 @@
       <div class="abs phone p2">
         <div class="screen" style="background: #12263a">
           <div class="abs island"></div>
-          <div class="status"><span>10:05</span><span>●●● ▮</span></div>
+          <div class="status">
+            <span>10:05</span>
+            <svg width="84" height="20" viewBox="0 0 84 20" fill="#fff">
+              <rect x="0" y="12" width="4.5" height="7" rx="1.5" />
+              <rect x="7" y="9" width="4.5" height="10" rx="1.5" />
+              <rect x="14" y="5" width="4.5" height="14" rx="1.5" />
+              <rect x="21" y="1" width="4.5" height="18" rx="1.5" />
+              <path
+                d="M40 6.5a12 12 0 0 1 16 0l-2 2a9 9 0 0 0-12 0z M43.5 10a7 7 0 0 1 9 0l-2 2a4 4 0 0 0-5 0z M46 13.5a2.8 2.8 0 0 1 4 0L48 16z"
+              />
+              <rect x="60" y="3" width="21" height="14" rx="4" />
+              <rect x="82" y="8" width="2" height="4" rx="1" opacity=".5" />
+            </svg>
+          </div>
           <img src="screens/quote-accepted.png" style="top: 0" />
         </div>
       </div>
 
-      <div class="abs chip glass c1">
-        <div class="ic" style="background: var(--blue)">
+      <div class="abs callout glass dark c1">
+        <div class="tile" style="background: var(--blue)">
           <svg
             viewBox="0 0 24 24"
             fill="none"
             stroke="#fff"
-            stroke-width="2.4"
+            stroke-width="2.3"
             stroke-linecap="round"
             stroke-linejoin="round"
           >
@@ -406,15 +525,18 @@
             <path d="M8.5 19h7a3.5 3.5 0 0 0 0-7h-7a3.5 3.5 0 0 1 0-7h7" />
           </svg>
         </div>
-        <span>Optimize Week: <b>2 hr 4 min</b> less driving</span>
+        <div>
+          <div class="t">Optimize Week</div>
+          <div class="d">2 hr 4 min less driving</div>
+        </div>
       </div>
-      <div class="abs chip glass c2">
-        <div class="ic" style="background: var(--blue)">
+      <div class="abs callout glass dark c2">
+        <div class="tile" style="background: var(--blue)">
           <svg
             viewBox="0 0 24 24"
             fill="none"
             stroke="#fff"
-            stroke-width="2.4"
+            stroke-width="2.3"
             stroke-linecap="round"
             stroke-linejoin="round"
           >
@@ -422,160 +544,159 @@
             <circle cx="12" cy="9.5" r="2.5" />
           </svg>
         </div>
-        <span>The job, live on the Lock Screen</span>
+        <div>
+          <div class="t">Live Activity</div>
+          <div class="d">The job on the Lock Screen</div>
+        </div>
       </div>
-      <div class="abs chip glass c3">
-        <div class="ic" style="background: var(--pass)">
+      <div class="abs callout glass dark c3">
+        <div class="tile" style="background: var(--pass)">
           <svg
             viewBox="0 0 24 24"
             fill="none"
             stroke="#fff"
-            stroke-width="3"
+            stroke-width="2.8"
             stroke-linecap="round"
             stroke-linejoin="round"
           >
             <path d="M5 12.5l4.5 4.5L19 7.5" />
           </svg>
         </div>
-        <span>Signed on site, <b>deposit in</b></span>
+        <div>
+          <div class="t">Signed on site</div>
+          <div class="d">$767.50 deposit in</div>
+        </div>
       </div>
 
-      <div class="abs pills">
-        <div class="row">
-          <div class="pill glass">
-            <div class="ic">
-              <svg
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="#fff"
-                stroke-width="2.2"
-                stroke-linecap="round"
-                stroke-linejoin="round"
-              >
-                <rect x="3" y="6" width="18" height="12" rx="6" />
-                <circle cx="8" cy="12" r="2.2" fill="#fff" />
-              </svg>
-            </div>
-            Pool diagram
+      <div class="abs features glass">
+        <div class="f">
+          <div class="tile">
+            <svg
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="#fff"
+              stroke-width="2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            >
+              <rect x="2.5" y="6" width="19" height="12" rx="6" />
+              <circle cx="8.5" cy="12" r="2" fill="#fff" />
+            </svg>
           </div>
-          <div class="pill glass">
-            <div class="ic">
-              <svg
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="#fff"
-                stroke-width="2.2"
-                stroke-linecap="round"
-                stroke-linejoin="round"
-              >
-                <circle cx="12" cy="13" r="8" />
-                <path d="M12 13l4-4" />
-                <path d="M9 3h6" />
-              </svg>
-            </div>
-            Pressure tests
-          </div>
-          <div class="pill glass">
-            <div class="ic">
-              <svg
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="#fff"
-                stroke-width="2.2"
-                stroke-linecap="round"
-                stroke-linejoin="round"
-              >
-                <rect x="3" y="5" width="18" height="14" rx="3" />
-                <circle cx="12" cy="12" r="3.5" />
-                <path d="M15.5 8.5l4-3" />
-              </svg>
-            </div>
-            Photo markup
-          </div>
-          <div class="pill glass">
-            <div class="ic">
-              <svg
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="#fff"
-                stroke-width="2.2"
-                stroke-linecap="round"
-                stroke-linejoin="round"
-              >
-                <path d="M7 3h7l4 4v14H7z" />
-                <path d="M10 12h5M10 16h5M10 8h2" />
-              </svg>
-            </div>
-            Branded reports
-          </div>
+          Pool diagram
         </div>
-        <div class="row">
-          <div class="pill glass">
-            <div class="ic">
-              <svg
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="#fff"
-                stroke-width="2.2"
-                stroke-linecap="round"
-                stroke-linejoin="round"
-              >
-                <path d="M4 18c3-6 5 2 8-3s4 1 7-2" />
-                <path d="M4 21h16" />
-              </svg>
-            </div>
-            Quotes &amp; e-sign
+        <div class="f">
+          <div class="tile">
+            <svg
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="#fff"
+              stroke-width="2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            >
+              <circle cx="12" cy="13" r="8" />
+              <path d="M12 13l4-4M9.5 3h5" />
+            </svg>
           </div>
-          <div class="pill glass">
-            <div class="ic">
-              <svg
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="#fff"
-                stroke-width="2.2"
-                stroke-linecap="round"
-                stroke-linejoin="round"
-              >
-                <rect x="3" y="6" width="18" height="12" rx="3" />
-                <path d="M3 10h18" />
-                <path d="M7 15h3" />
-              </svg>
-            </div>
-            Invoices &amp; pay
+          Pressure tests
+        </div>
+        <div class="f">
+          <div class="tile">
+            <svg
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="#fff"
+              stroke-width="2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            >
+              <rect x="3" y="5" width="18" height="14" rx="3" />
+              <circle cx="12" cy="12" r="3.5" />
+              <path d="M15.5 8.5l4-3" />
+            </svg>
           </div>
-          <div class="pill glass">
-            <div class="ic">
-              <svg
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="#fff"
-                stroke-width="2.2"
-                stroke-linecap="round"
-                stroke-linejoin="round"
-              >
-                <path d="M2 9a15 15 0 0 1 20 0" />
-                <path d="M5.5 12.5a10 10 0 0 1 13 0" />
-                <path d="M9 16a5 5 0 0 1 6 0" />
-                <path d="M3 3l18 18" />
-              </svg>
-            </div>
-            Works offline
+          Photo markup
+        </div>
+        <div class="f">
+          <div class="tile">
+            <svg
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="#fff"
+              stroke-width="2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            >
+              <path d="M7 3h7l4 4v14H7z" />
+              <path d="M10 12h5M10 16h5M10 8h2" />
+            </svg>
           </div>
-          <div class="pill glass">
-            <div class="ic">
-              <svg
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="#fff"
-                stroke-width="2.2"
-                stroke-linecap="round"
-                stroke-linejoin="round"
-              >
-                <path d="M4 20V10M10 20V4M16 20v-7M22 20H2" />
-              </svg>
-            </div>
-            Owner dashboard
+          Branded reports
+        </div>
+        <div class="f">
+          <div class="tile">
+            <svg
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="#fff"
+              stroke-width="2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            >
+              <path d="M4 17c3-6 5 2 8-3s4 1 7-2" />
+              <path d="M4 21h16" />
+            </svg>
           </div>
+          Quotes &amp; e-sign
+        </div>
+        <div class="f">
+          <div class="tile">
+            <svg
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="#fff"
+              stroke-width="2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            >
+              <rect x="3" y="6" width="18" height="12" rx="3" />
+              <path d="M3 10h18M7 15h3" />
+            </svg>
+          </div>
+          Invoices &amp; pay
+        </div>
+        <div class="f">
+          <div class="tile">
+            <svg
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="#fff"
+              stroke-width="2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            >
+              <path
+                d="M2 9a15 15 0 0 1 20 0M5.5 12.5a10 10 0 0 1 13 0M9 16a5 5 0 0 1 6 0M3 3l18 18"
+              />
+            </svg>
+          </div>
+          Works offline
+        </div>
+        <div class="f">
+          <div class="tile">
+            <svg
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="#fff"
+              stroke-width="2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            >
+              <path d="M5 20V11M11 20V5M17 20v-7M2 20h20" />
+            </svg>
+          </div>
+          Owner dashboard
         </div>
       </div>
 
@@ -583,7 +704,7 @@
         <div class="qr"><img src="qr.svg" /></div>
         <div class="cta">
           <div class="btn">Start Your Free Trial</div>
-          <div class="url2">sundeckpro.com</div>
+          <div class="url">sundeckpro.com</div>
         </div>
         <div class="contact">
           office@sundeckpro.com<br /><span>Call or text</span> (561) 307-7770
