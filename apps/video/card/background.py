@@ -1,7 +1,7 @@
 """The laminate card's background: deep pool water at night-blue, its caustic light network,
 and sun glints sparkling on the surface. Deterministic (fixed seed), so a re-render matches.
 
-    python3 card/background.py out.png WIDTH HEIGHT
+    python3 card/background.py out.png WIDTH HEIGHT   (also out-top.png and out-bottom.png)
 """
 
 import sys
@@ -45,7 +45,8 @@ acc = np.asarray(base).astype(np.float32) / 255
 
 # Glitter: sun glints, many tiny and a few with four-point star flares, densest in the glow band.
 glint = np.zeros((H, W), np.float32)
-n = int(1400 * (W * H) / (1875 * 2500))
+# The same glints at every resolution (the look approved at 3750 x 5000).
+n = 5600
 gx = rng.uniform(0, W, n)
 gy = rng.uniform(0, H, n)
 keep = rng.uniform(0, 1, n) < (0.25 + 0.75 * np.exp(-(((gy / H) - 0.45) / 0.33) ** 2))
@@ -87,5 +88,11 @@ for _ in range(28):
     bok += np.clip((r - d) / (1.5 * s), 0, 1) * rng.uniform(0.04, 0.09)
 acc += bok[..., None] * np.array([0.55, 0.8, 1.0], np.float32)[None, None]
 
-Image.fromarray((np.clip(acc, 0, 1) * 255).astype(np.uint8)).save(out, quality=95)
+bg = Image.fromarray((np.clip(acc, 0, 1) * 255).astype(np.uint8))
+bg.save(out, quality=95)
+# Also as two halves, top and bottom: Chromium draws an image taller than its largest texture
+# (8192) with a band across the bottom, and the 4x card's background is 10000 tall.
+stem = out.rsplit(".", 1)[0]
+bg.crop((0, 0, W, H // 2)).save(f"{stem}-top.png")
+bg.crop((0, H // 2, W, H)).save(f"{stem}-bottom.png")
 print(out, W, H)
