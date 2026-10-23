@@ -196,8 +196,11 @@ Before recording:
 | 13 | Built for the backyard | Airplane Mode on, complete a stop or answer a checklist item (the sync bar says it's waiting), Airplane Mode off, the bar catches up. |
 | 14 | Built for the backyard | Any busy screen in dark mode (Control Center › Dark Mode), scrolling. |
 
-If one is a hassle, skip it: the simulator screenshots cover every screen as stills, and the
-desktop website covers the owner's side.
+**Recorded (owner, 2026-10-23):** 1, 2, 3 and 5 (`apps/video/assets/owner/`); the owner is done
+recording ("The scheduling smoothness was important to record. The rest is all you"). The other
+tech shots come from the app's own screens captured in the iPhone simulator. Every recording is
+smoothed to a steady 60 fps by `scripts/launch-video-smooth.sh` (owner: "screen recordings are low
+FPS, if you can smooth it out, that would be amazing").
 
 ## 6. Images to make in ChatGPT
 
