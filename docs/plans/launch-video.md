@@ -377,3 +377,83 @@ ElevenLabs reads it as a pause.
 
 **Send back:** the 43 files (MP3 or WAV) in one folder, or one long file with a second of
 silence between lines; either works.
+
+## 9. How it's made
+
+Everything is in `apps/video` (package `@leakbook/video`), built from scratch for this film: no
+code, music, look or layout from the 45-second videos.
+
+**Tools and licenses.** The frames are plain TypeScript drawing a 1920 × 1080 page, rendered one
+frame at a time in headless Chromium through Playwright (`playwright-core`, Apache 2.0) and
+encoded with ffmpeg (libx264). Remotion was considered and not used: its license needs a paid
+company license for for-profit companies with 4 or more people, and we don't need it. The score is
+Python with numpy, synthesized from nothing (no samples or loops). Fonts are the brand's own
+Barlow Semi Condensed and Public Sans (OFL) from `brand/fonts`; colors come from
+`brand/tokens.json`.
+
+**Make the film** (in `apps/video`; cloud sessions add `NODE_USE_ENV_PROXY=1
+PW_CHROMIUM_PATH=/opt/pw-browsers/chromium` to the capture):
+
+1. `node src/capture-web.ts`: the website's real screens from https://sundeckpro.com, read-only.
+   The Schedule screens are the shared demo company (Canyon State Leak Detections, signed in as
+   its owner), the same shop as the owner's iPhone recordings: it opens Optimize Week's sheet but
+   never presses it, folds Needs a Time and the Getting Started panel away (this browser only),
+   types into nothing and never signs out. Everything else comes from the Canyon State video
+   shop (`marcus@canyonstate.video.test`), because the demo company has test rows and almost no
+   history: Dashboard, Invoices, Activity, Settings, Email Customers (filled in, never sent) and
+   Rebecca Quinn's report, quote (open, and accepted with its deposit) and invoice. In this
+   browser only, it shows the demo's "Dana Owner" and "Tony Tech" as Dana Ruiz and Tony Alvarez,
+   the shops' `.video.test` office addresses as `canyonstateleak.com` and `bluemesapools.com`,
+   and hides the dashboard's "+N in 30 days" line. A capture that shows "demo", "e2e", a test
+   row or `.test` anywhere on screen fails and isn't saved.
+2. `node src/capture-iphone.ts <folder>`: copies the iPhone app's real screens: CI's
+   `iphone-screenshots` artifact, and the film's own `launch-video-iphone` artifact
+   (`.github/workflows/launch-video-iphone.yml`, suite
+   `apps/ios/Tests/SundeckAppScreenshots/LaunchVideoShots.swift`: the app's screens with Rebecca
+   Quinn, Janet Yates and Julia Hughes; its `lv-*` screens win over CI's).
+3. `node src/prepare.ts`: times the film to the narration. Each `audio/voice/NN.mp3` (or .wav) is
+   measured with ffprobe; a missing line is read at 2.4 words a second. Lines are 0.6 s apart,
+   1.5 s before a chapter (its card plays there), 1.2 s of silence before "Not anymore.", and
+   0.5 s extra after lines 19, 29 and 33. After the hit every line starts on the music's beat
+   (92 BPM), and every chapter on every other beat. Writes `build/timeline.json`.
+4. `python3 music/launch_score.py`: the score, built on that timeline (drone and clock, the hit,
+   the groove, a fill and crash into every chapter card, the vision's swell, the end hit), ducked
+   under the voice's own level. Writes `build/mix.wav`: the voice at about -16 LUFS, the music at
+   -25.5 LUFS under it, the whole at -14 LUFS with true peaks under -1 dBFS.
+   `python3 music/check_mix.py [film.mp4]` measures the film's loudness and true peak, and the
+   music under each narration line, and fails when any line's music is less than 12 dB under the
+   voice.
+5. `node src/render.ts`: the film, `out/sundeck-pro-launch.mp4` (1920 × 1080, 60 fps, H.264,
+   AAC), in 4 parallel segments (`--workers`). Every frame waits for its images to decode, so a
+   scene never opens on a blank frame. `--stills 12.5,40` writes single frames to `build/stills/` to look at; `--from 30 --to 60`
+   renders a stretch.
+
+**Where things go.**
+- Shots: `src/film/shots.ts`, one per narration line, timed from the line's start, so new voice
+  takes re-time everything. Captions: the key lines (section 4's) stay on in the final; while
+  any voice file is missing, the whole narration shows as subtitles to judge pacing.
+- Photos (section 6): `assets/photos/launch/01-dawn-truck.jpg`, `02-whiteboard.jpg`,
+  `03-kitchen-table.jpg`, `04-phone-buzzing.jpg`, `05-hands-on-gauge.jpg`, `06-tech-at-pool.jpg`,
+  `07-handshake.jpg`, `08-fleet.jpg`, `09-crew-meeting.jpg`, `10-home-on-time.jpg`,
+  `11-lake-tailgate.jpg`. A missing one shows as a labeled placeholder card. The earlier photos in
+  `assets/photos/` (dye tests, equipment pad, before and after, backyard) are used too.
+- The owner's recordings (section 5): `assets/owner/NN-*.mov|mp4`, numbered as in the table; the
+  smoothed `assets/owner/smooth/NN-*.mp4` wins when it exists. Each is cut to frames once
+  (`build/clips/`). A shot uses its recording when it's there, else the app's screenshots. The
+  Lock Screen is the owner's screenshot `assets/owner/01-lock-screen-live-activity.jpg`.
+- Motion (`src/film/devices.ts`): an iPhone with thin bezels and a soft contact shadow, and the
+  way iOS moves: momentum scrolls that ease out, sheets that spring up while the screen behind
+  scales back and dims, pushes with the old screen sliding a third under the new one, and a tap
+  ring then the pressed state on every tap. Screens are the app's and website's real
+  screenshots; the owner's 60 fps recordings lead where they exist.
+- `scripts/launch-video-seed.mjs` (dry run unless `--apply`) touches only the two video shops:
+  it hides Getting Started for their owners; names Canyon State "Canyon State Leak Detections";
+  makes Rebecca Quinn's leak job (7745 N 42nd Ave; skimmer seam leak, pressure test dropped 8 PSI
+  in 15 minutes, dye at the skimmer throat; her signed report, a $600 quote with a $300 deposit,
+  the $375 detection invoice) through the same steps and server functions the app uses, and
+  moves the shop's job, quote and invoice counters past it; with `--accept` she accepts the
+  quote on its page's own function and the deposit is recorded as the card payment webhook
+  records it. It also completes Blue Mesa's visit #5230 (Caleb Pacheco) with its water test and
+  before and after photos and sends its visit report. The demo company is never seeded.
+
+`build/`, `captures/` and `out/` are made by the scripts and not committed.

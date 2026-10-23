@@ -1,0 +1,19 @@
+{
+  "name": "@leakbook/video",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "capture:web": "NODE_USE_ENV_PROXY=1 node src/capture-web.ts",
+    "capture:iphone": "node src/capture-iphone.ts",
+    "prepare:timeline": "node src/prepare.ts",
+    "music": "python3 music/launch_score.py",
+    "render": "node src/render.ts",
+    "film": "node src/prepare.ts && python3 music/launch_score.py && node src/render.ts",
+    "lint": "eslint src",
+    "typecheck": "tsc -p tsconfig.json"
+  },
+  "dependencies": {
+    "playwright-core": "1.64.0"
+  }
+}
