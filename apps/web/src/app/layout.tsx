@@ -9,6 +9,8 @@ import "./globals.css";
 import { PhoneFormatting } from "@/components/phone-format";
 
 export const metadata: Metadata = {
+  // Link previews need absolute URLs (lib/share-preview).
+  metadataBase: new URL("https://sundeckpro.com"),
   title: "Sundeck Pro",
   description:
     "Routes, checklists, quotes, and invoicing for pool service and leak detection shops.",

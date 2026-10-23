@@ -5,8 +5,15 @@ import { parseServices } from "@leakbook/core";
 import { AuthCard } from "@/components/auth-card";
 import { TrialForm } from "@/components/auth-forms";
 import { getUser } from "@/lib/auth";
+import { sharePreview } from "@/lib/share-preview";
 
-export const metadata: Metadata = { title: "Start Free Trial · Sundeck Pro" };
+export const metadata: Metadata = {
+  title: "Start Free Trial · Sundeck Pro",
+  ...sharePreview(
+    "Start your 30-day free trial",
+    "Set up your pool shop in minutes, then invite your techs. One app for routes, reports, quotes and payments.",
+  ),
+};
 
 export default function SignUpPage({ searchParams }: PageProps<"/sign-up">) {
   return (
