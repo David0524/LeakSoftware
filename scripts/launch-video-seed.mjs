@@ -76,9 +76,10 @@ const STORY_EVE = "2026-10-22";
 const STORY_TOTAL = 153500;
 /**
  * Her pool as drawn in the app for the laminate card (owner, 2026-10-23: "Make your own using
- * our tools and include a tree landmark"): a kidney with the spa in its curve, a tree on each
- * side, the steps in the shallow end, the equipment pad by the spa, and her two leaks pinned
- * where they are (the return line by the equipment, the light at the deep end's wall).
+ * our tools and include a tree landmark"; "Remove the stairs"): a kidney with the spa in its
+ * curve, a tree on each side, the equipment pad by the spa, and her two leaks pinned where they
+ * are (the return line by the equipment, the light at the deep end's wall), each marked up on
+ * the job's diagram with a red circle, an arrow and a label (Mark Up, job.diagram_markup).
  */
 const STORY_SHAPE = "kidney";
 const STORY_LAYOUT = {
@@ -87,8 +88,18 @@ const STORY_LAYOUT = {
   landmarks: [
     { kind: "tree", x: 0.07, y: 0.22, s: 28 },
     { kind: "tree", x: 0.93, y: 0.72, s: 24 },
-    { kind: "steps", x: 0.22, y: 0.55, s: 16 },
     { kind: "equipment", x: 0.9, y: 0.15, s: 20 },
+  ],
+};
+const STORY_MARKUP = {
+  version: 1,
+  shapes: [
+    { type: "circle", color: "red", cx: 0.79, cy: 0.13, rx: 0.065, ry: 0.12 },
+    { type: "arrow", color: "red", x1: 0.735, y1: 0.47, x2: 0.775, y2: 0.27 },
+    { type: "text", color: "red", x: 0.71, y: 0.58, text: "Break under deck", s: 0.7 },
+    { type: "circle", color: "red", cx: 0.47, cy: 0.86, rx: 0.065, ry: 0.12 },
+    { type: "arrow", color: "red", x1: 0.33, y1: 0.56, x2: 0.43, y2: 0.77 },
+    { type: "text", color: "red", x: 0.3, y: 0.47, text: "Dye at the light", s: 0.7 },
   ],
 };
 const STORY_PINS = { "Return line break": [0.79, 0.13], "Light niche conduit leak": [0.47, 0.86] };
@@ -259,12 +270,14 @@ if (story && !remake) canyonSteps.push("set her story's times (Friday morning)")
 const [drawn] = story
   ? await query(`select p.diagram_shape = ${q(STORY_SHAPE)}
         and p.diagram_layout = ${q(JSON.stringify(STORY_LAYOUT))}::jsonb
+        and j.diagram_markup = ${q(JSON.stringify(STORY_MARKUP))}::jsonb
         and not exists (select 1 from public.finding f where f.job_id = j.id and f.deleted_at is null
           and (f.pin_x, f.pin_y) is distinct from (${pinCase("x")}, ${pinCase("y")})) as ok
       from public.job j join public.property p on p.id = j.property_id where j.id = ${q(story.id)}`)
   : [{ ok: true }];
 const redraw = story && !remake && !drawn.ok;
-if (redraw) canyonSteps.push("draw her pool (kidney, spa, trees) and move her two pins");
+if (redraw)
+  canyonSteps.push("draw her pool (kidney, spa, trees), mark up her leaks and move her two pins");
 if (accept && story?.quote_status !== "accepted")
   canyonSteps.push("accept her quote with the deposit");
 const [invoice2087] = story
@@ -686,13 +699,15 @@ function pinCase(axis) {
     .join(" ")} else f.pin_${axis} end`;
 }
 
-/** Her pool drawn as STORY_SHAPE and STORY_LAYOUT, and her findings' pins moved to match. */
+/** Her pool drawn as STORY_SHAPE and STORY_LAYOUT, marked up (STORY_MARKUP), and her pins moved. */
 async function drawPool(jobId) {
   await query(`
     update public.property p set diagram_shape = ${q(STORY_SHAPE)},
       diagram_layout = ${q(JSON.stringify(STORY_LAYOUT))}::jsonb
     from public.job j where j.id = ${q(jobId)} and p.id = j.property_id
       and p.company_id = ${q(SHOPS.canyon)};
+    update public.job set diagram_markup = ${q(JSON.stringify(STORY_MARKUP))}::jsonb
+    where id = ${q(jobId)} and company_id = ${q(SHOPS.canyon)};
     update public.finding f set pin_x = ${pinCase("x")}, pin_y = ${pinCase("y")}
     where f.job_id = ${q(jobId)} and f.company_id = ${q(SHOPS.canyon)} and f.deleted_at is null;
   `);
@@ -734,10 +749,10 @@ async function rebeccaStory() {
       ${q(JSON.stringify(STORY_LAYOUT))}::jsonb,
       20000, 'Code #1955');
     insert into public.job (id, company_id, number, type, property_id, bill_to_customer_id, status,
-      assigned_user_id, scheduled_start, scheduled_end, started_at, completed_at, fee_cents)
+      assigned_user_id, scheduled_start, scheduled_end, started_at, completed_at, fee_cents, diagram_markup)
     values (${q(ids.job)}, ${q(c)}, ${STORY_JOB}, 'detection', ${q(ids.property)}, ${q(ids.customer)},
       'in_progress', ${q(nums.dana)}, ${q(at("08:00"))}, ${q(at("10:00"))}, ${q(at("08:10"))},
-      ${q(at("09:40"))}, 37500);
+      ${q(at("09:40"))}, 37500, ${q(JSON.stringify(STORY_MARKUP))}::jsonb);
     with src as (
       select jc.*, ct.key, r.status as r_status, r.method, r.inspected_at
       from public.job_component jc

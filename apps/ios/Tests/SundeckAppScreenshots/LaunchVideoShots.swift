@@ -140,8 +140,8 @@
                 "state": "AZ", "postal_code": "85051", "has_pool": true, "has_spa": true,
                 "pool_type": "gunite_plaster", "approx_gallons": 20000, "access_notes": "Code #1955",
                 // Her kidney pool, drawn in the app for the laminate card (owner, 2026-10-23: "include
-                // a tree landmark"): the spa in its curve, a tree on each side, the steps in the
-                // shallow end, the equipment pad by the spa (scripts/launch-video-seed.mjs, STORY_LAYOUT).
+                // a tree landmark"): the spa in its curve, a tree on each side, the equipment pad by
+                // the spa (scripts/launch-video-seed.mjs, STORY_LAYOUT; the job's markup, STORY_MARKUP).
                 "diagram_shape": "kidney",
                 "diagram_layout": [
                     "centered": true,
@@ -149,7 +149,6 @@
                     "landmarks": [
                         ["kind": "tree", "x": 0.07, "y": 0.22, "s": 28],
                         ["kind": "tree", "x": 0.93, "y": 0.72, "s": 24],
-                        ["kind": "steps", "x": 0.22, "y": 0.55, "s": 16],
                         ["kind": "equipment", "x": 0.9, "y": 0.15, "s": 20],
                     ],
                 ],
@@ -161,6 +160,18 @@
                 "type": "detection",
                 "started_at": phoenixMorning(8, 10),
                 "assigned_user_id": "u1", "number": 1042, "fee_cents": 37500,
+                // Her two leaks marked up on the diagram: a red circle, an arrow and a label each.
+                "diagram_markup": [
+                    "version": 1,
+                    "shapes": [
+                        ["type": "circle", "color": "red", "cx": 0.79, "cy": 0.13, "rx": 0.065, "ry": 0.12],
+                        ["type": "arrow", "color": "red", "x1": 0.735, "y1": 0.47, "x2": 0.775, "y2": 0.27],
+                        ["type": "text", "color": "red", "x": 0.71, "y": 0.58, "text": "Break under deck", "s": 0.7],
+                        ["type": "circle", "color": "red", "cx": 0.47, "cy": 0.86, "rx": 0.065, "ry": 0.12],
+                        ["type": "arrow", "color": "red", "x1": 0.33, "y1": 0.56, "x2": 0.43, "y2": 0.77],
+                        ["type": "text", "color": "red", "x": 0.3, "y": 0.47, "text": "Dye at the light", "s": 0.7],
+                    ],
+                ],
             ])
     }
 
