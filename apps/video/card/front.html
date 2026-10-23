@@ -145,6 +145,208 @@
         top: 62px;
         width: 1365px;
       }
+
+      /* The schedule, redrawn for the card from the real Week board after Optimize Week: the
+         same techs, jobs, times and result, with less on screen and each tech's color. */
+      .page {
+        position: absolute;
+        inset: 0;
+        background: #f3f6f9;
+        color: #12263a;
+        font-family: Public, sans-serif;
+      }
+      .ph {
+        position: absolute;
+        left: 140px;
+        top: 100px;
+      }
+      .pt {
+        font-family: Barlow;
+        font-weight: 800;
+        font-size: 58px;
+        line-height: 1;
+      }
+      .ps {
+        font-size: 23px;
+        color: #5a6875;
+        margin-top: 8px;
+      }
+      .opt {
+        position: absolute;
+        left: 428px;
+        top: 112px;
+        height: 50px;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        padding: 0 20px;
+        border-radius: 24px;
+        background: #1a63a0;
+        color: #fff;
+        font-size: 20px;
+        font-weight: 700;
+      }
+      .opt svg {
+        width: 24px;
+        height: 24px;
+      }
+      .board {
+        position: absolute;
+        left: 140px;
+        top: 214px;
+        width: 530px;
+      }
+      .thead,
+      .days {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 10px;
+      }
+      .days {
+        padding-bottom: 6px;
+      }
+      .thead span {
+        font-family: Barlow;
+        font-weight: 700;
+        font-size: 24px;
+        color: #46535f;
+        padding: 0 4px 8px;
+      }
+      .who {
+        font-size: 19px;
+        font-weight: 700;
+        display: flex;
+        align-items: center;
+        gap: 9px;
+        border-top: 1.5px solid #dde3e9;
+        padding: 9px 0 8px;
+      }
+      .who i {
+        width: 13px;
+        height: 13px;
+        border-radius: 50%;
+        flex: none;
+      }
+      .cell {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+      }
+      .job {
+        background: #fff;
+        border-radius: 13px;
+        height: 54px;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        padding: 0 8px 0 11px;
+        box-shadow:
+          inset 5px 0 0 var(--c),
+          0 2px 8px rgba(18, 38, 58, 0.08);
+      }
+      .job .n {
+        width: 24px;
+        height: 24px;
+        border-radius: 50%;
+        background: var(--c);
+        color: #fff;
+        font-size: 16px;
+        font-weight: 700;
+        display: grid;
+        place-items: center;
+        flex: none;
+      }
+      .job b {
+        display: block;
+        font-size: 16.5px;
+        font-weight: 700;
+        white-space: nowrap;
+      }
+      .job i {
+        display: block;
+        font-style: normal;
+        font-size: 16px;
+        color: #5a6875;
+      }
+      .more {
+        font-size: 16px;
+        font-weight: 600;
+        color: #1a63a0;
+        padding-left: 6px;
+      }
+      .free {
+        height: 54px;
+        border-radius: 13px;
+        border: 2px dashed #cfd7df;
+        display: grid;
+        place-items: center;
+        font-size: 18px;
+        color: #8a97a4;
+      }
+      .map {
+        position: absolute;
+        left: 690px;
+        top: 100px;
+        width: 270px;
+        height: 640px;
+        border-radius: 24px;
+        overflow: hidden;
+        background: #e8eef3;
+        box-shadow: 0 4px 18px rgba(18, 38, 58, 0.12);
+      }
+      .map svg {
+        position: absolute;
+        left: 0;
+        top: 0;
+      }
+      .mlabel {
+        position: absolute;
+        left: 18px;
+        top: 16px;
+        padding: 8px 16px;
+        border-radius: 12px;
+        background: rgba(255, 255, 255, 0.86);
+        font-size: 19px;
+        font-weight: 700;
+      }
+      .toast {
+        position: absolute;
+        left: 18px;
+        right: 18px;
+        top: 18px;
+        border-radius: 20px;
+        padding: 14px 18px;
+        display: flex;
+        align-items: center;
+        gap: 14px;
+        background: rgba(255, 255, 255, 0.9);
+        backdrop-filter: blur(14px);
+        box-shadow: 0 8px 24px rgba(18, 38, 58, 0.18);
+      }
+      .toast .ok {
+        width: 44px;
+        height: 44px;
+        border-radius: 50%;
+        background: #1b7d45;
+        display: grid;
+        place-items: center;
+        flex: none;
+      }
+      .toast .ok svg {
+        width: 26px;
+        height: 26px;
+      }
+      .toast b {
+        display: block;
+        font-size: 22px;
+      }
+      .toast i {
+        display: block;
+        font-style: normal;
+        font-size: 19px;
+        color: #1b7d45;
+        font-weight: 700;
+      }
       .toolbar {
         position: absolute;
         left: 0;
@@ -407,7 +609,160 @@
       <p class="abs sub">One app for the whole pool shop.</p>
 
       <div class="abs browser">
-        <img class="shot" src="screens/schedule-optimized.png" />
+        <div class="page">
+          <div class="ph">
+            <div class="pt">Schedule</div>
+            <div class="ps">Oct 26 – 28 · 3 techs</div>
+          </div>
+
+          <div class="opt">
+            <svg
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="#fff"
+              stroke-width="2.4"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            >
+              <circle cx="6" cy="19" r="2.5" />
+              <circle cx="18" cy="5" r="2.5" />
+              <path d="M8.5 19h7a3.5 3.5 0 0 0 0-7h-7a3.5 3.5 0 0 1 0-7h7" />
+            </svg>
+            Optimize Week
+          </div>
+          <div class="board">
+            <div class="thead"><span>Mon 26</span><span>Tue 27</span><span>Wed 28</span></div>
+            <div class="who"><i style="background: #1f6fae"></i>Dana Ruiz</div>
+            <div class="days">
+              <div class="cell">
+                <div class="job" style="--c: #1f6fae">
+                  <span class="n">1</span>
+                  <div><b>Kristen Vance</b><i>8:30</i></div>
+                </div>
+                <div class="job" style="--c: #1f6fae">
+                  <span class="n">2</span>
+                  <div><b>Walter Harmon</b><i>10:56</i></div>
+                </div>
+              </div>
+              <div class="cell">
+                <div class="job" style="--c: #1f6fae">
+                  <span class="n">1</span>
+                  <div><b>Miguel Ramos</b><i>8:27</i></div>
+                </div>
+                <div class="job" style="--c: #1f6fae">
+                  <span class="n">2</span>
+                  <div><b>Jason Espinoza</b><i>10:40</i></div>
+                </div>
+              </div>
+              <div class="cell">
+                <div class="job" style="--c: #1f6fae">
+                  <span class="n">1</span>
+                  <div><b>Dylan Barnes</b><i>8:27</i></div>
+                </div>
+                <div class="job" style="--c: #1f6fae">
+                  <span class="n">2</span>
+                  <div><b>Lance Quinn</b><i>10:39</i></div>
+                </div>
+              </div>
+            </div>
+            <div class="who"><i style="background: #d07b27"></i>Jake Turner</div>
+            <div class="days">
+              <div class="cell">
+                <div class="job" style="--c: #d07b27">
+                  <span class="n">1</span>
+                  <div><b>Jacob Wade</b><i>8:12</i></div>
+                </div>
+                <div class="job" style="--c: #d07b27">
+                  <span class="n">2</span>
+                  <div><b>Craig Fischer</b><i>10:24</i></div>
+                </div>
+              </div>
+              <div class="cell">
+                <div class="job" style="--c: #d07b27">
+                  <span class="n">1</span>
+                  <div><b>Gregory Lin</b><i>8:23</i></div>
+                </div>
+                <div class="job" style="--c: #d07b27">
+                  <span class="n">2</span>
+                  <div><b>Rick Herrera</b><i>11:08</i></div>
+                </div>
+              </div>
+              <div class="cell"><div class="free">Open</div></div>
+            </div>
+            <div class="who"><i style="background: #7b5cc4"></i>Marcus Hale</div>
+            <div class="days">
+              <div class="cell">
+                <div class="job" style="--c: #7b5cc4">
+                  <span class="n">1</span>
+                  <div><b>Keith Wade</b><i>8:21</i></div>
+                </div>
+                <div class="job" style="--c: #7b5cc4">
+                  <span class="n">2</span>
+                  <div><b>Rebecca Quinn</b><i>11:15</i></div>
+                </div>
+              </div>
+              <div class="cell"><div class="free">Open</div></div>
+              <div class="cell"><div class="free">Open</div></div>
+            </div>
+          </div>
+          <div class="map">
+            <svg
+              viewBox="0 0 450 520"
+              width="270"
+              height="640"
+              preserveAspectRatio="xMidYMid slice"
+            >
+              <rect width="450" height="520" fill="#E8EEF3" />
+              <path d="M300 0c-20 90 60 140 40 230s-90 120-60 290h170V0z" fill="#D5EBCF" />
+              <path
+                d="M0 330c70-30 120 10 170-20s60-70 120-60v20c-50-6-70 40-120 62S50 330 0 356z"
+                fill="#BFDDF2"
+              />
+              <g stroke="#fff" stroke-width="7" fill="none">
+                <path d="M0 90h450M0 200h450M0 420h450M80 0v520M200 0v520M330 0v520M0 0l450 520" />
+              </g>
+              <path
+                d="M0 150c120 0 160-40 250-40s140 30 200 20"
+                stroke="#F4C766"
+                stroke-width="10"
+                fill="none"
+              />
+              <g fill="none" stroke-width="7" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M225 470L140 335L150 215L250 105" stroke="#fff" stroke-width="12" />
+                <path d="M225 470L140 335L150 215L250 105" stroke="#1F6FAE" />
+                <path d="M225 470L305 375L315 250" stroke="#fff" stroke-width="12" />
+                <path d="M225 470L305 375L315 250" stroke="#D07B27" />
+                <path d="M225 470L250 300L185 160" stroke="#fff" stroke-width="12" />
+                <path d="M225 470L250 300L185 160" stroke="#7B5CC4" />
+              </g>
+              <g
+                font-family="Public"
+                font-weight="700"
+                font-size="17"
+                text-anchor="middle"
+                fill="#fff"
+              >
+                <circle cx="140" cy="335" r="16" fill="#1F6FAE" stroke="#fff" stroke-width="3.5" />
+                <text x="140" y="341">1</text>
+                <circle cx="150" cy="215" r="16" fill="#1F6FAE" stroke="#fff" stroke-width="3.5" />
+                <text x="150" y="221">2</text>
+                <circle cx="250" cy="105" r="16" fill="#1F6FAE" stroke="#fff" stroke-width="3.5" />
+                <text x="250" y="111">3</text>
+                <circle cx="305" cy="375" r="16" fill="#D07B27" stroke="#fff" stroke-width="3.5" />
+                <text x="305" y="381">1</text>
+                <circle cx="315" cy="250" r="16" fill="#D07B27" stroke="#fff" stroke-width="3.5" />
+                <text x="315" y="256">2</text>
+                <circle cx="250" cy="300" r="16" fill="#7B5CC4" stroke="#fff" stroke-width="3.5" />
+                <text x="250" y="306">1</text>
+                <circle cx="185" cy="160" r="16" fill="#7B5CC4" stroke="#fff" stroke-width="3.5" />
+                <text x="185" y="166">2</text>
+              </g>
+              <circle cx="225" cy="470" r="20" fill="#12263A" stroke="#fff" stroke-width="4" />
+              <path d="M216 473l9-8 9 8v8h-18z" fill="#fff" />
+            </svg>
+            <div class="mlabel">Monday</div>
+          </div>
+        </div>
         <div class="toolbar">
           <div class="lights">
             <i style="background: #ff5f57"></i><i style="background: #febc2e"></i
@@ -491,21 +846,6 @@
 
       <div class="abs phone p2">
         <div class="screen" style="background: #12263a">
-          <div class="abs island"></div>
-          <div class="status">
-            <span>10:05</span>
-            <svg width="84" height="20" viewBox="0 0 84 20" fill="#fff">
-              <rect x="0" y="12" width="4.5" height="7" rx="1.5" />
-              <rect x="7" y="9" width="4.5" height="10" rx="1.5" />
-              <rect x="14" y="5" width="4.5" height="14" rx="1.5" />
-              <rect x="21" y="1" width="4.5" height="18" rx="1.5" />
-              <path
-                d="M40 6.5a12 12 0 0 1 16 0l-2 2a9 9 0 0 0-12 0z M43.5 10a7 7 0 0 1 9 0l-2 2a4 4 0 0 0-5 0z M46 13.5a2.8 2.8 0 0 1 4 0L48 16z"
-              />
-              <rect x="60" y="3" width="21" height="14" rx="4" />
-              <rect x="82" y="8" width="2" height="4" rx="1" opacity=".5" />
-            </svg>
-          </div>
           <img src="screens/quote-accepted.png" style="top: 0" />
         </div>
       </div>
