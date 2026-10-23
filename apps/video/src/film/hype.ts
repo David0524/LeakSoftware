@@ -938,8 +938,9 @@ export function buildHype(stage: Stage, manifest: HypeManifest) {
       const col = d.cap.boxes.collected ?? { x: 1066, y: 390, w: 746, h: 45 };
       return (t) => {
         bg(t + e3);
-        // Collected, big.
-        d.set(t, 2.55, col.x / 2 - 17, 150);
+        // Collected, big, with the Invoiced card under it out of frame (an invoice's total is
+        // net of the deposit already collected, so Invoiced reads less than Collected).
+        d.set(t, 3.5, col.x / 2 - 17, 0);
       };
     }),
   );

@@ -185,7 +185,8 @@ export function slamText(parent: HTMLElement, lines: string[], o: SlamOptions = 
     draw(t: number, times: number[], out = Infinity) {
       words.forEach((w, i) => {
         const p = ramp(t, times[i] ?? 0, (times[i] ?? 0) + 0.2);
-        const s = lerp(1.45, 1, slam(p));
+        // A small slam: words landing together never run into each other.
+        const s = lerp(1.1, 1, slam(p));
         // Full white within two frames (never a grey, half-faded word on screen).
         const on = ramp(t, times[i] ?? 0, (times[i] ?? 0) + 1.5 / 60);
         w.style.opacity = String(on * (1 - ramp(t, out, out + 0.15)));

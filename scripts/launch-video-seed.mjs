@@ -28,6 +28,18 @@
 //     and every job in Needs a Time to apps/video/build/week-before.json before the captures
 //     move jobs and optimize it (Optimize Week also places Needs a Time's jobs), and
 //     `--restore-week --apply` puts them back from there afterwards.
+//   - Canyon State also does pool service (services 'both', set as Settings does it, then
+//     add_package_defaults as the owner): 24 weekly plans for Dana Ruiz, Jake Turner and Marcus
+//     Hale, pool stops before 8:00, this week's earlier visits finished, so the week board shows
+//     the plans filling it. Julia Hughes (6121 N 31st St, seeded map location) has her Friday
+//     visit, job #1102 at 1:30 PM, completed by 1:56 with the phone's readings (FC 1.5, pH 7.9,
+//     TA 90, CH 250, CYA 40; liquid chlorine and acid added), before and after photos, and its
+//     visit report sent. `--remake-julia --apply` makes her visit again.
+//   - With --accept: Rebecca's $375 invoice #2087 paid in cash on site through
+//     record_invoice_payment (signed in as the owner), at 10:12.
+//   - Why the Dashboard's Collected is more than its Invoiced: an invoice's total is the balance
+//     after the quote deposit already paid (its credit), and that deposit is counted once, in
+//     Collected, when it's paid. The film keeps Invoiced out of frame while Collected counts up.
 //   - Blue Mesa: completes one weekly visit (Caleb Pacheco, job #5230): its checklist inspected,
 //     the water readings, before and after photos (apps/video/assets/photos/pool-before.jpg and
 //     pool-after.jpg), and sends its visit report the way the app does (send_visit_report), so
@@ -64,6 +76,44 @@ const STORY_EVE = "2026-10-22";
 const STORY_TOTAL = 153500;
 /** Blue Mesa's visit for the film: Caleb Pacheco, a weekly plan. */
 const VISIT_NUMBER = 5230;
+// Julia Hughes's weekly visit on the same Friday, Dana's third stop in the app's screens.
+const JULIA_JOB = 1102;
+// Canyon State's weekly pool plans: name, street, ZIP, latitude, longitude (seeded, never
+// geocoded), tech, weekday (1 Monday to 5 Friday) and visit time: pool stops first thing, before
+// the day's leak jobs from 8:00.
+const POOL_ROUTE = [
+  ["Julia Hughes", "6121 N 31st St", "85016", 33.528, -112.012, "dana", 5, "13:30"],
+  ["Tom Albright", "3402 E Camelback Rd", "85018", 33.5094, -112.0085, "dana", 1, "06:30"],
+  ["Grace Medina", "4519 N 40th St", "85018", 33.5035, -111.9958, "dana", 1, "07:15"],
+  ["Owen Fischer", "2207 E Highland Ave", "85016", 33.5065, -112.0335, "dana", 2, "06:30"],
+  ["Priya Nair", "5830 N 24th St", "85016", 33.5245, -112.0302, "dana", 2, "07:15"],
+  ["Sam Whitaker", "3120 E Glenrosa Ave", "85016", 33.4985, -112.013, "dana", 3, "06:30"],
+  ["Linda Castro", "6402 N 12th St", "85014", 33.531, -112.054, "dana", 3, "07:15"],
+  ["Ben Kowalski", "1835 E Bethany Home Rd", "85016", 33.524, -112.042, "dana", 4, "06:30"],
+  ["Erica Lund", "7020 N 16th St", "85020", 33.539, -112.047, "dana", 4, "07:15"],
+  ["Marco DeLuca", "8814 N 47th Ave", "85302", 33.564, -112.161, "jake", 1, "06:30"],
+  ["Hannah Price", "6533 W Cactus Rd", "85304", 33.597, -112.202, "jake", 1, "07:15"],
+  ["Victor Ramos", "5203 W Thunderbird Rd", "85306", 33.611, -112.17, "jake", 2, "06:30"],
+  ["Chloe Bennington", "9120 N 39th Ave", "85051", 33.57, -112.143, "jake", 2, "07:15"],
+  ["Ray Okafor", "4421 W Dunlap Ave", "85051", 33.568, -112.152, "jake", 3, "06:30"],
+  ["Megan Sutter", "7608 N 51st Ave", "85301", 33.547, -112.169, "jake", 3, "07:15"],
+  ["Ian Gallagher", "3618 W Northern Ave", "85051", 33.553, -112.136, "jake", 4, "06:30"],
+  ["Sofia Herrera", "10215 N 43rd Ave", "85302", 33.58, -112.152, "jake", 4, "07:15"],
+  ["Daniel Brooks", "6010 W Peoria Ave", "85302", 33.582, -112.188, "jake", 5, "06:30"],
+  ["Ava Kim", "8402 N 35th Ave", "85051", 33.556, -112.133, "jake", 5, "07:15"],
+  ["Paul Jensen", "4802 E Cactus Rd", "85032", 33.597, -111.978, "marcus", 1, "07:00"],
+  ["Nora Becker", "12010 N 32nd St", "85028", 33.593, -112.011, "marcus", 2, "07:00"],
+  ["Luke Moreno", "3818 E Shea Blvd", "85028", 33.583, -111.998, "marcus", 3, "07:00"],
+  ["Rachel Stein", "10420 N 28th St", "85028", 33.581, -112.023, "marcus", 4, "07:00"],
+  ["Kevin Tran", "2701 E Sweetwater Ave", "85032", 33.601, -112.023, "marcus", 5, "07:00"],
+];
+const POOL_TECHS = {
+  dana: "00000000-0000-4000-9000-00000000a102",
+  jake: "00000000-0000-4000-9000-00000000a103",
+  marcus: "00000000-0000-4000-9000-00000000a101",
+};
+// This week's visits before Friday, made and finished as the plans would have made them.
+const POOL_WEEK = { from: "2026-10-19", through: "2026-10-22", next: "2026-10-26T00:00:00-07:00" };
 
 async function query(sql) {
   const headers = { "content-type": "application/json" };
@@ -189,8 +239,69 @@ if (remake && apply) {
 if (story && !remake) canyonSteps.push("set her story's times (Friday morning)");
 if (accept && story?.quote_status !== "accepted")
   canyonSteps.push("accept her quote with the deposit");
+const [invoice2087] = story
+  ? await query(`select id, status from public.invoice
+      where job_id = ${q(story.id)} and company_id = ${q(SHOPS.canyon)} and deleted_at is null`)
+  : [];
+const cashSteps =
+  accept && invoice2087?.status !== "paid" ? ["record her $375 cash payment on the invoice"] : [];
+canyonSteps.push(...cashSteps);
 console.log(`Canyon State: ${canyonSteps.length ? canyonSteps.join(", ") : "ready"}`);
 if (story) printLinks(story);
+
+// Canyon State's pool routes: the shop does both services, with weekly plans ---------------
+
+const julia = (
+  await query(`
+  select c.settings ->> 'services' as services,
+    (select count(*) from public.service_plan sp where sp.company_id = c.id and sp.deleted_at is null)::int as plans,
+    (select count(*) from public.job pj where pj.company_id = c.id and pj.type = 'maintenance'
+       and pj.deleted_at is null and pj.plan_date between ${q(POOL_WEEK.from)} and ${q(POOL_WEEK.through)})::int as past,
+    (select row_to_json(x) from (
+       select j.id, j.number, j.status, j.property_id, j.assigned_user_id, j.scheduled_start,
+         (select count(*) from public.chemical_reading r where r.job_id = j.id and r.deleted_at is null)::int as readings,
+         (select count(*) from public.media m where m.job_id = j.id and m.deleted_at is null)::int as photos,
+         (select count(*) from public.checklist_item_result r where r.job_id = j.id and r.status = 'pending')::int as pending,
+         (select s.token from public.report r join public.share_link s on s.report_id = r.id
+          where r.job_id = j.id and r.template_key = 'maintenance' and r.status = 'sent'
+            and r.deleted_at is null and s.revoked_at is null and s.deleted_at is null
+          order by r.version desc limit 1) as token
+       from public.job j join public.customer cu on cu.id = j.bill_to_customer_id
+       where j.company_id = c.id and cu.name = 'Julia Hughes' and j.type = 'maintenance'
+         and j.plan_date = ${q(STORY_DAY)} and j.deleted_at is null limit 1) x) as visit
+  from public.company c where c.id = ${q(SHOPS.canyon)}`)
+)[0];
+const poolSteps = [];
+if (julia.services !== "both") poolSteps.push("turn on pool service (Settings, Services: both)");
+if (!julia.plans)
+  poolSteps.push(`add ${POOL_ROUTE.length} weekly pool plans, Julia Hughes's among them`);
+if (!julia.past) poolSteps.push("finish this week's visits before Friday");
+const routeTimes = `(values ${POOL_ROUTE.map((r) => `(${q(r[0])}, ${q(r[7])}::time)`).join(", ")}) as v(name, at)`;
+const [late] = await query(`
+  select count(*)::int as plans,
+    (select count(*) from public.job where company_id = ${q(SHOPS.canyon)} and deleted_at is null
+       and second_tech_id is not null and scheduled_start >= ${q(POOL_WEEK.from + "T00:00:00-07:00")}
+       and scheduled_start < ${q(POOL_WEEK.next)})::int as shared
+  from public.service_plan sp join public.customer cu on cu.id = sp.customer_id
+  join ${routeTimes} on v.name = cu.name
+  where sp.company_id = ${q(SHOPS.canyon)} and sp.deleted_at is null
+    and sp.visit_time is distinct from v.at`);
+if (late.plans) poolSteps.push(`set ${late.plans} plans' visit times (pool stops before 8:00)`);
+if (late.shared) poolSteps.push(`give ${late.shared} of this week's jobs one tech each`);
+// --remake-julia: her visit made again (a run that sent her report twice, or other times).
+const remakeJulia = process.argv.includes("--remake-julia") && !!julia.visit;
+if (remakeJulia) {
+  poolSteps.push("remove her Friday visit, its photos, readings and report, to make it again");
+  julia.visit = null;
+}
+const jv = julia.visit;
+if (!jv || jv.number !== JULIA_JOB) poolSteps.push(`number Julia's Friday visit #${JULIA_JOB}`);
+if (!jv || jv.status !== "done" || jv.pending) poolSteps.push("complete Julia's visit");
+if (!jv || !jv.readings) poolSteps.push("add her water readings");
+if (!jv || !jv.photos) poolSteps.push("upload her before and after photos");
+if (!jv?.token) poolSteps.push("send her visit report");
+console.log(`Canyon State pool: ${poolSteps.length ? poolSteps.join(", ") : "ready"}`);
+if (jv?.token) console.log(`  Julia's visit report: ${dev.webUrl}/r/${jv.token}`);
 
 // Canyon State's next week: one tech per job, and a new leak detection to place --------------
 
@@ -214,7 +325,7 @@ if (week.shared) weekSteps.push(`give ${week.shared} of next week's jobs one tec
 if (!week.laura) weekSteps.push("add Laura Bennett's leak detection to Needs a Time");
 console.log(`Canyon State next week: ${weekSteps.length ? weekSteps.join(", ") : "ready"}`);
 
-const total = hide.length + steps.length + canyonSteps.length + weekSteps.length;
+const total = hide.length + steps.length + canyonSteps.length + weekSteps.length + poolSteps.length;
 if (!total) {
   console.log("Nothing to change.");
 } else if (!apply) {
@@ -235,6 +346,7 @@ if (!total) {
   if (!made) made = await rebeccaStory();
   await catchUpCounters(SHOPS.canyon);
   if (accept && made.quote_status !== "accepted") await acceptQuote(made.id);
+  if (cashSteps.length) await payCash(made.id);
   if (week.shared) {
     await query(`
       update public.job set second_tech_id = null
@@ -244,13 +356,22 @@ if (!total) {
   if (!week.laura) await addLaura();
   await setStoryTimes(made.id);
   if (!story) printLinks(made);
+  if (poolSteps.length) await poolRoutes();
   console.log(`Applied ${total} change(s).`);
 }
 
-async function completeVisit(v) {
-  const company = SHOPS.blueMesa;
+async function completeVisit(
+  v,
+  {
+    company = SHOPS.blueMesa,
+    minutes = 38,
+    owner = "erin@bluemesa.video.test",
+    reading = [18000, 3.0, 7.5, 90, 260, 45, "Added 1 gal liquid chlorine."],
+  } = {},
+) {
+  const [gallons, fc, ph, ta, ch, cya, notes] = reading;
   const start = new Date(v.scheduled_start);
-  const done = new Date(start.getTime() + 38 * 60_000);
+  const done = new Date(start.getTime() + minutes * 60_000);
   await query(`
     update public.job set status = 'done', started_at = coalesce(started_at, ${q(start.toISOString())}),
       completed_at = coalesce(completed_at, ${q(done.toISOString())})
@@ -264,14 +385,14 @@ async function completeVisit(v) {
         gallons, fc, ph, ta, ch, cya, chlorine_product, acid_product, notes)
       values (${q(company)}, ${q(v.property_id)}, ${q(v.id)},
         ${q(new Date(start.getTime() + 12 * 60_000).toISOString())}, ${q(v.assigned_user_id)},
-        18000, 3.0, 7.5, 90, 260, 45, 'liquid12', 'muriatic31', 'Added 1 gal liquid chlorine.')
+        ${gallons}, ${fc}, ${ph}, ${ta}, ${ch}, ${cya}, 'liquid12', 'muriatic31', ${q(notes)})
     `);
   }
   if (v.photos === 0) {
-    const session = await signIn("erin@bluemesa.video.test");
+    const session = await signIn(owner);
     const shots = [
       { file: "pool-before.jpg", caption: "Before", at: 4 },
-      { file: "pool-after.jpg", caption: "After", at: 34 },
+      { file: "pool-after.jpg", caption: "After", at: Math.min(34, minutes - 2) },
     ];
     for (const s of shots) {
       const bytes = readFileSync(join(root, "apps", "video", "assets", "photos", s.file));
@@ -308,6 +429,194 @@ async function completeVisit(v) {
   const token = sent?.token;
   if (!token) throw new Error(`Sending the visit report returned ${JSON.stringify(sent)}`);
   console.log(`  Visit report: ${dev.webUrl}/r/${token}`);
+}
+
+/**
+ * Canyon State does both services: pool service turned on as Settings does it (services 'both',
+ * then add_package_defaults as the owner, which adds the maintenance checklist), 24 weekly plans
+ * (the plans make their own visits from today on), this week's earlier visits finished, and
+ * Julia Hughes's Friday visit completed with readings and photos, and its report sent.
+ */
+async function poolRoutes() {
+  const c = SHOPS.canyon;
+  if (julia.services !== "both") {
+    await query(`update public.company set settings = settings || '{"services": "both"}'::jsonb
+      where id = ${q(c)}`);
+    const owner = await signIn("marcus@canyonstate.video.test");
+    const res = await fetch(`${dev.url}/rest/v1/rpc/add_package_defaults`, {
+      method: "POST",
+      headers: {
+        apikey: dev.publishableKey,
+        authorization: `Bearer ${owner}`,
+        "content-type": "application/json",
+      },
+      body: JSON.stringify({ target_company: c, services: "pool" }),
+    });
+    if (!res.ok)
+      throw new Error(`add_package_defaults failed: HTTP ${res.status} ${await res.text()}`);
+  }
+  if (!julia.plans) {
+    const rows = POOL_ROUTE.map(([name, street, zip, lat, lng, tech, wd, time], i) => {
+      const email = `${name.toLowerCase().replace(/[^a-z]+/g, ".")}@example.com`;
+      const phone = `(602) 555-${String(201 + i).padStart(4, "0")}`;
+      // A Monday in August, moved to the plan's weekday: weekly since then.
+      const starts = `2026-08-${String(2 + wd).padStart(2, "0")}`;
+      return `(${q(name)}, ${q(email)}, ${q(phone)}, ${q(street)}, ${q(zip)}, ${lat}, ${lng},
+        ${q(POOL_TECHS[tech])}::uuid, ${q(starts)}::date, ${time ? `${q(time)}::time` : "null::time"}, ${i})`;
+    });
+    await query(`
+      do $$
+      declare
+        r record;
+        cust uuid;
+        prop uuid;
+      begin
+        for r in select * from (values ${rows.join(",\n")})
+                 as v(name, email, phone, street, zip, lat, lng, tech, starts, at, ord) order by ord loop
+          insert into public.customer (company_id, name, email, phone)
+          values (${q(c)}, r.name, r.email, r.phone) returning id into cust;
+          insert into public.property (company_id, customer_id, address_line1, city, state, postal_code,
+            latitude, longitude, location_source, pool_type, has_pool, has_spa, approx_gallons)
+          values (${q(c)}, cust, r.street, 'Phoenix', 'AZ', r.zip, r.lat, r.lng, 'manual',
+            'gunite_plaster', true, false, 18000) returning id into prop;
+          insert into public.service_plan (company_id, customer_id, property_id, assigned_user_id,
+            starts_on, interval_weeks, visit_time, duration_minutes, price_cents)
+          values (${q(c)}, cust, prop, r.tech, r.starts, 1, r.at, 30, 18500);
+        end loop;
+      end
+      $$;`);
+  }
+  if (!julia.past) {
+    // This week's earlier visits, the same as app.plan_visits makes them, then finished.
+    await query(`
+      do $$
+      declare
+        p public.service_plan;
+        d date;
+        tz text := 'America/Phoenix';
+        start_at timestamptz;
+        j uuid;
+      begin
+        for p in select * from public.service_plan where company_id = ${q(c)} and deleted_at is null
+                 order by created_at loop
+          for d in select * from app.plan_dates(p, ${q(POOL_WEEK.from)}, ${q(POOL_WEEK.through)}) loop
+            continue when exists (select 1 from public.job where service_plan_id = p.id
+                                  and plan_date = d and deleted_at is null);
+            start_at := (d + p.visit_time) at time zone tz;
+            insert into public.job (company_id, type, property_id, bill_to_customer_id, status,
+              assigned_user_id, scheduled_start, scheduled_end, arrival_fixed, service_plan_id, plan_date)
+            values (p.company_id, 'maintenance', p.property_id, p.customer_id, 'scheduled',
+              p.assigned_user_id, start_at, start_at + interval '30 minutes', false, p.id, d)
+            returning id into j;
+            insert into public.job_component (company_id, job_id, component_type_id, instance_number,
+              label, sort_order)
+            select p.company_id, j, ty.id, 1, ty.name, ty.sort_order * 100 + 1
+            from public.component_type ty
+            where ty.company_id = p.company_id and ty.job_type = 'maintenance' and ty.active
+              and not ty.on_schedule and ty.deleted_at is null and ty.applies_to <> 'spa';
+            insert into public.checklist_item_result (company_id, job_id, job_component_id, status, outcome)
+            select p.company_id, j, jc.id, 'inspected', 'ok' from public.job_component jc where jc.job_id = j;
+            update public.job set status = 'done', started_at = start_at,
+              completed_at = start_at + interval '32 minutes', stop_done_on = d
+            where id = j;
+          end loop;
+        end loop;
+      end
+      $$;`);
+  }
+  if (remakeJulia) {
+    const [old] = await query(`select j.id, j.service_plan_id from public.job j
+      join public.customer cu on cu.id = j.bill_to_customer_id
+      where j.company_id = ${q(c)} and cu.name = 'Julia Hughes' and j.plan_date = ${q(STORY_DAY)}
+        and j.deleted_at is null`);
+    const j = q(old.id);
+    await query(`
+      delete from public.activity where company_id = ${q(c)} and job_id = ${j};
+      delete from public.share_link where company_id = ${q(c)} and job_id = ${j};
+      delete from public.report where company_id = ${q(c)} and job_id = ${j};
+      delete from public.media where company_id = ${q(c)} and job_id = ${j};
+      delete from public.chemical_reading where company_id = ${q(c)} and job_id = ${j};
+      delete from public.checklist_item_result where company_id = ${q(c)} and job_id = ${j};
+      delete from public.job_component where company_id = ${q(c)} and job_id = ${j};
+      delete from public.job where company_id = ${q(c)} and id = ${j};
+      select app.plan_visits(${q(old.service_plan_id)}, false);`);
+  }
+  if (late.plans) {
+    // The plans make their coming visits again at the new time; this week's finished ones move too.
+    await query(`
+      update public.service_plan sp set visit_time = v.at
+      from public.customer cu, ${routeTimes}
+      where cu.id = sp.customer_id and v.name = cu.name and sp.company_id = ${q(c)}
+        and sp.deleted_at is null and sp.visit_time is distinct from v.at;
+      update public.job j set scheduled_start = (j.plan_date + sp.visit_time) at time zone 'America/Phoenix',
+        scheduled_end = (j.plan_date + sp.visit_time) at time zone 'America/Phoenix' + interval '30 minutes',
+        started_at = (j.plan_date + sp.visit_time) at time zone 'America/Phoenix',
+        completed_at = (j.plan_date + sp.visit_time) at time zone 'America/Phoenix' + interval '32 minutes'
+      from public.service_plan sp
+      where sp.id = j.service_plan_id and j.company_id = ${q(c)} and j.status = 'done'
+        and j.deleted_at is null and j.plan_date between ${q(POOL_WEEK.from)} and ${q(POOL_WEEK.through)};`);
+  }
+  if (late.shared) {
+    await query(`
+      update public.job set second_tech_id = null
+      where company_id = ${q(c)} and deleted_at is null and second_tech_id is not null
+        and scheduled_start >= ${q(POOL_WEEK.from + "T00:00:00-07:00")} and scheduled_start < ${q(POOL_WEEK.next)}`);
+  }
+  const [v] = await query(`
+    select j.id, j.number, j.property_id, j.assigned_user_id, j.scheduled_start,
+      (select count(*) from public.chemical_reading r where r.job_id = j.id and r.deleted_at is null)::int as readings,
+      (select count(*) from public.media m where m.job_id = j.id and m.deleted_at is null)::int as photos
+    from public.job j join public.customer cu on cu.id = j.bill_to_customer_id
+    where j.company_id = ${q(c)} and cu.name = 'Julia Hughes' and j.type = 'maintenance'
+      and j.plan_date = ${q(STORY_DAY)} and j.deleted_at is null`);
+  if (!v) throw new Error("Julia Hughes's plan made no Friday visit. Stopping.");
+  if (v.number !== JULIA_JOB) {
+    const [taken] = await query(`select count(*)::int as n from public.job
+      where company_id = ${q(c)} and number = ${JULIA_JOB}`);
+    if (taken.n) throw new Error(`Job #${JULIA_JOB} is taken at Canyon State. Stopping.`);
+    await query(`update public.job set number = ${JULIA_JOB} where id = ${q(v.id)}`);
+  }
+  // Once: completing and sending again would send a new version of her report.
+  if (julia.visit?.token) return;
+  await completeVisit(v, {
+    company: c,
+    // 1:30 to 1:56, so the report reaches her phone before 2:00.
+    minutes: 26,
+    owner: "marcus@canyonstate.video.test",
+    // The phone's readings (What to Add): chlorine low and pH high.
+    reading: [18000, 1.5, 7.9, 90, 250, 40, "Added 1 gal liquid chlorine and 1 qt muriatic acid."],
+  });
+}
+
+/**
+ * Her leak detection's $375 paid in cash on site, recorded as the phone records it (the
+ * record_invoice_payment function, signed in as the owner), at 10:12 that morning.
+ */
+async function payCash(jobId) {
+  const [inv] = await query(`select id, status from public.invoice
+    where job_id = ${q(jobId)} and company_id = ${q(SHOPS.canyon)} and deleted_at is null`);
+  if (inv.status !== "paid") {
+    const owner = await signIn("marcus@canyonstate.video.test");
+    const res = await fetch(`${dev.url}/rest/v1/rpc/record_invoice_payment`, {
+      method: "POST",
+      headers: {
+        apikey: dev.publishableKey,
+        authorization: `Bearer ${owner}`,
+        "content-type": "application/json",
+      },
+      body: JSON.stringify({ target_invoice: inv.id, amount: 37500, method: "cash" }),
+    });
+    if (!res.ok)
+      throw new Error(`record_invoice_payment failed: HTTP ${res.status} ${await res.text()}`);
+  }
+  const at = q(`${STORY_DAY}T10:12:00-07:00`);
+  await query(`
+    select set_config('app.invoice_server', 'on', true);
+    update public.payment set paid_at = ${at}
+    where invoice_id = ${q(inv.id)} and method = 'cash' and company_id = ${q(SHOPS.canyon)};
+    update public.invoice set paid_at = ${at} where id = ${q(inv.id)} and paid_at is not null;
+    select set_config('app.invoice_server', 'off', true);
+  `);
 }
 
 async function signIn(email) {
@@ -639,14 +948,17 @@ async function setStoryTimes(jobId) {
     reset role;
     -- An Activity row keeps the time it was written (app.touch_row), so each of hers is
     -- written again with the time it happened, as record_report_opened writes its own.
-    create temp table story_times (kind text, at timestamptz) on commit drop;
+    create temp table story_times (kind text, at timestamptz, amount integer) on commit drop;
     insert into story_times values
-      ('job_assigned', ${q(`${STORY_EVE}T16:12:00-07:00`)}::timestamptz),
-      ('report_signed', ${at("09:45")}), ('report_sent', ${at("09:45")}),
-      ('report_opened', ${at("09:50")}), ('quote_accepted', ${at("10:05")}),
-      ('payment_received', ${at("10:06")});
+      ('job_assigned', ${q(`${STORY_EVE}T16:12:00-07:00`)}::timestamptz, null),
+      ('report_signed', ${at("09:45")}, null), ('report_sent', ${at("09:45")}, null),
+      ('report_opened', ${at("09:45")}, null), ('quote_accepted', ${at("10:05")}, null),
+      -- The deposit by card, then the leak detection's $375 in cash on site.
+      ('payment_received', ${at("10:06")}, ${STORY_TOTAL / 2}),
+      ('payment_received', ${at("10:12")}, 37500);
     create temp table story_rows on commit drop as
       select a.*, t.at from public.activity a join story_times t on t.kind = a.kind
+        and (t.amount is null or t.amount = a.amount_cents)
       where a.company_id = ${c} and a.created_at <> t.at
         and (a.job_id = ${j} or a.job_id in (select id from public.job where parent_job_id = ${j}));
     delete from public.activity where id in (select id from story_rows);
@@ -655,7 +967,7 @@ async function setStoryTimes(jobId) {
       to_jsonb(r) - 'at' || jsonb_build_object('created_at', r.at, 'updated_at', r.at,
                                                 'notified_at', r.at))).*
     from story_rows r;
-    update public.share_link set last_viewed_at = ${at("09:50")}
+    update public.share_link set last_viewed_at = ${at("09:45")}
     where job_id = ${j} and report_id is not null and last_viewed_at is not null;
   `);
 }

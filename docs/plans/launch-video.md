@@ -396,8 +396,8 @@ PW_CHROMIUM_PATH=/opt/pw-browsers/chromium` to the capture):
 
 1. `node src/capture-web.ts`: the website's real screens from https://sundeckpro.com. Every
    office screen is the Canyon State video shop (`marcus@canyonstate.video.test`: owner Marcus
-   Hale, techs Dana Ruiz and Jake Turner), so names, counts and avatars agree; the pool chapter's
-   week is the Blue Mesa video shop's (`erin@bluemesa.video.test`). The demo company is used
+   Hale, techs Dana Ruiz and Jake Turner), so names, counts and avatars agree, the pool chapter
+   included (Canyon State does both services: `cs-week`, Julia Hughes's visit report). The demo company is used
    nowhere. Dispatch (`dispatch-0` to `-4`) is done for real on Canyon State's next week: Laura
    Bennett's new leak detection dragged from Needs a Time onto Tuesday, then to Jake, then
    Optimize Week for everyone and its result. Run `scripts/launch-video-seed.mjs --snapshot-week`
@@ -465,10 +465,15 @@ PW_CHROMIUM_PATH=/opt/pw-browsers/chromium` to the capture):
   through the same steps and server functions the app uses, and moves the shop's job, quote and
   invoice counters past it. With `--accept` she accepts the quote on its page's own function
   and the deposit is recorded the way the card webhook records it. Activity rows are written
-  again at the times they happened (the report opened 9:50, accepted 10:05, paid 10:06). It
+  again at the times they happened (the report sent and opened 9:45, accepted 10:05, deposit
+  10:06, and her $375 in cash at 10:12, recorded through `record_invoice_payment` as the owner). It
   gives next week's jobs one tech each and adds Laura Bennett's job to Needs a Time, and
-  `--remake` makes Rebecca's story again. It also completes Blue Mesa's visit #5230 (Caleb
-  Pacheco) with its water test and before and after photos and sends its visit report. The demo
-  company is never seeded.
+  `--remake` makes Rebecca's story again. It turns on pool service at Canyon State as Settings
+  does, adds 24 weekly plans (pool stops before 8:00, this week's earlier visits finished), and
+  completes Julia Hughes's Friday visit #1102 (1:30 to 1:56 PM, the phone's readings, before and
+  after photos) and sends its visit report (`--remake-julia` makes it again). The Dashboard's
+  Collected is more than Invoiced because an invoice's total is net of the quote deposit already
+  collected; the film frames Collected without Invoiced while it counts. Blue Mesa's visit #5230
+  is still completed but no longer in the film. The demo company is never seeded.
 
 `build/`, `captures/` and `out/` are made by the scripts and not committed.

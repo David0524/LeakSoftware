@@ -42,7 +42,7 @@ const LINKS = {
   quoteOpen: "/q/4e30dc22e0e36c8325686f34cac27969",
   quoteAccepted: "/q/4e30dc22e0e36c8325686f34cac27969",
   invoiceOpen: "/i/496c6c1333173f2014f79a68e46a7d58",
-  visitReport: "/r/973924b79806016606eb799e888a14a6",
+  visitReport: "/r/206f5376adcbce5421c64f4bad72f92e",
 };
 
 export interface Box {
@@ -342,8 +342,8 @@ const shots: Shot[] = [
   },
   // 06 Every pool, every week: Blue Mesa (the pool video shop) this week, its plans on the board.
   {
-    name: "bm-week",
-    as: "bluemesa",
+    name: "cs-week",
+    as: "canyon",
     path: "/schedule?view=week",
     fullPage: true,
     clipHeight: 1600,
