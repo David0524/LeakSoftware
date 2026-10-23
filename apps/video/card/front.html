@@ -209,33 +209,32 @@
       .board {
         position: absolute;
         left: 140px;
-        top: 214px;
-        width: 530px;
-      }
-      .thead,
-      .days {
+        top: 206px;
+        width: 534px;
         display: grid;
-        grid-template-columns: repeat(3, 1fr);
+        grid-template-columns: repeat(3, minmax(0, 1fr));
         gap: 10px;
       }
-      .days {
-        padding-bottom: 6px;
-      }
-      .thead span {
-        font-family: Barlow;
-        font-weight: 700;
-        font-size: 24px;
-        color: #46535f;
-        padding: 0 4px 8px;
-      }
       .who {
-        font-size: 19px;
-        font-weight: 700;
         display: flex;
         align-items: center;
-        gap: 9px;
-        border-top: 1.5px solid #dde3e9;
-        padding: 9px 0 8px;
+        gap: 8px;
+        padding: 4px 2px 10px;
+        font-size: 18px;
+        font-weight: 700;
+        line-height: 1.15;
+      }
+      .who em {
+        display: block;
+        font-style: normal;
+        font-weight: 500;
+        font-size: 15px;
+        color: #5a6875;
+      }
+      .col {
+        display: flex;
+        flex-direction: column;
+        gap: 7px;
       }
       .who i {
         width: 13px;
@@ -243,15 +242,10 @@
         border-radius: 50%;
         flex: none;
       }
-      .cell {
-        display: flex;
-        flex-direction: column;
-        gap: 8px;
-      }
       .job {
         background: #fff;
-        border-radius: 13px;
-        height: 54px;
+        border-radius: 12px;
+        height: 62px;
         display: flex;
         align-items: center;
         gap: 8px;
@@ -272,32 +266,22 @@
         place-items: center;
         flex: none;
       }
+      .job > div {
+        min-width: 0;
+      }
       .job b {
         display: block;
-        font-size: 16.5px;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        font-size: 15.5px;
         font-weight: 700;
         white-space: nowrap;
       }
       .job i {
         display: block;
         font-style: normal;
-        font-size: 16px;
+        font-size: 13.5px;
         color: #5a6875;
-      }
-      .more {
-        font-size: 16px;
-        font-weight: 600;
-        color: #1a63a0;
-        padding-left: 6px;
-      }
-      .free {
-        height: 54px;
-        border-radius: 13px;
-        border: 2px dashed #cfd7df;
-        display: grid;
-        place-items: center;
-        font-size: 18px;
-        color: #8a97a4;
       }
       .map {
         position: absolute;
@@ -511,7 +495,7 @@
         top: 650px;
       }
       .c2 {
-        left: 505px;
+        left: 530px;
         top: 1505px;
       }
       .c3 {
@@ -627,7 +611,7 @@
         <div class="page">
           <div class="ph">
             <div class="pt">Schedule</div>
-            <div class="ps">Oct 26 – 28 · 3 techs</div>
+            <div class="ps">Monday, Oct 26 · 21 stops</div>
           </div>
 
           <div class="opt">
@@ -646,84 +630,110 @@
             Optimize Week
           </div>
           <div class="board">
-            <div class="thead"><span>Mon 26</span><span>Tue 27</span><span>Wed 28</span></div>
-            <div class="who"><i style="background: #1f6fae"></i>Dana Ruiz</div>
-            <div class="days">
-              <div class="cell">
-                <div class="job" style="--c: #1f6fae">
-                  <span class="n">1</span>
-                  <div><b>Kristen Vance</b><i>8:30</i></div>
-                </div>
-                <div class="job" style="--c: #1f6fae">
-                  <span class="n">2</span>
-                  <div><b>Walter Harmon</b><i>10:56</i></div>
-                </div>
+            <div class="col">
+              <div class="who">
+                <i style="background: #1f6fae"></i><span>Dana Ruiz<em>7 stops</em></span>
               </div>
-              <div class="cell">
-                <div class="job" style="--c: #1f6fae">
-                  <span class="n">1</span>
-                  <div><b>Miguel Ramos</b><i>8:27</i></div>
-                </div>
-                <div class="job" style="--c: #1f6fae">
-                  <span class="n">2</span>
-                  <div><b>Jason Espinoza</b><i>10:40</i></div>
-                </div>
+              <div class="job" style="--c: #1f6fae">
+                <span class="n">1</span>
+                <div><b>Ava Kim</b><i>8:00 · Clean</i></div>
               </div>
-              <div class="cell">
-                <div class="job" style="--c: #1f6fae">
-                  <span class="n">1</span>
-                  <div><b>Dylan Barnes</b><i>8:27</i></div>
-                </div>
-                <div class="job" style="--c: #1f6fae">
-                  <span class="n">2</span>
-                  <div><b>Lance Quinn</b><i>10:39</i></div>
-                </div>
+              <div class="job" style="--c: #1f6fae">
+                <span class="n">2</span>
+                <div><b>Ben Kowalski</b><i>8:40 · Clean</i></div>
+              </div>
+              <div class="job" style="--c: #1f6fae">
+                <span class="n">3</span>
+                <div><b>Tom Albright</b><i>9:20 · Clean</i></div>
+              </div>
+              <div class="job" style="--c: #1f6fae">
+                <span class="n">4</span>
+                <div><b>Daniel Brooks</b><i>10:05 · Clean</i></div>
+              </div>
+              <div class="job" style="--c: #1f6fae">
+                <span class="n">5</span>
+                <div><b>Erica Lund</b><i>10:50 · Clean</i></div>
+              </div>
+              <div class="job" style="--c: #1f6fae">
+                <span class="n">6</span>
+                <div><b>Grace Medina</b><i>11:35 · Clean</i></div>
+              </div>
+              <div class="job" style="--c: #1f6fae">
+                <span class="n">7</span>
+                <div><b>Hannah Price</b><i>12:20 · Clean</i></div>
               </div>
             </div>
-            <div class="who"><i style="background: #d07b27"></i>Jake Turner</div>
-            <div class="days">
-              <div class="cell">
-                <div class="job" style="--c: #d07b27">
-                  <span class="n">1</span>
-                  <div><b>Jacob Wade</b><i>8:12</i></div>
-                </div>
-                <div class="job" style="--c: #d07b27">
-                  <span class="n">2</span>
-                  <div><b>Craig Fischer</b><i>10:24</i></div>
-                </div>
+            <div class="col">
+              <div class="who">
+                <i style="background: #7b5cc4"></i><span>Marcus Hale<em>7 stops</em></span>
               </div>
-              <div class="cell">
-                <div class="job" style="--c: #d07b27">
-                  <span class="n">1</span>
-                  <div><b>Gregory Lin</b><i>8:23</i></div>
-                </div>
-                <div class="job" style="--c: #d07b27">
-                  <span class="n">2</span>
-                  <div><b>Rick Herrera</b><i>11:08</i></div>
-                </div>
+              <div class="job" style="--c: #7b5cc4">
+                <span class="n">1</span>
+                <div><b>Ian Gallagher</b><i>8:00 · Clean</i></div>
               </div>
-              <div class="cell"><div class="free">Open</div></div>
+              <div class="job" style="--c: #7b5cc4">
+                <span class="n">2</span>
+                <div><b>Julia Hughes</b><i>8:45 · Clean</i></div>
+              </div>
+              <div class="job" style="--c: #7b5cc4">
+                <span class="n">3</span>
+                <div><b>Kevin Tran</b><i>9:25 · Clean</i></div>
+              </div>
+              <div class="job" style="--c: #7b5cc4">
+                <span class="n">4</span>
+                <div><b>Linda Castro</b><i>10:10 · Clean</i></div>
+              </div>
+              <div class="job" style="--c: #7b5cc4">
+                <span class="n">5</span>
+                <div><b>Luke Moreno</b><i>10:55 · Clean</i></div>
+              </div>
+              <div class="job" style="--c: #7b5cc4">
+                <span class="n">6</span>
+                <div><b>Megan Sutter</b><i>11:40 · Clean</i></div>
+              </div>
+              <div class="job" style="--c: #7b5cc4">
+                <span class="n">7</span>
+                <div><b>Nora Becker</b><i>12:25 · Clean</i></div>
+              </div>
             </div>
-            <div class="who"><i style="background: #7b5cc4"></i>Marcus Hale</div>
-            <div class="days">
-              <div class="cell">
-                <div class="job" style="--c: #7b5cc4">
-                  <span class="n">1</span>
-                  <div><b>Keith Wade</b><i>8:21</i></div>
-                </div>
-                <div class="job" style="--c: #7b5cc4">
-                  <span class="n">2</span>
-                  <div><b>Rebecca Quinn</b><i>11:15</i></div>
-                </div>
+            <div class="col">
+              <div class="who">
+                <i style="background: #d07b27"></i><span>Jake Turner<em>7 stops</em></span>
               </div>
-              <div class="cell"><div class="free">Open</div></div>
-              <div class="cell"><div class="free">Open</div></div>
+              <div class="job" style="--c: #d07b27">
+                <span class="n">1</span>
+                <div><b>Owen Fischer</b><i>8:00 · Clean</i></div>
+              </div>
+              <div class="job" style="--c: #d07b27">
+                <span class="n">2</span>
+                <div><b>Paul Jensen</b><i>8:35 · Clean</i></div>
+              </div>
+              <div class="job" style="--c: #d07b27">
+                <span class="n">3</span>
+                <div><b>Priya Nair</b><i>9:15 · Clean</i></div>
+              </div>
+              <div class="job" style="--c: #d07b27">
+                <span class="n">4</span>
+                <div><b>Rachel Stein</b><i>10:00 · Clean</i></div>
+              </div>
+              <div class="job" style="--c: #d07b27">
+                <span class="n">5</span>
+                <div><b>Ray Okafor</b><i>10:45 · Clean</i></div>
+              </div>
+              <div class="job" style="--c: #d07b27">
+                <span class="n">6</span>
+                <div><b>Sam Whitaker</b><i>11:30 · Clean</i></div>
+              </div>
+              <div class="job" style="--c: #d07b27">
+                <span class="n">7</span>
+                <div><b>Sofia Herrera</b><i>12:15 · Clean</i></div>
+              </div>
             </div>
           </div>
           <div class="map">
             <svg viewBox="0 0 675 770" width="675" height="770">
               <rect width="675" height="770" fill="#EEF2F5" />
-              <path d="M310 60C290 170 360 230 340 340S270 520 320 770H675V60z" fill="#D6EBCF" />
+              <path d="M300 60C280 170 350 230 330 340S260 520 310 770H675V60z" fill="#D6EBCF" />
               <path
                 d="M-20 92C110 62 170 122 280 100S440 58 700 92"
                 stroke="#BEDCF1"
@@ -731,79 +741,101 @@
                 fill="none"
               />
               <g stroke="#FFFFFF" stroke-width="7">
-                <path d="M55 0V770" />
-                <path d="M150 0V770" />
-                <path d="M245 0V770" />
+                <path d="M45 0V770" />
+                <path d="M130 0V770" />
+                <path d="M215 0V770" />
                 <path d="M380 0V770" />
                 <path d="M540 0V770" />
                 <path d="M0 170H675" />
                 <path d="M0 300H675" />
                 <path d="M0 450H675" />
-                <path d="M0 620H675" />
-                <path d="M0 735H675" />
+                <path d="M0 640H675" />
+                <path d="M0 740H675" />
               </g>
               <path
-                d="M-10 380C120 372 200 300 330 286S520 240 690 252"
+                d="M-10 385C120 377 200 305 330 291S520 245 690 257"
                 stroke="#F7CF7A"
-                stroke-width="13"
-                fill="none"
-              />
-              <path
-                d="M-10 690C80 700 120 560 210 540S330 520 420 470"
-                stroke="#fff"
-                stroke-width="7"
+                stroke-width="12"
                 fill="none"
               />
               <g fill="none" stroke-linecap="round" stroke-linejoin="round">
                 <path
-                  d="M150 620 L81.0 620.0 Q55 620 55.0 594.0 L55 315"
+                  d="M130 640 L69.0 640.0 Q45 640 45.0 616.0 L45 155"
                   stroke="#fff"
-                  stroke-width="17"
+                  stroke-width="16"
                 />
                 <path
-                  d="M150 620 L81.0 620.0 Q55 620 55.0 594.0 L55 315"
+                  d="M130 640 L69.0 640.0 Q45 640 45.0 616.0 L45 155"
                   stroke="#1F6FAE"
-                  stroke-width="9"
+                  stroke-width="8"
                 />
-                <path d="M150 620 L150 240" stroke="#fff" stroke-width="17" />
-                <path d="M150 620 L150 240" stroke="#7B5CC4" stroke-width="9" />
+                <path d="M130 640 L130 175" stroke="#fff" stroke-width="16" />
+                <path d="M130 640 L130 175" stroke="#7B5CC4" stroke-width="8" />
                 <path
-                  d="M150 620 L219.0 620.0 Q245 620 245.0 594.0 L245.0 196.0 Q245 170 271.0 170.0 L470 170"
+                  d="M130 640 L191.0 640.0 Q215 640 215.0 616.0 L215.0 194.0 Q215 170 239.0 170.0 L470 170"
                   stroke="#fff"
-                  stroke-width="17"
+                  stroke-width="16"
                 />
                 <path
-                  d="M150 620 L219.0 620.0 Q245 620 245.0 594.0 L245.0 196.0 Q245 170 271.0 170.0 L470 170"
+                  d="M130 640 L191.0 640.0 Q215 640 215.0 616.0 L215.0 194.0 Q215 170 239.0 170.0 L470 170"
                   stroke="#D07B27"
-                  stroke-width="9"
+                  stroke-width="8"
                 />
               </g>
               <g
                 font-family="Public"
                 font-weight="700"
-                font-size="19"
+                font-size="16"
                 text-anchor="middle"
                 fill="#fff"
               >
-                <circle cx="55" cy="540" r="18" fill="#1F6FAE" stroke="#fff" stroke-width="4" />
-                <text x="55" y="546.5">1</text>
-                <circle cx="55" cy="425" r="18" fill="#1F6FAE" stroke="#fff" stroke-width="4" />
-                <text x="55" y="431.5">2</text>
-                <circle cx="55" cy="315" r="18" fill="#1F6FAE" stroke="#fff" stroke-width="4" />
-                <text x="55" y="321.5">3</text>
-                <circle cx="150" cy="450" r="18" fill="#7B5CC4" stroke="#fff" stroke-width="4" />
-                <text x="150" y="456.5">1</text>
-                <circle cx="150" cy="240" r="18" fill="#7B5CC4" stroke="#fff" stroke-width="4" />
-                <text x="150" y="246.5">2</text>
-                <circle cx="245" cy="390" r="18" fill="#D07B27" stroke="#fff" stroke-width="4" />
-                <text x="245" y="396.5">1</text>
-                <circle cx="470" cy="170" r="18" fill="#D07B27" stroke="#fff" stroke-width="4" />
-                <text x="470" y="176.5">2</text>
+                <circle cx="45" cy="575" r="15" fill="#1F6FAE" stroke="#fff" stroke-width="3.5" />
+                <text x="45" y="580.5">1</text>
+                <circle cx="45" cy="505" r="15" fill="#1F6FAE" stroke="#fff" stroke-width="3.5" />
+                <text x="45" y="510.5">2</text>
+                <circle cx="45" cy="435" r="15" fill="#1F6FAE" stroke="#fff" stroke-width="3.5" />
+                <text x="45" y="440.5">3</text>
+                <circle cx="45" cy="365" r="15" fill="#1F6FAE" stroke="#fff" stroke-width="3.5" />
+                <text x="45" y="370.5">4</text>
+                <circle cx="45" cy="295" r="15" fill="#1F6FAE" stroke="#fff" stroke-width="3.5" />
+                <text x="45" y="300.5">5</text>
+                <circle cx="45" cy="225" r="15" fill="#1F6FAE" stroke="#fff" stroke-width="3.5" />
+                <text x="45" y="230.5">6</text>
+                <circle cx="45" cy="155" r="15" fill="#1F6FAE" stroke="#fff" stroke-width="3.5" />
+                <text x="45" y="160.5">7</text>
+                <circle cx="130" cy="570" r="15" fill="#7B5CC4" stroke="#fff" stroke-width="3.5" />
+                <text x="130" y="575.5">1</text>
+                <circle cx="130" cy="505" r="15" fill="#7B5CC4" stroke="#fff" stroke-width="3.5" />
+                <text x="130" y="510.5">2</text>
+                <circle cx="130" cy="440" r="15" fill="#7B5CC4" stroke="#fff" stroke-width="3.5" />
+                <text x="130" y="445.5">3</text>
+                <circle cx="130" cy="375" r="15" fill="#7B5CC4" stroke="#fff" stroke-width="3.5" />
+                <text x="130" y="380.5">4</text>
+                <circle cx="130" cy="310" r="15" fill="#7B5CC4" stroke="#fff" stroke-width="3.5" />
+                <text x="130" y="315.5">5</text>
+                <circle cx="130" cy="245" r="15" fill="#7B5CC4" stroke="#fff" stroke-width="3.5" />
+                <text x="130" y="250.5">6</text>
+                <circle cx="130" cy="175" r="15" fill="#7B5CC4" stroke="#fff" stroke-width="3.5" />
+                <text x="130" y="180.5">7</text>
+                <circle cx="215" cy="560" r="15" fill="#D07B27" stroke="#fff" stroke-width="3.5" />
+                <text x="215" y="565.5">1</text>
+                <circle cx="215" cy="480" r="15" fill="#D07B27" stroke="#fff" stroke-width="3.5" />
+                <text x="215" y="485.5">2</text>
+                <circle cx="215" cy="400" r="15" fill="#D07B27" stroke="#fff" stroke-width="3.5" />
+                <text x="215" y="405.5">3</text>
+                <circle cx="215" cy="320" r="15" fill="#D07B27" stroke="#fff" stroke-width="3.5" />
+                <text x="215" y="325.5">4</text>
+                <circle cx="215" cy="240" r="15" fill="#D07B27" stroke="#fff" stroke-width="3.5" />
+                <text x="215" y="245.5">5</text>
+                <circle cx="340" cy="170" r="15" fill="#D07B27" stroke="#fff" stroke-width="3.5" />
+                <text x="340" y="175.5">6</text>
+                <circle cx="470" cy="170" r="15" fill="#D07B27" stroke="#fff" stroke-width="3.5" />
+                <text x="470" y="175.5">7</text>
               </g>
-              <circle cx="150" cy="620" r="22" fill="#12263A" stroke="#fff" stroke-width="4" />
-              <path d="M140 623l10-9 10 9v9h-20z" fill="#fff" />
+              <circle cx="130" cy="640" r="21" fill="#12263A" stroke="#fff" stroke-width="4" />
+              <path d="M120 643l10-9 10 9v9h-20z" fill="#fff" />
             </svg>
-            <div class="mlabel">Monday</div>
+            <div class="mlabel">Monday · 3 routes</div>
           </div>
         </div>
         <div class="toolbar">
@@ -923,13 +955,14 @@
             stroke-linecap="round"
             stroke-linejoin="round"
           >
-            <path d="M12 21s-7-6.2-7-11.5A7 7 0 0 1 19 9.5C19 14.8 12 21 12 21z" />
-            <circle cx="12" cy="9.5" r="2.5" />
+            <path
+              d="M4 5.5h16a1.5 1.5 0 0 1 1.5 1.5v9a1.5 1.5 0 0 1-1.5 1.5H10l-4.5 3.5V17.5H4A1.5 1.5 0 0 1 2.5 16V7A1.5 1.5 0 0 1 4 5.5z"
+            />
           </svg>
         </div>
         <div>
-          <div class="t">Live Activity</div>
-          <div class="d">The job on the Lock Screen</div>
+          <div class="t">On My Way texts</div>
+          <div class="d">Customers know when you're coming</div>
         </div>
       </div>
       <div class="abs callout glass dark c3">
