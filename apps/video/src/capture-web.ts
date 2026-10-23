@@ -1,16 +1,17 @@
 // Captures the website's real screens for the launch film: the office side signed in as the
-// shared demo company's owner (Canyon State Leak Detections, the same company the owner's iPhone
-// recordings use; owner, 2026-10-23), and the customer pages a homeowner opens on a phone.
-// Desktop at 1440 × 900 at 2×, phones at 393 × 852 at 3×. Writes captures/web/<name>.png and
-// captures/web/boxes.json (where buttons sit, in image pixels, for tap rings and push-ins).
+// Canyon State video shop's owner (Marcus Hale; the pool chapter's week as Blue Mesa's owner),
+// and the customer pages a homeowner opens on a phone. Desktop at 1440 × 900 at 2×, phones at
+// 393 × 852 at 3×. Writes captures/web/<name>.png and captures/web/boxes.json (where buttons
+// sit, in image pixels, for tap rings and push-ins, and figures the film counts up to).
 //
 //   NODE_USE_ENV_PROXY=1 PW_CHROMIUM_PATH=/opt/pw-browsers/chromium node src/capture-web.ts [name…]
 //
 // Against https://sundeckpro.com (config/supabase-dev.json `webUrl`, the dev project) unless
-// CAPTURE_BASE_URL says otherwise. READ-ONLY: the demo company is shared, so nothing here saves
-// anything. It opens Optimize Week's sheet but never presses it, types into no form, never
-// signs out through the website (that would sign the owner's phone out too), and opens only
-// customer links that have been opened before (a first open notifies the shop).
+// CAPTURE_BASE_URL says otherwise. Nothing is sent or saved except the Dispatch sequence, which
+// really moves and optimizes the Canyon State video shop's next week (snapshot it before with
+// `scripts/launch-video-seed.mjs --snapshot-week`, put it back after with `--restore-week
+// --apply`). It types an offer into Email Customers and a review link into Settings without
+// sending or saving them, and never signs out through the website.
 
 import { existsSync, mkdirSync, readFileSync } from "node:fs";
 import { join } from "node:path";
@@ -26,8 +27,8 @@ const dev = JSON.parse(readFileSync(join(repo, "config", "supabase-dev.json"), "
 };
 const BASE = process.env.CAPTURE_BASE_URL ?? dev.webUrl;
 const ACCOUNTS = {
-  demo: { email: "owner@demo.leakbook.test", password: "leakbook-demo" },
   canyon: { email: "marcus@canyonstate.video.test", password: "sundeck-video" },
+  bluemesa: { email: "erin@bluemesa.video.test", password: "sundeck-video" },
 } as const;
 type Account = keyof typeof ACCOUNTS;
 
@@ -37,10 +38,10 @@ type Account = keyof typeof ACCOUNTS;
 // invoice at Canyon State; Caleb Pacheco's visit report at Blue Mesa. The demo company's own
 // customer pages carry its office@demo… address and test data, so they're never used.
 const LINKS = {
-  report: "/r/722855c7a0ab3cd7226438567b777e9d",
-  quoteOpen: "/q/391072222a7ef15e9ed008f4ca3479d5",
-  quoteAccepted: "/q/391072222a7ef15e9ed008f4ca3479d5",
-  invoiceOpen: "/i/75a5792c26d045811fa80a7eae421068",
+  report: "/r/dd031676ac80e7b8278ccb8ebf131e0e",
+  quoteOpen: "/q/4e30dc22e0e36c8325686f34cac27969",
+  quoteAccepted: "/q/4e30dc22e0e36c8325686f34cac27969",
+  invoiceOpen: "/i/496c6c1333173f2014f79a68e46a7d58",
   visitReport: "/r/973924b79806016606eb799e888a14a6",
 };
 
@@ -55,6 +56,8 @@ export interface CaptureInfo {
   height: number;
   scale: number;
   boxes: Record<string, Box>;
+  /** Text read off the page (a figure the film counts up to). */
+  texts?: Record<string, string>;
 }
 
 interface Shot {
@@ -68,6 +71,8 @@ interface Shot {
   clipHeight?: number;
   /** Steps before the picture; returns named boxes to record. */
   before?: (page: Page) => Promise<Record<string, Box | null> | void>;
+  /** Text to read off the page, by name. */
+  texts?: (page: Page) => Promise<Record<string, string>>;
   /** More pictures from the same page after the first (e.g. a sheet, then its result). */
   more?: { name: string; step: (page: Page) => Promise<Record<string, Box | null> | void> }[];
 }
@@ -111,130 +116,139 @@ async function quietDock(page: Page) {
   await page.waitForTimeout(300);
 }
 
-/** Folds Needs a Time away (a disclosure in this browser only; nothing is saved). */
-async function foldTray(page: Page) {
-  const tray = page.getByRole("button", { name: /^Needs a Time/ }).first();
-  if ((await tray.count()) && (await tray.getAttribute("aria-expanded")) === "true") {
-    await tray.click();
-    await page.waitForTimeout(600);
-  }
+/**
+ * A drag the way a mouse does it: press on the card's handle, a small move to start, the way
+ * over, release. The board drops a card where the card's middle lands, so the pointer aims the
+ * handle's offset from the card's middle past the target.
+ */
+async function dragTo(
+  page: Page,
+  handle: ReturnType<Page["locator"]>,
+  to: { x: number; y: number },
+) {
+  const from = await handle.boundingBox();
+  if (!from) throw new Error("No handle to drag");
+  const offset = await handle.evaluate((el) => {
+    let card: Element | null = el;
+    while (card && card.getBoundingClientRect().width < 150) card = card.parentElement;
+    const r = (card ?? el).getBoundingClientRect();
+    const h = el.getBoundingClientRect();
+    return h.x + h.width / 2 - (r.x + r.width / 2);
+  });
+  const sx = from.x + from.width / 2;
+  const sy = from.y + from.height / 2;
+  await page.mouse.move(sx, sy);
+  await page.mouse.down();
+  await page.mouse.move(sx + 10, sy + 10, { steps: 4 });
+  await page.mouse.move(to.x + offset, to.y, { steps: 30 });
+  await page.waitForTimeout(500);
+  await page.mouse.up();
+  // The board works out the new drive times after a move.
+  await settle(page, 7000);
+}
+
+/** The middle of a day's cell in a tech's row on the Week board (viewport pixels). */
+async function cell(page: Page, tech: string, day: string) {
+  const col = await page.getByText(day, { exact: true }).first().boundingBox();
+  const row = await page.locator("span", { hasText: tech }).last().boundingBox();
+  if (!col || !row) throw new Error(`No cell for ${tech} on ${day}`);
+  return { x: col.x + 96, y: row.y + row.height / 2 + 6 };
 }
 
 const shots: Shot[] = [
-  // 01 Dispatch: the week, Optimize Week's sheet (opened, never pressed), the day board.
+  // 01 Dispatch, done for real on the Canyon State video shop's next week (run
+  // `launch-video-seed.mjs --snapshot-week` first and `--restore-week --apply` after): Laura
+  // Bennett's new leak detection dropped from Needs a Time onto Tuesday, then dragged to Jake,
+  // then Optimize Week and its result. The window is tall enough to show the whole board.
   {
-    name: "week",
-    as: "demo",
-    path: "/schedule?view=week",
-    fullPage: true,
-    clipHeight: 2000,
+    name: "dispatch-0",
+    as: "canyon",
+    path: `/schedule?view=week&date=${nextMonday()}`,
     before: async (page) => {
+      await page.setViewportSize({ width: 1440, height: 1180 });
+      await page.evaluate(() => window.scrollTo(0, 0));
       await quietDock(page);
-      await foldTray(page);
       await mapsDrawn(page);
       return {
+        laura: await boxOf(page, page.getByRole("button", { name: "Drag Laura Bennett" })),
+        lauraCard: await boxOf(page, page.getByText("Laura Bennett").first()),
+        tray: await boxOf(page, page.getByRole("button", { name: /^Needs a Time/ })),
         optimizeWeek: await boxOf(page, page.getByRole("button", { name: "Optimize Week" })),
+        board: await boxOf(page, page.getByText("Tech", { exact: true })),
       };
     },
     more: [
       {
-        name: "week-optimize-sheet",
+        name: "dispatch-1",
         step: async (page) => {
-          await page.evaluate(() => window.scrollTo(0, 0));
+          const handle = page.getByRole("button", { name: "Drag Laura Bennett" }).first();
+          await dragTo(page, handle, await cell(page, "Dana Ruiz", "Tue, Oct 27"));
+          return {
+            laura: await boxOf(page, page.getByRole("button", { name: "Drag Laura Bennett" })),
+            lauraCard: await boxOf(page, page.getByText("Laura Bennett").first()),
+          };
+        },
+      },
+      {
+        name: "dispatch-2",
+        step: async (page) => {
+          const handle = page.getByRole("button", { name: "Drag Laura Bennett" }).first();
+          await dragTo(page, handle, await cell(page, "Jake Turner", "Tue, Oct 27"));
+          return {
+            laura: await boxOf(page, page.getByRole("button", { name: "Drag Laura Bennett" })),
+            lauraCard: await boxOf(page, page.getByText("Laura Bennett").first()),
+          };
+        },
+      },
+      {
+        name: "dispatch-3",
+        step: async (page) => {
           await page.getByRole("button", { name: "Optimize Week" }).first().click();
           await page.waitForTimeout(1200);
           const sheet = page.getByRole("dialog");
-          const found = {
+          // Every tech's week, not just the one whose maps are showing.
+          await sheet.getByText("Everyone", { exact: true }).click();
+          await page.waitForTimeout(600);
+          return {
             sheet: await boxOf(page, sheet),
+            everyone: await boxOf(page, sheet.getByText("Everyone", { exact: true })),
             confirm: await boxOf(page, sheet.getByRole("button", { name: "Optimize Week" })),
           };
-          return found;
         },
       },
-    ],
-  },
-  {
-    name: "week-next",
-    as: "demo",
-    path: `/schedule?view=week&date=${nextMonday()}`,
-    fullPage: true,
-    clipHeight: 2000,
-    before: async (page) => {
-      await quietDock(page);
-      await foldTray(page);
-      await mapsDrawn(page);
-    },
-  },
-  {
-    name: "day",
-    as: "demo",
-    path: "/schedule",
-    before: async (page) => {
-      await quietDock(page);
-      await mapsDrawn(page);
-      return {
-        needsATime: await boxOf(page, page.getByText("Needs a Time")),
-        optimize: await boxOf(page, page.getByRole("button", { name: /^Optimize .*Route$/ })),
-      };
-    },
-  },
-  {
-    name: "today",
-    as: "demo",
-    path: "/today",
-    before: async (page) => {
-      await quietDock(page);
-      await mapsDrawn(page);
-    },
-  },
-  {
-    name: "dashboard",
-    as: "demo",
-    path: "/dashboard",
-    fullPage: true,
-    before: async (page) => {
-      await quietDock(page);
-      return {
-        customers: await boxOf(page, page.getByText("Customers", { exact: true })),
-        collected: await boxOf(page, page.getByText("Collected", { exact: true })),
-        owed: await boxOf(page, page.getByText("Owed to you", { exact: true })),
-        plan: await boxOf(page, page.getByText("On a plan", { exact: true })),
-        quotes: await boxOf(page, page.getByText("Quotes accepted", { exact: true })),
-        activity: await boxOf(page, page.getByRole("button", { name: /Activity/ })),
-      };
-    },
-    more: [
       {
-        name: "dashboard-activity",
+        name: "dispatch-4",
         step: async (page) => {
-          await page.evaluate(() => window.scrollTo(0, 0));
+          await page.getByRole("dialog").getByRole("button", { name: "Optimize Week" }).click();
           await page
-            .getByRole("button", { name: /Activity/ })
+            .getByText(/less driving|best order/)
             .first()
-            .click();
-          await page.waitForTimeout(1500);
-          return { menu: await boxOf(page, page.locator("[role=menu], [role=dialog]")) };
+            .waitFor({ timeout: 60000 });
+          await settle(page, 2500);
+          await mapsDrawn(page);
+          return {
+            banner: await boxOf(page, page.getByText(/less driving|best order/).first()),
+            lauraCard: await boxOf(page, page.getByText("Laura Bennett").first()),
+          };
         },
       },
     ],
   },
-  { name: "customers", as: "demo", path: "/customers", before: quietDock },
-  { name: "activity", as: "demo", path: "/activity", before: quietDock },
-  { name: "invoices", as: "demo", path: "/invoices", before: quietDock },
-  { name: "jobs", as: "demo", path: "/jobs", before: quietDock },
   {
     name: "email",
-    as: "demo",
+    as: "canyon",
     path: "/customers/email",
     before: async (page) => {
       await quietDock(page);
       // Typed in this browser only; never sent.
-      await page.getByLabel("Subject").fill("Spring opening: 15% off your first month");
+      await page
+        .getByLabel("Subject")
+        .fill("Fall tune-up: a free equipment check with any repair this month");
       await page
         .locator("textarea")
         .first()
         .fill(
-          "Hi {first name},\n\nPools open in three weeks. Book your spring opening now and your first month of weekly service is 15% off.\n\nReply to this email or call us to get on the schedule.",
+          "Hi {first name},\n\nCooler days are the best time to fix a leak before winter. Book any repair with us this month and we'll check your pump, filter and heater for free.\n\nReply to this email or call us to get on the schedule.",
         );
       await page.waitForTimeout(500);
       return {
@@ -250,6 +264,10 @@ const shots: Shot[] = [
     path: "/settings/company",
     before: async (page) => {
       await quietDock(page);
+      // The shop's review page, typed in this browser only (never saved), so the review request
+      // has somewhere to send customers.
+      await page.getByLabel("Review link").fill("g.page/r/canyonstateleak/review");
+      await page.getByLabel("Review link").blur();
       await page.getByText("Reminders and Reviews").first().scrollIntoViewIfNeeded();
       await page.evaluate(() => window.scrollBy(0, 120));
       await page.waitForTimeout(600);
@@ -265,10 +283,24 @@ const shots: Shot[] = [
     before: async (page) => ({
       customers: await boxOf(page, page.getByText("Customers", { exact: true })),
       collected: await boxOf(page, page.getByText("Collected", { exact: true })),
+      // The card's own figure, for the film's count-up on it.
+      collectedValue: await boxOf(
+        page,
+        page.getByText("Collected", { exact: true }).locator("xpath=following-sibling::*[1]"),
+      ),
       owed: await boxOf(page, page.getByText("Owed to you", { exact: true })),
       quotes: await boxOf(page, page.getByText("Quotes accepted", { exact: true })),
       invoiced: await boxOf(page, page.getByText("Invoiced", { exact: true })),
       activity: await boxOf(page, page.getByRole("button", { name: /Activity/ })),
+    }),
+    texts: async (page) => ({
+      collected: (
+        await page
+          .getByText("Collected", { exact: true })
+          .locator("xpath=following-sibling::*[1]")
+          .first()
+          .innerText()
+      ).trim(),
     }),
     more: [
       {
@@ -285,7 +317,42 @@ const shots: Shot[] = [
       },
     ],
   },
-  { name: "vs-invoices", as: "canyon", path: "/invoices" },
+  {
+    name: "vs-invoices",
+    as: "canyon",
+    path: "/invoices",
+    before: async (page) => ({
+      rebecca: await boxOf(page, page.getByText("Rebecca Quinn").first()),
+    }),
+    more: [
+      {
+        // The paid ones: what's come in.
+        name: "vs-invoices-paid",
+        step: async (page) => {
+          await page
+            .locator("a, button, [role=tab], [role=radio], label")
+            .filter({ hasText: /^\s*Paid\s*\d/ })
+            .first()
+            .click();
+          await settle(page, 2500);
+          return { list: await boxOf(page, page.getByText("Paid", { exact: true }).nth(1)) };
+        },
+      },
+    ],
+  },
+  // 06 Every pool, every week: Blue Mesa (the pool video shop) this week, its plans on the board.
+  {
+    name: "bm-week",
+    as: "bluemesa",
+    path: "/schedule?view=week",
+    fullPage: true,
+    clipHeight: 1600,
+    before: async (page) => {
+      await quietDock(page);
+      await mapsDrawn(page);
+      return { board: await boxOf(page, page.getByText("Tech", { exact: true })) };
+    },
+  },
   {
     name: "vs-activity",
     as: "canyon",
@@ -297,7 +364,17 @@ const shots: Shot[] = [
     }),
   },
   // 04 Prove it: the homeowner's report, wide (as it opens on a computer) and on a phone.
-  { name: "report-desktop", path: LINKS.report, fullPage: true },
+  {
+    name: "report-desktop",
+    path: LINKS.report,
+    fullPage: true,
+    before: async (page) => ({
+      found: await boxOf(page, page.getByText("What we found", { exact: true })),
+      photos: await boxOf(page, page.getByText("Photos", { exact: true })),
+      photo: await boxOf(page, page.locator("img[alt*='ight']").first()),
+      signatures: await boxOf(page, page.getByText("Signatures", { exact: true })),
+    }),
+  },
   {
     name: "phone-report",
     phone: true,
@@ -305,6 +382,8 @@ const shots: Shot[] = [
     fullPage: true,
     before: async (page) => ({
       found: await boxOf(page, page.getByText("What we found", { exact: true })),
+      photos: await boxOf(page, page.getByText("Photos", { exact: true })),
+      signatures: await boxOf(page, page.getByText("Signatures", { exact: true })),
     }),
   },
   // 05 Close it: the customer's quote with Accept, and one accepted with its deposit in.
@@ -319,6 +398,25 @@ const shots: Shot[] = [
       heading: await boxOf(page, page.getByText("Accept This Quote", { exact: true })),
     }),
   },
+  // The same page ready to accept: the terms switch turned on in this browser. Never submitted.
+  {
+    name: "phone-quote-agreed",
+    phone: true,
+    path: LINKS.quoteOpen,
+    fullPage: true,
+    before: async (page) => {
+      const agree = page.getByRole("switch");
+      await agree.click();
+      if (!(await agree.isChecked())) {
+        throw new Error("phone-quote-agreed: the terms switch didn't turn on");
+      }
+      return {
+        accept: await boxOf(page, page.getByRole("button", { name: "Accept Quote" })),
+        agree: await boxOf(page, agree),
+        heading: await boxOf(page, page.getByText("Accept This Quote", { exact: true })),
+      };
+    },
+  },
   {
     name: "phone-quote-accepted",
     phone: true,
@@ -332,18 +430,16 @@ const shots: Shot[] = [
   // 06 Every pool, every week: the homeowner's visit report (Blue Mesa, seeded by
   // scripts/launch-video-seed.mjs).
   { name: "phone-visit-report", phone: true, path: LINKS.visitReport, fullPage: true },
-  // 08 Get paid: the invoice a customer pays by card.
+  // 08 Get paid: Rebecca's invoice (not in the film while the shop has no card payments).
   { name: "phone-invoice-open", phone: true, path: LINKS.invoiceOpen, fullPage: true },
 ];
 
 /**
- * The capture browser's own touch-ups, nothing saved: the demo company's placeholder people get
- * their film names, the video shops' `.video.test` addresses read as real ones, and the
- * Dashboard's "+189 in 30 days" (every customer was imported this month) is left out.
+ * The capture browser's own touch-ups, nothing saved: the video shops' `.video.test` addresses
+ * read as real ones, and the Dashboard's "+N in 30 days" (every customer was imported this
+ * month) is left out.
  */
 const RENAME: [string, string][] = [
-  ["Dana Owner", "Dana Ruiz"],
-  ["Tony Tech", "Tony Alvarez"],
   ["office@canyonstate.video.test", "office@canyonstateleak.com"],
   ["office@bluemesa.video.test", "office@bluemesapools.com"],
 ];
@@ -354,8 +450,6 @@ async function tidy(page: Page) {
     for (let n = walker.nextNode(); n; n = walker.nextNode()) {
       let text = n.nodeValue ?? "";
       for (const [from, to] of rename) text = text.split(from).join(to);
-      // The account button's initials.
-      if (text === "DO" && n.parentElement?.closest("header, nav")) text = "DR";
       if (/^\+\d+ in 30 days$/.test(text.trim()) && n.parentElement) {
         n.parentElement.style.visibility = "hidden";
       }
@@ -497,7 +591,13 @@ async function main() {
           if (b) named[k] = { x: b.x * scale, y: b.y * scale, w: b.w * scale, h: b.h * scale };
         }
         const height = clip ? Math.min(clip, size.h) : size.h;
-        boxes[name] = { width: size.w * scale, height: height * scale, scale, boxes: named };
+        boxes[name] = {
+          width: size.w * scale,
+          height: height * scale,
+          scale,
+          boxes: named,
+          ...(name === shot.name && shot.texts ? { texts: await shot.texts(page) } : {}),
+        };
         console.log(`  ${name}.png  ${Object.keys(named).join(", ")}`);
       };
       await save(shot.name, await shot.before?.(page), shot.fullPage);

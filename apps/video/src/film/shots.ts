@@ -34,6 +34,7 @@ import {
   type Stage,
 } from "./engine.ts";
 import {
+  CAPTION_RIGHT,
   camAt,
   chapterCard,
   float,
@@ -139,26 +140,93 @@ function placeBrowser(
   };
 }
 
+/**
+ * The camera moved (only ever left) so the stage's x `left` (a device's left edge) sits right of
+ * the caption zone on screen.
+ */
+const rightOf = (c: Cam, left: number): Cam => ({
+  ...c,
+  x: Math.min(c.x, left - (CAPTION_RIGHT + 40 - W / 2) / c.s),
+});
+
+/**
+ * A camera for the lens window (right of the caption): the page's capture-pixel `x` at the
+ * window's left edge, `y` in the middle, at zoom `s`.
+ */
+const lensOn =
+  (b: BrowserRig, x: number, y: number) =>
+  (s: number): Cam => {
+    const p = b.at(x, y);
+    return { s, x: p.x + (W / 2 - (CAPTION_RIGHT + 80)) / s, y: p.y };
+  };
+
+/** The website's sticky header, in capture pixels (56 points at 2×). */
+const NAV = 112;
+
+/** A momentum scroll from `a` to `b` starting at `t0` (iOS-style: quick, then easing out). */
+const glideTo = (t: number, t0: number, a: number, b: number, dur = 1.2) =>
+  lerp(a, b, flickEase(ramp(t, t0, t0 + dur)));
+const flickEase = (x: number) => 1 - Math.pow(1 - x, 3);
+
+/**
+ * A card being dragged on the website: a cut of the card from the page picture, lifted (a
+ * shadow, slightly larger) and carried from where it was to where it's dropped, while its old
+ * place shows faded.
+ */
+class Ghost {
+  private card: HTMLDivElement;
+  private hole: HTMLDivElement;
+  private b: BrowserRig;
+  private from: Box;
+  private to: Box;
+  constructor(b: BrowserRig, src: string, from: Box, to: Box) {
+    this.b = b;
+    this.from = from;
+    this.to = to;
+    const k = b.browser.k;
+    this.hole = div("abs", b.browser.page);
+    css(this.hole, {
+      width: from.w * k,
+      height: from.h * k,
+      background: "rgba(242, 244, 247, 0.72)",
+      "border-radius": 10,
+    });
+    this.card = div("abs", b.browser.page);
+    css(this.card, {
+      width: from.w * k,
+      height: from.h * k,
+      "background-image": `url(${src})`,
+      "background-size": `${b.browser.w}px auto`,
+      "background-position": `${-from.x * k}px ${-from.y * k}px`,
+      "border-radius": 12,
+      "box-shadow": "0 18px 40px rgba(16, 24, 40, 0.28), 0 0 0 1px rgba(16, 24, 40, 0.08)",
+    });
+  }
+  /** Lifted at `t0`, dropped at `t1` (seconds), on a page scrolled by `scroll` image pixels. */
+  draw(t: number, t0: number, t1: number, scroll: number) {
+    const on = t >= t0 && t < t1;
+    this.card.style.display = on ? "" : "none";
+    this.hole.style.display = on ? "" : "none";
+    if (!on) return;
+    const k = this.b.browser.k;
+    const p = easeInOut(ramp(t, t0 + 0.12, t1 - 0.05));
+    const lift = easeOut(ramp(t, t0, t0 + 0.12));
+    const x = lerp(this.from.x, this.to.x, p) * k;
+    const y = (lerp(this.from.y, this.to.y, p) - scroll) * k;
+    this.card.style.transform = `translate(${x}px, ${y}px) scale(${1 + 0.04 * lift}) rotate(${1.5 * lift}deg)`;
+    this.hole.style.transform = `translate(${this.from.x * k}px, ${(this.from.y - scroll) * k}px)`;
+  }
+}
+
 const mid = (b: Box | undefined, fallback: { x: number; y: number }) =>
   b ? { x: b.x + b.w / 2, y: b.y + b.h / 2 } : fallback;
 
 /** A camera on a point (rig pixels) at a zoom, with the float added. */
 const on = (p: { x: number; y: number }, s: number): Cam => ({ s, x: p.x, y: p.y });
-/** The same, with the point right of center, clear of a key caption on the left. */
-const onRight = (p: { x: number; y: number }, s: number): Cam => ({ s, x: p.x - 420 / s, y: p.y });
 
 function setCam(r: ReturnType<typeof rig>, c: Cam, t: number, amount = 5) {
   const f = float(t, amount);
   r.set({ s: c.s, x: c.x - f.x / c.s, y: c.y - f.y / c.s });
-}
-
-/** Shows one of several layers by time: [from, layer, scroll(t)]. Hard cuts between them. */
-function sequence(t: number, items: [number, Layer, (t: number) => number][]) {
-  let active = 0;
-  items.forEach(([from], i) => {
-    if (t >= from) active = i;
-  });
-  items.forEach(([, layer, scroll], i) => layer.set(scroll(t), i === active ? 1 : 0));
 }
 
 const still = (...names: string[]) => {
@@ -204,6 +272,34 @@ function banner(parent: HTMLElement, from: string, text: string, y: number) {
   };
 }
 
+/**
+ * Photos as a list of hard cuts: [from (seconds), photo, Ken Burns start, end, shade]. Each
+ * plays its push from its cut to the next.
+ */
+function cutList(
+  el: HTMLElement,
+  list: [
+    number,
+    Parameters<typeof photo>[1],
+    [number, number, number],
+    [number, number, number],
+    number,
+  ][],
+) {
+  const parts = list.map(([at, ref, from, to, shade]) => {
+    const wrap = div("fill", el);
+    return { at, wrap, draw: photo(wrap, ref, from, to, shade) };
+  });
+  return (t: number, d: number) => {
+    parts.forEach((p, i) => {
+      const end = parts[i + 1]?.at ?? d;
+      const on = t >= p.at && t < end;
+      p.wrap.style.display = on ? "" : "none";
+      if (on) p.draw(t - p.at, end - p.at);
+    });
+  };
+}
+
 /** A big clock stamp ("5:12 AM"). */
 function stamp(parent: HTMLElement, text: string) {
   const el = label(parent, text, {
@@ -243,30 +339,36 @@ function print(parent: HTMLElement, src: string, x: number, y: number, w: number
   };
 }
 
-/** A number on a navy chip that counts up (the Dashboard's own figure). */
-function counter(parent: HTMLElement, caption: string, cents: number, x: number, y: number) {
-  const el = div("abs", parent);
+/**
+ * The Dashboard card's own figure counting up: a live number over the card's printed one,
+ * matched to it, that lands exactly on it and then gives way to the screenshot's own.
+ */
+function cardCount(b: BrowserRig, box: Box | undefined, cents: number) {
+  const el = div("display", b.browser.page);
+  const k = b.browser.k;
+  const v = box ?? { x: 1066, y: 452, w: 330, h: 80 };
   css(el, {
-    left: x,
-    top: y,
-    padding: "22px 34px 18px",
-    background: "var(--navy)",
-    "border-left": "10px solid var(--water)",
-  });
-  const cap = label(el, caption.toUpperCase(), { "font-size": 34, color: "var(--n300)" });
-  const num = label(el, "", {
-    "font-size": 120,
-    color: "var(--paper)",
+    position: "absolute",
+    left: v.x * k - 4,
+    top: v.y * k - 2,
+    width: v.w * k,
+    height: v.h * k + 4,
+    "padding-left": 4,
+    "padding-right": 12,
+    background: "#fff",
+    color: "#102a43",
+    "font-size": v.h * k * 0.82,
+    "line-height": `${v.h * k + 4}px`,
+    "font-weight": 700,
     "font-variant-numeric": "tabular-nums",
+    "white-space": "nowrap",
+    "text-transform": "none",
   });
-  void cap;
-  return (t: number, at: number, dur = 1.6) => {
+  return (t: number, at: number, dur: number) => {
     const p = easeOut(ramp(t, at, at + dur));
-    const v = Math.round(cents * p);
-    num.textContent = `$${Math.floor(v / 100).toLocaleString("en-US")}.${String(v % 100).padStart(2, "0")}`;
-    const s = expoOut(ramp(t, at - 0.2, at + 0.2));
-    el.style.opacity = String(s);
-    el.style.transform = `translateX(${(1 - s) * -80}px)`;
+    const c = Math.round(cents * p);
+    el.textContent = `$${Math.floor(c / 100).toLocaleString("en-US")}.${String(c % 100).padStart(2, "0")}`;
+    el.style.display = p >= 1 ? "none" : "";
   };
 }
 
@@ -301,57 +403,80 @@ export function buildFilm(stage: Stage, timeline: Timeline) {
   const add = (s: Scene) => stage.add(s);
 
   // Cold open --------------------------------------------------------------------------
+  // About two seconds a cut: the truck at dawn, the phone on the console as the texts come in,
+  // a blurred whiteboard, the kitchen table at night, the work itself.
   add(
     scene(0, shotEnd(1), 10, (el) => {
-      const p = photo(el, photoRef("01"), [1.02, 40, 50], [1.08, 46, 52], 0.15);
+      const s1 = line(1).start;
+      const cuts = cutList(el, [
+        [0, photoRef("01"), [1.02, 40, 50], [1.06, 44, 52], 0.15],
+        [s1 + 2.4, photoRef("01"), [1.32, 62, 58], [1.38, 60, 56], 0.15],
+        [s1 + 4.4, photoRef("04"), [1.03, 50, 55], [1.08, 52, 56], 0.2],
+      ]);
       const s = stamp(el, "5:12 AM");
       return (t, d) => {
-        p(t, d);
-        s(t - line(1).start + 0.6);
+        cuts(t, d);
+        s(t - s1 + 0.6);
       };
     }),
   );
   add(
     shot(2, (el) => {
-      const a = photo(el, photoRef("04"), [1.02, 50, 50], [1.1, 52, 55], 0.25);
+      // The phone face down on the console, buzzing; the texts stack beside it.
+      const cuts = cutList(el, [
+        [0, photoRef("04"), [1.45, 55, 62], [1.5, 55, 62], 0.2],
+        [2.2, photoRef("04"), [1.12, 50, 58], [1.16, 51, 58], 0.25],
+        [4.3, photoRef("04"), [1.7, 52, 66], [1.76, 53, 66], 0.25],
+      ]);
       const wbWrap = div("fill", el);
       const wb = photo(wbWrap, photoRef("02"), [1.15, 30, 50], [1.3, 70, 50], 0.2);
-      css(wbWrap, { filter: "blur(2.5px)" });
+      css(wbWrap, { filter: "blur(2.5px)", "z-index": 3 });
       const b1 = banner(el, "Rebecca Quinn", "Is the tech coming today?", 120);
       const b2 = banner(el, "Janet Yates", "Did you get my check?", 290);
       const b3 = banner(el, "Ken Alvarez", "Can you come Thursday?", 460);
+      const shakeEl = el;
       return (t, d) => {
-        a(t, d);
-        // The whiteboard: a quick blurred whip, never a readable hold.
-        const wbOn = t > d * 0.5 && t < d * 0.5 + 0.9;
-        wbWrap.style.display = wbOn ? "" : "none";
-        wb(t - d * 0.5, 0.9);
-        b1(t, 2.6);
-        b2(t, 4.1);
-        b3(t, 5.4);
+        cuts(t, d);
+        // After the third text, the whiteboard (a quick blurred whip), and no cut back.
+        const wbAt = 6.0;
+        wbWrap.style.display = t >= wbAt ? "" : "none";
+        wb(t - wbAt, d - wbAt);
+        const showBanners = t < wbAt;
+        for (const [b, at] of [
+          [b1, 2.6],
+          [b2, 4.1],
+          [b3, 5.4],
+        ] as const)
+          b(showBanners ? t : -1, at);
+        // A buzz as each text lands.
+        const k = [2.6, 4.1, 5.4].reduce((m, at) => m + shake(t, at, 6).x, 0);
+        shakeEl.style.transform = `translateX(${k * 0.4}px)`;
       };
     }),
   );
   add(
     shot(3, (el) => {
-      const p = photo(el, photoRef("03"), [1.02, 50, 50], [1.1, 54, 46], 0.2);
-      const s = stamp(el, "9:47 PM");
+      const cuts = cutList(el, [
+        [0, photoRef("03"), [1.02, 50, 50], [1.06, 52, 48], 0.2],
+        [2.5, photoRef("03"), [1.45, 62, 66], [1.5, 62, 64], 0.2],
+      ]);
+      const s = stamp(el, "10:04 PM");
       return (t, d) => {
-        p(t, d);
+        cuts(t, d);
         s(t);
       };
     }),
   );
   add(
     shot(4, (el) => {
-      const a = photo(el, photoRef("05"), [1.04, 50, 50], [1.12, 46, 48], 0.25);
-      const bWrap = div("fill", el);
-      const b = photo(bWrap, stockRef("leak-dye-skimmer"), [1.05, 50, 50], [1.14, 54, 50], 0.25);
+      const cuts = cutList(el, [
+        [0, photoRef("05"), [1.04, 50, 50], [1.1, 46, 48], 0.25],
+        [2.4, stockRef("leak-dye-light-niche"), [1.05, 50, 50], [1.12, 54, 50], 0.25],
+      ]);
       const text = slamText(el, ["You're great", "at the work."], { size: 150, y: 640, x: 110 });
+      text.box.style.zIndex = "4";
       return (t, d) => {
-        a(t, d);
-        bWrap.style.display = t > d * 0.55 ? "" : "none";
-        b(t - d * 0.55, d * 0.45);
+        cuts(t, d);
         text.draw(t, spread(text.words, 0.15, 1.2));
       };
     }),
@@ -374,7 +499,8 @@ export function buildFilm(stage: Stage, timeline: Timeline) {
         wbWrap.style.display = t < 0.85 ? "" : "none";
         a(t, d);
         text.box.style.zIndex = "3";
-        text.draw(t, [1.0, 1.25, 2.15, 2.4, 2.7]);
+        // Centered type comes in a line at a time, so each line sits centered as it lands.
+        text.draw(t, [1.0, 1.0, 2.15, 2.15, 2.15]);
         black.style.zIndex = "4";
         // Black only for the last moment before the hit (never an empty held frame).
         black.style.opacity = String(ramp(t, d - 0.45, d - 0.12));
@@ -387,10 +513,12 @@ export function buildFilm(stage: Stage, timeline: Timeline) {
     shot(6, (el) => {
       const bg = surface(el, "steel", false);
       const text = slamText(el, ["Not anymore."], { size: 280, align: "center" });
+      // The hit lands just after the words.
+      const hitAt = tl.hit - line(6).start;
       return (t) => {
         bg(t);
-        text.draw(t, [0, 0.32]);
-        const k = shake(t, 0, 20);
+        text.draw(t, [0, 0]);
+        const k = shake(t, hitAt, 20);
         text.box.style.transform = `translate(${k.x}px, ${k.y}px)`;
       };
     }),
@@ -400,8 +528,8 @@ export function buildFilm(stage: Stage, timeline: Timeline) {
       const bg = surface(el, "navy", false);
       const logo = img("/brand/logo/sundeck-logo-reverse.svg", el, "abs");
       css(logo, { width: 1000, left: W / 2 - 500, top: H / 2 - 170 });
-      // The montage: about a second each, real screens: the week, Today, a report, a quote
-      // accepted, the dashboard.
+      // Five hard cuts on the beat (2, 1, 2, 1, 2 beats, about a second each): the week, Today,
+      // a report, a quote accepted, the dashboard.
       const shots = div("fill", el);
       const tile = (kind: Surface) => {
         const f = div("fill", shots);
@@ -410,24 +538,24 @@ export function buildFilm(stage: Stage, timeline: Timeline) {
       };
       const t1 = tile("steel");
       placeBrowser(t1, W / 2, 410, 1180)
-        .browser.layer(web("week").src)
+        .browser.layer(web("dispatch-4").src)
         .set(0);
       const t2 = tile("concrete");
       const today = clip("02");
-      const p2 = placePhone(t2, W / 2, 410, 330);
+      const p2 = placePhone(t2, W / 2, 410, 330, { time: "6:29" });
       if (today) p2.phone.clip(today).set(0);
-      else p2.phone.layer(still("30-today").src).set(0);
+      else p2.phone.layer(still("lv-today").src).set(0);
       const t3 = tile("steel");
       placeBrowser(t3, W / 2, 410, 1180, "sundeckpro.com/r/…")
         .browser.layer(web("report-desktop").src)
         .set(0);
       const t4 = tile("concrete");
-      placePhone(t4, W / 2, 410, 330)
+      placePhone(t4, W / 2, 410, 330, { time: "10:05" })
         .phone.layer(web("phone-quote-accepted").src)
         .set(
           Math.min(
             web("phone-quote-accepted").height - 2600,
-            Math.max(0, (web("phone-quote-accepted").boxes.heading?.y ?? 1300) - 400),
+            Math.max(0, (web("phone-quote-accepted").boxes.heading?.y ?? 1300) - 900),
           ),
         );
       const t5 = tile("steel");
@@ -438,30 +566,33 @@ export function buildFilm(stage: Stage, timeline: Timeline) {
       const words = slamText(el, ["Your whole shop."], { size: 130, align: "center", y: 850 });
       const words2 = slamText(el, ["In your pocket."], { size: 130, align: "center", y: 850 });
       const words3 = slamText(el, ["On every truck."], { size: 130, align: "center", y: 850 });
-      return (t, d) => {
+      return (t) => {
         bg(t);
         const beat = tl.beat;
+        const m0 = 2 * beat;
+        const starts = [0, 2, 3, 5, 6].map((k) => m0 + k * beat);
         const p = slam(ramp(t, 0, 0.3));
         logo.style.transform = `scale(${lerp(1.5, 1, p)})`;
-        logo.style.opacity = String(ramp(t, 0, 0.06) * (t < 1.6 ? 1 : 0));
-        const m0 = 1.6;
-        const i = Math.min(tiles.length - 1, Math.floor((t - m0) / (beat * 1.5)));
+        logo.style.opacity = String(ramp(t, 0, 0.06) * (t < m0 ? 1 : 0));
+        let i = -1;
+        starts.forEach((st, k) => {
+          if (t >= st) i = k;
+        });
         tiles.forEach((tile, k) => {
-          const on = t >= m0 && i === k;
-          tile.style.display = on ? "" : "none";
-          const local = t - m0 - i * beat * 1.5;
+          tile.style.display = i === k ? "" : "none";
           tile.style.transformOrigin = "50% 38%";
-          tile.style.transform = `scale(${1 + local * 0.035})`;
+          tile.style.transform = `scale(${1 + Math.max(0, t - starts[k]!) * 0.035})`;
         });
         shots.style.display = t >= m0 ? "" : "none";
-        words.box.style.display = t >= m0 && t < 2.8 ? "" : "none";
-        words2.box.style.display = t >= 2.8 && t < 4.0 ? "" : "none";
-        words3.box.style.display = t >= 4.0 ? "" : "none";
+        const w2 = starts[2]!;
+        const w3 = starts[3]!;
+        words.box.style.display = t >= m0 && t < w2 ? "" : "none";
+        words2.box.style.display = t >= w2 && t < w3 ? "" : "none";
+        words3.box.style.display = t >= w3 ? "" : "none";
         for (const w of [words, words2, words3]) w.box.style.zIndex = "5";
-        words.draw(t, spread(3, 1.6, 2.0));
-        words2.draw(t, spread(3, 2.8, 3.2));
-        words3.draw(t, spread(3, 4.0, 4.4));
-        void d;
+        words.draw(t, [m0, m0, m0]);
+        words2.draw(t, [w2, w2, w2]);
+        words3.draw(t, [w3, w3, w3]);
       };
     }),
   );
@@ -473,188 +604,173 @@ export function buildFilm(stage: Stage, timeline: Timeline) {
   }
 
   // 01 Dispatch (desktop) --------------------------------------------------------------
+  // The office's real week on the Canyon State video shop (capture-web.ts "dispatch-*"): the
+  // board, Laura Bennett's new leak detection dropped from Needs a Time onto Tuesday and dragged
+  // to Jake, then Optimize Week and its result; then the tech's own day on the iPhone.
   add(
     deviceShot(8, "steel", (r) => {
+      const d0 = web("dispatch-0");
       const b = placeBrowser(r.el, W / 2, H / 2 + 10, 1500);
-      const week = web("week");
-      const layer = b.browser.layer(week.src);
+      const layer = b.browser.layer(d0.src).pin(NAV);
       return (t, d) => {
-        const scroll = keys(t, [
-          [0, 0],
-          [d * 0.55, 0],
-          [d, Math.min(700, week.height - 1800)],
-        ]);
+        const scroll = glideTo(t, 1.6, 0, 420, 1.4);
         layer.set(scroll);
         setCam(
           r,
           camAt(t, [
-            [0, { s: 0.94, x: W / 2, y: H / 2 }],
-            [d, { s: 1.04, x: W / 2 + 40, y: H / 2 + 10 }],
+            [0, { s: 0.97, x: W / 2, y: H / 2 }],
+            [0.9, { s: 0.97, x: W / 2, y: H / 2 }],
+            [2.2, on(b.at(1300, 1450, 420), 1.5)],
+            [d, on(b.at(1500, 1420, 420), 1.58)],
           ]),
           t,
         );
       };
     }),
   );
-  if (clip("03")) {
-    // The owner's recording: Schedule on the phone, a job dragged from Needs a Time into the
-    // route, then Optimize ("Optimized · 39 min less driving"), beside the week on the website.
-    add(
-      deviceShot(
-        9,
-        "steel",
-        (r, el) => {
-          const c = clip("03")!;
-          const week = web("week");
-          const b = placeBrowser(r.el, 700, H / 2 + 20, 1180);
-          const bl = b.browser.layer(week.src);
-          const p = placePhone(r.el, 1500, H / 2, 420);
-          const l = p.phone.clip(c);
-          const cap = keyCaption(el, "Build the week in minutes. Not hours.");
-          const d10 = line(10).start - line(9).start;
-          const clipH = (c.height * p.phone.w) / c.width;
-          // The banner ("Optimized · 39 min less driving") and the map at the top; never the stop
-          // times further down (the owner recorded at night).
-          const banner = {
-            x: p.x + p.phone.bezel + p.phone.w / 2,
-            y: p.y + p.phone.bezel + (p.phone.h - clipH) + clipH * 0.2,
-          };
-          return (t, d) => {
-            bl.set(0);
-            // Real time, held on the last frame to the end.
-            const speed = Math.max(1, c.duration / (d - 1.8));
-            l.set(t * speed);
-            const result = (c.duration - 2.6) / speed;
-            setCam(
-              r,
-              camAt(t, [
-                [0, { s: 1, x: W / 2, y: H / 2 }],
-                [2.0, { s: 1.02, x: W / 2 + 120, y: H / 2 }],
-                [result, { s: 1.02, x: W / 2 + 120, y: H / 2 }],
-                [result + 0.8, on(banner, 1.5)],
-                [d, on(banner, 1.55)],
-              ]),
-              t,
-            );
-            cap(t - d10 - 4.6, d - d10 - 4.6);
-          };
-        },
-        10,
-      ),
-    );
-  } else {
-    add(
-      deviceShot(9, "steel", (r) => {
-        const day = web("day");
-        const b = placeBrowser(r.el, W / 2, H / 2 + 10, 1500);
-        const layer = b.browser.layer(day.src);
-        const tray = mid(day.boxes.needsATime, { x: 300, y: 600 });
-        const trayAt = b.at(tray.x, tray.y);
-        const c = clip("03");
-        let phoneRig: PhoneRig | null = null;
-        let clipLayer: ReturnType<Phone["clip"]> | null = null;
-        if (c) {
-          phoneRig = placePhone(r.el, 1560, H / 2 + 40, 380);
-          clipLayer = phoneRig.phone.clip(c);
+  add(
+    deviceShot(9, "steel", (r) => {
+      const d0 = web("dispatch-0");
+      const d1 = web("dispatch-1");
+      const d2 = web("dispatch-2");
+      const b = placeBrowser(r.el, W / 2, H / 2 + 10, 1500);
+      const l0 = b.browser.layer(d0.src).pin(NAV);
+      const l1 = b.browser.layer(d1.src).pin(NAV);
+      const l2 = b.browser.layer(d2.src).pin(NAV);
+      // Laura's card in Needs a Time, then on Dana's Tuesday, then on Jake's (image pixels).
+      const grip0 = mid(d0.boxes.laura, { x: 552, y: 546 });
+      const grip1 = mid(d1.boxes.laura, { x: 1623, y: 1239 });
+      const grip2 = mid(d2.boxes.laura, { x: 1623, y: 1705 });
+      const tray = { x: 88, y: grip0.y - 60, w: 512, h: 120 };
+      const onDana = { x: 1286, y: grip1.y - 52, w: 380, h: 104 };
+      const onJake = { x: 1286, y: grip2.y - 52, w: 380, h: 104 };
+      const g1 = new Ghost(b, d0.src, tray, onDana);
+      const g2 = new Ghost(b, d1.src, onDana, onJake);
+      const scroll = 260;
+      return (t) => {
+        const drop1 = 1.45;
+        const drop2 = 3.15;
+        const k1 = ramp(t, drop1, drop1 + 0.12);
+        const k2 = ramp(t, drop2, drop2 + 0.12);
+        l0.set(scroll, 1);
+        l1.set(scroll, k1);
+        l2.set(scroll, k2);
+        b.browser.drawTap(0, grip0.x, grip0.y, t - 0.15, scroll);
+        g1.draw(t, 0.6, drop1, scroll);
+        b.browser.drawTap(1, grip1.x, grip1.y, t - 1.85, scroll);
+        g2.draw(t, 2.3, drop2, scroll);
+        setCam(
+          r,
+          camAt(t, [
+            [0, on(b.at(1000, 1000, scroll), 1.3)],
+            [1.6, on(b.at(1150, 1150, scroll), 1.35)],
+            [3.4, on(b.at(1250, 1400, scroll), 1.45)],
+            [5, on(b.at(1280, 1430, scroll), 1.5)],
+          ]),
+          t,
+        );
+      };
+    }),
+  );
+  add(
+    deviceShot(10, "steel", (r, el) => {
+      const d2 = web("dispatch-2");
+      const d3 = web("dispatch-3");
+      const d4 = web("dispatch-4");
+      const b = placeBrowser(r.el, W / 2, H / 2 + 10, 1500);
+      const l2 = b.browser.layer(d2.src).pin(NAV);
+      const l3 = b.browser.layer(d3.src).pin(NAV);
+      const l4 = b.browser.layer(d4.src).pin(NAV);
+      const btn = mid(d2.boxes.optimizeWeek ?? d3.boxes.optimizeWeek, { x: 2652, y: 506 });
+      const sheet = mid(d3.boxes.sheet, { x: 1440, y: 1180 });
+      const confirm = mid(d3.boxes.confirm, { x: 1440, y: 1614 });
+      const result = mid(d4.boxes.banner, { x: 1398, y: 203 });
+      // The tech's own day on the phone: the recording's Optimize and its result.
+      const c = clip("03");
+      const p = c ? placePhone(r.el, 1460, H / 2, 430, { time: "6:22" }) : null;
+      const rec = c && p ? p.phone.clip(c) : null;
+      if (p) p.phone.el.style.opacity = "0";
+      const cap = keyCaption(el, "Build the week in minutes.\nNot hours.");
+      return (t, d) => {
+        const toPhone = d - 2.9;
+        const k3 = ramp(t, 0.85, 1.05);
+        const k4 = ramp(t, 2.35, 2.5);
+        const onPhone = t >= toPhone && !!rec;
+        l2.set(0, 1);
+        l3.set(0, k3);
+        l4.set(0, k4);
+        b.browser.el.style.display = onPhone ? "none" : "";
+        b.browser.drawTap(0, btn.x, btn.y, t - 0.4, 0, { w: 330, h: 88, r: 44 });
+        b.browser.drawTap(1, confirm.x, confirm.y, t - 1.9, 0, { w: 960, h: 88, r: 44 });
+        if (rec && p) {
+          p.phone.el.style.opacity = onPhone ? "1" : "0";
+          // Its last moments: Optimize pressed and "Optimized · 39 min less driving".
+          rec.set(c!.duration - 2.9 + Math.max(0, t - toPhone));
         }
-        return (t, d) => {
-          layer.set(0);
-          b.browser.drawTap(0, tray.x, tray.y, t - 0.9);
-          if (clipLayer) {
-            clipLayer.set(t * Math.max(1, c!.duration / d));
-            setCam(
-              r,
-              camAt(t, [
-                [0, { s: 0.92, x: W / 2 + 100, y: H / 2 }],
-                [d, { s: 0.98, x: W / 2 + 140, y: H / 2 }],
+        r.lens(onPhone ? 0 : ramp(t, 3.2, 3.6));
+        const board = on(b.at(1250, 1250), 1.4);
+        const phoneTop = p ? { x: p.x + p.phone.outerW / 2, y: p.y + p.phone.outerH * 0.4 } : null;
+        setCam(
+          r,
+          onPhone && phoneTop
+            ? camAt(t - toPhone, [
+                [0, { s: 1.2, x: phoneTop.x - 380 / 1.2, y: phoneTop.y }],
+                [3, { s: 1.26, x: phoneTop.x - 380 / 1.26, y: phoneTop.y - 10 }],
+              ])
+            : camAt(t, [
+                [0, on(b.at(1900, 700), 1.35)],
+                [0.5, on(b.at(btn.x - 200, btn.y + 120), 1.75)],
+                [1.0, on(b.at(btn.x - 200, btn.y + 120), 1.75)],
+                [1.6, on(b.at(sheet.x, sheet.y), 1.5)],
+                [2.3, on(b.at(sheet.x, sheet.y + 80), 1.55)],
+                [2.7, on(b.at(result.x + 120, result.y + 220), 2.0)],
+                [3.2, on(b.at(result.x + 120, result.y + 220), 2.05)],
+                [3.7, { s: board.s, x: board.x - 420 / board.s, y: board.y }],
+                [d, { s: board.s + 0.05, x: board.x - 420 / board.s, y: board.y }],
               ]),
-              t,
-            );
-          } else {
-            setCam(
-              r,
-              camAt(t, [
-                [0, { s: 0.95, x: W / 2, y: H / 2 }],
-                [1.4, on(trayAt, 1.25)],
-                [d, { s: 1.12, x: W / 2 + 120, y: H / 2 }],
-              ]),
-              t,
-            );
-          }
-        };
-      }),
-    );
-    add(
-      deviceShot(10, "steel", (r, el) => {
-        const week = web("week");
-        const sheet = web("week-optimize-sheet");
-        const b = placeBrowser(r.el, W / 2, H / 2 + 10, 1500);
-        const l1 = b.browser.layer(week.src);
-        const l2 = b.browser.layer(sheet.src);
-        const btn = mid(week.boxes.optimizeWeek, { x: 2600, y: 500 });
-        const sheetBox = mid(sheet.boxes.sheet, { x: 1440, y: 900 });
-        const confirm = mid(sheet.boxes.confirm, { x: 1440, y: 1300 });
-        const cap = keyCaption(el, "Build the week in minutes. Not hours.");
-        return (t, d) => {
-          sequence(t, [
-            [0, l1, () => 0],
-            [1.5, l2, () => 0],
-          ]);
-          b.browser.drawTap(0, btn.x, btn.y, t - 0.8);
-          b.browser.drawTap(1, confirm.x, confirm.y, t - 3.4);
-          setCam(
-            r,
-            camAt(t, [
-              [0, { s: 0.95, x: W / 2, y: H / 2 }],
-              [1.2, on(b.at(btn.x, btn.y), 1.5)],
-              [1.6, on(b.at(btn.x, btn.y), 1.5)],
-              [2.6, on(b.at(sheetBox.x, sheetBox.y), 1.45)],
-              [d, on(b.at(sheetBox.x, sheetBox.y + 60), 1.55)],
-            ]),
-            t,
-          );
-          cap(t - 4.6, d - 4.6);
-        };
-      }),
-    );
-  }
+          t,
+        );
+        cap(t - 3.4, d - 3.4);
+      };
+    }),
+  );
 
   // 02 On the road (iPhone) ------------------------------------------------------------
   add(
     deviceShot(11, "concrete", (r) => {
+      // The owner's recording: Today, laid out. Then the parts the voice names: the next stop,
+      // the gate code, the dog in the yard (the recording's own last frame, pushed in on).
       const c = clip("02");
-      const p = placePhone(r.el, W / 2, H / 2, 420);
-      if (c) {
-        const l = p.phone.clip(c);
-        const card = p.at(c.width * 0.5, c.height * 0.42, 0, c.width);
-        return (t, d) => {
-          l.set(t - 2.0);
-          setCam(
-            r,
-            camAt(t, [
-              [0, { s: 1, x: W / 2, y: H / 2 }],
-              [1.8, on(card, 1.35)],
-              [d, on(card, 1.42)],
-            ]),
-            t,
-          );
-        };
-      }
-      const s = still("lv-today", "30-today");
-      const l = p.phone.layer(s.src);
+      const p = placePhone(r.el, W / 2, H / 2, 430, { time: "6:29" });
+      const l = c ? p.phone.clip(c) : p.phone.layer(still("lv-today").src);
+      const at = (x: number, y: number) =>
+        c
+          ? {
+              x: p.x + p.phone.bezel + (x * p.phone.w) / c.width,
+              y:
+                p.y +
+                p.phone.bezel +
+                (p.phone.h - (c.height * p.phone.w) / c.width) +
+                (y * p.phone.w) / c.width,
+            }
+          : p.at(x * 1.6375, y * 1.6375);
+      const card = at(360, 420);
+      const code = at(250, 760);
+      const dog = at(300, 815);
       return (t, d) => {
-        l.set(
-          keys(t, [
-            [0, 0],
-            [d * 0.5, 0],
-            [d, 900],
-          ]),
-        );
+        if (c) (l as ReturnType<Phone["clip"]>).set(t);
+        else (l as Layer).set(0);
         setCam(
           r,
           camAt(t, [
-            [0, CENTER],
-            [d, on(p.at(590, 1500), 1.3)],
+            [0, { s: 1.0, x: W / 2, y: H / 2 }],
+            [2.4, { s: 1.04, x: W / 2, y: H / 2 }],
+            [3.3, on(card, 1.9)],
+            [4.4, on(card, 1.95)],
+            [5.0, on(code, 2.1)],
+            [5.7, on(code, 2.15)],
+            [6.2, on(dog, 2.2)],
+            [d, on(dog, 2.26)],
           ]),
           t,
         );
@@ -663,48 +779,78 @@ export function buildFilm(stage: Stage, timeline: Timeline) {
   );
   add(
     deviceShot(12, "concrete", (r) => {
+      // The owner's recording: the tap on the message button, the text Messages writes for her
+      // ("Hi Rebecca, this is Dana from Canyon State Leak Detections. I'm on my way"), then
+      // "On the way".
       const c = clip("01");
-      const p = placePhone(r.el, W / 2, H / 2, 420);
-      if (c) {
-        const l = p.phone.clip(c);
-        // Today, the tap on On My Way, then the card reading "On the way". The Messages step
-        // in between is left out.
-        const segs: [number, number][] = [
-          [0, 1.9],
-          [5.5, c.duration - 0.05],
-        ];
-        const clipH = (c.height * p.phone.w) / c.width;
-        const top = p.phone.h - clipH;
-        const bubble = { x: p.phone.w * 0.63, y: top + clipH * 0.483 };
-        return (t, d) => {
-          l.set(segmentTime(t, segs));
-          p.phone.tapAt(0, bubble.x, bubble.y, t - 1.45, {
-            w: p.phone.w * 0.085,
-            h: p.phone.w * 0.085,
-          });
-          setCam(
-            r,
-            camAt(t, [
-              [0, { s: 1.04, x: W / 2, y: H / 2 }],
-              [d, { s: 1.1, x: W / 2, y: H / 2 + 20 }],
-            ]),
-            t,
-          );
+      const p = placePhone(r.el, W / 2, H / 2, 430, { time: "6:29" });
+      if (!c) {
+        const l = p.phone.layer(still("lv-today").src);
+        return (t) => {
+          l.set(0);
+          setCam(r, CENTER, t);
         };
       }
-      const s = still("lv-today", "30-today");
-      const l = p.phone.layer(s.src);
-      return (t) => {
-        l.set(0);
-        p.phone.drawTap(0, 703, 1660, t - 0.5);
-        setCam(r, CENTER, t);
+      const l = p.phone.clip(c);
+      const k = p.phone.w / c.width;
+      const top = p.phone.h - c.height * k;
+      const at = (x: number, y: number) => ({
+        x: p.x + p.phone.bezel + x * k,
+        y: p.y + p.phone.bezel + top + y * k,
+      });
+      // The rest of the message (from "and should be there" to its end, with the recording's
+      // night-time arrival) covered in the bubble's own white, so the text ends at "on my way".
+      const soft = (x: number, y: number, w: number, h: number) => {
+        const el = div("abs", p.phone.screen);
+        css(el, {
+          left: x * k,
+          top: top + y * k,
+          width: w * k,
+          height: h * k,
+          background: "rgb(252, 252, 252)",
+          "z-index": 12,
+        });
+        return el;
+      };
+      const softs = [soft(280, 802, 334, 34), soft(138, 836, 470, 37)];
+      const segs: [number, number][] = [
+        [0.6, 2.1],
+        [3.05, 4.75],
+        [5.6, 6.7],
+      ];
+      const tCompose = 2.1 - 0.6;
+      const tBack = tCompose + 4.75 - 3.05;
+      const button = at(720 * 0.63, 1478 * 0.483);
+      const bubble = at(330, 800);
+      const cardAt = at(360, 420);
+      return (t, d) => {
+        const ct = segmentTime(t, segs);
+        l.set(ct);
+        const composing = ct >= 3.0 && ct < 5.5;
+        for (const s of softs) s.style.display = composing ? "" : "none";
+        p.phone.tapAt(0, button.x - p.x - p.phone.bezel, button.y - p.y - p.phone.bezel, t - 0.4, {
+          w: p.phone.w * 0.085,
+          h: p.phone.w * 0.085,
+        });
+        setCam(
+          r,
+          camAt(t, [
+            [0, on(cardAt, 1.25)],
+            [tCompose - 0.05, on(cardAt, 1.3)],
+            [tCompose, on(bubble, 2.3)],
+            [tBack - 0.05, on(bubble, 2.38)],
+            [tBack, on(cardAt, 1.5)],
+            [d, on(cardAt, 1.56)],
+          ]),
+          t,
+        );
       };
     }),
   );
   add(
     deviceShot(13, "concrete", (r, el) => {
       const lock = ownerStill("01");
-      const p = placePhone(r.el, W / 2 + 330, H / 2, 420, {
+      const p = placePhone(r.el, W / 2 + 330, H / 2, 430, {
         status: lock ? "light" : "dark",
         time: "6:31",
       });
@@ -718,19 +864,19 @@ export function buildFilm(stage: Stage, timeline: Timeline) {
       css(l.el, { top });
       const at0 = p.at(width * 0.5, height * 0.72, 0, width);
       const activity = { x: at0.x, y: at0.y + top };
-      const cap = keyCaption(el, "Your crew knows exactly where to be.");
+      const cap = keyCaption(el, "Your crew knows\nexactly where to be.");
       return (t, d) => {
         l.set(0);
         setCam(
           r,
           camAt(t, [
-            [0, { s: 1, x: W / 2, y: H / 2 }],
-            [1.6, on(activity, 1.7)],
-            [d, on(activity, 1.78)],
+            [0, rightOf({ s: 1.0, x: W / 2 + 100, y: H / 2 }, p.x)],
+            [1.0, rightOf(on(activity, 1.55), p.x)],
+            [d, rightOf(on(activity, 1.6), p.x)],
           ]),
           t,
         );
-        cap(t - 2.2, d - 2.2);
+        cap(t - 0.3, d - 0.3);
       };
     }),
   );
@@ -741,7 +887,7 @@ export function buildFilm(stage: Stage, timeline: Timeline) {
       const gauge = div("fill", el);
       const g = photo(gauge, photoRef("05"), [1.03, 50, 50], [1.1, 50, 50], 0.1);
       gauge.style.zIndex = "5";
-      const p = placePhone(r.el, W / 2, H / 2, 420);
+      const p = placePhone(r.el, W / 2, H / 2, 430, { time: "8:42" });
       // Today → tap the stop → the job pushes in → flick down the checklist → tap the line that
       // dropped → its pressure test comes up as a sheet.
       const today = p.phone.layer(still("lv-today", "30-today").src);
@@ -760,11 +906,12 @@ export function buildFilm(stage: Stage, timeline: Timeline) {
         const mv = push(pp, p.phone.w);
         const sp = spring(t - tSheet);
         today.set(0, pp < 1 ? 1 : 0, mv.from);
-        const scroll = flick(t, tFlick, 0, 1350);
+        const scroll = flick(t, tFlick, 0, 600);
         job.set(scroll, pp > 0 ? 1 : 0, { ...mv.to, ...behindSheet(sp) });
         test.set(sp);
         p.phone.drawTap(0, 590, 2064, t - (tPush - 0.45), 0, { w: 1100, h: 150, r: 30 });
-        p.phone.drawTap(1, 636, 2244, t - (tDrop - 0.45), scroll, { w: 110, h: 110 });
+        // The Returns line's leak button (it dropped: Leaking).
+        p.phone.drawTap(1, 644, 1728, t - (tDrop - 0.45), scroll, { w: 116, h: 104 });
         setCam(
           r,
           camAt(t, [
@@ -834,12 +981,12 @@ export function buildFilm(stage: Stage, timeline: Timeline) {
   add(
     deviceShot(16, "concrete", (r, el) => {
       // "Say what you see": Voice Note on the finding; then back (a pop) to the job's record.
-      const p = placePhone(r.el, W / 2 + 330, H / 2, 420);
+      const p = placePhone(r.el, W / 2 + 330, H / 2, 430, { time: "9:20" });
       const findings = p.phone.layer(still("lv-findings", "10-findings").src);
       const voice = p.phone.layer(still("lv-voice-note", "12-component").src);
       const tests = p.at(590, 2500, 1300);
       const mic = p.at(866, 2270, 1500);
-      const cap = keyCaption(el, "Every test. Every finding. On record.");
+      const cap = keyCaption(el, "Every test. Every finding.\nOn record.");
       const tPop = 2.2;
       return (t, d) => {
         const pp = spring(t - tPop, 0.5);
@@ -854,14 +1001,14 @@ export function buildFilm(stage: Stage, timeline: Timeline) {
         setCam(
           r,
           camAt(t, [
-            [0, on(mic, 1.4)],
-            [tPop - 0.1, on(mic, 1.45)],
-            [tPop + 0.5, onRight(p.at(590, 1300), 1.0)],
-            [d, onRight(tests, 1.2)],
+            [0, rightOf(on(mic, 1.35), p.x)],
+            [tPop - 0.1, rightOf(on(mic, 1.4), p.x)],
+            [tPop + 0.5, rightOf(on(p.at(590, 1300), 1.0), p.x)],
+            [d, rightOf(on(tests, 1.2), p.x)],
           ]),
           t,
         );
-        cap(t - 1.0, d - 1.0);
+        cap(t - 0.6, d - 0.6);
       };
     }),
   );
@@ -869,73 +1016,76 @@ export function buildFilm(stage: Stage, timeline: Timeline) {
   // 04 Prove it ------------------------------------------------------------------------
   add(
     deviceShot(17, "steel", (r) => {
+      // Rebecca's real report (the Canyon State video shop): the logo, the findings, then its own
+      // Photos section, with the dye photo the tech took.
       const rep = web("report-desktop");
-      const b = placeBrowser(r.el, W / 2 - 120, H / 2 + 10, 1400, "sundeckpro.com/r/…");
+      const b = placeBrowser(r.el, W / 2, H / 2 + 10, 1500, "sundeckpro.com/r/…");
       const l = b.browser.layer(rep.src);
-      const pr1 = print(r.el, stockRef("leak-dye-light-niche").url ?? "", 1320, 140, 520, 4);
-      const pr2 = print(r.el, stockRef("leak-dye-skimmer").url ?? "", 1360, 520, 520, -3);
+      const found = rep.boxes.found ?? { x: 608, y: 1369, w: 1664, h: 74 };
+      const photos = rep.boxes.photos ?? { x: 608, y: 4781, w: 1664, h: 74 };
+      const pic = rep.boxes.photo ?? { x: 608, y: 4879, w: 816, h: 544 };
+      const s1 = Math.max(0, found.y - 260);
+      const s2 = Math.min(rep.height - 1800, Math.max(0, photos.y - 200));
       return (t, d) => {
-        const scroll = keys(t, [
-          [0, 0],
-          [1.6, 0],
-          [3.2, 700],
-          [d, 1100],
-        ]);
+        const scroll = t < 3.6 ? glideTo(t, 1.7, 0, s1, 1.1) : glideTo(t, 3.6, s1, s2, 1.2);
         l.set(scroll);
         setCam(
           r,
           camAt(t, [
-            [0, on(b.at(900, 300), 1.6)],
-            [1.4, on(b.at(900, 300), 1.6)],
-            [2.6, { s: 1.0, x: W / 2 - 120, y: H / 2 }],
-            [d, { s: 0.98, x: W / 2, y: H / 2 }],
+            [0, on(b.at(1440, 330, 0), 1.6)],
+            [1.6, on(b.at(1440, 330, 0), 1.66)],
+            [2.6, on(b.at(1440, found.y + 360, s1), 1.6)],
+            [3.5, on(b.at(1440, found.y + 380, s1), 1.64)],
+            [4.6, on(b.at(pic.x + pic.w / 2 + 120, pic.y + pic.h / 2 - 60, s2), 1.85)],
+            [d, on(b.at(pic.x + pic.w / 2 + 120, pic.y + pic.h / 2 - 60, s2), 2.0)],
           ]),
           t,
         );
-        pr1(t, 3.9);
-        pr2(t, 4.3);
       };
     }),
   );
   add(
     deviceShot(18, "steel", (r) => {
-      const c = clip("08");
-      const tech = placePhone(r.el, W / 2 - 330, H / 2, 400);
-      const cust = placePhone(r.el, W / 2 + 330, H / 2, 400);
+      // On the tech's phone: the report's draft is ready, Customer Signs, Review with Customer,
+      // her signature; then the report on her own phone, signed.
+      const tech = placePhone(r.el, W / 2 - 300, H / 2, 430, { time: "9:42" });
+      const cust = placePhone(r.el, W / 2 + 330, H / 2, 430, { time: "9:45" });
+      const job = tech.phone.layer(still("lv-findings").src);
+      const draft = tech.phone.sheet(still("lv-send-report").src);
+      const sign = tech.phone.sheet(still("lv-review-sign").src);
+      const signed = tech.phone.sheet(still("lv-signed").src);
       const rep = web("phone-report");
       const custLayer = cust.phone.layer(rep.src);
-      // The report as it lands: from "What we found" down (the customer's name stays out).
-      const found = Math.max(0, (rep.boxes.found?.y ?? 2300) - 200);
-      if (c) {
-        const l = tech.phone.clip(c);
-        return (t, d) => {
-          l.set(t * Math.max(1, c.duration / d));
-          custLayer.set(found);
-          const s = slideIn(t, 2.6, 0.6, 1200);
-          cust.phone.el.style.transform = `translate(${cust.x + s.x}px, ${cust.y}px)`;
-          setCam(r, CENTER, t);
-        };
-      }
-      const job = tech.phone.layer(still("lv-findings", "10-findings").src);
-      const sign = tech.phone.sheet(still("lv-review-sign", "20-wrap-up-sign").src);
-      const review = sign.at(424, 921);
+      const sigs = Math.min(
+        rep.height - 2600,
+        Math.max(0, (rep.boxes.signatures?.y ?? 9000) - 700),
+      );
+      const review = sign.at(434, 922);
       return (t) => {
-        const sp = spring(t - 0.15);
+        const sp = spring(t - 0.05);
         job.set(0, 1, behindSheet(sp));
-        sign.set(sp);
-        tech.phone.tapAt(0, review.x, review.y, t - 0.9, {
-          w: 210 * sign.k * 2.5,
-          h: 105 * sign.k * 1.2,
+        // Inside the sheet: the draft, then (pushed) Customer Signs, then her signature on it.
+        const pp = spring(t - 0.75, 0.45);
+        const mv = push(pp, tech.phone.w);
+        draft.set(sp, 0, pp < 1 ? 1 : 0, mv.from);
+        sign.set(sp, 0, pp > 0 && t < 2.0 ? 1 : 0, mv.to);
+        signed.set(sp, 0, ramp(t, 1.95, 2.15));
+        tech.phone.tapAt(0, review.x, review.y, t - 1.05, {
+          w: 652 * sign.k,
+          h: 132 * sign.k,
+          r: 66 * sign.k,
         });
-        custLayer.set(flick(t, 2.9, found, found + 500, 1.4));
-        const s = slideIn(t, 2.3, 0.6, 1200);
+        custLayer.set(flick(t, 2.9, Math.max(0, sigs - 900), sigs, 1.2));
+        const s = slideIn(t, 2.5, 0.6, 1200);
         cust.phone.el.style.transform = `translate(${cust.x + s.x}px, ${cust.y}px)`;
+        cust.phone.el.style.opacity = String(t >= 2.5 ? 1 : 0);
         setCam(
           r,
           camAt(t, [
-            [0, on(tech.at(590, 900), 1.25)],
-            [2.1, on(tech.at(590, 900), 1.25)],
-            [2.7, CENTER],
+            [0, on(tech.at(590, 1100), 1.2)],
+            [2.2, on(tech.at(590, 1150), 1.25)],
+            [2.9, { s: 1.0, x: W / 2, y: H / 2 }],
+            [6, { s: 1.03, x: W / 2, y: H / 2 }],
           ]),
           t,
         );
@@ -945,25 +1095,26 @@ export function buildFilm(stage: Stage, timeline: Timeline) {
   add(
     deviceShot(19, "steel", (r, el) => {
       const rep = web("phone-report");
-      const p = placePhone(r.el, W / 2 + 460, H / 2, 420);
+      const p = placePhone(r.el, W / 2 + 360, H / 2, 430, { time: "9:50" });
       const l = p.phone.layer(rep.src);
-      const cap = keyCaption(el, "A report that looks like a big company sent it.", {
-        x: 96,
-        y: 780,
-      });
+      const cap = keyCaption(el, "A report that looks like\na big company sent it.");
       return (t, d) => {
         l.set(
-          keys(
-            t,
-            [
-              [0, 0],
-              [d, Math.min(4200, rep.height - 2600)],
-            ],
-            (x) => x,
-          ),
+          keys(t, [
+            [0, 0],
+            [0.8, 0],
+            [d, Math.min(4200, rep.height - 2600)],
+          ]),
         );
-        setCam(r, CENTER, t);
-        cap(t - 0.8, d - 0.8);
+        setCam(
+          r,
+          camAt(t, [
+            [0, rightOf({ s: 1.15, x: p.x + p.phone.outerW / 2, y: H / 2 - 40 }, p.x)],
+            [d, rightOf({ s: 1.2, x: p.x + p.phone.outerW / 2, y: H / 2 - 40 }, p.x)],
+          ]),
+          t,
+        );
+        cap(t - 0.4, d - 0.4);
       };
     }),
   );
@@ -971,33 +1122,41 @@ export function buildFilm(stage: Stage, timeline: Timeline) {
   // 05 Close it on the spot ------------------------------------------------------------
   add(
     deviceShot(20, "concrete", (r) => {
-      const p = placePhone(r.el, W / 2, H / 2, 420);
-      const c = clip("09");
-      if (c) {
-        const l = p.phone.clip(c);
-        return (t, d) => {
-          l.set(t * Math.max(1, c.duration / d));
-          setCam(r, CENTER, t);
-        };
-      }
-      // The quote sheet over the job: tap the finding's price book line, flick to the lines.
-      const job = p.phone.layer(still("lv-findings", "10-findings").src);
-      const quote = p.phone.sheet(still("lv-quote", "20-wrap-up-quote").src);
+      // The quote sheet over the job: both findings' price book lines, then the lines below.
+      const p = placePhone(r.el, W / 2, H / 2, 430, { time: "9:46" });
+      const job = p.phone.layer(still("lv-findings").src);
+      const quote = p.phone.sheet(still("lv-quote").src);
       return (t, d) => {
         const sp = spring(t - 0.1);
         job.set(0, 1, behindSheet(sp));
-        const scroll = flick(t, 2.3, 0, 620, 1.2);
+        const scroll = flick(t, 2.4, 0, 620, 1.2);
         quote.set(sp, scroll);
-        const chip = quote.at(519, 921, scroll);
-        p.phone.tapAt(0, chip.x, chip.y, t - 0.75, { w: 470 * quote.k, h: 80 * quote.k });
-        const lines = quote.at(590, 1300, 620);
+        const chip1 = quote.at(546, 927, scroll);
+        const chip2 = quote.at(546, 1179, scroll);
+        p.phone.tapAt(0, chip1.x, chip1.y, t - 0.6, {
+          w: 876 * quote.k,
+          h: 132 * quote.k,
+          r: 66 * quote.k,
+        });
+        p.phone.tapAt(1, chip2.x, chip2.y, t - 1.4, {
+          w: 900 * quote.k,
+          h: 132 * quote.k,
+          r: 66 * quote.k,
+        });
+        const head = quote.at(590, 900, 0);
+        const lines = quote.at(590, 1900, 620);
+        const at = (q: { x: number; y: number }) => ({
+          x: p.x + p.phone.bezel + q.x,
+          y: p.y + p.phone.bezel + q.y,
+        });
         setCam(
           r,
           camAt(t, [
             [0, { s: 1, x: W / 2, y: H / 2 }],
-            [1.0, on({ x: p.x + p.phone.bezel + chip.x, y: p.y + p.phone.bezel + chip.y }, 1.45)],
-            [2.2, on({ x: p.x + p.phone.bezel + chip.x, y: p.y + p.phone.bezel + chip.y }, 1.45)],
-            [d, on({ x: p.x + p.phone.bezel + lines.x, y: p.y + p.phone.bezel + lines.y }, 1.3)],
+            [0.9, on(at(head), 1.5)],
+            [2.3, on(at(head), 1.55)],
+            [3.4, on(at(lines), 1.4)],
+            [d, on(at(lines), 1.45)],
           ]),
           t,
         );
@@ -1006,27 +1165,34 @@ export function buildFilm(stage: Stage, timeline: Timeline) {
   );
   add(
     deviceShot(21, "concrete", (r) => {
-      // The customer's own phone: her quote scrolls to its totals and Accept This Quote, then the
-      // same page once she accepted, with the deposit received. No taps: the open capture has the
-      // terms switch off, and tapping Accept Quote with it off would not accept.
+      // Her own phone: the quote at Accept This Quote, the terms switch turned on, Accept Quote,
+      // then the same page accepted with the deposit received.
       const open = web("phone-quote-open");
+      const agreed = web("phone-quote-agreed");
       const done = web("phone-quote-accepted");
-      const p = placePhone(r.el, W / 2, H / 2, 420);
+      const p = placePhone(r.el, W / 2, H / 2, 430, { time: "10:05" });
       const l1 = p.phone.layer(open.src);
-      const l2 = p.phone.layer(done.src);
-      // Scrolled to Accept This Quote, never past the page's end.
-      const top1 = Math.min(open.height - 2600, Math.max(0, (open.boxes.heading?.y ?? 2400) - 220));
-      const top2 = Math.min(done.height - 2600, Math.max(0, (done.boxes.heading?.y ?? 1300) - 220));
+      const l2 = p.phone.layer(agreed.src);
+      const l3 = p.phone.layer(done.src);
+      const top1 = Math.min(open.height - 2600, Math.max(0, (open.boxes.heading?.y ?? 2400) - 900));
+      const top3 = Math.min(done.height - 2600, Math.max(0, (done.boxes.heading?.y ?? 1300) - 900));
+      const sw = mid(open.boxes.agree, { x: 1000, y: 2900 });
+      const acc = mid(open.boxes.accept, { x: 590, y: 3150 });
+      const accW = open.boxes.accept?.w ?? 1000;
       return (t) => {
-        const scroll = flick(t, 0.1, top1 - 500, top1, 0.9);
-        const swap = ramp(t, 2.4, 2.75);
-        l1.set(scroll, 1 - swap);
-        l2.set(top2, swap);
+        const scroll = flick(t, 0.0, top1 - 500, top1, 0.9);
+        const on2 = ramp(t, 1.25, 1.35);
+        const on3 = ramp(t, 2.6, 2.85);
+        l1.set(scroll, 1);
+        l2.set(scroll, on2);
+        l3.set(top3, on3);
+        p.phone.drawTap(0, sw.x, sw.y, t - 0.85, scroll);
+        p.phone.drawTap(1, acc.x, acc.y, t - 1.9, scroll, { w: accW, h: 130, r: 65 });
         setCam(
           r,
           camAt(t, [
-            [0, { s: 1.12, x: W / 2, y: H / 2 + 60 }],
-            [4.0, { s: 1.18, x: W / 2, y: H / 2 + 40 }],
+            [0, { s: 1.12, x: W / 2, y: H / 2 + 40 }],
+            [4.0, { s: 1.18, x: W / 2, y: H / 2 + 30 }],
           ]),
           t,
         );
@@ -1036,10 +1202,10 @@ export function buildFilm(stage: Stage, timeline: Timeline) {
   add(
     shot(22, (el) => {
       const p = photo(el, photoRef("07"), [1.03, 50, 50], [1.1, 50, 45], 0.55);
-      const a = slamText(el, ["No callbacks."], { size: 130, x: 110, y: 170 });
-      const b = slamText(el, ["No “let me think", "about it.”"], { size: 130, x: 110, y: 310 });
-      const c = slamText(el, ["Done."], { size: 230, x: 110, y: 570, accent: ["Done"] });
-      const cap = keyCaption(el, "They say yes before you leave.");
+      const a = slamText(el, ["No callbacks."], { size: 130, x: 110, y: 120 });
+      const b = slamText(el, ["No “let me think", "about it.”"], { size: 130, x: 110, y: 260 });
+      const c = slamText(el, ["Done."], { size: 230, x: 110, y: 510, accent: ["Done"] });
+      const cap = keyCaption(el, "They say yes\nbefore you leave.");
       return (t, d) => {
         p(t, d);
         a.draw(t, spread(2, 0.1, 0.4));
@@ -1047,7 +1213,7 @@ export function buildFilm(stage: Stage, timeline: Timeline) {
         c.draw(t, [2.95]);
         const k = shake(t, 2.95, 10);
         c.box.style.transform = `translate(${k.x}px, ${k.y}px)`;
-        cap(t - 3.4, d - 3.4);
+        cap(t - 0.9, d - 0.9);
       };
     }),
   );
@@ -1055,27 +1221,23 @@ export function buildFilm(stage: Stage, timeline: Timeline) {
   // 06 Every pool, every week -----------------------------------------------------------
   add(
     deviceShot(23, "steel", (r, el) => {
+      // A pool route shop's week (Blue Mesa, the pool video shop): its plans fill the board.
       const pool = div("fill", el);
       const pp = photo(pool, photoRef("06"), [1.03, 50, 50], [1.1, 50, 50], 0.1);
       pool.style.zIndex = "5";
-      const week = web("week");
+      const week = web("bm-week");
       const b = placeBrowser(r.el, W / 2, H / 2 + 10, 1500);
-      const l = b.browser.layer(week.src);
-      const target = Math.min(1500, week.height - 1800);
+      const l = b.browser.layer(week.src).pin(NAV);
+      const scroll = Math.min(900, week.height - 1800);
       return (t, d) => {
-        pp(t, 1.5);
-        pool.style.display = t < 1.5 ? "" : "none";
-        l.set(
-          keys(t, [
-            [1.5, target * 0.6],
-            [d, target],
-          ]),
-        );
+        pp(t, 1.3);
+        pool.style.display = t < 1.3 ? "" : "none";
+        l.set(glideTo(t, 1.5, 250, scroll, 1.6));
         setCam(
           r,
           camAt(t, [
-            [1.5, { s: 1.0, x: W / 2, y: H / 2 }],
-            [d, { s: 1.08, x: W / 2 + 60, y: H / 2 + 20 }],
+            [1.3, on(b.at(1700, 1300, 250), 1.3)],
+            [d, on(b.at(1750, 1900, scroll), 1.42)],
           ]),
           t,
         );
@@ -1084,19 +1246,11 @@ export function buildFilm(stage: Stage, timeline: Timeline) {
   );
   add(
     deviceShot(24, "concrete", (r) => {
-      const p = placePhone(r.el, W / 2, H / 2, 420);
-      const c = clip("10");
-      if (c) {
-        const l = p.phone.clip(c);
-        return (t, d) => {
-          l.set(t * Math.max(1, (c.duration * 0.5) / d));
-          setCam(r, CENTER, t);
-        };
-      }
+      const p = placePhone(r.el, W / 2, H / 2, 430, { time: "1:30" });
       // Today → the pool stop pushes in → Chemical → What to Add comes up as a sheet.
-      const today = p.phone.layer(still("lv-today-pool", "30-today-cleanings").src);
-      const visit = p.phone.layer(still("lv-cleanings", "30-checklist-cleanings").src);
-      const add = p.phone.sheet(still("lv-what-to-add", "47-chemicals-doses").src);
+      const today = p.phone.layer(still("lv-today-pool").src);
+      const visit = p.phone.layer(still("lv-cleanings").src);
+      const add = p.phone.sheet(still("lv-what-to-add").src);
       const tPush = 1.15;
       const tSheet = 2.95;
       const dose = add.at(560, 830);
@@ -1113,10 +1267,10 @@ export function buildFilm(stage: Stage, timeline: Timeline) {
         setCam(
           r,
           camAt(t, [
-            [0, CENTER],
-            [tSheet + 0.3, CENTER],
-            [tSheet + 0.9, on(focus, 1.5)],
-            [d, on(focus, 1.58)],
+            [0, { s: 1.12, x: W / 2, y: H / 2 }],
+            [tSheet + 0.3, { s: 1.12, x: W / 2, y: H / 2 }],
+            [tSheet + 0.9, on(focus, 1.6)],
+            [d, on(focus, 1.66)],
           ]),
           t,
         );
@@ -1125,20 +1279,10 @@ export function buildFilm(stage: Stage, timeline: Timeline) {
   );
   add(
     deviceShot(25, "concrete", (r) => {
-      const p = placePhone(r.el, W / 2 - 280, H / 2, 420);
-      const c = clip("10");
+      const p = placePhone(r.el, W / 2 - 280, H / 2, 430, { time: "1:52" });
       const before = print(r.el, stockRef("pool-before").url ?? "", W / 2 + 40, 160, 560, -3);
       const after = print(r.el, stockRef("pool-after").url ?? "", W / 2 + 120, 480, 560, 3);
-      if (c) {
-        const l = p.phone.clip(c);
-        return (t, d) => {
-          l.set(c.duration * 0.5 + t * Math.max(1, (c.duration * 0.5) / d));
-          before(t, 2.0);
-          after(t, 2.8);
-          setCam(r, CENTER, t);
-        };
-      }
-      const l = p.phone.layer(still("lv-cleanings", "30-checklist-cleanings").src);
+      const l = p.phone.layer(still("lv-cleanings").src);
       const filter = p.at(590, 1528);
       return (t, d) => {
         l.set(0);
@@ -1148,11 +1292,11 @@ export function buildFilm(stage: Stage, timeline: Timeline) {
         setCam(
           r,
           camAt(t, [
-            [0, on(filter, 1.45)],
-            [1.6, on(filter, 1.45)],
-            [2.2, { s: 1, x: W / 2, y: H / 2 }],
-            [d - 1.4, { s: 1, x: W / 2, y: H / 2 }],
-            [d - 0.9, on(p.at(707, 794), 1.4)],
+            [0, on(filter, 1.55)],
+            [1.6, on(filter, 1.55)],
+            [2.2, { s: 1.08, x: W / 2, y: H / 2 }],
+            [d - 1.4, { s: 1.08, x: W / 2, y: H / 2 }],
+            [d - 0.9, on(p.at(707, 794), 1.5)],
           ]),
           t,
         );
@@ -1165,7 +1309,7 @@ export function buildFilm(stage: Stage, timeline: Timeline) {
       const yard = div("fill", r.el);
       const yp = photo(yard, stockRef("hero-backyard"), [1.04, 50, 50], [1.1, 45, 50], 0.35);
       const rep = web("phone-visit-report");
-      const p = placePhone(r.el, W / 2 + 420, H / 2, 420, { status: "light" });
+      const p = placePhone(r.el, W / 2 + 420, H / 2, 430, { status: "light", time: "1:58" });
       const l = p.phone.layer(rep.src);
       const end = Math.max(0, rep.height - 2600);
       const cap = keyCaption(el, "Your route runs itself.");
@@ -1173,9 +1317,9 @@ export function buildFilm(stage: Stage, timeline: Timeline) {
         yp(t, d);
         const scroll = flick(t, 3.4, flick(t, 1.0, 0, end * 0.45, 1.2), end, 1.3);
         l.set(scroll);
-        p.phone.statusBar(scroll > 500 ? "dark" : "light", "7:42");
+        p.phone.statusBar(scroll > 500 ? "dark" : "light", "1:58");
         setCam(r, CENTER, t, 3);
-        cap(t - 2.0, d - 2.0);
+        cap(t - 0.6, d - 0.6);
       };
     }),
   );
@@ -1184,42 +1328,32 @@ export function buildFilm(stage: Stage, timeline: Timeline) {
   add(
     deviceShot(27, "concrete", (r, el) => {
       const pad = div("fill", el);
-      const pp = photo(pad, stockRef("equipment-pad"), [1.03, 40, 60], [1.15, 30, 65], 0.1);
+      const pp = photo(pad, stockRef("equipment-pad"), [1.03, 40, 60], [1.12, 30, 65], 0.1);
       pad.style.zIndex = "5";
-      const p = placePhone(r.el, W / 2, H / 2, 420);
-      const c = clip("11");
+      const p = placePhone(r.el, W / 2 + 360, H / 2, 430, { time: "2:05" });
       const cap = keyCaption(el, "Every visit can be a sale.");
-      if (c) {
-        const l = p.phone.clip(c);
-        return (t, d) => {
-          pp(t, 2.6);
-          pad.style.display = t < 2.6 ? "" : "none";
-          l.set((t - 2.6) * Math.max(1, c.duration / (d - 2.6)));
-          setCam(r, CENTER, t);
-          cap(t - 5.6, d - 5.6);
-        };
-      }
       // The finding as a sheet over the visit, then (dismissed) the quote from it.
-      const visit = p.phone.layer(still("lv-cleanings", "30-checklist-cleanings").src);
-      const finding = p.phone.sheet(still("lv-pump-finding", "14-finding-editor").src);
-      const quote = p.phone.sheet(still("lv-pump-quote", "lv-quote", "20-wrap-up-quote").src);
+      const visit = p.phone.layer(still("lv-cleanings").src);
+      const finding = p.phone.sheet(still("lv-pump-finding").src);
+      const quote = p.phone.sheet(still("lv-pump-quote").src);
+      const tPad = 1.4;
       return (t, d) => {
-        pp(t, 2.6);
-        pad.style.display = t < 2.6 ? "" : "none";
-        const f = spring(t - 2.7) * (1 - spring(t - 4.9, 0.35));
-        const q = spring(t - 5.25);
+        pp(t, tPad);
+        pad.style.display = t < tPad ? "" : "none";
+        const f = spring(t - (tPad + 0.1)) * (1 - spring(t - 3.9, 0.35));
+        const q = spring(t - 4.25);
         visit.set(0, 1, behindSheet(Math.max(f, q)));
         finding.set(f);
         quote.set(q);
         setCam(
           r,
           camAt(t, [
-            [2.6, { s: 1.04, x: W / 2, y: H / 2 }],
-            [d, { s: 1.1, x: W / 2, y: H / 2 }],
+            [tPad, rightOf({ s: 1.12, x: p.x + p.phone.outerW / 2, y: H / 2 - 60 }, p.x)],
+            [d, rightOf({ s: 1.2, x: p.x + p.phone.outerW / 2, y: H / 2 - 80 }, p.x)],
           ]),
           t,
         );
-        cap(t - 5.6, d - 5.6);
+        cap(t - 4.6, d - 4.6);
       };
     }),
   );
@@ -1227,27 +1361,19 @@ export function buildFilm(stage: Stage, timeline: Timeline) {
   // 08 Get paid ------------------------------------------------------------------------
   add(
     deviceShot(28, "steel", (r) => {
+      // The office's invoices: every one sent, and what's been paid.
       const inv = web("vs-invoices");
-      const pay = web("phone-invoice-open");
-      const b = placeBrowser(r.el, 760, H / 2 + 20, 1260);
+      const b = placeBrowser(r.el, W / 2, H / 2 + 10, 1500);
       const bl = b.browser.layer(inv.src);
-      const p = placePhone(r.el, 1560, H / 2, 380, { status: "light" });
-      const pl = p.phone.layer(pay.src);
       return (t, d) => {
         bl.set(0);
-        pl.set(
-          keys(t, [
-            [0, 0],
-            [d, Math.max(0, pay.height - 2600)],
-          ]),
-        );
-        const s = slideIn(t, 1.4, 0.6, 900);
-        p.phone.el.style.transform = `translate(${p.x + s.x}px, ${p.y}px)`;
         setCam(
           r,
           camAt(t, [
-            [0, { s: 1.05, x: W / 2 - 100, y: H / 2 }],
-            [d, { s: 1, x: W / 2, y: H / 2 }],
+            [0, { s: 1.0, x: W / 2, y: H / 2 }],
+            [0.8, { s: 1.0, x: W / 2, y: H / 2 }],
+            [2.0, on(b.at(1250, 760), 1.55)],
+            [d, on(b.at(1450, 860), 1.62)],
           ]),
           t,
         );
@@ -1256,23 +1382,13 @@ export function buildFilm(stage: Stage, timeline: Timeline) {
   );
   add(
     deviceShot(29, "concrete", (r) => {
-      const p = placePhone(r.el, W / 2, H / 2, 420);
-      const c = clip("12");
-      if (c) {
-        const l = p.phone.clip(c);
-        return (t, d) => {
-          l.set(t * Math.max(1, c.duration / d));
-          setCam(r, CENTER, t);
-        };
-      }
+      const p = placePhone(r.el, W / 2, H / 2, 430, { time: "2:15" });
       // Record Payment as a sheet over the job; after it, Send Receipt.
-      const job = p.phone.layer(still("lv-findings", "10-findings").src);
-      const pay = p.phone.sheet(still("lv-record-payment", "81-record-payment").src);
-      const receiptStill = still("lv-send-receipt", "81-send-receipt-text");
-      const receipt = p.phone.sheet(receiptStill.src);
-      const sendY = receiptStill.src.includes("lv-") ? 1204 : 1353;
+      const job = p.phone.layer(still("lv-findings").src);
+      const pay = p.phone.sheet(still("lv-record-payment").src);
+      const receipt = p.phone.sheet(still("lv-send-receipt").src);
       const record = pay.at(580, 1200);
-      const send = receipt.at(580, sendY);
+      const send = receipt.at(580, 1204);
       return (t) => {
         const a = spring(t - 0.1) * (1 - spring(t - 1.75, 0.35));
         const b = spring(t - 2.1);
@@ -1284,8 +1400,8 @@ export function buildFilm(stage: Stage, timeline: Timeline) {
         setCam(
           r,
           camAt(t, [
-            [0, on(p.at(590, 1000), 1.3)],
-            [4.5, on(p.at(590, 1150), 1.34)],
+            [0, on(p.at(590, 1000), 1.35)],
+            [4.5, on(p.at(590, 1150), 1.4)],
           ]),
           t,
         );
@@ -1294,25 +1410,24 @@ export function buildFilm(stage: Stage, timeline: Timeline) {
   );
   add(
     deviceShot(30, "steel", (r, el) => {
-      const dash = web("vs-dashboard");
+      // What's come in: the paid invoices.
+      const paid = web("vs-invoices-paid");
       const b = placeBrowser(r.el, W / 2, H / 2 + 10, 1500);
-      const l = b.browser.layer(dash.src);
-      const col = mid(dash.boxes.collected, { x: 1300, y: 420 });
-      const cnt = counter(el, "Collected · 6 months", 10991500, 110, 160);
+      const l = b.browser.layer(paid.src);
       const cap = keyCaption(el, "Stop chasing checks.");
+      const focus = lensOn(b, 140, 820);
       return (t, d) => {
         l.set(0);
+        r.lens(ramp(t, 0.1, 0.5));
         setCam(
           r,
           camAt(t, [
-            [0, { s: 1, x: W / 2, y: H / 2 }],
-            [1.0, on(b.at(col.x + 300, col.y + 60), 1.7)],
-            [d, on(b.at(col.x + 300, col.y + 60), 1.8)],
+            [0, focus(1.3)],
+            [d, focus(1.36)],
           ]),
           t,
         );
-        cnt(t, 0.9);
-        cap(t - 2.4, d - 2.4);
+        cap(t - 0.4, d - 0.4);
       };
     }),
   );
@@ -1334,17 +1449,12 @@ export function buildFilm(stage: Stage, timeline: Timeline) {
       words.box.style.zIndex = "3";
       shade.style.zIndex = "2";
       return (t, d) => {
-        l.set(
-          keys(t, [
-            [0, 0],
-            [d, 300],
-          ]),
-        );
+        l.set(0);
         setCam(
           r,
           camAt(t, [
-            [0, { s: 0.92, x: W / 2, y: H / 2 }],
-            [d, { s: 1.0, x: W / 2, y: H / 2 }],
+            [0, on(b.at(1440, 700), 1.15)],
+            [d, on(b.at(1440, 760), 1.25)],
           ]),
           t,
         );
@@ -1362,25 +1472,32 @@ export function buildFilm(stage: Stage, timeline: Timeline) {
         const m = mid(dash.boxes[k], f);
         return b.at(m.x + 260, m.y + 50);
       };
-      // What came in, what's still owed, what was billed, who said yes.
+      // What came in (the card counts up to its own figure), what's still owed, what was billed,
+      // who said yes.
       const collected = pt("collected", { x: 1300, y: 420 });
       const owed = pt("owed", { x: 2200, y: 420 });
       const invoiced = pt("invoiced", { x: 1300, y: 720 });
       const quotes = pt("quotes", { x: 400, y: 720 });
+      // The card's own figure, read off the page when it was captured.
+      const figure = Math.round(
+        Number((dash.texts?.collected ?? "$0").replace(/[^0-9.]/g, "")) * 100,
+      );
+      const count = cardCount(b, dash.boxes.collectedValue, figure);
       return (t, d) => {
         l.set(0);
+        count(t, 0.1, 0.9);
         setCam(
           r,
           camAt(
             t,
             [
               [0, on(collected, 1.9)],
-              [1.3, on(collected, 1.9)],
-              [1.75, on(owed, 1.9)],
-              [2.9, on(owed, 1.9)],
-              [3.35, on(invoiced, 1.9)],
-              [4.2, on(invoiced, 1.9)],
-              [4.65, on(quotes, 1.9)],
+              [1.7, on(collected, 1.9)],
+              [2.1, on(owed, 1.9)],
+              [3.1, on(owed, 1.9)],
+              [3.5, on(invoiced, 1.9)],
+              [4.3, on(invoiced, 1.9)],
+              [4.7, on(quotes, 1.9)],
               [d, on(quotes, 1.95)],
             ],
             easeInOut,
@@ -1393,26 +1510,25 @@ export function buildFilm(stage: Stage, timeline: Timeline) {
   );
   add(
     deviceShot(33, "steel", (r, el) => {
-      // The shop's Activity: payments and accepted quotes as they came in from every truck.
+      // The shop's Activity: Rebecca's morning as it came in.
       const act = web("vs-activity");
       const b = placeBrowser(r.el, W / 2, H / 2 + 10, 1500);
-      const l = b.browser.layer(act.src);
+      const l = b.browser.layer(act.src).pin(NAV);
       const row = act.boxes.payment ?? act.boxes.quoteAccepted;
-      const scroll = Math.max(0, (row?.y ?? 700) - 260);
-      // The list's column: from its left edge, about a thousand pixels wide.
-      const focus = b.at((row?.x ?? 320) + 520, (row?.y ?? 700) + 380, scroll);
-      const cap = keyCaption(el, "Every truck. Every job. Every dollar. One screen.");
+      const focus = lensOn(b, (row?.x ?? 320) - 60, (row?.y ?? 700) + 280);
+      const cap = keyCaption(el, "Every truck. Every job.\nEvery dollar. One screen.");
       return (t, d) => {
-        l.set(flick(t, 0.2, scroll - 500, scroll, 1.2));
+        l.set(0);
+        r.lens(ramp(t, 0.1, 0.5));
         setCam(
           r,
           camAt(t, [
-            [0, onRight(focus, 1.25)],
-            [d, onRight(focus, 1.4)],
+            [0, focus(1.35)],
+            [d, focus(1.42)],
           ]),
           t,
         );
-        cap(t - 1.8, d - 1.8);
+        cap(t - 0.4, d - 0.4);
       };
     }),
   );
@@ -1434,9 +1550,9 @@ export function buildFilm(stage: Stage, timeline: Timeline) {
           r,
           camAt(t, [
             [0, { s: 1.0, x: W / 2, y: H / 2 }],
-            [1.8, on(b.at(subject.x + 200, subject.y + 120), 1.45)],
-            [d - 2.4, on(b.at(subject.x + 200, subject.y + 300), 1.45)],
-            [d - 1.6, on(b.at(send.x + 420, send.y - 180), 1.45)],
+            [1.0, on(b.at(subject.x + 200, subject.y + 120), 1.6)],
+            [d - 2.4, on(b.at(subject.x + 200, subject.y + 300), 1.6)],
+            [d - 1.6, on(b.at(send.x + 420, send.y - 180), 1.6)],
           ]),
           t,
         );
@@ -1448,19 +1564,21 @@ export function buildFilm(stage: Stage, timeline: Timeline) {
       const s = web("vs-settings-reminders");
       const b = placeBrowser(r.el, W / 2, H / 2 + 10, 1500);
       const l = b.browser.layer(s.src);
-      const cap = keyCaption(el, "Customers who come back. And send their friends.");
+      const cap = keyCaption(el, "Customers who come back.\nAnd send their friends.");
+      const focus = lensOn(b, 740, 760);
       return (t, d) => {
         l.set(0);
+        r.lens(ramp(t, 0.8, 1.2));
         setCam(
           r,
           camAt(t, [
-            [0, { s: 1, x: W / 2, y: H / 2 }],
-            [1.6, onRight(b.at(1500, 850), 1.5)],
-            [d, onRight(b.at(1500, 850), 1.56)],
+            [0, on(b.at(1400, 760), 1.4)],
+            [1.0, focus(1.3)],
+            [d, focus(1.34)],
           ]),
           t,
         );
-        cap(t - 2.6, d - 2.6);
+        cap(t - 1.0, d - 1.0);
       };
     }),
   );
@@ -1468,63 +1586,59 @@ export function buildFilm(stage: Stage, timeline: Timeline) {
   // 11 Built for the backyard -----------------------------------------------------------
   add(
     deviceShot(36, "concrete", (r, el) => {
-      // In the backyard at six in the morning: Today in dark mode, Start under the thumb.
+      // No signal at the pool: Airplane Mode, the job saying what's waiting on this phone; then
+      // back in range, the same job, caught up.
       const yard = div("fill", r.el);
       const yp = photo(yard, photoRef("06"), [1.04, 50, 50], [1.1, 50, 48], 0.3);
-      const p = placePhone(r.el, W / 2 + 420, H / 2, 420, {
-        status: "light",
-        time: "6:04",
-        dark: true,
-      });
-      const c = clip("13");
+      const p = placePhone(r.el, W / 2 + 420, H / 2, 430, { time: "8:46" });
+      const off = p.phone.layer(still("lv-offline").src);
+      const on2 = p.phone.layer(still("lv-checklist").src);
       const cap = keyCaption(el, "No signal? No problem.");
-      const dark = still("lv-today-dark", "30-today-dark");
-      const l = c ? p.phone.clip(c) : p.phone.layer(dark.src);
-      const y = dark.src.includes("lv-") ? 1534 : 1660;
+      const back = 5.0;
+      const bar = p.at(590, 470);
       return (t, d) => {
         yp(t, d);
-        if ("clip" in l) l.set(t * Math.max(1, l.clip.duration / d));
-        else {
-          l.set(0);
-          p.phone.drawTap(0, 352, y, t - 3.0, 0, { w: 520, h: 150 });
-        }
+        const synced = ramp(t, back, back + 0.3);
+        off.set(0, 1);
+        on2.set(0, synced);
+        p.phone.statusBar("dark", t < back ? "8:46" : "8:52", t < back);
         setCam(
           r,
           camAt(t, [
-            [0, CENTER],
-            [d, { s: 1.05, x: W / 2 + 60, y: H / 2 }],
+            [0, rightOf({ s: 1.05, x: W / 2 + 100, y: H / 2 }, p.x)],
+            [1.4, rightOf(on(bar, 1.5), p.x)],
+            [d, rightOf(on(bar, 1.55), p.x)],
           ]),
           t,
           3,
         );
-        cap(t - 1.2, d - 1.2);
+        cap(t - 0.8, d - 0.8);
       };
     }),
   );
   add(
-    deviceShot(37, "concrete", (r) => {
-      // Big buttons, one hand: the card's Start and the round Text, Call and Directions buttons.
-      const p = placePhone(r.el, W / 2, H / 2, 420);
-      const c = clip("14");
-      if (c) {
-        const l = p.phone.clip(c);
-        return (t, d) => {
-          l.set(t * Math.max(1, c.duration / d));
-          setCam(r, CENTER, t);
-        };
-      }
-      const today = still("lv-today", "30-today");
-      const l = p.phone.layer(today.src);
-      const y = today.src.includes("lv-") ? 1534 : 1660;
+    deviceShot(37, "concrete", (r, el) => {
+      // Big buttons, one hand: Today in dark mode at dawn, Start and Directions under the thumb.
+      const dawn = div("fill", r.el);
+      const dp = photo(dawn, photoRef("01"), [1.05, 45, 50], [1.1, 45, 52], 0.25);
+      void el;
+      const p = placePhone(r.el, W / 2 + 300, H / 2, 430, {
+        status: "light",
+        time: "6:04",
+        dark: true,
+      });
+      const l = p.phone.layer(still("lv-today-dark").src);
+      const y = 1534;
       return (t, d) => {
+        dp(t, d);
         l.set(0);
-        p.phone.drawTap(0, 352, y, t - 0.9, 0, { w: 520, h: 150 });
-        p.phone.drawTap(1, 1018, y, t - 2.2, 0, { w: 150, h: 150 });
+        p.phone.drawTap(0, 352, y, t - 0.7, 0, { w: 520, h: 150, r: 75 });
+        p.phone.drawTap(1, 1018, y, t - 2.0, 0, { w: 150, h: 150, r: 75 });
         setCam(
           r,
           camAt(t, [
-            [0, CENTER],
-            [0.8, on(p.at(640, y), 1.55)],
+            [0, { s: 1.0, x: W / 2 + 120, y: H / 2 }],
+            [0.6, on(p.at(640, y), 1.55)],
             [d, on(p.at(640, y), 1.62)],
           ]),
           t,
@@ -1549,7 +1663,7 @@ export function buildFilm(stage: Stage, timeline: Timeline) {
       const c = photo(cw, photoRef("07"), [1.02, 50, 50], [1.08, 50, 50], 0.3);
       const t1 = slamText(el, ["Another truck."], { size: 170, x: 110, y: 720 });
       const t2 = slamText(el, ["Another crew."], { size: 170, x: 110, y: 720 });
-      const t3 = slamText(el, ["A bigger name in town."], { size: 170, x: 110, y: 720 });
+      const t3 = slamText(el, ["A bigger name", "in town."], { size: 170, x: 110, y: 560 });
       for (const x of [t1, t2, t3]) x.box.style.zIndex = "4";
       return (t, d) => {
         a(t, d);
@@ -1572,7 +1686,7 @@ export function buildFilm(stage: Stage, timeline: Timeline) {
       const bw = div("fill", el);
       const b = photo(bw, photoRef("11"), [1.02, 50, 50], [1.08, 50, 50], 0.2);
       const t1 = slamText(el, ["Home for dinner."], { size: 170, x: 110, y: 720 });
-      const t2 = slamText(el, ["Saturdays at the lake."], { size: 170, x: 110, y: 720 });
+      const t2 = slamText(el, ["Saturdays", "at the lake."], { size: 170, x: 110, y: 560 });
       for (const x of [t1, t2]) x.box.style.zIndex = "4";
       return (t, d) => {
         a(t, d);
@@ -1615,7 +1729,7 @@ export function buildFilm(stage: Stage, timeline: Timeline) {
         const p = slam(ramp(t, 0, 0.3));
         logo.style.transform = `scale(${lerp(1.4, 1, p)})`;
         logo.style.opacity = String(ramp(t, 0, 0.06));
-        text.draw(t, spread(text.words, 1.0, 2.6));
+        text.draw(t, [1.0, 1.0, 1.0, 1.9, 1.9, 1.9, 1.9, 1.9]);
       };
     }),
   );

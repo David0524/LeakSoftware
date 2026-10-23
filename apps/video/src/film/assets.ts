@@ -14,7 +14,10 @@ export interface Box {
 export interface Manifest {
   timeline: Timeline;
   /** Website captures: captures/web/<name>.png with their size and named boxes (image pixels). */
-  web: Record<string, { width: number; height: number; boxes: Record<string, Box> }>;
+  web: Record<
+    string,
+    { width: number; height: number; boxes: Record<string, Box>; texts?: Record<string, string> }
+  >;
   /** iPhone screens: captures/iphone/<name>.png. */
   iphone: Record<string, { width: number; height: number }>;
   /** The launch photos (section 6 of the plan) by number, "01" … "11": a URL or null. */

@@ -28,7 +28,7 @@ BUILD = os.path.join(ROOT, "build")
 SR = 48000
 # Mix levels: the voice bus, and the music bus under it (music/check_mix.py checks the gap).
 VOICE_LUFS = -16.0
-MUSIC_LUFS = -25.5
+MUSIC_LUFS = -29.0
 RNG = np.random.default_rng(20261023)
 
 
@@ -366,8 +366,10 @@ def main():
 
     # The vision: a swell, half-time drums, open chords and a lead, into the end hit.
     vision_prog = [("C3", "G3", "E4"), ("G2", "D3", "B3"), ("D3", "A3", "F#4"), ("E3", "B3", "G4")]
-    place(air, riser(2.5), vision - 2.5, 0.6)
-    place(air, crash(4.0), vision, 0.7)
+    # The swell's crash lands in the breath before "Think about…", never on the word.
+    lift_at = lines[37]["end"] + 0.15
+    place(air, riser(2.5), lift_at - 2.5, 0.6)
+    place(air, crash(4.0), lift_at, 0.7)
     t = vision
     i = 0
     lead_line = ["E4", "G4", "A4", "B4", "D5", "B4", "A4", "G4"]
@@ -415,7 +417,11 @@ def main():
     print("  voice…")
     voice = voice_track(timeline, n)
     if np.any(voice):
-        level = envelope(voice)
+        # The music steps back a quarter second before each word (look-ahead) and stays down
+        # through the pauses inside a line.
+        level = envelope(voice, release=0.8)
+        ahead = seconds(0.25)
+        level = np.maximum(level, np.concatenate([level[ahead:], np.full(ahead, level[-1])]))
         duck = 1 / (1 + (level / 0.02) ** 1.5)
         duck = 0.14 + 0.86 * duck  # ~ -17 dB while talking
     else:
@@ -427,6 +433,13 @@ def main():
     air_duck = 0.15 + 0.85 * duck
 
     music = band * band_duck + (air + wet) * air_duck
+    # The vision lifts: about 5 dB up between lines, and further under the voice while it speaks.
+    if np.any(voice):
+        free = np.clip((duck - 0.14) / 0.86, 0, 1)
+        a, b = seconds(lines[38]["start"] - 1.0), seconds(end_hit)
+        lift = np.ones(n)
+        lift[a:b] = 0.5 + 1.3 * free[a:b]
+        music = music * lift
     # Fade the very end.
     tail = seconds(1.2)
     music[:, -tail:] *= np.linspace(1, 0, tail)

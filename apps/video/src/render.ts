@@ -123,14 +123,18 @@ function manifest(timeline: Timeline) {
   const boxes = existsSync(join(webDir, "boxes.json"))
     ? (JSON.parse(readFileSync(join(webDir, "boxes.json"), "utf8")) as Record<
         string,
-        { boxes: unknown }
+        { boxes: unknown; texts?: unknown }
       >)
     : {};
   const web: Record<string, unknown> = {};
   for (const f of existsSync(webDir) ? readdirSync(webDir) : []) {
     if (!f.endsWith(".png")) continue;
     const name = f.slice(0, -4);
-    web[name] = { ...imageSize(join(webDir, f)), boxes: boxes[name]?.boxes ?? {} };
+    web[name] = {
+      ...imageSize(join(webDir, f)),
+      boxes: boxes[name]?.boxes ?? {},
+      texts: boxes[name]?.texts ?? {},
+    };
   }
   const phoneDir = join(root, "captures", "iphone");
   const iphone: Record<string, unknown> = {};
@@ -373,7 +377,9 @@ async function main() {
     ]);
     mkdirSync(outDir, { recursive: true });
     const whole = from === 0 && to === total;
-    const out = whole ? join(outDir, FILM) : join(outDir, `part-${from / 30}-${to / 30}.mp4`);
+    const out = whole
+      ? join(outDir, FILM)
+      : join(outDir, `part-${from / timeline.fps}-${to / timeline.fps}.mp4`);
     const mix = join(build, "mix.wav");
     if (whole && existsSync(mix)) {
       execFileSync("ffmpeg", [

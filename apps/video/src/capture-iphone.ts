@@ -8,6 +8,7 @@
 // Download an artifact with `gh run download <run id> -n iphone-screenshots -D <folder>` (or
 // from the run's page on GitHub).
 
+import { execFileSync } from "node:child_process";
 import { copyFileSync, existsSync, mkdirSync, readdirSync } from "node:fs";
 import { join } from "node:path";
 
@@ -30,3 +31,9 @@ for (const dir of dirs) {
   }
 }
 console.log(`Copied ${n} iPhone screens to captures/iphone/`);
+// The simulator's capture leaves SwiftUI's Canvas blank: draw Rebecca's saved signature into
+// the Customer Signs screen the way the app does (tools/sign_screen.py).
+const signed = join(out, "lv-signed.png");
+if (existsSync(signed)) {
+  execFileSync("python3", [join(root, "tools", "sign_screen.py"), signed], { stdio: "inherit" });
+}

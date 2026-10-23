@@ -68,6 +68,8 @@ export function photo(
   from: [number, number, number] = [1.04, 50, 50],
   to: [number, number, number] = [1.12, 50, 46],
   shade = 0,
+  /** The push's pace: eased in and out, or `(x) => x` for a constant speed (fast cuts). */
+  ease: (x: number) => number = easeInOut,
 ) {
   const wrap = div("fill", parent);
   css(wrap, { overflow: "hidden", background: "var(--n900)" });
@@ -112,8 +114,12 @@ export function photo(
   }
   const dark = div("fill", wrap);
   css(dark, { background: "var(--navy)", opacity: shade });
+  // Film grain on photos only (never over the app's screens), a new pattern 15 times a second.
+  const grain = div("grain", wrap);
+  css(grain, { opacity: 0.06 });
   return (t: number, d: number) => {
-    const p = easeInOut(clamp(t / Math.max(d, 0.01)));
+    grain.style.backgroundImage = `url(${textures.grain[Math.floor(Math.max(0, t) * 15) % textures.grain.length]})`;
+    const p = ease(clamp(t / Math.max(d, 0.01)));
     const s = lerp(from[0], to[0], p);
     const x = lerp(from[1], to[1], p);
     const y = lerp(from[2], to[2], p);
@@ -133,7 +139,7 @@ export interface SlamOptions {
   align?: "left" | "center";
   x?: number;
   y?: number;
-  /** Words to color water blue. */
+  /** Words to underline in safety orange (one per screen at most; never a blue word on a photo). */
   accent?: string[];
   width?: number;
 }
@@ -153,6 +159,8 @@ export function slamText(parent: HTMLElement, lines: string[], o: SlamOptions = 
     "font-size": size,
     color: o.color ?? "var(--paper)",
     "text-align": o.align ?? "left",
+    // Legible over any photo: a soft dark halo under the white type.
+    "text-shadow": "0 3px 0 rgba(0,0,0,0.35), 0 0 36px rgba(0,0,0,0.55), 0 0 12px rgba(0,0,0,0.35)",
   });
   const words: HTMLElement[] = [];
   for (const line of lines) {
@@ -161,8 +169,12 @@ export function slamText(parent: HTMLElement, lines: string[], o: SlamOptions = 
       const span = document.createElement("span");
       span.className = "word";
       span.textContent = (i ? " " : "") + w;
-      if (o.accent?.some((a) => w.toUpperCase().startsWith(a.toUpperCase())))
-        span.style.color = "var(--water)";
+      if (o.accent?.some((a) => w.toUpperCase().startsWith(a.toUpperCase()))) {
+        span.style.textDecoration = "underline";
+        span.style.textDecorationColor = "var(--safety)";
+        span.style.textDecorationThickness = "0.07em";
+        span.style.textUnderlineOffset = "0.1em";
+      }
       row.appendChild(span);
       words.push(span);
     });
@@ -174,7 +186,9 @@ export function slamText(parent: HTMLElement, lines: string[], o: SlamOptions = 
       words.forEach((w, i) => {
         const p = ramp(t, times[i] ?? 0, (times[i] ?? 0) + 0.2);
         const s = lerp(1.45, 1, slam(p));
-        w.style.opacity = String(clamp(p * 3) * (1 - ramp(t, out, out + 0.15)));
+        // Full white within two frames (never a grey, half-faded word on screen).
+        const on = ramp(t, times[i] ?? 0, (times[i] ?? 0) + 1.5 / 60);
+        w.style.opacity = String(on * (1 - ramp(t, out, out + 0.15)));
         w.style.transform = `scale(${s})`;
       });
     },
@@ -229,9 +243,11 @@ export function chapterCard(parent: HTMLElement, number: string, title: string) 
     // On screen from the first frame (no empty card), slamming down to size.
     num.style.opacity = "1";
     slash.style.opacity = String(ramp(t, 0, 0.12));
-    const pt = easeOut(ramp(t, 0.15, 0.6));
-    name.style.clipPath = `inset(0 ${(1 - pt) * 100}% 0 0)`;
-    rule.style.width = `${easeOut(ramp(t, 0.25, 0.9)) * 1100}px`;
+    // The title is whole from its first frame (never half-written): it slides in as one.
+    const pt = expoOut(ramp(t, 0.05, 0.4));
+    name.style.opacity = String(clamp(pt * 4));
+    name.style.transform = `translateX(${(1 - pt) * 50}px)`;
+    rule.style.width = `${easeOut(ramp(t, 0.1, 0.7)) * 1100}px`;
     // A push out as it leaves.
     const out = ramp(t, d - 0.15, d);
     row.style.transform = `translateX(${-out * 60}px)`;
@@ -240,24 +256,31 @@ export function chapterCard(parent: HTMLElement, number: string, title: string) 
   };
 }
 
-/** A key line that stays on screen for muted viewing: white on a solid navy bar. */
+/**
+ * A key line that stays on screen for muted viewing: white on a solid navy bar, left-aligned,
+ * broken where the text has "\n". It sits in the caption zone (bottom left, or bottom right
+ * with `side: "right"`), and shots keep their devices out of that zone while it shows.
+ */
 export function keyCaption(
   parent: HTMLElement,
   text: string,
-  opts: { y?: number; x?: number } = {},
+  opts: { y?: number; x?: number; side?: "left" | "right" } = {},
 ) {
   const el = div("display", parent);
+  const side = opts.side ?? "left";
   css(el, {
     position: "absolute",
-    left: opts.x ?? 96,
+    ...(side === "right" ? { right: opts.x ?? 96 } : { left: opts.x ?? 96 }),
     ...(opts.y === undefined ? { bottom: 110 } : { top: opts.y }),
     padding: "18px 30px 14px 30px",
     "font-size": 64,
     background: "var(--navy)",
     color: "var(--paper)",
     "border-left": "10px solid var(--water)",
-    "max-width": "880px",
     "line-height": "1",
+    "white-space": "pre",
+    "text-align": "left",
+    "z-index": 8,
   });
   el.textContent = text.toUpperCase();
   return (t: number, d: number) => {
@@ -266,6 +289,9 @@ export function keyCaption(
     el.style.opacity = String(1 - ramp(t, d - 0.2, d));
   };
 }
+
+/** The caption zone's right edge (left captions): devices stay right of it while one shows. */
+export const CAPTION_RIGHT = 1000;
 
 /** The narration as a subtitle (placeholder cut only, to judge pacing). */
 export function subtitle(parent: HTMLElement, text: string) {
@@ -300,7 +326,12 @@ export interface Cam {
 
 /** A layer the camera moves: devices sit in it at stage coordinates. */
 export function rig(parent: HTMLElement) {
-  const el = div("abs", parent);
+  // The lens: a rounded window the devices show through, for a push-in that leaves room for a
+  // caption (the frame's left part shows the surface under it, never a device under the type).
+  const shadow = div("abs", parent);
+  css(shadow, { "border-radius": 28, "box-shadow": "0 30px 70px rgba(0,0,0,0.42)", opacity: 0 });
+  const frame = div("fill", parent);
+  const el = div("abs", frame);
   css(el, { width: W, height: H });
   return {
     el,
@@ -308,6 +339,23 @@ export function rig(parent: HTMLElement) {
       const tx = W / 2 - c.x * c.s;
       const ty = H / 2 - c.y * c.s;
       el.style.transform = `translate(${tx}px, ${ty}px) scale(${c.s})${rot ? ` rotate(${rot}deg)` : ""}`;
+    },
+    /**
+     * Narrows the view to a window right of the caption zone (`side: "right"`) or left of a
+     * right-hand caption, by `p` (0 full frame, 1 the window).
+     */
+    lens(p: number, side: "right" | "left" = "right") {
+      const q = easeInOut(clamp(p));
+      if (q <= 0) {
+        frame.style.clipPath = "";
+        shadow.style.opacity = "0";
+        return;
+      }
+      const edge = 60 * q;
+      const inner = (CAPTION_RIGHT + 40) * q;
+      const [l, r] = side === "right" ? [inner, edge] : [edge, inner];
+      frame.style.clipPath = `inset(${edge}px ${r}px ${edge}px ${l}px round ${28 * q}px)`;
+      css(shadow, { left: l, top: edge, width: W - l - r, height: H - 2 * edge, opacity: q });
     },
   };
 }

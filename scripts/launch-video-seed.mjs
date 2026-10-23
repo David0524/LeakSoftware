@@ -5,7 +5,7 @@
 // company is never seeded.
 //
 //   NODE_USE_ENV_PROXY=1 node scripts/launch-video-seed.mjs            # dry run: shows the changes
-//   NODE_USE_ENV_PROXY=1 node scripts/launch-video-seed.mjs --apply    # makes them
+//   NODE_USE_ENV_PROXY=1 node scripts/launch-video-seed.mjs --apply    # makes them (--remake: her story again)
 //
 // What it does:
 //   - Hides Getting Started for the two owners (Marcus Hale, Erin Cole), as the owner's own Hide
@@ -13,13 +13,21 @@
 //   - Canyon State: the film's one leak story, the same as the owner's iPhone recordings and the
 //     app's screens. The shop reads "Canyon State Leak Detections"; customer Rebecca Quinn at
 //     7745 N 42nd Ave, Phoenix (seeded map location, no geocoding) has a finished leak
-//     detection: the checklist with the skimmer seam leaking, a pressure test that dropped 8 PSI
-//     in 15 minutes, dye drawn in at the skimmer throat, the finding pinned on the pool with
-//     its photo (apps/video/assets/photos/leak-dye-skimmer.jpg), her signature, the sent
-//     report, a sent quote (Reseal skimmer throat $450 + Dive fee $150 = $600, $300 deposit) and
-//     the sent $375 leak detection invoice. Prints the customer links.
+//     detection, job #5163 on Friday, October 23 (Phoenix time): the checklist with two leaks, a
+//     pressure test on the return line that dropped from 20 to 12 PSI in 15 minutes (a break
+//     under the deck) and dye drawn into the conduit behind the pool light (its photo,
+//     apps/video/assets/photos/leak-dye-light-niche.jpg), both findings pinned on the pool, her
+//     signature taken on site, the sent report, a sent quote (Repair return line break $1,150 +
+//     Reseal light niche conduit $385 = $1,535, $767.50 deposit) and the sent $375 leak
+//     detection invoice #2087. Prints the customer links.
 //     With --accept as well: she accepts the quote and pays the deposit by card (the capture of
 //     the open quote comes first; see apps/video/src/capture-web.ts).
+//   - Canyon State's next week (Oct 26 to 30) for the Schedule captures: each job has one tech,
+//     so Dana Ruiz and Jake Turner have their own days, and a new leak detection (Laura
+//     Bennett) waits in Needs a Time for the office to place. `--snapshot-week` saves that week
+//     and every job in Needs a Time to apps/video/build/week-before.json before the captures
+//     move jobs and optimize it (Optimize Week also places Needs a Time's jobs), and
+//     `--restore-week --apply` puts them back from there afterwards.
 //   - Blue Mesa: completes one weekly visit (Caleb Pacheco, job #5230): its checklist inspected,
 //     the water readings, before and after photos (apps/video/assets/photos/pool-before.jpg and
 //     pool-after.jpg), and sends its visit report the way the app does (send_visit_report), so
@@ -30,7 +38,7 @@
 // here: it geocodes through Mapbox, which costs money. Seed latitude and longitude directly when
 // a scene needs a place on the map.
 import { createHash, randomUUID } from "node:crypto";
-import { readFileSync } from "node:fs";
+import { readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 
 const root = join(import.meta.dirname, "..");
@@ -38,6 +46,8 @@ const dev = JSON.parse(readFileSync(join(root, "config", "supabase-dev.json"), "
 const ref = dev.projectRef;
 const apply = process.argv.includes("--apply");
 const accept = process.argv.includes("--accept");
+const snapshotWeek = process.argv.includes("--snapshot-week");
+const restoreWeek = process.argv.includes("--restore-week");
 
 const SHOPS = {
   canyon: "00000000-0000-4000-9000-00000000c501",
@@ -45,6 +55,13 @@ const SHOPS = {
 };
 const OWNERS = ["marcus@canyonstate.video.test", "erin@bluemesa.video.test"];
 const VIDEO_PASSWORD = "sundeck-video";
+/** Rebecca Quinn's leak job: the number in the owner's recording 05 and the app's screens. */
+const STORY_JOB = 5163;
+const STORY_DAY = "2026-10-23";
+/** The day before: the office gave her job to Dana that afternoon. */
+const STORY_EVE = "2026-10-22";
+/** Her quote: the two repairs, $1,535, half as the deposit. */
+const STORY_TOTAL = 153500;
 /** Blue Mesa's visit for the film: Caleb Pacheco, a weekly plan. */
 const VISIT_NUMBER = 5230;
 
@@ -137,6 +154,8 @@ const [canyon] = await query(`
          (select s.token from public.share_link s join public.quote q on q.id = s.quote_id
           where q.job_id = j.id and s.revoked_at is null limit 1) as quote,
          (select q.status from public.quote q where q.job_id = j.id and q.deleted_at is null limit 1) as quote_status,
+         (select q.total_cents from public.quote q where q.job_id = j.id and q.deleted_at is null limit 1) as quote_total,
+         (j.scheduled_start at time zone 'America/Phoenix')::date::text as day,
          (select s.token from public.share_link s join public.invoice i on i.id = s.invoice_id
           where i.job_id = j.id and s.revoked_at is null limit 1) as invoice
        from public.job j join public.customer cu on cu.id = j.bill_to_customer_id
@@ -146,20 +165,56 @@ const [canyon] = await query(`
   from public.company c where c.id = ${q(SHOPS.canyon)}
 `);
 let story = canyon.story;
-// A run cut off before her report was made: start her story again (an apply only).
-if (story && !story.report && apply) {
+// A run cut off before her report was made, or her story under another job number (her sent
+// report keeps the number it was sent with): make her story again (an apply only).
+const remake =
+  story &&
+  (process.argv.includes("--remake") ||
+    !story.report ||
+    story.number !== STORY_JOB ||
+    story.quote_total !== STORY_TOTAL ||
+    story.day !== STORY_DAY);
+const canyonSteps = [];
+if (canyon.name !== SHOP_NAME) canyonSteps.push(`rename the shop to "${SHOP_NAME}"`);
+if (remake) canyonSteps.push(`remove her earlier story (job #${story.number}, ${story.day})`);
+if (!story || remake) {
+  canyonSteps.push(
+    `add Rebecca Quinn's leak detection (job #${STORY_JOB}), report, quote and invoice`,
+  );
+}
+if (remake && apply) {
   await resetStory(story.id);
   story = null;
 }
-const canyonSteps = [];
-if (canyon.name !== SHOP_NAME) canyonSteps.push(`rename the shop to "${SHOP_NAME}"`);
-if (!story) canyonSteps.push("add Rebecca Quinn's leak detection, report, quote and invoice");
+if (story && !remake) canyonSteps.push("set her story's times (Friday morning)");
 if (accept && story?.quote_status !== "accepted")
   canyonSteps.push("accept her quote with the deposit");
 console.log(`Canyon State: ${canyonSteps.length ? canyonSteps.join(", ") : "ready"}`);
 if (story) printLinks(story);
 
-const total = hide.length + steps.length + canyonSteps.length;
+// Canyon State's next week: one tech per job, and a new leak detection to place --------------
+
+const WEEK = { from: "2026-10-26T00:00:00-07:00", to: "2026-11-02T00:00:00-07:00" };
+const weekFile = join(root, "apps", "video", "build", "week-before.json");
+const [week] = await query(`
+  select
+    (select count(*) from public.job where company_id = ${q(SHOPS.canyon)} and deleted_at is null
+       and scheduled_start >= ${q(WEEK.from)} and scheduled_start < ${q(WEEK.to)}
+       and second_tech_id is not null)::int as shared,
+    (select j.id from public.job j join public.customer c on c.id = j.bill_to_customer_id
+       where j.company_id = ${q(SHOPS.canyon)} and c.name = 'Laura Bennett' and j.deleted_at is null
+       limit 1) as laura
+`);
+if (snapshotWeek || restoreWeek) {
+  await weekSnapshot();
+  process.exit(0);
+}
+const weekSteps = [];
+if (week.shared) weekSteps.push(`give ${week.shared} of next week's jobs one tech each`);
+if (!week.laura) weekSteps.push("add Laura Bennett's leak detection to Needs a Time");
+console.log(`Canyon State next week: ${weekSteps.length ? weekSteps.join(", ") : "ready"}`);
+
+const total = hide.length + steps.length + canyonSteps.length + weekSteps.length;
 if (!total) {
   console.log("Nothing to change.");
 } else if (!apply) {
@@ -180,6 +235,14 @@ if (!total) {
   if (!made) made = await rebeccaStory();
   await catchUpCounters(SHOPS.canyon);
   if (accept && made.quote_status !== "accepted") await acceptQuote(made.id);
+  if (week.shared) {
+    await query(`
+      update public.job set second_tech_id = null
+      where company_id = ${q(SHOPS.canyon)} and deleted_at is null and second_tech_id is not null
+        and scheduled_start >= ${q(WEEK.from)} and scheduled_start < ${q(WEEK.to)}`);
+  }
+  if (!week.laura) await addLaura();
+  await setStoryTimes(made.id);
   if (!story) printLinks(made);
   console.log(`Applied ${total} change(s).`);
 }
@@ -264,59 +327,6 @@ function printLinks(st) {
   console.log(`  Invoice: ${dev.webUrl}/i/${st.invoice}`);
 }
 
-/** A signature drawn as one flowing stroke and a second for the surname, like a finger's. */
-function signatureStrokes() {
-  const stroke = (x0, y0, letters) => {
-    const pts = [];
-    let x = x0;
-    for (const [h, loops] of letters) {
-      for (let i = 0; i <= 24 * loops; i++) {
-        const t = (i / 24) * Math.PI * 2;
-        pts.push([x + t * 7 - 9 * Math.sin(t), y0 - h * (0.5 - 0.5 * Math.cos(t)) + i * 0.05]);
-      }
-      x += loops * 2 * Math.PI * 7;
-    }
-    return pts;
-  };
-  return [
-    stroke(10, 70, [
-      [58, 1],
-      [22, 1],
-      [48, 1],
-      [20, 2],
-      [24, 1],
-    ]),
-    stroke(250, 74, [
-      [54, 1],
-      [20, 1],
-      [16, 1],
-      [20, 2],
-    ]),
-    [
-      [18, 92],
-      [120, 88],
-      [240, 90],
-      [330, 86],
-    ],
-  ];
-}
-
-function signatureSvg(strokes) {
-  const pts = strokes.flat();
-  const minX = Math.min(...pts.map((p) => p[0])) - 6;
-  const minY = Math.min(...pts.map((p) => p[1])) - 6;
-  const w = Math.max(...pts.map((p) => p[0])) + 6 - minX;
-  const h = Math.max(...pts.map((p) => p[1])) + 6 - minY;
-  const r = (n) => Math.round(n * 10) / 10;
-  const paths = strokes
-    .map((st) => `<path d="M${st.map(([x, y]) => `${r(x)} ${r(y)}`).join("L")}"/>`)
-    .join("");
-  return (
-    `<svg xmlns="http://www.w3.org/2000/svg" viewBox="${r(minX)} ${r(minY)} ${r(w)} ${r(h)}" width="${Math.round(w)}" height="${Math.round(h)}">` +
-    `<g fill="none" stroke="#111111" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">${paths}</g></svg>`
-  );
-}
-
 async function upload(session, path, bytes, type) {
   const res = await fetch(`${dev.url}/storage/v1/object/media/${path}`, {
     method: "POST",
@@ -337,18 +347,19 @@ async function rebeccaStory() {
     property: randomUUID(),
     job: randomUUID(),
     finding: randomUUID(),
+    finding2: randomUUID(),
     media: randomUUID(),
     signature: randomUUID(),
     report: randomUUID(),
     quote: randomUUID(),
     invoice: randomUUID(),
   };
-  // Thursday, the same day as the app's screens: started at 8 AM, done by 9:40 (Phoenix).
-  const day = "2026-10-22";
+  // Friday, the same day as the app's screens (Phoenix time): worked 8:10 to 9:40, signed on
+  // site at 9:42, the report and quote sent at 9:45 and the invoice at 9:46.
+  const day = STORY_DAY;
   const at = (hhmm) => `${day}T${hhmm}:00-07:00`;
   const [nums] = await query(`
-    select (select max(number) from public.job where company_id = ${q(c)}) + 1 as job,
-      (select max(number) from public.quote where company_id = ${q(c)}) + 1 as quote,
+    select (select max(number) from public.quote where company_id = ${q(c)}) + 1 as quote,
       (select max(number) from public.invoice where company_id = ${q(c)}) + 1 as invoice,
       (select user_id from public.membership m join public.profile p on p.id = m.user_id
        where m.company_id = ${q(c)} and p.full_name = 'Dana Ruiz') as dana
@@ -358,14 +369,17 @@ async function rebeccaStory() {
     insert into public.customer (id, company_id, name, email, phone)
     values (${q(ids.customer)}, ${q(c)}, 'Rebecca Quinn', 'rebecca.quinn@example.com', '(480) 555-0171');
     insert into public.property (id, company_id, customer_id, address_line1, city, state, postal_code,
-      latitude, longitude, location_source, pool_type, has_pool, has_spa, diagram_shape, approx_gallons,
-      access_notes)
+      latitude, longitude, location_source, pool_type, has_pool, has_spa, diagram_shape, diagram_layout,
+      approx_gallons, access_notes)
     values (${q(ids.property)}, ${q(c)}, ${q(ids.customer)}, '7745 N 42nd Ave', 'Phoenix', 'AZ', '85051',
-      33.5463, -112.1497, 'manual', 'gunite_plaster', true, true, 'kidney', 20000, 'Code #1955');
+      33.5463, -112.1497, 'manual', 'gunite_plaster', true, true, 'roman',
+      -- Roman, the spa at the upper left, as in the owner's recording 05 and the app's screens.
+      '{"spa":{"r":17.8,"x":0.1364,"y":0.2144,"size":"large","shape":"round"},"centered":true}'::jsonb,
+      20000, 'Code #1955');
     insert into public.job (id, company_id, number, type, property_id, bill_to_customer_id, status,
       assigned_user_id, scheduled_start, scheduled_end, started_at, completed_at, fee_cents)
-    values (${q(ids.job)}, ${q(c)}, ${nums.job}, 'detection', ${q(ids.property)}, ${q(ids.customer)},
-      'in_progress', ${q(nums.dana)}, ${q(at("08:00"))}, ${q(at("10:00"))}, ${q(at("08:05"))},
+    values (${q(ids.job)}, ${q(c)}, ${STORY_JOB}, 'detection', ${q(ids.property)}, ${q(ids.customer)},
+      'in_progress', ${q(nums.dana)}, ${q(at("08:00"))}, ${q(at("10:00"))}, ${q(at("08:10"))},
       ${q(at("09:40"))}, 37500);
     with src as (
       select jc.*, ct.key, r.status as r_status, r.method, r.inspected_at
@@ -384,10 +398,11 @@ async function rebeccaStory() {
     insert into public.checklist_item_result (company_id, job_id, job_component_id, status, method,
       outcome, location_text, inspected_at, inspected_by)
     select ${q(c)}, ${q(ids.job)}, made.id, 'inspected',
-      case when src.key = 'skimmer_seam' then 'Dye test' else src.method end,
-      case when src.key = 'skimmer_seam' then 'leaking' else 'ok' end,
-      case when src.key = 'skimmer_seam' then 'Seam at the skimmer throat' end,
-      ${q(at("09:10"))}, ${q(nums.dana)}
+      case src.key when 'return' then 'Pressure test' when 'light' then 'Dye test' else src.method end,
+      case when src.key in ('return', 'light') then 'leaking' else 'ok' end,
+      case src.key when 'return' then 'Under the deck, 6 ft from the pool wall'
+        when 'light' then 'Behind the pool light' end,
+      ${q(at("09:25"))}, ${q(nums.dana)}
     from made join src on src.component_type_id = made.component_type_id
       and src.instance_number = made.instance_number;
   `);
@@ -397,9 +412,10 @@ async function rebeccaStory() {
         select jc.id from public.job_component jc join public.component_type ct on ct.id = jc.component_type_id
         where jc.job_id = ${q(ids.job)} and ct.key = ${q(key)} limit 1`)
     )[0]?.id ?? null;
-  const seam = await comp("skimmer_seam");
   const ret = await comp("return");
+  const skimmer = await comp("skimmer");
   const cleaner = await comp("cleaner_line");
+  const light = await comp("light");
   const types = await query(`
     select id, key from public.test_type where company_id = ${q(c)} and key in ('pressure', 'dye')`);
   const type = (k) => types.find((t) => t.key === k).id;
@@ -410,81 +426,84 @@ async function rebeccaStory() {
     insert into public.test_result (company_id, job_id, job_component_id, test_type_id, schema_version,
       data, computed, outcome, performed_at)
     values
-      ${test(seam, "pressure", { line_name: "Skimmer", start_psi: 20, end_psi: 12, duration_min: 15 }, { drop_psi: 8, drop_psi_per_min: 0.533 }, "fail", "08:40")},
-      ${test(ret, "pressure", { line_name: "Return line", start_psi: 20, end_psi: 20, duration_min: 15 }, { drop_psi: 0, drop_psi_per_min: 0 }, "pass", "08:25")},
-      ${test(cleaner, "pressure", { line_name: "Cleaner line", start_psi: 20, end_psi: 20, duration_min: 15 }, { drop_psi: 0, drop_psi_per_min: 0 }, "pass", "08:55")},
-      ${test(seam, "dye", { location: "Skimmer throat", observation: "Dye drawn in (leak)" }, {}, "fail", "09:05")};
+      ${test(skimmer, "pressure", { line_name: "Skimmer", start_psi: 20, end_psi: 20, duration_min: 15 }, { drop_psi: 0, drop_psi_per_min: 0 }, "pass", "08:25")},
+      ${test(ret, "pressure", { line_name: "Return line", start_psi: 20, end_psi: 12, duration_min: 15 }, { drop_psi: 8, drop_psi_per_min: 0.533 }, "fail", "08:45")},
+      ${test(cleaner, "pressure", { line_name: "Cleaner line", start_psi: 20, end_psi: 20, duration_min: 15 }, { drop_psi: 0, drop_psi_per_min: 0 }, "pass", "09:05")},
+      ${test(light, "dye", { location: "Light niche", observation: "Dye drawn into the conduit (leak)" }, {}, "fail", "09:20")};
     insert into public.finding (id, company_id, job_id, job_component_id, title, location_text,
       severity_key, pin_x, pin_y, status)
-    values (${q(ids.finding)}, ${q(c)}, ${q(ids.job)}, ${q(seam)}, 'Skimmer seam leak', 'Skimmer throat',
-      'major', 0.18, 0.12, 'quoted');
+    values (${q(ids.finding)}, ${q(c)}, ${q(ids.job)}, ${q(ret)}, 'Return line break',
+      'Under the deck, 6 ft from the pool wall', 'major', 0.55, 0.06, 'quoted'),
+      (${q(ids.finding2)}, ${q(c)}, ${q(ids.job)}, ${q(light)}, 'Light niche conduit leak',
+      'Behind the pool light', 'moderate', 0.3, 0.94, 'quoted');
   `);
-  // The photo of the dye at the seam, and her signature, uploaded as the shop's owner would.
+  // The photo of the dye at the light, and her signature, uploaded as the shop's owner would.
   const session = await signIn("marcus@canyonstate.video.test");
   const photo = readFileSync(
-    join(root, "apps", "video", "assets", "photos", "leak-dye-skimmer.jpg"),
+    join(root, "apps", "video", "assets", "photos", "leak-dye-light-niche.jpg"),
   );
   const photoPath = `${c}/${ids.job}/${ids.media}.jpg`;
   await upload(session, photoPath, photo, "image/jpeg");
   const size = jpegSize(photo);
-  const svg = Buffer.from(signatureSvg(signatureStrokes()));
+  // Her signature: the same strokes the app saved on the iPhone (the film shows both).
+  const svg = readFileSync(join(root, "apps", "video", "assets", "owner", "rebecca-signature.svg"));
   const sigPath = `${c}/${ids.job}/signature-${ids.signature}.svg`;
   await upload(session, sigPath, svg, "image/svg+xml");
   await query(`
     insert into public.media (id, company_id, job_id, finding_id, job_component_id, kind, storage_path,
       upload_state, mime_type, size_bytes, sha256, width, height, captured_at, caption, latitude, longitude)
-    values (${q(ids.media)}, ${q(c)}, ${q(ids.job)}, ${q(ids.finding)}, ${q(seam)}, 'photo',
+    values (${q(ids.media)}, ${q(c)}, ${q(ids.job)}, ${q(ids.finding2)}, ${q(light)}, 'photo',
       ${q(photoPath)}, 'uploaded', 'image/jpeg', ${photo.length},
       ${q(createHash("sha256").update(photo).digest("hex"))}, ${size.width}, ${size.height},
-      ${q(at("09:06"))}, 'Dye drawn in at the skimmer throat', 33.5463, -112.1497);
+      ${q(at("09:20"))}, 'Dye drawn into the conduit behind the light', 33.5463, -112.1497);
     insert into public.signature (id, company_id, job_id, purpose, signer_name, signer_role, image_path,
       signed_at, device_id)
     values (${q(ids.signature)}, ${q(c)}, ${q(ids.job)}, 'inspection_ack', 'Rebecca Quinn', 'Homeowner',
-      ${q(sigPath)}, ${q(at("09:35"))}, 'seed');
+      ${q(sigPath)}, ${q(at("09:42"))}, 'seed');
   `);
   const sections = [
     {
       key: "summary",
       title: "Summary",
-      text: "We found one leak, at the skimmer seam. Everything else we checked is holding.",
+      text: "We found two leaks: a break in the return line under the deck, and water getting into the conduit behind the pool light. Everything else we checked is holding.",
     },
     {
       key: "findings",
       title: "What we found",
-      text: "The skimmer line dropped 8 PSI in 15 minutes while the return and cleaner lines held. Dye drew in at the seam where the skimmer throat meets the pool wall.",
+      text: "The return line dropped from 20 to 12 PSI in 15 minutes while the skimmer and cleaner lines held. Dye drew into the conduit behind the pool light.",
     },
     {
       key: "next_steps",
       title: "What happens next",
-      text: "We sent a quote to reseal the skimmer throat. Once the deposit is in, we'll book the repair.",
+      text: "We sent a quote to repair the return line and reseal the light niche conduit. Once the deposit is in, we'll book the repair.",
     },
   ];
   const [links] = await query(`
     insert into public.report (id, company_id, job_id, template_key, version, status, final_sections,
       data_snapshot, sent_at)
     values (${q(ids.report)}, ${q(c)}, ${q(ids.job)}, 'homeowner', 1, 'sent',
-      ${q(JSON.stringify(sections))}::jsonb, app.report_snapshot(${q(ids.job)}), ${q(at("09:38"))});
+      ${q(JSON.stringify(sections))}::jsonb, app.report_snapshot(${q(ids.job)}), ${q(at("09:45"))});
     update public.signature set report_id = ${q(ids.report)} where id = ${q(ids.signature)};
     insert into public.quote (id, company_id, job_id, number, status, subtotal_cents, discount_cents,
       tax_cents, total_cents, deposit_rule, deposit_cents, valid_until)
-    values (${q(ids.quote)}, ${q(c)}, ${q(ids.job)}, ${nums.quote}, 'draft', 60000, 0, 0, 60000,
-      '{"type":"percent","value_bps":5000,"minimum_cents":0}'::jsonb, 30000, '2026-11-21');
+    values (${q(ids.quote)}, ${q(c)}, ${q(ids.job)}, ${nums.quote}, 'draft', ${STORY_TOTAL}, 0, 0, ${STORY_TOTAL},
+      '{"type":"percent","value_bps":5000,"minimum_cents":0}'::jsonb, ${STORY_TOTAL / 2}, '2026-11-22');
     insert into public.quote_line_item (company_id, quote_id, finding_id, description, quantity,
       unit_price_cents, taxable, sort_order)
-    values (${q(c)}, ${q(ids.quote)}, ${q(ids.finding)}, 'Reseal skimmer throat', 1, 45000, false, 1),
-           (${q(c)}, ${q(ids.quote)}, null, 'Dive fee', 1, 15000, false, 2);
+    values (${q(c)}, ${q(ids.quote)}, ${q(ids.finding)}, 'Repair return line break', 1, 115000, false, 1),
+           (${q(c)}, ${q(ids.quote)}, ${q(ids.finding2)}, 'Reseal light niche conduit', 1, 38500, false, 2);
     -- Lines first, then sent (a sent quote's lines are frozen).
-    update public.quote set status = 'sent', sent_at = ${q(at("09:39"))} where id = ${q(ids.quote)};
+    update public.quote set status = 'sent', sent_at = ${q(at("09:45"))} where id = ${q(ids.quote)};
     insert into public.invoice (id, company_id, job_id, customer_id, number, status, subtotal_cents,
       discount_cents, tax_cents, credit_cents, total_cents, amount_paid_cents, due_date)
     values (${q(ids.invoice)}, ${q(c)}, ${q(ids.job)}, ${q(ids.customer)}, ${nums.invoice}, 'draft',
-      37500, 0, 0, 0, 37500, 0, '2026-11-06');
+      37500, 0, 0, 0, 37500, 0, '2026-11-07');
     insert into public.invoice_line_item (company_id, invoice_id, kind, description, quantity,
       unit_price_cents, taxable, sort_order)
     values (${q(c)}, ${q(ids.invoice)}, 'item', 'Leak detection', 1, 37500, false, 1);
     -- Sending is the server's step (as its own send does).
     select set_config('app.invoice_server', 'on', true);
-    update public.invoice set status = 'sent', sent_at = ${q(at("09:40"))} where id = ${q(ids.invoice)};
+    update public.invoice set status = 'sent', sent_at = ${q(at("09:46"))} where id = ${q(ids.invoice)};
     insert into public.share_link (company_id, job_id, report_id)
     values (${q(c)}, ${q(ids.job)}, ${q(ids.report)});
     insert into public.share_link (company_id, job_id, quote_id)
@@ -501,6 +520,66 @@ async function rebeccaStory() {
       (select token from public.share_link where invoice_id = ${q(ids.invoice)}) as invoice;
   `);
   return { id: ids.job, ...links, quote_status: "sent" };
+}
+
+/** Laura Bennett's leak detection, new and not yet given a day (Needs a Time). */
+async function addLaura() {
+  const c = q(SHOPS.canyon);
+  const ids = { customer: randomUUID(), property: randomUUID(), job: randomUUID() };
+  await query(`
+    insert into public.customer (id, company_id, name, email, phone)
+    values (${q(ids.customer)}, ${c}, 'Laura Bennett', 'laura.bennett@example.com', '(602) 555-0148');
+    insert into public.property (id, company_id, customer_id, address_line1, city, state, postal_code,
+      latitude, longitude, location_source, pool_type, has_pool, has_spa, diagram_shape)
+    values (${q(ids.property)}, ${c}, ${q(ids.customer)}, '6214 N 31st Dr', 'Phoenix', 'AZ', '85017',
+      33.5293, -112.1255, 'manual', 'gunite_plaster', true, false, 'rectangle');
+    insert into public.job (id, company_id, type, property_id, bill_to_customer_id, status, fee_cents)
+    values (${q(ids.job)}, ${c}, 'detection', ${q(ids.property)}, ${q(ids.customer)}, 'unscheduled', 37500);
+  `);
+}
+
+/**
+ * Next week's jobs and Needs a Time's as they stand, saved before the Schedule captures move and
+ * optimize them (--snapshot-week), and put back afterwards (--restore-week --apply), with the
+ * Activity rows those moves made removed.
+ */
+async function weekSnapshot() {
+  const cols = `id, status, scheduled_start, scheduled_end, assigned_user_id, second_tech_id,
+    route_order, arrive_at, arrival_fixed, lock_day, lock_time, plan_moved`;
+  if (snapshotWeek) {
+    const rows = await query(`
+      select ${cols}, now() as saved_at from public.job
+      where company_id = ${q(SHOPS.canyon)} and deleted_at is null
+        and (scheduled_start >= ${q(WEEK.from)} and scheduled_start < ${q(WEEK.to)}
+             or status = 'unscheduled')`);
+    writeFileSync(weekFile, JSON.stringify(rows, null, 2) + "\n");
+    console.log(`Saved ${rows.length} jobs of next week to ${weekFile}`);
+    return;
+  }
+  const rows = JSON.parse(readFileSync(weekFile, "utf8"));
+  if (!apply) {
+    console.log(`Dry run: would put ${rows.length} jobs back as saved. Run with --apply.`);
+    return;
+  }
+  const saved = rows[0].saved_at;
+  await query(`
+    delete from public.activity
+    where company_id = ${q(SHOPS.canyon)} and kind in ('job_moved', 'job_assigned')
+      and created_at > ${q(saved)} and job_id in (select (r ->> 'id')::uuid
+        from jsonb_array_elements(${q(JSON.stringify(rows))}::jsonb) r);
+    update public.job j set status = r.status, scheduled_start = r.scheduled_start,
+      scheduled_end = r.scheduled_end, assigned_user_id = r.assigned_user_id,
+      second_tech_id = r.second_tech_id, route_order = r.route_order, arrive_at = r.arrive_at,
+      arrival_fixed = r.arrival_fixed, lock_day = r.lock_day, lock_time = r.lock_time,
+      plan_moved = r.plan_moved
+    from jsonb_populate_recordset(null::public.job, ${q(JSON.stringify(rows))}::jsonb) r
+    where j.id = r.id and j.company_id = ${q(SHOPS.canyon)};
+    delete from public.activity
+    where company_id = ${q(SHOPS.canyon)} and kind in ('job_moved', 'job_assigned')
+      and created_at > ${q(saved)} and job_id in (select (r ->> 'id')::uuid
+        from jsonb_array_elements(${q(JSON.stringify(rows))}::jsonb) r);
+  `);
+  console.log(`Put ${rows.length} jobs of next week back.`);
 }
 
 /**
@@ -530,19 +609,82 @@ async function acceptQuote(jobId) {
         where q.job_id = ${q(jobId)} and q.company_id = ${q(SHOPS.canyon)}),
       'Rebecca Quinn', true, null, 'Sundeck launch film seed');
     reset role;
+    -- Her acceptance at 9:57 that morning, written as the server writes a sent quote.
+    select set_config('app.quote_server', 'on', true);
+    update public.quote set accepted_at = ${q(STORY_DAY + "T10:05:00-07:00")}
+    where job_id = ${q(jobId)} and company_id = ${q(SHOPS.canyon)} and status = 'accepted';
+    select set_config('app.quote_server', 'off', true);
     insert into public.payment (company_id, quote_id, amount_cents, method, status, paid_at)
-    select company_id, id, deposit_cents, 'card', 'succeeded', now() from public.quote
+    select company_id, id, deposit_cents, 'card', 'succeeded', ${q(STORY_DAY + "T10:06:00-07:00")}
+    from public.quote
     where job_id = ${q(jobId)} and company_id = ${q(SHOPS.canyon)} and status = 'accepted'
       and not exists (select 1 from public.payment p where p.quote_id = quote.id);
   `);
 }
 
-/** Removes a half-made story (a run that stopped part way), so it's made again in full. */
+/**
+ * Her story's events at the times they happened that Thursday morning (Phoenix): the triggers
+ * stamp each Activity row with the time the seed wrote it. Also records her first open of the report,
+ * as the report page does, so the captures that open it later add nothing.
+ */
+async function setStoryTimes(jobId) {
+  const c = q(SHOPS.canyon);
+  const j = q(jobId);
+  const at = (hhmm) => q(`${STORY_DAY}T${hhmm}:00-07:00`);
+  await query(`
+    set local role service_role;
+    select public.record_report_opened(s.token)
+    from public.share_link s join public.report r on r.id = s.report_id
+    where r.job_id = ${j} and r.status = 'sent' and s.revoked_at is null;
+    reset role;
+    -- An Activity row keeps the time it was written (app.touch_row), so each of hers is
+    -- written again with the time it happened, as record_report_opened writes its own.
+    create temp table story_times (kind text, at timestamptz) on commit drop;
+    insert into story_times values
+      ('job_assigned', ${q(`${STORY_EVE}T16:12:00-07:00`)}::timestamptz),
+      ('report_signed', ${at("09:45")}), ('report_sent', ${at("09:45")}),
+      ('report_opened', ${at("09:50")}), ('quote_accepted', ${at("10:05")}),
+      ('payment_received', ${at("10:06")});
+    create temp table story_rows on commit drop as
+      select a.*, t.at from public.activity a join story_times t on t.kind = a.kind
+      where a.company_id = ${c} and a.created_at <> t.at
+        and (a.job_id = ${j} or a.job_id in (select id from public.job where parent_job_id = ${j}));
+    delete from public.activity where id in (select id from story_rows);
+    insert into public.activity
+    select (jsonb_populate_record(null::public.activity,
+      to_jsonb(r) - 'at' || jsonb_build_object('created_at', r.at, 'updated_at', r.at,
+                                                'notified_at', r.at))).*
+    from story_rows r;
+    update public.share_link set last_viewed_at = ${at("09:50")}
+    where job_id = ${j} and report_id is not null and last_viewed_at is not null;
+  `);
+}
+
+/**
+ * Removes her story (a run that stopped part way, or one made under another number), so it's
+ * made again in full: its activity, payments, links, the quote and invoice with their lines
+ * (as the server removes a sent document's lines), the repair job, the report, and the job.
+ */
 async function resetStory(jobId) {
   const c = q(SHOPS.canyon);
   const j = q(jobId);
+  const jobs = `(select id from public.job where company_id = ${c} and (id = ${j} or parent_job_id = ${j}))`;
   await query(`
-    delete from public.activity where job_id = ${j} and company_id = ${c};
+    select set_config('app.quote_server', 'on', true);
+    select set_config('app.invoice_server', 'on', true);
+    delete from public.activity where company_id = ${c} and job_id in ${jobs};
+    delete from public.payment where company_id = ${c} and (
+      quote_id in (select id from public.quote where job_id = ${j})
+      or invoice_id in (select id from public.invoice where job_id = ${j}));
+    delete from public.share_link where company_id = ${c} and job_id in ${jobs};
+    delete from public.quote_line_item where quote_id in (select id from public.quote where job_id = ${j});
+    delete from public.invoice_line_item where invoice_id in (select id from public.invoice where job_id = ${j});
+    update public.quote set repair_job_id = null where job_id = ${j};
+    delete from public.job where company_id = ${c} and parent_job_id = ${j};
+    delete from public.quote where job_id = ${j} and company_id = ${c};
+    delete from public.invoice where job_id = ${j} and company_id = ${c};
+    update public.signature set report_id = null where job_id = ${j} and company_id = ${c};
+    delete from public.report where job_id = ${j} and company_id = ${c};
     delete from public.signature where job_id = ${j} and company_id = ${c};
     delete from public.media where job_id = ${j} and company_id = ${c};
     delete from public.finding where job_id = ${j} and company_id = ${c};

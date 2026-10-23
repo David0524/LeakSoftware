@@ -67,6 +67,24 @@ export class Layer {
     this.el.style.filter = style.dim ? `brightness(${1 - style.dim})` : "";
     this.el.style.opacity = String(opacity);
     this.el.style.display = opacity <= 0 ? "none" : "";
+    if (this.bar) {
+      this.bar.style.opacity = String(opacity);
+      this.bar.style.display = opacity <= 0 || scroll <= 0 ? "none" : "";
+      this.bar.style.transform = `translateX(${style.dx ?? 0}px)`;
+    }
+  }
+  private bar?: HTMLDivElement;
+  /**
+   * Keeps the page's top `height` image pixels in place as it scrolls: the website's header is
+   * sticky, so it stays at the top of the window in the real browser too.
+   */
+  pin(height: number) {
+    const parent = this.el.parentElement!;
+    this.bar = div("abs", parent);
+    css(this.bar, { left: 0, top: 0, width: this.w, height: height * this.k, overflow: "hidden" });
+    const copy = img(this.el.src, this.bar, "abs");
+    css(copy, { width: this.w });
+    return this;
   }
 }
 
@@ -144,12 +162,18 @@ export class Sheet {
     pending.push(this.el.decode().catch(() => {}));
     phone.screen.insertBefore(this.wrap, phone.status);
   }
-  /** `p` 0 (off screen) → 1 (up), scrolled by `scroll` image pixels. */
-  set(p: number, scroll = 0, opacity = 1) {
+  /**
+   * `p` 0 (off screen) → 1 (up), scrolled by `scroll` image pixels. `style.dx` slides the
+   * sheet's content sideways (a push inside the sheet), `style.dim` darkens it.
+   */
+  set(p: number, scroll = 0, opacity = 1, style: LayerStyle = {}) {
     this.wrap.style.display = p <= 0 || opacity <= 0 ? "none" : "";
     this.wrap.style.transform = `translateY(${this.top + (1 - p) * (this.h - this.top + 20)}px)`;
     this.wrap.style.opacity = String(opacity);
-    this.el.style.transform = `translateY(${-(this.cut + scroll) * this.k}px)`;
+    // While its content slides, the sheet shows only its picture (the one under shows beside it).
+    this.wrap.style.background = style.dx ? "transparent" : "var(--app-bg)";
+    this.el.style.transform = `translate(${style.dx ?? 0}px, ${-(this.cut + scroll) * this.k}px)`;
+    this.el.style.filter = style.dim ? `brightness(${1 - style.dim})` : "";
   }
   /** A point on the sheet (screenshot pixels) in the screen's pixels, when it's up. */
   at(px: number, py: number, scroll = 0) {
@@ -185,7 +209,9 @@ export class Tap {
       height: size,
       "border-radius": "50%",
       border: `${Math.max(3, size * 0.06)}px solid var(--paper)`,
-      "box-shadow": "0 0 0 2px rgba(18, 38, 58, 0.35)",
+      // Seen on white screens and on blue buttons alike: a dark edge and a light fill.
+      "box-shadow": "0 0 0 3px rgba(18, 38, 58, 0.6), inset 0 0 0 3px rgba(18, 38, 58, 0.35)",
+      background: "rgba(255, 255, 255, 0.22)",
     });
     css(this.press, { background: "#000" });
   }
@@ -298,16 +324,20 @@ export class Phone {
     });
   }
 
-  statusBar(tone: "dark" | "light", time: string) {
+  statusBar(tone: "dark" | "light", time: string, airplane = false) {
     const c = tone === "dark" ? "#000" : "#fff";
     const s = this.w / 393;
+    // Airplane Mode: the plane where the signal bars and Wi-Fi sit, as iOS shows it.
+    const radios = airplane
+      ? `<path transform="translate(26 0) scale(0.6)" d="M21 16v-2l-8-5V3.5a1.5 1.5 0 0 0-3 0V9l-8 5v2l8-2.5V19l-2 1.5V22l3.5-1 3.5 1v-1.5L13 19v-5.5z"/>`
+      : `<rect x="0" y="9" width="3" height="5" rx="1"/><rect x="5" y="6" width="3" height="8" rx="1"/>
+          <rect x="10" y="3" width="3" height="11" rx="1"/><rect x="15" y="0" width="3" height="14" rx="1"/>
+          <path d="M31 4.2a9 9 0 0 1 12 0l-1.4 1.5a7 7 0 0 0-9.2 0zM33.4 6.7a5.6 5.6 0 0 1 7.2 0L39.2 8.2a3.6 3.6 0 0 0-4.4 0zM35.8 9.2a2.2 2.2 0 0 1 2.4 0L37 10.6z"/>`;
     this.status.innerHTML = `
       <div style="position:absolute;left:${48 * s}px;top:${17 * s}px;font:600 ${17 * s}px 'Public Sans',sans-serif;color:${c};letter-spacing:-0.01em">${time}</div>
       <svg style="position:absolute;right:${30 * s}px;top:${20 * s}px" width="${78 * s}" height="${14 * s}" viewBox="0 0 78 14">
         <g fill="${c}">
-          <rect x="0" y="9" width="3" height="5" rx="1"/><rect x="5" y="6" width="3" height="8" rx="1"/>
-          <rect x="10" y="3" width="3" height="11" rx="1"/><rect x="15" y="0" width="3" height="14" rx="1"/>
-          <path d="M31 4.2a9 9 0 0 1 12 0l-1.4 1.5a7 7 0 0 0-9.2 0zM33.4 6.7a5.6 5.6 0 0 1 7.2 0L39.2 8.2a3.6 3.6 0 0 0-4.4 0zM35.8 9.2a2.2 2.2 0 0 1 2.4 0L37 10.6z"/>
+          ${radios}
           <rect x="52" y="1" width="22" height="12" rx="3.5" fill="none" stroke="${c}" stroke-opacity="0.4"/>
           <rect x="54" y="3" width="17" height="8" rx="2"/><rect x="75" y="5" width="2" height="4" rx="1" fill-opacity="0.45"/>
         </g>

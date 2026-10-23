@@ -15,7 +15,7 @@ import {
 } from "./script.ts";
 
 export const FPS = 60;
-/** The groove's tempo. Cuts after the turn land on its beats; chapters on every other beat. */
+/** The groove's tempo. Lines and chapters after the turn start on its beats. */
 export const BPM = 92;
 export const BEAT = 60 / BPM;
 
@@ -33,7 +33,7 @@ export interface Timeline {
   fps: number;
   bpm: number;
   beat: number;
-  /** "Not anymore.": the hit, and beat 0 of the groove. */
+  /** Just after "Not anymore.": the hit, and beat 0 of the groove. */
   hit: number;
   lines: TimedLine[];
   /** Each chapter card's window (the break before the chapter's first line). */
@@ -64,15 +64,15 @@ export function buildTimeline(
     const prev = lines[i - 1];
     const newChapter = prev && prev.chapter !== line.chapter;
     if (prev) {
-      const gap =
-        (line.n === 6 ? DROP_GAP : newChapter ? CHAPTER_GAP : LINE_GAP) +
-        (EXTRA_AFTER[prev.n] ?? 0);
-      const cardStart = t;
+      const extra = EXTRA_AFTER[prev.n] ?? 0;
+      const gap = (line.n === 6 ? DROP_GAP : newChapter ? CHAPTER_GAP : LINE_GAP) + extra;
+      // Extra air stays with the line before, so a chapter card keeps its short length.
+      const cardStart = t + (newChapter ? extra : 0);
       t += gap;
-      if (line.n === 6) hit = t;
-      else if (hit) t = snap(t, newChapter ? 2 : 1);
+      if (hit) t = snap(t, 1);
       if (newChapter) {
-        const hasCard = !["turn", "end"].includes(line.chapter);
+        // The vision has no card: the voice and the photos carry it.
+        const hasCard = !["turn", "vision", "end"].includes(line.chapter);
         chapterStarts[line.chapter] = hasCard ? cardStart : t;
         if (hasCard) cards.push({ chapter: line.chapter, start: cardStart, end: t });
       }
@@ -87,6 +87,8 @@ export function buildTimeline(
       voice: d.voice,
     });
     t += d.seconds;
+    // The hit lands just after "Not anymore." (never under the word); the groove counts from it.
+    if (line.n === 6) hit = t + 0.08;
   });
   const voiced = out.filter((l) => l.voice).length;
   return {

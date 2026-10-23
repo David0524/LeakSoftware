@@ -232,13 +232,13 @@ export const WORDS_PER_SECOND = 2.4;
 export const ELLIPSIS_PAUSE = 0.5;
 /** Seconds between two lines in a chapter, and before a new chapter (its card plays there). */
 export const LINE_GAP = 0.6;
-export const CHAPTER_GAP = 1.5;
+export const CHAPTER_GAP = 1.0;
 /** The silence before "Not anymore." (the drop), and the hold after the last line. */
 export const DROP_GAP = 1.2;
 export const PRE_ROLL = 1.6;
 /** Extra air after lines read quickly (owner's narration, 2026-10-23: 19, 29 and 33). */
 export const EXTRA_AFTER: Record<number, number> = { 19: 0.5, 29: 0.5, 33: 0.5 };
-export const TAIL = 4.5;
+export const TAIL = 1.5;
 
 /** A line's length read at the placeholder pace. */
 export function placeholderSeconds(text: string): number {

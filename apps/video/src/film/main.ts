@@ -3,8 +3,8 @@
 
 import { allImages, setManifest, type Manifest } from "./assets.ts";
 import { pending } from "./devices.ts";
-import { Stage, css, div, preload } from "./engine.ts";
-import { STYLES, loadLook, textures } from "./look.ts";
+import { Stage, div, preload } from "./engine.ts";
+import { STYLES, loadLook } from "./look.ts";
 import { buildFilm } from "./shots.ts";
 
 declare global {
@@ -29,21 +29,6 @@ async function start() {
   const stage = new Stage(root);
   const tl = manifest.timeline;
   buildFilm(stage, tl);
-
-  // Film grain over everything, a different pattern each frame.
-  const grain = div("grain");
-  stage.add({
-    start: 0,
-    end: tl.total,
-    z: 90,
-    build: (el) => {
-      el.appendChild(grain);
-      css(grain, { opacity: 0.05 });
-      return (t) => {
-        grain.style.backgroundImage = `url(${textures.grain[Math.floor(t * 15) % textures.grain.length]})`;
-      };
-    },
-  });
 
   await preload(allImages());
   window.__fps = tl.fps;
