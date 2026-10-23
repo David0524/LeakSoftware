@@ -125,6 +125,11 @@
                 "customer_id": .string(rebecca.id), "address_line1": "7745 N 42nd Ave", "city": "Phoenix",
                 "state": "AZ", "postal_code": "85051", "has_pool": true, "has_spa": true,
                 "pool_type": "gunite_plaster", "approx_gallons": 20000, "access_notes": "Code #1955",
+                // Her Roman pool with the spa at the upper left, as the owner drew it on his phone.
+                "diagram_shape": "roman",
+                "diagram_layout": [
+                    "spa": ["r": 17.8, "x": 0.1364, "y": 0.2144, "size": "large", "shape": "round"], "centered": true,
+                ],
             ])
         try store.insert(
             "job", companyId: "c1",
