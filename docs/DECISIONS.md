@@ -2,6 +2,9 @@
 
 Newest first. Each entry: date, decision, reason.
 
+## 2026-10-23 (owner: the Apple map "looks pretty grey to me … not literally grey, just dull")
+- **The iPhone's maps use Apple's full-color standard map**, not the muted one, the same as the website's MapKit map and snapshots (Android shows those snapshots). Points of interest stay off everywhere so the pins stay forward.
+
 ## 2026-10-23 (owner, of the home page: "put it in the closing band just like the mockup"; "white texts on those orange buttons"; "A small strip of facts that are already true")
 - **The closing band shows the 3D mark clip** (apps/video/logo3d) fading in from the right on wide screens and above the text on phones; the headline and buttons stay real text. It loads only near the band, plays muted and looping, and holds its still for Reduce Motion. The band's drifting water lines are gone (the clip has the water).
 - **Start Free Trial is white text on a deeper orange**, Safety Deep `#C64B0C` (4.8:1), on the marketing site; white on the logo's Safety orange (3.1:1) stays ruled out (brand/BRAND.md).

@@ -14,8 +14,9 @@
     // the website's components/day-map.tsx and interactive-map.tsx). The pins come from core
     // `dayMapPins` (Model/RouteMaps.swift): the shop as a house, the stops numbered in route order,
     // water blue to do, safety orange for the stop you're on, green once done, and a faint line in
-    // stop order. A muted map keeps the pins forward (maps.md › Best practices); Apple's logo and
-    // legal link stay uncovered in the bottom corners.
+    // stop order. Apple's full-color map, as on the website (owner, 2026-10-23: the muted one
+    // looked dull), with no points of interest so the pins stay forward; Apple's logo and legal
+    // link stay uncovered in the bottom corners.
 
     extension PinTone {
         /// Brand tokens: navy shop, water to do, safety orange now, pass green done.
@@ -128,7 +129,7 @@
                     .annotationTitles(.hidden)
                 }
             }
-            .mapStyle(.standard(emphasis: .muted, pointsOfInterest: .excludingAll))
+            .mapStyle(.standard(emphasis: .automatic, pointsOfInterest: .excludingAll))
             .mapControls {
                 if interactive {
                     MapCompass()
