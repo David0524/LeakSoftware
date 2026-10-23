@@ -74,6 +74,24 @@ const STORY_DAY = "2026-10-23";
 const STORY_EVE = "2026-10-22";
 /** Her quote: the two repairs, $1,535, half as the deposit. */
 const STORY_TOTAL = 153500;
+/**
+ * Her pool as drawn in the app for the laminate card (owner, 2026-10-23: "Make your own using
+ * our tools and include a tree landmark"): a kidney with the spa in its curve, a tree on each
+ * side, the steps in the shallow end, the equipment pad by the spa, and her two leaks pinned
+ * where they are (the return line by the equipment, the light at the deep end's wall).
+ */
+const STORY_SHAPE = "kidney";
+const STORY_LAYOUT = {
+  centered: true,
+  spa: { x: 0.585, y: 0.17, r: 13, size: "medium", shape: "round" },
+  landmarks: [
+    { kind: "tree", x: 0.07, y: 0.22, s: 28 },
+    { kind: "tree", x: 0.93, y: 0.72, s: 24 },
+    { kind: "steps", x: 0.22, y: 0.55, s: 16 },
+    { kind: "equipment", x: 0.9, y: 0.15, s: 20 },
+  ],
+};
+const STORY_PINS = { "Return line break": [0.79, 0.13], "Light niche conduit leak": [0.47, 0.86] };
 /** Blue Mesa's visit for the film: Caleb Pacheco, a weekly plan. */
 const VISIT_NUMBER = 5230;
 // Julia Hughes's weekly visit on the same Friday, Dana's third stop in the app's screens.
@@ -237,6 +255,16 @@ if (remake && apply) {
   story = null;
 }
 if (story && !remake) canyonSteps.push("set her story's times (Friday morning)");
+// Her pool's diagram and pins, when an earlier run drew them differently.
+const [drawn] = story
+  ? await query(`select p.diagram_shape = ${q(STORY_SHAPE)}
+        and p.diagram_layout = ${q(JSON.stringify(STORY_LAYOUT))}::jsonb
+        and not exists (select 1 from public.finding f where f.job_id = j.id and f.deleted_at is null
+          and (f.pin_x, f.pin_y) is distinct from (${pinCase("x")}, ${pinCase("y")})) as ok
+      from public.job j join public.property p on p.id = j.property_id where j.id = ${q(story.id)}`)
+  : [{ ok: true }];
+const redraw = story && !remake && !drawn.ok;
+if (redraw) canyonSteps.push("draw her pool (kidney, spa, trees) and move her two pins");
 if (accept && story?.quote_status !== "accepted")
   canyonSteps.push("accept her quote with the deposit");
 const [invoice2087] = story
@@ -354,6 +382,7 @@ if (!total) {
         and scheduled_start >= ${q(WEEK.from)} and scheduled_start < ${q(WEEK.to)}`);
   }
   if (!week.laura) await addLaura();
+  if (redraw) await drawPool(made.id);
   await setStoryTimes(made.id);
   if (!story) printLinks(made);
   if (poolSteps.length) await poolRoutes();
@@ -649,6 +678,26 @@ async function upload(session, path, bytes, type) {
   if (!res.ok) throw new Error(`Upload of ${path} failed: HTTP ${res.status} ${await res.text()}`);
 }
 
+/** A finding's pin coordinate by its title (STORY_PINS), as SQL; its own value otherwise. */
+function pinCase(axis) {
+  const i = axis === "x" ? 0 : 1;
+  return `case f.title ${Object.entries(STORY_PINS)
+    .map(([title, xy]) => `when ${q(title)} then ${xy[i]}`)
+    .join(" ")} else f.pin_${axis} end`;
+}
+
+/** Her pool drawn as STORY_SHAPE and STORY_LAYOUT, and her findings' pins moved to match. */
+async function drawPool(jobId) {
+  await query(`
+    update public.property p set diagram_shape = ${q(STORY_SHAPE)},
+      diagram_layout = ${q(JSON.stringify(STORY_LAYOUT))}::jsonb
+    from public.job j where j.id = ${q(jobId)} and p.id = j.property_id
+      and p.company_id = ${q(SHOPS.canyon)};
+    update public.finding f set pin_x = ${pinCase("x")}, pin_y = ${pinCase("y")}
+    where f.job_id = ${q(jobId)} and f.company_id = ${q(SHOPS.canyon)} and f.deleted_at is null;
+  `);
+}
+
 async function rebeccaStory() {
   const c = SHOPS.canyon;
   const ids = {
@@ -681,9 +730,8 @@ async function rebeccaStory() {
       latitude, longitude, location_source, pool_type, has_pool, has_spa, diagram_shape, diagram_layout,
       approx_gallons, access_notes)
     values (${q(ids.property)}, ${q(c)}, ${q(ids.customer)}, '7745 N 42nd Ave', 'Phoenix', 'AZ', '85051',
-      33.5463, -112.1497, 'manual', 'gunite_plaster', true, true, 'roman',
-      -- Roman, the spa at the upper left, as in the owner's recording 05 and the app's screens.
-      '{"spa":{"r":17.8,"x":0.1364,"y":0.2144,"size":"large","shape":"round"},"centered":true}'::jsonb,
+      33.5463, -112.1497, 'manual', 'gunite_plaster', true, true, ${q(STORY_SHAPE)},
+      ${q(JSON.stringify(STORY_LAYOUT))}::jsonb,
       20000, 'Code #1955');
     insert into public.job (id, company_id, number, type, property_id, bill_to_customer_id, status,
       assigned_user_id, scheduled_start, scheduled_end, started_at, completed_at, fee_cents)
@@ -742,9 +790,9 @@ async function rebeccaStory() {
     insert into public.finding (id, company_id, job_id, job_component_id, title, location_text,
       severity_key, pin_x, pin_y, status)
     values (${q(ids.finding)}, ${q(c)}, ${q(ids.job)}, ${q(ret)}, 'Return line break',
-      'Under the deck, 6 ft from the pool wall', 'major', 0.55, 0.06, 'quoted'),
+      'Under the deck, 6 ft from the pool wall', 'major', ${STORY_PINS["Return line break"].join(", ")}, 'quoted'),
       (${q(ids.finding2)}, ${q(c)}, ${q(ids.job)}, ${q(light)}, 'Light niche conduit leak',
-      'Behind the pool light', 'moderate', 0.3, 0.94, 'quoted');
+      'Behind the pool light', 'moderate', ${STORY_PINS["Light niche conduit leak"].join(", ")}, 'quoted');
   `);
   // The photo of the dye at the light, and her signature, uploaded as the shop's owner would.
   const session = await signIn("marcus@canyonstate.video.test");

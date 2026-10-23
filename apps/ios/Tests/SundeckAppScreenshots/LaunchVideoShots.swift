@@ -139,10 +139,19 @@
                 "customer_id": .string(rebecca.id), "address_line1": "7745 N 42nd Ave", "city": "Phoenix",
                 "state": "AZ", "postal_code": "85051", "has_pool": true, "has_spa": true,
                 "pool_type": "gunite_plaster", "approx_gallons": 20000, "access_notes": "Code #1955",
-                // Her Roman pool with the spa at the upper left, as the owner drew it on his phone.
-                "diagram_shape": "roman",
+                // Her kidney pool, drawn in the app for the laminate card (owner, 2026-10-23: "include
+                // a tree landmark"): the spa in its curve, a tree on each side, the steps in the
+                // shallow end, the equipment pad by the spa (scripts/launch-video-seed.mjs, STORY_LAYOUT).
+                "diagram_shape": "kidney",
                 "diagram_layout": [
-                    "spa": ["r": 17.8, "x": 0.1364, "y": 0.2144, "size": "large", "shape": "round"], "centered": true,
+                    "centered": true,
+                    "spa": ["x": 0.585, "y": 0.17, "r": 13, "size": "medium", "shape": "round"],
+                    "landmarks": [
+                        ["kind": "tree", "x": 0.07, "y": 0.22, "s": 28],
+                        ["kind": "tree", "x": 0.93, "y": 0.72, "s": 24],
+                        ["kind": "steps", "x": 0.22, "y": 0.55, "s": 16],
+                        ["kind": "equipment", "x": 0.9, "y": 0.15, "s": 20],
+                    ],
                 ],
             ])
         try store.insert(
@@ -157,7 +166,7 @@
 
     /// Rebecca's leak detection as the narration tells it: the return line dropped on the
     /// pressure test (a break under the deck), and dye pulled into the light niche's conduit.
-    /// Checklist, test, both findings pinned on her Roman pool with a spa, a dye photo, the draft
+    /// Checklist, test, both findings pinned on her kidney pool with a spa, a dye photo, the draft
     /// report, and the repair quote from the price book ($1,150 + $385). Numbered #5163.
     @MainActor
     private func launchInspection(_ env: AppEnvironment) throws -> (
@@ -180,7 +189,7 @@
         let propertyId = try #require(jobRow["property_id"]?.string)
         let property = try JSONValue.object(try #require(try sync.store.get("property", propertyId))).decode(
             Property.self)
-        try InspectionWrites.setDiagramShape(sync, propertyId: propertyId, companyId: "c1", shape: .roman)
+        try InspectionWrites.setDiagramShape(sync, propertyId: propertyId, companyId: "c1", shape: .kidney)
         let types = InspectionConfig(sync.store, companyId: "c1")
         try InspectionWrites.createChecklist(
             sync, companyId: "c1", jobId: job, types: types.componentTypes, property: property, jobType: .detection)
@@ -212,11 +221,11 @@
         try sync.store.write("test_result", id: test, companyId: "c1", ["performed_at": phoenixMorning(8, 42)])
         let returnFinding = try InspectionWrites.saveFinding(
             sync, companyId: "c1", jobId: job, existing: nil, title: "Return line break", componentId: returns.id,
-            severityKey: "major", location: "Under the deck, 6 ft from the pool wall", pin: (0.55, 0.06),
+            severityKey: "major", location: "Under the deck, 6 ft from the pool wall", pin: (0.79, 0.13),
             status: .open, notes: "Return line dropped 8 PSI in 15 minutes; the others held.")
         let lightFinding = try InspectionWrites.saveFinding(
             sync, companyId: "c1", jobId: job, existing: nil, title: "Light niche conduit leak", componentId: light.id,
-            severityKey: "moderate", location: "Behind the pool light", pin: (0.30, 0.94), status: .open,
+            severityKey: "moderate", location: "Behind the pool light", pin: (0.47, 0.86), status: .open,
             notes: "Dye pulled into the conduit at the back of the light niche.")
         try seedPhoto(sync, job: job, componentId: light.id)
         func line(_ id: String, _ item: String, _ finding: String, _ text: String, _ cents: Int, _ order: Int)
