@@ -188,30 +188,16 @@ body {
   gap: 12px;
 }
 .btn {
-  /* The one call to action: a deeper orange than the logo dot so white text reads (owner,
-     2026-10-23: "Black text probably isn't the best"), a top highlight and a warm glow. */
-  background: linear-gradient(180deg, #ff8a3d 0%, #ee6a1f 55%, #d9531a 100%);
+  /* The app's own primary button (filled blue, white text): plain and flat, so it reads as
+     a product's button, not an ad (owner, 2026-10-23: "still feels scammy"). */
+  background: var(--blue);
   color: #fff;
-  font-family: Barlow;
-  font-weight: 800;
-  font-size: 54px;
-  letter-spacing: 0.3px;
+  font-family: Public;
+  font-weight: 700;
+  font-size: 44px;
   border-radius: 999px;
-  padding: 14px 34px 16px 44px;
+  padding: 18px 46px 20px;
   align-self: flex-start;
-  display: flex;
-  align-items: center;
-  gap: 16px;
-  text-shadow: 0 1.5px 2px rgba(120, 40, 0, 0.35);
-  box-shadow:
-    inset 0 2px 0 rgba(255, 255, 255, 0.45),
-    inset 0 -3px 0 rgba(150, 50, 0, 0.25),
-    0 14px 34px rgba(238, 106, 31, 0.45);
-}
-.btn svg {
-  width: 40px;
-  height: 40px;
-  flex: none;
 }
 .url {
   font-family: Barlow;
