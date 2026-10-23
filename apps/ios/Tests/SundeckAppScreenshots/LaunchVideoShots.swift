@@ -128,6 +128,157 @@
             ])
     }
 
+    /// Rebecca's leak detection as the narration tells it: the return line dropped on the
+    /// pressure test (a break under the deck), and dye pulled into the light niche's conduit.
+    /// Checklist, test, both findings pinned on her Roman pool with a spa, a dye photo, the draft
+    /// report, and the repair quote from the price book ($1,150 + $385). Numbered #5163.
+    @MainActor
+    private func launchInspection(_ env: AppEnvironment) throws -> (
+        job: String, light: String, test: String, returnFinding: String, lightFinding: String
+    ) {
+        let sync = env.session.sync
+        let url = try #require(Bundle.module.url(forResource: "config", withExtension: "json"))
+        let config = try JSONDecoder().decode([String: [Row]].self, from: Data(contentsOf: url))
+        var rows: [PulledRow] = []
+        for (table, list) in config {
+            for row in list {
+                var r = row
+                r["company_id"] = "c1"
+                rows.append(PulledRow(table: table, xid: "2", row: r))
+            }
+        }
+        try sync.store.applyPage(PullPage(rows: rows, done: true, cursor: [:], serverHLC: "1760000000001-0000-srv"))
+        let jobRow = try #require(try sync.store.list("job").first { $0["number"] == 1042 })
+        let job = try #require(jobRow["id"]?.string)
+        let propertyId = try #require(jobRow["property_id"]?.string)
+        let property = try JSONValue.object(try #require(try sync.store.get("property", propertyId))).decode(
+            Property.self)
+        try InspectionWrites.setDiagramShape(sync, propertyId: propertyId, companyId: "c1", shape: .roman)
+        let types = InspectionConfig(sync.store, companyId: "c1")
+        try InspectionWrites.createChecklist(
+            sync, companyId: "c1", jobId: job, types: types.componentTypes, property: property, jobType: .detection)
+        let inspection = JobInspection(sync.store, jobId: job)
+        let key = { (c: JobComponent) in types.componentTypeById[c.componentTypeId]?.key ?? "" }
+        for (i, c) in inspection.components.enumerated() where i < 12 {
+            let verdict: Verdict = ["return", "light"].contains(key(c)) ? .leaking : .ok
+            try InspectionWrites.setVerdict(
+                sync, companyId: "c1", jobId: job, componentId: c.id, existing: inspection.resultByComponent[c.id],
+                verdict: verdict, userId: "u1")
+        }
+        let returns = try #require(inspection.components.first { key($0) == "return" })
+        let light = try #require(inspection.components.first { key($0) == "light" })
+        let places = [(returns, "Under the deck, 6 ft from the pool wall"), (light, "Behind the pool light")]
+        for (component, place) in places {
+            try InspectionWrites.saveChecklistResult(
+                sync, companyId: "c1", jobId: job, componentId: component.id,
+                existing: JobInspection(sync.store, jobId: job).resultByComponent[component.id],
+                ["location_text": .string(place)])
+        }
+        let pressure = try #require(types.testTypes.first { $0.key == "pressure" })
+        let data = normalizeTestData(
+            pressure.fieldSchema,
+            ["line_name": "Return", "start_psi": "20", "end_psi": "12", "duration_min": "15"].mapValues { .string($0) }
+        )
+        let test = try InspectionWrites.saveTest(
+            sync, companyId: "c1", jobId: job, existing: nil, type: pressure, componentId: returns.id, data: data,
+            outcome: calculate(pressure, data).suggested, notes: "")
+        let returnFinding = try InspectionWrites.saveFinding(
+            sync, companyId: "c1", jobId: job, existing: nil, title: "Return line break", componentId: returns.id,
+            severityKey: "major", location: "Under the deck, 6 ft from the pool wall", pin: (0.55, 0.06),
+            status: .open, notes: "Return line dropped 8 PSI in 15 minutes; the others held.")
+        let lightFinding = try InspectionWrites.saveFinding(
+            sync, companyId: "c1", jobId: job, existing: nil, title: "Light niche conduit leak", componentId: light.id,
+            severityKey: "moderate", location: "Behind the pool light", pin: (0.30, 0.94), status: .open,
+            notes: "Dye pulled into the conduit at the back of the light niche.")
+        try seedPhoto(sync, job: job, componentId: light.id)
+        func line(_ id: String, _ item: String, _ finding: String, _ text: String, _ cents: Int, _ order: Int)
+            -> PulledRow
+        {
+            PulledRow(
+                table: "quote_line_item", xid: "5",
+                row: [
+                    "id": .string(id), "company_id": "c1", "quote_id": "q1", "description": .string(text),
+                    "quantity": 1, "unit_price_cents": .number(Double(cents)), "taxable": false,
+                    "sort_order": .number(Double(order)), "price_book_item_id": .string(item),
+                    "finding_id": .string(finding),
+                ])
+        }
+        try sync.store.applyPage(
+            PullPage(
+                rows: [
+                    PulledRow(
+                        table: "report", xid: "3",
+                        row: [
+                            "id": "r1", "company_id": "c1", "job_id": .string(job), "template_key": "homeowner",
+                            "version": 1, "status": "draft",
+                            "final_sections": [
+                                [
+                                    "key": "summary", "title": "What We Found",
+                                    "text":
+                                        "We found two leaks: a break in the return line under the deck, and water getting into the conduit behind the pool light. Everything else we checked is holding.",
+                                ],
+                                [
+                                    "key": "next_steps", "title": "Next Steps",
+                                    "text":
+                                        "Repair the return line and reseal the light niche conduit. We've sent a quote for both.",
+                                ],
+                            ],
+                            "ai_draft": ["problems": []],
+                        ]),
+                    PulledRow(
+                        table: "price_book_item", xid: "5",
+                        row: [
+                            "id": "pbr1", "company_id": "c1", "name": "Repair return line break", "unit": "each",
+                            "price_cents": 115000, "taxable": false, "sort_order": 1, "active": true,
+                            "component_type_key": "return",
+                        ]),
+                    PulledRow(
+                        table: "price_book_item", xid: "5",
+                        row: [
+                            "id": "pbr2", "company_id": "c1", "name": "Reseal light niche conduit", "unit": "each",
+                            "price_cents": 38500, "taxable": false, "sort_order": 2, "active": true,
+                            "component_type_key": "light",
+                        ]),
+                    PulledRow(
+                        table: "quote", xid: "5",
+                        row: [
+                            "id": "q1", "company_id": "c1", "job_id": .string(job), "status": "draft",
+                            "subtotal_cents": 153500, "discount_cents": 0, "tax_cents": 0, "total_cents": 153500,
+                            "deposit_cents": 76750,
+                        ]),
+                    line("ql1", "pbr1", returnFinding, "Repair return line break", 115000, 1),
+                    line("ql2", "pbr2", lightFinding, "Reseal light niche conduit", 38500, 2),
+                ], done: true, cursor: [:], serverHLC: "1760000000005-0000-srv"))
+        try sync.store.write("job", id: job, companyId: "c1", ["number": 5163])
+        return (job, light.id, test, returnFinding, lightFinding)
+    }
+
+    /// "Rebecca Quinn" in a quick hand, as the signature pad records it (points, top-left origin).
+    private func rebeccaSignature() -> [SignatureStroke] {
+        func stroke(_ from: Double, _ to: Double, _ y: (Double) -> Double) -> SignatureStroke {
+            stride(from: from, through: to, by: 3).map { x in SIMD2<Double>(x, y(x)) }
+        }
+        func loops(_ x: Double, _ start: Double, _ base: Double, _ height: Double, _ width: Double) -> Double {
+            let wave: Double = abs(sin((x - start) / width))
+            return base - height * wave
+        }
+        var r: SignatureStroke = stroke(20, 40) { x in 150 - (x - 20) * 4.5 }
+        r += stroke(40, 80) { x in 60 + 30 * sin((x - 40) / 40 * Double.pi) }
+        r += stroke(80, 120) { x in 90 + (x - 80) * 1.5 }
+        let ebecca = stroke(120, 330) { x in loops(x, 120, 120, 22, 18) }
+        let q = stroke(380, 470) { x in 100 + 45 * sin((x - 380) / 90 * 2 * Double.pi) }
+        let qTail = stroke(440, 500) { x in 140 + (x - 440) * 0.6 }
+        let uinn = stroke(500, 700) { x in loops(x, 500, 125, 18, 14) }
+        let tail = stroke(700, 760) { x in 125 + (x - 700) * 0.3 }
+        return [r, ebecca, q, qTail, uinn, tail]
+    }
+
+    /// Marks everything written so far as synced, so the sync bar shows no waiting changes.
+    private func markSynced(_ store: LocalStore) throws {
+        let batch = try store.pendingBatch(maxMutations: 100_000)
+        try store.acknowledge(batch.seqsByMutation.values.flatMap { $0 })
+    }
+
     @Suite(.serialized, .enabled(if: launchShots)) @MainActor struct LaunchVideoShots {
         /// Today, Today with the first stop done, and Today in dark mode at 6 AM.
         @Test func today() async throws {
@@ -152,13 +303,14 @@
         /// voice note button, the customer's signature step, the quote from the price book.
         @Test func leakJob() async throws {
             let env = try launchEnvironment()
-            let store = env.session.sync.store
+            let sync = env.session.sync
+            let store = sync.store
             try launchRoute(store)
             try launchLeakJob(store)
             env.session.reloadCompanies()
-            let ids = try seedInspection(env)
-            try seedMoney(env.session.sync, job: ids.job, finding: ids.finding)
-            try store.write("job", id: ids.job, companyId: "c1", ["number": 5163])
+            let ids = try launchInspection(env)
+            // Everything so far reached the office: no "waiting to sync" bar on these screens.
+            try markSynced(store)
             try await snapshot(
                 "lv-checklist", height: 3000,
                 NavigationStack { JobScreen(jobId: ids.job, section: .checklist) }.app(env))
@@ -166,22 +318,43 @@
                 "lv-pressure-test", TestEditor(jobId: ids.job, testId: ids.test, typeId: nil, componentId: nil).app(env)
             )
             try await snapshot(
-                "lv-findings", height: 1800, NavigationStack { JobScreen(jobId: ids.job, section: .findings) }.app(env))
-            try await snapshot(
-                "lv-sync-waiting", NavigationStack { JobScreen(jobId: ids.job, section: .findings) }.app(env))
+                "lv-findings", height: 2200, NavigationStack { JobScreen(jobId: ids.job, section: .findings) }.app(env))
             try await snapshot(
                 "lv-voice-note", height: 2000,
-                NavigationStack { ComponentScreen(jobId: ids.job, componentId: ids.seam) }.app(env))
+                NavigationStack { ComponentScreen(jobId: ids.job, componentId: ids.light) }.app(env))
             let job = try #require(try jobViews(store, companyId: "c1").first { $0.id == ids.job })
-            let list = wrapUp(wrapUpInput(store: store, companyId: "c1", settings: nil, job: job))
+            var list = wrapUp(wrapUpInput(store: store, companyId: "c1", settings: nil, job: job))
             let quote = jobQuotes(store, companyId: "c1", jobId: job.id).first?.id
-            for (name, step) in [
-                ("lv-review-sign", WrapUpOpen(step: .sign, refId: nil)),
-                ("lv-quote", WrapUpOpen(step: .quote, refId: quote)),
-            ] {
-                try await snapshot(
-                    name, height: 3600, WrapUpStepSheet(job: job, step: step, title: step.title(list)).app(env))
+            let sign = WrapUpOpen(step: .sign, refId: nil)
+            try await snapshot(
+                "lv-review-sign", height: 3600, WrapUpStepSheet(job: job, step: sign, title: sign.title(list)).app(env))
+            // Rebecca signs on the tech's phone.
+            try SignatureWrites.save(
+                sync, companyId: "c1", jobId: job.id, purpose: .inspectionAck, signerName: "Rebecca Quinn",
+                signerRole: "Homeowner", strokes: rebeccaSignature(), at: nil)
+            try markSynced(store)
+            list = wrapUp(wrapUpInput(store: store, companyId: "c1", settings: nil, job: job))
+            try await snapshot(
+                "lv-signed", height: 3600, WrapUpStepSheet(job: job, step: sign, title: sign.title(list)).app(env))
+            let report = WrapUpOpen(step: .report, refId: nil)
+            try await snapshot(
+                "lv-send-report", height: 3600,
+                WrapUpStepSheet(job: job, step: report, title: report.title(list)).app(env))
+            let quoteStep = WrapUpOpen(step: .quote, refId: quote)
+            try await snapshot(
+                "lv-quote", height: 3600,
+                WrapUpStepSheet(job: job, step: quoteStep, title: quoteStep.title(list)).app(env))
+            // In the backyard with no signal: two answers saved on the phone, waiting to sync.
+            let inspection = JobInspection(store, jobId: job.id)
+            for c in inspection.components.dropFirst(12).prefix(2) {
+                try InspectionWrites.setVerdict(
+                    sync, companyId: "c1", jobId: job.id, componentId: c.id,
+                    existing: inspection.resultByComponent[c.id], verdict: .ok, userId: "u1")
             }
+            await sync.syncNow()
+            try await snapshot(
+                "lv-offline", height: 3000,
+                NavigationStack { JobScreen(jobId: ids.job, section: .checklist) }.app(env))
         }
 
         /// The upsell on a pool visit: the tech hears the pump going and adds a finding, then
