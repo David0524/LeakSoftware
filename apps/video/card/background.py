@@ -18,13 +18,13 @@ u, v = x / W, y / H
 
 # Base: navy at the top and bottom, a lift of water blue through the middle, a little brighter
 # behind the hero (upper middle).
-navy = np.array([0x12, 0x26, 0x3A], np.float32) / 255
-deep = np.array([0x0B, 0x1A, 0x2A], np.float32) / 255
+navy = np.array([0x16, 0x34, 0x55], np.float32) / 255
+deep = np.array([0x10, 0x26, 0x40], np.float32) / 255
 water = np.array([0x1F, 0x6F, 0xAE], np.float32) / 255
-glow = np.exp(-(((u - 0.55) / 0.55) ** 2 + ((v - 0.40) / 0.30) ** 2))
+glow = np.exp(-(((u - 0.55) / 0.65) ** 2 + ((v - 0.42) / 0.40) ** 2))
 low = np.clip((v - 0.62) / 0.38, 0, 1)
-img = navy[None, None] * (1 - low[..., None] * 0.6) + deep[None, None] * (low[..., None] * 0.6)
-img = img + (water - navy)[None, None] * (glow[..., None] * 0.55)
+img = navy[None, None] * (1 - low[..., None] * 0.4) + deep[None, None] * (low[..., None] * 0.4)
+img = img + (water - navy)[None, None] * (glow[..., None] * 0.85)
 
 # Caustics: the bright net light makes through rippled water (sum of warped waves, thin ridges).
 k = 2 * np.pi / (220 * s)
