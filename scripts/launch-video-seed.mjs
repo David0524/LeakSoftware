@@ -96,10 +96,10 @@ const STORY_MARKUP = {
   shapes: [
     { type: "circle", color: "red", cx: 0.79, cy: 0.13, rx: 0.065, ry: 0.12 },
     { type: "arrow", color: "red", x1: 0.735, y1: 0.47, x2: 0.775, y2: 0.27 },
-    { type: "text", color: "red", x: 0.71, y: 0.58, text: "Break under deck", s: 0.7 },
+    { type: "text", color: "white", x: 0.71, y: 0.58, text: "Break under deck", s: 0.7 },
     { type: "circle", color: "red", cx: 0.47, cy: 0.86, rx: 0.065, ry: 0.12 },
     { type: "arrow", color: "red", x1: 0.33, y1: 0.56, x2: 0.43, y2: 0.77 },
-    { type: "text", color: "red", x: 0.3, y: 0.47, text: "Dye at the light", s: 0.7 },
+    { type: "text", color: "white", x: 0.3, y: 0.47, text: "Dye at the light", s: 0.7 },
   ],
 };
 const STORY_PINS = { "Return line break": [0.79, 0.13], "Light niche conduit leak": [0.47, 0.86] };

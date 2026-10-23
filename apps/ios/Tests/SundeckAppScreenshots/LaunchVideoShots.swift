@@ -121,7 +121,7 @@
         }
     }
 
-    /// A time this morning in Phoenix, as the server stores it: Rebecca's job runs 8:10 to 9:50 AM
+    /// A time this morning in Phoenix, as the server stores it: Rebecca's job runs 8:00 to 9:50 AM
     /// whatever time the capture runs.
     private func phoenixMorning(_ hour: Int, _ minute: Int) -> JSONValue {
         let zone = "America/Phoenix"
@@ -158,7 +158,7 @@
             [
                 "property_id": .string(pool), "bill_to_customer_id": .string(rebecca.id), "status": "in_progress",
                 "type": "detection",
-                "started_at": phoenixMorning(8, 10),
+                "started_at": phoenixMorning(8, 0),
                 "assigned_user_id": "u1", "number": 1042, "fee_cents": 37500,
                 // Her two leaks marked up on the diagram: a red circle, an arrow and a label each.
                 "diagram_markup": [
@@ -166,10 +166,10 @@
                     "shapes": [
                         ["type": "circle", "color": "red", "cx": 0.79, "cy": 0.13, "rx": 0.065, "ry": 0.12],
                         ["type": "arrow", "color": "red", "x1": 0.735, "y1": 0.47, "x2": 0.775, "y2": 0.27],
-                        ["type": "text", "color": "red", "x": 0.71, "y": 0.58, "text": "Break under deck", "s": 0.7],
+                        ["type": "text", "color": "white", "x": 0.71, "y": 0.58, "text": "Break under deck", "s": 0.7],
                         ["type": "circle", "color": "red", "cx": 0.47, "cy": 0.86, "rx": 0.065, "ry": 0.12],
                         ["type": "arrow", "color": "red", "x1": 0.33, "y1": 0.56, "x2": 0.43, "y2": 0.77],
-                        ["type": "text", "color": "red", "x": 0.3, "y": 0.47, "text": "Dye at the light", "s": 0.7],
+                        ["type": "text", "color": "white", "x": 0.3, "y": 0.47, "text": "Dye at the light", "s": 0.7],
                     ],
                 ],
             ])
@@ -229,7 +229,7 @@
         let test = try InspectionWrites.saveTest(
             sync, companyId: "c1", jobId: job, existing: nil, type: pressure, componentId: returns.id, data: data,
             outcome: calculate(pressure, data).suggested, notes: "")
-        try sync.store.write("test_result", id: test, companyId: "c1", ["performed_at": phoenixMorning(8, 42)])
+        try sync.store.write("test_result", id: test, companyId: "c1", ["performed_at": phoenixMorning(8, 30)])
         let returnFinding = try InspectionWrites.saveFinding(
             sync, companyId: "c1", jobId: job, existing: nil, title: "Return line break", componentId: returns.id,
             severityKey: "major", location: "Under the deck, 6 ft from the pool wall", pin: (0.79, 0.13),
