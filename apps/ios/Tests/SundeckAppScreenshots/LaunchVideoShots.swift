@@ -28,6 +28,20 @@
         func signOut() async {}
     }
 
+    /// The office as the phone sees it when there's signal: every change is accepted at once and
+    /// there's nothing new to download, so the sync bar stays hidden.
+    private final class LaunchTransport: SyncTransport, @unchecked Sendable {
+        func push(_ mutations: [Mutation], deviceId: String) async throws -> PushResponse {
+            PushResponse(
+                serverHLC: "1760000000009-0000-srv",
+                results: mutations.map { MutationResult(id: $0.id, status: .applied) })
+        }
+        func pull(cursor: PullCursor, pageSize: Int) async throws -> PullPage {
+            PullPage(rows: [], done: true, cursor: cursor, serverHLC: "1760000000009-0000-srv")
+        }
+        func scope() async throws -> String? { nil }
+    }
+
     private let shop = "Canyon State Leak Detections"
 
     /// A signed-in phone for the film's shop, with nothing synced from a server.
@@ -45,7 +59,7 @@
         kv.set(KVKey.lastSyncedAt, String(Date().addingTimeInterval(-120).timeIntervalSince1970))
         kv.set(KVKey.initialSyncDone, "1")
         let sync = SyncService(
-            store: store, kv: kv, transport: SilentTransport(), auth: auth, media: MediaFiles(root: files))
+            store: store, kv: kv, transport: LaunchTransport(), auth: auth, media: MediaFiles(root: files))
         kv.setTeam([
             TeamProfile(id: "u1", fullName: "Dana Owner", email: "dana@canyonstate.example"),
             TeamProfile(id: "u2", fullName: "Jake Turner", email: nil),
@@ -355,12 +369,6 @@
         return strokes.map { flat in stride(from: 0, to: flat.count - 1, by: 2).map { SIMD2(flat[$0], flat[$0 + 1]) } }
     }
 
-    /// Marks everything written so far as synced, so the sync bar shows no waiting changes.
-    private func markSynced(_ store: LocalStore) throws {
-        let batch = try store.pendingBatch(maxMutations: 100_000)
-        try store.acknowledge(batch.seqsByMutation.values.flatMap { $0 })
-    }
-
     @Suite(.serialized, .enabled(if: launchShots)) @MainActor struct LaunchVideoShots {
         /// Today, Today with the first stop done, and Today in dark mode at 6 AM.
         @Test func today() async throws {
@@ -392,7 +400,7 @@
             env.session.reloadCompanies()
             let ids = try launchInspection(env)
             // Everything so far reached the office: no "waiting to sync" bar on these screens.
-            try markSynced(store)
+            await sync.syncNow()
             try await snapshot(
                 "lv-checklist", height: 3000,
                 NavigationStack { JobScreen(jobId: ids.job, section: .checklist) }.app(env))
@@ -415,7 +423,7 @@
                 sync, companyId: "c1", jobId: job.id, purpose: .inspectionAck, signerName: "Rebecca Quinn",
                 signerRole: "Homeowner", strokes: rebeccaSignature(), at: nil)
             try store.write("signature", id: signature, companyId: "c1", ["signed_at": phoenixMorning(9, 42)])
-            try markSynced(store)
+            await sync.syncNow()
             list = wrapUp(wrapUpInput(store: store, companyId: "c1", settings: nil, job: job))
             try await snapshot(
                 "lv-signed", height: 3600, WrapUpStepSheet(job: job, step: sign, title: sign.title(list)).app(env))
@@ -428,13 +436,13 @@
                 "lv-quote", height: 3600,
                 WrapUpStepSheet(job: job, step: quoteStep, title: quoteStep.title(list)).app(env))
             // In the backyard with no signal: two answers saved on the phone, waiting to sync.
+            sync.networkChanged(online: false)
             let inspection = JobInspection(store, jobId: job.id)
             for c in inspection.components.dropFirst(12).prefix(2) {
                 try InspectionWrites.setVerdict(
                     sync, companyId: "c1", jobId: job.id, componentId: c.id,
                     existing: inspection.resultByComponent[c.id], verdict: .ok, userId: "u1")
             }
-            await sync.syncNow()
             try await snapshot(
                 "lv-offline", height: 3000,
                 NavigationStack { JobScreen(jobId: ids.job, section: .checklist) }.app(env))
