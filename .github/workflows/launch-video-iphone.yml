@@ -2,13 +2,18 @@ name: Launch video iPhone screens
 
 # The launch film's iPhone screens (docs/plans/launch-video.md, "How it's made"): the
 # LaunchVideoShots suite renders the app's real screens with the film's shop in the iPhone
-# simulator and saves them as the `launch-video-iphone` artifact (lv-*.png). Run it by hand from
-# the Actions tab; nothing else starts it. Then, in apps/video:
+# simulator and saves them as the `launch-video-iphone` artifact (lv-*.png). It runs on a push
+# that changes the suite or this file, or by hand from the Actions tab (once this file is on the
+# default branch). Then, in apps/video:
 #   gh run download <run id> -n launch-video-iphone -D <folder>
 #   node src/capture-iphone.ts <folder>
 
 on:
   workflow_dispatch:
+  push:
+    paths:
+      - apps/ios/Tests/SundeckAppScreenshots/LaunchVideoShots.swift
+      - .github/workflows/launch-video-iphone.yml
 
 concurrency:
   group: launch-video-iphone-${{ github.ref }}
