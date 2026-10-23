@@ -14,7 +14,7 @@ back to where it started, so the clip loops.
 
     blender -b -P apps/video/logo3d/blender/scene.py -- --out DIR [options]
 
-      --frames A-B     frames to render (1-240)
+      --frames A-B     frames to render (1-270: a 240-frame loop and a 30-frame tail)
       --samples N      Cycles samples (default 192)
       --engine E       CYCLES (default) or EEVEE (the fast fallback)
       --pct P          resolution percentage of 1920 x 1080 (default 100)
@@ -36,7 +36,10 @@ from mathutils.kdtree import KDTree
 
 ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", "..", ".."))
 SVG = os.path.join(ROOT, "brand", "logo", "sundeck-mark-reverse.svg")
-FRAMES = 240
+FRAMES = 240  # one loop of the camera and the pin
+# Rendered a second longer: the sea runs forward the whole time, and the encoder dissolves the
+# last second into the first (card/../workflow), so the loop has no seam.
+TAIL = 30
 FPS = 30
 PIN_Z = 1.75  # the pin's center above the water
 PIN_H = 2.2  # its height
@@ -44,7 +47,7 @@ PIN_H = 2.2  # its height
 
 def args():
     argv = sys.argv[sys.argv.index("--") + 1 :] if "--" in sys.argv else []
-    o = {"out": "build/logo3d", "frames": f"1-{FRAMES}", "samples": 192, "engine": "CYCLES",
+    o = {"out": "build/logo3d", "frames": f"1-{FRAMES + TAIL}", "samples": 192, "engine": "CYCLES",
          "pct": 100, "device": "AUTO", "still": None, "blend": None, "drop": "clear"}
     i = 0
     while i < len(argv):
@@ -185,10 +188,41 @@ if DROP == "frost":
     drop_mat = principled("Drop", color=(0.96, 0.975, 1.0, 1), rough=0.32, ior=1.5, trans=1.0,
                           coat=1.0, coat_rough=0.03, film=320.0, film_ior=1.38)
 else:
-    # Clear glass, cut like a lens: dispersion splits light at the edges, and a thin film on
-    # the surface gives the faint rainbow sheen of Apple's glass.
-    drop_mat = principled("Drop", color=(0.97, 0.99, 1.0, 1), rough=0.0, ior=1.5, trans=1.0,
-                          coat=1.0, coat_rough=0.0, film=380.0, film_ior=1.38, disp=0.45)
+    # Clear as water (owner: "more see through rather than absorbing the colored lights so
+    # much"): untinted, a gentle lens, only a trace of dispersion and rainbow sheen at the edges.
+    drop_mat = principled("Drop", color=(1.0, 1.0, 1.0, 1), rough=0.0, ior=1.45, trans=1.0,
+                          coat=0.5, coat_rough=0.0, film=120.0, film_ior=1.33, disp=0.15)
+
+
+def glow_material(name, color, strength):
+    m = bpy.data.materials.new(name)
+    m.use_nodes = True
+    nt = m.node_tree
+    nt.nodes.clear()
+    out = nt.nodes.new("ShaderNodeOutputMaterial")
+    tc = nt.nodes.new("ShaderNodeTexCoord")
+    grad = nt.nodes.new("ShaderNodeTexGradient")
+    grad.gradient_type = "SPHERICAL"
+    curve = nt.nodes.new("ShaderNodeMath")
+    curve.operation = "POWER"
+    curve.inputs[1].default_value = 3.0
+    mul = nt.nodes.new("ShaderNodeMath")
+    mul.operation = "MULTIPLY"
+    mul.inputs[1].default_value = strength
+    e = nt.nodes.new("ShaderNodeEmission")
+    e.inputs["Color"].default_value = (*color, 1)
+    clear = nt.nodes.new("ShaderNodeBsdfTransparent")
+    add = nt.nodes.new("ShaderNodeAddShader")
+    nt.links.new(tc.outputs["Object"], grad.inputs["Vector"])
+    nt.links.new(grad.outputs["Fac"], curve.inputs[0])
+    nt.links.new(curve.outputs[0], mul.inputs[0])
+    nt.links.new(mul.outputs[0], e.inputs["Strength"])
+    nt.links.new(e.outputs[0], add.inputs[0])
+    nt.links.new(clear.outputs[0], add.inputs[1])
+    nt.links.new(add.outputs[0], out.inputs[0])
+    if hasattr(m, "blend_method"):
+        m.blend_method = "BLEND"
+    return m
 
 
 def wave_material(name, color, glow):
@@ -206,7 +240,16 @@ def wave_material(name, color, glow):
         b.inputs["Subsurface Radius"].default_value = (0.1, 0.4, 1.0)
     set_input(b, ["Coat Weight", "Clearcoat"], 0.6)
     b.inputs["Emission Color"].default_value = (*color, 1)
-    b.inputs["Emission Strength"].default_value = glow
+    # Brighter where the surface turns away (its edges and the tops of the waves), so each
+    # band reads as a solid, lit shape even face-on.
+    lw = nt.nodes.new("ShaderNodeLayerWeight")
+    lw.inputs["Blend"].default_value = 0.35
+    edge = nt.nodes.new("ShaderNodeMath")
+    edge.operation = "MULTIPLY_ADD"
+    edge.inputs[1].default_value = glow * 3.0
+    edge.inputs[2].default_value = glow
+    nt.links.new(lw.outputs["Facing"], edge.inputs[0])
+    nt.links.new(edge.outputs[0], b.inputs["Emission Strength"])
     tc = nt.nodes.new("ShaderNodeTexCoord")
     wave = nt.nodes.new("ShaderNodeTexWave")
     wave.wave_type = "BANDS"
@@ -264,7 +307,7 @@ def dot_material():
     b = nt.nodes["Principled BSDF"]
     b.inputs["Base Color"].default_value = (0.42, 0.06, 0.0, 1)
     b.inputs["Roughness"].default_value = 0.85
-    b.inputs["Emission Color"].default_value = (1.0, 0.13, 0.0, 1)
+    b.inputs["Emission Color"].default_value = (1.0, 0.07, 0.0, 1)
     tc = nt.nodes.new("ShaderNodeTexCoord")
     noise = nt.nodes.new("ShaderNodeTexNoise")
     noise.inputs["Scale"].default_value = 60.0
@@ -278,8 +321,8 @@ def dot_material():
     glow = nt.nodes.new("ShaderNodeMapRange")
     glow.inputs["From Min"].default_value = 0.35
     glow.inputs["From Max"].default_value = 1.0
-    glow.inputs["To Min"].default_value = 3.0
-    glow.inputs["To Max"].default_value = 10.0
+    glow.inputs["To Min"].default_value = 0.9
+    glow.inputs["To Max"].default_value = 2.6
     bump = nt.nodes.new("ShaderNodeBump")
     bump.inputs["Strength"].default_value = 0.8
     bump.inputs["Distance"].default_value = 0.006
@@ -347,7 +390,7 @@ bpy.data.objects.remove(outline)
 for v in drop.data.vertices:
     _, _, dist = tree.find((v.co.x, v.co.y, 0.0))
     swell = min(dist / 0.45, 1.0) ** 0.6
-    v.co.z *= 1.0 + 0.85 * swell
+    v.co.z *= 1.0 + 0.45 * swell
 # Smooth the swell (depth only), so the faces curve evenly, with no ridge down the middle.
 sm = drop.modifiers.new("Even out", "SMOOTH")
 sm.use_x = sm.use_y = False
@@ -365,11 +408,11 @@ drop.data.materials.append(drop_mat)
 # are real textured things, never a perfect curve. Lightest at the front, deepest at the back.
 cutters = [to_mesh(w, "Cut", 0.4) for w in whites] + [to_mesh(d, "Cut", 0.4, 0.0, 0.02) for d in dots]
 LAYERS = [
-    (0.1, (0.02, 0.38, 1.0), 0.6),
-    (0.05, (0.015, 0.32, 1.0), 0.5),
-    (0.0, (0.01, 0.27, 1.0), 0.42),
-    (-0.05, (0.008, 0.22, 0.95), 0.35),
-    (-0.1, (0.005, 0.17, 0.9), 0.3),
+    (0.1, (0.03, 0.4, 1.0), 0.55),
+    (0.05, (0.012, 0.26, 0.95), 0.35),
+    (0.0, (0.008, 0.2, 0.9), 0.28),
+    (-0.05, (0.005, 0.15, 0.85), 0.22),
+    (-0.1, (0.003, 0.11, 0.8), 0.18),
 ]
 grain = bpy.data.textures.new("Wave grain", "CLOUDS")
 grain.noise_scale = 0.035
@@ -416,7 +459,7 @@ for o in curves:
 dc = sum((Vector(v.co) for v in dot.data.vertices), Vector()) / len(dot.data.vertices)
 glow = bpy.data.lights.new("Dot glow", "POINT")
 glow.color = (1.0, 0.32, 0.05)
-glow.energy = 60
+glow.energy = 45
 glow.shadow_soft_size = 0.12
 go = bpy.data.objects.new("Dot glow", glow)
 go.location = dot.matrix_world @ dc
@@ -424,6 +467,19 @@ go.parent = pin
 scene.collection.objects.link(go)
 for k in ("visible_camera", "visible_glossy", "visible_transmission"):
     setattr(go, k, False)
+# A soft orange halo in the glass around the dot, as a glowing core would show (seen, lighting
+# nothing; glow_material, the same falloff as the light shapes behind).
+dr = max((Vector(v.co) - dc).length for v in dot.data.vertices)
+# A flat disc through the dot's middle (the drop's face plane, before the pin stands up), so
+# the falloff runs from the dot out to nothing.
+bpy.ops.mesh.primitive_circle_add(vertices=64, radius=1.0, fill_type="NGON", location=dot.matrix_world @ dc)
+halo = bpy.context.active_object
+halo.name = "Dot halo"
+halo.scale = (dr * 2.2, dr * 2.2, 1.0)
+halo.data.materials.append(glow_material("Dot halo", (1.0, 0.24, 0.02), 5.0))
+halo.visible_shadow = False
+halo.visible_diffuse = False
+halo.parent = pin
 pin.rotation_euler = (math.radians(90), 0, 0)  # SVG lies in XY: stand it up, facing -Y
 
 # The pin bobs on the water's breath and turns a little (simple-expression drivers, no Python).
@@ -460,42 +516,13 @@ def area(name, color, power, size, loc, look_at=(0, 0, PIN_Z), shape="RECTANGLE"
 
 # Long soft strips, so the glass edges carry bright lines as in Apple's glass.
 area("Key", (0.85, 0.92, 1.0), 380, 6.0, (-4.5, -5.0, 6.0), size_y=0.3)
-area("Kick", (1.0, 0.52, 0.2), 400, 0.25, (5.0, -2.5, 2.4), size_y=5.0)
-area("Rim", (0.3, 0.88, 1.0), 900, 0.25, (-2.5, 4.5, 4.0), size_y=6.0)
+area("Kick", (1.0, 0.52, 0.2), 300, 1.6, (5.0, -2.5, 2.4), size_y=5.0)
+area("Rim", (0.3, 0.88, 1.0), 700, 1.4, (-2.5, 4.5, 4.0), size_y=6.0)
 area("Top", (1.0, 1.0, 1.0), 110, 6.0, (0, 0, 7.5), size_y=0.25)
 
 # Big soft shapes of blue and orange light behind the pin, which the glass bends and the lens
 # blurs: discs whose light falls off from the middle to nothing at the edge, seen but lighting
 # nothing.
-def glow_material(name, color, strength):
-    m = bpy.data.materials.new(name)
-    m.use_nodes = True
-    nt = m.node_tree
-    nt.nodes.clear()
-    out = nt.nodes.new("ShaderNodeOutputMaterial")
-    tc = nt.nodes.new("ShaderNodeTexCoord")
-    grad = nt.nodes.new("ShaderNodeTexGradient")
-    grad.gradient_type = "SPHERICAL"
-    curve = nt.nodes.new("ShaderNodeMath")
-    curve.operation = "POWER"
-    curve.inputs[1].default_value = 3.0
-    mul = nt.nodes.new("ShaderNodeMath")
-    mul.operation = "MULTIPLY"
-    mul.inputs[1].default_value = strength
-    e = nt.nodes.new("ShaderNodeEmission")
-    e.inputs["Color"].default_value = (*color, 1)
-    clear = nt.nodes.new("ShaderNodeBsdfTransparent")
-    add = nt.nodes.new("ShaderNodeAddShader")
-    nt.links.new(tc.outputs["Object"], grad.inputs["Vector"])
-    nt.links.new(grad.outputs["Fac"], curve.inputs[0])
-    nt.links.new(curve.outputs[0], mul.inputs[0])
-    nt.links.new(mul.outputs[0], e.inputs["Strength"])
-    nt.links.new(e.outputs[0], add.inputs[0])
-    nt.links.new(clear.outputs[0], add.inputs[1])
-    nt.links.new(add.outputs[0], out.inputs[0])
-    if hasattr(m, "blend_method"):
-        m.blend_method = "BLEND"
-    return m
 
 
 for name, color, strength, loc, r in (
@@ -527,15 +554,15 @@ ocean.size = 1.0
 ocean.spatial_size = 60
 ocean.resolution = 20
 ocean.repeat_x = ocean.repeat_y = 3
-ocean.wave_scale = 0.55
-ocean.choppiness = 1.1
-ocean.wind_velocity = 7.0
+ocean.wave_scale = 0.95
+ocean.choppiness = 1.35
+ocean.wind_velocity = 10.0
 ocean.wave_alignment = 0.4
 ocean.wave_direction = 0.6
 ocean.wave_scale_min = 0.0
-# The ocean's time runs back and forth over the loop, so the last frame meets the first.
+# Real time: the swells roll forward the whole clip (the loop is made in the encoder).
 d = ocean.driver_add("time").driver
-d.expression = f"1.6*sin(frame/{FRAMES}*2*pi)"
+d.expression = f"frame/{FPS}*1.2"
 water.location = (-90, -90, 0)
 water.data.polygons.foreach_set("use_smooth", [True] * len(water.data.polygons))
 # Deep night water: almost black, a mirror at grazing angles (Fresnel), faintly rough so the
@@ -557,7 +584,7 @@ wnoise.inputs["Detail"].default_value = 10.0
 wnoise.inputs["Roughness"].default_value = 0.55
 wnoise.noise_dimensions = "4D"
 wd = wnoise.inputs[1].driver_add("default_value").driver  # W, the fourth dimension
-wd.expression = f"0.5*sin(frame/{FRAMES}*2*pi)"
+wd.expression = f"frame/{FPS}*0.25"
 wbump = wn.nodes.new("ShaderNodeBump")
 wbump.inputs["Strength"].default_value = 0.25
 wbump.inputs["Distance"].default_value = 0.02
@@ -587,12 +614,12 @@ track.up_axis = "UP_Y"
 
 # (frame, angle in degrees round the pin, distance, height, where the target sits, focus offset)
 keys = [
-    (1, -38, 10.5, 0.65, 1.4, -2.0),  # low over the swells, focus in front: rack to the pin
-    (40, -30, 9.4, 0.85, 1.55, 0.0),
+    (1, -38, 10.5, 0.95, 1.45, -2.0),  # low over the swells, focus in front: rack to the pin
+    (40, -30, 9.4, 1.1, 1.6, 0.0),
     (95, 24, 8.6, 2.3, 1.8, 0.0),  # cranes up and sweeps round
     (135, 0, 7.6, 1.95, 1.8, 0.0),  # settles face-on
     (175, -4, 7.8, 1.7, 1.75, 0.0),
-    (241, -38, 10.5, 0.65, 1.4, -2.0),  # back where it began (frame 241 = frame 1)
+    (241, -38, 10.5, 0.95, 1.45, -2.0),  # back where it began (frame 241 = frame 1)
 ]
 for f, ang, r, h, tz, df in keys:
     a = math.radians(ang)
@@ -610,6 +637,8 @@ for ob in (cam, target, cam_data):
                 kp.interpolation = "BEZIER"
                 kp.easing = "AUTO"
                 kp.handle_left_type = kp.handle_right_type = "AUTO_CLAMPED"
+            # Past frame 241 the move repeats, for the tail the encoder dissolves into frame 1.
+            fc.modifiers.new("CYCLES")
 
 # ---------------------------------------------------------------------------------------------
 # Render
@@ -667,9 +696,9 @@ rl = ct.nodes.new("CompositorNodeRLayers")
 glare = ct.nodes.new("CompositorNodeGlare")
 glare.glare_type = "FOG_GLOW"
 glare.quality = "HIGH"
-glare.threshold = 0.9
+glare.threshold = 0.55
 glare.size = 9
-glare.mix = -0.25
+glare.mix = -0.1
 comp = ct.nodes.new("CompositorNodeComposite")
 ct.links.new(rl.outputs["Image"], glare.inputs["Image"])
 ct.links.new(glare.outputs["Image"], comp.inputs["Image"])
