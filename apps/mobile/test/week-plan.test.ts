@@ -200,6 +200,13 @@ describe("day maps on the phone", () => {
     expect(mapUrl("https://x.test", "co", "s", { w: 1, h: 1 }, "dark")).toBe(
       "https://x.test/api/map?company=co&pins=s&w=1&h=1&theme=dark",
     );
+    // The tech's color (owner, 2026-10-23); water blue, the default, is left out.
+    expect(mapUrl("https://x.test", "co", "s", { w: 1, h: 1 }, "dark", "orange")).toBe(
+      "https://x.test/api/map?company=co&pins=s&w=1&h=1&color=orange&theme=dark",
+    );
+    expect(mapUrl("https://x.test", "co", "s", { w: 1, h: 1 }, "light", "blue")).toBe(
+      "https://x.test/api/map?company=co&pins=s&w=1&h=1",
+    );
     expect(mapUrl(null, "co", "s", { w: 1, h: 1 })).toBeNull();
     expect(mapAlt("Priya Shah", "Monday", 1)).toBe("Map of Priya Shah’s stops on Monday: 1 stop");
     expect(missingNote(0)).toBeNull();

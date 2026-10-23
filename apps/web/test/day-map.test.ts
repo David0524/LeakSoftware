@@ -1,4 +1,14 @@
 import { describe, expect, it } from "vitest";
+import { tokens } from "@leakbook/tokens";
+import {
+  donePin,
+  mixHex,
+  parsePinImageName,
+  pinHex,
+  pinImageName,
+  pinImageSize,
+  routeHex,
+} from "../src/components/map-pins";
 import { dayMap, lockTag, mapAlt, mapSrc, missingNote, weekdayName } from "../src/lib/day-map";
 
 const shop = { lat: 33.45, lng: -112.07 };
@@ -63,6 +73,16 @@ describe("day map", () => {
     expect(mapSrc("c1", "s:1.00000,2.00000", { w: 600, h: 300 })).toBe(
       "/api/map?company=c1&pins=s%3A1.00000%2C2.00000&w=600&h=300",
     );
+    // The tech's color (owner, 2026-10-23); water blue is the default, so it's left out.
+    expect(mapSrc("c1", "s", { w: 1, h: 1 }, "light", "orange")).toBe(
+      "/api/map?company=c1&pins=s&w=1&h=1&color=orange",
+    );
+    expect(mapSrc("c1", "s", { w: 1, h: 1 }, "dark", "blue")).toBe(
+      "/api/map?company=c1&pins=s&w=1&h=1&theme=dark",
+    );
+    expect(mapSrc("c1", "s", { w: 1, h: 1 }, "light", null)).toBe(
+      "/api/map?company=c1&pins=s&w=1&h=1",
+    );
     expect(mapAlt("Priya Shah", "Monday", 1)).toBe("Map of Priya Shah’s stops on Monday: 1 stop");
     expect(mapAlt("Priya Shah", "Monday", 5)).toBe("Map of Priya Shah’s stops on Monday: 5 stops");
     expect(missingNote(0)).toBeNull();
@@ -103,5 +123,49 @@ describe("lock tag", () => {
       kind: "two_techs",
     });
     expect(lockTag({ ...job, status: "in_progress", lock_day: true })).toBeNull();
+  });
+});
+
+describe("map pins in the tech's color", () => {
+  it("names each pin image by its tone, number, color and appearance", () => {
+    expect(pinImageName({ tone: "todo", label: "3" }, "orange")).toBe("todo-3-orange");
+    expect(pinImageName({ tone: "done", label: "1" }, null, "dark")).toBe("done-1-blue-dark");
+    expect(pinImageName({ tone: "shop", label: "" }, "orange")).toBe("shop");
+    expect(pinImageName({ tone: "shop", label: "", home: true }, "orange")).toBe("home");
+  });
+
+  it("reads the names back, older ones in water blue, and refuses anything else", () => {
+    expect(parsePinImageName("todo-3-orange.png")).toEqual({
+      tone: "todo",
+      label: "3",
+      home: false,
+      hex: tokens.color.tech.light.orange,
+      dark: false,
+    });
+    expect(parsePinImageName("current-12-green-dark.png")?.hex).toBe(tokens.color.tech.dark.green);
+    expect(parsePinImageName("todo-3.png")?.hex).toBe(tokens.color.brand.water);
+    expect(parsePinImageName("home.png")).toMatchObject({ tone: "shop", home: true });
+    expect(parsePinImageName("todo-0-orange.png")).toBeNull();
+    expect(parsePinImageName("todo-100.png")).toBeNull();
+    expect(parsePinImageName("todo-3-mauve.png")).toBeNull();
+    expect(parsePinImageName("todo-3-orange")).toBeNull();
+  });
+
+  it("colors routes by tech, water blue without one, and fades done stops", () => {
+    expect(routeHex("orange")).toBe(tokens.color.tech.light.orange);
+    expect(routeHex("orange", "dark")).toBe(tokens.color.tech.dark.orange);
+    expect(routeHex(null)).toBe(tokens.color.brand.water);
+    expect(pinHex("shop", "orange")).toBe(tokens.color.brand.navy);
+    expect(pinHex("current", "orange")).toBe(tokens.color.tech.light.orange);
+    expect(mixHex("#000000", "#ffffff", 0.45)).toBe("#8c8c8c");
+    expect(mixHex("#ffffff", "#161E26", 1)).toBe("#ffffff");
+    expect(pinImageSize("current")).toBeGreaterThan(pinImageSize("todo"));
+    // A done pin: a light tint ringed in the color, numbered in the text color.
+    expect(donePin("#000000")).toEqual({
+      fill: "#cccccc",
+      ring: "#000000",
+      text: tokens.color.role.light.text,
+    });
+    expect(donePin("#000000", "dark").text).toBe(tokens.color.role.dark.text);
   });
 });

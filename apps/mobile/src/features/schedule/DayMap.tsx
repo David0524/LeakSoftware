@@ -138,6 +138,7 @@ export function DayMap({
   stops,
   missing,
   tech,
+  techColor = null,
   day,
 }: {
   company: string;
@@ -146,6 +147,11 @@ export function DayMap({
   stops: MapListStop[];
   missing: number;
   tech: string;
+  /**
+   * The tech's team color (Settings › Team; owner, 2026-10-23): the route and its pins are drawn
+   * in it, tying the map to the tech. Null: water blue.
+   */
+  techColor?: string | null;
   /** "Monday". */
   day: string;
 }) {
@@ -156,7 +162,10 @@ export function DayMap({
   const [open, setOpen] = useState(readOpen);
   const [failedSrc, setFailedSrc] = useState<string | null>(null);
   const [enlarged, setEnlarged] = useState(false);
-  const src = pins ? mapUrl(API_URL, company, pins, { w: 640, h: 320 }, mapTheme()) : null;
+  // About the size it's shown at, so the pins show at their real size (34 pt), not shrunk.
+  const src = pins
+    ? mapUrl(API_URL, company, pins, { w: 360, h: 180 }, mapTheme(), techColor)
+    : null;
   const failed = !!src && failedSrc === src;
   const shown = !!src && !!token && !failed;
   const note = missingNote(missing);
@@ -239,6 +248,7 @@ export function DayMap({
           company={company}
           pins={pins}
           token={token}
+          techColor={techColor}
           tech={tech}
           day={day}
           stops={stops}
@@ -257,6 +267,7 @@ function EnlargeSheet({
   company,
   pins,
   token,
+  techColor,
   tech,
   day,
   stops,
@@ -268,6 +279,7 @@ function EnlargeSheet({
   company: string;
   pins: string;
   token: string;
+  techColor: string | null;
   tech: string;
   day: string;
   stops: MapListStop[];
@@ -275,7 +287,7 @@ function EnlargeSheet({
   alt: string;
 }) {
   const [failed, setFailed] = useState(false);
-  const src = mapUrl(API_URL, company, pins, { w: 960, h: 640 }, mapTheme());
+  const src = mapUrl(API_URL, company, pins, { w: 960, h: 640 }, mapTheme(), techColor);
   return (
     <ModalSheet visible={open} onClose={onClose} title={`${tech} · ${day}`} cancel="Close">
       <View style={{ gap: space["2"] }}>

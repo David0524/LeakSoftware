@@ -1,12 +1,12 @@
 "use client";
 
 import { useEffect, useRef } from "react";
-import { tokens } from "@leakbook/tokens";
-import { markSelected, pinElement, routeLine, type LivePin } from "./map-pins";
+import { ROUTE_STYLE } from "@leakbook/core";
+import { markSelected, pinElement, routeHex, routeLine, type LivePin } from "./map-pins";
 
 // The enlarged day map, live (HIG maps.md › Best practices: "In general, make your map
-// interactive"): pan and zoom, the same pins as the map image (numbers in their colors, the shop
-// as a house), a thin line through the stops in order, and a pin and its row in the list
+// interactive"): pan and zoom, the same pins as the map image (numbers in the tech's color, the
+// shop as a house), the route in the tech's color through the stops in order, and a pin and its row in the list
 // selected together. Mapbox GL JS loads only when this opens, so the Schedule page never
 // carries it. A muted style (light, or dark in dark mode) keeps the pins forward.
 
@@ -20,6 +20,7 @@ export function InteractiveMap({
   company,
   token,
   pins,
+  color,
   selected,
   onSelect,
   onFail,
@@ -29,6 +30,8 @@ export function InteractiveMap({
   company: string;
   token: string;
   pins: LivePin[];
+  /** The tech's team color (a palette key), or null: water blue. */
+  color?: string | null;
   /** The selected stop's label ("1", "2", …), or null. */
   selected: string | null;
   onSelect: (label: string) => void;
@@ -81,6 +84,7 @@ export function InteractiveMap({
       if (gone || !box.current) return;
       if (typeof gl.supported === "function" && !gl.supported()) return fail.current();
       const dark = document.documentElement.dataset.theme === "dark";
+      const hex = routeHex(color, dark ? "dark" : "light");
       gl.accessToken = token;
       const reduce = matchMedia("(prefers-reduced-motion: reduce)").matches;
       try {
@@ -115,21 +119,25 @@ export function InteractiveMap({
               geometry: { type: "LineString", coordinates: line.map((p) => [p.at.lng, p.at.lat]) },
             },
           });
+          // The route in the tech's color on a white casing, so it reads on any street.
+          made.addLayer({
+            id: "route-casing",
+            type: "line",
+            source: "route",
+            layout: { "line-join": "round", "line-cap": "round" },
+            paint: { "line-color": "#ffffff", "line-width": ROUTE_STYLE.casingWidth },
+          });
           made.addLayer({
             id: "route",
             type: "line",
             source: "route",
             layout: { "line-join": "round", "line-cap": "round" },
-            paint: {
-              "line-color": tokens.color.brand.water,
-              "line-width": 3,
-              "line-opacity": 0.55,
-            },
+            paint: { "line-color": hex, "line-width": ROUTE_STYLE.lineWidth },
           });
         }
       });
       markers.current = pins.map((p) =>
-        new gl.Marker({ element: pinElement(p, () => select.current(p.label)) })
+        new gl.Marker({ element: pinElement(p, hex, () => select.current(p.label)) })
           .setLngLat([p.at.lng, p.at.lat])
           .addTo(made!),
       );
@@ -146,7 +154,7 @@ export function InteractiveMap({
     };
     // The map is made once per set of pins; selection is handled below.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [company, token, pins]);
+  }, [company, token, pins, color]);
 
   useEffect(() => {
     markSelected(

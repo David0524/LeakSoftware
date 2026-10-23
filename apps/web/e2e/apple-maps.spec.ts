@@ -172,8 +172,8 @@ test("Enlarge shows Apple's map with the day's numbered stops", async ({ page })
   const apple = sheet.getByTestId("apple-map");
   await expect(apple.getByRole("button", { name: "Stop 1" })).toBeVisible();
   await expect(apple.getByRole("button", { name: "Stop 2" })).toBeVisible();
-  // The route line is drawn.
-  await expect(apple.locator("[data-stub=mapkit]")).toHaveAttribute("data-overlays", "1");
+  // The route line is drawn, on its white casing.
+  await expect(apple.locator("[data-stub=mapkit]")).toHaveAttribute("data-overlays", "2");
   // A pin and its row are selected together.
   await apple.getByRole("button", { name: "Stop 2" }).click();
   await expect(sheet.getByRole("button", { name: /^Stop 2:/ })).toHaveAttribute(

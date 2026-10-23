@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { dayMapPins, decodePins, encodePins } from "../src";
+import { ROUTE_STYLE, dayMapPins, decodePins, encodePins, routeColor } from "../src";
 
 describe("dayMapPins", () => {
   const depot = { lat: 33.45, lng: -112.07 };
@@ -39,5 +39,23 @@ describe("dayMapPins", () => {
     expect(decodePins("x1:1,2")).toBeNull();
     expect(decodePins("t1:91,0")).toBeNull();
     expect(decodePins("t1:1,2;<script>")).toBeNull();
+  });
+});
+
+describe("routeColor", () => {
+  it("is the tech's team color, else water blue", () => {
+    expect(routeColor("orange")).toBe("orange");
+    expect(routeColor("slate")).toBe("slate");
+    expect(routeColor(null)).toBe("blue");
+    expect(routeColor(undefined)).toBe("blue");
+    expect(routeColor("mauve")).toBe("blue");
+    expect(routeColor(3)).toBe("blue");
+  });
+  it("draws bolder than before: thicker line, bigger pins", () => {
+    expect(ROUTE_STYLE.lineWidth).toBeGreaterThanOrEqual(6);
+    expect(ROUTE_STYLE.casingWidth).toBeGreaterThan(ROUTE_STYLE.lineWidth);
+    expect(ROUTE_STYLE.currentPinSize).toBeGreaterThan(ROUTE_STYLE.pinSize);
+    expect(ROUTE_STYLE.startPinSize).toBe(28);
+    expect(ROUTE_STYLE.doneTint).toBeLessThan(0.5);
   });
 });

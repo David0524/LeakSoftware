@@ -432,6 +432,7 @@ export default async function TodayPage({ searchParams }: PageProps<"/today">) {
           stops={mapStops}
           missing={map?.missing ?? 0}
           tech={tech?.name ?? office.user.name ?? "Tech"}
+          color={tech?.color ?? null}
           day={weekdayName(ctx.today)}
         />
       ),

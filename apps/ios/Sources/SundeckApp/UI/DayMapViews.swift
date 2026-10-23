@@ -12,23 +12,13 @@
 
     // A tech's day as an Apple Maps map on Schedule (owner, 2026-10-20, docs/plans/route-maps.md;
     // the website's components/day-map.tsx and interactive-map.tsx). The pins come from core
-    // `dayMapPins` (Model/RouteMaps.swift): the shop as a house, the stops numbered in route order,
-    // water blue to do, safety orange for the stop you're on, green once done, and a faint line in
-    // stop order. Apple's full-color map, as on the website (owner, 2026-10-23: the muted one
-    // looked dull), with no points of interest so the pins stay forward; Apple's logo and legal
-    // link stay uncovered in the bottom corners.
-
-    extension PinTone {
-        /// Brand tokens: navy shop, water to do, safety orange now, pass green done.
-        var color: Color {
-            switch self {
-            case .shop: .navy
-            case .todo: .water
-            case .current: .safety
-            case .done: .pass
-            }
-        }
-    }
+    // `dayMapPins` (Model/RouteMaps.swift): the shop as a navy house, the stops numbered in route
+    // order. Since 2026-10-23 (owner: "Bold tech-colored routes") the route is drawn in the tech's
+    // team color, as on the website and Android (core `ROUTE_STYLE`): a bold line on a white
+    // casing, 34 pt stops in that color, done stops fainter, and the stop you're on larger with a
+    // white ring and a navy ring outside it. Apple's full-color map, as on the website (owner,
+    // 2026-10-23: the muted one looked dull), with no points of interest so the pins stay
+    // forward; Apple's logo and legal link stay uncovered in the bottom corners.
 
     extension LatLng {
         var coordinate: CLLocationCoordinate2D { CLLocationCoordinate2D(latitude: lat, longitude: lng) }
@@ -41,16 +31,52 @@
         }
     }
 
-    /// A pin: the stop's number (or the shop's house) in a circle of its tone, with a white edge so it
-    /// reads on any street. Selected, it grows and gets a ring.
+    /// A pin (core `ROUTE_STYLE`): the stop's number in a circle of the route's color with a white
+    /// edge so it reads on any street; a done stop quieter (a light tint of the color ringed in it,
+    /// numbered in the text color, so it still reads); the stop you're on larger, ringed in
+    /// white and navy; the shop a navy house. Selected, it grows and gets a ring in the route's
+    /// color. Status is never color alone: VoiceOver reads each pin ("Stop 2, Grace Holloway").
     struct MapPinDot: View {
         var annotation: DayMapAnnotation
+        /// The route's color (the tech's team color).
+        var route: Color = .water
         var selected = false
-        var size: CGFloat = 28
+        /// The still map on Schedule draws its pins a little smaller than the large map.
+        var scale: CGFloat = 1
+
+        private var current: Bool { annotation.tone == .current }
+        private var done: Bool { annotation.tone == .done }
+
+        /// The circle with its white edge (inside the navy ring for the stop you're on).
+        private var size: CGFloat {
+            let s = routeStyle
+            let points =
+                annotation.isShop
+                ? s.startPinSize : current ? s.currentPinSize - 2 * s.currentNavyRing : s.pinSize
+            return CGFloat(points) * scale
+        }
+
+        private var edge: CGFloat {
+            let s = routeStyle
+            return CGFloat(current ? s.currentWhiteRing : annotation.isShop ? 2 : done ? s.pinEdge + 1 : s.pinEdge)
+                * scale
+        }
+
+        /// The circle's fill: navy for the shop, a light tint of the route's color (over the
+        /// surface, so it follows dark mode) once done, else the route's color.
+        @ViewBuilder private var fill: some View {
+            if annotation.isShop {
+                Circle().fill(Color.navy)
+            } else if done {
+                Circle().fill(Color.surface).overlay(Circle().fill(route.opacity(routeStyle.doneTint)))
+            } else {
+                Circle().fill(route)
+            }
+        }
 
         var body: some View {
             ZStack {
-                Circle().fill(annotation.tone.color)
+                fill
                 if annotation.isShop {
                     Image(systemName: "house.fill")
                         .font(.system(size: size * 0.46, weight: .semibold))
@@ -61,13 +87,15 @@
                         .minimumScaleFactor(0.6)
                 }
             }
-            .foregroundStyle(.white)
+            .foregroundStyle(done ? Color.text : .white)
             .frame(width: size, height: size)
-            .overlay(Circle().strokeBorder(.white, lineWidth: 2))
+            .overlay(Circle().strokeBorder(done ? route : .white, lineWidth: edge))
+            .padding(current ? CGFloat(routeStyle.currentNavyRing) * scale : 0)
+            .background { if current { Circle().fill(Color.navy) } }
             .shadow(color: .black.opacity(0.3), radius: 2, y: 1)
             .padding(selected ? 3 : 0)
-            .overlay { if selected { Circle().strokeBorder(Color.water, lineWidth: 3) } }
-            .scaleEffect(selected ? 1.2 : 1)
+            .overlay { if selected { Circle().strokeBorder(route, lineWidth: 3) } }
+            .scaleEffect(selected ? 1.15 : 1)
             .animation(Motion.snappy, value: selected)
             // Someone who starts from home: the house is labeled Home (never the street), under
             // the pin so the circle stays on the point.
@@ -101,7 +129,7 @@
         @Binding var position: MapCameraPosition
         var interactive: Bool
         var selected: String?
-        var pinSize: CGFloat = 28
+        var pinScale: CGFloat = 1
         var onPick: ((String) -> Void)?
 
         var body: some View {
@@ -116,10 +144,17 @@
         private var live: some View {
             Map(position: $position, interactionModes: interactive ? [.pan, .zoom, .rotate] : []) {
                 if model.line.count > 1 {
+                    // The route in the tech's color on a white casing, so it reads on any street.
                     MapPolyline(coordinates: model.line.map(\.coordinate))
                         .stroke(
-                            Color.water.opacity(0.55),
-                            style: StrokeStyle(lineWidth: 3, lineCap: .round, lineJoin: .round))
+                            Color.white,
+                            style: StrokeStyle(
+                                lineWidth: CGFloat(routeStyle.casingWidth), lineCap: .round, lineJoin: .round))
+                    MapPolyline(coordinates: model.line.map(\.coordinate))
+                        .stroke(
+                            model.color.color,
+                            style: StrokeStyle(
+                                lineWidth: CGFloat(routeStyle.lineWidth), lineCap: .round, lineJoin: .round))
                 }
                 // The shop first, so stops draw over it where they're close.
                 ForEach(model.annotations.sorted { $0.isShop && !$1.isShop }) { a in
@@ -139,7 +174,7 @@
         }
 
         @ViewBuilder private func pin(_ a: DayMapAnnotation) -> some View {
-            let dot = MapPinDot(annotation: a, selected: selected == a.id, size: pinSize)
+            let dot = MapPinDot(annotation: a, route: model.color.color, selected: selected == a.id, scale: pinScale)
             if let onPick, !a.isShop {
                 Button {
                     onPick(a.id)
@@ -217,7 +252,7 @@
         /// the large, interactive one.
         private var map: some View {
             let shape = RoundedRectangle(cornerRadius: CGFloat(Radius.card), style: .continuous)
-            return DayMapCanvas(model: model, position: $position, interactive: false, selected: nil, pinSize: 24)
+            return DayMapCanvas(model: model, position: $position, interactive: false, selected: nil, pinScale: 0.88)
                 .frame(height: height)
                 .clipShape(shape)
                 .overlay(shape.strokeBorder(Color.text.opacity(0.08), lineWidth: 1).allowsHitTesting(false))
@@ -264,7 +299,7 @@
                 ScrollViewReader { proxy in
                     VStack(spacing: 0) {
                         DayMapCanvas(
-                            model: model, position: $position, interactive: true, selected: selected, pinSize: 30
+                            model: model, position: $position, interactive: true, selected: selected
                         ) { id in
                             withAnimation(Motion.snappy) { selected = selected == id ? nil : id }
                             if selected == id { withAnimation(Motion.smooth) { proxy.scrollTo(id, anchor: .center) } }

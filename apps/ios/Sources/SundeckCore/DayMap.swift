@@ -47,6 +47,33 @@ public struct MapPin: Codable, Equatable, Sendable {
 /// `MAP_PIN_LIMIT`: most pins one map shows (the map image's address has a length limit).
 public let mapPinLimit = 60
 
+/// A route's color on its map (owner, 2026-10-23: "Bold tech-colored routes"; `routeColor`): the
+/// tech's team color, so each map matches its tech's column; blue (the brand's water blue) when no
+/// tech is known. Unlike `techColor`, a missing or unknown key is blue, not slate.
+public func routeColor(_ key: String?) -> TechColor { key.flatMap(TechColor.init(rawValue:)) ?? .blue }
+
+/// How a route is drawn on every map (`ROUTE_STYLE`): the line in the tech's color on a white
+/// casing; stops filled in that color with a white number and edge; a done stop quieter (a light
+/// tint of the color with a ring in it, numbered in the text color); the stop you're on larger, with a white ring and a navy ring outside it; the start
+/// unchanged. Sizes in points.
+public struct RouteStyle: Codable, Equatable, Sendable {
+    public var pinSize: Double
+    public var currentPinSize: Double
+    public var pinEdge: Double
+    public var currentWhiteRing: Double
+    public var currentNavyRing: Double
+    public var startPinSize: Double
+    /// A done stop's fill: the route's color at this strength over the surface.
+    public var doneTint: Double
+    public var lineWidth: Double
+    public var casingWidth: Double
+}
+
+/// `ROUTE_STYLE`.
+public let routeStyle = RouteStyle(
+    pinSize: 34, currentPinSize: 40, pinEdge: 2, currentWhiteRing: 3, currentNavyRing: 2, startPinSize: 28,
+    doneTint: 0.2, lineWidth: 6, casingWidth: 9)
+
 public struct MapStop: Codable, Equatable, Sendable {
     public var id: String
     public var location: LatLng?

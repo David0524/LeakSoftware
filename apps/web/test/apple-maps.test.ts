@@ -167,43 +167,75 @@ describe("Apple Snapshots", () => {
     expect(
       annotations.slice(1).map((a: { glyphText: string; color: string }) => [a.glyphText, a.color]),
     ).toEqual([
-      ["1", "1b7d45"],
-      ["2", "ee6a1f"],
+      ["1", "8fb7d7"],
+      ["2", "1f6fae"],
       ["3", "1f6fae"],
     ]);
-    const [line] = JSON.parse(q.get("overlays")!);
-    expect(line.strokeColor).toBe("1f6fae");
+    const [casing, line] = JSON.parse(q.get("overlays")!);
+    expect(casing).toMatchObject({ strokeColor: "ffffff", lineWidth: 9, strokeOpacity: 1 });
+    expect(line).toMatchObject({ strokeColor: "1f6fae", lineWidth: 6, strokeOpacity: 1 });
     // From the shop, through the stops, back to the shop.
     expect(line.points).toHaveLength(5);
     expect(line.points[0]).toBe(line.points[4]);
   });
 
-  it("uses this site's small round pins, centered on their places, when it has an address", () => {
+  it("uses this site's round pins in the tech's color, centered on their places", () => {
     const { keys } = throwaway();
     const q = new URL(
       appleSnapshotUrl(
-        [{ ...SHOP, home: true }, stop(1, "done"), stop(2), stop(3)],
+        [{ ...SHOP, home: true }, stop(1, "done"), stop(2, "current"), stop(3)],
         { w: 640, h: 320 },
         keys,
         "light",
         "https://app.example.com",
+        "orange",
       ),
     ).searchParams;
     expect(JSON.parse(q.get("imgs")!)).toEqual(
-      ["home", "done-1", "todo-2", "todo-3"].map((n) => ({
+      [
+        ["home", 28],
+        ["done-1-orange", 36],
+        ["current-2-orange", 42],
+        ["todo-3-orange", 36],
+      ].map(([n, size]) => ({
         url: `https://app.example.com/api/map/pin/${n}.png`,
-        width: 28,
-        height: 28,
+        width: size,
+        height: size,
       })),
     );
     const annotations = JSON.parse(q.get("annotations")!);
     expect(annotations.map((a: { imgIdx: number }) => a.imgIdx)).toEqual([0, 1, 2, 3]);
+    expect(annotations.map((a: { offset: string }) => a.offset)).toEqual([
+      "0,-14",
+      "0,-18",
+      "0,-21",
+      "0,-18",
+    ]);
     expect(annotations[1]).toEqual({
       point: expect.any(String),
       markerStyle: "img",
       imgIdx: 1,
-      offset: "0,-14",
+      offset: "0,-18",
     });
+    expect(JSON.parse(q.get("overlays")!)[1].strokeColor).toBe("d07b27");
+  });
+
+  it("draws dark pins and line in the tech's dark color", () => {
+    const { keys } = throwaway();
+    const q = new URL(
+      appleSnapshotUrl(
+        [SHOP, stop(1)],
+        { w: 640, h: 320 },
+        keys,
+        "dark",
+        "https://app.example.com",
+        "green",
+      ),
+    ).searchParams;
+    expect(JSON.parse(q.get("imgs")!)[1].url).toBe(
+      "https://app.example.com/api/map/pin/todo-1-green-dark.png",
+    );
+    expect(JSON.parse(q.get("overlays")!)[1].strokeColor).toBe("4cb07a");
   });
 
   it("draws a home start as a house", () => {
@@ -295,6 +327,35 @@ describe("drawing a day-map image", () => {
     const ten = harness({ token: "pk" });
     expect(await ten.draw([SHOP, stop(10)])).toMatchObject({ ok: true, by: "mapbox" });
     expect(ten.taken).toEqual(["static_image"]);
+  });
+
+  it("on Mapbox, tries this site's pins, then Mapbox's own markers if it can't fetch them", async () => {
+    const asked: string[] = [];
+    const taken: string[] = [];
+    const drawn = await drawMapImage({
+      pins,
+      size: { w: 360, h: 240 },
+      theme: "light",
+      color: "orange",
+      apple: null,
+      pinBase: "https://app.example.com",
+      mapboxToken: "pk",
+      take: async (kind) => {
+        taken.push(kind);
+        return true;
+      },
+      fetchImpl: (async (url: string) => {
+        asked.push(url);
+        return url.includes("url-")
+          ? new Response("no", { status: 422 })
+          : new Response("png", { headers: { "content-type": "image/png" } });
+      }) as unknown as typeof fetch,
+    });
+    expect(drawn).toMatchObject({ ok: true, by: "mapbox" });
+    expect(asked).toHaveLength(2);
+    expect(asked[0]).toContain(encodeURIComponent("/api/map/pin/todo-1-orange.png"));
+    expect(asked[1]).toContain("pin-l-1+d07b27(");
+    expect(taken).toEqual(["static_image", "static_image"]);
   });
 
   it("uses only Mapbox on MAP_PROVIDER=mapbox, and says so when nothing can draw it", async () => {

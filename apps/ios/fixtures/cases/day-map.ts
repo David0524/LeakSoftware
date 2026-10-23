@@ -1,4 +1,12 @@
-import { dayMapPins, decodePins, encodePins, MAP_PIN_LIMIT, type MapPin } from "@leakbook/core";
+import {
+  dayMapPins,
+  decodePins,
+  encodePins,
+  MAP_PIN_LIMIT,
+  ROUTE_STYLE,
+  routeColor,
+  type MapPin,
+} from "@leakbook/core";
 import { rule, type ModuleCases } from "../case";
 
 // day-map.ts (a day's map on Schedule and Today, owner 2026-10-20).
@@ -8,6 +16,12 @@ const at = (i: number) => ({ lat: 33.4 + i * 0.01, lng: -111.9 - i * 0.003 });
 
 export const dayMap: ModuleCases = {
   MAP_PIN_LIMIT: rule(() => MAP_PIN_LIMIT, [[]]),
+  ROUTE_STYLE: rule(() => ROUTE_STYLE, [[]]),
+  // A route's color (owner, 2026-10-23): the tech's, else water blue.
+  routeColor: rule(
+    (key: string | null) => routeColor(key),
+    [["orange"], ["slate"], ["blue"], [null], [""], ["Orange"], ["mauve"]],
+  ),
   dayMapPins: rule(
     (input: Parameters<typeof dayMapPins>[0]) => dayMapPins(input),
     [

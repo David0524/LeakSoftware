@@ -1023,7 +1023,7 @@
                 let start = ctx.start(for: route.techId)
                 leadMap = dayMapModel(
                     jobs: route.jobs, depot: start.at, date: self.date, today: ctx.today, tech: route.techName,
-                    timeZone: ctx.timeZone, startLabel: start.label)
+                    timeZone: ctx.timeZone, startLabel: start.label, color: colors[route.techId])
             }
         }
 

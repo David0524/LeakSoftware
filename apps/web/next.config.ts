@@ -24,6 +24,8 @@ const nextConfig: NextConfig = {
     "/i/\\[token\\]/pdf": pdfFiles,
     "/api/reports/\\[id\\]/send": pdfFiles,
     "/jobs/\\[id\\]": pdfFiles,
+    // Map pin images number their stops in the brand's display face.
+    "/api/map/pin/\\[pin\\]": ["../../brand/fonts/BarlowSemiCondensed-Bold.ttf"],
   },
   cacheComponents: true,
   partialPrefetching: true,

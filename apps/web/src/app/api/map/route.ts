@@ -15,7 +15,7 @@ function mapLimit(): number {
 }
 
 /**
- * GET ?company=…&pins=…&w=…&h=…[&theme=dark]: a map image of a day's stops (owner, 2026-10-20,
+ * GET ?company=…&pins=…&w=…&h=…[&color=orange][&theme=dark]: a map image of a day's stops (owner, 2026-10-20,
  * docs/plans/route-maps.md), for the website (signed in) and Android (Authorization: Bearer).
  * The pins come from core's dayMapPins and encodePins. Kept by the browser for a day.
  * On Apple Maps (docs/plans/apple-maps.md) the image is an Apple Snapshot; Mapbox draws it when
@@ -55,11 +55,14 @@ export async function GET(request: Request) {
   const h = Number(url.searchParams.get("h")) || 300;
   // Dark mode gets a dark map rather than a dimmed street map.
   const theme = url.searchParams.get("theme") === "dark" ? "dark" : "light";
+  // The tech's team color (owner, 2026-10-23); missing or unknown is water blue.
+  const color = url.searchParams.get("color");
 
   const drawn = await drawMapImage({
     pins,
     size: { w, h },
     theme,
+    color,
     apple: resolveMapProvider() === "apple" ? appleKeys() : null,
     pinBase: await siteOrigin(),
     mapboxToken: process.env.MAPBOX_TOKEN,

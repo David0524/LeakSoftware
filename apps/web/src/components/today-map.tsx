@@ -33,6 +33,7 @@ export function TodayMap({
   stops,
   missing,
   tech,
+  color = null,
   day,
 }: {
   /** The shop, for the map image; null when this site has no map service. */
@@ -42,6 +43,8 @@ export function TodayMap({
   missing: number;
   /** "Priya Shah", for the map's spoken name. */
   tech: string;
+  /** The tech's team color: the route and pins are drawn in it (null: water blue). */
+  color?: string | null;
   /** "Tuesday". */
   day: string;
 }) {
@@ -75,6 +78,7 @@ export function TodayMap({
       stops={stops}
       missing={missing}
       tech={tech}
+      color={color}
       day={day}
       // Shorter than the Schedule's, so it doesn't fill the column (owner, 2026-10-22: "the
       // map appears huge").

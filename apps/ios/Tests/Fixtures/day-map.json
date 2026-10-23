@@ -5,6 +5,66 @@
       "result": 60
     }
   ],
+  "ROUTE_STYLE": [
+    {
+      "args": [],
+      "result": {
+        "pinSize": 34,
+        "currentPinSize": 40,
+        "pinEdge": 2,
+        "currentWhiteRing": 3,
+        "currentNavyRing": 2,
+        "startPinSize": 28,
+        "doneTint": 0.2,
+        "lineWidth": 6,
+        "casingWidth": 9
+      }
+    }
+  ],
+  "routeColor": [
+    {
+      "args": [
+        "orange"
+      ],
+      "result": "orange"
+    },
+    {
+      "args": [
+        "slate"
+      ],
+      "result": "slate"
+    },
+    {
+      "args": [
+        "blue"
+      ],
+      "result": "blue"
+    },
+    {
+      "args": [
+        null
+      ],
+      "result": "blue"
+    },
+    {
+      "args": [
+        ""
+      ],
+      "result": "blue"
+    },
+    {
+      "args": [
+        "Orange"
+      ],
+      "result": "blue"
+    },
+    {
+      "args": [
+        "mauve"
+      ],
+      "result": "blue"
+    }
+  ],
   "dayMapPins": [
     {
       "args": [

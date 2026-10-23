@@ -5,6 +5,7 @@ import {
   encodePins,
   jobLock,
   lockReason,
+  routeColor,
   type LatLng,
   type PlanJob,
   type RouteStartLabel,
@@ -56,6 +57,8 @@ export function dayMap(input: {
 /**
  * The map image's address on the website (GET /api/map), or null without a website. Dark
  * appearance asks for Mapbox's dark map (one image, never both), as the website's mapSrc.
+ * `color` is the tech's team color (owner, 2026-10-23: the route and pins in it); left out for
+ * water blue, the default.
  */
 export function mapUrl(
   api: string | null,
@@ -63,13 +66,16 @@ export function mapUrl(
   pins: string,
   size: { w: number; h: number },
   theme: "light" | "dark" = "light",
+  color?: string | null,
 ): string | null {
   if (!api) return null;
+  const route = routeColor(color);
   const q = [
     `company=${encodeURIComponent(company)}`,
     `pins=${encodeURIComponent(pins)}`,
     `w=${size.w}`,
     `h=${size.h}`,
+    ...(route !== "blue" ? [`color=${route}`] : []),
     ...(theme === "dark" ? ["theme=dark"] : []),
   ].join("&");
   return `${api}/api/map?${q}`;

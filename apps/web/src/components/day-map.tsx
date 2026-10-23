@@ -146,6 +146,7 @@ function EnlargeSheet({
   onClose,
   company,
   pins,
+  color,
   tech,
   day,
   stops,
@@ -155,6 +156,7 @@ function EnlargeSheet({
   onClose: () => void;
   company: string;
   pins: string;
+  color: string | null;
   tech: string;
   day: string;
   stops: MapListStop[];
@@ -193,6 +195,7 @@ function EnlargeSheet({
                 <AppleMap
                   company={company}
                   pins={live}
+                  color={color}
                   selected={selected}
                   onSelect={pick}
                   onFail={appleFail}
@@ -203,6 +206,7 @@ function EnlargeSheet({
                   company={company}
                   token={LIVE_TOKEN}
                   pins={live}
+                  color={color}
                   selected={selected}
                   onSelect={pick}
                   onFail={liveFail}
@@ -214,7 +218,7 @@ function EnlargeSheet({
             <p className="text-[0.9375rem] text-text-muted">The map couldn’t be drawn right now.</p>
           ) : (
             <MapImage
-              src={mapSrc(company, pins, { w: 960, h: 640 })}
+              src={mapSrc(company, pins, { w: 960, h: 640 }, "light", color)}
               alt={alt}
               ratio="aspect-[3/2]"
               width={960}
@@ -317,6 +321,7 @@ export function DayMap({
   stops,
   missing,
   tech,
+  color = null,
   day,
   variant = "column",
   short = false,
@@ -329,6 +334,11 @@ export function DayMap({
   stops: MapListStop[];
   missing: number;
   tech: string;
+  /**
+   * The tech's team color (Settings › Team; owner, 2026-10-23): the route and its pins are drawn
+   * in it, tying the map to the tech's column. Null: water blue.
+   */
+  color?: string | null;
   /** "Monday". */
   day: string;
   variant?: "column" | "week";
@@ -350,8 +360,10 @@ export function DayMap({
   const open = useSyncExternalStore(subscribeOpen, readOpen, () => true);
   const boxId = useId();
   const week = variant === "week";
-  const size = week ? { w: 360, h: 240 } : short ? { w: 720, h: 240 } : { w: 640, h: 320 };
-  const src = pins ? mapSrc(company, pins, size) : null;
+  // Close to the size it's shown at (a column is about 320–360 wide), so the pins and route
+  // show at their real size (34 pt) instead of shrunk to half (owner, 2026-10-23: bigger pins).
+  const size = week ? { w: 270, h: 180 } : short ? { w: 480, h: 160 } : { w: 360, h: 180 };
+  const src = pins ? mapSrc(company, pins, size, "light", color) : null;
   const failed = src !== null && failedSrc === src;
   const fail = useCallback(() => setFailedSrc(src), [src]);
   const close = useCallback(() => setEnlarged(false), []);
@@ -421,6 +433,7 @@ export function DayMap({
             onClose={close}
             company={company}
             pins={pins}
+            color={color}
             tech={tech}
             day={day}
             stops={stops}
@@ -474,6 +487,7 @@ export function DayMap({
           onClose={close}
           company={company}
           pins={pins}
+          color={color}
           tech={tech}
           day={day}
           stops={stops}

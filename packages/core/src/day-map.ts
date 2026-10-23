@@ -5,6 +5,7 @@
 
 import type { LatLng } from "./routing";
 import type { RouteStartLabel } from "./route-start";
+import { TECH_COLORS, type TechColor } from "./team";
 
 export type PinTone = "shop" | "todo" | "current" | "done";
 
@@ -60,6 +61,47 @@ export function dayMapPins(input: {
   });
   return { pins: pins.slice(0, MAP_PIN_LIMIT), missing };
 }
+
+/**
+ * A route's color on its map (owner, 2026-10-23: "Bold tech-colored routes"): the tech's team
+ * color, so each map matches its tech's column; blue (the brand's water blue) when no tech is
+ * known (unassigned, or an address without one). Unlike techColor, a missing or unknown key is
+ * blue, not slate, so old map addresses keep their look.
+ */
+export function routeColor(key: unknown): TechColor {
+  return typeof key === "string" && TECH_COLORS.some((c) => c.key === key)
+    ? (key as TechColor)
+    : "blue";
+}
+
+/**
+ * How a route is drawn, the same on every map (website images and live maps, the iPhone, and
+ * Android's images): the line in the tech's color, opaque, on a white casing; stops as filled
+ * circles in that color with a white number and edge; a done stop quieter (a light tint of the
+ * color with a ring in it and the number in the text color, readable on any map); the stop
+ * you're on larger, with a white ring and a navy ring outside it; the start unchanged (navy).
+ * Sizes in points. Status is never color alone: each pin is still read aloud as "Stop 2".
+ */
+export const ROUTE_STYLE = {
+  /** A stop's circle, white edge included. */
+  pinSize: 34,
+  /** The stop you're on, both rings included. */
+  currentPinSize: 40,
+  /** The white edge of a stop, and the white ring of the stop you're on. */
+  pinEdge: 2,
+  currentWhiteRing: 3,
+  currentNavyRing: 2,
+  /** The start (shop or home): unchanged. */
+  startPinSize: 28,
+  /**
+   * A done stop's fill: the route's color at this strength over the surface (white, or the dark
+   * surface in dark mode), so its number in the text color stays easy to read.
+   */
+  doneTint: 0.2,
+  /** The line, and the white casing under it. */
+  lineWidth: 6,
+  casingWidth: 9,
+} as const;
 
 const TONE_CODE: Record<PinTone, string> = { shop: "s", todo: "t", current: "c", done: "d" };
 const CODE_TONE = Object.fromEntries(

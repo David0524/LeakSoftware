@@ -1,7 +1,7 @@
 import "server-only";
 import { createPrivateKey, sign, type KeyObject } from "node:crypto";
-import { tokens } from "@leakbook/tokens";
-import type { AddressSuggestion, LatLng, MapPin, PinTone } from "@leakbook/core";
+import { ROUTE_STYLE, type AddressSuggestion, type LatLng, type MapPin } from "@leakbook/core";
+import { pinHex, pinImageName, pinImageSize, routeHex } from "@/components/map-pins";
 
 // Apple Maps for the website (owner, 2026-10-20, docs/plans/apple-maps.md): the MapKit JS token,
 // signed Snapshot addresses for the day-map images, and the Maps Server API's autocomplete. The
@@ -60,13 +60,6 @@ export function mapkitToken(keys: AppleKeys, origin: string, now = Date.now()): 
 // Snapshots (map images)
 // ---------------------------------------------------------------------------
 
-const TONE_COLOR: Record<PinTone, string> = {
-  shop: tokens.color.brand.navy,
-  todo: tokens.color.brand.water,
-  current: tokens.color.brand.safety,
-  done: tokens.color.status.pass,
-};
-
 const hex = (c: string) => c.replace("#", "").toLowerCase();
 const point = (p: LatLng) => `${p.lat.toFixed(5)},${p.lng.toFixed(5)}`;
 
@@ -98,9 +91,10 @@ export function snapshotSize(size: { w: number; h: number }): {
 }
 
 /**
- * The signed Apple Snapshots address for these pins: stops numbered in their colors, the shop
- * in navy, and a faint line through them in route order (shop, stops, back to the shop), the
- * same as the Mapbox image. Signed per Apple's documentation: ES256 over the path and query
+ * The signed Apple Snapshots address for these pins (owner, 2026-10-23: "Bold tech-colored
+ * routes"): stops numbered in the tech's color (`color`, a palette key; water blue without
+ * one), the shop in navy, and the route in that color on a white casing in route order (shop,
+ * stops, back to the shop), the same as the Mapbox image. Signed per Apple's documentation: ES256 over the path and query
  * (teamId and keyId included), Base64URL, added as the last parameter.
  */
 export function appleSnapshotUrl(
@@ -111,6 +105,8 @@ export function appleSnapshotUrl(
   /** This site's address: the pins are its own small circles (api/map/pin), as on the live
    * map. Without it (tests), Apple's balloon pins. */
   pinBase?: string,
+  /** The tech's team color (a palette key); missing or unknown is water blue. */
+  color?: string | null,
 ): string {
   const { w, h, scale } = snapshotSize(size);
   const q = new URLSearchParams();
@@ -125,28 +121,34 @@ export function appleSnapshotUrl(
   q.set("colorScheme", theme);
   q.set("poi", "0");
   if (pinBase) {
-    // Each pin is a 28 pt circle, its middle on the place. Apple anchors an image's bottom
-    // middle, and a negative y moves it down (owner, 2026-10-22: Apple's own pins "look huge
-    // and cartoony"). At most 10 different images: stops 1 to 9 and the start.
-    const names = pins.map((p) =>
-      p.tone === "shop" ? (p.home ? "home" : "shop") : `${p.tone}-${p.label}`,
-    );
+    // Each pin is a circle, its middle on the place. Apple anchors an image's bottom middle,
+    // and a negative y moves it down (owner, 2026-10-22: Apple's own pins "look huge and
+    // cartoony"). At most 10 different images: stops 1 to 9 and the start (one color a map).
+    const names = pins.map((p) => pinImageName(p, color, theme));
     const unique = [...new Set(names)];
+    const sizeOf = unique.map((_, n) => pinImageSize(pins[names.indexOf(unique[n]!)]!.tone));
     q.set(
       "imgs",
       JSON.stringify(
-        unique.map((n) => ({ url: `${pinBase}/api/map/pin/${n}.png`, width: 28, height: 28 })),
+        unique.map((n, i) => ({
+          url: `${pinBase}/api/map/pin/${n}.png`,
+          width: sizeOf[i],
+          height: sizeOf[i],
+        })),
       ),
     );
     q.set(
       "annotations",
       JSON.stringify(
-        pins.map((p, i) => ({
-          point: point(p.at),
-          markerStyle: "img",
-          imgIdx: unique.indexOf(names[i]!),
-          offset: "0,-14",
-        })),
+        pins.map((p, i) => {
+          const idx = unique.indexOf(names[i]!);
+          return {
+            point: point(p.at),
+            markerStyle: "img",
+            imgIdx: idx,
+            offset: `0,-${sizeOf[idx]! / 2}`,
+          };
+        }),
       ),
     );
   } else {
@@ -155,7 +157,7 @@ export function appleSnapshotUrl(
       JSON.stringify(
         pins.map((p) => ({
           point: point(p.at),
-          color: hex(TONE_COLOR[p.tone]),
+          color: hex(pinHex(p.tone, color, theme)),
           markerStyle: "balloon",
           // The shop's pin is plain; someone's home is a house (⌂), never its street.
           ...(p.tone === "shop" ? (p.home ? { glyphText: "\u2302" } : {}) : { glyphText: p.label }),
@@ -169,14 +171,17 @@ export function appleSnapshotUrl(
   if (route.length > 1)
     q.set(
       "overlays",
-      JSON.stringify([
-        {
+      JSON.stringify(
+        // A white casing under the line, so it reads on any street.
+        [
+          { strokeColor: "ffffff", lineWidth: ROUTE_STYLE.casingWidth },
+          { strokeColor: hex(routeHex(color, theme)), lineWidth: ROUTE_STYLE.lineWidth },
+        ].map((style) => ({
           points: route.map((p) => point(p.at)),
-          strokeColor: hex(TONE_COLOR.todo),
-          lineWidth: 3,
-          strokeOpacity: 0.45,
-        },
-      ]),
+          ...style,
+          strokeOpacity: 1,
+        })),
+      ),
     );
   q.set("teamId", keys.teamId);
   q.set("keyId", keys.keyId);

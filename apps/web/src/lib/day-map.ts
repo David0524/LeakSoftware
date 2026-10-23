@@ -4,6 +4,7 @@ import {
   dayMapPins,
   encodePins,
   jobLock,
+  routeColor,
   lockReason,
   type LatLng,
   type PlanJob,
@@ -51,14 +52,20 @@ export function dayMap(input: {
   return { pins: located ? encodePins(pins) : null, located, missing };
 }
 
-/** The map image's address on this site (GET /api/map). */
+/**
+ * The map image's address on this site (GET /api/map). `color` is the tech's team color (owner,
+ * 2026-10-23: the route and pins in it); left out for water blue, the default.
+ */
 export function mapSrc(
   company: string,
   pins: string,
   size: { w: number; h: number },
   theme: "light" | "dark" = "light",
+  color?: string | null,
 ): string {
   const q = new URLSearchParams({ company, pins, w: String(size.w), h: String(size.h) });
+  const route = routeColor(color);
+  if (route !== "blue") q.set("color", route);
   if (theme === "dark") q.set("theme", "dark");
   return `/api/map?${q.toString()}`;
 }

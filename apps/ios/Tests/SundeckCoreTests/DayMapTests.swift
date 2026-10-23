@@ -7,7 +7,10 @@ import Testing
     let module = "day-map"
 
     @Test func everyRuleIsChecked() {
-        #expect(Fixtures.rules(module) == ["MAP_PIN_LIMIT", "dayMapPins", "encodePins", "decodePins"])
+        #expect(
+            Fixtures.rules(module) == [
+                "MAP_PIN_LIMIT", "ROUTE_STYLE", "routeColor", "dayMapPins", "encodePins", "decodePins",
+            ])
     }
 
     struct Input: Decodable {
@@ -18,6 +21,8 @@ import Testing
 
     @Test func pins() {
         checkRule(module, "MAP_PIN_LIMIT") { _ in mapPinLimit }
+        checkRule(module, "ROUTE_STYLE") { _ in routeStyle }
+        checkRule(module, "routeColor") { c in routeColor(try c.arg(0, as: String?.self)) }
         checkRule(module, "dayMapPins") { c in
             let input = try c.arg(0, as: Input.self)
             return dayMapPins(stops: input.stops, depot: input.depot, currentId: input.currentId)

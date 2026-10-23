@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef } from "react";
-import { tokens } from "@leakbook/tokens";
+import { ROUTE_STYLE } from "@leakbook/core";
 import {
   loadMapKit,
   mapkitToken,
@@ -11,7 +11,7 @@ import {
   type MkAnnotation,
   type MkMap,
 } from "@/lib/mapkit";
-import { markSelected, pinElement, routeLine, type LivePin } from "./map-pins";
+import { markSelected, pageTheme, pinElement, routeHex, routeLine, type LivePin } from "./map-pins";
 
 // The enlarged day map on Apple Maps (owner, 2026-10-20, docs/plans/apple-maps.md), with the
 // same props, pins, colors and route line as the Mapbox map it replaces: pan and zoom, numbered
@@ -23,6 +23,7 @@ import { markSelected, pinElement, routeLine, type LivePin } from "./map-pins";
 export function AppleMap({
   company,
   pins,
+  color,
   selected,
   onSelect,
   onFail,
@@ -33,6 +34,8 @@ export function AppleMap({
   /** Kept for the same props as the Mapbox map; Apple's token comes from the server. */
   token?: string;
   pins: LivePin[];
+  /** The tech's team color (a palette key), or null: water blue. */
+  color?: string | null;
   /** The selected stop's label ("1", "2", …), or null. */
   selected: string | null;
   onSelect: (label: string) => void;
@@ -93,9 +96,10 @@ export function AppleMap({
       }
       map.current = made;
       const coord = (p: LivePin) => new kit.Coordinate(p.at.lat, p.at.lng);
+      const hex = routeHex(color, pageTheme());
       const els: HTMLElement[] = [];
       const annotations: MkAnnotation[] = pins.map((p) => {
-        const el = pinElement(p, () => select.current(p.label));
+        const el = pinElement(p, hex, () => select.current(p.label));
         els.push(el);
         return new kit.Annotation(coord(p), () => el, {
           // The 44 pt button's middle sits on the place. MapKit anchors the bottom middle, and a
@@ -112,15 +116,20 @@ export function AppleMap({
       const line = routeLine(pins);
       const items: unknown[] = [...annotations];
       if (line.length > 1) {
-        const overlay = new kit.PolylineOverlay(line.map(coord), {
-          style: new kit.Style({
-            strokeColor: tokens.color.brand.water,
-            lineWidth: 3,
-            strokeOpacity: 0.55,
-            lineJoin: "round",
-            lineCap: "round",
-          }),
-        });
+        // The route in the tech's color on a white casing, so it reads on any street.
+        const stroke = (strokeColor: string, lineWidth: number) =>
+          new kit.PolylineOverlay(line.map(coord), {
+            style: new kit.Style({
+              strokeColor,
+              lineWidth,
+              strokeOpacity: 1,
+              lineJoin: "round",
+              lineCap: "round",
+            }),
+          });
+        const casing = stroke("#ffffff", ROUTE_STYLE.casingWidth);
+        const overlay = stroke(hex, ROUTE_STYLE.lineWidth);
+        made.addOverlay(casing);
         made.addOverlay(overlay);
         items.push(overlay);
       }
@@ -154,7 +163,7 @@ export function AppleMap({
     };
     // The map is made once per set of pins; selection is handled below.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [company, pins]);
+  }, [company, pins, color]);
 
   useEffect(() => {
     markSelected(pinEls.current, selected);

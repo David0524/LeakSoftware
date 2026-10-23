@@ -57,6 +57,9 @@ public struct DayMapModel: Equatable, Sendable {
     /// "Priya Shah · Monday", the large map's title.
     public var title: String
     public var fit: MapFit?
+    /// The route's color (owner, 2026-10-23: "Bold tech-colored routes"): the tech's team color,
+    /// so the map matches their column; blue (the brand's water blue) when no tech is known.
+    public var color: TechColor = .blue
 
     /// Whether there's a map to draw (at least one stop has a pin).
     public var drawable: Bool { located > 0 }
@@ -69,7 +72,7 @@ public struct DayMapModel: Equatable, Sendable {
 /// Nil when the day has no stops.
 public func dayMapModel(
     jobs: [ScheduleJob], depot: LatLng?, date: String, today: String, tech: String, timeZone: String,
-    startLabel: RouteStartLabel? = nil
+    startLabel: RouteStartLabel? = nil, color: TechColor? = nil
 ) -> DayMapModel? {
     guard !jobs.isEmpty else { return nil }
     let stops = jobs.map { MapStop(id: $0.id, location: $0.location, done: !openStatuses.contains($0.status)) }
@@ -89,7 +92,7 @@ public func dayMapModel(
         },
         located: located, missing: found.missing, line: routeLine(annotations),
         label: mapLabel(tech: tech, day: day, stops: jobs.count), title: "\(tech) · \(day)",
-        fit: mapFit(annotations.map(\.at)))
+        fit: mapFit(annotations.map(\.at)), color: color ?? .blue)
 }
 
 /// Pins as annotations, with what VoiceOver says for each.

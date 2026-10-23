@@ -1012,6 +1012,7 @@ export function ScheduleScreen() {
                   missing={leadMap.missing}
                   stops={leadStops}
                   tech={lead.title}
+                  techColor={lead.color}
                   day={weekdayName(lead.date)}
                 />
               ) : null}

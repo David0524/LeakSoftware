@@ -1242,6 +1242,7 @@ function DayColumnMap({
       stops={stops}
       missing={map.missing}
       tech={c.title}
+      color={c.color ?? null}
       day={weekdayName(c.date)}
       className={className}
     />
@@ -2147,6 +2148,7 @@ function WeekMaps({
                     stops={stops}
                     missing={map.missing}
                     tech={name}
+                    color={colors.get(tech) ?? null}
                     day={day}
                     action={
                       stops.length ? (
