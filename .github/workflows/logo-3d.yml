@@ -1,0 +1,92 @@
+name: 3D logo clip
+
+# The link-preview animation (apps/video/logo3d/blender/scene.py): the Sundeck Pro mark as a
+# glass drop over night pool water, rendered in Blender Cycles. 240 frames are split across 20
+# Linux runners in parallel (CPU; GitHub's macOS runners have no Metal GPU for Cycles), then
+# joined and encoded. Artifact `logo-3d`: sundeck-pro.mp4 (1280 x 720, H.264, faststart, no
+# audio) and sundeck-pro.jpg (the face-on frame), for apps/web/public/og/. Runs on a push that
+# changes the scene or this file, or by hand (with samples, or EEVEE as the fast fallback).
+
+on:
+  workflow_dispatch:
+    inputs:
+      samples:
+        description: Cycles samples
+        default: "160"
+      engine:
+        description: CYCLES or EEVEE
+        default: CYCLES
+  push:
+    paths:
+      - apps/video/logo3d/blender/**
+      - .github/workflows/logo-3d.yml
+
+concurrency:
+  group: logo-3d-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  BLENDER: "4.2.3"
+
+jobs:
+  frames:
+    name: Frames ${{ matrix.chunk }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 340
+    strategy:
+      fail-fast: true
+      matrix:
+        chunk: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19]
+    steps:
+      - uses: actions/checkout@v4
+      - name: Blender
+        id: cache
+        uses: actions/cache@v4
+        with:
+          path: blender
+          key: blender-${{ env.BLENDER }}-linux
+      - if: steps.cache.outputs.cache-hit != 'true'
+        run: |
+          curl -sSL -o b.tar.xz "https://download.blender.org/release/Blender${BLENDER%.*}/blender-${BLENDER}-linux-x64.tar.xz"
+          mkdir blender && tar -xf b.tar.xz -C blender --strip-components=1
+      - run: sudo apt-get update -q && sudo apt-get install -yq libxi6 libxxf86vm1 libxfixes3 libxrender1 libgl1 libxkbcommon0 libsm6
+      - name: Render frames
+        run: |
+          a=$(( ${{ matrix.chunk }} * 12 + 1 )); b=$(( a + 11 ))
+          ./blender/blender -b -P apps/video/logo3d/blender/scene.py -- --out frames \
+            --frames "$a-$b" --samples "${{ inputs.samples || '160' }}" --engine "${{ inputs.engine || 'CYCLES' }}" \
+            | grep -E "^Saved|Error|Traceback|Cycles device" || true
+          test "$(ls frames | wc -l)" -eq 12
+      - uses: actions/upload-artifact@v4
+        with:
+          name: frames-${{ matrix.chunk }}
+          path: frames
+          retention-days: 3
+
+  encode:
+    name: Encode the clip
+    needs: frames
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: frames-*
+          path: frames
+          merge-multiple: true
+      - run: sudo apt-get update -q && sudo apt-get install -yq ffmpeg
+      - name: Encode
+        run: |
+          ls frames | wc -l
+          mkdir out
+          # 1080p frames scaled to 720p (supersampled), sized for Messages (well under 10 MB).
+          ffmpeg -v error -y -framerate 30 -i frames/f%04d.png -vf "scale=1280:720:flags=lanczos" \
+            -c:v libx264 -profile:v high -level 4.0 -pix_fmt yuv420p -preset slower -crf 21 \
+            -movflags +faststart -an out/sundeck-pro.mp4
+          # The poster: the face-on frame (135), 1200 x 630.
+          ffmpeg -v error -y -i frames/f0135.png -vf "scale=1200:675:flags=lanczos,crop=1200:630:0:22" \
+            -q:v 2 out/sundeck-pro.jpg
+          ls -la out
+      - uses: actions/upload-artifact@v4
+        with:
+          name: logo-3d
+          path: out
