@@ -107,7 +107,8 @@
         }
     }
 
-    /// Rebecca Quinn's leak detection in progress (job #1042), for the inspection helpers.
+    /// Rebecca Quinn's leak detection in progress, for the inspection helpers: numbered #1042 as they
+    /// expect, then #5163 (the job in the owner's recording) once they've run.
     private func launchLeakJob(_ store: LocalStore) throws {
         let rebecca = try #require(try store.list("customer").first { $0["name"] == "Rebecca Quinn" })
         let pool = try store.insert(
@@ -157,6 +158,7 @@
             env.session.reloadCompanies()
             let ids = try seedInspection(env)
             try seedMoney(env.session.sync, job: ids.job, finding: ids.finding)
+            try store.write("job", id: ids.job, companyId: "c1", ["number": 5163])
             try await snapshot(
                 "lv-checklist", height: 3000,
                 NavigationStack { JobScreen(jobId: ids.job, section: .checklist) }.app(env))
@@ -279,12 +281,12 @@
             let invoice = try JSONDecoder().decode(
                 InvoiceRecord.self,
                 from: Data(
-                    #"{"id":"i1","company_id":"c1","job_id":"j1","number":1042,"status":"sent","total_cents":37500,"amount_paid_cents":0,"subtotal_cents":37500,"discount_cents":0,"tax_cents":0,"credit_cents":0}"#
+                    #"{"id":"i1","company_id":"c1","job_id":"j1","number":2087,"status":"sent","total_cents":37500,"amount_paid_cents":0,"subtotal_cents":37500,"discount_cents":0,"tax_cents":0,"credit_cents":0}"#
                         .utf8))
             try await snapshot(
                 "lv-record-payment",
                 RecordPaymentSheet(
-                    title: "Rebecca Quinn · Invoice #1042", invoice: invoice,
+                    title: "Rebecca Quinn · Invoice #2087", invoice: invoice,
                     flow: InvoiceFlow(sync: env.session.sync, companyId: "c1", jobId: "j1")
                 ) { _ in }
                 .app(env))
