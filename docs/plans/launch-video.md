@@ -11,7 +11,8 @@ This is a third video, beside the two 45-second demos (`demo-videos.md`). It reu
 pipeline: the seeded video shops, the iPhone screen captures from CI, the website captures, and
 the Remotion project in `apps/video`.
 
-Status: **draft for the owner.** Questions are in section 7.
+Status: **decided (section 7); building.** The owner generates the narration from the script in
+section 8; the music is made in code and cut to it.
 
 ## 1. Who it's for, and what moves them
 
@@ -245,20 +246,123 @@ Paste this style line in front of each prompt:
     at a desert lake at golden hour, a fishing rod leaning on the truck, a cooler, calm water,
     mountains, sense of freedom and a weekend earned."
 
-## 7. Questions for the owner
+## 7. Decisions (owner, 2026-10-23)
 
-1. **Voiceover or captions only?** The 45-second videos use captions only. At 4 minutes, a
-   narrator carries the story much better, and a low, steady, confident voice suits this
-   audience. Options: (a) captions only; (b) I write the script and you record it yourself or with
-   someone in the trade; (c) an AI voice from ElevenLabs (about $5 a month; you'd generate it
-   from my script, or add a key). Recommended: b or c, with captions kept on for muted viewing.
-2. **Music?** The 45-second videos use music made in code, which is fine for a short demo but
-   thin for a 4-minute launch film. Recommended: a licensed track from Artlist or Epidemic Sound
-   (about $10 to $20 a month, cleared for ads and social). You'd download the track; I'd cut the
-   video to it. Search terms: "gritty cinematic trailer", "driving rock build", "heavy
-   percussion".
-3. **One shop or two?** Recommended: both video shops (Canyon State Leak Detection for leak
-   chapters, Blue Mesa Pool Co. for pool chapters), so each trade sees itself. The alternative is
-   one combined "Canyon State Pool & Leak" doing both.
-4. **About 4 minutes, OK?** Plus a 60-second hype cut from the same project once the long one is
+1. **An AI voice, with captions kept on.** I write the script (section 8); the owner generates it
+   in ElevenLabs and sends the audio files. Captions carry the key lines for muted viewing.
+2. **Music made in code** (`apps/video/audio/score.py`), extended to the full length and built
+   around the narration: quiet under the voice, lifting at every chapter break.
+3. **Both shops:** Canyon State Leak Detection for the leak chapters, Blue Mesa Pool Co. for the
+   pool chapters.
+4. **About 4 minutes, then a 60-second hype cut** from the same project once the long one is
    approved.
+
+## 8. Narration script
+
+About 590 words: a little over 4 minutes at a steady pace, with room to breathe. One file per numbered line
+keeps the edit flexible: name them `01.mp3`, `02.mp3` and so on.
+
+**Voice, in ElevenLabs:** a man in his 40s or 50s, low, calm and certain; he sounds like he's run
+crews, not like an announcer. Good starting points in the Voice Library: search "deep narrator",
+"documentary" or "gravelly", and pick one without a radio-host polish. Settings: Stability about
+50%, Similarity about 75%, Style 0 to 15%, Speaker Boost on. Generate each line two or three times
+and keep the take that sounds least like reading. A "..." in the script is a beat of silence;
+ElevenLabs reads it as a pause.
+
+**Cold open**
+
+01. It's five in the morning. You've already answered three texts... and you haven't left the
+    driveway.
+02. All day, you're the one everybody calls. Where's the tech. Did you get my check. Can you come
+    Thursday.
+03. And at ten at night... you're at the kitchen table, doing the invoices.
+04. You're great at the work. You built this company with your own hands.
+05. But the paperwork? The paperwork is running you.
+
+**The turn**
+
+06. Not anymore.
+07. Sundeck Pro. Your whole shop. In your pocket. On every truck.
+
+**01 / Dispatch**
+
+08. Your morning starts here. Every tech, every job, the whole week, on one board.
+09. New call comes in? Drop it on a day. Drag it to whoever's closest.
+10. Then hit Optimize. Sundeck reworks every route... and shows you the drive time you just got
+    back.
+
+**02 / On the road**
+
+11. Your techs open the app and the day's already laid out. Next stop. Gate code. The dog in the
+    yard.
+12. One tap, and the customer gets a text: we're on the way.
+13. It even sits on the lock screen. No digging through the phone with wet hands.
+
+**03 / Find the leak**
+
+14. On a leak job, every test has its place. Pressure test on the return line... it dropped.
+15. Dye at the light niche. Pin it on the pool. Snap the photo. Say what you see.
+16. Nothing lives in somebody's head anymore. It's all on record.
+
+**04 / Prove it**
+
+17. Then the report builds itself. Your logo. Your findings. The photos that prove it.
+18. The homeowner signs right there... and it's in their inbox before you're back in the truck.
+19. That's the kind of report that makes a customer trust you. And tell their neighbors.
+
+**05 / Close it on the spot**
+
+20. Found the problem? Quote the repair right there. Straight from your price book.
+21. They tap accept on their own phone, put the deposit down... and you've got the job.
+22. No callbacks. No "let me think about it." Done.
+
+**06 / Every pool, every week**
+
+23. Running pool routes? Your weekly plans fill the board on their own.
+24. Your guys see every stop in order. Readings go in, and Sundeck tells them exactly what to add.
+25. Filter's due? It's already on the list. Before and after photos. Mark it complete...
+26. And the homeowner gets the visit report automatically. They see the work, every single week.
+
+**07 / Spot the upsell**
+
+27. And when a tech hears a pump starting to go... that's not a note in a notebook anymore. That's
+    a quote. And a sale.
+
+**08 / Get paid**
+
+28. Every plan bills itself at the end of the month. Customers pay by card.
+29. Cash or check on site? Record it on the phone, and the receipt goes out on the spot.
+30. Stop chasing money. Watch it come in.
+
+**09 / The command center**
+
+31. And you? You see all of it. Every truck. Every job. Every dollar.
+32. What came in today. What's still owed. Who's on a plan. Who said yes.
+33. You don't have to call anybody to find out what's going on. You already know.
+
+**10 / Keep them coming back**
+
+34. Need more work in the slow season? Send an offer to every customer you've got, in one click.
+35. Reminders and review requests go out on their own. Customers come back... and they bring
+    their friends.
+
+**11 / Built for the backyard**
+
+36. And it's built for where the work happens. No signal in the backyard? Doesn't matter. It
+    catches up when you're back in range.
+37. Big buttons. One hand. Made for guys who work for a living.
+
+**12 / The vision**
+
+38. Think about what you'd do with those hours back.
+39. Another truck. Another crew. A bigger name in town.
+40. Home for dinner. Saturdays at the lake.
+41. You didn't start this company to do paperwork. You started it to build something.
+42. Sundeck Pro. Build the company you set out to build.
+
+**End card**
+
+43. Start your free trial at sundeck pro dot com.
+
+**Send back:** the 43 files (MP3 or WAV) in one folder, or one long file with a second of
+silence between lines; either works.
