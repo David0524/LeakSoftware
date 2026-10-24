@@ -170,4 +170,28 @@ describe("TusUploader", () => {
     });
     await expect(u.upload(job(), save)).rejects.toThrow("Not signed in");
   });
+
+  it("says plainly when storage refuses a file, and throws so it stays queued (M2)", async () => {
+    const refuse = (status: number, body: string) =>
+      new TusUploader({
+        supabaseUrl: "https://x.supabase.co",
+        apiKey: "pk",
+        accessToken: async () => "tok",
+        files: { size: async () => 1, read: async () => new Uint8Array(1) },
+        fetch: (async () => new Response(body, { status })) as typeof fetch,
+      });
+    const { job, save } = setup(bytes(1));
+    await expect(
+      refuse(413, "The object exceeded the maximum allowed size").upload(job(), save),
+    ).rejects.toThrow("That file is too large to upload (50 MB at most).");
+    await expect(
+      refuse(415, "mime type text/html is not supported").upload(job(), save),
+    ).rejects.toThrow("That type of file can’t be uploaded.");
+    await expect(
+      refuse(403, "new row violates row-level security policy").upload(job(), save),
+    ).rejects.toThrow("This shop is read-only until the subscription is paid");
+    await expect(refuse(500, "boom").upload(job(), save)).rejects.toThrow(
+      "Upload create failed (500) boom",
+    );
+  });
 });

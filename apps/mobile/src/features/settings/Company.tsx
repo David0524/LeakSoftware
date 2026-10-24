@@ -6,6 +6,8 @@ import {
   offersLeak,
   parseReminderDays,
   suggestedBrandColor,
+  uploadRefusal,
+  uploadRefusalMessage,
   type Job,
 } from "@leakbook/core";
 import type { JsonValue } from "@leakbook/sync";
@@ -284,7 +286,9 @@ function CompanyPage() {
         const { error } = await getServices()
           .supabase.storage.from("company-assets")
           .upload(path, logo.body, { contentType: logo.type, upsert: false });
-        if (error) failure = error.message;
+        // The bucket's own limits, or a read-only shop (security review M2), in plain words.
+        const refusal = error ? uploadRefusal(null, error.message) : null;
+        if (error) failure = refusal ? uploadRefusalMessage(refusal, "logo") : error.message;
         else {
           shownLogo.current = path;
           write({ logo_path: path });

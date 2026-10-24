@@ -20,6 +20,160 @@
       }
     }
   ],
+  "UPLOAD_LIMITS": [
+    {
+      "args": [],
+      "result": {
+        "media": 52428800,
+        "texts": 10485760,
+        "logo": 2097152
+      }
+    }
+  ],
+  "uploadRefusal": [
+    {
+      "args": [
+        413,
+        ""
+      ],
+      "result": "too_large"
+    },
+    {
+      "args": [
+        400,
+        "The object exceeded the maximum allowed size"
+      ],
+      "result": "too_large"
+    },
+    {
+      "args": [
+        null,
+        "Payload too large"
+      ],
+      "result": "too_large"
+    },
+    {
+      "args": [
+        415,
+        ""
+      ],
+      "result": "wrong_type"
+    },
+    {
+      "args": [
+        400,
+        "mime type application/x-msdownload is not supported"
+      ],
+      "result": "wrong_type"
+    },
+    {
+      "args": [
+        null,
+        "invalid_mime_type"
+      ],
+      "result": "wrong_type"
+    },
+    {
+      "args": [
+        403,
+        "new row violates row-level security policy"
+      ],
+      "result": "read_only"
+    },
+    {
+      "args": [
+        null,
+        "new row violates row-level security policy for table \"objects\""
+      ],
+      "result": "read_only"
+    },
+    {
+      "args": [
+        500,
+        "Internal Server Error"
+      ],
+      "result": null
+    },
+    {
+      "args": [
+        null,
+        "The network connection was lost."
+      ],
+      "result": null
+    },
+    {
+      "args": [
+        null,
+        null
+      ],
+      "result": null
+    }
+  ],
+  "uploadRefusalMessage": [
+    {
+      "args": [
+        "too_large",
+        "media"
+      ],
+      "result": "That file is too large to upload (50 MB at most). For a video, record a shorter clip."
+    },
+    {
+      "args": [
+        "too_large",
+        "texts"
+      ],
+      "result": "That picture is too large to send. Each one can be up to 10 MB."
+    },
+    {
+      "args": [
+        "too_large",
+        "logo"
+      ],
+      "result": "Use a file under 2 MB."
+    },
+    {
+      "args": [
+        "wrong_type",
+        "media"
+      ],
+      "result": "That type of file can’t be uploaded. Use a photo (JPEG, PNG, or HEIC), a video (MP4 or MOV), or a voice note."
+    },
+    {
+      "args": [
+        "wrong_type",
+        "texts"
+      ],
+      "result": "Send photos (JPEG, PNG, or HEIC)."
+    },
+    {
+      "args": [
+        "wrong_type",
+        "logo"
+      ],
+      "result": "Use a PNG, JPEG, or SVG file."
+    },
+    {
+      "args": [
+        "read_only",
+        "media"
+      ],
+      "result": "This shop is read-only until the subscription is paid, so files can’t be added yet."
+    },
+    {
+      "args": [
+        "read_only",
+        "texts"
+      ],
+      "result": "This shop is read-only until the subscription is paid, so files can’t be added yet."
+    },
+    {
+      "args": [
+        "read_only",
+        "logo"
+      ],
+      "result": "This shop is read-only until the subscription is paid, so files can’t be added yet."
+    }
+  ],
   "MARKUP_COLORS": [
     {
       "args": [],

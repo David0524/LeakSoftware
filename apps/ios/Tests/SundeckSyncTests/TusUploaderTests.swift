@@ -104,6 +104,27 @@ import Testing
         }
         #expect(error?.description == "Not signed in")
     }
+
+    /// Port of "says plainly when storage refuses a file, and throws so it stays queued (M2)".
+    @Test func saysPlainlyWhenStorageRefusesAFile() async throws {
+        func refused(_ status: Int, _ body: String) async -> String? {
+            let s = setup(testBytes(1)) { _ in
+                InterceptingHTTPClient { _ in HTTPResponse(status: status, body: Data(body.utf8)) }
+            }
+            let error = await #expect(throws: UploadHTTPError.self) { try await s.upload() }
+            return error?.description
+        }
+        #expect(
+            await refused(413, "The object exceeded the maximum allowed size")?
+                .hasPrefix("That file is too large to upload (50 MB at most).") == true)
+        #expect(
+            await refused(415, "mime type text/html is not supported")?
+                .hasPrefix("That type of file can’t be uploaded.") == true)
+        #expect(
+            await refused(403, "new row violates row-level security policy")?
+                .hasPrefix("This shop is read-only until the subscription is paid") == true)
+        #expect(await refused(500, "boom") == "Upload create failed (500) boom")
+    }
 }
 
 /// Not in the TypeScript (React Native reads files there): the file system `FileSource`.

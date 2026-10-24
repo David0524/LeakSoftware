@@ -14,6 +14,7 @@ import Testing
             "enabledSignaturePurposes", "reportSignOffPurposes", "signatureStoragePath", "inkLength", "strokePath",
             "signatureSvg", "signatureStatement", "REPORT_BLOCKS", "testOutcomeLabel",
             "PEN_POINTS_MAX", "penShape", "penPath", "clampTextSize", "moveText", "resizeText",
+            "UPLOAD_LIMITS", "uploadRefusal", "uploadRefusalMessage",
         ]
         #expect(Fixtures.rules(module) == checked)
     }
@@ -35,6 +36,43 @@ import Testing
         checkRule(module, "fitWithin") { c in fitWithin(try c.arg(0), try c.arg(1), try c.arg(2)) }
         checkRule(module, "formatDuration") { c in formatDuration(try c.arg(0, as: Double?.self)) }
         checkRule(module, "formatBytes") { c in formatBytes(try c.arg(0, as: Int?.self)) }
+    }
+
+    /// The storage buckets' limits and refused uploads (security review M2).
+    @Test func uploadRefusals() {
+        checkRule(module, "UPLOAD_LIMITS") { _ in
+            [
+                "media": UploadBucket.media.maxBytes, "texts": UploadBucket.texts.maxBytes,
+                "logo": UploadBucket.logo.maxBytes,
+            ]
+        }
+        checkRule(module, "uploadRefusal") { c in
+            UploadRefusal(status: try c.arg(0, as: Int?.self), message: try c.arg(1, as: String?.self))
+                .map(Self.name)
+        }
+        checkRule(module, "uploadRefusalMessage") { c in
+            let refusal: UploadRefusal =
+                switch try c.arg(0, as: String.self) {
+                case "too_large": .tooLarge
+                case "wrong_type": .wrongType
+                default: .readOnly
+                }
+            let bucket: UploadBucket =
+                switch try c.arg(1, as: String.self) {
+                case "texts": .texts
+                case "logo": .logo
+                default: .media
+                }
+            return refusal.message(bucket)
+        }
+    }
+
+    private static func name(_ refusal: UploadRefusal) -> String {
+        switch refusal {
+        case .tooLarge: "too_large"
+        case .wrongType: "wrong_type"
+        case .readOnly: "read_only"
+        }
     }
 
     @Test func markup() {

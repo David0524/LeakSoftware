@@ -10,6 +10,8 @@ import {
   uuidv7,
   type MediaKind,
   type SignaturePurpose,
+  uploadRefusal,
+  uploadRefusalMessage,
 } from "@leakbook/core";
 import { getOffice } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
@@ -71,7 +73,15 @@ export async function startUpload(input: {
     return { ok: false, error: "That file type isn’t supported. Use a JPEG, PNG, MP4, or MOV." };
   }
   const { data, error } = await db.storage.from("media").createSignedUploadUrl(path);
-  if (error || !data) return { ok: false, error: error?.message ?? "Upload not allowed." };
+  if (error || !data) {
+    const refusal = uploadRefusal(null, error?.message);
+    return {
+      ok: false,
+      error: refusal
+        ? uploadRefusalMessage(refusal, "media")
+        : (error?.message ?? "Upload not allowed."),
+    };
+  }
   return { ok: true, value: { id, path, url: data.signedUrl } };
 }
 

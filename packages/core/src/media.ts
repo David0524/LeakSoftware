@@ -104,6 +104,59 @@ export function formatBytes(bytes: number | null | undefined): string {
   return `${(b / (1024 * 1024)).toFixed(1)} MB`;
 }
 
+/**
+ * What each storage bucket takes (security review M2; the buckets' file_size_limit and
+ * allowed_mime_types, 20261022002500_upload_limits.sql). The apps check these before
+ * uploading; the storage server refuses anything past them.
+ */
+export const UPLOAD_LIMITS = {
+  /** Photos (2048 px JPEG), 60-second medium-quality videos, voice notes, signatures. */
+  media: 50 * 1024 * 1024,
+  /** Pictures in texts: a phone's full-size JPEG, or what a customer's carrier sends (5 MB). */
+  texts: 10 * 1024 * 1024,
+  /** Shop logos. */
+  logo: 2 * 1024 * 1024,
+} as const;
+
+export type UploadBucket = keyof typeof UPLOAD_LIMITS;
+
+/** Why the storage server refused an upload, when it's one a person can fix. */
+export type UploadRefusal = "too_large" | "wrong_type" | "read_only";
+
+/**
+ * Reads a refusal from the storage server's status and message (TUS, a signed upload URL, or
+ * supabase-js): 413 too large, 415 a type the bucket doesn't take, or the row rule that keeps
+ * a read-only shop from adding files. Null for anything else (offline, a server error).
+ */
+export function uploadRefusal(
+  status: number | string | null | undefined,
+  message: string | null | undefined,
+): UploadRefusal | null {
+  const code = Number(status);
+  const text = message ?? "";
+  if (code === 413 || /maximum allowed size|too large|maximum size exceeded/i.test(text))
+    return "too_large";
+  if (code === 415 || /mime type|invalid_mime_type|invalidmimetype/i.test(text))
+    return "wrong_type";
+  if (/row-level security/i.test(text)) return "read_only";
+  return null;
+}
+
+/** The message for a refused upload, in the same words on every platform. */
+export function uploadRefusalMessage(refusal: UploadRefusal, bucket: UploadBucket): string {
+  if (refusal === "read_only")
+    return "This shop is read-only until the subscription is paid, so files can’t be added yet.";
+  if (bucket === "logo")
+    return refusal === "too_large" ? "Use a file under 2 MB." : "Use a PNG, JPEG, or SVG file.";
+  if (bucket === "texts")
+    return refusal === "too_large"
+      ? "That picture is too large to send. Each one can be up to 10 MB."
+      : "Send photos (JPEG, PNG, or HEIC).";
+  return refusal === "too_large"
+    ? "That file is too large to upload (50 MB at most). For a video, record a shorter clip."
+    : "That type of file can’t be uploaded. Use a photo (JPEG, PNG, or HEIC), a video (MP4 or MOV), or a voice note.";
+}
+
 export const MEDIA_KIND_LABELS: Record<MediaKind, string> = {
   photo: "Photo",
   video: "Video",

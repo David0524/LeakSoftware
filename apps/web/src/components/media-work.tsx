@@ -12,6 +12,9 @@ import {
   MEDIA_KIND_LABELS,
   MARKUP_COLORS,
   MARKUP_TEXT_MAX,
+  UPLOAD_LIMITS,
+  uploadRefusal,
+  uploadRefusalMessage,
   MARKUP_TEXT_SIZE_MAX,
   MARKUP_TEXT_SIZE_MIN,
   moveText,
@@ -54,7 +57,7 @@ import { SavedNote, useAutosave } from "./undo";
 // Photos, videos, voice notes, markup, and signatures from a browser (M9.5): the phone app's
 // capture screens. Files go straight to storage; the server records them.
 
-const MAX_BYTES = 50 * 1024 * 1024;
+const MAX_BYTES = UPLOAD_LIMITS.media;
 
 async function sha256Hex(blob: Blob): Promise<string> {
   const hash = await crypto.subtle.digest("SHA-256", await blob.arrayBuffer());
@@ -124,6 +127,18 @@ function videoInfo(file: File): Promise<{ width: number; height: number; duratio
 
 const baseMime = (mime: string) => mime.split(";")[0]!.trim().toLowerCase();
 
+/**
+ * The storage server's refusal as the person should read it: too large, a type it doesn't take,
+ * or a read-only shop (security review M2); otherwise the status and Try Again.
+ */
+async function putError(put: Response): Promise<Error> {
+  const body = await put.text().catch(() => "");
+  const refusal = uploadRefusal(put.status, body);
+  return new Error(
+    refusal ? uploadRefusalMessage(refusal, "media") : `Upload failed (${put.status}). Try again.`,
+  );
+}
+
 /** Upload one file and record it. Throws with a message for the person. */
 async function uploadMedia(
   jobId: string,
@@ -142,7 +157,7 @@ async function uploadMedia(
     headers: { "content-type": mime, "x-upsert": "false" },
     body: blob,
   });
-  if (!put.ok) throw new Error(`Upload failed (${put.status}). Try again.`);
+  if (!put.ok) throw await putError(put);
   const done = await finishUpload({
     id: start.value.id,
     jobId,
@@ -1041,7 +1056,7 @@ export async function uploadSignature(input: {
     headers: { "content-type": "image/svg+xml", "x-upsert": "false" },
     body: svg,
   });
-  if (!put.ok) throw new Error(`Upload failed (${put.status}). Try again.`);
+  if (!put.ok) throw await putError(put);
   const where = await position();
   const done = await finishSignature({
     id: start.value.id,

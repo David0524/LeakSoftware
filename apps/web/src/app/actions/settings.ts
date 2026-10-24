@@ -22,6 +22,8 @@ import {
   TECH_COLORS,
   REORDER_TECHS,
   scheduleOrderWrites,
+  uploadRefusal,
+  uploadRefusalMessage,
 } from "@leakbook/core";
 import { OWNER_ONLY, requireManager, requireOwner } from "@/lib/auth";
 import { friendlyDbError, isWebUrl } from "@/lib/limits";
@@ -149,7 +151,12 @@ export async function saveCompanySettings(_: FormState, form: FormData): Promise
     const { error } = await supabase.storage
       .from("company-assets")
       .upload(path, logoFile, { contentType: logoFile.type, upsert: false });
-    if (error) return failed(error);
+    if (error) {
+      // The bucket's own limits, or a read-only shop (security review M2), in plain words.
+      const refusal = uploadRefusal(null, error.message);
+      if (refusal) return { error: uploadRefusalMessage(refusal, "logo") };
+      return failed(error);
+    }
     update.logo_path = path;
   }
   const { error } = await supabase.from("company").update(update).eq("id", office.company.id);

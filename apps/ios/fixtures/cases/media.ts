@@ -32,7 +32,12 @@ import {
   signatureSvg,
   strokePath,
   textShape,
+  UPLOAD_LIMITS,
+  uploadRefusal,
+  uploadRefusalMessage,
   type MarkupColor,
+  type UploadBucket,
+  type UploadRefusal,
   type MediaKind,
   type SignaturePurpose,
   type SignatureStroke,
@@ -145,6 +150,29 @@ const strokes: SignatureStroke[][] = [
 export const media: ModuleCases = {
   MEDIA_LIMITS: rule(() => MEDIA_LIMITS, [[]]),
   MEDIA_KIND_LABELS: rule(() => MEDIA_KIND_LABELS, [[]]),
+  UPLOAD_LIMITS: rule(() => UPLOAD_LIMITS, [[]]),
+  uploadRefusal: rule(
+    (status: number | null, message: string | null) => uploadRefusal(status, message),
+    [
+      [413, ""],
+      [400, "The object exceeded the maximum allowed size"],
+      [null, "Payload too large"],
+      [415, ""],
+      [400, "mime type application/x-msdownload is not supported"],
+      [null, "invalid_mime_type"],
+      [403, "new row violates row-level security policy"],
+      [null, 'new row violates row-level security policy for table "objects"'],
+      [500, "Internal Server Error"],
+      [null, "The network connection was lost."],
+      [null, null],
+    ],
+  ),
+  uploadRefusalMessage: rule(
+    (refusal: UploadRefusal, bucket: UploadBucket) => uploadRefusalMessage(refusal, bucket),
+    (["too_large", "wrong_type", "read_only"] as const).flatMap((r) =>
+      (["media", "texts", "logo"] as const).map((b): [UploadRefusal, UploadBucket] => [r, b]),
+    ),
+  ),
   MARKUP_COLORS: rule(() => MARKUP_COLORS, [[]]),
   extensionForMime: rule(
     (m: string) => extensionForMime(m),

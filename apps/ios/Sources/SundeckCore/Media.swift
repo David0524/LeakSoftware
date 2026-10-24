@@ -106,6 +106,68 @@ public enum MediaLimits {
     public static let voiceMaxSeconds = 300
 }
 
+/// What each storage bucket takes (security review M2; the buckets' file_size_limit and
+/// allowed_mime_types). Port of core's UPLOAD_LIMITS.
+public enum UploadBucket: Sendable {
+    case media
+    case texts
+    case logo
+
+    public var maxBytes: Int {
+        switch self {
+        case .media: return 50 * 1024 * 1024
+        case .texts: return 10 * 1024 * 1024
+        case .logo: return 2 * 1024 * 1024
+        }
+    }
+}
+
+/// Why the storage server refused an upload, when it's one a person can fix. Port of core's
+/// uploadRefusal.
+public enum UploadRefusal: Equatable, Sendable {
+    case tooLarge
+    case wrongType
+    case readOnly
+
+    /// 413 too large, 415 a type the bucket doesn't take, or the row rule that keeps a read-only
+    /// shop from adding files. Nil for anything else (offline, a server error).
+    public init?(status: Int?, message: String?) {
+        let text = (message ?? "").lowercased()
+        if status == 413 || text.contains("maximum allowed size") || text.contains("too large")
+            || text.contains("maximum size exceeded")
+        {
+            self = .tooLarge
+        } else if status == 415 || text.contains("mime type") || text.contains("invalid_mime_type")
+            || text.contains("invalidmimetype")
+        {
+            self = .wrongType
+        } else if text.contains("row-level security") {
+            self = .readOnly
+        } else {
+            return nil
+        }
+    }
+
+    /// The message, in the same words on every platform (core's uploadRefusalMessage).
+    public func message(_ bucket: UploadBucket) -> String {
+        if self == .readOnly {
+            return "This shop is read-only until the subscription is paid, so files can’t be added yet."
+        }
+        switch bucket {
+        case .logo:
+            return self == .tooLarge ? "Use a file under 2 MB." : "Use a PNG, JPEG, or SVG file."
+        case .texts:
+            return self == .tooLarge
+                ? "That picture is too large to send. Each one can be up to 10 MB."
+                : "Send photos (JPEG, PNG, or HEIC)."
+        case .media:
+            return self == .tooLarge
+                ? "That file is too large to upload (50 MB at most). For a video, record a shorter clip."
+                : "That type of file can’t be uploaded. Use a photo (JPEG, PNG, or HEIC), a video (MP4 or MOV), or a voice note."
+        }
+    }
+}
+
 /// MIME type to file extension, in the TypeScript table's order (the first match wins when
 /// guessing a MIME type from an extension).
 private let extensions: [(mime: String, ext: String)] = [

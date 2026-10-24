@@ -340,7 +340,9 @@
                 body = ""
                 photos = []
             } catch {
-                self.error = String(describing: error)
+                let message = String(describing: error)
+                // The bucket's own limits, or a read-only shop (security review M2), in plain words.
+                self.error = UploadRefusal(status: nil, message: message)?.message(.texts) ?? message
             }
             sending = false
         }

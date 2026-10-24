@@ -1,7 +1,14 @@
 import NetInfo from "@react-native-community/netinfo";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { AppState, type NativeEventSubscription } from "react-native";
-import { isConnectionError, looksSignedOut, syncErrorText, uuidv7 } from "@leakbook/core";
+import {
+  isConnectionError,
+  looksSignedOut,
+  syncErrorText,
+  uploadRefusal,
+  uploadRefusalMessage,
+  uuidv7,
+} from "@leakbook/core";
 import { Paths } from "expo-file-system";
 import {
   LocalStore,
@@ -490,7 +497,11 @@ export class SyncService {
     const { error } = await this.supabase.storage
       .from("texts")
       .upload(path, body, { contentType: type });
-    if (error) throw new Error(error.message);
+    if (error) {
+      // The bucket's own limits, or a read-only shop (security review M2), in plain words.
+      const refusal = uploadRefusal(null, error.message);
+      throw new Error(refusal ? uploadRefusalMessage(refusal, "texts") : error.message);
+    }
     return path;
   }
 

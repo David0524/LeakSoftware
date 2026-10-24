@@ -11,6 +11,8 @@ import {
   shapeAtTap,
   shapeFromDrag,
   textShape,
+  uploadRefusal,
+  uploadRefusalMessage,
 } from "../src";
 
 describe("media helpers", () => {
@@ -169,5 +171,23 @@ describe("markup text can move and change size", () => {
     expect(resizeText({ ...t, s: 2 }, 1)).toEqual(t);
     const arrow = { type: "arrow", color: "red", x1: 0, y1: 0, x2: 1, y2: 1 } as const;
     expect(moveText(arrow, { x: 0.5, y: 0.5 })).toBe(arrow);
+  });
+});
+
+describe("uploadRefusal (security review M2)", () => {
+  it("reads too large, wrong type and read-only from the storage server", () => {
+    expect(uploadRefusal(413, "")).toBe("too_large");
+    expect(uploadRefusal("400", "The object exceeded the maximum allowed size")).toBe("too_large");
+    expect(uploadRefusal(415, "")).toBe("wrong_type");
+    expect(uploadRefusal(null, "mime type text/html is not supported")).toBe("wrong_type");
+    expect(uploadRefusal(403, "new row violates row-level security policy")).toBe("read_only");
+    expect(uploadRefusal(500, "Internal Server Error")).toBeNull();
+    expect(uploadRefusal(undefined, null)).toBeNull();
+  });
+
+  it("says each in the words of the place it happened", () => {
+    expect(uploadRefusalMessage("too_large", "logo")).toBe("Use a file under 2 MB.");
+    expect(uploadRefusalMessage("wrong_type", "texts")).toBe("Send photos (JPEG, PNG, or HEIC).");
+    expect(uploadRefusalMessage("too_large", "media")).toMatch(/50 MB at most/);
   });
 });

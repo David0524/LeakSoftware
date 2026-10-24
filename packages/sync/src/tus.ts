@@ -1,3 +1,4 @@
+import { uploadRefusal, uploadRefusalMessage } from "@leakbook/core";
 import type { UploadJob, Uploader } from "./uploads";
 
 /** Reads a local file in pieces, so large videos never sit in memory twice. */
@@ -142,5 +143,9 @@ async function httpError(step: string, res: Response): Promise<UploadHttpError> 
   } catch {
     // ignore
   }
+  // Too large, a type the bucket doesn't take, or a read-only shop: said plainly on the sync
+  // screen. The file stays queued and is tried again (security review M2).
+  const refusal = uploadRefusal(res.status, detail);
+  if (refusal) return new UploadHttpError(res.status, uploadRefusalMessage(refusal, "media"));
   return new UploadHttpError(res.status, `Upload ${step} failed (${res.status}) ${detail}`.trim());
 }

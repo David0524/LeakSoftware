@@ -378,6 +378,8 @@
                 return nil
             } catch {
                 let message = String(describing: error)
+                // The bucket's own limits, or a read-only shop (security review M2), in plain words.
+                if let refusal = UploadRefusal(status: nil, message: message) { return refusal.message(.logo) }
                 return isNetworkFailure(message) ? WebAPI.Failure.noConnection : message
             }
         }

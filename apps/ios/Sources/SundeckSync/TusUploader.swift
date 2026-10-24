@@ -1,4 +1,5 @@
 import Foundation
+import SundeckCore
 
 #if canImport(FoundationNetworking)
     import FoundationNetworking
@@ -234,6 +235,11 @@ private func b64(_ text: String) -> String { Data(text.utf8).base64EncodedString
 
 private func httpError(_ step: String, _ response: HTTPResponse) -> UploadHTTPError {
     let detail = String(response.text.prefix(200))
+    // Too large, a type the bucket doesn't take, or a read-only shop: said plainly on the sync
+    // screen. The file stays queued and is tried again (security review M2).
+    if let refusal = UploadRefusal(status: response.status, message: detail) {
+        return UploadHTTPError(status: response.status, refusal.message(.media))
+    }
     return UploadHTTPError(
         status: response.status,
         "Upload \(step) failed (\(response.status)) \(detail)".trimmingCharacters(in: .whitespaces))

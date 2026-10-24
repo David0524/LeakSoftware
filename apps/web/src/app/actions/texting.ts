@@ -1,7 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { uuidv7 } from "@leakbook/core";
+import { uploadRefusal, uploadRefusalMessage, uuidv7 } from "@leakbook/core";
 import { getOffice, requireManager } from "@/lib/auth";
 import { siteOrigin } from "@/lib/origin";
 import { createClient } from "@/lib/supabase/server";
@@ -120,7 +120,11 @@ export async function sendMessage(_: SendState, form: FormData): Promise<SendSta
     const { error } = await supabase.storage
       .from("texts")
       .upload(path, file, { contentType: file.type });
-    if (error) return { error: error.message };
+    if (error) {
+      // The bucket's own limits, or a read-only shop (security review M2), in plain words.
+      const refusal = uploadRefusal(null, error.message);
+      return { error: refusal ? uploadRefusalMessage(refusal, "texts") : error.message };
+    }
     pictures.push({ path, type: file.type });
   }
 
