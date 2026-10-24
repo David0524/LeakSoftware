@@ -11,8 +11,8 @@ or a data flow changes, update this file, the privacy policy
 The legal entity, its address and the copyright year are one constant, `COMPANY` and
 `COPYRIGHT` in `apps/web/src/lib/site.ts`; the copyright line below is that constant.
 
-Placeholders still to fill: **`[REVIEWER EMAIL]`, `[REVIEWER PASSWORD]`** (the review account,
-made separately) and **`[CONTACT FIRST NAME]`, `[CONTACT LAST NAME]`, `[CONTACT PHONE]`** (who
+Placeholders still to fill: **`[REVIEWER PASSWORD]`** (printed once by
+`pnpm review:account -- --ref <production ref> --apply`, `scripts/review-account.mjs`) and **`[CONTACT FIRST NAME]`, `[CONTACT LAST NAME]`, `[CONTACT PHONE]`** (who
 Apple calls during review).
 
 ---
@@ -140,7 +140,7 @@ compliance: section 5.
 
 | Field | Value |
 |---|---|
-| User name | `[REVIEWER EMAIL]` |
+| User name | `appreview@sundeckpro.com` (owner of the review shop, Palo Verde Pool Service) |
 | Password | `[REVIEWER PASSWORD]` |
 | First name | `[CONTACT FIRST NAME]` |
 | Last name | `[CONTACT LAST NAME]` |
@@ -151,7 +151,7 @@ compliance: section 5.
 
 <!-- field:review-notes limit:4000 -->
 ```text
-Sundeck Pro is a business tool for pool service and pool leak detection companies. The account above is the owner of a review shop with sample customers, jobs, and messages; nothing in it belongs to a real customer, and the shop is set up for both pool care and leak detection.
+Sundeck Pro is a business tool for pool service and pool leak detection companies. The account above is the owner of a review shop with sample customers and jobs (example.com emails, 555 phone numbers); nothing in it belongs to a real customer, and the shop does both pool care and leak detection.
 
 HOW TO TRY IT
 1. Sign in with the account above. The first sign-in downloads the shop to the phone (a few seconds).
@@ -159,8 +159,8 @@ HOW TO TRY IT
 3. On a pool service visit: work the Checklist, enter water readings, and tap What to Add for the chemical calculator.
 4. On a leak detection job: Checklist, Tests (pressure test), and Findings with the pool drawing. Wrap Up shows the report for the customer to review and sign.
 5. Schedule: day, week, or month, with the route map. Optimize reorders a day's stops.
-6. Messages: texts with customers from the shop's number.
-7. More: Notifications, Delete My Account (at the bottom), Privacy Policy, and Terms.
+6. Messages: where a shop texts its customers from its own business number. The review shop has no texting number, so Messages explains that texting needs one; nothing is sent from this account.
+7. More: Notifications, Delete My Account (at the bottom), Privacy Policy, and Terms. Because this account is the shop's only owner, Delete My Account turns into a request to delete the account and the shop's data within 30 days (a tech's account is deleted at once).
 
 ACCOUNTS AND PAYMENT
 The app is free and sells nothing. A company subscribes to Sundeck Pro outside the app as a business; the app is the field tool for its owners and staff, who sign in with the account the company set up (guidelines 3.1.3(c) and 3.1.3(f)). The app has no purchase screens, prices, or links to buy. Anyone can create a free account in the app (to join a team with the invite code the owner sends) and delete it in the app (More › Delete My Account).
@@ -175,7 +175,7 @@ PERMISSIONS (each asked when first needed; the app works without them)
 • Live Activity: shows the tech's next stop during the work day. It can be closed from the Lock Screen.
 
 TEXTING
-Texts go to the shop's own customers from the shop's business number. Customers who reply STOP are not texted again. There is no public content and no chat between app users. On the review account, messages are sample data and nothing is sent to a real phone.
+Texts go to the shop's own customers from the shop's business number. Customers who reply STOP are not texted again. There is no public content and no chat between app users. Reminders, review requests, and automatic emails are off on the review shop, so trying the app sends nothing to anyone.
 
 The app collects no data for tracking or advertising and contains no advertising or analytics SDKs.
 
