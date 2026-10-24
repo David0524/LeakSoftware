@@ -12,7 +12,7 @@ import Testing
                 "MAP_PIN_LIMIT", "ROUTE_STYLE", "routeColor", "dayMapPins", "encodePins", "decodePins",
                 "ROUTE_STYLE_SMALL", "ROUTE_ZOOM", "routeStyleAt", "routeTierStyle", "pinSizeAt", "imageTier",
                 "projectPoint", "unprojectPoint", "mapView", "viewPoint", "viewSpan", "crowdedStyleAt", "zoomForSpan",
-                "fitZoom", "metersPerPoint",
+                "fitZoom", "metersPerPoint", "SPREAD", "spreadPins",
             ])
     }
 
@@ -97,6 +97,24 @@ import Testing
             return viewSpan(center: view.center, zoom: view.zoom, w: size.w, h: size.h)
         }
         checkRule(module, "crowdedStyleAt") { c in crowdedStyleAt(try c.arg(0), try c.arg(1)) }
+    }
+
+    /// Pins too close to read, spread apart (owner, 2026-10-24: "the dots aren't placed great").
+    @Test func spreading() {
+        checkRule(module, "SPREAD") { _ in spread }
+        checkRule(module, "spreadPins") { c in
+            let tier = try c.arg(1, as: RouteTier.self)
+            let frame = try c.arg(2, as: SpreadFrame?.self)
+            return spreadPins(try c.arg(0), tier.style, frame: frame)
+        }
+    }
+
+    /// Every size is numbered (owner, 2026-10-24: "the stops aren't numbered").
+    @Test func alwaysNumbered() {
+        for zoom in [-3.0, 6, 10, 10.5, 11.5, 13, 17] {
+            #expect(routeStyleAt(zoom).pinSize >= 22)
+            #expect(routeStyleAt(zoom).startPinSize >= 20)
+        }
     }
 
     @Test func pinsRoundTrip() throws {

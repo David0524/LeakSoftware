@@ -1,7 +1,7 @@
 import "server-only";
 import { ImageResponse } from "next/og";
-import { viewPoint, type MapPin, type MapView, type PinTone } from "@leakbook/core";
-import { pinImageSize } from "@/components/map-pins";
+import { SPREAD, imagePinLayout, type MapPin, type MapView, type PinTone } from "@leakbook/core";
+import { pinImageSize, routeHex } from "@/components/map-pins";
 import { pinArtFor, pinBody, pinFonts } from "./pin-art";
 
 // Our pins drawn onto Apple's map image (owner, 2026-10-24: "Why some Apple some Mapbox?").
@@ -9,7 +9,10 @@ import { pinArtFor, pinBody, pinFonts } from "./pin-art";
 // go to Mapbox. Now Apple draws only the map and the route, at the exact middle and span we
 // framed (core mapView), and the pins are drawn here at the points the same Web Mercator
 // projection puts them (core viewPoint), scaled to the image's pixels: any number of stops, and
-// every column's image looks the same.
+// every column's image looks the same. Since 2026-10-24 (owner: "the dots aren't placed great
+// and the stops aren't numbered") every stop is numbered, and pins that would overlap are spread
+// apart (core imagePinLayout), each with a thin line in the route's color back to a small dot on
+// its true spot.
 
 /** The pixel size of a PNG (from its IHDR), or null when it isn't one. */
 export function pngSize(bytes: Uint8Array): { w: number; h: number } | null {
@@ -24,20 +27,36 @@ const LAYER: Record<PinTone, number> = { shop: 0, done: 1, todo: 2, current: 3 }
 
 /**
  * Where each pin goes on an image of `size` points showing `view`, top-left corner and side in
- * points, in drawing order (the shop first, the stop you're on last).
+ * points, in drawing order (the shop first, the stop you're on last), with its true spot and
+ * whether it has a leader line back to it (core imagePinLayout).
  */
 export function pinPlacements(
   pins: Omit<MapPin, "id">[],
   view: MapView,
   size: { w: number; h: number },
-): { pin: Omit<MapPin, "id">; x: number; y: number; side: number }[] {
+): {
+  pin: Omit<MapPin, "id">;
+  x: number;
+  y: number;
+  side: number;
+  at: { x: number; y: number };
+  leader: boolean;
+}[] {
+  const spots = imagePinLayout(pins, view, size);
   return pins
     .map((pin, i) => ({ pin, i }))
     .sort((a, b) => LAYER[a.pin.tone] - LAYER[b.pin.tone] || a.i - b.i)
-    .map(({ pin }) => {
-      const at = viewPoint(pin.at, view, size);
+    .map(({ pin, i }) => {
+      const spot = spots[i]!;
       const side = pinImageSize(pin.tone, view.tier);
-      return { pin, x: at.x - side / 2, y: at.y - side / 2, side };
+      return {
+        pin,
+        x: spot.x - side / 2,
+        y: spot.y - side / 2,
+        side,
+        at: { x: spot.atX, y: spot.atY },
+        leader: spot.leader,
+      };
     });
 }
 
@@ -60,6 +79,9 @@ export async function compositePins(input: {
   const ky = px.h / input.size.h;
   const fonts = await pinFonts();
   const src = `data:image/png;base64,${Buffer.from(bytes).toString("base64")}`;
+  const placed = pinPlacements(input.pins, input.view, input.size);
+  const leaders = placed.filter((p) => p.leader);
+  const line = routeHex(input.color, input.theme);
   return new ImageResponse(
     <div style={{ display: "flex", position: "relative", width: px.w, height: px.h }}>
       {/* eslint-disable-next-line @next/next/no-img-element -- drawn into an image, not a page */}
@@ -70,7 +92,47 @@ export async function compositePins(input: {
         alt=""
         style={{ position: "absolute", left: 0, top: 0 }}
       />
-      {pinPlacements(input.pins, input.view, input.size).map(({ pin, x, y, side }, i) => (
+      {leaders.length ? (
+        // Each moved pin's line back to a small dot on its true spot, under every pin.
+        <svg
+          width={px.w}
+          height={px.h}
+          viewBox={`0 0 ${input.size.w} ${input.size.h}`}
+          style={{ position: "absolute", left: 0, top: 0 }}
+        >
+          {leaders.map(({ x, y, side, at }, i) => (
+            <g key={i}>
+              <line
+                x1={at.x}
+                y1={at.y}
+                x2={x + side / 2}
+                y2={y + side / 2}
+                stroke="#fff"
+                strokeWidth={SPREAD.leaderWidth + 1.5}
+                strokeLinecap="round"
+              />
+              <line
+                x1={at.x}
+                y1={at.y}
+                x2={x + side / 2}
+                y2={y + side / 2}
+                stroke={line}
+                strokeWidth={SPREAD.leaderWidth}
+                strokeLinecap="round"
+              />
+              <circle
+                cx={at.x}
+                cy={at.y}
+                r={SPREAD.leaderDot / 2}
+                fill={line}
+                stroke="#fff"
+                strokeWidth={1}
+              />
+            </g>
+          ))}
+        </svg>
+      ) : null}
+      {placed.map(({ pin, x, y, side }, i) => (
         <div
           key={i}
           style={{

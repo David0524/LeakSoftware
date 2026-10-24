@@ -20,6 +20,9 @@ import {
   routeColor,
   routeStyleAt,
   routeTierStyle,
+  SPREAD,
+  spreadPins,
+  VIEW_MARGIN,
   zoomForSpan,
   type LatLng,
   type MapPin,
@@ -51,6 +54,31 @@ const spread: { at: LatLng; tone: PinTone }[] = [
   { at: { lat: 33.5, lng: -112.05 }, tone: "current" },
   { at: { lat: 33.53, lng: -111.99 }, tone: "todo" },
 ];
+
+const DOWNTOWN = { lat: 33.4484, lng: -112.074 };
+const glendale: { at: LatLng; tone: PinTone }[] = [
+  { at: DOWNTOWN, tone: "shop" },
+  ...[
+    [33.5412, -112.1869],
+    [33.535, -112.1853],
+    [33.5343, -112.1865],
+    [33.5319, -112.1703],
+    [33.5374, -112.1629],
+    [33.5377, -112.1575],
+    [33.536, -112.1508],
+    [33.536, -112.1458],
+    [33.5433, -112.1388],
+    [33.5291, -112.1388],
+    [33.5024, -112.1849],
+    [33.491, -111.9959],
+  ].map(([lat, lng], i) => ({
+    at: { lat: lat!, lng: lng! },
+    tone: (i < 9 ? "done" : i === 9 ? "current" : "todo") as PinTone,
+  })),
+];
+
+const COLUMN = { w: 360, h: 180 };
+const glendaleView = mapView(glendale, COLUMN);
 
 export const dayMap: ModuleCases = {
   MAP_PIN_LIMIT: rule(() => MAP_PIN_LIMIT, [[]]),
@@ -188,6 +216,55 @@ export const dayMap: ModuleCases = {
       [
         { center: SHOP, zoom: 10.2 },
         { w: 640, h: 427 },
+      ],
+    ],
+  ),
+  // Pins too close to read, spread apart (owner, 2026-10-24: "the dots aren't placed great").
+  SPREAD: rule(() => SPREAD, [[]]),
+  spreadPins: rule(
+    (
+      pins: { x: number; y: number; tone: PinTone }[],
+      tier: RouteTier,
+      frame?: { w: number; h: number; margin: number; corner?: number },
+    ) => spreadPins(pins, routeTierStyle(tier), frame),
+    [
+      [[], "small"],
+      [
+        [
+          { x: 50, y: 50, tone: "todo" },
+          { x: 100, y: 50, tone: "current" },
+        ],
+        "full",
+      ],
+      // A pile, the start among it (it never moves for a stop).
+      [
+        [
+          { x: 100, y: 60, tone: "shop" },
+          ...Array.from({ length: 9 }, (_, i) => ({
+            x: 100 + (i % 3) * 4,
+            y: 60 + Math.floor(i / 3) * 3,
+            tone: (i === 4 ? "current" : i < 2 ? "done" : "todo") as PinTone,
+          })),
+        ],
+        "small",
+      ],
+      // Pins on one spot.
+      [Array.from({ length: 4 }, () => ({ x: 80, y: 80, tone: "todo" as PinTone })), "medium"],
+      // Inside an image, out of its Enlarge corner.
+      [
+        [
+          { x: 340, y: 20, tone: "todo" },
+          { x: 2, y: 178, tone: "todo" },
+          { x: 30, y: 170, tone: "current" },
+        ],
+        "small",
+        { w: 360, h: 180, margin: VIEW_MARGIN, corner: SPREAD.corner },
+      ],
+      // The 12-stop day in Glendale the owner looked at (2026-10-24), as the column image lays it.
+      [
+        glendale.map((p) => ({ ...viewPoint(p.at, glendaleView, COLUMN), tone: p.tone })),
+        "small",
+        { ...COLUMN, margin: VIEW_MARGIN, corner: SPREAD.corner },
       ],
     ],
   ),

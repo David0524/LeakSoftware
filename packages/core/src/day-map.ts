@@ -115,19 +115,21 @@ export function routeOrder<P extends { tone: PinTone }>(pins: P[]): P[] {
 
 /**
  * Zoomed out, a route shrinks (owner, 2026-10-23: "thinner lines and smaller dots when zoomed out
- * of the map so it doesn't look like one blob"): at ROUTE_ZOOM.full (a few streets across) and
- * closer, ROUTE_STYLE as it is; at ROUTE_ZOOM.small (a city across) and farther, these small
- * dots without numbers on a thin line; in between, every size steps smoothly from one to the
- * other. The stop you're on stays a little larger, with its rings, so it's easy to find. Zoom is
- * the web map zoom level (256-point tiles; 13 shows about 5 km across a phone).
+ * of the map so it doesn't look like one blob"), but every stop keeps its number (owner,
+ * 2026-10-24: "the stops aren't numbered"): at ROUTE_ZOOM.full (a few streets across) and closer,
+ * ROUTE_STYLE as it is; at ROUTE_ZOOM.small (a city across) and farther, these smaller numbered
+ * pins (22 points, the smallest a number reads at) on a thin line; in between, every size steps
+ * smoothly from one to the other. The stop you're on stays a little larger, with its rings, so
+ * it's easy to find. Zoom is the web map zoom level (256-point tiles; 13 shows about 5 km across
+ * a phone). Pins that would overlap are spread apart (spreadPins), never shrunk to dots.
  */
 export const ROUTE_STYLE_SMALL = {
-  pinSize: 13,
-  currentPinSize: 18,
+  pinSize: 22,
+  currentPinSize: 27,
   pinEdge: 1.5,
   currentWhiteRing: 2,
   currentNavyRing: 1.5,
-  startPinSize: 14,
+  startPinSize: 20,
   lineWidth: 2.5,
   casingWidth: 4,
 } as const;
@@ -137,11 +139,9 @@ export const ROUTE_ZOOM = {
   full: 13,
   /** At this zoom and farther: ROUTE_STYLE_SMALL. */
   small: 10,
-  /** A pin shows its number (and the start its house) from this size, in points. */
-  numbersFrom: 20,
 } as const;
 
-/** A route's sizes at one zoom (points), and whether its pins show their numbers. */
+/** A route's sizes at one zoom (points). Every size shows its pins' numbers. */
 export interface RouteSizes {
   pinSize: number;
   currentPinSize: number;
@@ -151,7 +151,6 @@ export interface RouteSizes {
   startPinSize: number;
   lineWidth: number;
   casingWidth: number;
-  numbers: boolean;
 }
 
 const SIZE_KEYS = [
@@ -174,7 +173,7 @@ export function routeStyleAt(zoom: number): RouteSizes {
     const v = ROUTE_STYLE_SMALL[k] + (ROUTE_STYLE[k] - ROUTE_STYLE_SMALL[k]) * t;
     out[k] = Math.round(v * 4) / 4;
   }
-  return { ...out, numbers: out.pinSize >= ROUTE_ZOOM.numbersFrom };
+  return out;
 }
 
 /**
@@ -235,8 +234,8 @@ export function crowdedAt(pins: { x: number; y: number; tone: PinTone }[], sizes
 /**
  * A live map's route sizes at `zoom` (owner, 2026-10-24: "the pins are a pile on top of each
  * other"): routeStyleAt(zoom), or, while any two pins would overlap at those sizes, the medium
- * or small tier's smaller ones, as the map images step down (imageTier). Small dots may still
- * touch; numbered pins never pile up.
+ * or small tier's smaller ones, as the map images step down (imageTier). Pins still too close
+ * at the small size are spread apart (spreadPins); every one keeps its number.
  */
 export function crowdedStyleAt(zoom: number, pins: { at: LatLng; tone: PinTone }[]): RouteSizes {
   const base = routeStyleAt(zoom);
@@ -297,7 +296,8 @@ export const VIEW_MAX_ZOOM = 15;
  * The tightest view of `size` points that shows every pin whole (its circle at the view's tier,
  * plus VIEW_MARGIN) and every `extra` point (the route's road path) with room for the line. The
  * tier is the largest one whose pins fit and don't overlap at that zoom (imageTier): a tight
- * cluster with one far stop gets small dots, never a pile of numbered pins.
+ * cluster with one far stop gets the small numbered pins, spread apart where they'd still
+ * overlap (imagePinLayout).
  */
 export function mapView(
   pins: { at: LatLng; tone: PinTone }[],
@@ -364,6 +364,203 @@ export function viewPoint(
   const a = projectPoint(p, view.zoom);
   const c = projectPoint(view.center, view.zoom);
   return { x: a.x - c.x + size.w / 2, y: a.y - c.y + size.h / 2 };
+}
+
+// ---------------------------------------------------------------------------
+// Pins too close to read: spread apart (owner, 2026-10-24: "the dots aren't placed great")
+// ---------------------------------------------------------------------------
+
+/**
+ * How crowded pins are spread apart, the same on every map: `gap` points kept between two pins'
+ * circles; a pin moved more than `leaderFrom` points from its place gets a leader line
+ * (`leaderWidth`, in the route's color) back to a small dot (`leaderDot` across) on its true
+ * spot; and on the map images, pins keep out of the top-right `corner` (points), where the
+ * Enlarge button sits (48 points with its inset).
+ */
+export const SPREAD = {
+  gap: 2,
+  leaderFrom: 3,
+  leaderWidth: 1.5,
+  leaderDot: 6,
+  corner: 58,
+} as const;
+
+/** Where a pin is drawn after spreading (map points), and whether it has a leader line. */
+export interface SpreadPoint {
+  x: number;
+  y: number;
+  leader: boolean;
+}
+
+/** What a map image keeps pins inside: its size, the room at its edges, and its Enlarge corner. */
+export interface SpreadFrame {
+  w: number;
+  h: number;
+  margin: number;
+  /** The top-right corner kept clear, in points (SPREAD.corner); 0 or left out for none. */
+  corner?: number;
+}
+
+const round2 = (v: number) => Math.round(v * 100) / 100;
+
+/** The golden angle, in radians: one turn per pin spreads a pile evenly. */
+const GOLDEN_ANGLE = 2.399963229728653;
+
+/**
+ * Pins (in map points, x right, y down) moved apart where their circles at `sizes` would
+ * overlap, each as little as it can (owner, 2026-10-24: "the dots aren't placed great and the
+ * stops aren't numbered"): a few rounds of pushing every overlapping pair apart along the line
+ * between them while drawing each pin back toward its place, then pushes alone until none
+ * overlap. The start never moves for a stop (it's the day's anchor); two pins on one spot part
+ * along their places' line, or by a fixed turn per pin, so it's the same every time and on every
+ * platform. With `frame` (map images), pins stay `margin` inside its edges and out of its
+ * Enlarge corner. Returns each pin's spot in the same order, to the hundredth of a point, and
+ * whether it moved far enough to need a leader line (SPREAD.leaderFrom).
+ */
+export function spreadPins(
+  pins: { x: number; y: number; tone: PinTone }[],
+  sizes: RouteSizes,
+  frame?: SpreadFrame | null,
+): SpreadPoint[] {
+  const n = pins.length;
+  const r = pins.map((p) => pinSizeAt(p.tone, sizes) / 2);
+  const fixed = pins.map((p) => p.tone === "shop");
+  const pos = pins.map((p) => ({ x: p.x, y: p.y }));
+  const keepIn = (i: number) => {
+    if (!frame) return;
+    const p = pos[i]!;
+    const ri = r[i]!;
+    const corner = frame.corner ?? 0;
+    if (corner > 0 && p.x > frame.w - corner - ri && p.y < corner + ri) {
+      // Out of the corner the shorter way: left, or down.
+      const left = p.x - (frame.w - corner - ri - SPREAD.gap);
+      const down = corner + ri + SPREAD.gap - p.y;
+      if (left <= down) p.x -= left;
+      else p.y += down;
+    }
+    const x0 = frame.margin + ri;
+    const x1 = frame.w - frame.margin - ri;
+    const y0 = frame.margin + ri;
+    const y1 = frame.h - frame.margin - ri;
+    p.x = x0 <= x1 ? Math.max(x0, Math.min(x1, p.x)) : frame.w / 2;
+    p.y = y0 <= y1 ? Math.max(y0, Math.min(y1, p.y)) : frame.h / 2;
+  };
+  const push = () => {
+    let moved = false;
+    for (let i = 0; i < n; i++)
+      for (let j = i + 1; j < n; j++) {
+        if (fixed[i] && fixed[j]) continue;
+        const a = pos[i]!;
+        const b = pos[j]!;
+        const dx = b.x - a.x;
+        const dy = b.y - a.y;
+        const d = Math.sqrt(dx * dx + dy * dy);
+        const need = r[i]! + r[j]! + SPREAD.gap;
+        if (d >= need - 1e-9) continue;
+        let ux: number;
+        let uy: number;
+        if (d > 1e-6) {
+          ux = dx / d;
+          uy = dy / d;
+        } else {
+          const ax = pins[j]!.x - pins[i]!.x;
+          const ay = pins[j]!.y - pins[i]!.y;
+          const ad = Math.sqrt(ax * ax + ay * ay);
+          if (ad > 1e-6) {
+            ux = ax / ad;
+            uy = ay / ad;
+          } else {
+            // The golden angle per pin: pins on one spot fan out evenly.
+            const turn = j * GOLDEN_ANGLE;
+            ux = Math.cos(turn);
+            uy = Math.sin(turn);
+          }
+        }
+        const over = need - d;
+        const si = fixed[i] ? 0 : fixed[j] ? 1 : 0.5;
+        const sj = fixed[j] ? 0 : fixed[i] ? 1 : 0.5;
+        a.x -= ux * over * si;
+        a.y -= uy * over * si;
+        b.x += ux * over * sj;
+        b.y += uy * over * sj;
+        moved = true;
+      }
+    for (let i = 0; i < n; i++) if (!fixed[i]) keepIn(i);
+    return moved;
+  };
+  for (let i = 0; i < n; i++) keepIn(i);
+  // Pins in a pile first step off their place a little, each its own way (the golden angle per
+  // pin), so they part in every direction, not in a long line.
+  for (let i = 0; i < n; i++) {
+    if (fixed[i]) continue;
+    const crowded = pos.some((q, j) => {
+      if (j === i) return false;
+      const dx = q.x - pos[i]!.x;
+      const dy = q.y - pos[i]!.y;
+      return Math.sqrt(dx * dx + dy * dy) < r[i]! + r[j]! + SPREAD.gap;
+    });
+    if (!crowded) continue;
+    const turn = i * GOLDEN_ANGLE;
+    pos[i]!.x += Math.cos(turn) * r[i]! * 0.5;
+    pos[i]!.y += Math.sin(turn) * r[i]! * 0.5;
+    keepIn(i);
+  }
+  // Spread, drawn back toward each place, then settle with no pull.
+  for (let round = 0; round < 40; round++) {
+    for (let i = 0; i < n; i++) {
+      if (fixed[i]) continue;
+      pos[i]!.x += (pins[i]!.x - pos[i]!.x) * 0.15;
+      pos[i]!.y += (pins[i]!.y - pos[i]!.y) * 0.15;
+      keepIn(i);
+    }
+    push();
+  }
+  for (let round = 0; round < 200; round++) if (!push()) break;
+  return pos.map((p, i) => {
+    const dx = p.x - pins[i]!.x;
+    const dy = p.y - pins[i]!.y;
+    return {
+      x: round2(p.x),
+      y: round2(p.y),
+      leader: Math.sqrt(dx * dx + dy * dy) > SPREAD.leaderFrom,
+    };
+  });
+}
+
+/** A pin on a map image: where it's drawn (its middle), its true spot, and its leader line. */
+export interface ImagePinSpot {
+  x: number;
+  y: number;
+  /** The stop's true spot on the image. */
+  atX: number;
+  atY: number;
+  leader: boolean;
+}
+
+/**
+ * Where each pin goes on a map image of `size` points showing `view` (in `pins` order): its
+ * true spot (viewPoint), then spread apart at the view's tier, kept VIEW_MARGIN inside the
+ * edges and out of the Enlarge corner (spreadPins).
+ */
+export function imagePinLayout(
+  pins: { at: LatLng; tone: PinTone }[],
+  view: MapView,
+  size: { w: number; h: number },
+): ImagePinSpot[] {
+  const at = pins.map((p) => ({ ...viewPoint(p.at, view, size), tone: p.tone }));
+  const spread = spreadPins(at, routeTierStyle(view.tier), {
+    w: size.w,
+    h: size.h,
+    margin: VIEW_MARGIN,
+    corner: SPREAD.corner,
+  });
+  return spread.map((s, i) => ({
+    x: s.x,
+    y: s.y,
+    atX: round2(at[i]!.x),
+    atY: round2(at[i]!.y),
+    leader: s.leader,
+  }));
 }
 
 /**

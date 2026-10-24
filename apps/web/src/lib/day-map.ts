@@ -53,7 +53,7 @@ export function dayMap(input: {
 }
 
 /** Bumped when map images are drawn differently, so browsers fetch the new drawing. */
-export const MAP_IMAGE_VERSION = "2";
+export const MAP_IMAGE_VERSION = "3";
 
 /**
  * The map image's address on this site (GET /api/map). `color` is the tech's team color (owner,
@@ -68,7 +68,8 @@ export function mapSrc(
 ): string {
   const q = new URLSearchParams({ company, pins, w: String(size.w), h: String(size.h) });
   // The drawing's version: images kept by browsers from before the 2026-10-24 framing (mixed
-  // Apple and Mapbox, zoomed out) aren't reused.
+  // Apple and Mapbox, zoomed out), or with unnumbered dots piled up (3: numbered, spread
+  // apart), aren't reused.
   q.set("v", MAP_IMAGE_VERSION);
   const route = routeColor(color);
   if (route !== "blue") q.set("color", route);

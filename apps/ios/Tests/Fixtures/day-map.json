@@ -25,12 +25,12 @@
     {
       "args": [],
       "result": {
-        "pinSize": 13,
-        "currentPinSize": 18,
+        "pinSize": 22,
+        "currentPinSize": 27,
         "pinEdge": 1.5,
         "currentWhiteRing": 2,
         "currentNavyRing": 1.5,
-        "startPinSize": 14,
+        "startPinSize": 20,
         "lineWidth": 2.5,
         "casingWidth": 4
       }
@@ -41,8 +41,7 @@
       "args": [],
       "result": {
         "full": 13,
-        "small": 10,
-        "numbersFrom": 20
+        "small": 10
       }
     }
   ],
@@ -52,15 +51,14 @@
         2
       ],
       "result": {
-        "pinSize": 13,
-        "currentPinSize": 18,
+        "pinSize": 22,
+        "currentPinSize": 27,
         "pinEdge": 1.5,
         "currentWhiteRing": 2,
         "currentNavyRing": 1.5,
-        "startPinSize": 14,
+        "startPinSize": 20,
         "lineWidth": 2.5,
-        "casingWidth": 4,
-        "numbers": false
+        "casingWidth": 4
       }
     },
     {
@@ -68,15 +66,14 @@
         10
       ],
       "result": {
-        "pinSize": 13,
-        "currentPinSize": 18,
+        "pinSize": 22,
+        "currentPinSize": 27,
         "pinEdge": 1.5,
         "currentWhiteRing": 2,
         "currentNavyRing": 1.5,
-        "startPinSize": 14,
+        "startPinSize": 20,
         "lineWidth": 2.5,
-        "casingWidth": 4,
-        "numbers": false
+        "casingWidth": 4
       }
     },
     {
@@ -84,15 +81,14 @@
         10.4
       ],
       "result": {
-        "pinSize": 15.75,
-        "currentPinSize": 21,
+        "pinSize": 23.5,
+        "currentPinSize": 28.75,
         "pinEdge": 1.5,
         "currentWhiteRing": 2.25,
         "currentNavyRing": 1.5,
-        "startPinSize": 15.75,
+        "startPinSize": 21,
         "lineWidth": 3,
-        "casingWidth": 4.75,
-        "numbers": false
+        "casingWidth": 4.75
       }
     },
     {
@@ -100,15 +96,14 @@
         10.9
       ],
       "result": {
-        "pinSize": 19.25,
-        "currentPinSize": 24.5,
+        "pinSize": 25.5,
+        "currentPinSize": 31,
         "pinEdge": 1.75,
         "currentWhiteRing": 2.25,
         "currentNavyRing": 1.75,
-        "startPinSize": 18.25,
+        "startPinSize": 22.5,
         "lineWidth": 3.5,
-        "casingWidth": 5.5,
-        "numbers": false
+        "casingWidth": 5.5
       }
     },
     {
@@ -116,15 +111,14 @@
         11.37
       ],
       "result": {
-        "pinSize": 22.5,
-        "currentPinSize": 28,
+        "pinSize": 27.5,
+        "currentPinSize": 33,
         "pinEdge": 1.75,
         "currentWhiteRing": 2.5,
         "currentNavyRing": 1.75,
-        "startPinSize": 20.5,
+        "startPinSize": 23.75,
         "lineWidth": 4,
-        "casingWidth": 6.25,
-        "numbers": true
+        "casingWidth": 6.25
       }
     },
     {
@@ -132,15 +126,14 @@
         11.5
       ],
       "result": {
-        "pinSize": 23.5,
-        "currentPinSize": 29,
+        "pinSize": 28,
+        "currentPinSize": 33.5,
         "pinEdge": 1.75,
         "currentWhiteRing": 2.5,
         "currentNavyRing": 1.75,
-        "startPinSize": 21,
+        "startPinSize": 24,
         "lineWidth": 4.25,
-        "casingWidth": 6.5,
-        "numbers": true
+        "casingWidth": 6.5
       }
     },
     {
@@ -148,15 +141,14 @@
         12.1
       ],
       "result": {
-        "pinSize": 27.75,
-        "currentPinSize": 33.5,
+        "pinSize": 30.5,
+        "currentPinSize": 36,
         "pinEdge": 1.75,
         "currentWhiteRing": 2.75,
         "currentNavyRing": 1.75,
-        "startPinSize": 23.75,
+        "startPinSize": 25.5,
         "lineWidth": 5,
-        "casingWidth": 7.5,
-        "numbers": true
+        "casingWidth": 7.5
       }
     },
     {
@@ -164,15 +156,14 @@
         12.75
       ],
       "result": {
-        "pinSize": 32.25,
-        "currentPinSize": 38.25,
+        "pinSize": 33,
+        "currentPinSize": 39,
         "pinEdge": 2,
         "currentWhiteRing": 3,
         "currentNavyRing": 2,
-        "startPinSize": 26.75,
+        "startPinSize": 27.25,
         "lineWidth": 5.75,
-        "casingWidth": 8.5,
-        "numbers": true
+        "casingWidth": 8.5
       }
     },
     {
@@ -187,8 +178,7 @@
         "currentNavyRing": 2,
         "startPinSize": 28,
         "lineWidth": 6,
-        "casingWidth": 9,
-        "numbers": true
+        "casingWidth": 9
       }
     },
     {
@@ -203,8 +193,7 @@
         "currentNavyRing": 2,
         "startPinSize": 28,
         "lineWidth": 6,
-        "casingWidth": 9,
-        "numbers": true
+        "casingWidth": 9
       }
     },
     {
@@ -212,15 +201,14 @@
         -3
       ],
       "result": {
-        "pinSize": 13,
-        "currentPinSize": 18,
+        "pinSize": 22,
+        "currentPinSize": 27,
         "pinEdge": 1.5,
         "currentWhiteRing": 2,
         "currentNavyRing": 1.5,
-        "startPinSize": 14,
+        "startPinSize": 20,
         "lineWidth": 2.5,
-        "casingWidth": 4,
-        "numbers": false
+        "casingWidth": 4
       }
     }
   ],
@@ -238,8 +226,7 @@
         "currentNavyRing": 2,
         "startPinSize": 28,
         "lineWidth": 6,
-        "casingWidth": 9,
-        "numbers": true
+        "casingWidth": 9
       }
     },
     {
@@ -248,15 +235,14 @@
       ],
       "result": {
         "zoom": 11.5,
-        "pinSize": 23.5,
-        "currentPinSize": 29,
+        "pinSize": 28,
+        "currentPinSize": 33.5,
         "pinEdge": 1.75,
         "currentWhiteRing": 2.5,
         "currentNavyRing": 1.75,
-        "startPinSize": 21,
+        "startPinSize": 24,
         "lineWidth": 4.25,
-        "casingWidth": 6.5,
-        "numbers": true
+        "casingWidth": 6.5
       }
     },
     {
@@ -265,15 +251,14 @@
       ],
       "result": {
         "zoom": 10,
-        "pinSize": 13,
-        "currentPinSize": 18,
+        "pinSize": 22,
+        "currentPinSize": 27,
         "pinEdge": 1.5,
         "currentWhiteRing": 2,
         "currentNavyRing": 1.5,
-        "startPinSize": 14,
+        "startPinSize": 20,
         "lineWidth": 2.5,
-        "casingWidth": 4,
-        "numbers": false
+        "casingWidth": 4
       }
     }
   ],
@@ -290,21 +275,21 @@
         "current",
         11
       ],
-      "result": 25.25
+      "result": 31.25
     },
     {
       "args": [
         "done",
         10
       ],
-      "result": 13
+      "result": 22
     },
     {
       "args": [
         "todo",
         12.5
       ],
-      "result": 30.5
+      "result": 32
     }
   ],
   "imageTier": [
@@ -817,10 +802,10 @@
       ],
       "result": {
         "center": {
-          "lng": -111.98823692431085,
+          "lng": -111.98833116599252,
           "lat": 33.490132391514216
         },
-        "zoom": 10.207234264359613,
+        "zoom": 10.118576644539644,
         "tier": "small"
       }
     },
@@ -864,9 +849,9 @@
       "result": {
         "center": {
           "lng": -112.06599999999999,
-          "lat": 33.529384783502785
+          "lat": 33.52919290047703
         },
-        "zoom": 11.39513241538225,
+        "zoom": 11.355676126489925,
         "tier": "medium"
       }
     },
@@ -915,10 +900,10 @@
       ],
       "result": {
         "center": {
-          "lng": -112.09142284569138,
-          "lat": 33.546156340150056
+          "lng": -112.08942857142857,
+          "lat": 33.5444781083586
         },
-        "zoom": 10.706287868662002,
+        "zoom": 10.680029802326317,
         "tier": "small"
       }
     },
@@ -962,9 +947,9 @@
       "result": {
         "center": {
           "lng": -112.06599999999999,
-          "lat": 33.5294942818465
+          "lat": 33.529329763177635
         },
-        "zoom": 11.589074297943625,
+        "zoom": 11.554640800883135,
         "tier": "medium"
       }
     }
@@ -1080,6 +1065,404 @@
       }
     }
   ],
+  "SPREAD": [
+    {
+      "args": [],
+      "result": {
+        "gap": 2,
+        "leaderFrom": 3,
+        "leaderWidth": 1.5,
+        "leaderDot": 6,
+        "corner": 58
+      }
+    }
+  ],
+  "spreadPins": [
+    {
+      "args": [
+        [],
+        "small"
+      ],
+      "result": []
+    },
+    {
+      "args": [
+        [
+          {
+            "x": 50,
+            "y": 50,
+            "tone": "todo"
+          },
+          {
+            "x": 100,
+            "y": 50,
+            "tone": "current"
+          }
+        ],
+        "full"
+      ],
+      "result": [
+        {
+          "x": 50,
+          "y": 50,
+          "leader": false
+        },
+        {
+          "x": 100,
+          "y": 50,
+          "leader": false
+        }
+      ]
+    },
+    {
+      "args": [
+        [
+          {
+            "x": 100,
+            "y": 60,
+            "tone": "shop"
+          },
+          {
+            "x": 100,
+            "y": 60,
+            "tone": "done"
+          },
+          {
+            "x": 104,
+            "y": 60,
+            "tone": "done"
+          },
+          {
+            "x": 108,
+            "y": 60,
+            "tone": "todo"
+          },
+          {
+            "x": 100,
+            "y": 63,
+            "tone": "todo"
+          },
+          {
+            "x": 104,
+            "y": 63,
+            "tone": "current"
+          },
+          {
+            "x": 108,
+            "y": 63,
+            "tone": "todo"
+          },
+          {
+            "x": 100,
+            "y": 66,
+            "tone": "todo"
+          },
+          {
+            "x": 104,
+            "y": 66,
+            "tone": "todo"
+          },
+          {
+            "x": 108,
+            "y": 66,
+            "tone": "todo"
+          }
+        ],
+        "small"
+      ],
+      "result": [
+        {
+          "x": 100,
+          "y": 60,
+          "leader": false
+        },
+        {
+          "x": 85.61,
+          "y": 87.17,
+          "leader": true
+        },
+        {
+          "x": 98.87,
+          "y": 31.35,
+          "leader": true
+        },
+        {
+          "x": 120.81,
+          "y": 41.07,
+          "leader": true
+        },
+        {
+          "x": 78.34,
+          "y": 43.78,
+          "leader": true
+        },
+        {
+          "x": 147.72,
+          "y": 57.05,
+          "leader": true
+        },
+        {
+          "x": 133.47,
+          "y": 86.99,
+          "leader": true
+        },
+        {
+          "x": 72.51,
+          "y": 67.06,
+          "leader": true
+        },
+        {
+          "x": 122.44,
+          "y": 65.02,
+          "leader": true
+        },
+        {
+          "x": 109.53,
+          "y": 85.25,
+          "leader": true
+        }
+      ]
+    },
+    {
+      "args": [
+        [
+          {
+            "x": 80,
+            "y": 80,
+            "tone": "todo"
+          },
+          {
+            "x": 80,
+            "y": 80,
+            "tone": "todo"
+          },
+          {
+            "x": 80,
+            "y": 80,
+            "tone": "todo"
+          },
+          {
+            "x": 80,
+            "y": 80,
+            "tone": "todo"
+          }
+        ],
+        "medium"
+      ],
+      "result": [
+        {
+          "x": 104.51,
+          "y": 70.05,
+          "leader": true
+        },
+        {
+          "x": 55.86,
+          "y": 91.09,
+          "leader": true
+        },
+        {
+          "x": 73.87,
+          "y": 65.39,
+          "leader": true
+        },
+        {
+          "x": 85.77,
+          "y": 93.47,
+          "leader": true
+        }
+      ]
+    },
+    {
+      "args": [
+        [
+          {
+            "x": 340,
+            "y": 20,
+            "tone": "todo"
+          },
+          {
+            "x": 2,
+            "y": 178,
+            "tone": "todo"
+          },
+          {
+            "x": 30,
+            "y": 170,
+            "tone": "current"
+          }
+        ],
+        "small",
+        {
+          "w": 360,
+          "h": 180,
+          "margin": 8,
+          "corner": 58
+        }
+      ],
+      "result": [
+        {
+          "x": 289,
+          "y": 20,
+          "leader": true
+        },
+        {
+          "x": 19,
+          "y": 161,
+          "leader": true
+        },
+        {
+          "x": 45.34,
+          "y": 158.05,
+          "leader": true
+        }
+      ]
+    },
+    {
+      "args": [
+        [
+          {
+            "x": 201.8648442986596,
+            "y": 161.99999999970896,
+            "tone": "shop"
+          },
+          {
+            "x": 59.99467640693183,
+            "y": 22.166080726427026,
+            "tone": "done"
+          },
+          {
+            "x": 62.00523680221522,
+            "y": 31.51310836302582,
+            "tone": "done"
+          },
+          {
+            "x": 60.497316505759954,
+            "y": 32.56837581770378,
+            "tone": "done"
+          },
+          {
+            "x": 80.85424050793517,
+            "y": 36.18637079614564,
+            "tone": "done"
+          },
+          {
+            "x": 90.1530823360954,
+            "y": 27.894983646285255,
+            "tone": "done"
+          },
+          {
+            "x": 96.9387236701441,
+            "y": 27.442710993578658,
+            "tone": "done"
+          },
+          {
+            "x": 105.35794532536238,
+            "y": 30.00556860517827,
+            "tone": "done"
+          },
+          {
+            "x": 111.64094656061206,
+            "y": 30.00556860517827,
+            "tone": "done"
+          },
+          {
+            "x": 120.43714828994416,
+            "y": 19.000000000203727,
+            "tone": "done"
+          },
+          {
+            "x": 120.43714828994416,
+            "y": 40.40723800752312,
+            "tone": "current"
+          },
+          {
+            "x": 62.507876901028794,
+            "y": 80.64935886499006,
+            "tone": "todo"
+          },
+          {
+            "x": 300.0053235931118,
+            "y": 97.82760607954697,
+            "tone": "todo"
+          }
+        ],
+        "small",
+        {
+          "w": 360,
+          "h": 180,
+          "margin": 8,
+          "corner": 58
+        }
+      ],
+      "result": [
+        {
+          "x": 201.86,
+          "y": 162,
+          "leader": false
+        },
+        {
+          "x": 41.44,
+          "y": 19,
+          "leader": true
+        },
+        {
+          "x": 64.07,
+          "y": 27,
+          "leader": true
+        },
+        {
+          "x": 47.53,
+          "y": 44.38,
+          "leader": true
+        },
+        {
+          "x": 70.56,
+          "y": 51.23,
+          "leader": true
+        },
+        {
+          "x": 86.7,
+          "y": 19,
+          "leader": true
+        },
+        {
+          "x": 92.8,
+          "y": 42.21,
+          "leader": true
+        },
+        {
+          "x": 110.64,
+          "y": 20.66,
+          "leader": true
+        },
+        {
+          "x": 116.74,
+          "y": 43.87,
+          "leader": true
+        },
+        {
+          "x": 134.58,
+          "y": 19,
+          "leader": true
+        },
+        {
+          "x": 143.24,
+          "y": 44.05,
+          "leader": true
+        },
+        {
+          "x": 62.51,
+          "y": 80.65,
+          "leader": false
+        },
+        {
+          "x": 300.01,
+          "y": 97.83,
+          "leader": false
+        }
+      ]
+    }
+  ],
   "crowdedStyleAt": [
     {
       "args": [
@@ -1179,8 +1562,7 @@
         "currentNavyRing": 2,
         "startPinSize": 28,
         "lineWidth": 6,
-        "casingWidth": 9,
-        "numbers": true
+        "casingWidth": 9
       }
     },
     {
@@ -1274,15 +1656,14 @@
         ]
       ],
       "result": {
-        "pinSize": 23.5,
-        "currentPinSize": 29,
-        "pinEdge": 1.75,
-        "currentWhiteRing": 2.5,
-        "currentNavyRing": 1.75,
-        "startPinSize": 21,
-        "lineWidth": 4.25,
-        "casingWidth": 6.5,
-        "numbers": true
+        "pinSize": 22,
+        "currentPinSize": 27,
+        "pinEdge": 1.5,
+        "currentWhiteRing": 2,
+        "currentNavyRing": 1.5,
+        "startPinSize": 20,
+        "lineWidth": 2.5,
+        "casingWidth": 4
       }
     },
     {
@@ -1320,15 +1701,14 @@
         ]
       ],
       "result": {
-        "pinSize": 27,
-        "currentPinSize": 32.75,
+        "pinSize": 30,
+        "currentPinSize": 35.75,
         "pinEdge": 1.75,
         "currentWhiteRing": 2.75,
         "currentNavyRing": 1.75,
-        "startPinSize": 23.25,
+        "startPinSize": 25.25,
         "lineWidth": 4.75,
-        "casingWidth": 7.25,
-        "numbers": true
+        "casingWidth": 7.25
       }
     },
     {
@@ -1422,15 +1802,14 @@
         ]
       ],
       "result": {
-        "pinSize": 13,
-        "currentPinSize": 18,
+        "pinSize": 22,
+        "currentPinSize": 27,
         "pinEdge": 1.5,
         "currentWhiteRing": 2,
         "currentNavyRing": 1.5,
-        "startPinSize": 14,
+        "startPinSize": 20,
         "lineWidth": 2.5,
-        "casingWidth": 4,
-        "numbers": false
+        "casingWidth": 4
       }
     },
     {
@@ -1446,8 +1825,7 @@
         "currentNavyRing": 2,
         "startPinSize": 28,
         "lineWidth": 6,
-        "casingWidth": 9,
-        "numbers": true
+        "casingWidth": 9
       }
     }
   ],

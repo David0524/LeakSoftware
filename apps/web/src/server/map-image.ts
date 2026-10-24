@@ -2,17 +2,20 @@ import "server-only";
 import {
   encodePolyline,
   fitLegs,
+  imagePinLayout,
   joinLegs,
   mapView,
   metersPerPoint,
   routeLegs,
   routeOrder,
   routeTierStyle,
+  projectPoint,
+  unprojectPoint,
   type LatLng,
   type MapPin,
   type MapView,
 } from "@leakbook/core";
-import { pinHex, pinImageName, routeHex } from "@/components/map-pins";
+import { leaderDotImageName, pinHex, pinImageName, routeHex } from "@/components/map-pins";
 import { routeExtent } from "./apple-maps";
 
 // Day maps (owner, 2026-10-20, docs/plans/route-maps.md): a map image of a day's stops from
@@ -46,6 +49,9 @@ export function mapboxZoom(view: MapView): number {
  * out, or with pins crowded, the pins and line are drawn smaller. Since 2026-10-24 (owner:
  * "Mapbox is way too far zoomed out") the view is ours (core mapView, the same as Apple's
  * image), never Mapbox's "auto", so the pins' sizes are chosen for the zoom the image has.
+ * Every stop is numbered at every size, and pins that would overlap are drawn apart (core
+ * imagePinLayout, at the zoom Mapbox draws), each with a thin line back to its true spot
+ * (owner, 2026-10-24: "the dots aren't placed great and the stops aren't numbered").
  */
 export function staticMapUrl(
   pins: Omit<MapPin, "id">[],
@@ -64,30 +70,48 @@ export function staticMapUrl(
   const view = mapView(pins, { w, h }, routeExtent(legs));
   const { tier, zoom } = view;
   const sizes = routeTierStyle(tier);
-  const at = (p: Omit<MapPin, "id">) => `(${p.at.lng.toFixed(5)},${p.at.lat.toFixed(5)})`;
-  const markers = pins.map((p) => {
-    // Stops large, as the bold route's pins, small zoomed out (no number on the small ones);
+  // Where each pin is drawn: its spot, or moved apart from its neighbors (as Apple's image), at
+  // the zoom Mapbox really draws.
+  const drawn = { ...view, zoom: mapboxZoom(view) + 1 };
+  const spots = imagePinLayout(pins, drawn, { w, h });
+  const middle = projectPoint(drawn.center, drawn.zoom);
+  const place = (x: number, y: number) =>
+    unprojectPoint({ x: middle.x + x - w / 2, y: middle.y + y - h / 2 }, drawn.zoom);
+  const lngLat = (p: LatLng) => `(${p.lng.toFixed(5)},${p.lat.toFixed(5)})`;
+  const shown = spots.map((s, i) => (s.leader ? place(s.x, s.y) : pins[i]!.at));
+  const at = (p: Omit<MapPin, "id">) => lngLat(shown[pins.indexOf(p)] ?? p.at);
+  const leaders = pins.flatMap((p, i) => (spots[i]!.leader ? [{ p, to: shown[i]! }] : []));
+  // Each moved pin's line back to its spot: white under the route's color.
+  const leaderLines = leaders.flatMap(({ p, to }) => {
+    const poly = encodeURIComponent(encodePolyline([p.at, to]));
+    return [`path-3+ffffff-1(${poly})`, `path-2+${hex(routeHex(color, theme))}-1(${poly})`];
+  });
+  // Drawn last on top, the stop you're on above the rest (Mapbox draws overlays in order).
+  const layer = { shop: 0, done: 1, todo: 2, current: 3 } as const;
+  const byLayer = pins
+    .map((p, i) => ({ p, i }))
+    .sort((a, b) => layer[a.p.tone] - layer[b.p.tone] || a.i - b.i)
+    .map(({ p }) => p);
+  const markers = byLayer.map((p) => {
+    // Stops large, as the bold route's pins, smaller zoomed out, numbered at every size;
     // someone who starts from home a larger house (an image's pin can't carry words; the live
     // maps label it Home). Never the street.
     const small = tier !== "full";
     const marker =
-      p.tone === "shop"
-        ? "-home"
-        : tier === "small"
-          ? ""
-          : /^\d{1,2}$/.test(p.label)
-            ? `-${p.label}`
-            : "-circle";
+      p.tone === "shop" ? "-home" : /^\d{1,2}$/.test(p.label) ? `-${p.label}` : "-circle";
     const pinSize = (p.tone !== "shop" || p.home) && !small ? "l" : "s";
     return `pin-${pinSize}${marker}+${hex(pinHex(p.tone, color, theme))}${at(p)}`;
   });
   // Mapbox doesn't scale its own images' markers for @2x, so ours (drawn at 2x) fit as they are.
+  const image = (name: string) => encodeURIComponent(`${pinBase}/api/map/pin/${name}.png`);
   const images = pinBase?.startsWith("https://")
-    ? pins.map(
-        (p) =>
-          `url-${encodeURIComponent(`${pinBase}/api/map/pin/${pinImageName(p, color, theme, tier)}.png`)}${at(p)}`,
-      )
+    ? [
+        ...leaderLines,
+        ...leaders.map(({ p }) => `url-${image(leaderDotImageName(color, theme))}${lngLat(p.at)}`),
+        ...byLayer.map((p) => `url-${image(pinImageName(p, color, theme, tier))}${at(p)}`),
+      ]
     : null;
+  const plain = [...leaderLines, ...markers];
   // Mapbox takes whole-number widths.
   const casing = Math.max(1, Math.round(sizes.casingWidth));
   const width = Math.max(1, Math.round(sizes.lineWidth));
@@ -115,10 +139,15 @@ export function staticMapUrl(
       if (own.length <= MAX_URL) return own;
     }
   }
-  return url(
-    route.length ? fitLegs(route, (l) => url(l, markers).length <= MAX_URL, half) : null,
-    markers,
-  );
+  // Mapbox's markers, with the leader lines while they fit, then without.
+  for (const overlays of [plain, markers]) {
+    const fitted = route.length
+      ? fitLegs(route, (l) => url(l, overlays).length <= MAX_URL, half)
+      : null;
+    const out = url(fitted, overlays);
+    if (out.length <= MAX_URL) return out;
+  }
+  return url(null, markers);
 }
 
 function address(

@@ -102,6 +102,38 @@ extension ScheduleDataTests {
         #expect(weekdayName("2026-10-19") == "Monday")
     }
 
+    /// Pins too close at the map's zoom are drawn apart, each numbered, with a leader line back to
+    /// its place (owner, 2026-10-24: "the dots aren't placed great and the stops aren't numbered").
+    @Test func crowdedPinsAreDrawnApartWithLeaderLines() throws {
+        let pins = dayMapPins(
+            stops: (0..<6).map {
+                MapStop(id: "s\($0)", location: LatLng(lat: 33.54 + Double($0) * 0.0002, lng: -112.18), done: false)
+            }, depot: LatLng(lat: 33.4484, lng: -112.074), currentId: "s2")
+        let a = mapAnnotations(pins.pins, customers: [:])
+        let model = DayMapModel(
+            annotations: a, stops: [], located: 6, missing: 0, line: routeLine(a), label: "", title: "", fit: nil)
+        let zoom = 11.0
+        let sizes = crowdedStyleAt(zoom, model.placed)
+        let spots = model.spots(zoom: zoom, sizes: sizes)
+        let shown = try a.map { x in
+            let p = projectPoint(try #require(spots[x.id]).at, zoom)
+            return (p, pinSizeAt(x.tone, sizes))
+        }
+        for i in shown.indices {
+            for j in shown.indices where j > i {
+                let d = hypot(shown[i].0.x - shown[j].0.x, shown[i].0.y - shown[j].0.y)
+                #expect(d >= (shown[i].1 + shown[j].1) / 2 - 0.05)
+            }
+        }
+        #expect(spots["shop"]?.leader == false)
+        // Most of the pile moved off its place, with a leader line back to it.
+        #expect(a.filter { spots[$0.id]?.leader == true }.count >= 4)
+        // Far enough in, they're apart by themselves: no leader lines.
+        let close = model.spots(zoom: 18, sizes: crowdedStyleAt(18, model.placed))
+        #expect(close.values.allSatisfy { !$0.leader })
+        #expect(sizes.pinSize >= 22)
+    }
+
     // MARK: - Locks
 
     @Test func cardsSayWhatKeepsAJobInPlace() throws {

@@ -2,6 +2,7 @@ import { tokens } from "@leakbook/tokens";
 import {
   ROUTE_STYLE,
   ROUTE_ZOOM,
+  SPREAD,
   START_FROM_COPY,
   TECH_COLORS,
   crowdedStyleAt,
@@ -9,10 +10,12 @@ import {
   encodePins,
   joinLegs,
   pinSizeAt,
+  projectPoint,
   routeColor,
   routeOrder,
   routeStyleAt,
   routeTierStyle,
+  spreadPins,
   zoomForSpan,
   type LatLng,
   type PinTone,
@@ -106,9 +109,9 @@ export function pinElement(
 }
 
 /**
- * Draws a live pin at the route's sizes for the map's zoom (owner, 2026-10-23: smaller dots when
- * zoomed out): its number only while it's large enough to read, the stop you're on still larger
- * and ringed. Keeps the selection's ring.
+ * Draws a live pin at the route's sizes for the map's zoom (owner, 2026-10-23: smaller when
+ * zoomed out), numbered at every size (owner, 2026-10-24: "the stops aren't numbered") in the
+ * brand's display face, the stop you're on still larger and ringed. Keeps the selection's ring.
  */
 export function stylePin(el: HTMLElement, sizes: RouteSizes) {
   const dot = el.firstElementChild as HTMLElement | null;
@@ -124,13 +127,16 @@ export function stylePin(el: HTMLElement, sizes: RouteSizes) {
     outline: dot.style.outline,
     offset: dot.style.outlineOffset,
   };
-  const shadow = s.numbers ? "0 1px 4px rgb(0 0 0/.35)" : "0 1px 2px rgb(0 0 0/.35)";
+  const shadow = "0 1px 4px rgb(0 0 0/.35)";
+  // Over its leader line (spreadLivePins).
   const base =
-    "border-radius:9999px;display:grid;place-items:center;box-sizing:border-box;color:#fff;transition:transform .15s ease;";
+    "position:relative;z-index:1;border-radius:9999px;display:grid;place-items:center;box-sizing:border-box;color:#fff;transition:transform .15s ease;";
+  // The number in the display face, a little larger for its size on the smaller pins (as the
+  // map images, server/pin-art.tsx).
   const font = (px: number) =>
-    `font:700 ${Math.round(px * 0.44 * 10) / 10}px/1 system-ui,-apple-system,sans-serif`;
+    `font:700 ${Math.round(px * (0.5 + Math.max(0, (34 - px) / 100)) * 10) / 10}px/1 var(--lb-font-display),system-ui,sans-serif`;
   if (tone === "shop")
-    dot.style.cssText = `${base}width:${s.startPinSize}px;height:${s.startPinSize}px;background:${NAVY};border:${s.numbers ? 2 : s.pinEdge}px solid #fff;box-shadow:${shadow}`;
+    dot.style.cssText = `${base}width:${s.startPinSize}px;height:${s.startPinSize}px;background:${NAVY};border:${Math.min(2, s.pinEdge + 0.5)}px solid #fff;box-shadow:${shadow}`;
   else if (tone === "current") {
     // Larger, with a white ring and a navy ring outside it, so it stays distinct.
     const inner = s.currentPinSize - 2 * s.currentNavyRing;
@@ -141,14 +147,64 @@ export function stylePin(el: HTMLElement, sizes: RouteSizes) {
     dot.style.cssText = `${base}width:${s.pinSize}px;height:${s.pinSize}px;background:${done.fill};color:${done.text};border:${s.pinEdge + 1}px solid ${done.ring};box-shadow:${shadow};${font(s.pinSize)}`;
   } else
     dot.style.cssText = `${base}width:${s.pinSize}px;height:${s.pinSize}px;background:${color};border:${s.pinEdge}px solid #fff;box-shadow:${shadow};${font(s.pinSize)}`;
-  if (tone === "shop") dot.innerHTML = s.numbers ? HOUSE : "";
-  else dot.textContent = s.numbers ? (el.dataset.label ?? "") : "";
+  if (tone === "shop") dot.innerHTML = HOUSE;
+  else dot.textContent = el.dataset.label ?? "";
   dot.style.transform = keep.transform;
   dot.style.outline = keep.outline;
   dot.style.outlineOffset = keep.offset;
   // The Home tag sits just under the house at every size.
   const tag = el.children[1] as HTMLElement | undefined;
   if (tag) tag.style.top = `${22 + s.startPinSize / 2 + 2}px`;
+}
+
+const SVG_NS = "http://www.w3.org/2000/svg";
+
+/**
+ * Pins too close to read at the live map's `zoom` (core scale, 256-point tiles) are moved apart
+ * (owner, 2026-10-24: "the dots aren't placed great"; core spreadPins, as the map images), each
+ * with a thin line in the route's color back to a small dot on its true spot; zooming in parts
+ * them by themselves, so the lines go. `els` are the pins' elements, in `pins` order. Run again
+ * as the map zooms.
+ */
+export function spreadLivePins(
+  els: HTMLElement[],
+  pins: LivePin[],
+  zoom: number,
+  sizes: RouteSizes,
+) {
+  const at = pins.map((p) => ({ ...projectPoint(p.at, zoom), tone: p.tone }));
+  const spread = spreadPins(at, sizes);
+  els.forEach((el, i) => {
+    const s = spread[i];
+    const from = at[i];
+    if (!s || !from) return;
+    const dx = Math.round((s.x - from.x) * 10) / 10;
+    const dy = Math.round((s.y - from.y) * 10) / 10;
+    let lead = el.querySelector<SVGSVGElement>("svg[data-leader]");
+    if (!s.leader) {
+      el.style.translate = "";
+      lead?.remove();
+      return;
+    }
+    // The whole 44 pt button moves, so a tap lands on the pin where it's drawn.
+    el.style.translate = `${dx}px ${dy}px`;
+    if (!lead) {
+      lead = document.createElementNS(SVG_NS, "svg");
+      lead.dataset.leader = "";
+      lead.setAttribute("aria-hidden", "true");
+      lead.setAttribute("width", "44");
+      lead.setAttribute("height", "44");
+      lead.style.cssText = "position:absolute;left:0;top:0;overflow:visible;pointer-events:none";
+      el.appendChild(lead);
+    }
+    const color = el.dataset.ring ?? NAVY;
+    const [x, y] = [22 - dx, 22 - dy];
+    const w = SPREAD.leaderWidth;
+    lead.innerHTML =
+      `<line x1="22" y1="22" x2="${x}" y2="${y}" stroke="#fff" stroke-width="${w + 1.5}" stroke-linecap="round"/>` +
+      `<line x1="22" y1="22" x2="${x}" y2="${y}" stroke="${color}" stroke-width="${w}" stroke-linecap="round"/>` +
+      `<circle cx="${x}" cy="${y}" r="${SPREAD.leaderDot / 2}" fill="${color}" stroke="#fff" stroke-width="1"/>`;
+  });
 }
 
 /** Marks the selected stop's pin: larger, with a ring in the route's color. */
@@ -188,9 +244,9 @@ const TIER_CODE: Record<RouteTier, string> = { full: "", medium: "-m", small: "-
 
 /**
  * A pin image's name: "shop", "home", or "<tone>-<label>-<color>" with "-dark" in dark mode
- * ("todo-3-orange", "done-1-blue-dark"), then "-m" at the medium size; at the small size a dot
- * with no number, so no label ("todo-orange-s", "shop-s"). Names from before tech colors
- * ("todo-3") still draw, in water blue.
+ * ("todo-3-orange", "done-1-blue-dark"), then "-m" at the medium size or "-s" at the small one
+ * ("todo-3-orange-s", "shop-s"); every size is numbered (owner, 2026-10-24). Names from before
+ * tech colors ("todo-3") still draw, in water blue.
  */
 export function pinImageName(
   pin: { tone: PinTone; label: string; home?: true },
@@ -199,12 +255,11 @@ export function pinImageName(
   tier: RouteTier = "full",
 ): string {
   if (pin.tone === "shop") return `${pin.home ? "home" : "shop"}${TIER_CODE[tier]}`;
-  const label = tier === "small" ? "" : `-${pin.label}`;
-  return `${pin.tone}${label}-${routeColor(color)}${theme === "dark" ? "-dark" : ""}${TIER_CODE[tier]}`;
+  return `${pin.tone}-${pin.label}-${routeColor(color)}${theme === "dark" ? "-dark" : ""}${TIER_CODE[tier]}`;
 }
 
 const PIN_NAME = new RegExp(
-  `^(?:(todo|current|done)(?:-([1-9]\\d?))?(?:-(${TECH_COLORS.map((c) => c.key).join("|")}))?(-dark)?|(shop|home))(-m|-s)?\\.png$`,
+  `^(?:(todo|current|done)-([1-9]\\d?)(?:-(${TECH_COLORS.map((c) => c.key).join("|")}))?(-dark)?|(shop|home))(-m|-s)?\\.png$`,
 );
 
 /** A pin image's file name read back ("todo-3-orange.png"), or null when it isn't one. */
@@ -220,16 +275,30 @@ export function parsePinImageName(file: string): {
   if (!m) return null;
   const tier: RouteTier = m[6] === "-s" ? "small" : m[6] === "-m" ? "medium" : "full";
   if (m[5]) return { tone: "shop", label: "", home: m[5] === "home", hex: NAVY, dark: false, tier };
-  // A number on every size but the small dot, which has none.
-  if (tier === "small" ? m[2] : !m[2]) return null;
   return {
     tone: m[1] as PinTone,
-    label: m[2] ?? "",
+    label: m[2]!,
     home: false,
     hex: routeHex(m[3], m[4] ? "dark" : "light"),
     dark: !!m[4],
     tier,
   };
+}
+
+/**
+ * The small dot a moved pin's leader line ends at, on the Mapbox images (core SPREAD.leaderDot):
+ * "dot-<color>", with "-dark" in dark mode.
+ */
+export function leaderDotImageName(color: unknown, theme: "light" | "dark" = "light"): string {
+  return `dot-${routeColor(color)}${theme === "dark" ? "-dark" : ""}`;
+}
+
+const DOT_NAME = new RegExp(`^dot-(${TECH_COLORS.map((c) => c.key).join("|")})(-dark)?\\.png$`);
+
+/** A leader dot image's file name read back ("dot-orange.png"): its color, or null. */
+export function parseLeaderDotName(file: string): { hex: string } | null {
+  const m = DOT_NAME.exec(file);
+  return m ? { hex: routeHex(m[1], m[2] ? "dark" : "light") } : null;
 }
 
 /** `hex` at `strength` over `under` (both "#RRGGBB"). */

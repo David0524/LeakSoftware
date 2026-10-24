@@ -7,6 +7,9 @@ import {
   crowdedAt,
   crowdedStyleAt,
   dayMapPins,
+  imagePinLayout,
+  SPREAD,
+  spreadPins,
   mapView,
   pinSizeAt,
   unprojectPoint,
@@ -92,10 +95,9 @@ describe("route sizes by zoom (owner, 2026-10-23: smaller when zoomed out)", () 
       currentPinSize: ROUTE_STYLE.currentPinSize,
       lineWidth: ROUTE_STYLE.lineWidth,
       casingWidth: ROUTE_STYLE.casingWidth,
-      numbers: true,
     });
     expect(routeStyleAt(ROUTE_ZOOM.full)).toEqual(full);
-    expect(routeStyleAt(6)).toMatchObject({ ...ROUTE_STYLE_SMALL, numbers: false });
+    expect(routeStyleAt(6)).toMatchObject(ROUTE_STYLE_SMALL);
     expect(routeStyleAt(ROUTE_ZOOM.small)).toEqual(routeStyleAt(6));
   });
 
@@ -109,15 +111,20 @@ describe("route sizes by zoom (owner, 2026-10-23: smaller when zoomed out)", () 
       expect(s.casingWidth).toBeGreaterThan(s.lineWidth);
       last = s;
     }
-    expect(routeStyleAt(11.5)).toMatchObject({ pinSize: 23.5, lineWidth: 4.25, numbers: true });
+    expect(routeStyleAt(11.5)).toMatchObject({ pinSize: 28, lineWidth: 4.25 });
     expect(routeStyleAt(Number.NaN)).toEqual(routeStyleAt(ROUTE_ZOOM.full));
   });
 
-  it("numbers show only on pins big enough to read them", () => {
-    expect(routeStyleAt(10.5).numbers).toBe(false);
-    expect(routeStyleAt(11.5).numbers).toBe(true);
-    expect(routeTierStyle("small").numbers).toBe(false);
-    expect(routeTierStyle("medium").numbers).toBe(true);
+  it("keeps every pin big enough to number (owner, 2026-10-24: the stops aren't numbered)", () => {
+    for (const z of [-3, 2, 6, 9, 10, 10.5, 11, 11.5, 12, 13, 17])
+      for (const s of [routeStyleAt(z), crowdedStyleAt(z, dayPins(CLUSTER))]) {
+        expect(s.pinSize).toBeGreaterThanOrEqual(22);
+        expect(s.currentPinSize).toBeGreaterThan(s.pinSize);
+        expect(s.startPinSize).toBeGreaterThanOrEqual(20);
+        expect(s).not.toHaveProperty("numbers");
+      }
+    for (const tier of ["full", "medium", "small"] as const)
+      expect(routeTierStyle(tier).pinSize).toBeGreaterThanOrEqual(22);
   });
 });
 
@@ -136,9 +143,9 @@ describe("imageTier", () => {
   });
 
   it("goes smaller when two pins would overlap", () => {
-    // 30 points apart: 34-point pins overlap, 23.5-point pins don't.
+    // 30 points apart: 34-point pins overlap, 28-point pins don't.
     expect(imageTier(14, apart(3, 30))).toBe("medium");
-    // 20 apart: only the small dots fit.
+    // 20 apart: only the smallest numbered pins come close.
     expect(imageTier(14, apart(3, 20))).toBe("small");
     // The start is drawn under the stops: a stop at its door costs no pin its number.
     expect(imageTier(14, [{ x: 0, y: 0, tone: "shop" }, ...apart(2, 100)])).toBe("full");
@@ -270,7 +277,7 @@ describe("map views (owner, 2026-10-24: every image framed by us, never the serv
       expect(at.y).toBeGreaterThan(0);
       expect(at.y).toBeLessThan(COLUMN.h);
     }
-    // Numbered pins would overlap there, so the image draws small dots.
+    // Larger pins would overlap there, so the image draws the smallest numbered ones.
     expect(view.tier).toBe("small");
   });
 
@@ -309,7 +316,152 @@ describe("map views (owner, 2026-10-24: every image framed by us, never the serv
     expect(crowdedStyleAt(17, pins)).toEqual(routeStyleAt(17));
     const s = crowdedStyleAt(13, pins);
     expect(s.pinSize).toBeLessThan(routeStyleAt(13).pinSize);
-    // Zoomed out it's already the small dots.
+    // Zoomed out it's already the smallest pins.
     expect(crowdedStyleAt(9, pins)).toEqual(routeStyleAt(9));
   });
+});
+
+// The two days the owner looked at on the live Schedule (2026-10-24: "the dots aren't placed
+// great and the stops aren't numbered"), read back from its 360 x 180 column images.
+const DOWNTOWN = { lat: 33.4484, lng: -112.074 };
+const GLENDALE_DAY = [
+  { lat: 33.5412, lng: -112.1869 },
+  { lat: 33.535, lng: -112.1853 },
+  { lat: 33.5343, lng: -112.1865 },
+  { lat: 33.5319, lng: -112.1703 },
+  { lat: 33.5374, lng: -112.1629 },
+  { lat: 33.5377, lng: -112.1575 },
+  { lat: 33.536, lng: -112.1508 },
+  { lat: 33.536, lng: -112.1458 },
+  { lat: 33.5433, lng: -112.1388 },
+  { lat: 33.5291, lng: -112.1388 },
+  { lat: 33.5024, lng: -112.1849 },
+  { lat: 33.491, lng: -111.9959 },
+];
+const SURPRISE_DAY = [
+  { lat: 33.6566, lng: -112.1783 },
+  { lat: 33.5529, lng: -112.1481 },
+];
+const day = (stops: { lat: number; lng: number }[], current: number) => [
+  { at: DOWNTOWN, tone: "shop" as const },
+  ...stops.map((at, i) => ({
+    at,
+    tone:
+      i < current ? ("done" as const) : i === current ? ("current" as const) : ("todo" as const),
+  })),
+];
+
+describe("spreading crowded pins (owner, 2026-10-24: the dots aren't placed great)", () => {
+  const sizes = routeTierStyle("small");
+  const overlaps = (pins: { x: number; y: number; tone: "shop" | "todo" | "current" | "done" }[]) =>
+    pins.flatMap((a, i) =>
+      pins
+        .slice(i + 1)
+        .flatMap((b) =>
+          Math.hypot(a.x - b.x, a.y - b.y) <
+          (pinSizeAt(a.tone, sizes) + pinSizeAt(b.tone, sizes)) / 2 - 0.01
+            ? [[a, b]]
+            : [],
+        ),
+    );
+
+  it("leaves pins that don't touch where they are", () => {
+    const pins = [
+      { x: 50, y: 50, tone: "todo" as const },
+      { x: 100, y: 50, tone: "current" as const },
+      { x: 150, y: 50, tone: "shop" as const },
+    ];
+    expect(spreadPins(pins, sizes)).toEqual(pins.map(({ x, y }) => ({ x, y, leader: false })));
+  });
+
+  it("parts a pile so no two pins overlap, each with a leader line back to its spot", () => {
+    const pile = Array.from({ length: 9 }, (_, i) => ({
+      x: 100 + (i % 3) * 4,
+      y: 60 + Math.floor(i / 3) * 3,
+      tone: (i === 4 ? "current" : "todo") as "current" | "todo",
+    }));
+    const out = spreadPins(pile, sizes);
+    const placed = out.map((p, i) => ({ x: p.x, y: p.y, tone: pile[i]!.tone }));
+    expect(overlaps(placed)).toEqual([]);
+    out.forEach((p, i) => {
+      const moved = Math.hypot(p.x - pile[i]!.x, p.y - pile[i]!.y);
+      // Close by, and a leader line wherever it moved more than a hair.
+      expect(moved).toBeLessThan(60);
+      expect(p.leader).toBe(moved > SPREAD.leaderFrom);
+    });
+  });
+
+  it("parts pins on one spot, the same way every time", () => {
+    const same = Array.from({ length: 5 }, () => ({ x: 80, y: 80, tone: "todo" as const }));
+    const a = spreadPins(same, sizes);
+    expect(spreadPins(same, sizes)).toEqual(a);
+    expect(overlaps(a.map((p) => ({ ...p, tone: "todo" as const })))).toEqual([]);
+  });
+
+  it("never moves the start for a stop", () => {
+    const out = spreadPins(
+      [
+        { x: 100, y: 100, tone: "shop" },
+        { x: 102, y: 101, tone: "todo" },
+      ],
+      sizes,
+    );
+    expect(out[0]).toEqual({ x: 100, y: 100, leader: false });
+    expect(out[1]!.leader).toBe(true);
+  });
+
+  it("keeps pins inside the image and out of the Enlarge corner", () => {
+    const frame = { w: 360, h: 180, margin: VIEW_MARGIN, corner: SPREAD.corner };
+    const out = spreadPins(
+      [
+        { x: 340, y: 20, tone: "todo" },
+        { x: 2, y: 178, tone: "todo" },
+      ],
+      sizes,
+      frame,
+    );
+    const r = sizes.pinSize / 2;
+    const [corner, edge] = out;
+    expect(corner!.x + r <= 360 - SPREAD.corner || corner!.y - r >= SPREAD.corner).toBe(true);
+    expect(edge).toMatchObject({ x: VIEW_MARGIN + r, y: 180 - VIEW_MARGIN - r });
+  });
+
+  for (const [name, stops, current] of [
+    ["the 12-stop day in Glendale", GLENDALE_DAY, 9],
+    ["the 2-stop day from Surprise", SURPRISE_DAY, 1],
+  ] as const)
+    it(`lays out ${name}: numbered, apart, close to each spot`, () => {
+      const pins = day([...stops], current);
+      const view = mapView(pins, COLUMN);
+      const out = imagePinLayout(pins, view, COLUMN);
+      const s = routeTierStyle(view.tier);
+      expect(s.pinSize).toBeGreaterThanOrEqual(22);
+      const placed = out.map((p, i) => ({ x: p.x, y: p.y, tone: pins[i]!.tone }));
+      const apart = placed.flatMap((a, i) =>
+        placed
+          .slice(i + 1)
+          .filter(
+            (b) =>
+              Math.hypot(a.x - b.x, a.y - b.y) <
+              (pinSizeAt(a.tone, s) + pinSizeAt(b.tone, s)) / 2 - 0.01,
+          ),
+      );
+      expect(apart).toEqual([]);
+      out.forEach((p, i) => {
+        const at = viewPoint(pins[i]!.at, view, COLUMN);
+        // The leader line ends on the stop's true spot on Apple's map.
+        expect(p.atX).toBeCloseTo(at.x, 1);
+        expect(p.atY).toBeCloseTo(at.y, 1);
+        const moved = Math.hypot(p.x - p.atX, p.y - p.atY);
+        expect(moved).toBeLessThan(70);
+        if (!p.leader) expect(moved).toBeLessThanOrEqual(SPREAD.leaderFrom + 0.01);
+        const r = pinSizeAt(pins[i]!.tone, s) / 2;
+        expect(p.x - r).toBeGreaterThanOrEqual(VIEW_MARGIN - 0.01);
+        expect(p.x + r).toBeLessThanOrEqual(COLUMN.w - VIEW_MARGIN + 0.01);
+        expect(p.y - r).toBeGreaterThanOrEqual(VIEW_MARGIN - 0.01);
+        expect(p.y + r).toBeLessThanOrEqual(COLUMN.h - VIEW_MARGIN + 0.01);
+        expect(p.x + r <= COLUMN.w - SPREAD.corner || p.y - r >= SPREAD.corner).toBe(true);
+      });
+      expect(imagePinLayout(pins, view, COLUMN)).toEqual(out);
+    });
 });

@@ -75,9 +75,10 @@ public let routeStyle = RouteStyle(
     doneTint: 0.2, lineWidth: 6, casingWidth: 9)
 
 /// `ROUTE_STYLE_SMALL` (owner, 2026-10-23: "thinner lines and smaller dots when zoomed out of the
-/// map so it doesn't look like one blob"): the route at `RouteZoom.small` and farther, small dots
-/// without numbers on a thin line. Between it and `routeStyle`, every size steps smoothly with the
-/// zoom (`routeStyleAt`).
+/// map so it doesn't look like one blob"; 2026-10-24: "the stops aren't numbered"): the route at
+/// `RouteZoom.small` and farther, smaller pins (22 points, still numbered) on a thin line. Between
+/// it and `routeStyle`, every size steps smoothly with the zoom (`routeStyleAt`). Pins that would
+/// overlap are spread apart (`spreadPins`), never shrunk to dots.
 public struct RouteStyleSmall: Codable, Equatable, Sendable {
     public var pinSize: Double
     public var currentPinSize: Double
@@ -90,21 +91,19 @@ public struct RouteStyleSmall: Codable, Equatable, Sendable {
 }
 
 public let routeStyleSmall = RouteStyleSmall(
-    pinSize: 13, currentPinSize: 18, pinEdge: 1.5, currentWhiteRing: 2, currentNavyRing: 1.5, startPinSize: 14,
+    pinSize: 22, currentPinSize: 27, pinEdge: 1.5, currentWhiteRing: 2, currentNavyRing: 1.5, startPinSize: 20,
     lineWidth: 2.5, casingWidth: 4)
 
 /// `ROUTE_ZOOM`: the web map zoom (256-point tiles) at and closer than which a route is drawn at
-/// `routeStyle` (`full`), at and farther than which at `routeStyleSmall` (`small`), and the pin
-/// size from which pins show their numbers (`numbersFrom`).
+/// `routeStyle` (`full`), and at and farther than which at `routeStyleSmall` (`small`).
 public struct RouteZoom: Codable, Equatable, Sendable {
     public var full: Double
     public var small: Double
-    public var numbersFrom: Double
 }
 
-public let routeZoom = RouteZoom(full: 13, small: 10, numbersFrom: 20)
+public let routeZoom = RouteZoom(full: 13, small: 10)
 
-/// A route's sizes at one zoom (`RouteSizes`), in points, and whether its pins show their numbers.
+/// A route's sizes at one zoom (`RouteSizes`), in points. Every size shows its pins' numbers.
 public struct RouteSizes: Codable, Equatable, Sendable {
     public var pinSize: Double
     public var currentPinSize: Double
@@ -114,7 +113,6 @@ public struct RouteSizes: Codable, Equatable, Sendable {
     public var startPinSize: Double
     public var lineWidth: Double
     public var casingWidth: Double
-    public var numbers: Bool
 }
 
 /// The route's sizes at `zoom`, each to the nearest quarter point (`routeStyleAt`).
@@ -124,13 +122,12 @@ public func routeStyleAt(_ zoom: Double) -> RouteSizes {
     func at(_ small: Double, _ full: Double) -> Double { ECMA.round((small + (full - small) * t) * 4) / 4 }
     let s = routeStyleSmall
     let f = routeStyle
-    let pin = at(s.pinSize, f.pinSize)
     return RouteSizes(
-        pinSize: pin, currentPinSize: at(s.currentPinSize, f.currentPinSize), pinEdge: at(s.pinEdge, f.pinEdge),
+        pinSize: at(s.pinSize, f.pinSize), currentPinSize: at(s.currentPinSize, f.currentPinSize),
+        pinEdge: at(s.pinEdge, f.pinEdge),
         currentWhiteRing: at(s.currentWhiteRing, f.currentWhiteRing),
         currentNavyRing: at(s.currentNavyRing, f.currentNavyRing), startPinSize: at(s.startPinSize, f.startPinSize),
-        lineWidth: at(s.lineWidth, f.lineWidth), casingWidth: at(s.casingWidth, f.casingWidth),
-        numbers: pin >= routeZoom.numbersFrom)
+        lineWidth: at(s.lineWidth, f.lineWidth), casingWidth: at(s.casingWidth, f.casingWidth))
 }
 
 /// A map image's three sizes (`RouteTier`): full, medium (halfway) and small.
@@ -224,6 +221,11 @@ public func crowdedStyleAt(_ zoom: Double, _ pins: [PlacedPin]) -> RouteSizes {
 public struct MapPoint: Codable, Equatable, Sendable {
     public var x: Double
     public var y: Double
+
+    public init(x: Double, y: Double) {
+        self.x = x
+        self.y = y
+    }
 }
 
 public func projectPoint(_ p: LatLng, _ zoom: Double) -> MapPoint {
@@ -307,6 +309,154 @@ public func viewPoint(_ p: LatLng, center: LatLng, zoom: Double, w: Double, h: D
     let a = projectPoint(p, zoom)
     let c = projectPoint(center, zoom)
     return MapPoint(x: a.x - c.x + w / 2, y: a.y - c.y + h / 2)
+}
+
+// MARK: - Pins too close to read: spread apart (owner, 2026-10-24: "the dots aren't placed great")
+
+/// `SPREAD`: `gap` points kept between two pins' circles; a pin moved more than `leaderFrom` points
+/// gets a leader line (`leaderWidth`, in the route's color) back to a small dot (`leaderDot`
+/// across) on its true spot; map images keep pins out of the top-right `corner` (Enlarge).
+public struct Spread: Codable, Equatable, Sendable {
+    public var gap: Double
+    public var leaderFrom: Double
+    public var leaderWidth: Double
+    public var leaderDot: Double
+    public var corner: Double
+}
+
+/// The golden angle, in radians: one turn per pin spreads a pile evenly.
+private let goldenAngle = 2.399963229728653
+
+public let spread = Spread(gap: 2, leaderFrom: 3, leaderWidth: 1.5, leaderDot: 6, corner: 58)
+
+/// Where a pin is drawn after spreading (`SpreadPoint`), in map points, and whether it has a
+/// leader line.
+public struct SpreadPoint: Codable, Equatable, Sendable {
+    public var x: Double
+    public var y: Double
+    public var leader: Bool
+}
+
+/// What a map keeps pins inside (`SpreadFrame`): its size, the room at its edges, and its Enlarge
+/// corner (0 for none).
+public struct SpreadFrame: Codable, Equatable, Sendable {
+    public var w: Double
+    public var h: Double
+    public var margin: Double
+    public var corner: Double?
+
+    public init(w: Double, h: Double, margin: Double, corner: Double? = nil) {
+        self.w = w
+        self.h = h
+        self.margin = margin
+        self.corner = corner
+    }
+}
+
+/// Pins (map points, x right, y down) moved apart where their circles at `sizes` would overlap,
+/// each as little as it can (`spreadPins`): pushes between overlapping pairs while each pin is
+/// drawn back toward its place, then pushes alone until none overlap. The start never moves for a
+/// stop; pins on one spot part the same way every time. With `frame`, pins stay inside its
+/// margins and out of its Enlarge corner.
+public func spreadPins(_ pins: [ImagePin], _ sizes: RouteSizes, frame: SpreadFrame? = nil) -> [SpreadPoint] {
+    let n = pins.count
+    let r = pins.map { pinSizeAt($0.tone, sizes) / 2 }
+    let fixed = pins.map { $0.tone == .shop }
+    var pos = pins.map { MapPoint(x: $0.x, y: $0.y) }
+    func keepIn(_ i: Int) {
+        guard let frame else { return }
+        let ri = r[i]
+        let corner = frame.corner ?? 0
+        if corner > 0, pos[i].x > frame.w - corner - ri, pos[i].y < corner + ri {
+            // Out of the corner the shorter way: left, or down.
+            let left = pos[i].x - (frame.w - corner - ri - spread.gap)
+            let down = corner + ri + spread.gap - pos[i].y
+            if left <= down { pos[i].x -= left } else { pos[i].y += down }
+        }
+        let x0 = frame.margin + ri
+        let x1 = frame.w - frame.margin - ri
+        let y0 = frame.margin + ri
+        let y1 = frame.h - frame.margin - ri
+        pos[i].x = x0 <= x1 ? max(x0, min(x1, pos[i].x)) : frame.w / 2
+        pos[i].y = y0 <= y1 ? max(y0, min(y1, pos[i].y)) : frame.h / 2
+    }
+    func push() -> Bool {
+        var moved = false
+        for i in 0..<n {
+            for j in (i + 1)..<n {
+                if fixed[i] && fixed[j] { continue }
+                let dx = pos[j].x - pos[i].x
+                let dy = pos[j].y - pos[i].y
+                let d = (dx * dx + dy * dy).squareRoot()
+                let need = r[i] + r[j] + spread.gap
+                if d >= need - 1e-9 { continue }
+                var ux: Double
+                var uy: Double
+                if d > 1e-6 {
+                    ux = dx / d
+                    uy = dy / d
+                } else {
+                    let ax = pins[j].x - pins[i].x
+                    let ay = pins[j].y - pins[i].y
+                    let ad = (ax * ax + ay * ay).squareRoot()
+                    if ad > 1e-6 {
+                        ux = ax / ad
+                        uy = ay / ad
+                    } else {
+                        // The golden angle per pin: pins on one spot fan out evenly.
+                        let turn = Double(j) * goldenAngle
+                        ux = cos(turn)
+                        uy = sin(turn)
+                    }
+                }
+                let over = need - d
+                let si: Double = fixed[i] ? 0 : fixed[j] ? 1 : 0.5
+                let sj: Double = fixed[j] ? 0 : fixed[i] ? 1 : 0.5
+                pos[i].x -= ux * over * si
+                pos[i].y -= uy * over * si
+                pos[j].x += ux * over * sj
+                pos[j].y += uy * over * sj
+                moved = true
+            }
+        }
+        for i in 0..<n where !fixed[i] { keepIn(i) }
+        return moved
+    }
+    for i in 0..<n { keepIn(i) }
+    // Pins in a pile first step off their place a little, each its own way (the golden angle per
+    // pin), so they part in every direction, not in a long line.
+    for i in 0..<n where !fixed[i] {
+        let crowded = pos.indices.contains { j in
+            guard j != i else { return false }
+            let dx = pos[j].x - pos[i].x
+            let dy = pos[j].y - pos[i].y
+            return (dx * dx + dy * dy).squareRoot() < r[i] + r[j] + spread.gap
+        }
+        guard crowded else { continue }
+        let turn = Double(i) * goldenAngle
+        pos[i].x += cos(turn) * r[i] * 0.5
+        pos[i].y += sin(turn) * r[i] * 0.5
+        keepIn(i)
+    }
+    // Spread, drawn back toward each place, then settle with no pull.
+    for _ in 0..<40 {
+        for i in 0..<n where !fixed[i] {
+            pos[i].x += (pins[i].x - pos[i].x) * 0.15
+            pos[i].y += (pins[i].y - pos[i].y) * 0.15
+            keepIn(i)
+        }
+        _ = push()
+    }
+    for _ in 0..<200 {
+        if !push() { break }
+    }
+    func round2(_ v: Double) -> Double { ECMA.round(v * 100) / 100 }
+    return pos.enumerated().map { i, p in
+        let dx = p.x - pins[i].x
+        let dy = p.y - pins[i].y
+        let moved = (dx * dx + dy * dy).squareRoot()
+        return SpreadPoint(x: round2(p.x), y: round2(p.y), leader: moved > spread.leaderFrom)
+    }
 }
 
 /// The degrees such a map spans (`viewSpan`): from its top edge to its bottom edge, and across.

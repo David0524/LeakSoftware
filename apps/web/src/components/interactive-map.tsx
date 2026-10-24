@@ -14,6 +14,7 @@ import {
   pinElement,
   routeHex,
   routeLine,
+  spreadLivePins,
   stylePin,
   type LivePin,
 } from "./map-pins";
@@ -199,10 +200,20 @@ export function InteractiveMap({
         frame = requestAnimationFrame(() => {
           frame = 0;
           if (!made || gone) return;
-          const s = crowdedStyleAt(coreZoom(made.getZoom()), pins);
-          for (const m of markers.current) stylePin(m.getElement(), s);
+          const z = coreZoom(made.getZoom());
+          const s = crowdedStyleAt(z, pins);
+          const els = markers.current.map((m) => m.getElement());
+          for (const el of els) stylePin(el, s);
+          // Pins too close at this zoom drawn apart, with a line back to their spot.
+          spreadLivePins(els, pins, z, s);
         });
       });
+      spreadLivePins(
+        markers.current.map((m) => m.getElement()),
+        pins,
+        coreZoom(made.getZoom()),
+        crowdedStyleAt(coreZoom(made.getZoom()), pins),
+      );
       markSelected(
         markers.current.map((m) => m.getElement()),
         selected,

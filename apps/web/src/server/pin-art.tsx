@@ -7,7 +7,7 @@ import { donePin, routeHex } from "@/components/map-pins";
 // circle in the tech's color with a white number and edge; a done stop a light tint of it,
 // ringed in it, numbered in the text color; the stop you're on larger, with a white ring and a
 // navy ring outside it; the start a navy circle with a house. At each image size tier (core
-// routeTierStyle); the small dot has no number. Drawn by next/og (Satori), both as the small
+// routeTierStyle), every one numbered (owner, 2026-10-24: "the stops aren't numbered"). Drawn by next/og (Satori), both as the small
 // pin images Mapbox fetches (api/map/pin) and straight onto Apple's snapshots
 // (map-composite.tsx), so every image's pins are the same.
 
@@ -31,7 +31,7 @@ export function pinArtFor(
 ): PinArt {
   return {
     tone: pin.tone,
-    label: tier === "small" ? "" : pin.label,
+    label: pin.label,
     hex: pin.tone === "shop" ? tokens.color.brand.navy : routeHex(color, theme),
     dark: theme === "dark",
     tier,
@@ -41,10 +41,16 @@ export function pinArtFor(
 /** The pin's circle, `k` pixels a point (2 for a pin image drawn at 2x). */
 export function pinBody(pin: PinArt, k: number) {
   const s = routeTierStyle(pin.tier);
-  // The numbers (and the start's house) scale with the dot; the small dot has none.
-  // (34 → 34 and 30 px at 2x for one and two digits; the stop you're on 40 → 36 and 32.)
+  // The numbers (and the start's house) scale with the pin, in the brand's display face, a
+  // little larger for its size on the smaller pins so they still read (34 → 34 and 30 px at 2x
+  // for one and two digits; the stop you're on 40 → 36 and 32; the smallest, 22, → 27 and 25).
   const num = (size: number, label: string, current = false) =>
-    Math.round(size * k * (label.length > 1 ? (current ? 0.4 : 0.44) : current ? 0.45 : 0.5));
+    Math.round(
+      size *
+        k *
+        ((label.length > 1 ? (current ? 0.4 : 0.44) : current ? 0.45 : 0.5) +
+          Math.max(0, (34 - size) / 100)),
+    );
   if (pin.tone === "shop")
     return (
       <div
@@ -53,28 +59,26 @@ export function pinBody(pin: PinArt, k: number) {
           width: (s.startPinSize - 2) * k,
           height: (s.startPinSize - 2) * k,
           borderRadius: 9999,
-          border: `${(s.numbers ? 2 : s.pinEdge) * k}px solid #fff`,
+          border: `${Math.min(2, s.pinEdge + 0.5) * k}px solid #fff`,
           background: pin.hex,
           alignItems: "center",
           justifyContent: "center",
           boxShadow: SHADOW,
         }}
       >
-        {s.numbers ? (
-          <svg
-            viewBox="0 0 24 24"
-            width={Math.round(s.startPinSize * k * 0.54)}
-            height={Math.round(s.startPinSize * k * 0.54)}
-            fill="none"
-            stroke="#fff"
-            strokeWidth="2.4"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-          >
-            <path d="M4 11l8-7 8 7" />
-            <path d="M6 10v10h12V10" />
-          </svg>
-        ) : null}
+        <svg
+          viewBox="0 0 24 24"
+          width={Math.round(s.startPinSize * k * 0.54)}
+          height={Math.round(s.startPinSize * k * 0.54)}
+          fill="none"
+          stroke="#fff"
+          strokeWidth="2.4"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        >
+          <path d="M4 11l8-7 8 7" />
+          <path d="M6 10v10h12V10" />
+        </svg>
       </div>
     );
   if (pin.tone === "current") {
@@ -106,7 +110,7 @@ export function pinBody(pin: PinArt, k: number) {
             fontWeight: 700,
           }}
         >
-          {s.numbers ? pin.label : null}
+          {pin.label}
         </div>
       </div>
     );
@@ -132,7 +136,7 @@ export function pinBody(pin: PinArt, k: number) {
         boxShadow: SHADOW,
       }}
     >
-      {s.numbers ? pin.label : null}
+      {pin.label}
     </div>
   );
 }

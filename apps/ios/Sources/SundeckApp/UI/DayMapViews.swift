@@ -21,8 +21,10 @@
     // forward; Apple's logo and legal link stay uncovered in the bottom corners. Since 2026-10-23
     // (owner) the route follows the roads (MapKit's paths on the phone, Model/RoadPaths.swift;
     // straight until they come, or where there's none), and as the map zooms out its line thins
-    // and its pins shrink to small dots without numbers (core `routeStyleAt`), the stop you're on
-    // still a little larger and ringed.
+    // and its pins shrink (core `routeStyleAt`), the stop you're on still a little larger and
+    // ringed. Since 2026-10-24 (owner: "the dots aren't placed great and the stops aren't
+    // numbered") every pin keeps its number, and pins too close at the map's zoom are drawn apart
+    // with a thin line back to a small dot on their place (core `spreadPins`, as the website).
 
     extension LatLng {
         var coordinate: CLLocationCoordinate2D { CLLocationCoordinate2D(latitude: lat, longitude: lng) }
@@ -64,10 +66,16 @@
 
         private var edge: CGFloat {
             let s = sizes
-            let shopEdge = s.numbers ? 2 : s.pinEdge
+            let shopEdge = min(2, s.pinEdge + 0.5)
             return CGFloat(
                 current ? s.currentWhiteRing : annotation.isShop ? shopEdge : done ? s.pinEdge + 1 : s.pinEdge)
                 * scale
+        }
+
+        /// The number's size: half the pin, a little more on the smaller pins.
+        private var numberSize: CGFloat {
+            let points = CGFloat(current ? sizes.currentPinSize : sizes.pinSize) * scale
+            return points * (0.5 + max(0, (34 - points) / 100))
         }
 
         /// The circle's fill: navy for the shop, a light tint of the route's color (over the
@@ -85,15 +93,14 @@
         var body: some View {
             ZStack {
                 fill
-                // Zoomed out, the dots are too small for a number or the house: just the dot.
-                if !sizes.numbers {
-                    EmptyView()
-                } else if annotation.isShop {
+                // Numbered at every size, in the display face, a little larger for its size on
+                // the smaller pins so it still reads (as the website's pins).
+                if annotation.isShop {
                     Image(systemName: "house.fill")
                         .font(.system(size: size * 0.46, weight: .semibold))
                 } else {
                     Text(annotation.label)
-                        .font(.system(size: size * 0.46, weight: .bold, design: .rounded))
+                        .font(.custom(BrandFonts.Weight.bold.rawValue, fixedSize: numberSize))
                         .monospacedDigit()
                         .minimumScaleFactor(0.6)
                 }
@@ -103,7 +110,7 @@
             .overlay(Circle().strokeBorder(done ? route : .white, lineWidth: edge))
             .padding(current ? CGFloat(sizes.currentNavyRing) * scale : 0)
             .background { if current { Circle().fill(Color.navy) } }
-            .shadow(color: .black.opacity(0.3), radius: sizes.numbers ? 2 : 1, y: 1)
+            .shadow(color: .black.opacity(0.3), radius: 2, y: 1)
             .padding(selected ? 3 : 0)
             .overlay { if selected { Circle().strokeBorder(route, lineWidth: 3) } }
             .scaleEffect(selected ? 1.15 : 1)
@@ -126,6 +133,40 @@
         }
     }
 
+    /// A moved pin's leader line (core `SPREAD`): from the pin's middle back to a small dot on its
+    /// place, `dx` and `dy` points away, in the route's color on a white edge.
+    struct PinLeader: View {
+        var dx: Double
+        var dy: Double
+        var color: Color
+
+        private struct Line: Shape {
+            var dx: Double
+            var dy: Double
+
+            func path(in rect: CGRect) -> Path {
+                var p = Path()
+                p.move(to: CGPoint(x: rect.midX, y: rect.midY))
+                p.addLine(to: CGPoint(x: rect.midX - dx, y: rect.midY - dy))
+                return p
+            }
+        }
+
+        var body: some View {
+            let width = CGFloat(spread.leaderWidth)
+            let dot = CGFloat(spread.leaderDot)
+            ZStack {
+                Line(dx: dx, dy: dy).stroke(Color.white, style: StrokeStyle(lineWidth: width + 1.5, lineCap: .round))
+                Line(dx: dx, dy: dy).stroke(color, style: StrokeStyle(lineWidth: width, lineCap: .round))
+                Circle().fill(color).overlay(Circle().strokeBorder(Color.white, lineWidth: 1))
+                    .frame(width: dot, height: dot)
+                    .offset(x: -dx, y: -dy)
+            }
+            .allowsHitTesting(false)
+            .accessibilityHidden(true)
+        }
+    }
+
     /// The map itself: the line, then the pins (the shop under the stops). `onPick` makes each
     /// pin a 44 pt button; without it the pins are pictures and the map's own tap is the action.
     extension EnvironmentValues {
@@ -144,25 +185,49 @@
         var onPick: ((String) -> Void)?
         /// The route along the roads (straight until MapKit's paths come).
         @State private var road: [LatLng] = []
-        /// The map's zoom, to a quarter step (so the pins redraw only when their size changes).
+        /// The map's zoom, to a twentieth (so the pins move only when it really changes); their
+        /// sizes follow it to a quarter step.
         @State private var zoom = routeZoom.full
-        @State private var width: CGFloat = 0
+        /// The camera's middle, for keeping the still map's pins inside it and off Enlarge.
+        @State private var center: LatLng?
+        @State private var size: CGSize = .zero
 
         /// Smaller while the pins would overlap at this zoom (core `crowdedStyleAt`; owner,
-        /// 2026-10-24: never a pile of numbered pins).
-        private var sizes: RouteSizes { crowdedStyleAt(zoom, model.placed) }
+        /// 2026-10-24: never a pile of pins).
+        private var sizes: RouteSizes { crowdedStyleAt((zoom * 4).rounded() / 4, model.placed) }
+
+        /// Where each pin is drawn: apart from its neighbors where they'd overlap, with a leader
+        /// line back to its place (owner, 2026-10-24: "the dots aren't placed great"). The still
+        /// map keeps them inside its edges and out of the Enlarge corner.
+        private var spots: [String: PinSpot] {
+            let frame =
+                interactive || size.width <= 0
+                ? nil : center.map { (center: $0, w: Double(size.width), h: Double(size.height)) }
+            return model.spots(zoom: zoom, sizes: sizes, frame: frame)
+        }
+
+        /// The stop you're on drawn last, so it's on top; the start first, under the stops.
+        private var layered: [DayMapAnnotation] {
+            let layer: [PinTone: Int] = [.shop: 0, .done: 1, .todo: 2, .current: 3]
+            return model.annotations.enumerated()
+                .sorted { (layer[$0.element.tone] ?? 0, $0.offset) < (layer[$1.element.tone] ?? 0, $1.offset) }
+                .map(\.element)
+        }
 
         var body: some View {
             if drawsLiveMaps {
                 live
-                    .onGeometryChange(for: CGFloat.self) {
-                        $0.size.width
+                    .onGeometryChange(for: CGSize.self) {
+                        $0.size
                     } action: {
-                        width = $0
+                        size = $0
                     }
                     .onMapCameraChange(frequency: .continuous) { context in
-                        let z = (zoomForSpan(context.region.span.longitudeDelta, Double(width)) * 4).rounded() / 4
+                        let z =
+                            (zoomForSpan(context.region.span.longitudeDelta, Double(size.width)) * 20).rounded() / 20
                         if z != zoom { zoom = z }
+                        let c = context.region.center
+                        if !interactive { center = LatLng(lat: c.latitude, lng: c.longitude) }
                     }
                     .task(id: model.line) {
                         road = RoadPaths.shared.kept(model.line)
@@ -198,10 +263,18 @@
                             style: StrokeStyle(
                                 lineWidth: CGFloat(sizes.lineWidth), lineCap: .round, lineJoin: .round))
                 }
-                // The shop first, so stops draw over it where they're close.
-                ForEach(model.annotations.sorted { $0.isShop && !$1.isShop }) { a in
-                    Annotation(a.spoken, coordinate: a.at.coordinate, anchor: .center) {
+                // The shop first, so stops draw over it where they're close; each pin where it's
+                // drawn (apart from its neighbors), its leader line back to its place.
+                let drawnAt = spots
+                ForEach(layered) { a in
+                    let spot = drawnAt[a.id]
+                    Annotation(a.spoken, coordinate: (spot?.at ?? a.at).coordinate, anchor: .center) {
                         pin(a)
+                            .background {
+                                if let spot, spot.leader {
+                                    PinLeader(dx: spot.dx, dy: spot.dy, color: model.color.color)
+                                }
+                            }
                     }
                     .annotationTitles(.hidden)
                 }

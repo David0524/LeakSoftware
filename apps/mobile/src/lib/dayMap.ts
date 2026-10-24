@@ -76,8 +76,9 @@ export function mapUrl(
     `w=${size.w}`,
     `h=${size.h}`,
     // The drawing's version, as the website's mapSrc (2026-10-24: framed by us, Apple for every
-    // day), so images kept from before aren't reused.
-    "v=2",
+    // day; 3: every stop numbered, crowded pins spread apart), so images kept from before
+    // aren't reused.
+    "v=3",
     ...(route !== "blue" ? [`color=${route}`] : []),
     ...(theme === "dark" ? ["theme=dark"] : []),
   ].join("&");

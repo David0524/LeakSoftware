@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef } from "react";
-import { mapView, viewSpan } from "@leakbook/core";
+import { mapView, viewSpan, zoomForSpan } from "@leakbook/core";
 import {
   loadMapKit,
   mapkitToken,
@@ -19,6 +19,7 @@ import {
   pinElement,
   routeHex,
   routeLine,
+  spreadLivePins,
   stylePin,
   type LivePin,
 } from "./map-pins";
@@ -31,6 +32,8 @@ import {
 // over to the Mapbox map. Apple's logo and legal link stay visible in the bottom corners. Since
 // 2026-10-23 (owner) the route follows the roads (Apple's paths, from /api/map/path; straight
 // until they come, or where there's none), and its line and pins shrink as the map zooms out.
+// Since 2026-10-24 (owner: "the stops aren't numbered") every pin keeps its number, and pins
+// too close at the map's zoom are drawn apart with a line back to their spot (spreadLivePins).
 
 export function AppleMap({
   company,
@@ -173,6 +176,12 @@ export function AppleMap({
           if (!made || gone) return;
           const s = sizes();
           for (const el of els) stylePin(el, s);
+          spreadLivePins(
+            els,
+            pins,
+            zoomForSpan(made.region?.span?.longitudeDelta ?? 0, box.current?.clientWidth ?? 0),
+            s,
+          );
           if (route.line && route.width !== s.lineWidth) drawRoute(route.path);
         });
       };

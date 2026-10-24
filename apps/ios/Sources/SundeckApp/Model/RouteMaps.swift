@@ -73,10 +73,51 @@ public struct DayMapModel: Equatable, Sendable {
         return MapFit(center: view.center, latDelta: span.latDelta, lngDelta: span.lngDelta)
     }
 
+    /// Where each pin is drawn on a live map at `zoom` (core `spreadPins`, as the website's maps;
+    /// owner, 2026-10-24: "the dots aren't placed great"): its own place, or, where pins would
+    /// overlap at `sizes`, moved apart with a leader line back to its place. With `frame` (the
+    /// camera's middle and the map's size: the still map), pins also stay inside its edges and
+    /// out of its Enlarge corner. By annotation id.
+    public func spots(zoom: Double, sizes: RouteSizes, frame: (center: LatLng, w: Double, h: Double)? = nil)
+        -> [String: PinSpot]
+    {
+        let middle = frame.map { projectPoint($0.center, zoom) }
+        let shift = { (p: MapPoint) -> MapPoint in
+            guard let frame, let middle else { return p }
+            return MapPoint(x: p.x - middle.x + frame.w / 2, y: p.y - middle.y + frame.h / 2)
+        }
+        let unshift = { (x: Double, y: Double) -> MapPoint in
+            guard let frame, let middle else { return MapPoint(x: x, y: y) }
+            return MapPoint(x: x + middle.x - frame.w / 2, y: y + middle.y - frame.h / 2)
+        }
+        let at = annotations.map { a in
+            let p = shift(projectPoint(a.at, zoom))
+            return ImagePin(x: p.x, y: p.y, tone: a.tone)
+        }
+        let box = frame.map { SpreadFrame(w: $0.w, h: $0.h, margin: viewMargin, corner: spread.corner) }
+        let out = spreadPins(at, sizes, frame: box)
+        var spots: [String: PinSpot] = [:]
+        for (i, a) in annotations.enumerated() {
+            let s = out[i]
+            spots[a.id] = PinSpot(
+                at: unprojectPoint(unshift(s.x, s.y), zoom), dx: s.x - at[i].x, dy: s.y - at[i].y, leader: s.leader)
+        }
+        return spots
+    }
+
     /// Whether there's a map to draw (at least one stop has a pin).
     public var drawable: Bool { located > 0 }
     /// "2 stops aren’t on the map", or nil.
     public var note: String? { missingNote(missing) }
+}
+
+/// Where a pin is drawn (`DayMapModel.spots`): the place it's drawn at, how far that is from its
+/// own place in points (`dx` right, `dy` down), and whether a leader line joins them.
+public struct PinSpot: Equatable, Sendable {
+    public var at: LatLng
+    public var dx: Double
+    public var dy: Double
+    public var leader: Bool
 }
 
 /// The map of a tech's day: the shop, then the stops in route order, numbered by their place in

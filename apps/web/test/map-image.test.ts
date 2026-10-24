@@ -92,8 +92,8 @@ describe("map image", () => {
       `https://${"a".repeat(80)}.com`,
     );
     expect(long.length).toBeLessThanOrEqual(8192);
-    // (60 stops across a county: the small dots, which have no numbers.)
-    expect(long).toContain("pin-s+2e8b57(-112.59000,33.59000)");
+    // (60 stops across a county: the small pins, still numbered.)
+    expect(long).toMatch(/pin-s-60\+2e8b57\(/);
   });
 
   it("draws a home start as a larger house, never anything else about it", () => {
@@ -189,7 +189,7 @@ describe("map image", () => {
     expect(line).toHaveLength(4);
   });
 
-  it("draws a spread-out day with small dots and a thin line, and crowded pins smaller", () => {
+  it("draws a spread-out day with small pins and a thin line, and crowded pins smaller", () => {
     // Stops across a city: zoomed out.
     const city = [
       { tone: "shop" as const, label: "", at: { lat: 33.45, lng: -112.07 } },
@@ -204,24 +204,24 @@ describe("map image", () => {
       "green",
       "https://app.example.com",
     );
-    expect(small).toContain(encodeURIComponent("/api/map/pin/done-green-s.png"));
-    expect(small).toContain(encodeURIComponent("/api/map/pin/current-green-s.png"));
+    expect(small).toContain(encodeURIComponent("/api/map/pin/done-1-green-s.png"));
+    expect(small).toContain(encodeURIComponent("/api/map/pin/current-2-green-s.png"));
     expect(small).toContain(encodeURIComponent("/api/map/pin/shop-s.png"));
     expect(small).toContain("/static/path-4+ffffff-1(");
     expect(small).toContain(",path-3+2e8b57-1(");
-    // Mapbox's own markers: small, and without numbers.
+    // Mapbox's own markers: small, still numbered (owner, 2026-10-24).
     expect(staticMapUrl(city, { w: 360, h: 180 }, "pk", "light", "green")).toContain(
-      ",pin-s+2e8b57(-112.25000,33.30000)",
+      ",pin-s-2+2e8b57(-112.25000,33.30000)",
     );
-    // Close in, but two stops 130 m apart, about 23 points on this image: full-size pins (34)
-    // would overlap, so the medium ones, still numbered.
+    // Close in, but two stops 130 m apart, about 23 points on this image: full-size (34) and
+    // medium (28) pins would overlap, so the small ones (22), still numbered.
     const nextDoor = [
       { tone: "shop" as const, label: "", at: { lat: 33.45, lng: -112.07 } },
       { tone: "todo" as const, label: "1", at: { lat: 33.455, lng: -112.075 } },
       { tone: "todo" as const, label: "2", at: { lat: 33.45617, lng: -112.075 } },
     ];
-    expect(mapView(nextDoor, { w: 360, h: 180 }).tier).toBe("medium");
-    const medium = staticMapUrl(
+    expect(mapView(nextDoor, { w: 360, h: 180 }).tier).toBe("small");
+    const small2 = staticMapUrl(
       nextDoor,
       { w: 360, h: 180 },
       "pk",
@@ -229,6 +229,34 @@ describe("map image", () => {
       "green",
       "https://app.example.com",
     );
-    expect(medium).toContain(encodeURIComponent("/api/map/pin/todo-1-green-m.png"));
+    expect(small2).toContain(encodeURIComponent("/api/map/pin/todo-1-green-s.png"));
+    expect(small2).toContain(encodeURIComponent("/api/map/pin/todo-2-green-s.png"));
+  });
+});
+
+describe("crowded pins on Mapbox's image (owner, 2026-10-24: the dots aren't placed great)", () => {
+  it("draws a pile apart, each with a leader line and a dot on its true spot", () => {
+    const pile = [
+      { tone: "shop" as const, label: "", at: { lat: 33.4484, lng: -112.074 } },
+      ...Array.from({ length: 6 }, (_, i) => ({
+        tone: "todo" as const,
+        label: String(i + 1),
+        at: { lat: 33.54 + i * 0.0003, lng: -112.18 + (i % 2) * 0.0003 },
+      })),
+    ];
+    const url = staticMapUrl(
+      pile,
+      { w: 360, h: 180 },
+      "pk",
+      "light",
+      "green",
+      "https://app.example.com",
+    );
+    expect(url.length).toBeLessThanOrEqual(MAX_URL);
+    // Leader lines: white under the route's color, and a dot on the stop's spot.
+    expect(url).toContain(",path-2+2e8b57-1(");
+    expect(url).toContain(encodeURIComponent("/api/map/pin/dot-green.png"));
+    for (let n = 1; n <= 6; n++)
+      expect(url).toContain(encodeURIComponent(`/api/map/pin/todo-${n}-green-s.png`));
   });
 });

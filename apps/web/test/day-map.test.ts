@@ -3,6 +3,8 @@ import { tokens } from "@leakbook/tokens";
 import {
   donePin,
   mixHex,
+  leaderDotImageName,
+  parseLeaderDotName,
   parsePinImageName,
   pinHex,
   pinImageName,
@@ -71,17 +73,17 @@ describe("day map", () => {
 
   it("builds the image address and its words", () => {
     expect(mapSrc("c1", "s:1.00000,2.00000", { w: 600, h: 300 })).toBe(
-      "/api/map?company=c1&pins=s%3A1.00000%2C2.00000&w=600&h=300&v=2",
+      "/api/map?company=c1&pins=s%3A1.00000%2C2.00000&w=600&h=300&v=3",
     );
     // The tech's color (owner, 2026-10-23); water blue is the default, so it's left out.
     expect(mapSrc("c1", "s", { w: 1, h: 1 }, "light", "orange")).toBe(
-      "/api/map?company=c1&pins=s&w=1&h=1&v=2&color=orange",
+      "/api/map?company=c1&pins=s&w=1&h=1&v=3&color=orange",
     );
     expect(mapSrc("c1", "s", { w: 1, h: 1 }, "dark", "blue")).toBe(
-      "/api/map?company=c1&pins=s&w=1&h=1&v=2&theme=dark",
+      "/api/map?company=c1&pins=s&w=1&h=1&v=3&theme=dark",
     );
     expect(mapSrc("c1", "s", { w: 1, h: 1 }, "light", null)).toBe(
-      "/api/map?company=c1&pins=s&w=1&h=1&v=2",
+      "/api/map?company=c1&pins=s&w=1&h=1&v=3",
     );
     expect(mapAlt("Priya Shah", "Monday", 1)).toBe("Map of Priya Shah’s stops on Monday: 1 stop");
     expect(mapAlt("Priya Shah", "Monday", 5)).toBe("Map of Priya Shah’s stops on Monday: 5 stops");
@@ -156,25 +158,31 @@ describe("map pins in the tech's color", () => {
     expect(pinImageName({ tone: "todo", label: "3" }, "orange", "light", "medium")).toBe(
       "todo-3-orange-m",
     );
-    // The small dot has no number, so one image serves every stop of a tone.
+    // Every size is numbered (owner, 2026-10-24: "the stops aren't numbered").
     expect(pinImageName({ tone: "done", label: "7" }, "green", "dark", "small")).toBe(
-      "done-green-dark-s",
+      "done-7-green-dark-s",
     );
     expect(pinImageName({ tone: "shop", label: "", home: true }, null, "light", "small")).toBe(
       "home-s",
     );
     expect(parsePinImageName("todo-3-orange-m.png")).toMatchObject({ label: "3", tier: "medium" });
-    expect(parsePinImageName("done-green-dark-s.png")).toMatchObject({
+    expect(parsePinImageName("done-7-green-dark-s.png")).toMatchObject({
       tone: "done",
-      label: "",
+      label: "7",
       dark: true,
       tier: "small",
     });
     expect(parsePinImageName("shop-s.png")).toMatchObject({ tone: "shop", tier: "small" });
-    // A number on the small dot, or none on the others, isn't a pin.
-    expect(parsePinImageName("todo-3-orange-s.png")).toBeNull();
+    // A stop without its number isn't a pin, at any size.
+    expect(parsePinImageName("done-green-dark-s.png")).toBeNull();
     expect(parsePinImageName("todo-orange-m.png")).toBeNull();
     expect(parsePinImageName("todo-orange.png")).toBeNull();
+    // The small dot a moved pin's leader line ends at.
+    expect(leaderDotImageName("orange", "dark")).toBe("dot-orange-dark");
+    expect(parseLeaderDotName("dot-orange-dark.png")).toEqual({
+      hex: tokens.color.tech.dark.orange,
+    });
+    expect(parseLeaderDotName("dot-mauve.png")).toBeNull();
     expect(pinImageSize("todo", "small")).toBeLessThan(pinImageSize("todo", "medium"));
     expect(pinImageSize("current", "small")).toBeGreaterThan(pinImageSize("todo", "small"));
     expect(pinImageSize("todo")).toBe(36);

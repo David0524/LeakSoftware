@@ -14,11 +14,11 @@ import {
 } from "../src/server/apple-maps";
 import {
   mapView,
+  pinSizeAt,
   routeLegs,
   routeOrder,
   routeTierStyle,
   viewPoint,
-  viewSpan,
   type LatLng,
 } from "@leakbook/core";
 import { pinImageSize } from "../src/components/map-pins";
@@ -281,7 +281,7 @@ describe("Apple Snapshots: the route along the roads, smaller zoomed out (owner,
     expect(snap.view.tier).toBe("small");
     const [casing, stroke] = JSON.parse(new URL(snap.url).searchParams.get("overlays")!);
     expect([casing.lineWidth, stroke.lineWidth]).toEqual([4, 3]);
-    const roads = roadLegs(city, 50, 0.05);
+    const roads = roadLegs(city, 50, 0.12);
     expect(
       appleSnapshot(city, { w: 360, h: 180 }, keys, "light", "orange", roads).view.zoom,
     ).toBeLessThan(snap.view.zoom);
@@ -303,7 +303,7 @@ describe("our pins on Apple's image (owner, 2026-10-24: Apple for every day)", (
     expect(pngSize(new TextEncoder().encode("not a png at all, no"))).toBeNull();
   });
 
-  it("puts each pin centered on its place, the stop you're on drawn last", () => {
+  it("puts each pin on its place, or apart from its neighbors with a leader line back to it", () => {
     const size = { w: 360, h: 180 };
     const view = mapView(cluster, size);
     const placed = pinPlacements(cluster, view, size);
@@ -312,8 +312,11 @@ describe("our pins on Apple's image (owner, 2026-10-24: Apple for every day)", (
     expect(placed.at(-1)!.pin.tone).toBe("current");
     for (const p of placed) {
       const at = viewPoint(p.pin.at, view, size);
-      expect(p.x + p.side / 2).toBeCloseTo(at.x, 9);
-      expect(p.y + p.side / 2).toBeCloseTo(at.y, 9);
+      // The leader line ends on the stop's true spot on Apple's map.
+      expect(p.at.x).toBeCloseTo(at.x, 1);
+      expect(p.at.y).toBeCloseTo(at.y, 1);
+      const moved = Math.hypot(p.x + p.side / 2 - at.x, p.y + p.side / 2 - at.y);
+      if (!p.leader) expect(moved).toBeLessThanOrEqual(3.01);
       expect(p.side).toBe(pinImageSize(p.pin.tone, view.tier));
       // Every pin whole inside the image.
       expect(p.x).toBeGreaterThan(0);
@@ -321,6 +324,15 @@ describe("our pins on Apple's image (owner, 2026-10-24: Apple for every day)", (
       expect(p.x + p.side).toBeLessThan(size.w);
       expect(p.y + p.side).toBeLessThan(size.h);
     }
+    // No two stops overlap.
+    const sizes = routeTierStyle(view.tier);
+    for (const [i, a] of placed.entries())
+      for (const b of placed.slice(i + 1))
+        expect(
+          Math.hypot(a.x + a.side / 2 - b.x - b.side / 2, a.y + a.side / 2 - b.y - b.side / 2),
+        ).toBeGreaterThanOrEqual(
+          (pinSizeAt(a.pin.tone, sizes) + pinSizeAt(b.pin.tone, sizes)) / 2 - 0.01,
+        );
   });
 
   it("draws them onto the image at its scale", async () => {
