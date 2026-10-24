@@ -127,4 +127,42 @@ import Testing
         #expect(call?.mimeType == "image/svg+xml")
         #expect(try s.store.pendingCount() == before)
     }
+
+    // MARK: Signing out while a file uploads
+
+    /// Holds each upload until the test lets it finish.
+    final class HeldUploader: Uploader, @unchecked Sendable {
+        let calls = Locked<[String]>([])
+        let gates = Locked<[CheckedContinuation<Void, Never>]>([])
+
+        func upload(_ job: UploadJob, saveResumeUrl: (String?) throws -> Void) async throws -> UploadResult {
+            calls.withLock { $0.append(job.mediaId) }
+            await withCheckedContinuation { gate in gates.withLock { $0.append(gate) } }
+            return .uploaded
+        }
+    }
+
+    @Test func signingOutMidUploadMarksNothingOnTheClearedPhone() async throws {
+        let store = try LocalStore.open(memoryDatabase(), deviceId: "dev1")
+        let uploader = HeldUploader()
+        let queue = UploadQueue(store: store, uploader: uploader)
+        for n in 1...2 {
+            let mediaId = try store.insert(
+                "media", companyId: testCompany, ["job_id": .string("j"), "kind": .string("photo")])
+            try queue.enqueue(
+                UploadJob(
+                    mediaId: mediaId, companyId: testCompany, localPath: "/\(n).jpg",
+                    storagePath: "\(testCompany)/j/\(mediaId).jpg", mimeType: "image/jpeg"))
+        }
+        let running = Task { try await queue.process() }
+        while uploader.gates.current.isEmpty { try await Task.sleep(nanoseconds: 1_000_000) }
+        try store.clearAll()
+        uploader.gates.withLock { $0.removeFirst() }.resume()
+        let summary = try await running.value
+        #expect(summary.uploaded == 0)
+        #expect(uploader.calls.current.count == 1)
+        #expect(try store.list("media", includeDeleted: true).isEmpty)
+        #expect(try store.pendingCount() == 0)
+        #expect(try queue.waitingCount() == 0)
+    }
 }

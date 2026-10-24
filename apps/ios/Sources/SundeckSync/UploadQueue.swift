@@ -153,7 +153,12 @@ public final class UploadQueue: @unchecked Sendable {
         var uploadedIds: [String] = []
         var done = 0
         var failed = 0
+        // Signing out clears the phone (`LocalStore.clearAll`) and may do so mid-upload: the
+        // files left in this run, and the marks for ones that finish, belong to the sign-in that
+        // left.
+        let generation = store.generation
         for row in due {
+            if store.generation != generation { break }
             let job = UploadJob(
                 mediaId: row["media_id"]?.text ?? "",
                 recordTable: UploadJob.RecordTable(rawValue: row["record_table"]?.text ?? "") ?? .media,
@@ -170,6 +175,7 @@ public final class UploadQueue: @unchecked Sendable {
                         [url.map(SQLValue.text) ?? .null, .text(job.mediaId)])
                 }
                 try database.transaction {
+                    try store.checkGeneration(generation)
                     if job.recordTable == .media {
                         try store.write(
                             "media", id: job.mediaId, companyId: job.companyId,
@@ -179,7 +185,10 @@ public final class UploadQueue: @unchecked Sendable {
                 }
                 if job.recordTable == .media { uploadedIds.append(job.mediaId) }
                 done += 1
+            } catch is SyncCancelled {
+                break
             } catch {
+                if store.generation != generation { break }
                 // 30 s doubling per attempt, at most an hour (2^7 × 30 s is already past it).
                 let delay = attempts >= 7 ? maxDelayMs : min(baseDelayMs << attempts, maxDelayMs)
                 try database.query(

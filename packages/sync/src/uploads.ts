@@ -106,7 +106,11 @@ export class UploadQueue {
     const uploadedIds: string[] = [];
     let done = 0;
     let failed = 0;
+    // Signing out clears the phone (LocalStore.clearAll) and may do so mid-upload: the files
+    // left in this run, and the marks for ones that finish, belong to the sign-in that left.
+    const generation = this.store.generation;
     for (const row of due) {
+      if (this.store.generation !== generation) break;
       const job: UploadJob = {
         mediaId: row.media_id,
         companyId: row.company_id,
@@ -123,6 +127,7 @@ export class UploadQueue {
             job.mediaId,
           ]),
         );
+        if (this.store.generation !== generation) break;
         this.store.database.transaction(() => {
           if (job.recordTable === "media") {
             this.store.write("media", job.mediaId, job.companyId, {
@@ -135,6 +140,7 @@ export class UploadQueue {
         if (job.recordTable === "media") uploadedIds.push(job.mediaId);
         done += 1;
       } catch (e) {
+        if (this.store.generation !== generation) break;
         const delay = Math.min(BASE_DELAY_MS * 2 ** row.attempts, MAX_DELAY_MS);
         this.store.database.run(
           "update upload_queue set attempts = attempts + 1, next_attempt_at = ?, last_error = ? where media_id = ?",

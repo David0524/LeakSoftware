@@ -110,3 +110,39 @@ describe("UploadQueue", () => {
     expect(store.pendingCount()).toBe(before);
   });
 });
+
+describe("signing out while a file uploads", () => {
+  it("marks nothing on the cleared phone and stops the run", async () => {
+    const store = LocalStore.open(memoryDb());
+    let finish = () => {};
+    const calls: string[] = [];
+    const uploader: Uploader = {
+      async upload(job) {
+        calls.push(job.mediaId);
+        await new Promise<void>((r) => (finish = r));
+        return "uploaded";
+      },
+    };
+    const queue = new UploadQueue(store, uploader);
+    for (const n of [1, 2]) {
+      const mediaId = store.insert("media", C, { job_id: "j", kind: "photo" });
+      queue.enqueue({
+        mediaId,
+        companyId: C,
+        localPath: `/${n}.jpg`,
+        storagePath: `${C}/j/${mediaId}.jpg`,
+        mimeType: "image/jpeg",
+      });
+    }
+    const running = queue.process();
+    await new Promise((r) => setTimeout(r, 0));
+    store.clearAll();
+    finish();
+    const summary = await running;
+    expect(summary.uploaded).toBe(0);
+    expect(calls).toHaveLength(1);
+    expect(store.list("media", { includeDeleted: true })).toHaveLength(0);
+    expect(store.pendingCount()).toBe(0);
+    expect(queue.waitingCount()).toBe(0);
+  });
+});
