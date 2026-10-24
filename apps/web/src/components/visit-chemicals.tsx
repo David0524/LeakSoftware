@@ -979,7 +979,7 @@ function AddedForm({
           />
         </div>
       </Group>
-      <button id="added-form-submit" type="submit" className="sr-only" tabIndex={-1}>
+      <button id="added-form-submit" type="submit" className="sr-only" tabIndex={-1} aria-hidden>
         Save
       </button>
       {row.id && !locked ? (
@@ -1162,7 +1162,7 @@ function PickForm({
           </p>
         ) : null}
       </Group>
-      <button id="pick-form-submit" type="submit" className="sr-only" tabIndex={-1}>
+      <button id="pick-form-submit" type="submit" className="sr-only" tabIndex={-1} aria-hidden>
         Add
       </button>
     </form>

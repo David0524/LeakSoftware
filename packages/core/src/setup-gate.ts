@@ -29,7 +29,7 @@ export function mustFinishSetup(
 /** The apps' screen for an owner whose shop isn't set up yet. */
 export const FINISH_SETUP_TITLE = "Finish Setting Up Your Account";
 export const FINISH_SETUP_BODY =
-  "Your shop’s trial isn’t started yet. Finish setting up on the Sundeck Pro website, then come back here.";
+  "Your shop’s setup isn’t finished yet. Sign in on a computer to finish it, then come back here.";
 /** After Check Again, when setup still isn't finished. */
 export const FINISH_SETUP_STILL = "Setup isn’t finished yet. Check again once it’s done.";
 /** After Check Again without a connection. */

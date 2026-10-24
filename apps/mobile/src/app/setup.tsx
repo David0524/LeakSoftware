@@ -108,7 +108,7 @@ export default function Setup() {
         </Block>
         <Block
           title="Starting a New Shop?"
-          note="The owner sets up the shop on the Sundeck Pro website, then signs in here with the same email."
+          note="A shop’s owner sets it up on a computer, then signs in here with the same email."
         />
         <Button title="Sign Out" kind="quiet" onPress={() => void signOut()} />
       </Screen>

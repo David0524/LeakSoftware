@@ -235,21 +235,21 @@ export default function More() {
             <ListRow
               title="Privacy Policy"
               accessibilityRole="link"
-              onPress={() => open("/privacy")}
+              onPress={() => open("/in-app/privacy")}
             />
           ) : null}
           {API_URL ? (
             <ListRow
               title="Terms of Service"
               accessibilityRole="link"
-              onPress={() => open("/terms")}
+              onPress={() => open("/in-app/terms")}
             />
           ) : null}
           {API_URL ? (
             <ListRow
               title="System Status"
               accessibilityRole="link"
-              onPress={() => open("/status")}
+              onPress={() => open("/in-app/status")}
             />
           ) : null}
           {/* A text box, saved like the website's (owner, 2026-10-19). */}

@@ -471,7 +471,8 @@
             let consent = termsConsent
             func link(_ title: String, _ path: String) -> AttributedString {
                 var part = AttributedString(title)
-                part.link = BrowserPage.site(String(path.drop { $0 == "/" })).url
+                // The in-app copy of the page: no menu or links to buying (App Review 3.1.3).
+                part.link = BrowserPage.site("in-app" + path).url
                 part.foregroundColor = Color.link
                 part.underlineStyle = .single
                 return part
@@ -649,7 +650,7 @@
             .buttonStyle(.primary(fullWidth: true, size: .field))
             .disabled(joining)
             Grouped(label: "Starting a new shop?") {
-                Text("The owner sets up the shop on the Sundeck Pro website, then signs in here with the same email.")
+                Text("A shop’s owner sets it up on a computer, then signs in here with the same email.")
                     .textRole(.body)
                     .foregroundStyle(Color.text)
                     .padding(.horizontal, 16)

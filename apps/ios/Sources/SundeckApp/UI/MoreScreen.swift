@@ -243,9 +243,9 @@
         private var help: some View {
             Section {
                 helpRow("Contact Us", detail: HelpMail.contactEmail) { openURL(HelpMail.contactURL) }
-                helpRow("Privacy Policy") { browser = .site("privacy") }
-                helpRow("Terms of Service") { browser = .site("terms") }
-                helpRow("System Status") { browser = .site("status") }
+                helpRow("Privacy Policy") { browser = .site("in-app/privacy") }
+                helpRow("Terms of Service") { browser = .site("in-app/terms") }
+                helpRow("System Status") { browser = .site("in-app/status") }
                 ActionRow(FeatureRequestForm.title) { requesting = true }
                     .surfaceRow()
                     .listRowInsets(EdgeInsets())

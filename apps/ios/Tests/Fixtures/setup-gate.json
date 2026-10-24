@@ -106,7 +106,7 @@
   "FINISH_SETUP_BODY": [
     {
       "args": [],
-      "result": "Your shop’s trial isn’t started yet. Finish setting up on the Sundeck Pro website, then come back here."
+      "result": "Your shop’s setup isn’t finished yet. Sign in on a computer to finish it, then come back here."
     }
   ],
   "FINISH_SETUP_STILL": [

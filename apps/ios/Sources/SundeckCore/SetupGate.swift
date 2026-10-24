@@ -28,7 +28,7 @@ public func mustFinishSetup(_ access: SetupAccess?, role: String?) -> Bool {
 /// The screen for an owner whose shop isn't set up yet (`FINISH_SETUP_TITLE`, `FINISH_SETUP_BODY`).
 public let finishSetupTitle = "Finish Setting Up Your Account"
 public let finishSetupBody =
-    "Your shop’s trial isn’t started yet. Finish setting up on the Sundeck Pro website, then come back here."
+    "Your shop’s setup isn’t finished yet. Sign in on a computer to finish it, then come back here."
 /// After Check Again, when setup still isn't finished (`FINISH_SETUP_STILL`).
 public let finishSetupStill = "Setup isn’t finished yet. Check again once it’s done."
 /// After Check Again without a connection (`FINISH_SETUP_OFFLINE`).

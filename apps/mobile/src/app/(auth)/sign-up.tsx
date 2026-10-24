@@ -144,11 +144,19 @@ function TermsConsent() {
   return (
     <T variant="secondary" muted style={styles.consent}>
       {c.before}
-      <Text style={styles.link} accessibilityRole="link" onPress={() => open(c.termsPath)}>
+      <Text
+        style={styles.link}
+        accessibilityRole="link"
+        onPress={() => open(`/in-app${c.termsPath}`)}
+      >
         {c.terms}
       </Text>
       {c.between}
-      <Text style={styles.link} accessibilityRole="link" onPress={() => open(c.privacyPath)}>
+      <Text
+        style={styles.link}
+        accessibilityRole="link"
+        onPress={() => open(`/in-app${c.privacyPath}`)}
+      >
         {c.privacy}
       </Text>
       {c.after}
