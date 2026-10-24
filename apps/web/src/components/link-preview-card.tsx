@@ -13,7 +13,9 @@ export const CARD_SIZE = { width: 1200, height: 630 } as const;
 const C = tokens.color;
 const INK = C.role.light.text;
 const MUTED = C.role.light.textMuted;
-const QUIET = C.neutral["400"];
+const QUIET = C.neutral["500"];
+/** White, so a logo saved on a white background (most JPEGs) sits on the card cleanly. */
+const PAGE = C.brand.paper;
 const DISPLAY = "Barlow Semi Condensed";
 const BODY = "Public Sans";
 
@@ -24,7 +26,7 @@ export interface CardLogo {
 }
 
 /** Fits a logo inside the logo area, keeping its shape. */
-export function fitLogo(width: number, height: number, maxW = 560, maxH = 150) {
+export function fitLogo(width: number, height: number, maxW = 600, maxH = 128) {
   const scale = Math.min(maxW / width, maxH / height);
   return { width: Math.round(width * scale), height: Math.round(height * scale) };
 }
@@ -49,7 +51,7 @@ export function LinkPreviewArt({
         display: "flex",
         flexDirection: "column",
         alignItems: "center",
-        backgroundColor: C.brand.paper,
+        backgroundColor: PAGE,
         color: INK,
         fontFamily: BODY,
       }}
@@ -62,7 +64,7 @@ export function LinkPreviewArt({
           flexDirection: "column",
           alignItems: "center",
           justifyContent: "center",
-          padding: "40px 96px 0",
+          padding: "30px 80px 0",
         }}
       >
         {logo && !neutral ? (
@@ -82,7 +84,7 @@ export function LinkPreviewArt({
               textAlign: "center",
               fontFamily: DISPLAY,
               fontWeight: 800,
-              fontSize: neutral ? 64 : longName ? 58 : 72,
+              fontSize: neutral ? 76 : longName ? 64 : 80,
               lineHeight: 1.05,
               lineClamp: 2,
               color: INK,
@@ -96,8 +98,8 @@ export function LinkPreviewArt({
           <div
             style={{
               display: "flex",
-              marginTop: 36,
-              fontSize: 38,
+              marginTop: 28,
+              fontSize: 46,
               fontWeight: 500,
               color: MUTED,
               textAlign: "center",
@@ -111,22 +113,22 @@ export function LinkPreviewArt({
               display: "flex",
               flexDirection: "column",
               alignItems: "center",
-              marginTop: 44,
-              maxWidth: 1000,
+              marginTop: 30,
+              maxWidth: 1040,
             }}
           >
-            <div style={{ display: "flex", fontSize: 34, fontWeight: 600, color: MUTED }}>
+            <div style={{ display: "flex", fontSize: 46, fontWeight: 600, color: MUTED }}>
               {card.docType}
             </div>
             <div
               style={{
                 display: "block",
-                marginTop: card.money ? 0 : 10,
+                marginTop: card.money ? -2 : 6,
                 textAlign: "center",
                 fontFamily: DISPLAY,
                 fontWeight: 700,
-                fontSize: card.money ? 128 : card.headline.length > 30 ? 60 : 76,
-                lineHeight: card.money ? 1.1 : 1.08,
+                fontSize: card.money ? 148 : card.headline.length > 24 ? 70 : 92,
+                lineHeight: card.money ? 1.05 : 1.05,
                 lineClamp: 2,
                 color: INK,
                 fontVariantNumeric: "tabular-nums",
@@ -138,9 +140,9 @@ export function LinkPreviewArt({
               <div
                 style={{
                   display: "block",
-                  marginTop: card.money ? 4 : 14,
+                  marginTop: card.money ? 2 : 10,
                   textAlign: "center",
-                  fontSize: 32,
+                  fontSize: 44,
                   fontWeight: 500,
                   color: MUTED,
                   lineClamp: 1,
@@ -155,22 +157,22 @@ export function LinkPreviewArt({
 
       <div
         style={{
-          width: 1008,
+          width: 1040,
           display: "flex",
           alignItems: "center",
           justifyContent: "center",
           gap: 12,
-          marginBottom: 34,
-          paddingTop: 22,
+          marginBottom: 26,
+          paddingTop: 18,
           borderTop: `2px solid ${C.neutral["100"]}`,
-          fontSize: 24,
+          fontSize: 30,
           fontWeight: 500,
           color: QUIET,
         }}
       >
         {mark ? (
           // eslint-disable-next-line @next/next/no-img-element -- drawn by next/og, not a page
-          <img src={mark} width={20} height={29} alt="" style={{ width: 20, height: 29 }} />
+          <img src={mark} width={22} height={32} alt="" style={{ width: 22, height: 32 }} />
         ) : null}
         <div style={{ display: "flex" }}>{LINK_PREVIEW_TEXT.sentWith}</div>
       </div>
