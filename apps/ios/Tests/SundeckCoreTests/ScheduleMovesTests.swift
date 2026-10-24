@@ -10,6 +10,7 @@ import Testing
         let checked: Set<String> = [
             "constants", "isDateString", "addDays", "addMonths", "monthGrid", "scheduleDays", "formatDay", "formatTime",
             "planDay", "noteSentences", "renumberDay", "moveJobChange", "suggestionDates", "suggestTimes", "timeline",
+            "partnerProblem", "keptNote", "nothingMoved",
         ]
         #expect(Fixtures.rules(module) == checked)
     }
@@ -22,7 +23,13 @@ import Testing
                     "holdMs": .number(Double(ScheduleDrag.holdMs)),
                     "slopPt": .number(Double(ScheduleDrag.slopPt)),
                     "scrollSettleMs": .number(Double(ScheduleDrag.scrollSettleMs)),
-                ])
+                ]),
+                "OPTIMIZE_WORDS": .object([
+                    "alreadyBest": .string(OptimizeWords.alreadyBest),
+                    "noChange": .string(OptimizeWords.noChange),
+                    "optimized": .string(OptimizeWords.optimized),
+                    "rest": .string(OptimizeWords.rest),
+                ]),
             ])
         }
     }
@@ -46,6 +53,18 @@ import Testing
         let fromDay: [PlanJob]
         let seesAll: Bool
         let userId: String
+        let partnerDay: [PlanJob]?
+        let names: [String: String]?
+    }
+
+    struct Partner: Decodable {
+        let techId: String
+        let jobs: [PlanJob]
+    }
+
+    struct PlanOptions: Decodable {
+        let partners: [Partner]?
+        let names: [String: String]?
     }
 
     struct Job: Decodable {
@@ -67,7 +86,23 @@ import Testing
             noteSentences(try c.arg(0, as: [JSONValue].self).map(\.string))
         }
         checkRule(module, "planDay") { c in
-            try planDay(c.arg(0), c.arg(1), c.arg(2), c.arg(3, as: [PlanJob].self), drive: RoutingTests.drive(c, 4))
+            let opts = try c.arg(5, as: PlanOptions?.self)
+            return try planDay(
+                c.arg(0), c.arg(1), c.arg(2), c.arg(3, as: [PlanJob].self), drive: RoutingTests.drive(c, 4),
+                partners: (opts?.partners ?? []).map { PartnerDay(techId: $0.techId, jobs: $0.jobs) },
+                names: opts?.names ?? [:])
+        }
+        checkRule(module, "partnerProblem") { c in
+            let p = try c.arg(1, as: Partner.self)
+            return try partnerProblem(
+                c.arg(0), PartnerDay(techId: p.techId, jobs: p.jobs), c.arg(2, as: [PartnerMove].self),
+                drive: RoutingTests.drive(c, 3))
+        }
+        checkRule(module, "keptNote") { c in
+            keptNote(try c.arg(0, as: [KeptStop].self), names: try c.arg(1, as: [String: String]?.self) ?? [:])
+        }
+        checkRule(module, "nothingMoved") { c in
+            nothingMoved(try c.arg(0, as: [KeptStop].self), names: try c.arg(1, as: [String: String]?.self) ?? [:])
         }
         checkRule(module, "renumberDay") { c in
             renumberDay(try c.arg(0), try c.arg(1, as: [PlanJob].self), leaving: try c.arg(2))
@@ -76,7 +111,7 @@ import Testing
             let m = try c.arg(1, as: Move.self)
             let input = MoveInput(
                 job: m.job, tech: m.tech, date: m.date, index: m.index, targetDay: m.targetDay, fromDay: m.fromDay,
-                seesAll: m.seesAll, userId: m.userId)
+                seesAll: m.seesAll, userId: m.userId, partnerDay: m.partnerDay, names: m.names ?? [:])
             return try moveJobChange(c.arg(0), input, drive: RoutingTests.drive(c, 2))
         }
         checkRule(module, "suggestionDates") { c in try suggestionDates(c.arg(0)) }

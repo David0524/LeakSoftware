@@ -19,6 +19,8 @@
         @State private var result: (text: String, failed: Bool)?
         @State private var saves = 0
         @State private var planMove: PlanVisitMove?
+        /// A shared job's move waiting on Move Anyway (owner, 2026-10-24).
+        @State private var asking: (ask: MoveNeedsConfirm, item: ScheduleJob, tech: String?, day: String?)?
 
         static func shows(_ job: JobView) -> Bool {
             jobReschedulable(type: job.type.rawValue, status: job.status.rawValue)
@@ -93,6 +95,13 @@
                 }
             }
             .planMoveDialog($planMove) { m, schedule in resolve(m, changeSchedule: schedule) }
+            .moveConfirmAlert(
+                Binding(get: { asking?.ask }, set: { if $0 == nil { asking = nil } })
+            ) { ask in
+                guard let a = asking else { return }
+                asking = nil
+                applyMove(a.item, tech: a.tech, day: a.day) { (ask.updates, ask.message) }
+            }
             .sheet(item: $suggesting) { item in
                 if let board {
                     SuggestedTimesSheet(job: item, board: board, drive: drive) { s in
@@ -127,6 +136,8 @@
                     result = message.isEmpty ? nil : (message, false)
                     saves += 1
                 }
+            } catch let ask as MoveNeedsConfirm {
+                asking = (ask, item, tech, day)
             } catch {
                 result = (String(describing: error), true)
             }
@@ -224,6 +235,8 @@
         @State private var board: Board?
         @State private var drive = DriveTimes()
         @State private var planMove: PlanVisitMove?
+        /// A shared job's move waiting on Move Anyway (owner, 2026-10-24).
+        @State private var asking: (ask: MoveNeedsConfirm, item: ScheduleJob, tech: String?, day: String?)?
 
         var body: some View {
             Group {
@@ -248,6 +261,13 @@
                 }
             }
             .planMoveDialog($planMove) { m, schedule in resolve(m, changeSchedule: schedule) }
+            .moveConfirmAlert(
+                Binding(get: { asking?.ask }, set: { if $0 == nil { asking = nil } })
+            ) { ask in
+                guard let a = asking else { return }
+                asking = nil
+                apply(a.item, tech: a.tech, day: a.day) { (ask.updates, ask.message) }
+            }
             .task {
                 guard let company = session.company, let user = session.user else { return }
                 let start = job?.job["scheduled_start"]?.string.flatMap(parseISODate)
@@ -283,6 +303,10 @@
                     // A lock saved alone says nothing (owner, 2026-10-20).
                     done(message.isEmpty ? nil : ResultBanner(kind: .success, title: message))
                 }
+            } catch let ask as MoveNeedsConfirm {
+                // The question first; the sheet stays until the answer.
+                asking = (ask, item, tech, day)
+                return
             } catch {
                 done(ResultBanner(kind: .error, title: String(describing: error)))
             }
@@ -306,6 +330,25 @@
 
 #if os(iOS)
     extension View {
+        /// "Move Jake Turner’s Visit Too?" (owner, 2026-10-24): a plain alert when moving a shared
+        /// job runs into its second tech's day, with Move Anyway and Cancel. `anyway` saves it;
+        /// `cancel` runs after Cancel.
+        func moveConfirmAlert(
+            _ ask: Binding<MoveNeedsConfirm?>, cancel: @escaping () -> Void = {},
+            anyway: @escaping (MoveNeedsConfirm) -> Void
+        ) -> some View {
+            alert(
+                ask.wrappedValue?.confirm.title ?? "",
+                isPresented: Binding(get: { ask.wrappedValue != nil }, set: { if !$0 { ask.wrappedValue = nil } }),
+                presenting: ask.wrappedValue
+            ) { a in
+                Button(a.confirm.action) { anyway(a) }
+                Button("Cancel", role: .cancel) { cancel() }
+            } message: { a in
+                Text(a.confirm.message)
+            }
+        }
+
         /// "Move <Customer>'s visits?" (owner, 2026-10-20): Change Schedule, Just This Visit,
         /// Cancel. `answer` gets the move and whether it's Change Schedule.
         func planMoveDialog(

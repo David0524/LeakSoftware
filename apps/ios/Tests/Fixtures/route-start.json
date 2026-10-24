@@ -841,7 +841,8 @@
             "scheduled_end": "2026-10-21T21:46:00.000Z"
           }
         ],
-        "message": "Optimized · 3 hr 11 min driving"
+        "message": "Already the best order",
+        "unchanged": true
       }
     },
     {
@@ -978,7 +979,8 @@
             "scheduled_end": "2026-10-21T21:20:00.000Z"
           }
         ],
-        "message": "Optimized · 1 hr 13 min less driving"
+        "message": "Optimized · 1 hr 13 min less driving",
+        "unchanged": false
       }
     },
     {
@@ -1115,7 +1117,8 @@
             "scheduled_end": "2026-10-21T21:46:00.000Z"
           }
         ],
-        "message": "Optimized · 3 hr 11 min driving"
+        "message": "Already the best order",
+        "unchanged": true
       }
     },
     {
@@ -1249,7 +1252,8 @@
             "scheduled_end": "2026-10-21T21:20:00.000Z"
           }
         ],
-        "message": "Optimized · 1 hr 13 min less driving"
+        "message": "Optimized · 1 hr 13 min less driving",
+        "unchanged": false
       }
     },
     {
@@ -1359,7 +1363,8 @@
       "result": {
         "updates": [],
         "message": "Optimized · 20 min less driving",
-        "detail": "The shop has no location (Settings › Scheduling)."
+        "detail": "The shop has no location (Settings › Scheduling).",
+        "unchanged": false
       }
     }
   ],

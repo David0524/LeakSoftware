@@ -8,6 +8,12 @@
           "holdMs": 400,
           "slopPt": 8,
           "scrollSettleMs": 100
+        },
+        "OPTIMIZE_WORDS": {
+          "alreadyBest": "Already the best order",
+          "noChange": "No change",
+          "optimized": "Optimized",
+          "rest": "the rest are already in the best order"
         }
       }
     }
@@ -553,6 +559,1262 @@
         {
           "timeZone": "America/Phoenix",
           "settings": {
+            "dayStart": "07:40",
+            "dayEnd": "17:00",
+            "windowMin": 0,
+            "jobMinutes": 60,
+            "workDays": [
+              1,
+              2,
+              3,
+              4,
+              5
+            ]
+          },
+          "depot": {
+            "lat": 0,
+            "lng": 0
+          },
+          "today": "2026-10-20",
+          "nowMin": 480
+        },
+        "dana",
+        "2026-10-21",
+        [
+          {
+            "id": "abby",
+            "status": "scheduled",
+            "assigned_user_id": "dana",
+            "second_tech_id": "jake",
+            "scheduled_start": "2026-10-21T15:00:00Z",
+            "scheduled_end": "2026-10-21T16:00:00Z",
+            "route_order": 1,
+            "arrival_fixed": false,
+            "property": {
+              "latitude": 0,
+              "longitude": 1
+            }
+          },
+          {
+            "id": "ian",
+            "status": "scheduled",
+            "assigned_user_id": "dana",
+            "second_tech_id": "jake",
+            "scheduled_start": "2026-10-21T18:28:00Z",
+            "scheduled_end": "2026-10-21T19:28:00Z",
+            "route_order": 2,
+            "arrival_fixed": false,
+            "property": {
+              "latitude": 0,
+              "longitude": 2
+            }
+          },
+          {
+            "id": "saguaro",
+            "status": "scheduled",
+            "assigned_user_id": "dana",
+            "second_tech_id": "jake",
+            "scheduled_start": "2026-10-21T21:00:00Z",
+            "scheduled_end": "2026-10-21T22:00:00Z",
+            "route_order": 3,
+            "arrival_fixed": false,
+            "property": {
+              "latitude": 0,
+              "longitude": 3
+            }
+          }
+        ],
+        {
+          "0.0000,0.0000>0.0000,1.0000": 20,
+          "0.0000,1.0000>0.0000,0.0000": 20,
+          "0.0000,1.0000>0.0000,2.0000": 45,
+          "0.0000,2.0000>0.0000,1.0000": 45,
+          "0.0000,2.0000>0.0000,3.0000": 35,
+          "0.0000,3.0000>0.0000,2.0000": 35,
+          "0.0000,3.0000>0.0000,0.0000": 17,
+          "0.0000,0.0000>0.0000,3.0000": 17,
+          "0.0000,1.0000>0.0000,3.0000": 15,
+          "0.0000,3.0000>0.0000,1.0000": 15,
+          "0.0000,0.0000>0.0000,2.0000": 30,
+          "0.0000,2.0000>0.0000,0.0000": 22,
+          "0.0000,1.0000>0.0000,4.0000": 10,
+          "0.0000,4.0000>0.0000,1.0000": 10,
+          "0.0000,4.0000>0.0000,2.0000": 15,
+          "0.0000,2.0000>0.0000,4.0000": 15,
+          "0.0000,4.0000>0.0000,3.0000": 30,
+          "0.0000,3.0000>0.0000,4.0000": 30,
+          "0.0000,0.0000>0.0000,4.0000": 25,
+          "0.0000,4.0000>0.0000,0.0000": 25
+        },
+        {
+          "partners": [
+            {
+              "techId": "jake",
+              "jobs": [
+                {
+                  "id": "abby",
+                  "status": "scheduled",
+                  "assigned_user_id": "dana",
+                  "second_tech_id": "jake",
+                  "scheduled_start": "2026-10-21T15:00:00Z",
+                  "scheduled_end": "2026-10-21T16:00:00Z",
+                  "route_order": 1,
+                  "arrival_fixed": false,
+                  "property": {
+                    "latitude": 0,
+                    "longitude": 1
+                  }
+                },
+                {
+                  "id": "ian",
+                  "status": "scheduled",
+                  "assigned_user_id": "dana",
+                  "second_tech_id": "jake",
+                  "scheduled_start": "2026-10-21T18:28:00Z",
+                  "scheduled_end": "2026-10-21T19:28:00Z",
+                  "route_order": 2,
+                  "arrival_fixed": false,
+                  "property": {
+                    "latitude": 0,
+                    "longitude": 2
+                  }
+                },
+                {
+                  "id": "saguaro",
+                  "status": "scheduled",
+                  "assigned_user_id": "dana",
+                  "second_tech_id": "jake",
+                  "scheduled_start": "2026-10-21T21:00:00Z",
+                  "scheduled_end": "2026-10-21T22:00:00Z",
+                  "route_order": 3,
+                  "arrival_fixed": false,
+                  "property": {
+                    "latitude": 0,
+                    "longitude": 3
+                  }
+                }
+              ]
+            }
+          ],
+          "names": {
+            "dana": "Dana Owner",
+            "jake": "Jake Turner"
+          }
+        }
+      ],
+      "result": {
+        "updates": [
+          {
+            "id": "abby",
+            "route_order": 1,
+            "scheduled_start": "2026-10-21T15:00:00.000Z",
+            "scheduled_end": "2026-10-21T16:00:00.000Z"
+          },
+          {
+            "id": "saguaro",
+            "route_order": 2,
+            "scheduled_start": "2026-10-21T16:15:00.000Z",
+            "scheduled_end": "2026-10-21T17:15:00.000Z"
+          },
+          {
+            "id": "ian",
+            "route_order": 3,
+            "scheduled_start": "2026-10-21T17:50:00.000Z",
+            "scheduled_end": "2026-10-21T18:50:00.000Z"
+          }
+        ],
+        "message": "Optimized · 25 min less driving",
+        "unchanged": false
+      }
+    },
+    {
+      "args": [
+        {
+          "timeZone": "America/Phoenix",
+          "settings": {
+            "dayStart": "07:40",
+            "dayEnd": "17:00",
+            "windowMin": 0,
+            "jobMinutes": 60,
+            "workDays": [
+              1,
+              2,
+              3,
+              4,
+              5
+            ]
+          },
+          "depot": {
+            "lat": 0,
+            "lng": 0
+          },
+          "today": "2026-10-20",
+          "nowMin": 480
+        },
+        "dana",
+        "2026-10-21",
+        [
+          {
+            "id": "abby",
+            "status": "scheduled",
+            "assigned_user_id": "dana",
+            "second_tech_id": "jake",
+            "scheduled_start": "2026-10-21T15:00:00Z",
+            "scheduled_end": "2026-10-21T16:00:00Z",
+            "route_order": 1,
+            "arrival_fixed": false,
+            "property": {
+              "latitude": 0,
+              "longitude": 1
+            }
+          },
+          {
+            "id": "ian",
+            "status": "scheduled",
+            "assigned_user_id": "dana",
+            "second_tech_id": "jake",
+            "scheduled_start": "2026-10-21T18:28:00Z",
+            "scheduled_end": "2026-10-21T19:28:00Z",
+            "route_order": 2,
+            "arrival_fixed": false,
+            "property": {
+              "latitude": 0,
+              "longitude": 2
+            }
+          },
+          {
+            "id": "saguaro",
+            "status": "scheduled",
+            "assigned_user_id": "dana",
+            "second_tech_id": "jake",
+            "scheduled_start": "2026-10-21T21:00:00Z",
+            "scheduled_end": "2026-10-21T22:00:00Z",
+            "route_order": 3,
+            "arrival_fixed": false,
+            "property": {
+              "latitude": 0,
+              "longitude": 3
+            }
+          }
+        ],
+        {
+          "0.0000,0.0000>0.0000,1.0000": 20,
+          "0.0000,1.0000>0.0000,0.0000": 20,
+          "0.0000,1.0000>0.0000,2.0000": 45,
+          "0.0000,2.0000>0.0000,1.0000": 45,
+          "0.0000,2.0000>0.0000,3.0000": 35,
+          "0.0000,3.0000>0.0000,2.0000": 35,
+          "0.0000,3.0000>0.0000,0.0000": 17,
+          "0.0000,0.0000>0.0000,3.0000": 17,
+          "0.0000,1.0000>0.0000,3.0000": 15,
+          "0.0000,3.0000>0.0000,1.0000": 15,
+          "0.0000,0.0000>0.0000,2.0000": 30,
+          "0.0000,2.0000>0.0000,0.0000": 22,
+          "0.0000,1.0000>0.0000,4.0000": 10,
+          "0.0000,4.0000>0.0000,1.0000": 10,
+          "0.0000,4.0000>0.0000,2.0000": 15,
+          "0.0000,2.0000>0.0000,4.0000": 15,
+          "0.0000,4.0000>0.0000,3.0000": 30,
+          "0.0000,3.0000>0.0000,4.0000": 30,
+          "0.0000,0.0000>0.0000,4.0000": 25,
+          "0.0000,4.0000>0.0000,0.0000": 25
+        },
+        {
+          "partners": [
+            {
+              "techId": "jake",
+              "jobs": [
+                {
+                  "id": "abby",
+                  "status": "scheduled",
+                  "assigned_user_id": "dana",
+                  "second_tech_id": "jake",
+                  "scheduled_start": "2026-10-21T15:00:00Z",
+                  "scheduled_end": "2026-10-21T16:00:00Z",
+                  "route_order": 1,
+                  "arrival_fixed": false,
+                  "property": {
+                    "latitude": 0,
+                    "longitude": 1
+                  }
+                },
+                {
+                  "id": "other",
+                  "status": "scheduled",
+                  "assigned_user_id": "jake",
+                  "second_tech_id": null,
+                  "scheduled_start": "2026-10-21T16:30:00Z",
+                  "scheduled_end": "2026-10-21T17:30:00Z",
+                  "route_order": null,
+                  "arrival_fixed": false,
+                  "property": {
+                    "latitude": 0,
+                    "longitude": 4
+                  }
+                },
+                {
+                  "id": "ian",
+                  "status": "scheduled",
+                  "assigned_user_id": "dana",
+                  "second_tech_id": "jake",
+                  "scheduled_start": "2026-10-21T18:28:00Z",
+                  "scheduled_end": "2026-10-21T19:28:00Z",
+                  "route_order": 2,
+                  "arrival_fixed": false,
+                  "property": {
+                    "latitude": 0,
+                    "longitude": 2
+                  }
+                },
+                {
+                  "id": "saguaro",
+                  "status": "scheduled",
+                  "assigned_user_id": "dana",
+                  "second_tech_id": "jake",
+                  "scheduled_start": "2026-10-21T21:00:00Z",
+                  "scheduled_end": "2026-10-21T22:00:00Z",
+                  "route_order": 3,
+                  "arrival_fixed": false,
+                  "property": {
+                    "latitude": 0,
+                    "longitude": 3
+                  }
+                }
+              ]
+            }
+          ],
+          "names": {
+            "dana": "Dana Owner",
+            "jake": "Jake Turner"
+          }
+        }
+      ],
+      "result": {
+        "updates": [
+          {
+            "id": "abby",
+            "route_order": 1,
+            "scheduled_start": "2026-10-21T15:00:00.000Z",
+            "scheduled_end": "2026-10-21T16:00:00.000Z"
+          },
+          {
+            "id": "saguaro",
+            "route_order": 2
+          },
+          {
+            "id": "ian",
+            "route_order": 3,
+            "scheduled_start": "2026-10-21T22:35:00.000Z",
+            "scheduled_end": "2026-10-21T23:35:00.000Z"
+          }
+        ],
+        "message": "Optimized · 25 min less driving",
+        "detail": "1 stop stayed: shared with Jake Turner.",
+        "unchanged": false
+      }
+    },
+    {
+      "args": [
+        {
+          "timeZone": "America/Phoenix",
+          "settings": {
+            "dayStart": "07:40",
+            "dayEnd": "17:00",
+            "windowMin": 0,
+            "jobMinutes": 60,
+            "workDays": [
+              1,
+              2,
+              3,
+              4,
+              5
+            ]
+          },
+          "depot": {
+            "lat": 0,
+            "lng": 0
+          },
+          "today": "2026-10-20",
+          "nowMin": 480
+        },
+        "dana",
+        "2026-10-21",
+        [
+          {
+            "id": "abby",
+            "status": "scheduled",
+            "assigned_user_id": "dana",
+            "second_tech_id": "jake",
+            "scheduled_start": "2026-10-21T15:00:00Z",
+            "scheduled_end": "2026-10-21T16:00:00Z",
+            "route_order": 1,
+            "arrival_fixed": false,
+            "property": {
+              "latitude": 0,
+              "longitude": 1
+            }
+          },
+          {
+            "id": "ian",
+            "status": "scheduled",
+            "assigned_user_id": "dana",
+            "second_tech_id": "jake",
+            "scheduled_start": "2026-10-21T18:28:00Z",
+            "scheduled_end": "2026-10-21T19:28:00Z",
+            "route_order": 2,
+            "arrival_fixed": false,
+            "property": {
+              "latitude": 0,
+              "longitude": 2
+            }
+          },
+          {
+            "id": "saguaro",
+            "status": "scheduled",
+            "assigned_user_id": "dana",
+            "second_tech_id": "jake",
+            "scheduled_start": "2026-10-21T21:00:00Z",
+            "scheduled_end": "2026-10-21T22:00:00Z",
+            "route_order": 3,
+            "arrival_fixed": false,
+            "property": {
+              "latitude": 0,
+              "longitude": 3
+            }
+          }
+        ],
+        {
+          "0.0000,0.0000>0.0000,1.0000": 20,
+          "0.0000,1.0000>0.0000,0.0000": 20,
+          "0.0000,1.0000>0.0000,2.0000": 45,
+          "0.0000,2.0000>0.0000,1.0000": 45,
+          "0.0000,2.0000>0.0000,3.0000": 35,
+          "0.0000,3.0000>0.0000,2.0000": 35,
+          "0.0000,3.0000>0.0000,0.0000": 17,
+          "0.0000,0.0000>0.0000,3.0000": 17,
+          "0.0000,1.0000>0.0000,3.0000": 15,
+          "0.0000,3.0000>0.0000,1.0000": 15,
+          "0.0000,0.0000>0.0000,2.0000": 30,
+          "0.0000,2.0000>0.0000,0.0000": 22,
+          "0.0000,1.0000>0.0000,4.0000": 10,
+          "0.0000,4.0000>0.0000,1.0000": 10,
+          "0.0000,4.0000>0.0000,2.0000": 15,
+          "0.0000,2.0000>0.0000,4.0000": 15,
+          "0.0000,4.0000>0.0000,3.0000": 30,
+          "0.0000,3.0000>0.0000,4.0000": 30,
+          "0.0000,0.0000>0.0000,4.0000": 25,
+          "0.0000,4.0000>0.0000,0.0000": 25
+        },
+        {
+          "names": {
+            "dana": "Dana Owner",
+            "jake": "Jake Turner"
+          }
+        }
+      ],
+      "result": {
+        "updates": [
+          {
+            "id": "abby",
+            "route_order": 1
+          },
+          {
+            "id": "ian",
+            "route_order": 2
+          },
+          {
+            "id": "saguaro",
+            "route_order": 3
+          }
+        ],
+        "message": "No change: all 3 stops are shared with Jake Turner, so their times stay.",
+        "unchanged": true
+      }
+    },
+    {
+      "args": [
+        {
+          "timeZone": "America/Phoenix",
+          "settings": {
+            "dayStart": "07:40",
+            "dayEnd": "17:00",
+            "windowMin": 0,
+            "jobMinutes": 60,
+            "workDays": [
+              1,
+              2,
+              3,
+              4,
+              5
+            ]
+          },
+          "depot": {
+            "lat": 0,
+            "lng": 0
+          },
+          "today": "2026-10-20",
+          "nowMin": 480
+        },
+        "dana",
+        "2026-10-21",
+        [
+          {
+            "id": "saguaro",
+            "status": "scheduled",
+            "assigned_user_id": "dana",
+            "second_tech_id": "jake",
+            "scheduled_start": "2026-10-21T21:00:00Z",
+            "scheduled_end": "2026-10-21T22:00:00Z",
+            "route_order": 3,
+            "arrival_fixed": false,
+            "property": {
+              "latitude": 0,
+              "longitude": 3
+            }
+          }
+        ],
+        {
+          "0.0000,0.0000>0.0000,1.0000": 20,
+          "0.0000,1.0000>0.0000,0.0000": 20,
+          "0.0000,1.0000>0.0000,2.0000": 45,
+          "0.0000,2.0000>0.0000,1.0000": 45,
+          "0.0000,2.0000>0.0000,3.0000": 35,
+          "0.0000,3.0000>0.0000,2.0000": 35,
+          "0.0000,3.0000>0.0000,0.0000": 17,
+          "0.0000,0.0000>0.0000,3.0000": 17,
+          "0.0000,1.0000>0.0000,3.0000": 15,
+          "0.0000,3.0000>0.0000,1.0000": 15,
+          "0.0000,0.0000>0.0000,2.0000": 30,
+          "0.0000,2.0000>0.0000,0.0000": 22,
+          "0.0000,1.0000>0.0000,4.0000": 10,
+          "0.0000,4.0000>0.0000,1.0000": 10,
+          "0.0000,4.0000>0.0000,2.0000": 15,
+          "0.0000,2.0000>0.0000,4.0000": 15,
+          "0.0000,4.0000>0.0000,3.0000": 30,
+          "0.0000,3.0000>0.0000,4.0000": 30,
+          "0.0000,0.0000>0.0000,4.0000": 25,
+          "0.0000,4.0000>0.0000,0.0000": 25
+        },
+        {
+          "names": {
+            "dana": "Dana Owner",
+            "jake": "Jake Turner"
+          }
+        }
+      ],
+      "result": {
+        "updates": [
+          {
+            "id": "saguaro",
+            "route_order": 1
+          }
+        ],
+        "message": "No change: the stop is shared with Jake Turner, so its time stays.",
+        "unchanged": true
+      }
+    },
+    {
+      "args": [
+        {
+          "timeZone": "America/Phoenix",
+          "settings": {
+            "dayStart": "07:40",
+            "dayEnd": "17:00",
+            "windowMin": 0,
+            "jobMinutes": 60,
+            "workDays": [
+              1,
+              2,
+              3,
+              4,
+              5
+            ]
+          },
+          "depot": {
+            "lat": 0,
+            "lng": 0
+          },
+          "today": "2026-10-20",
+          "nowMin": 480
+        },
+        "dana",
+        "2026-10-21",
+        [
+          {
+            "id": "abby",
+            "status": "scheduled",
+            "assigned_user_id": "dana",
+            "second_tech_id": "jake",
+            "scheduled_start": "2026-10-21T15:00:00Z",
+            "scheduled_end": "2026-10-21T16:00:00Z",
+            "route_order": 1,
+            "arrival_fixed": false,
+            "property": {
+              "latitude": 0,
+              "longitude": 1
+            }
+          },
+          {
+            "id": "ian",
+            "status": "scheduled",
+            "assigned_user_id": "dana",
+            "second_tech_id": "jake",
+            "scheduled_start": "2026-10-21T18:28:00Z",
+            "scheduled_end": "2026-10-21T19:28:00Z",
+            "route_order": 2,
+            "arrival_fixed": false,
+            "property": {
+              "latitude": 0,
+              "longitude": 2
+            }
+          },
+          {
+            "id": "saguaro",
+            "status": "scheduled",
+            "assigned_user_id": "dana",
+            "second_tech_id": "jake",
+            "scheduled_start": "2026-10-21T21:00:00Z",
+            "scheduled_end": "2026-10-21T22:00:00Z",
+            "route_order": 3,
+            "arrival_fixed": false,
+            "property": {
+              "latitude": 0,
+              "longitude": 3
+            }
+          }
+        ],
+        {
+          "0.0000,0.0000>0.0000,1.0000": 20,
+          "0.0000,1.0000>0.0000,0.0000": 20,
+          "0.0000,1.0000>0.0000,2.0000": 45,
+          "0.0000,2.0000>0.0000,1.0000": 45,
+          "0.0000,2.0000>0.0000,3.0000": 35,
+          "0.0000,3.0000>0.0000,2.0000": 35,
+          "0.0000,3.0000>0.0000,0.0000": 17,
+          "0.0000,0.0000>0.0000,3.0000": 17,
+          "0.0000,1.0000>0.0000,3.0000": 15,
+          "0.0000,3.0000>0.0000,1.0000": 15,
+          "0.0000,0.0000>0.0000,2.0000": 30,
+          "0.0000,2.0000>0.0000,0.0000": 22,
+          "0.0000,1.0000>0.0000,4.0000": 10,
+          "0.0000,4.0000>0.0000,1.0000": 10,
+          "0.0000,4.0000>0.0000,2.0000": 15,
+          "0.0000,2.0000>0.0000,4.0000": 15,
+          "0.0000,4.0000>0.0000,3.0000": 30,
+          "0.0000,3.0000>0.0000,4.0000": 30,
+          "0.0000,0.0000>0.0000,4.0000": 25,
+          "0.0000,4.0000>0.0000,0.0000": 25
+        }
+      ],
+      "result": {
+        "updates": [
+          {
+            "id": "abby",
+            "route_order": 1
+          },
+          {
+            "id": "ian",
+            "route_order": 2
+          },
+          {
+            "id": "saguaro",
+            "route_order": 3
+          }
+        ],
+        "message": "No change: all 3 stops are shared with another tech, so their times stay.",
+        "unchanged": true
+      }
+    },
+    {
+      "args": [
+        {
+          "timeZone": "America/Phoenix",
+          "settings": {
+            "dayStart": "07:40",
+            "dayEnd": "17:00",
+            "windowMin": 0,
+            "jobMinutes": 60,
+            "workDays": [
+              1,
+              2,
+              3,
+              4,
+              5
+            ]
+          },
+          "depot": {
+            "lat": 0,
+            "lng": 0
+          },
+          "today": "2026-10-20",
+          "nowMin": 480
+        },
+        "jake",
+        "2026-10-21",
+        [
+          {
+            "id": "abby",
+            "status": "scheduled",
+            "assigned_user_id": "dana",
+            "second_tech_id": "jake",
+            "scheduled_start": "2026-10-21T15:00:00Z",
+            "scheduled_end": "2026-10-21T16:00:00Z",
+            "route_order": 1,
+            "arrival_fixed": false,
+            "property": {
+              "latitude": 0,
+              "longitude": 1
+            }
+          },
+          {
+            "id": "ian",
+            "status": "scheduled",
+            "assigned_user_id": "dana",
+            "second_tech_id": "jake",
+            "scheduled_start": "2026-10-21T18:28:00Z",
+            "scheduled_end": "2026-10-21T19:28:00Z",
+            "route_order": 2,
+            "arrival_fixed": false,
+            "property": {
+              "latitude": 0,
+              "longitude": 2
+            }
+          },
+          {
+            "id": "saguaro",
+            "status": "scheduled",
+            "assigned_user_id": "dana",
+            "second_tech_id": "jake",
+            "scheduled_start": "2026-10-21T21:00:00Z",
+            "scheduled_end": "2026-10-21T22:00:00Z",
+            "route_order": 3,
+            "arrival_fixed": false,
+            "property": {
+              "latitude": 0,
+              "longitude": 3
+            }
+          }
+        ],
+        {
+          "0.0000,0.0000>0.0000,1.0000": 20,
+          "0.0000,1.0000>0.0000,0.0000": 20,
+          "0.0000,1.0000>0.0000,2.0000": 45,
+          "0.0000,2.0000>0.0000,1.0000": 45,
+          "0.0000,2.0000>0.0000,3.0000": 35,
+          "0.0000,3.0000>0.0000,2.0000": 35,
+          "0.0000,3.0000>0.0000,0.0000": 17,
+          "0.0000,0.0000>0.0000,3.0000": 17,
+          "0.0000,1.0000>0.0000,3.0000": 15,
+          "0.0000,3.0000>0.0000,1.0000": 15,
+          "0.0000,0.0000>0.0000,2.0000": 30,
+          "0.0000,2.0000>0.0000,0.0000": 22,
+          "0.0000,1.0000>0.0000,4.0000": 10,
+          "0.0000,4.0000>0.0000,1.0000": 10,
+          "0.0000,4.0000>0.0000,2.0000": 15,
+          "0.0000,2.0000>0.0000,4.0000": 15,
+          "0.0000,4.0000>0.0000,3.0000": 30,
+          "0.0000,3.0000>0.0000,4.0000": 30,
+          "0.0000,0.0000>0.0000,4.0000": 25,
+          "0.0000,4.0000>0.0000,0.0000": 25
+        },
+        {
+          "partners": [
+            {
+              "techId": "dana",
+              "jobs": [
+                {
+                  "id": "abby",
+                  "status": "scheduled",
+                  "assigned_user_id": "dana",
+                  "second_tech_id": "jake",
+                  "scheduled_start": "2026-10-21T15:00:00Z",
+                  "scheduled_end": "2026-10-21T16:00:00Z",
+                  "route_order": 1,
+                  "arrival_fixed": false,
+                  "property": {
+                    "latitude": 0,
+                    "longitude": 1
+                  }
+                },
+                {
+                  "id": "ian",
+                  "status": "scheduled",
+                  "assigned_user_id": "dana",
+                  "second_tech_id": "jake",
+                  "scheduled_start": "2026-10-21T18:28:00Z",
+                  "scheduled_end": "2026-10-21T19:28:00Z",
+                  "route_order": 2,
+                  "arrival_fixed": false,
+                  "property": {
+                    "latitude": 0,
+                    "longitude": 2
+                  }
+                },
+                {
+                  "id": "saguaro",
+                  "status": "scheduled",
+                  "assigned_user_id": "dana",
+                  "second_tech_id": "jake",
+                  "scheduled_start": "2026-10-21T21:00:00Z",
+                  "scheduled_end": "2026-10-21T22:00:00Z",
+                  "route_order": 3,
+                  "arrival_fixed": false,
+                  "property": {
+                    "latitude": 0,
+                    "longitude": 3
+                  }
+                }
+              ]
+            }
+          ],
+          "names": {
+            "dana": "Dana Owner",
+            "jake": "Jake Turner"
+          }
+        }
+      ],
+      "result": {
+        "updates": [
+          {
+            "id": "abby",
+            "scheduled_start": "2026-10-21T15:00:00.000Z",
+            "scheduled_end": "2026-10-21T16:00:00.000Z"
+          },
+          {
+            "id": "saguaro",
+            "scheduled_start": "2026-10-21T16:15:00.000Z",
+            "scheduled_end": "2026-10-21T17:15:00.000Z"
+          },
+          {
+            "id": "ian",
+            "scheduled_start": "2026-10-21T17:50:00.000Z",
+            "scheduled_end": "2026-10-21T18:50:00.000Z"
+          }
+        ],
+        "message": "Optimized · 25 min less driving",
+        "unchanged": false
+      }
+    },
+    {
+      "args": [
+        {
+          "timeZone": "America/Phoenix",
+          "settings": {
+            "dayStart": "07:40",
+            "dayEnd": "17:00",
+            "windowMin": 0,
+            "jobMinutes": 60,
+            "workDays": [
+              1,
+              2,
+              3,
+              4,
+              5
+            ]
+          },
+          "depot": {
+            "lat": 0,
+            "lng": 0
+          },
+          "today": "2026-10-20",
+          "nowMin": 480
+        },
+        "dana",
+        "2026-10-21",
+        [
+          {
+            "id": "a",
+            "status": "in_progress",
+            "assigned_user_id": "dana",
+            "second_tech_id": null,
+            "scheduled_start": "2026-10-21T15:00:00Z",
+            "scheduled_end": "2026-10-21T16:00:00Z",
+            "route_order": null,
+            "arrival_fixed": false,
+            "property": {
+              "latitude": 0,
+              "longitude": 1
+            }
+          },
+          {
+            "id": "b",
+            "status": "scheduled",
+            "assigned_user_id": "dana",
+            "second_tech_id": null,
+            "scheduled_start": "2026-10-21T18:28:00Z",
+            "scheduled_end": "2026-10-21T19:28:00Z",
+            "route_order": null,
+            "arrival_fixed": false,
+            "property": {
+              "latitude": 0,
+              "longitude": 2
+            },
+            "lock_time": true
+          },
+          {
+            "id": "c",
+            "status": "scheduled",
+            "assigned_user_id": "dana",
+            "second_tech_id": "jake",
+            "scheduled_start": "2026-10-21T21:00:00Z",
+            "scheduled_end": "2026-10-21T22:00:00Z",
+            "route_order": null,
+            "arrival_fixed": false,
+            "property": {
+              "latitude": 0,
+              "longitude": 3
+            }
+          }
+        ],
+        {
+          "0.0000,0.0000>0.0000,1.0000": 20,
+          "0.0000,1.0000>0.0000,0.0000": 20,
+          "0.0000,1.0000>0.0000,2.0000": 45,
+          "0.0000,2.0000>0.0000,1.0000": 45,
+          "0.0000,2.0000>0.0000,3.0000": 35,
+          "0.0000,3.0000>0.0000,2.0000": 35,
+          "0.0000,3.0000>0.0000,0.0000": 17,
+          "0.0000,0.0000>0.0000,3.0000": 17,
+          "0.0000,1.0000>0.0000,3.0000": 15,
+          "0.0000,3.0000>0.0000,1.0000": 15,
+          "0.0000,0.0000>0.0000,2.0000": 30,
+          "0.0000,2.0000>0.0000,0.0000": 22,
+          "0.0000,1.0000>0.0000,4.0000": 10,
+          "0.0000,4.0000>0.0000,1.0000": 10,
+          "0.0000,4.0000>0.0000,2.0000": 15,
+          "0.0000,2.0000>0.0000,4.0000": 15,
+          "0.0000,4.0000>0.0000,3.0000": 30,
+          "0.0000,3.0000>0.0000,4.0000": 30,
+          "0.0000,0.0000>0.0000,4.0000": 25,
+          "0.0000,4.0000>0.0000,0.0000": 25
+        },
+        {
+          "names": {
+            "dana": "Dana Owner",
+            "jake": "Jake Turner"
+          }
+        }
+      ],
+      "result": {
+        "updates": [
+          {
+            "id": "a",
+            "route_order": 1
+          },
+          {
+            "id": "b",
+            "route_order": 2
+          },
+          {
+            "id": "c",
+            "route_order": 3
+          }
+        ],
+        "message": "No change: 3 stops stayed: 1 started, 1 time promised to the customer, 1 shared with Jake Turner.",
+        "unchanged": true
+      }
+    },
+    {
+      "args": [
+        {
+          "timeZone": "America/Phoenix",
+          "settings": {
+            "dayStart": "07:40",
+            "dayEnd": "17:00",
+            "windowMin": 0,
+            "jobMinutes": 60,
+            "workDays": [
+              1,
+              2,
+              3,
+              4,
+              5
+            ]
+          },
+          "depot": {
+            "lat": 0,
+            "lng": 0
+          },
+          "today": "2026-10-20",
+          "nowMin": 480
+        },
+        "dana",
+        "2026-10-21",
+        [
+          {
+            "id": "abby",
+            "status": "scheduled",
+            "assigned_user_id": "dana",
+            "second_tech_id": "jake",
+            "scheduled_start": "2026-10-21T15:00:00Z",
+            "scheduled_end": "2026-10-21T16:00:00Z",
+            "route_order": 1,
+            "arrival_fixed": false,
+            "property": {
+              "latitude": 0,
+              "longitude": 1
+            }
+          },
+          {
+            "id": "ian",
+            "status": "scheduled",
+            "assigned_user_id": "dana",
+            "second_tech_id": "jake",
+            "scheduled_start": "2026-10-21T18:28:00Z",
+            "scheduled_end": "2026-10-21T19:28:00Z",
+            "route_order": 2,
+            "arrival_fixed": false,
+            "property": {
+              "latitude": 0,
+              "longitude": 2
+            }
+          },
+          {
+            "id": "saguaro",
+            "status": "scheduled",
+            "assigned_user_id": "dana",
+            "second_tech_id": "jake",
+            "scheduled_start": "2026-10-21T21:00:00Z",
+            "scheduled_end": "2026-10-21T22:00:00Z",
+            "route_order": 3,
+            "arrival_fixed": false,
+            "property": {
+              "latitude": 0,
+              "longitude": 3
+            },
+            "lock_time": true
+          }
+        ],
+        {
+          "0.0000,0.0000>0.0000,1.0000": 20,
+          "0.0000,1.0000>0.0000,0.0000": 20,
+          "0.0000,1.0000>0.0000,2.0000": 45,
+          "0.0000,2.0000>0.0000,1.0000": 45,
+          "0.0000,2.0000>0.0000,3.0000": 35,
+          "0.0000,3.0000>0.0000,2.0000": 35,
+          "0.0000,3.0000>0.0000,0.0000": 17,
+          "0.0000,0.0000>0.0000,3.0000": 17,
+          "0.0000,1.0000>0.0000,3.0000": 15,
+          "0.0000,3.0000>0.0000,1.0000": 15,
+          "0.0000,0.0000>0.0000,2.0000": 30,
+          "0.0000,2.0000>0.0000,0.0000": 22,
+          "0.0000,1.0000>0.0000,4.0000": 10,
+          "0.0000,4.0000>0.0000,1.0000": 10,
+          "0.0000,4.0000>0.0000,2.0000": 15,
+          "0.0000,2.0000>0.0000,4.0000": 15,
+          "0.0000,4.0000>0.0000,3.0000": 30,
+          "0.0000,3.0000>0.0000,4.0000": 30,
+          "0.0000,0.0000>0.0000,4.0000": 25,
+          "0.0000,4.0000>0.0000,0.0000": 25
+        },
+        {
+          "partners": [
+            {
+              "techId": "jake",
+              "jobs": [
+                {
+                  "id": "abby",
+                  "status": "scheduled",
+                  "assigned_user_id": "dana",
+                  "second_tech_id": "jake",
+                  "scheduled_start": "2026-10-21T15:00:00Z",
+                  "scheduled_end": "2026-10-21T16:00:00Z",
+                  "route_order": 1,
+                  "arrival_fixed": false,
+                  "property": {
+                    "latitude": 0,
+                    "longitude": 1
+                  }
+                },
+                {
+                  "id": "ian",
+                  "status": "scheduled",
+                  "assigned_user_id": "dana",
+                  "second_tech_id": "jake",
+                  "scheduled_start": "2026-10-21T18:28:00Z",
+                  "scheduled_end": "2026-10-21T19:28:00Z",
+                  "route_order": 2,
+                  "arrival_fixed": false,
+                  "property": {
+                    "latitude": 0,
+                    "longitude": 2
+                  }
+                },
+                {
+                  "id": "saguaro",
+                  "status": "scheduled",
+                  "assigned_user_id": "dana",
+                  "second_tech_id": "jake",
+                  "scheduled_start": "2026-10-21T21:00:00Z",
+                  "scheduled_end": "2026-10-21T22:00:00Z",
+                  "route_order": 3,
+                  "arrival_fixed": false,
+                  "property": {
+                    "latitude": 0,
+                    "longitude": 3
+                  }
+                }
+              ]
+            }
+          ],
+          "names": {
+            "dana": "Dana Owner",
+            "jake": "Jake Turner"
+          }
+        }
+      ],
+      "result": {
+        "updates": [
+          {
+            "id": "abby",
+            "route_order": 1,
+            "scheduled_start": "2026-10-21T15:00:00.000Z",
+            "scheduled_end": "2026-10-21T16:00:00.000Z"
+          },
+          {
+            "id": "saguaro",
+            "route_order": 2
+          },
+          {
+            "id": "ian",
+            "route_order": 3,
+            "scheduled_start": "2026-10-21T22:35:00.000Z",
+            "scheduled_end": "2026-10-21T23:35:00.000Z"
+          }
+        ],
+        "message": "Optimized · 25 min less driving",
+        "detail": "1 stop stayed: time promised to the customer.",
+        "unchanged": false
+      }
+    },
+    {
+      "args": [
+        {
+          "timeZone": "America/Phoenix",
+          "settings": {
+            "dayStart": "07:40",
+            "dayEnd": "17:00",
+            "windowMin": 0,
+            "jobMinutes": 60,
+            "workDays": [
+              1,
+              2,
+              3,
+              4,
+              5
+            ]
+          },
+          "depot": {
+            "lat": 0,
+            "lng": 0
+          },
+          "today": "2026-10-20",
+          "nowMin": 480
+        },
+        "dana",
+        "2026-10-21",
+        [
+          {
+            "id": "a",
+            "status": "scheduled",
+            "assigned_user_id": "dana",
+            "second_tech_id": null,
+            "scheduled_start": "2026-10-21T15:00:00Z",
+            "scheduled_end": "2026-10-21T16:00:00Z",
+            "route_order": null,
+            "arrival_fixed": false,
+            "property": {
+              "latitude": 0,
+              "longitude": 1
+            }
+          },
+          {
+            "id": "b",
+            "status": "scheduled",
+            "assigned_user_id": "dana",
+            "second_tech_id": null,
+            "scheduled_start": "2026-10-21T16:15:00Z",
+            "scheduled_end": "2026-10-21T17:15:00Z",
+            "route_order": null,
+            "arrival_fixed": false,
+            "property": {
+              "latitude": 0,
+              "longitude": 3
+            }
+          },
+          {
+            "id": "c",
+            "status": "scheduled",
+            "assigned_user_id": "dana",
+            "second_tech_id": "jake",
+            "scheduled_start": "2026-10-21T18:28:00Z",
+            "scheduled_end": "2026-10-21T19:28:00Z",
+            "route_order": null,
+            "arrival_fixed": false,
+            "property": {
+              "latitude": 0,
+              "longitude": 2
+            }
+          }
+        ],
+        {
+          "0.0000,0.0000>0.0000,1.0000": 20,
+          "0.0000,1.0000>0.0000,0.0000": 20,
+          "0.0000,1.0000>0.0000,2.0000": 45,
+          "0.0000,2.0000>0.0000,1.0000": 45,
+          "0.0000,2.0000>0.0000,3.0000": 35,
+          "0.0000,3.0000>0.0000,2.0000": 35,
+          "0.0000,3.0000>0.0000,0.0000": 17,
+          "0.0000,0.0000>0.0000,3.0000": 17,
+          "0.0000,1.0000>0.0000,3.0000": 15,
+          "0.0000,3.0000>0.0000,1.0000": 15,
+          "0.0000,0.0000>0.0000,2.0000": 30,
+          "0.0000,2.0000>0.0000,0.0000": 22,
+          "0.0000,1.0000>0.0000,4.0000": 10,
+          "0.0000,4.0000>0.0000,1.0000": 10,
+          "0.0000,4.0000>0.0000,2.0000": 15,
+          "0.0000,2.0000>0.0000,4.0000": 15,
+          "0.0000,4.0000>0.0000,3.0000": 30,
+          "0.0000,3.0000>0.0000,4.0000": 30,
+          "0.0000,0.0000>0.0000,4.0000": 25,
+          "0.0000,4.0000>0.0000,0.0000": 25
+        },
+        {
+          "names": {
+            "dana": "Dana Owner",
+            "jake": "Jake Turner"
+          }
+        }
+      ],
+      "result": {
+        "updates": [
+          {
+            "id": "a",
+            "route_order": 1,
+            "scheduled_start": "2026-10-21T15:00:00.000Z",
+            "scheduled_end": "2026-10-21T16:00:00.000Z"
+          },
+          {
+            "id": "b",
+            "route_order": 2,
+            "scheduled_start": "2026-10-21T16:15:00.000Z",
+            "scheduled_end": "2026-10-21T17:15:00.000Z"
+          },
+          {
+            "id": "c",
+            "route_order": 3
+          }
+        ],
+        "message": "No change",
+        "detail": "1 stop stayed: shared with Jake Turner. The rest are already in the best order.",
+        "unchanged": true
+      }
+    },
+    {
+      "args": [
+        {
+          "timeZone": "America/Phoenix",
+          "settings": {
             "dayStart": "08:00",
             "dayEnd": "17:00",
             "windowMin": 0,
@@ -776,7 +2038,8 @@
           }
         ],
         "message": "Optimized · 18 min less driving",
-        "detail": "Driving to pools not on the map isn’t counted."
+        "detail": "1 stop stayed: time promised to the customer. Driving to pools not on the map isn’t counted.",
+        "unchanged": false
       }
     },
     {
@@ -863,7 +2126,9 @@
             "scheduled_end": "2026-10-20T23:41:00.000Z"
           }
         ],
-        "message": "Optimized · 1 hr 54 min driving"
+        "message": "Optimized · 1 hr 54 min driving",
+        "detail": "2 stops stayed: 1 started, 1 shared with another tech.",
+        "unchanged": false
       }
     },
     {
@@ -935,8 +2200,9 @@
             "scheduled_end": "2026-10-21T18:03:00.000Z"
           }
         ],
-        "message": "Optimized · 33 min driving",
-        "detail": "The shop has no location (Settings › Scheduling)."
+        "message": "Already the best order",
+        "detail": "The shop has no location (Settings › Scheduling).",
+        "unchanged": true
       }
     },
     {
@@ -1009,7 +2275,9 @@
             "scheduled_end": "2026-10-22T02:00:00.000Z"
           }
         ],
-        "message": "Optimized · 1 hr 52 min driving"
+        "message": "Optimized · 1 hr 52 min driving",
+        "detail": "1 stop stayed: time promised to the customer.",
+        "unchanged": false
       }
     },
     {
@@ -1084,7 +2352,9 @@
             "scheduled_end": "2026-11-01T16:00:00.000Z"
           }
         ],
-        "message": "Optimized · 1 hr 5 min driving"
+        "message": "Optimized · 1 hr 5 min driving",
+        "detail": "1 stop stayed: time promised to the customer.",
+        "unchanged": false
       }
     },
     {
@@ -1179,8 +2449,977 @@
             "scheduled_end": "2026-10-21T23:11:00.000Z"
           }
         ],
-        "message": "Optimized · 17 min less driving"
+        "message": "Optimized · 17 min less driving",
+        "detail": "2 stops stayed: time promised to the customer.",
+        "unchanged": false
       }
+    }
+  ],
+  "partnerProblem": [
+    {
+      "args": [
+        {
+          "timeZone": "America/Phoenix",
+          "settings": {
+            "dayStart": "07:40",
+            "dayEnd": "17:00",
+            "windowMin": 0,
+            "jobMinutes": 60,
+            "workDays": [
+              1,
+              2,
+              3,
+              4,
+              5
+            ]
+          },
+          "depot": {
+            "lat": 0,
+            "lng": 0
+          },
+          "today": "2026-10-20",
+          "nowMin": 480
+        },
+        {
+          "techId": "jake",
+          "jobs": [
+            {
+              "id": "abby",
+              "status": "scheduled",
+              "assigned_user_id": "dana",
+              "second_tech_id": "jake",
+              "scheduled_start": "2026-10-21T15:00:00Z",
+              "scheduled_end": "2026-10-21T16:00:00Z",
+              "route_order": 1,
+              "arrival_fixed": false,
+              "property": {
+                "latitude": 0,
+                "longitude": 1
+              }
+            },
+            {
+              "id": "other",
+              "status": "scheduled",
+              "assigned_user_id": "jake",
+              "second_tech_id": null,
+              "scheduled_start": "2026-10-21T16:30:00Z",
+              "scheduled_end": "2026-10-21T17:30:00Z",
+              "route_order": null,
+              "arrival_fixed": false,
+              "property": {
+                "latitude": 0,
+                "longitude": 4
+              }
+            },
+            {
+              "id": "ian",
+              "status": "scheduled",
+              "assigned_user_id": "dana",
+              "second_tech_id": "jake",
+              "scheduled_start": "2026-10-21T18:28:00Z",
+              "scheduled_end": "2026-10-21T19:28:00Z",
+              "route_order": 2,
+              "arrival_fixed": false,
+              "property": {
+                "latitude": 0,
+                "longitude": 2
+              }
+            },
+            {
+              "id": "saguaro",
+              "status": "scheduled",
+              "assigned_user_id": "dana",
+              "second_tech_id": "jake",
+              "scheduled_start": "2026-10-21T21:00:00Z",
+              "scheduled_end": "2026-10-21T22:00:00Z",
+              "route_order": 3,
+              "arrival_fixed": false,
+              "property": {
+                "latitude": 0,
+                "longitude": 3
+              }
+            }
+          ]
+        },
+        [],
+        {
+          "0.0000,0.0000>0.0000,1.0000": 20,
+          "0.0000,1.0000>0.0000,0.0000": 20,
+          "0.0000,1.0000>0.0000,2.0000": 45,
+          "0.0000,2.0000>0.0000,1.0000": 45,
+          "0.0000,2.0000>0.0000,3.0000": 35,
+          "0.0000,3.0000>0.0000,2.0000": 35,
+          "0.0000,3.0000>0.0000,0.0000": 17,
+          "0.0000,0.0000>0.0000,3.0000": 17,
+          "0.0000,1.0000>0.0000,3.0000": 15,
+          "0.0000,3.0000>0.0000,1.0000": 15,
+          "0.0000,0.0000>0.0000,2.0000": 30,
+          "0.0000,2.0000>0.0000,0.0000": 22,
+          "0.0000,1.0000>0.0000,4.0000": 10,
+          "0.0000,4.0000>0.0000,1.0000": 10,
+          "0.0000,4.0000>0.0000,2.0000": 15,
+          "0.0000,2.0000>0.0000,4.0000": 15,
+          "0.0000,4.0000>0.0000,3.0000": 30,
+          "0.0000,3.0000>0.0000,4.0000": 30,
+          "0.0000,0.0000>0.0000,4.0000": 25,
+          "0.0000,4.0000>0.0000,0.0000": 25
+        }
+      ],
+      "result": null
+    },
+    {
+      "args": [
+        {
+          "timeZone": "America/Phoenix",
+          "settings": {
+            "dayStart": "07:40",
+            "dayEnd": "17:00",
+            "windowMin": 0,
+            "jobMinutes": 60,
+            "workDays": [
+              1,
+              2,
+              3,
+              4,
+              5
+            ]
+          },
+          "depot": {
+            "lat": 0,
+            "lng": 0
+          },
+          "today": "2026-10-20",
+          "nowMin": 480
+        },
+        {
+          "techId": "jake",
+          "jobs": [
+            {
+              "id": "abby",
+              "status": "scheduled",
+              "assigned_user_id": "dana",
+              "second_tech_id": "jake",
+              "scheduled_start": "2026-10-21T15:00:00Z",
+              "scheduled_end": "2026-10-21T16:00:00Z",
+              "route_order": 1,
+              "arrival_fixed": false,
+              "property": {
+                "latitude": 0,
+                "longitude": 1
+              }
+            },
+            {
+              "id": "other",
+              "status": "scheduled",
+              "assigned_user_id": "jake",
+              "second_tech_id": null,
+              "scheduled_start": "2026-10-21T16:30:00Z",
+              "scheduled_end": "2026-10-21T17:30:00Z",
+              "route_order": null,
+              "arrival_fixed": false,
+              "property": {
+                "latitude": 0,
+                "longitude": 4
+              }
+            },
+            {
+              "id": "ian",
+              "status": "scheduled",
+              "assigned_user_id": "dana",
+              "second_tech_id": "jake",
+              "scheduled_start": "2026-10-21T18:28:00Z",
+              "scheduled_end": "2026-10-21T19:28:00Z",
+              "route_order": 2,
+              "arrival_fixed": false,
+              "property": {
+                "latitude": 0,
+                "longitude": 2
+              }
+            },
+            {
+              "id": "saguaro",
+              "status": "scheduled",
+              "assigned_user_id": "dana",
+              "second_tech_id": "jake",
+              "scheduled_start": "2026-10-21T21:00:00Z",
+              "scheduled_end": "2026-10-21T22:00:00Z",
+              "route_order": 3,
+              "arrival_fixed": false,
+              "property": {
+                "latitude": 0,
+                "longitude": 3
+              }
+            }
+          ]
+        },
+        [
+          {
+            "id": "saguaro",
+            "location": {
+              "lat": 0,
+              "lng": 3
+            },
+            "startMin": 555,
+            "durationMin": 60
+          }
+        ],
+        {
+          "0.0000,0.0000>0.0000,1.0000": 20,
+          "0.0000,1.0000>0.0000,0.0000": 20,
+          "0.0000,1.0000>0.0000,2.0000": 45,
+          "0.0000,2.0000>0.0000,1.0000": 45,
+          "0.0000,2.0000>0.0000,3.0000": 35,
+          "0.0000,3.0000>0.0000,2.0000": 35,
+          "0.0000,3.0000>0.0000,0.0000": 17,
+          "0.0000,0.0000>0.0000,3.0000": 17,
+          "0.0000,1.0000>0.0000,3.0000": 15,
+          "0.0000,3.0000>0.0000,1.0000": 15,
+          "0.0000,0.0000>0.0000,2.0000": 30,
+          "0.0000,2.0000>0.0000,0.0000": 22,
+          "0.0000,1.0000>0.0000,4.0000": 10,
+          "0.0000,4.0000>0.0000,1.0000": 10,
+          "0.0000,4.0000>0.0000,2.0000": 15,
+          "0.0000,2.0000>0.0000,4.0000": 15,
+          "0.0000,4.0000>0.0000,3.0000": 30,
+          "0.0000,3.0000>0.0000,4.0000": 30,
+          "0.0000,0.0000>0.0000,4.0000": 25,
+          "0.0000,4.0000>0.0000,0.0000": 25
+        }
+      ],
+      "result": {
+        "jobId": "saguaro",
+        "kind": "overlap",
+        "otherId": "other",
+        "otherMin": 570
+      }
+    },
+    {
+      "args": [
+        {
+          "timeZone": "America/Phoenix",
+          "settings": {
+            "dayStart": "07:40",
+            "dayEnd": "17:00",
+            "windowMin": 0,
+            "jobMinutes": 60,
+            "workDays": [
+              1,
+              2,
+              3,
+              4,
+              5
+            ]
+          },
+          "depot": {
+            "lat": 0,
+            "lng": 0
+          },
+          "today": "2026-10-20",
+          "nowMin": 480
+        },
+        {
+          "techId": "jake",
+          "jobs": [
+            {
+              "id": "abby",
+              "status": "scheduled",
+              "assigned_user_id": "dana",
+              "second_tech_id": "jake",
+              "scheduled_start": "2026-10-21T15:00:00Z",
+              "scheduled_end": "2026-10-21T16:00:00Z",
+              "route_order": 1,
+              "arrival_fixed": false,
+              "property": {
+                "latitude": 0,
+                "longitude": 1
+              }
+            },
+            {
+              "id": "other",
+              "status": "scheduled",
+              "assigned_user_id": "jake",
+              "second_tech_id": null,
+              "scheduled_start": "2026-10-21T16:30:00Z",
+              "scheduled_end": "2026-10-21T17:30:00Z",
+              "route_order": null,
+              "arrival_fixed": false,
+              "property": {
+                "latitude": 0,
+                "longitude": 4
+              }
+            },
+            {
+              "id": "ian",
+              "status": "scheduled",
+              "assigned_user_id": "dana",
+              "second_tech_id": "jake",
+              "scheduled_start": "2026-10-21T18:28:00Z",
+              "scheduled_end": "2026-10-21T19:28:00Z",
+              "route_order": 2,
+              "arrival_fixed": false,
+              "property": {
+                "latitude": 0,
+                "longitude": 2
+              }
+            },
+            {
+              "id": "saguaro",
+              "status": "scheduled",
+              "assigned_user_id": "dana",
+              "second_tech_id": "jake",
+              "scheduled_start": "2026-10-21T21:00:00Z",
+              "scheduled_end": "2026-10-21T22:00:00Z",
+              "route_order": 3,
+              "arrival_fixed": false,
+              "property": {
+                "latitude": 0,
+                "longitude": 3
+              }
+            }
+          ]
+        },
+        [
+          {
+            "id": "ian",
+            "location": {
+              "lat": 0,
+              "lng": 2
+            },
+            "startMin": 935,
+            "durationMin": 60
+          }
+        ],
+        {
+          "0.0000,0.0000>0.0000,1.0000": 20,
+          "0.0000,1.0000>0.0000,0.0000": 20,
+          "0.0000,1.0000>0.0000,2.0000": 45,
+          "0.0000,2.0000>0.0000,1.0000": 45,
+          "0.0000,2.0000>0.0000,3.0000": 35,
+          "0.0000,3.0000>0.0000,2.0000": 35,
+          "0.0000,3.0000>0.0000,0.0000": 17,
+          "0.0000,0.0000>0.0000,3.0000": 17,
+          "0.0000,1.0000>0.0000,3.0000": 15,
+          "0.0000,3.0000>0.0000,1.0000": 15,
+          "0.0000,0.0000>0.0000,2.0000": 30,
+          "0.0000,2.0000>0.0000,0.0000": 22,
+          "0.0000,1.0000>0.0000,4.0000": 10,
+          "0.0000,4.0000>0.0000,1.0000": 10,
+          "0.0000,4.0000>0.0000,2.0000": 15,
+          "0.0000,2.0000>0.0000,4.0000": 15,
+          "0.0000,4.0000>0.0000,3.0000": 30,
+          "0.0000,3.0000>0.0000,4.0000": 30,
+          "0.0000,0.0000>0.0000,4.0000": 25,
+          "0.0000,4.0000>0.0000,0.0000": 25
+        }
+      ],
+      "result": null
+    },
+    {
+      "args": [
+        {
+          "timeZone": "America/Phoenix",
+          "settings": {
+            "dayStart": "07:40",
+            "dayEnd": "17:00",
+            "windowMin": 0,
+            "jobMinutes": 60,
+            "workDays": [
+              1,
+              2,
+              3,
+              4,
+              5
+            ]
+          },
+          "depot": {
+            "lat": 0,
+            "lng": 0
+          },
+          "today": "2026-10-20",
+          "nowMin": 480
+        },
+        {
+          "techId": "jake",
+          "jobs": [
+            {
+              "id": "abby",
+              "status": "scheduled",
+              "assigned_user_id": "dana",
+              "second_tech_id": "jake",
+              "scheduled_start": "2026-10-21T15:00:00Z",
+              "scheduled_end": "2026-10-21T16:00:00Z",
+              "route_order": 1,
+              "arrival_fixed": false,
+              "property": {
+                "latitude": 0,
+                "longitude": 1
+              }
+            },
+            {
+              "id": "ian",
+              "status": "scheduled",
+              "assigned_user_id": "dana",
+              "second_tech_id": "jake",
+              "scheduled_start": "2026-10-21T18:28:00Z",
+              "scheduled_end": "2026-10-21T19:28:00Z",
+              "route_order": 2,
+              "arrival_fixed": false,
+              "property": {
+                "latitude": 0,
+                "longitude": 2
+              }
+            },
+            {
+              "id": "saguaro",
+              "status": "scheduled",
+              "assigned_user_id": "dana",
+              "second_tech_id": "jake",
+              "scheduled_start": "2026-10-21T21:00:00Z",
+              "scheduled_end": "2026-10-21T22:00:00Z",
+              "route_order": 3,
+              "arrival_fixed": false,
+              "property": {
+                "latitude": 0,
+                "longitude": 3
+              }
+            }
+          ]
+        },
+        [
+          {
+            "id": "saguaro",
+            "location": {
+              "lat": 0,
+              "lng": 3
+            },
+            "startMin": 555,
+            "durationMin": 60
+          },
+          {
+            "id": "ian",
+            "location": {
+              "lat": 0,
+              "lng": 2
+            },
+            "startMin": 650,
+            "durationMin": 60
+          }
+        ],
+        {
+          "0.0000,0.0000>0.0000,1.0000": 20,
+          "0.0000,1.0000>0.0000,0.0000": 20,
+          "0.0000,1.0000>0.0000,2.0000": 45,
+          "0.0000,2.0000>0.0000,1.0000": 45,
+          "0.0000,2.0000>0.0000,3.0000": 35,
+          "0.0000,3.0000>0.0000,2.0000": 35,
+          "0.0000,3.0000>0.0000,0.0000": 17,
+          "0.0000,0.0000>0.0000,3.0000": 17,
+          "0.0000,1.0000>0.0000,3.0000": 15,
+          "0.0000,3.0000>0.0000,1.0000": 15,
+          "0.0000,0.0000>0.0000,2.0000": 30,
+          "0.0000,2.0000>0.0000,0.0000": 22,
+          "0.0000,1.0000>0.0000,4.0000": 10,
+          "0.0000,4.0000>0.0000,1.0000": 10,
+          "0.0000,4.0000>0.0000,2.0000": 15,
+          "0.0000,2.0000>0.0000,4.0000": 15,
+          "0.0000,4.0000>0.0000,3.0000": 30,
+          "0.0000,3.0000>0.0000,4.0000": 30,
+          "0.0000,0.0000>0.0000,4.0000": 25,
+          "0.0000,4.0000>0.0000,0.0000": 25
+        }
+      ],
+      "result": null
+    },
+    {
+      "args": [
+        {
+          "timeZone": "America/Phoenix",
+          "settings": {
+            "dayStart": "07:40",
+            "dayEnd": "17:00",
+            "windowMin": 0,
+            "jobMinutes": 60,
+            "workDays": [
+              1,
+              2,
+              3,
+              4,
+              5
+            ]
+          },
+          "depot": {
+            "lat": 0,
+            "lng": 0
+          },
+          "today": "2026-10-20",
+          "nowMin": 480
+        },
+        {
+          "techId": "jake",
+          "jobs": [
+            {
+              "id": "other",
+              "status": "scheduled",
+              "assigned_user_id": "jake",
+              "second_tech_id": null,
+              "scheduled_start": "2026-10-21T16:30:00Z",
+              "scheduled_end": "2026-10-21T17:30:00Z",
+              "route_order": null,
+              "arrival_fixed": false,
+              "property": {
+                "latitude": 0,
+                "longitude": 4
+              }
+            }
+          ]
+        },
+        [
+          {
+            "id": "n",
+            "location": {
+              "lat": 0,
+              "lng": 3
+            },
+            "startMin": 990,
+            "durationMin": 60
+          }
+        ],
+        {
+          "0.0000,0.0000>0.0000,1.0000": 20,
+          "0.0000,1.0000>0.0000,0.0000": 20,
+          "0.0000,1.0000>0.0000,2.0000": 45,
+          "0.0000,2.0000>0.0000,1.0000": 45,
+          "0.0000,2.0000>0.0000,3.0000": 35,
+          "0.0000,3.0000>0.0000,2.0000": 35,
+          "0.0000,3.0000>0.0000,0.0000": 17,
+          "0.0000,0.0000>0.0000,3.0000": 17,
+          "0.0000,1.0000>0.0000,3.0000": 15,
+          "0.0000,3.0000>0.0000,1.0000": 15,
+          "0.0000,0.0000>0.0000,2.0000": 30,
+          "0.0000,2.0000>0.0000,0.0000": 22,
+          "0.0000,1.0000>0.0000,4.0000": 10,
+          "0.0000,4.0000>0.0000,1.0000": 10,
+          "0.0000,4.0000>0.0000,2.0000": 15,
+          "0.0000,2.0000>0.0000,4.0000": 15,
+          "0.0000,4.0000>0.0000,3.0000": 30,
+          "0.0000,3.0000>0.0000,4.0000": 30,
+          "0.0000,0.0000>0.0000,4.0000": 25,
+          "0.0000,4.0000>0.0000,0.0000": 25
+        }
+      ],
+      "result": {
+        "jobId": "n",
+        "kind": "overtime"
+      }
+    },
+    {
+      "args": [
+        {
+          "timeZone": "America/Phoenix",
+          "settings": {
+            "dayStart": "07:40",
+            "dayEnd": "17:00",
+            "windowMin": 0,
+            "jobMinutes": 60,
+            "workDays": [
+              1,
+              2,
+              3,
+              4,
+              5
+            ]
+          },
+          "depot": {
+            "lat": 0,
+            "lng": 0
+          },
+          "today": "2026-10-20",
+          "nowMin": 480
+        },
+        {
+          "techId": "jake",
+          "jobs": [
+            {
+              "id": "other",
+              "status": "scheduled",
+              "assigned_user_id": "jake",
+              "second_tech_id": null,
+              "scheduled_start": "2026-10-21T16:30:00Z",
+              "scheduled_end": "2026-10-21T17:30:00Z",
+              "route_order": null,
+              "arrival_fixed": false,
+              "property": {
+                "latitude": 0,
+                "longitude": 4
+              }
+            }
+          ]
+        },
+        [
+          {
+            "id": "n",
+            "location": {
+              "lat": 0,
+              "lng": 2
+            },
+            "startMin": 465,
+            "durationMin": 30
+          }
+        ],
+        {
+          "0.0000,0.0000>0.0000,1.0000": 20,
+          "0.0000,1.0000>0.0000,0.0000": 20,
+          "0.0000,1.0000>0.0000,2.0000": 45,
+          "0.0000,2.0000>0.0000,1.0000": 45,
+          "0.0000,2.0000>0.0000,3.0000": 35,
+          "0.0000,3.0000>0.0000,2.0000": 35,
+          "0.0000,3.0000>0.0000,0.0000": 17,
+          "0.0000,0.0000>0.0000,3.0000": 17,
+          "0.0000,1.0000>0.0000,3.0000": 15,
+          "0.0000,3.0000>0.0000,1.0000": 15,
+          "0.0000,0.0000>0.0000,2.0000": 30,
+          "0.0000,2.0000>0.0000,0.0000": 22,
+          "0.0000,1.0000>0.0000,4.0000": 10,
+          "0.0000,4.0000>0.0000,1.0000": 10,
+          "0.0000,4.0000>0.0000,2.0000": 15,
+          "0.0000,2.0000>0.0000,4.0000": 15,
+          "0.0000,4.0000>0.0000,3.0000": 30,
+          "0.0000,3.0000>0.0000,4.0000": 30,
+          "0.0000,0.0000>0.0000,4.0000": 25,
+          "0.0000,4.0000>0.0000,0.0000": 25
+        }
+      ],
+      "result": {
+        "jobId": "n",
+        "kind": "early"
+      }
+    },
+    {
+      "args": [
+        {
+          "timeZone": "America/Phoenix",
+          "settings": {
+            "dayStart": "07:40",
+            "dayEnd": "17:00",
+            "windowMin": 0,
+            "jobMinutes": 60,
+            "workDays": [
+              1,
+              2,
+              3,
+              4,
+              5
+            ]
+          },
+          "depot": {
+            "lat": 0,
+            "lng": 0
+          },
+          "today": "2026-10-20",
+          "nowMin": 480
+        },
+        {
+          "techId": "jake",
+          "jobs": [
+            {
+              "id": "other",
+              "status": "scheduled",
+              "assigned_user_id": "jake",
+              "second_tech_id": null,
+              "scheduled_start": "2026-10-21T16:30:00Z",
+              "scheduled_end": "2026-10-21T17:30:00Z",
+              "route_order": null,
+              "arrival_fixed": false,
+              "property": {
+                "latitude": 0,
+                "longitude": 4
+              }
+            }
+          ]
+        },
+        [
+          {
+            "id": "n",
+            "location": {
+              "lat": 0,
+              "lng": 2
+            },
+            "startMin": 540,
+            "durationMin": 30
+          }
+        ],
+        {
+          "0.0000,0.0000>0.0000,1.0000": 20,
+          "0.0000,1.0000>0.0000,0.0000": 20,
+          "0.0000,1.0000>0.0000,2.0000": 45,
+          "0.0000,2.0000>0.0000,1.0000": 45,
+          "0.0000,2.0000>0.0000,3.0000": 35,
+          "0.0000,3.0000>0.0000,2.0000": 35,
+          "0.0000,3.0000>0.0000,0.0000": 17,
+          "0.0000,0.0000>0.0000,3.0000": 17,
+          "0.0000,1.0000>0.0000,3.0000": 15,
+          "0.0000,3.0000>0.0000,1.0000": 15,
+          "0.0000,0.0000>0.0000,2.0000": 30,
+          "0.0000,2.0000>0.0000,0.0000": 22,
+          "0.0000,1.0000>0.0000,4.0000": 10,
+          "0.0000,4.0000>0.0000,1.0000": 10,
+          "0.0000,4.0000>0.0000,2.0000": 15,
+          "0.0000,2.0000>0.0000,4.0000": 15,
+          "0.0000,4.0000>0.0000,3.0000": 30,
+          "0.0000,3.0000>0.0000,4.0000": 30,
+          "0.0000,0.0000>0.0000,4.0000": 25,
+          "0.0000,4.0000>0.0000,0.0000": 25
+        }
+      ],
+      "result": {
+        "jobId": "n",
+        "kind": "overlap",
+        "otherId": "other",
+        "otherMin": 570
+      }
+    },
+    {
+      "args": [
+        {
+          "timeZone": "America/Phoenix",
+          "settings": {
+            "dayStart": "08:00",
+            "dayEnd": "17:00",
+            "windowMin": 0,
+            "jobMinutes": 150,
+            "workDays": [
+              1,
+              2,
+              3,
+              4,
+              5
+            ]
+          },
+          "depot": {
+            "lat": 0,
+            "lng": 0
+          },
+          "today": "2026-10-20",
+          "nowMin": 480,
+          "starts": [
+            {
+              "user_id": "jake",
+              "start_from": "home",
+              "home_address": "home",
+              "home_geocoded_address": null,
+              "home_latitude": 0,
+              "home_longitude": 4
+            }
+          ]
+        },
+        {
+          "techId": "jake",
+          "jobs": []
+        },
+        [
+          {
+            "id": "n",
+            "location": {
+              "lat": 0,
+              "lng": 4
+            },
+            "startMin": 480,
+            "durationMin": 60
+          }
+        ],
+        {
+          "0.0000,0.0000>0.0000,1.0000": 20,
+          "0.0000,1.0000>0.0000,0.0000": 20,
+          "0.0000,1.0000>0.0000,2.0000": 45,
+          "0.0000,2.0000>0.0000,1.0000": 45,
+          "0.0000,2.0000>0.0000,3.0000": 35,
+          "0.0000,3.0000>0.0000,2.0000": 35,
+          "0.0000,3.0000>0.0000,0.0000": 17,
+          "0.0000,0.0000>0.0000,3.0000": 17,
+          "0.0000,1.0000>0.0000,3.0000": 15,
+          "0.0000,3.0000>0.0000,1.0000": 15,
+          "0.0000,0.0000>0.0000,2.0000": 30,
+          "0.0000,2.0000>0.0000,0.0000": 22,
+          "0.0000,1.0000>0.0000,4.0000": 10,
+          "0.0000,4.0000>0.0000,1.0000": 10,
+          "0.0000,4.0000>0.0000,2.0000": 15,
+          "0.0000,2.0000>0.0000,4.0000": 15,
+          "0.0000,4.0000>0.0000,3.0000": 30,
+          "0.0000,3.0000>0.0000,4.0000": 30,
+          "0.0000,0.0000>0.0000,4.0000": 25,
+          "0.0000,4.0000>0.0000,0.0000": 25
+        }
+      ],
+      "result": null
+    }
+  ],
+  "keptNote": [
+    {
+      "args": [
+        []
+      ],
+      "result": null
+    },
+    {
+      "args": [
+        [
+          {
+            "id": "a",
+            "reason": "shared",
+            "techId": "jake"
+          }
+        ],
+        {
+          "dana": "Dana Owner",
+          "jake": "Jake Turner"
+        }
+      ],
+      "result": "1 stop stayed: shared with Jake Turner"
+    },
+    {
+      "args": [
+        [
+          {
+            "id": "a",
+            "reason": "shared",
+            "techId": "jake"
+          },
+          {
+            "id": "b",
+            "reason": "time"
+          },
+          {
+            "id": "c",
+            "reason": "shared",
+            "techId": "jake"
+          },
+          {
+            "id": "d",
+            "reason": "started"
+          },
+          {
+            "id": "e",
+            "reason": "shared",
+            "techId": "dana"
+          }
+        ],
+        {
+          "dana": "Dana Owner",
+          "jake": "Jake Turner"
+        }
+      ],
+      "result": "5 stops stayed: 1 started, 1 time promised to the customer, 2 shared with Jake Turner, 1 shared with Dana Owner"
+    },
+    {
+      "args": [
+        [
+          {
+            "id": "a",
+            "reason": "shared"
+          }
+        ]
+      ],
+      "result": "1 stop stayed: shared with another tech"
+    }
+  ],
+  "nothingMoved": [
+    {
+      "args": [
+        [
+          {
+            "id": "a",
+            "reason": "started"
+          }
+        ]
+      ],
+      "result": "No change: the stop has started, so its time stays."
+    },
+    {
+      "args": [
+        [
+          {
+            "id": "a",
+            "reason": "started"
+          },
+          {
+            "id": "b",
+            "reason": "started"
+          }
+        ]
+      ],
+      "result": "No change: both stops have started, so their times stay."
+    },
+    {
+      "args": [
+        [
+          {
+            "id": "a",
+            "reason": "time"
+          }
+        ]
+      ],
+      "result": "No change: the stop has a time promised to the customer, so its time stays."
+    },
+    {
+      "args": [
+        [
+          {
+            "id": "a",
+            "reason": "time"
+          },
+          {
+            "id": "b",
+            "reason": "time"
+          }
+        ]
+      ],
+      "result": "No change: both stops have times promised to the customer, so their times stay."
+    },
+    {
+      "args": [
+        [
+          {
+            "id": "a",
+            "reason": "shared",
+            "techId": "jake"
+          },
+          {
+            "id": "b",
+            "reason": "shared",
+            "techId": "jake"
+          },
+          {
+            "id": "c",
+            "reason": "shared",
+            "techId": "jake"
+          }
+        ],
+        {
+          "dana": "Dana Owner",
+          "jake": "Jake Turner"
+        }
+      ],
+      "result": "No change: all 3 stops are shared with Jake Turner, so their times stay."
+    },
+    {
+      "args": [
+        [
+          {
+            "id": "a",
+            "reason": "shared",
+            "techId": "jake"
+          },
+          {
+            "id": "b",
+            "reason": "time"
+          }
+        ],
+        {
+          "dana": "Dana Owner",
+          "jake": "Jake Turner"
+        }
+      ],
+      "result": "No change: 2 stops stayed: 1 time promised to the customer, 1 shared with Jake Turner."
     }
   ],
   "noteSentences": [
@@ -3958,6 +6197,1042 @@
           }
         ],
         "message": "Moved."
+      }
+    },
+    {
+      "args": [
+        {
+          "timeZone": "America/Phoenix",
+          "settings": {
+            "dayStart": "07:40",
+            "dayEnd": "17:00",
+            "windowMin": 0,
+            "jobMinutes": 60,
+            "workDays": [
+              1,
+              2,
+              3,
+              4,
+              5
+            ]
+          },
+          "depot": {
+            "lat": 0,
+            "lng": 0
+          },
+          "today": "2026-10-20",
+          "nowMin": 480
+        },
+        {
+          "tech": "dana",
+          "date": "2026-10-21",
+          "index": 2,
+          "targetDay": [
+            {
+              "id": "abby",
+              "status": "scheduled",
+              "assigned_user_id": "dana",
+              "second_tech_id": "jake",
+              "scheduled_start": "2026-10-21T15:00:00Z",
+              "scheduled_end": "2026-10-21T16:00:00Z",
+              "route_order": 1,
+              "arrival_fixed": false,
+              "property": {
+                "latitude": 0,
+                "longitude": 1
+              }
+            },
+            {
+              "id": "ian",
+              "status": "scheduled",
+              "assigned_user_id": "dana",
+              "second_tech_id": "jake",
+              "scheduled_start": "2026-10-21T18:28:00Z",
+              "scheduled_end": "2026-10-21T19:28:00Z",
+              "route_order": 2,
+              "arrival_fixed": false,
+              "property": {
+                "latitude": 0,
+                "longitude": 2
+              }
+            },
+            {
+              "id": "saguaro",
+              "status": "scheduled",
+              "assigned_user_id": "dana",
+              "second_tech_id": "jake",
+              "scheduled_start": "2026-10-21T21:00:00Z",
+              "scheduled_end": "2026-10-21T22:00:00Z",
+              "route_order": 3,
+              "arrival_fixed": false,
+              "property": {
+                "latitude": 0,
+                "longitude": 3
+              }
+            }
+          ],
+          "fromDay": [
+            {
+              "id": "abby",
+              "status": "scheduled",
+              "assigned_user_id": "dana",
+              "second_tech_id": "jake",
+              "scheduled_start": "2026-10-21T15:00:00Z",
+              "scheduled_end": "2026-10-21T16:00:00Z",
+              "route_order": 1,
+              "arrival_fixed": false,
+              "property": {
+                "latitude": 0,
+                "longitude": 1
+              }
+            },
+            {
+              "id": "ian",
+              "status": "scheduled",
+              "assigned_user_id": "dana",
+              "second_tech_id": "jake",
+              "scheduled_start": "2026-10-21T18:28:00Z",
+              "scheduled_end": "2026-10-21T19:28:00Z",
+              "route_order": 2,
+              "arrival_fixed": false,
+              "property": {
+                "latitude": 0,
+                "longitude": 2
+              }
+            },
+            {
+              "id": "saguaro",
+              "status": "scheduled",
+              "assigned_user_id": "dana",
+              "second_tech_id": "jake",
+              "scheduled_start": "2026-10-21T21:00:00Z",
+              "scheduled_end": "2026-10-21T22:00:00Z",
+              "route_order": 3,
+              "arrival_fixed": false,
+              "property": {
+                "latitude": 0,
+                "longitude": 3
+              }
+            }
+          ],
+          "seesAll": true,
+          "userId": "t1",
+          "job": {
+            "id": "ian",
+            "status": "scheduled",
+            "assigned_user_id": "dana",
+            "second_tech_id": "jake",
+            "scheduled_start": "2026-10-21T18:28:00Z",
+            "scheduled_end": "2026-10-21T19:28:00Z",
+            "route_order": 2,
+            "arrival_fixed": false,
+            "property": {
+              "latitude": 0,
+              "longitude": 2
+            }
+          },
+          "partnerDay": [
+            {
+              "id": "abby",
+              "status": "scheduled",
+              "assigned_user_id": "dana",
+              "second_tech_id": "jake",
+              "scheduled_start": "2026-10-21T15:00:00Z",
+              "scheduled_end": "2026-10-21T16:00:00Z",
+              "route_order": 1,
+              "arrival_fixed": false,
+              "property": {
+                "latitude": 0,
+                "longitude": 1
+              }
+            },
+            {
+              "id": "ian",
+              "status": "scheduled",
+              "assigned_user_id": "dana",
+              "second_tech_id": "jake",
+              "scheduled_start": "2026-10-21T18:28:00Z",
+              "scheduled_end": "2026-10-21T19:28:00Z",
+              "route_order": 2,
+              "arrival_fixed": false,
+              "property": {
+                "latitude": 0,
+                "longitude": 2
+              }
+            },
+            {
+              "id": "saguaro",
+              "status": "scheduled",
+              "assigned_user_id": "dana",
+              "second_tech_id": "jake",
+              "scheduled_start": "2026-10-21T21:00:00Z",
+              "scheduled_end": "2026-10-21T22:00:00Z",
+              "route_order": 3,
+              "arrival_fixed": false,
+              "property": {
+                "latitude": 0,
+                "longitude": 3
+              }
+            }
+          ],
+          "names": {
+            "dana": "Dana Owner",
+            "jake": "Jake Turner"
+          }
+        },
+        {
+          "0.0000,0.0000>0.0000,1.0000": 20,
+          "0.0000,1.0000>0.0000,0.0000": 20,
+          "0.0000,1.0000>0.0000,2.0000": 45,
+          "0.0000,2.0000>0.0000,1.0000": 45,
+          "0.0000,2.0000>0.0000,3.0000": 35,
+          "0.0000,3.0000>0.0000,2.0000": 35,
+          "0.0000,3.0000>0.0000,0.0000": 17,
+          "0.0000,0.0000>0.0000,3.0000": 17,
+          "0.0000,1.0000>0.0000,3.0000": 15,
+          "0.0000,3.0000>0.0000,1.0000": 15,
+          "0.0000,0.0000>0.0000,2.0000": 30,
+          "0.0000,2.0000>0.0000,0.0000": 22,
+          "0.0000,1.0000>0.0000,4.0000": 10,
+          "0.0000,4.0000>0.0000,1.0000": 10,
+          "0.0000,4.0000>0.0000,2.0000": 15,
+          "0.0000,2.0000>0.0000,4.0000": 15,
+          "0.0000,4.0000>0.0000,3.0000": 30,
+          "0.0000,3.0000>0.0000,4.0000": 30,
+          "0.0000,0.0000>0.0000,4.0000": 25,
+          "0.0000,4.0000>0.0000,0.0000": 25
+        }
+      ],
+      "result": {
+        "updates": [
+          {
+            "id": "ian",
+            "route_order": 3,
+            "scheduled_start": "2026-10-21T22:35:00.000Z",
+            "scheduled_end": "2026-10-21T23:35:00.000Z",
+            "assigned_user_id": "dana",
+            "status": "scheduled"
+          },
+          {
+            "id": "abby",
+            "route_order": 1
+          },
+          {
+            "id": "saguaro",
+            "route_order": 2
+          }
+        ],
+        "message": "Moved. Jake Turner’s visit moved too."
+      }
+    },
+    {
+      "args": [
+        {
+          "timeZone": "America/Phoenix",
+          "settings": {
+            "dayStart": "07:40",
+            "dayEnd": "17:00",
+            "windowMin": 0,
+            "jobMinutes": 60,
+            "workDays": [
+              1,
+              2,
+              3,
+              4,
+              5
+            ]
+          },
+          "depot": {
+            "lat": 0,
+            "lng": 0
+          },
+          "today": "2026-10-20",
+          "nowMin": 480
+        },
+        {
+          "tech": "dana",
+          "date": "2026-10-21",
+          "index": 2,
+          "targetDay": [
+            {
+              "id": "abby",
+              "status": "scheduled",
+              "assigned_user_id": "dana",
+              "second_tech_id": "jake",
+              "scheduled_start": "2026-10-21T15:00:00Z",
+              "scheduled_end": "2026-10-21T16:00:00Z",
+              "route_order": 1,
+              "arrival_fixed": false,
+              "property": {
+                "latitude": 0,
+                "longitude": 1
+              }
+            },
+            {
+              "id": "ian",
+              "status": "scheduled",
+              "assigned_user_id": "dana",
+              "second_tech_id": "jake",
+              "scheduled_start": "2026-10-21T18:28:00Z",
+              "scheduled_end": "2026-10-21T19:28:00Z",
+              "route_order": 2,
+              "arrival_fixed": false,
+              "property": {
+                "latitude": 0,
+                "longitude": 2
+              }
+            },
+            {
+              "id": "saguaro",
+              "status": "scheduled",
+              "assigned_user_id": "dana",
+              "second_tech_id": "jake",
+              "scheduled_start": "2026-10-21T21:00:00Z",
+              "scheduled_end": "2026-10-21T22:00:00Z",
+              "route_order": 3,
+              "arrival_fixed": false,
+              "property": {
+                "latitude": 0,
+                "longitude": 3
+              }
+            }
+          ],
+          "fromDay": [
+            {
+              "id": "abby",
+              "status": "scheduled",
+              "assigned_user_id": "dana",
+              "second_tech_id": "jake",
+              "scheduled_start": "2026-10-21T15:00:00Z",
+              "scheduled_end": "2026-10-21T16:00:00Z",
+              "route_order": 1,
+              "arrival_fixed": false,
+              "property": {
+                "latitude": 0,
+                "longitude": 1
+              }
+            },
+            {
+              "id": "ian",
+              "status": "scheduled",
+              "assigned_user_id": "dana",
+              "second_tech_id": "jake",
+              "scheduled_start": "2026-10-21T18:28:00Z",
+              "scheduled_end": "2026-10-21T19:28:00Z",
+              "route_order": 2,
+              "arrival_fixed": false,
+              "property": {
+                "latitude": 0,
+                "longitude": 2
+              }
+            },
+            {
+              "id": "saguaro",
+              "status": "scheduled",
+              "assigned_user_id": "dana",
+              "second_tech_id": "jake",
+              "scheduled_start": "2026-10-21T21:00:00Z",
+              "scheduled_end": "2026-10-21T22:00:00Z",
+              "route_order": 3,
+              "arrival_fixed": false,
+              "property": {
+                "latitude": 0,
+                "longitude": 3
+              }
+            }
+          ],
+          "seesAll": true,
+          "userId": "t1",
+          "job": {
+            "id": "ian",
+            "status": "scheduled",
+            "assigned_user_id": "dana",
+            "second_tech_id": "jake",
+            "scheduled_start": "2026-10-21T18:28:00Z",
+            "scheduled_end": "2026-10-21T19:28:00Z",
+            "route_order": 2,
+            "arrival_fixed": false,
+            "property": {
+              "latitude": 0,
+              "longitude": 2
+            }
+          },
+          "partnerDay": [
+            {
+              "id": "abby",
+              "status": "scheduled",
+              "assigned_user_id": "dana",
+              "second_tech_id": "jake",
+              "scheduled_start": "2026-10-21T15:00:00Z",
+              "scheduled_end": "2026-10-21T16:00:00Z",
+              "route_order": 1,
+              "arrival_fixed": false,
+              "property": {
+                "latitude": 0,
+                "longitude": 1
+              }
+            },
+            {
+              "id": "ian",
+              "status": "scheduled",
+              "assigned_user_id": "dana",
+              "second_tech_id": "jake",
+              "scheduled_start": "2026-10-21T18:28:00Z",
+              "scheduled_end": "2026-10-21T19:28:00Z",
+              "route_order": 2,
+              "arrival_fixed": false,
+              "property": {
+                "latitude": 0,
+                "longitude": 2
+              }
+            },
+            {
+              "id": "saguaro",
+              "status": "scheduled",
+              "assigned_user_id": "dana",
+              "second_tech_id": "jake",
+              "scheduled_start": "2026-10-21T21:00:00Z",
+              "scheduled_end": "2026-10-21T22:00:00Z",
+              "route_order": 3,
+              "arrival_fixed": false,
+              "property": {
+                "latitude": 0,
+                "longitude": 3
+              }
+            },
+            {
+              "id": "late",
+              "status": "scheduled",
+              "assigned_user_id": "jake",
+              "second_tech_id": null,
+              "scheduled_start": "2026-10-21T23:00:00Z",
+              "scheduled_end": "2026-10-21T23:45:00Z",
+              "route_order": null,
+              "arrival_fixed": false,
+              "property": {
+                "latitude": 0,
+                "longitude": 4
+              }
+            }
+          ],
+          "names": {
+            "dana": "Dana Owner",
+            "jake": "Jake Turner"
+          }
+        },
+        {
+          "0.0000,0.0000>0.0000,1.0000": 20,
+          "0.0000,1.0000>0.0000,0.0000": 20,
+          "0.0000,1.0000>0.0000,2.0000": 45,
+          "0.0000,2.0000>0.0000,1.0000": 45,
+          "0.0000,2.0000>0.0000,3.0000": 35,
+          "0.0000,3.0000>0.0000,2.0000": 35,
+          "0.0000,3.0000>0.0000,0.0000": 17,
+          "0.0000,0.0000>0.0000,3.0000": 17,
+          "0.0000,1.0000>0.0000,3.0000": 15,
+          "0.0000,3.0000>0.0000,1.0000": 15,
+          "0.0000,0.0000>0.0000,2.0000": 30,
+          "0.0000,2.0000>0.0000,0.0000": 22,
+          "0.0000,1.0000>0.0000,4.0000": 10,
+          "0.0000,4.0000>0.0000,1.0000": 10,
+          "0.0000,4.0000>0.0000,2.0000": 15,
+          "0.0000,2.0000>0.0000,4.0000": 15,
+          "0.0000,4.0000>0.0000,3.0000": 30,
+          "0.0000,3.0000>0.0000,4.0000": 30,
+          "0.0000,0.0000>0.0000,4.0000": 25,
+          "0.0000,4.0000>0.0000,0.0000": 25
+        }
+      ],
+      "result": {
+        "updates": [
+          {
+            "id": "ian",
+            "route_order": 3,
+            "scheduled_start": "2026-10-21T22:35:00.000Z",
+            "scheduled_end": "2026-10-21T23:35:00.000Z",
+            "assigned_user_id": "dana",
+            "status": "scheduled"
+          },
+          {
+            "id": "abby",
+            "route_order": 1
+          },
+          {
+            "id": "saguaro",
+            "route_order": 2
+          }
+        ],
+        "message": "Moved. Jake Turner’s visit moved too.",
+        "confirm": {
+          "title": "Move Jake Turner’s Visit Too?",
+          "message": "This also moves Jake Turner to 3:35 PM, which overlaps Jake’s 4:00 PM job.",
+          "action": "Move Anyway"
+        }
+      }
+    },
+    {
+      "args": [
+        {
+          "timeZone": "America/Phoenix",
+          "settings": {
+            "dayStart": "07:40",
+            "dayEnd": "17:00",
+            "windowMin": 0,
+            "jobMinutes": 60,
+            "workDays": [
+              1,
+              2,
+              3,
+              4,
+              5
+            ]
+          },
+          "depot": {
+            "lat": 0,
+            "lng": 0
+          },
+          "today": "2026-10-20",
+          "nowMin": 480
+        },
+        {
+          "tech": "dana",
+          "date": "2026-10-21",
+          "index": 2,
+          "targetDay": [
+            {
+              "id": "abby",
+              "status": "scheduled",
+              "assigned_user_id": "dana",
+              "second_tech_id": "jake",
+              "scheduled_start": "2026-10-21T15:00:00Z",
+              "scheduled_end": "2026-10-21T16:00:00Z",
+              "route_order": 1,
+              "arrival_fixed": false,
+              "property": {
+                "latitude": 0,
+                "longitude": 1
+              }
+            },
+            {
+              "id": "ian",
+              "status": "scheduled",
+              "assigned_user_id": "dana",
+              "second_tech_id": "jake",
+              "scheduled_start": "2026-10-21T18:28:00Z",
+              "scheduled_end": "2026-10-21T19:28:00Z",
+              "route_order": 2,
+              "arrival_fixed": false,
+              "property": {
+                "latitude": 0,
+                "longitude": 2
+              }
+            },
+            {
+              "id": "saguaro",
+              "status": "scheduled",
+              "assigned_user_id": "dana",
+              "second_tech_id": "jake",
+              "scheduled_start": "2026-10-21T21:00:00Z",
+              "scheduled_end": "2026-10-21T22:00:00Z",
+              "route_order": 3,
+              "arrival_fixed": false,
+              "property": {
+                "latitude": 0,
+                "longitude": 3
+              }
+            }
+          ],
+          "fromDay": [
+            {
+              "id": "abby",
+              "status": "scheduled",
+              "assigned_user_id": "dana",
+              "second_tech_id": "jake",
+              "scheduled_start": "2026-10-21T15:00:00Z",
+              "scheduled_end": "2026-10-21T16:00:00Z",
+              "route_order": 1,
+              "arrival_fixed": false,
+              "property": {
+                "latitude": 0,
+                "longitude": 1
+              }
+            },
+            {
+              "id": "ian",
+              "status": "scheduled",
+              "assigned_user_id": "dana",
+              "second_tech_id": "jake",
+              "scheduled_start": "2026-10-21T18:28:00Z",
+              "scheduled_end": "2026-10-21T19:28:00Z",
+              "route_order": 2,
+              "arrival_fixed": false,
+              "property": {
+                "latitude": 0,
+                "longitude": 2
+              }
+            },
+            {
+              "id": "saguaro",
+              "status": "scheduled",
+              "assigned_user_id": "dana",
+              "second_tech_id": "jake",
+              "scheduled_start": "2026-10-21T21:00:00Z",
+              "scheduled_end": "2026-10-21T22:00:00Z",
+              "route_order": 3,
+              "arrival_fixed": false,
+              "property": {
+                "latitude": 0,
+                "longitude": 3
+              }
+            }
+          ],
+          "seesAll": true,
+          "userId": "t1",
+          "job": {
+            "id": "ian",
+            "status": "scheduled",
+            "assigned_user_id": "dana",
+            "second_tech_id": "jake",
+            "scheduled_start": "2026-10-21T18:28:00Z",
+            "scheduled_end": "2026-10-21T19:28:00Z",
+            "route_order": 2,
+            "arrival_fixed": false,
+            "property": {
+              "latitude": 0,
+              "longitude": 2
+            }
+          },
+          "names": {
+            "dana": "Dana Owner",
+            "jake": "Jake Turner"
+          }
+        },
+        {
+          "0.0000,0.0000>0.0000,1.0000": 20,
+          "0.0000,1.0000>0.0000,0.0000": 20,
+          "0.0000,1.0000>0.0000,2.0000": 45,
+          "0.0000,2.0000>0.0000,1.0000": 45,
+          "0.0000,2.0000>0.0000,3.0000": 35,
+          "0.0000,3.0000>0.0000,2.0000": 35,
+          "0.0000,3.0000>0.0000,0.0000": 17,
+          "0.0000,0.0000>0.0000,3.0000": 17,
+          "0.0000,1.0000>0.0000,3.0000": 15,
+          "0.0000,3.0000>0.0000,1.0000": 15,
+          "0.0000,0.0000>0.0000,2.0000": 30,
+          "0.0000,2.0000>0.0000,0.0000": 22,
+          "0.0000,1.0000>0.0000,4.0000": 10,
+          "0.0000,4.0000>0.0000,1.0000": 10,
+          "0.0000,4.0000>0.0000,2.0000": 15,
+          "0.0000,2.0000>0.0000,4.0000": 15,
+          "0.0000,4.0000>0.0000,3.0000": 30,
+          "0.0000,3.0000>0.0000,4.0000": 30,
+          "0.0000,0.0000>0.0000,4.0000": 25,
+          "0.0000,4.0000>0.0000,0.0000": 25
+        }
+      ],
+      "result": {
+        "updates": [
+          {
+            "id": "ian",
+            "route_order": 3,
+            "scheduled_start": "2026-10-21T22:35:00.000Z",
+            "scheduled_end": "2026-10-21T23:35:00.000Z",
+            "assigned_user_id": "dana",
+            "status": "scheduled"
+          },
+          {
+            "id": "abby",
+            "route_order": 1
+          },
+          {
+            "id": "saguaro",
+            "route_order": 2
+          }
+        ],
+        "message": "Moved. Jake Turner’s visit moved too."
+      }
+    },
+    {
+      "args": [
+        {
+          "timeZone": "America/Phoenix",
+          "settings": {
+            "dayStart": "07:40",
+            "dayEnd": "17:00",
+            "windowMin": 0,
+            "jobMinutes": 60,
+            "workDays": [
+              1,
+              2,
+              3,
+              4,
+              5
+            ]
+          },
+          "depot": {
+            "lat": 0,
+            "lng": 0
+          },
+          "today": "2026-10-20",
+          "nowMin": 480
+        },
+        {
+          "tech": "dana",
+          "date": "2026-10-22",
+          "index": 0,
+          "targetDay": [],
+          "fromDay": [
+            {
+              "id": "abby",
+              "status": "scheduled",
+              "assigned_user_id": "dana",
+              "second_tech_id": "jake",
+              "scheduled_start": "2026-10-21T15:00:00Z",
+              "scheduled_end": "2026-10-21T16:00:00Z",
+              "route_order": 1,
+              "arrival_fixed": false,
+              "property": {
+                "latitude": 0,
+                "longitude": 1
+              }
+            },
+            {
+              "id": "ian",
+              "status": "scheduled",
+              "assigned_user_id": "dana",
+              "second_tech_id": "jake",
+              "scheduled_start": "2026-10-21T18:28:00Z",
+              "scheduled_end": "2026-10-21T19:28:00Z",
+              "route_order": 2,
+              "arrival_fixed": false,
+              "property": {
+                "latitude": 0,
+                "longitude": 2
+              }
+            },
+            {
+              "id": "saguaro",
+              "status": "scheduled",
+              "assigned_user_id": "dana",
+              "second_tech_id": "jake",
+              "scheduled_start": "2026-10-21T21:00:00Z",
+              "scheduled_end": "2026-10-21T22:00:00Z",
+              "route_order": 3,
+              "arrival_fixed": false,
+              "property": {
+                "latitude": 0,
+                "longitude": 3
+              }
+            }
+          ],
+          "seesAll": true,
+          "userId": "t1",
+          "job": {
+            "id": "ian",
+            "status": "scheduled",
+            "assigned_user_id": "dana",
+            "second_tech_id": "jake",
+            "scheduled_start": "2026-10-21T18:28:00Z",
+            "scheduled_end": "2026-10-21T19:28:00Z",
+            "route_order": 2,
+            "arrival_fixed": false,
+            "property": {
+              "latitude": 0,
+              "longitude": 2
+            }
+          },
+          "partnerDay": [
+            {
+              "id": "early",
+              "status": "scheduled",
+              "assigned_user_id": "jake",
+              "second_tech_id": null,
+              "scheduled_start": "2026-10-21T15:00:00Z",
+              "scheduled_end": "2026-10-21T15:30:00Z",
+              "route_order": null,
+              "arrival_fixed": false,
+              "property": {
+                "latitude": 0,
+                "longitude": 4
+              }
+            }
+          ],
+          "names": {
+            "dana": "Dana Owner",
+            "jake": "Jake Turner"
+          }
+        },
+        {
+          "0.0000,0.0000>0.0000,1.0000": 20,
+          "0.0000,1.0000>0.0000,0.0000": 20,
+          "0.0000,1.0000>0.0000,2.0000": 45,
+          "0.0000,2.0000>0.0000,1.0000": 45,
+          "0.0000,2.0000>0.0000,3.0000": 35,
+          "0.0000,3.0000>0.0000,2.0000": 35,
+          "0.0000,3.0000>0.0000,0.0000": 17,
+          "0.0000,0.0000>0.0000,3.0000": 17,
+          "0.0000,1.0000>0.0000,3.0000": 15,
+          "0.0000,3.0000>0.0000,1.0000": 15,
+          "0.0000,0.0000>0.0000,2.0000": 30,
+          "0.0000,2.0000>0.0000,0.0000": 22,
+          "0.0000,1.0000>0.0000,4.0000": 10,
+          "0.0000,4.0000>0.0000,1.0000": 10,
+          "0.0000,4.0000>0.0000,2.0000": 15,
+          "0.0000,2.0000>0.0000,4.0000": 15,
+          "0.0000,4.0000>0.0000,3.0000": 30,
+          "0.0000,3.0000>0.0000,4.0000": 30,
+          "0.0000,0.0000>0.0000,4.0000": 25,
+          "0.0000,4.0000>0.0000,0.0000": 25
+        }
+      ],
+      "result": {
+        "updates": [
+          {
+            "id": "ian",
+            "route_order": 1,
+            "scheduled_start": "2026-10-22T15:10:00.000Z",
+            "scheduled_end": "2026-10-22T16:10:00.000Z",
+            "assigned_user_id": "dana",
+            "status": "scheduled"
+          },
+          {
+            "id": "saguaro",
+            "route_order": 2
+          }
+        ],
+        "message": "Moved. Jake Turner’s visit moved too.",
+        "confirm": {
+          "title": "Move Jake Turner’s Visit Too?",
+          "message": "This also moves Jake Turner to Thu, Oct 22 at 8:10 AM, which overlaps Jake’s 8:00 AM job.",
+          "action": "Move Anyway"
+        }
+      }
+    },
+    {
+      "args": [
+        {
+          "timeZone": "America/Phoenix",
+          "settings": {
+            "dayStart": "07:40",
+            "dayEnd": "17:00",
+            "windowMin": 0,
+            "jobMinutes": 60,
+            "workDays": [
+              1,
+              2,
+              3,
+              4,
+              5
+            ]
+          },
+          "depot": {
+            "lat": 0,
+            "lng": 0
+          },
+          "today": "2026-10-20",
+          "nowMin": 480
+        },
+        {
+          "tech": "dana",
+          "date": "2026-10-21",
+          "index": 2,
+          "targetDay": [
+            {
+              "id": "abby",
+              "status": "scheduled",
+              "assigned_user_id": "dana",
+              "second_tech_id": "jake",
+              "scheduled_start": "2026-10-21T15:00:00Z",
+              "scheduled_end": "2026-10-21T16:00:00Z",
+              "route_order": 1,
+              "arrival_fixed": false,
+              "property": {
+                "latitude": 0,
+                "longitude": 1
+              }
+            },
+            {
+              "id": "ian",
+              "status": "scheduled",
+              "assigned_user_id": "dana",
+              "second_tech_id": "jake",
+              "scheduled_start": "2026-10-21T18:28:00Z",
+              "scheduled_end": "2026-10-21T19:28:00Z",
+              "route_order": 2,
+              "arrival_fixed": false,
+              "property": {
+                "latitude": 0,
+                "longitude": 2
+              }
+            },
+            {
+              "id": "saguaro",
+              "status": "scheduled",
+              "assigned_user_id": "dana",
+              "second_tech_id": "jake",
+              "scheduled_start": "2026-10-21T21:00:00Z",
+              "scheduled_end": "2026-10-21T22:00:00Z",
+              "route_order": 3,
+              "arrival_fixed": false,
+              "property": {
+                "latitude": 0,
+                "longitude": 3
+              }
+            }
+          ],
+          "fromDay": [
+            {
+              "id": "abby",
+              "status": "scheduled",
+              "assigned_user_id": "dana",
+              "second_tech_id": "jake",
+              "scheduled_start": "2026-10-21T15:00:00Z",
+              "scheduled_end": "2026-10-21T16:00:00Z",
+              "route_order": 1,
+              "arrival_fixed": false,
+              "property": {
+                "latitude": 0,
+                "longitude": 1
+              }
+            },
+            {
+              "id": "ian",
+              "status": "scheduled",
+              "assigned_user_id": "dana",
+              "second_tech_id": "jake",
+              "scheduled_start": "2026-10-21T18:28:00Z",
+              "scheduled_end": "2026-10-21T19:28:00Z",
+              "route_order": 2,
+              "arrival_fixed": false,
+              "property": {
+                "latitude": 0,
+                "longitude": 2
+              }
+            },
+            {
+              "id": "saguaro",
+              "status": "scheduled",
+              "assigned_user_id": "dana",
+              "second_tech_id": "jake",
+              "scheduled_start": "2026-10-21T21:00:00Z",
+              "scheduled_end": "2026-10-21T22:00:00Z",
+              "route_order": 3,
+              "arrival_fixed": false,
+              "property": {
+                "latitude": 0,
+                "longitude": 3
+              }
+            }
+          ],
+          "seesAll": true,
+          "userId": "t1",
+          "job": {
+            "id": "ian",
+            "status": "scheduled",
+            "assigned_user_id": "dana",
+            "second_tech_id": "jake",
+            "scheduled_start": "2026-10-21T18:28:00Z",
+            "scheduled_end": "2026-10-21T19:28:00Z",
+            "route_order": 2,
+            "arrival_fixed": false,
+            "property": {
+              "latitude": 0,
+              "longitude": 2
+            }
+          },
+          "partnerDay": [
+            {
+              "id": "other",
+              "status": "scheduled",
+              "assigned_user_id": "jake",
+              "second_tech_id": null,
+              "scheduled_start": "2026-10-21T16:30:00Z",
+              "scheduled_end": "2026-10-21T17:30:00Z",
+              "route_order": null,
+              "arrival_fixed": false,
+              "property": {
+                "latitude": 0,
+                "longitude": 4
+              }
+            },
+            {
+              "id": "saguaro",
+              "status": "scheduled",
+              "assigned_user_id": "dana",
+              "second_tech_id": "jake",
+              "scheduled_start": "2026-10-21T21:00:00Z",
+              "scheduled_end": "2026-10-21T22:00:00Z",
+              "route_order": 3,
+              "arrival_fixed": false,
+              "property": {
+                "latitude": 0,
+                "longitude": 3
+              }
+            },
+            {
+              "id": "x",
+              "status": "scheduled",
+              "assigned_user_id": "jake",
+              "second_tech_id": null,
+              "scheduled_start": "2026-10-21T22:40:00Z",
+              "scheduled_end": "2026-10-21T23:59:00Z",
+              "route_order": null,
+              "arrival_fixed": false,
+              "property": {
+                "latitude": 0,
+                "longitude": 0
+              }
+            }
+          ]
+        },
+        {
+          "0.0000,0.0000>0.0000,1.0000": 20,
+          "0.0000,1.0000>0.0000,0.0000": 20,
+          "0.0000,1.0000>0.0000,2.0000": 45,
+          "0.0000,2.0000>0.0000,1.0000": 45,
+          "0.0000,2.0000>0.0000,3.0000": 35,
+          "0.0000,3.0000>0.0000,2.0000": 35,
+          "0.0000,3.0000>0.0000,0.0000": 17,
+          "0.0000,0.0000>0.0000,3.0000": 17,
+          "0.0000,1.0000>0.0000,3.0000": 15,
+          "0.0000,3.0000>0.0000,1.0000": 15,
+          "0.0000,0.0000>0.0000,2.0000": 30,
+          "0.0000,2.0000>0.0000,0.0000": 22,
+          "0.0000,1.0000>0.0000,4.0000": 10,
+          "0.0000,4.0000>0.0000,1.0000": 10,
+          "0.0000,4.0000>0.0000,2.0000": 15,
+          "0.0000,2.0000>0.0000,4.0000": 15,
+          "0.0000,4.0000>0.0000,3.0000": 30,
+          "0.0000,3.0000>0.0000,4.0000": 30,
+          "0.0000,0.0000>0.0000,4.0000": 25,
+          "0.0000,4.0000>0.0000,0.0000": 25
+        }
+      ],
+      "result": {
+        "updates": [
+          {
+            "id": "ian",
+            "route_order": 3,
+            "scheduled_start": "2026-10-21T22:35:00.000Z",
+            "scheduled_end": "2026-10-21T23:35:00.000Z",
+            "assigned_user_id": "dana",
+            "status": "scheduled"
+          },
+          {
+            "id": "abby",
+            "route_order": 1
+          },
+          {
+            "id": "saguaro",
+            "route_order": 2
+          }
+        ],
+        "message": "Moved. The second tech’s visit moved too.",
+        "confirm": {
+          "title": "Move the Second Tech’s Visit Too?",
+          "message": "This also moves the second tech to 3:35 PM, which overlaps their 3:40 PM job.",
+          "action": "Move Anyway"
+        }
       }
     },
     {

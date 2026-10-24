@@ -7,7 +7,6 @@ import {
   addDays,
   canMoveJob,
   canUnschedule,
-  durationLabel,
   formatAddress,
   isDateString,
   jobLock,
@@ -15,9 +14,11 @@ import {
   localDate,
   localMinutes,
   minutesLabel,
-  optimizeRoute,
+  partnerOf,
+  planDay,
   propertyLocation,
   routeUpdates,
+  sharedMove,
   stopFor,
   suggestSlots,
   timeRoute,
@@ -26,6 +27,8 @@ import {
   zonedMinutesToIso,
   type JobUpdate,
   type LatLng,
+  type MoveConfirm,
+  type PartnerDay,
   type PlanJob,
   type PlannedStop,
   type SlotSuggestion,
@@ -63,22 +66,17 @@ export interface RouteResult {
   message?: string;
   /** What to watch for, as a second, smaller line: "Runs 20 min past the end of the day." */
   detail?: string;
+  /**
+   * Nothing was saved yet: moving this shared job runs into its second tech's day, so ask
+   * (an alert with this title, body and button beside Cancel) and send the move again with
+   * `anyway` (owner, 2026-10-24).
+   */
+  confirm?: MoveConfirm;
 }
 
 /** Optimize's answer: and the saved values of what it changed, for Undo (none when no change). */
 export interface OptimizeResult extends RouteResult {
   undo?: JobChange[];
-}
-
-/** The banner when Optimize keeps the order (owner, 2026-10-22). */
-const ALREADY_BEST = "Already the best order";
-
-/** Notes as sentences: "Runs 20 min late. A fixed time can’t be met." */
-function sentences(notes: (string | null)[]): string | undefined {
-  const list = notes.filter((n): n is string => !!n);
-  return list.length
-    ? list.map((n) => `${n.charAt(0).toUpperCase()}${n.slice(1)}.`).join(" ")
-    : undefined;
 }
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -119,51 +117,59 @@ function dayStops(ctx: RouteContext, techId: string, date: string, jobs: PlanJob
 // Optimize (owner, 2026-10-20: "Change 'plan route' to 'optimize'")
 // ---------------------------------------------------------------------------
 
-/** Order a tech's day for the least driving, keep promised times, and save the times. */
+/**
+ * The other techs' days on this tech's shared jobs, for Optimize and moves to check a shared
+ * job's new time against (owner, 2026-10-24). Owners and admins only: they see every job and
+ * where each tech starts; a tech's view of a teammate's day may be partial, so their shared
+ * jobs keep their times.
+ */
+function partnerDays(
+  office: Office,
+  routes: Map<string, { jobs: PlanJob[] }>,
+  techId: string,
+  date: string,
+  jobs: PlanJob[],
+): PartnerDay[] {
+  if (!office.isManager) return [];
+  const techs = new Set(
+    jobs.map((j) => partnerOf(j, techId)).filter((t): t is string => !!t && t !== techId),
+  );
+  return [...techs].map((t) => ({ techId: t, jobs: routes.get(routeKey(t, date))?.jobs ?? [] }));
+}
+
+/**
+ * Order a tech's day for the least driving, keep promised times, and save the times. A shared
+ * job moves too when its new time fits the other tech's day (core planDay; owner, 2026-10-24),
+ * and the banner says which stops stayed and why.
+ */
 export async function planRoute(techId: string, date: string): Promise<OptimizeResult> {
   if (!UUID.test(techId) || !isDateString(date)) return { error: "Pick a tech and a day." };
   const office = await getOffice();
   const ctx = await routeContext(office);
   if (date < ctx.today) return { error: "Past days can’t be planned." };
-  const { routes, drive } = await loadRoutes(office, ctx, [date], { live: true });
+  const { routes, drive, team } = await loadRoutes(office, ctx, [date], { live: true });
   const day = routes.get(routeKey(techId, date));
   if (!day || day.jobs.length === 0) return { error: "Nothing scheduled for this tech that day." };
 
-  const stops = dayStops(ctx, techId, date, day.jobs);
-  const hours = workDay(ctx.settings);
-  // From this tech's start: their home when they start there, else the shop.
-  const start = day.start.at;
-  const before = timeRoute(stops, start, hours, drive);
-  const { order, route } = optimizeRoute(stops, start, hours, drive);
-  const planned = order.map((i) => stops[i]!);
+  const change = planDay(ctx, techId, date, day.jobs, drive, {
+    partners: partnerDays(office, routes, techId, date, day.jobs),
+    names: Object.fromEntries(team.map((t) => [t.user_id, t.name])),
+  });
+  if (change.error) return { error: change.error };
   // Only what changes is saved, and its saved values come back for Undo (owner, 2026-10-22:
   // "Make Optimize show the new order at once, with Undo").
-  const { updates, undo } = changeWithUndo(
-    routeUpdates(date, ctx.timeZone, planned, route),
-    day.jobs,
-  );
+  const { updates, undo } = changeWithUndo(change.updates, day.jobs);
   const error = await saveOrRestore(await createClient(), office, updates, undo);
   if (error) return { error };
   refresh();
-
   // One short line for the banner at the top of the screen (owner, 2026-10-20: the note under
-  // the button "looks horrible"), and what to watch for as a second line. The order as it was:
-  // "Already the best order", with no Undo.
-  const same = order.every((i, at) => i === at);
-  const saved = before.driveMin - route.driveMin;
-  const message = same
-    ? ALREADY_BEST
-    : [
-        "Optimized",
-        saved > 0
-          ? `${durationLabel(saved)} less driving`
-          : `${durationLabel(route.driveMin)} driving`,
-      ].join(" · ");
-  const detail = sentences([
-    stops.some((s) => !s.location) ? "driving to pools not on the map isn’t counted" : null,
-    !start ? "the shop has no location (Settings › Scheduling)" : null,
-  ]);
-  return { message, detail, undo: same ? undefined : undo };
+  // the button "looks horrible"), and what stayed and what to watch for as a second line. The
+  // order as it was: no Undo.
+  return {
+    message: change.message,
+    detail: change.detail,
+    undo: change.unchanged ? undefined : undo,
+  };
 }
 
 const OPTIMIZE_UNDO_KEYS = new Set(["id", "route_order", "scheduled_start", "scheduled_end"]);
@@ -199,7 +205,9 @@ export async function undoPlanRoute(
     const j = r && typeof r === "object" && UUID.test(String(r.id)) ? byId.get(r.id) : undefined;
     if (!j || Object.keys(r).some((k) => !OPTIMIZE_UNDO_KEYS.has(k)))
       return { error: "This stop isn’t on this day anymore. Refresh the page." };
-    const movable = lockReason(j) === null;
+    // Optimize may move a shared job too (owner, 2026-10-24), so Undo may put its time back.
+    const lock = lockReason(j);
+    const movable = lock === null || lock === "two_techs";
     const ok =
       (r.route_order == null ||
         (Number.isInteger(r.route_order) && (r.route_order as number) > 0)) &&
@@ -256,6 +264,8 @@ export interface MoveInput {
    * plan's visits leaves it where it is; Undo passes its old value back. Left out: unchanged.
    */
   planMoved?: boolean;
+  /** The person answered Move Anyway to the second tech's conflict (`confirm`). */
+  anyway?: boolean;
 }
 
 /**
@@ -352,7 +362,7 @@ export async function moveJob(input: MoveInput): Promise<RouteResult> {
   }
 
   // On a tech's day, at the chosen place.
-  const { routes, drive } = await loadRoutes(office, ctx, [date], { live: true });
+  const { routes, drive, team } = await loadRoutes(office, ctx, [date], { live: true });
   const others = (routes.get(routeKey(tech, date))?.jobs ?? []).filter((j) => j.id !== jobId);
   const stops = dayStops(ctx, tech, date, others).map((s, i) => {
     // Stops already on the day keep their times unless the new order pushes them later.
@@ -391,6 +401,23 @@ export async function moveJob(input: MoveInput): Promise<RouteResult> {
       Date.parse(mine.scheduled_start) + duration * 60_000,
     ).toISOString();
   }
+  // A shared job moves its second tech too (owner, 2026-10-24): ask first when the new time
+  // runs into their day (owners and admins see it whole), and say so after.
+  const second = job.second_tech_id;
+  const shared = sharedMove(
+    ctx,
+    {
+      job,
+      tech,
+      date,
+      startIso: mine.scheduled_start!,
+      partnerDay:
+        second && office.isManager ? (routes.get(routeKey(second, date))?.jobs ?? []) : null,
+      names: Object.fromEntries(team.map((t) => [t.user_id, t.name])),
+    },
+    drive,
+  );
+  if (shared?.confirm && !input.anyway) return { confirm: shared.confirm };
   // The moved job first, so a failure leaves the others as they were.
   const error = await save(db, office, [mine, ...updates.filter((u) => u !== mine)]);
   if (error) return { error };
@@ -410,7 +437,7 @@ export async function moveJob(input: MoveInput): Promise<RouteResult> {
   }
 
   // No times and no lateness (owner, 2026-10-21: "times are pretty irrelevant").
-  return { message: "Moved." };
+  return { message: shared?.message ?? "Moved." };
 }
 
 /** After a job leaves a day, close up the order numbers (times stay as they are). */

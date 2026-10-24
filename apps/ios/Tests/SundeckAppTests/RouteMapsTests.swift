@@ -253,7 +253,10 @@ extension ScheduleDataTests {
         let withTray = try weekPlanInput(
             dates: week, techs: [Self.me], tray: true, jobs: jobs, ctx: ctx, team: team, drive: DriveTimes())
         #expect(withTray.stays.count == 2 && withTray.jobs.map(\.id) == [id(4), id(5)])
-        #expect(throws: ScheduleProblem("Nothing to plan: every job this week is locked or started.")) {
+        #expect(
+            throws: ScheduleProblem(
+                "Nothing to plan: every job this week is locked, started, or shared with a second tech.")
+        ) {
             try planTheWeek(
                 dates: week, techs: [Self.me], tray: false, jobs: jobs, ctx: ctx, team: team, drive: DriveTimes())
         }

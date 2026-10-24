@@ -1,6 +1,7 @@
 import { router } from "expo-router";
 import { useCallback, useMemo, useState } from "react";
 import {
+  Alert,
   InteractionManager,
   LayoutAnimation,
   Linking,
@@ -81,7 +82,7 @@ import {
 import { dayMap, weekdayName } from "../../lib/dayMap";
 import { useRoutingOn } from "../../lib/routing";
 import { buildWeekPlan, PLAN_WEEK_UNDONE, planWaitingCount } from "../../lib/weekPlan";
-import { ALREADY_BEST, OPTIMIZE_PUT_BACK, optimizeOutcome } from "./optimize";
+import { OPTIMIZE_PUT_BACK, optimizeManyText, optimizeOutcome, partnerDays } from "./optimize";
 import { haptics } from "../../ui/haptics";
 import { ModalSheet } from "../../ui/ModalSheet";
 import { useResultBanner } from "../../ui/ResultBanner";
@@ -565,7 +566,12 @@ export function ScheduleScreen() {
     const now = live();
     const outs = list.map((r) => {
       const day = dayJobsOf(r.techId, r.date);
-      return optimizeOutcome(planDay(now, r.techId, r.date, day, drive), day);
+      // Shared jobs move too when they fit the other tech's day (owner, 2026-10-24).
+      const change = planDay(now, r.techId, r.date, day, drive, {
+        partners: partnerDays(manager, r.techId, day, (t) => dayJobsOf(t, r.date)),
+        names: teamNames(),
+      });
+      return optimizeOutcome(change, day);
     });
     const ok = outs.filter((o) => !o.error);
     if (!ok.length) return void fail(outs[0]!.error!);
@@ -584,14 +590,14 @@ export function ScheduleScreen() {
     }
     const one = outs.length === 1 ? ok[0]! : null;
     const text = one?.message ? bannerText(one.message) : null;
+    const many = optimizeManyText(
+      ok,
+      `Optimized ${ok.length} ${ok.length === 1 ? "route" : "routes"} for ${formatDay(date ?? list[0]!.date, "long")}.`,
+    );
     banner.show({
       tone: "success",
-      message:
-        text?.message ??
-        (!undo.length
-          ? ALREADY_BEST
-          : `Optimized ${ok.length} ${ok.length === 1 ? "route" : "routes"} for ${formatDay(date ?? list[0]!.date, "long")}.`),
-      detail: one ? (one.detail ?? text?.detail) : undefined,
+      message: text?.message ?? many.message,
+      detail: one ? (one.detail ?? text?.detail) : many.detail,
       undo: undo.length ? () => putBackOptimize(undo) : undefined,
     });
   }
@@ -640,6 +646,11 @@ export function ScheduleScreen() {
     }
   }
 
+  /** Names by user id, for what planning says about the second tech. */
+  function teamNames() {
+    return Object.fromEntries(team.map((t) => [t.user_id, t.name]));
+  }
+
   /** The move's changes (core moveJobChange), worked out but not saved. */
   function moveChange(job: JobView, techId: string | null, d: string | null, index: number) {
     const fromDate = job.scheduled_start ? localDate(new Date(job.scheduled_start), tz) : null;
@@ -654,9 +665,27 @@ export function ScheduleScreen() {
         fromDay: job.assigned_user_id && fromDate ? dayJobsOf(job.assigned_user_id, fromDate) : [],
         seesAll,
         userId: me,
+        // A shared job's second tech's day, to ask before running into it (owner, 2026-10-24).
+        partnerDay: manager && job.second_tech_id && d ? dayJobsOf(job.second_tech_id, d) : null,
+        names: teamNames(),
       },
       drive,
     );
+  }
+
+  /**
+   * Saves a move; one that runs a shared job into its second tech's day asks first with a plain
+   * alert (owner, 2026-10-24): Move Anyway saves it, Cancel leaves the day as it was. False when
+   * it was refused, failed, or is asking.
+   */
+  function saveMove(change: ReturnType<typeof moveChange>): boolean {
+    const ask = change.confirm;
+    if (!ask || change.error) return save(change);
+    Alert.alert(ask.title, ask.message, [
+      { text: "Cancel", style: "cancel" },
+      { text: ask.action, onPress: () => void save(change) },
+    ]);
+    return false;
   }
 
   /**
@@ -671,7 +700,7 @@ export function ScheduleScreen() {
       job,
       to: { tech: techId, date: d },
       move: () => {
-        moved = save(moveChange(job, techId, d, index));
+        moved = saveMove(moveChange(job, techId, d, index));
       },
       changes: () => {
         animateReorder(reduceMotion);

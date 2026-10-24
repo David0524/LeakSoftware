@@ -57,7 +57,8 @@ describe("planDay", () => {
     expect(r.updates).toHaveLength(3);
     expect(r.updates.map((u) => u.route_order)).toEqual([1, 2, 3]);
     expect(r.updates.every((u) => u.scheduled_start && u.scheduled_end)).toBe(true);
-    expect(r.message).toMatch(/^Optimized · .+ (less driving|driving)$/);
+    // The order kept is "Already the best order" (owner, 2026-10-22), else what it saved.
+    expect(r.message).toMatch(/^(Optimized · .+ (less driving|driving)|Already the best order)$/);
   });
 
   it("refuses past days and empty days", () => {

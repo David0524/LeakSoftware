@@ -61,6 +61,23 @@ describe("previewDay", () => {
     expect(r.starts.c).toBeUndefined();
   });
 
+  it("moves shared stops only for owners and admins with the other tech's day on the page", () => {
+    // Owner, 2026-10-24: Optimize may move a shared job when it fits the second tech's day.
+    const JAKE = "00000000-0000-4000-8000-000000000002";
+    const day = [near1, far, near2].map((j) => ({ ...j, second_tech_id: JAKE }));
+    const owner = previewDay({ ...ctx, partners: true }, TECH, DAY, day, () => day)!;
+    expect(owner.order.indexOf("b")).not.toBe(1);
+    expect(Object.keys(owner.starts).sort()).toEqual(["a", "b", "c"]);
+    // A tech, or Jake's day not on the page: the shared stops keep their times and order.
+    for (const r of [
+      previewDay(ctx, TECH, DAY, day, () => day)!,
+      previewDay({ ...ctx, partners: true }, TECH, DAY, day, () => null)!,
+    ]) {
+      expect(r.order).toEqual(["a", "b", "c"]);
+      expect(r.starts).toEqual({});
+    }
+  });
+
   it("has nothing to do for a past day or a single stop", () => {
     expect(previewDay(ctx, TECH, "2026-10-01", [near1, far])).toBeNull();
     expect(previewDay(ctx, TECH, DAY, [near1])).toBeNull();

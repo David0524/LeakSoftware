@@ -330,6 +330,8 @@ export default async function SchedulePage({ searchParams }: PageProps<"/schedul
     depot: ctx.depot,
     today: ctx.today,
     nowMin: ctx.nowMin,
+    // Owners and admins see every day whole, so Optimize may move shared jobs (owner, 2026-10-24).
+    partners: office.isManager,
     homes: [
       ...new Map(
         columns

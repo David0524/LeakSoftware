@@ -80,7 +80,9 @@ function run(jobs: WeekPlanJob[], over: { tech?: string; tray?: boolean } = {}) 
 describe("Plan Week on the phone", () => {
   it("plans only working days from today on", () => {
     expect(planDates(ctx, [...week, "2026-10-24", "2026-10-20"])).toEqual(week.slice(1));
-    expect(run([], {}).error).toBe("Nothing to plan: every job this week is locked or started.");
+    expect(run([], {}).error).toBe(
+      "Nothing to plan: every job this week is locked, started, or shared with a second tech.",
+    );
     expect(
       buildWeekPlan({
         ctx,
@@ -121,7 +123,9 @@ describe("Plan Week on the phone", () => {
   it("leaves Needs a Time with nobody on it alone when the switch is off", () => {
     const waiting = job({});
     const r = run([waiting], { tray: false });
-    expect(r.error).toBe("Nothing to plan: every job this week is locked or started.");
+    expect(r.error).toBe(
+      "Nothing to plan: every job this week is locked, started, or shared with a second tech.",
+    );
   });
 
   it("a job given to another tech is planned only with that tech", () => {

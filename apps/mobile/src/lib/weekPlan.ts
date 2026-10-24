@@ -206,7 +206,10 @@ export function buildWeekPlan(input: {
       techs: j.assigned_user_id ? [j.assigned_user_id] : techs,
     });
   }
-  if (!jobs.length) return none("Nothing to plan: every job this week is locked or started.");
+  if (!jobs.length)
+    return none(
+      "Nothing to plan: every job this week is locked, started, or shared with a second tech.",
+    );
   // Past the run's limit, the week's own jobs go first, then the jobs waiting longest (ids are
   // UUIDv7, so they sort by when they were made).
   jobs.sort(

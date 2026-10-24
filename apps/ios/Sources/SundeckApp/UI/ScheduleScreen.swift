@@ -54,6 +54,9 @@
         @State private var undo: PendingUndo?
         /// A plan visit being moved, waiting for Change Schedule or Just This Visit.
         @State private var planMove: PlanVisitMove?
+        /// A shared job's move that runs into its second tech's day, waiting on Move Anyway or
+        /// Cancel (owner, 2026-10-24).
+        @State private var askingMove: MoveNeedsConfirm?
         /// A day reordered by dragging shows its new order before it's saved and the board read
         /// again (`routeKey`); its drive times stay hidden until then.
         @State private var settling: String?
@@ -269,6 +272,9 @@
                 Button(PlanMoveChoices.justThisVisit) { justThisVisit(m) }
                 Button(PlanMoveChoices.cancel, role: .cancel) { restore(planRevert) }
             }
+            // Moving a shared job into its second tech's day asks first, with a plain alert
+            // (owner, 2026-10-24): Move Anyway saves it; Cancel puts a dragged stop back.
+            .moveConfirmAlert($askingMove, cancel: { restore(planRevert) }) { moveAnyway($0) }
             .sheet(isPresented: $picking) {
                 if let board {
                     DatePickSheet(date: board.date) {
@@ -684,7 +690,7 @@
             let moved = drop(id, on: .route(tech: tech, date: date, index: index))
             if !moved {
                 restore(prior)
-            } else if planMove != nil {
+            } else if planMove != nil || askingMove != nil {
                 planRevert = prior
             } else if sync.revision == revision {
                 // Nothing was saved (already in that place): the board stays as it is.
@@ -738,9 +744,22 @@
                     return true
                 }
                 return justThisVisit(pending)
+            } catch let ask as MoveNeedsConfirm {
+                askingMove = ask
+                return true
             } catch {
                 fail(error)
                 return false
+            }
+        }
+
+        /// Move Anyway: the shared job's move saved as worked out, its second tech's visit with it.
+        private func moveAnyway(_ ask: MoveNeedsConfirm) {
+            askingMove = nil
+            let revert = planRevert
+            planRevert = nil
+            if !save(ask.updates, ResultBanner(kind: .success, title: ask.message.isEmpty ? "Moved" : ask.message)) {
+                restore(revert)
             }
         }
 
@@ -872,6 +891,10 @@
             do {
                 guard let (updates, message) = try change() else { return true }
                 return save(updates, ResultBanner(kind: .success, title: message.isEmpty ? "Moved" : message))
+            } catch let ask as MoveNeedsConfirm {
+                // Asks first; a dragged stop keeps its new place until the answer.
+                askingMove = ask
+                return true
             } catch {
                 fail(error)
                 return false

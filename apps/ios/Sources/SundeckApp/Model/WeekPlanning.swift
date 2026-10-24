@@ -188,7 +188,9 @@ public func weekPlanInput(
                 timeMin: lock.keepsTime ? try localMin(j.scheduledStart) : nil, techId: nil, date: nil,
                 techs: j.assignedUserId.map { [$0] } ?? techs))
     }
-    if jobs.isEmpty { throw ScheduleProblem("Nothing to plan: every job this week is locked or started.") }
+    if jobs.isEmpty {
+        throw ScheduleProblem("Nothing to plan: every job this week is locked, started, or shared with a second tech.")
+    }
     // Past the run's limit, the week's own jobs go first, then the jobs waiting longest (ids are
     // UUIDv7, so they sort by when they were made). A stable sort, as JavaScript's is.
     jobs = jobs.enumerated().sorted { a, b in

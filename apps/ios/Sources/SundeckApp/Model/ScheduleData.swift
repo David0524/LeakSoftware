@@ -451,13 +451,46 @@ private func dayJobs(
         .jobs ?? []
 }
 
+/// Names by user id, for what planning says about a shared job's other tech.
+private func teamNames(_ team: [TeamMember]) -> [String: String] {
+    Dictionary(team.map { ($0.id, $0.name) }, uniquingKeysWith: { a, _ in a })
+}
+
+/// The other techs' days on a tech's shared jobs, for Optimize to check a shared job's new time
+/// against (owner, 2026-10-24). Owners and admins only, as on the website: they have every job and
+/// where each tech starts on the phone; a tech's view of a teammate may be partial, so their shared
+/// jobs keep their times.
+private func partnerDays(
+    _ techId: String, _ date: String, _ day: [ScheduleJob], jobs: [ScheduleJob], ctx: ScheduleContext,
+    team: [TeamMember]
+) -> [PartnerDay<ScheduleJob>] {
+    guard ctx.isManager else { return [] }
+    var techs: [String] = []
+    for j in day {
+        if let t = partnerOf(j, techId), t != techId, !techs.contains(t) { techs.append(t) }
+    }
+    return techs.map { PartnerDay(techId: $0, jobs: dayJobs($0, date, jobs: jobs, ctx: ctx, team: team)) }
+}
+
+/// Optimize's change for a tech's day (`planDay`), shared jobs included when they fit the other
+/// tech's day.
+private func optimizeChange(
+    techId: String, date: String, day: [ScheduleJob], jobs: [ScheduleJob], ctx: ScheduleContext,
+    team: [TeamMember], drive: DriveTimes
+) throws -> ScheduleChange {
+    try planDay(
+        ctx.plan, techId, date, day, drive: drive.drive,
+        partners: partnerDays(techId, date, day, jobs: jobs, ctx: ctx, team: team), names: teamNames(team))
+}
+
 /// Plan Route: orders a tech's day for the least driving, keeps promised times, and returns the
 /// rows to save with the website's message (`planDay`).
 public func planRoute(
     techId: String, date: String, jobs: [ScheduleJob], ctx: ScheduleContext, team: [TeamMember], drive: DriveTimes
 ) throws -> (updates: [JobUpdate], message: String) {
-    try result(
-        planDay(ctx.plan, techId, date, dayJobs(techId, date, jobs: jobs, ctx: ctx, team: team), drive: drive.drive))
+    let day = dayJobs(techId, date, jobs: jobs, ctx: ctx, team: team)
+    return try result(
+        optimizeChange(techId: techId, date: date, day: day, jobs: jobs, ctx: ctx, team: team, drive: drive))
 }
 
 /// What Optimize's banner says (owner, 2026-10-20: the inline "Planned: …" note "looks horrible.
@@ -468,8 +501,9 @@ public struct OptimizeSummary: Equatable, Sendable {
     public var warning: String?
 }
 
-/// The banner when Optimize keeps the order (owner, 2026-10-22), as the website and Android say.
-public let optimizeAlreadyBest = "Already the best order"
+/// The banner when Optimize keeps the order and every stop could move (owner, 2026-10-22 and
+/// 2026-10-24), as the website and Android say.
+public let optimizeAlreadyBest = OptimizeWords.alreadyBest
 
 /// Optimize couldn't save: the banner's second line, as the website and Android say.
 public let optimizePutBack = "The order is as it was."
@@ -477,20 +511,16 @@ public let optimizePutBack = "The order is as it was."
 /// Optimize (Plan Route, renamed by the owner on 2026-10-20): the rows `planRoute` saves, with the
 /// banner's words, and the rows that put the day back (Undo; owner, 2026-10-22: "Make Optimize show
 /// the new order at once, with Undo"). When the order stays, the banner says "Already the best
-/// order" and there's nothing to undo.
+/// order", or why stops stayed (owner, 2026-10-24: "No change: all 3 stops are shared with Jake
+/// Turner, so their times stay."), and there's nothing to undo.
 public func optimizeDay(
     techId: String, date: String, jobs: [ScheduleJob], ctx: ScheduleContext, team: [TeamMember], drive: DriveTimes
 ) throws -> (updates: [JobUpdate], summary: OptimizeSummary, undo: [JobUpdate]) {
     let day = dayJobs(techId, date, jobs: jobs, ctx: ctx, team: team)
-    let change = try planDay(ctx.plan, techId, date, day, drive: drive.drive)
+    let change = try optimizeChange(
+        techId: techId, date: date, day: day, jobs: jobs, ctx: ctx, team: team, drive: drive)
     let (updates, message) = try result(change)
-    let order = Dictionary(updates.map { ($0.id, $0.values["route_order"]) }, uniquingKeysWith: { a, _ in a })
-    let own = day.map(\.id).filter { order[$0] != nil }
-    let rank: (String) -> Double = { id in
-        if case .number(let n)? = order[id] ?? nil { return n }
-        return 0
-    }
-    let same = own == own.sorted { rank($0) < rank($1) }
+    let same = change.unchanged ?? false
     let byId = Dictionary(day.map { ($0.id, $0) }, uniquingKeysWith: { a, _ in a })
     let undo: [JobUpdate] =
         same
@@ -500,16 +530,24 @@ public func optimizeDay(
             let was = WeekUndoRow(j).values
             return JobUpdate(id: u.id, values: was.filter { u.values[$0.key] != nil })
         }
-    return (
-        updates, OptimizeSummary(title: same ? optimizeAlreadyBest : message, warning: change.detail), undo
-    )
+    return (updates, OptimizeSummary(title: message, warning: change.detail), undo)
+}
+
+/// A move that also moves a shared job's second tech into a conflict (owner, 2026-10-24): the
+/// Schedule asks with a plain alert ("Move Jake Turner’s Visit Too?", Move Anyway and Cancel)
+/// before saving these rows. Nothing is saved until then.
+public struct MoveNeedsConfirm: Error, Equatable, CustomStringConvertible {
+    public let confirm: MoveConfirm
+    public let updates: [JobUpdate]
+    public let message: String
+    public var description: String { confirm.message }
 }
 
 /// Move…: puts a job on a tech's day at a place in the route (`tech` nil: nobody yet, it waits in
 /// Needs a Time), or with `date` nil takes it off the schedule (`moveJobChange`).
 public func moveJob(
     _ jobId: String, tech: String?, date: String?, index: Int, jobs: [ScheduleJob], ctx: ScheduleContext,
-    team: [TeamMember], drive: DriveTimes
+    team: [TeamMember], drive: DriveTimes, confirmed: Bool = false
 ) throws -> (updates: [JobUpdate], message: String) {
     guard let job = jobs.first(where: { $0.id == jobId }) else {
         throw ScheduleProblem("This job is gone. Pull down to refresh.")
@@ -522,8 +560,17 @@ public func moveJob(
         targetDay: tech.flatMap { t in date.map { dayJobs(t, $0, jobs: jobs, ctx: ctx, team: team) } } ?? [],
         fromDay: job.assignedUserId.flatMap { t in fromDate.map { dayJobs(t, $0, jobs: jobs, ctx: ctx, team: team) } }
             ?? [],
-        seesAll: ctx.seesAll, userId: ctx.userId)
-    return try result(moveJobChange(ctx.plan, input, drive: drive.drive))
+        seesAll: ctx.seesAll, userId: ctx.userId,
+        // A shared job's second tech's day (owners and admins), to ask before running into it.
+        partnerDay: ctx.isManager
+            ? job.secondTechId.flatMap { t in date.map { dayJobs(t, $0, jobs: jobs, ctx: ctx, team: team) } } : nil,
+        names: teamNames(team))
+    let change = try moveJobChange(ctx.plan, input, drive: drive.drive)
+    let (updates, message) = try result(change)
+    if let ask = change.confirm, !confirmed {
+        throw MoveNeedsConfirm(confirm: ask, updates: updates, message: message)
+    }
+    return (updates, message)
 }
 
 /// Where a stop is dropped on the phone's Schedule (owner, 2026-10-20: "bring back drag/drop on
@@ -543,13 +590,15 @@ public enum ScheduleDrop: Equatable, Sendable {
 /// to Needs a Time, and past days refuse. Nil when the drop leaves the job where it was.
 public func dropJob(
     _ jobId: String, on drop: ScheduleDrop, jobs: [ScheduleJob], ctx: ScheduleContext, team: [TeamMember],
-    drive: DriveTimes
+    drive: DriveTimes, confirmed: Bool = false
 ) throws -> (updates: [JobUpdate], message: String)? {
     guard let job = jobs.first(where: { $0.id == jobId }) else {
         throw ScheduleProblem("This job is gone. Pull down to refresh.")
     }
     let move = { (tech: String?, date: String?, index: Int) in
-        try moveJob(jobId, tech: tech, date: date, index: index, jobs: jobs, ctx: ctx, team: team, drive: drive)
+        try moveJob(
+            jobId, tech: tech, date: date, index: index, jobs: jobs, ctx: ctx, team: team, drive: drive,
+            confirmed: confirmed)
     }
     switch drop {
     case .needsATime:

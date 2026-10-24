@@ -301,7 +301,8 @@ import Testing
             ["scheduled_start": "2026-10-20T15:30:00Z", "scheduled_end": "2026-10-20T16:30:00Z"])
         let (updates, message) = try planRoute(
             techId: Self.me, date: ctx.today, jobs: jobs, ctx: ctx, team: team, drive: DriveTimes())
-        #expect(message.hasPrefix("Optimized · "))
+        // The order stays (owner, 2026-10-22 and 2026-10-24: only when every stop could move).
+        #expect(message == optimizeAlreadyBest)
         #expect(updates.map(\.id) == [id(1), id(2)])
         #expect(updates.map { $0["route_order"] } == [1, 2])
         let pending = sync.status.pending
@@ -379,6 +380,48 @@ import Testing
         #expect(again.summary.title == optimizeAlreadyBest)
         #expect(again.undo.isEmpty)
         #expect(optimizePutBack == "The order is as it was.")
+    }
+
+    /// Shared jobs (owner, 2026-10-24): an owner's Optimize moves them when they fit the second
+    /// tech's day; a tech's Optimize, without that day, says why nothing moved.
+    @Test func optimizeMovesSharedJobsOnlyWhenTheSecondTechsDayIsKnown() throws {
+        for n in [1, 2] {
+            try sync.write("job", id: id(n), companyId: Self.company, ["second_tech_id": .string(Self.sam)])
+        }
+        let owner = try optimizeDay(
+            techId: Self.me, date: ctx.today, jobs: jobs, ctx: ctx, team: team, drive: DriveTimes())
+        #expect(owner.summary.title == optimizeAlreadyBest)
+        // Pulled as early as the day allows: Grace at 8:05, Sam free.
+        #expect(owner.updates.first { $0.id == id(2) }?.values["scheduled_start"] == "2026-10-20T15:05:00.000Z")
+
+        let limited = CompanyContext(
+            id: Self.company, name: "Desert Leak", timeZone: "America/Phoenix", settings: [:], role: "tech")
+        let techCtx = scheduleContext(sync.store, company: limited, userId: Self.me, now: Self.now)
+        let tech = try optimizeDay(
+            techId: Self.me, date: ctx.today, jobs: jobs, ctx: techCtx, team: team, drive: DriveTimes())
+        #expect(tech.summary.title == "No change: both stops are shared with Sam Sample, so their times stay.")
+        #expect(tech.undo.isEmpty)
+        #expect(tech.updates.allSatisfy { $0.values["scheduled_start"] == nil })
+    }
+
+    /// A shared job moved by hand into its second tech's day asks first (owner, 2026-10-24); Move
+    /// Anyway saves the same rows and says the second tech moved too.
+    @Test func movingASharedJobIntoTheSecondTechsDayAsksFirst() throws {
+        try sync.write("job", id: id(2), companyId: Self.company, ["second_tech_id": .string(Self.sam)])
+        // Tomorrow first thing runs into Sam's 9:00 AM job.
+        let ask = #expect(throws: MoveNeedsConfirm.self) {
+            try moveJob(
+                id(2), tech: Self.me, date: "2026-10-21", index: 0, jobs: jobs, ctx: ctx, team: team,
+                drive: DriveTimes())
+        }
+        #expect(ask?.confirm.title == "Move Sam Sample’s Visit Too?")
+        #expect(ask?.confirm.message.hasSuffix("which overlaps Sam’s 9:00 AM job.") == true)
+        #expect(ask?.confirm.action == "Move Anyway")
+        let (updates, message) = try moveJob(
+            id(2), tech: Self.me, date: "2026-10-21", index: 0, jobs: jobs, ctx: ctx, team: team,
+            drive: DriveTimes(), confirmed: true)
+        #expect(updates == ask?.updates)
+        #expect(message == "Moved. Sam Sample’s visit moved too.")
     }
 
     @Test func poolsNeverLookedUpAreAskedForOnce() throws {

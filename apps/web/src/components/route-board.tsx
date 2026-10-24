@@ -110,7 +110,7 @@ import {
   type PreviewJob,
 } from "@/lib/schedule-preview";
 import { OpenRouteInMaps } from "./open-in-maps";
-import { Sheet, useChoice } from "./sheet";
+import { Sheet, useChoice, useConfirm } from "./sheet";
 import { Segmented } from "./segmented";
 import { showBanner } from "./top-banner";
 import { useFlip } from "./use-flip";
@@ -361,11 +361,18 @@ function applyChange(lists: Lists, m: Move | Layout): Lists {
   const all = new Map(Object.values(lists).flatMap((l) => l.map((s) => [s.id, s] as const)));
   const next: Lists = { ...lists };
   for (const [key, ids] of Object.entries(m.layout)) {
+    // A shared job is on both techs' lists: each keeps its own tile (its "With …" line).
+    const own = new Map((lists[key] ?? []).map((s) => [s.id, s] as const));
     next[key] = ids.flatMap((id) => {
-      const s = all.get(id);
+      const s = own.get(id) ?? all.get(id);
       if (!s) return [];
       return id in m.times ? [{ ...s, time: m.times[id] ?? null }] : [s];
     });
+  }
+  // A shared job's new time shows on the other tech's day too (owner, 2026-10-24).
+  for (const [key, list] of Object.entries(next)) {
+    if (key in m.layout || !list.some((s) => s.id in m.times)) continue;
+    next[key] = list.map((s) => (s.id in m.times ? { ...s, time: m.times[s.id] ?? null } : s));
   }
   return next;
 }
@@ -463,6 +470,7 @@ export function RouteBoard({
   const planDrops = useRef<PlanDrops | null>(null);
   const dragEnd = useRef(0);
   const [choose, chooseSheet] = useChoice<"schedule" | "visit">();
+  const [confirmMove, confirmSheet] = useConfirm();
   const [moving, setMoving] = useState<BoardStop | null>(null);
   const byKey = useMemo(() => new Map(columns.map((c) => [c.key, c])), [columns]);
   // Stable, so the open sheet isn't re-focused each time the board re-renders.
@@ -559,10 +567,29 @@ export function RouteBoard({
       });
   }, [result]);
 
-  function run(move: Move, call: () => Promise<RouteResult>) {
+  /**
+   * A move, shown at once while it saves. A shared job whose new time runs into its second
+   * tech's day isn't saved yet: the server says why (owner, 2026-10-24), the day goes back as
+   * it was, and an alert asks; Move Anyway sends it again with `anyway`.
+   */
+  function run(move: Move, call: (anyway?: boolean) => Promise<RouteResult>, anyway = false) {
     start(async () => {
       optimistic(move);
-      const r = await whenOffline(call(), { error: NO_CONNECTION });
+      const r = await whenOffline(call(anyway), { error: NO_CONNECTION });
+      if (r.confirm && !anyway) {
+        const ask = r.confirm;
+        // After this transition ends, so the alert shows over the day as it is.
+        setTimeout(async () => {
+          const ok = await confirmMove({
+            title: ask.title,
+            message: ask.message,
+            confirmLabel: ask.action,
+            alert: true,
+          });
+          if (ok) run(move, call, true);
+        });
+        return;
+      }
       // Updates after an await join the transition only when wrapped, so the banner shows
       // with the refreshed day, not before it.
       start(() => report(r));
@@ -608,7 +635,14 @@ export function RouteBoard({
       const day = lists[key] ?? [];
       const jobs = day.flatMap((x) => (x.planJob ? [x.planJob] : []));
       const next =
-        preview && jobs.length === day.length ? previewDay(preview, techId, date, jobs) : null;
+        preview && jobs.length === day.length
+          ? previewDay(preview, techId, date, jobs, (t) => {
+              const other = lists[`${t}|${date}`];
+              return other && other.every((x) => x.planJob)
+                ? other.flatMap((x) => (x.planJob ? [x.planJob] : []))
+                : null;
+            })
+          : null;
       if (next) {
         const times: Record<string, string> = {};
         for (const [id, at] of Object.entries(next.starts))
@@ -718,8 +752,8 @@ export function RouteBoard({
         return;
       }
     }
-    run({ job, to: none ? TRAY : to, index: none ? 0 : index }, () =>
-      moveJob({ job, tech: none ? null : tech, date: date!, index }),
+    run({ job, to: none ? TRAY : to, index: none ? 0 : index }, (anyway) =>
+      moveJob({ job, tech: none ? null : tech, date: date!, index, anyway }),
     );
   }
 
@@ -774,12 +808,14 @@ export function RouteBoard({
     }
     start(async () => {
       optimistic(placed);
+      // The person just answered for this visit, so a second tech's conflict doesn't ask again.
       const r = await moveJob({
         job: stop.id,
         tech: m.tech,
         date: m.date,
         index: m.index,
         planMoved: true,
+        anyway: true,
       });
       start(() =>
         r.error
@@ -791,14 +827,17 @@ export function RouteBoard({
               action: {
                 label: "Undo",
                 onAction: () =>
-                  run({ job: stop.id, to: `${m.fromTech}|${m.fromDate}`, index: m.fromIndex }, () =>
-                    moveJob({
-                      job: stop.id,
-                      tech: m.fromTech === "none" ? null : m.fromTech,
-                      date: m.fromDate,
-                      index: m.fromIndex,
-                      planMoved: plan.moved,
-                    }),
+                  run(
+                    { job: stop.id, to: `${m.fromTech}|${m.fromDate}`, index: m.fromIndex },
+                    (anyway) =>
+                      moveJob({
+                        anyway,
+                        job: stop.id,
+                        tech: m.fromTech === "none" ? null : m.fromTech,
+                        date: m.fromDate,
+                        index: m.fromIndex,
+                        planMoved: plan.moved,
+                      }),
                   ),
               },
             }),
@@ -825,8 +864,9 @@ export function RouteBoard({
               action: {
                 label: "Undo",
                 onAction: () =>
-                  run({ job: stop.id, to: from, index: fromIndex }, () =>
+                  run({ job: stop.id, to: from, index: fromIndex }, (anyway) =>
                     moveJob({
+                      anyway,
                       job: stop.id,
                       tech: fromTech === "none" ? null : fromTech,
                       date: fromDate,
@@ -1123,6 +1163,7 @@ export function RouteBoard({
         />
       ) : null}
       {chooseSheet}
+      {confirmSheet}
     </DndContext>
   );
 }

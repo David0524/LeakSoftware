@@ -11,7 +11,9 @@ import {
   ALREADY_BEST,
   OPTIMIZE_PUT_BACK,
   PLAN_WEEK_KEPT,
+  optimizeManyText,
   optimizeOutcome,
+  partnerDays,
 } from "../src/features/schedule/optimize";
 import { STOP_HOLD_MS } from "../src/lib/scheduleDrag";
 
@@ -89,6 +91,65 @@ describe("Optimize with Undo", () => {
   it("words a failed save the same on every platform", () => {
     expect(OPTIMIZE_PUT_BACK).toBe("The order is as it was.");
     expect(PLAN_WEEK_KEPT).toBe("The week is as it was.");
+  });
+});
+
+describe("Optimize with shared jobs (owner, 2026-10-24)", () => {
+  const JAKE = "00000000-0000-4000-8000-000000000002";
+  const names = { [TECH]: "Dana Owner", [JAKE]: "Jake Turner" };
+  // The same poor order, every stop with Jake as second tech.
+  const day = [
+    job("a", 33.46, -111.94, "08:00", 1),
+    job("b", 33.43, -112.39, "10:00", 2),
+    job("c", 33.49, -111.92, "12:00", 3),
+  ].map((j) => ({ ...j, second_tech_id: JAKE }));
+  const plan = (manager: boolean) =>
+    optimizeOutcome(
+      planDay(ctx, TECH, DAY, day, estimateDriveMinutes, {
+        partners: partnerDays(manager, TECH, day, () => day),
+        names,
+      }),
+      day,
+    );
+
+  it("moves shared stops for an owner when the second tech's day allows it", () => {
+    const out = plan(true);
+    expect(out.message).toMatch(/^Optimized · .+ less driving$/);
+    expect(out.undo.length).toBeGreaterThan(0);
+  });
+
+  it("says why nothing moved when the second tech's day isn't known", () => {
+    const out = plan(false);
+    expect(out.message).toBe(
+      "No change: all 3 stops are shared with Jake Turner, so their times stay.",
+    );
+    expect(out.undo).toEqual([]);
+  });
+
+  it("finds each other tech once, never this one", () => {
+    expect(partnerDays(true, TECH, day, () => [])).toEqual([{ techId: JAKE, jobs: [] }]);
+    expect(partnerDays(true, JAKE, day, () => [])).toEqual([{ techId: TECH, jobs: [] }]);
+    expect(partnerDays(false, TECH, day, () => [])).toEqual([]);
+  });
+
+  it("words several routes at once", () => {
+    const best = { message: ALREADY_BEST, updates: [], undo: [] };
+    const kept = {
+      message: "No change: all 3 stops are shared with Jake Turner, so their times stay.",
+      updates: [],
+      undo: [],
+    };
+    const moved = { message: "Optimized · 5 min less driving", updates: [], undo: [{ id: "a" }] };
+    expect(optimizeManyText([best, best], "Optimized 2 routes.")).toEqual({
+      message: ALREADY_BEST,
+    });
+    expect(optimizeManyText([best, kept], "Optimized 2 routes.")).toEqual({
+      message: "No change",
+      detail: "All 3 stops are shared with Jake Turner, so their times stay.",
+    });
+    expect(optimizeManyText([moved, kept], "Optimized 2 routes.")).toEqual({
+      message: "Optimized 2 routes.",
+    });
   });
 });
 

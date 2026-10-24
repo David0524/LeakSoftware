@@ -231,8 +231,10 @@ export function canUnschedule(status: string): boolean {
 /**
  * Why planning a day keeps this job's time, or null when it may move. A started or finished job
  * has happened; a time lock was promised; a two-tech job is in two routes, so moving it in one
- * would strand the other tech (move it by hand to change both). A day lock alone doesn't hold a
- * time within the day, so it's not a reason here (Plan Week keeps it on its day).
+ * moves the other tech too: Optimize moves one only when its new time also fits the other
+ * tech's day (planTechDay, owner 2026-10-24), and Plan Week and Today's reorder leave it. A day
+ * lock alone doesn't hold a time within the day, so it's not a reason here (Plan Week keeps it
+ * on its day).
  */
 export function lockReason(job: PlanJob): LockReason | null {
   if (job.status !== "scheduled" && job.status !== "unscheduled") return "started";

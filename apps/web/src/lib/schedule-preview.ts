@@ -6,7 +6,8 @@ import {
   jobMinutes,
   localDate,
   localMinutes,
-  optimizeRoute,
+  partnerOf,
+  planTechDay,
   planWeek,
   planWeekSummary,
   propertyLocation,
@@ -17,6 +18,7 @@ import {
   zonedMinutesToIso,
   type JobChange,
   type LatLng,
+  type PartnerDay,
   type PlanContext,
   type PlanJob,
   type PlannedStop,
@@ -39,6 +41,11 @@ export type PreviewJob = PlanJob & { service_plan_id?: string | null };
 export type PreviewContext = Omit<PlanContext, "starts"> & {
   /** Each tech whose day starts at home, and where (never the street). */
   homes: { techId: string; at: LatLng }[];
+  /**
+   * Owners and admins: Optimize may move a shared job when it fits the other tech's day, as
+   * the server's planRoute does (owner, 2026-10-24).
+   */
+  partners?: boolean;
 };
 
 const startsOf = (ctx: PreviewContext): PlanContext["starts"] =>
@@ -54,32 +61,38 @@ const startsOf = (ctx: PreviewContext): PlanContext["starts"] =>
 /**
  * Optimize worked out in the browser, as the server's planRoute would with the drive estimate:
  * the day's ids in their new order, and the new start of each stop it may re-time. Null when
- * there's nothing to order.
+ * there's nothing to order. `dayOf` gives another tech's day on the page (null when it isn't
+ * shown), for shared jobs (planTechDay).
  */
 export function previewDay(
   ctx: PreviewContext,
   techId: string,
   date: string,
   jobs: PreviewJob[],
+  dayOf: (techId: string) => PreviewJob[] | null = () => null,
 ): { order: string[]; starts: Record<string, string> } | null {
   if (date < ctx.today || jobs.length < 2) return null;
-  const stops = jobs.map((j) =>
-    stopFor(j, {
-      timeZone: ctx.timeZone,
-      settings: ctx.settings,
-      techId,
-      nowMin: date === ctx.today ? ctx.nowMin : null,
-    }),
+  const partners: PartnerDay[] = [];
+  if (ctx.partners)
+    for (const t of new Set(jobs.map((j) => partnerOf(j, techId)))) {
+      const day = t && t !== techId ? dayOf(t) : null;
+      if (t && day) partners.push({ techId: t, jobs: day });
+    }
+  const plan = planTechDay(
+    { ...ctx, starts: startsOf(ctx) },
+    techId,
+    date,
+    jobs,
+    estimateDriveMinutes,
+    partners,
   );
-  const start = startFor(techId, startsOf(ctx), ctx.depot).at;
-  const { order, route } = optimizeRoute(stops, start, workDay(ctx.settings), estimateDriveMinutes);
   const starts: Record<string, string> = {};
-  order.forEach((i, at) => {
-    const s = stops[i]!;
-    if (s.own && s.movable)
-      starts[s.id] = zonedMinutesToIso(date, route.stops[at]!.startMin, ctx.timeZone);
+  plan.order.forEach((i, at) => {
+    const s = plan.stops[i]!;
+    if (s.movable && (s.own || plan.freed.includes(s.id)))
+      starts[s.id] = zonedMinutesToIso(date, plan.route.stops[at]!.startMin, ctx.timeZone);
   });
-  return { order: order.map((i) => stops[i]!.id), starts };
+  return { order: plan.order.map((i) => plan.stops[i]!.id), starts };
 }
 
 /**

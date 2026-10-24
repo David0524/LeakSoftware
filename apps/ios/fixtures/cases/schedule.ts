@@ -7,9 +7,14 @@ import {
   formatTime,
   isDateString,
   monthGrid,
+  keptNote,
   moveJobChange,
   noteSentences,
+  nothingMoved,
+  OPTIMIZE_WORDS,
+  partnerProblem,
   planDay,
+  pointKey,
   renumberDay,
   scheduleDays,
   suggestTimes,
@@ -17,7 +22,10 @@ import {
   timeline,
   type AuditEntry,
   type LatLng,
+  type KeptStop,
   type MoveInput,
+  type PartnerDay,
+  type PartnerMove,
   type PlanContext,
   type PlanJob,
   type ScheduleView,
@@ -125,6 +133,65 @@ const NY_JOBS: PlanJob[] = [
   }),
 ];
 
+// The owner's day (2026-10-24): Dana's three stops, all shared with Jake, 1 hr 57 min of
+// driving; Saguaro before Ian saves 25 minutes. Drive times between made-up points.
+const P = (lng: number): LatLng => ({ lat: 0, lng });
+const [O_SHOP, O_ABBY, O_IAN, O_SAGUARO, O_OTHER] = [0, 1, 2, 3, 4].map(P) as [
+  LatLng,
+  LatLng,
+  LatLng,
+  LatLng,
+  LatLng,
+];
+const OWNER_KNOWN: Known = {};
+const leg = (a: LatLng, b: LatLng, there: number, back = there) => {
+  OWNER_KNOWN[`${pointKey(a)}>${pointKey(b)}`] = there;
+  OWNER_KNOWN[`${pointKey(b)}>${pointKey(a)}`] = back;
+};
+leg(O_SHOP, O_ABBY, 20);
+leg(O_ABBY, O_IAN, 45);
+leg(O_IAN, O_SAGUARO, 35);
+leg(O_SAGUARO, O_SHOP, 17);
+leg(O_ABBY, O_SAGUARO, 15);
+leg(O_SHOP, O_IAN, 30, 22);
+leg(O_ABBY, O_OTHER, 10);
+leg(O_OTHER, O_IAN, 15);
+leg(O_OTHER, O_SAGUARO, 30);
+leg(O_SHOP, O_OTHER, 25);
+leg(O_IAN, O_OTHER, 15);
+const OWNER = ctx({
+  depot: O_SHOP,
+  settings: { ...ROUTING_DEFAULTS, dayStart: "07:40", jobMinutes: 60 },
+});
+// Phoenix is UTC-7: 15:00Z is 8:00 AM.
+const shared = (id: string, p: LatLng, start: string, end: string, o: Partial<PlanJob> = {}) =>
+  planJob(id, {
+    assigned_user_id: "dana",
+    second_tech_id: "jake",
+    property: at(p),
+    scheduled_start: `2026-10-21T${start}:00Z`,
+    scheduled_end: `2026-10-21T${end}:00Z`,
+    ...o,
+  });
+const O_DANA = [
+  shared("abby", O_ABBY, "15:00", "16:00", { route_order: 1 }),
+  shared("ian", O_IAN, "18:28", "19:28", { route_order: 2 }),
+  shared("saguaro", O_SAGUARO, "21:00", "22:00", { route_order: 3 }),
+];
+const O_OTHER_JOB = shared("other", O_OTHER, "16:30", "17:30", {
+  assigned_user_id: "jake",
+  second_tech_id: null,
+});
+const O_JAKE = [O_DANA[0]!, O_OTHER_JOB, O_DANA[1]!, O_DANA[2]!];
+const O_NAMES = { dana: "Dana Owner", jake: "Jake Turner" };
+const partners = (jobs: PlanJob[], techId = "jake"): PartnerDay[] => [{ techId, jobs }];
+const pm = (id: string, p: LatLng, startMin: number, durationMin = 60): PartnerMove => ({
+  id,
+  location: p,
+  startMin,
+  durationMin,
+});
+
 const move = (o: Partial<MoveInput> & { job: PlanJob }): MoveInput => ({
   tech: "t1",
   date: "2026-10-21",
@@ -152,7 +219,7 @@ const route = (techId: string, date: string, jobs: PlanJob[], label = true): Sug
 // office.ts (schedule dates and the timeline) and schedule-moves.ts.
 export const schedule: ModuleCases = {
   // schedule-drag.ts: how a finger picks up a job (the grip's rest, the tile's hold, the slop).
-  constants: rule(() => ({ SCHEDULE_DRAG }), [[]]),
+  constants: rule(() => ({ SCHEDULE_DRAG, OPTIMIZE_WORDS }), [[]]),
   isDateString: rule(
     (v: unknown) => isDateString(v),
     [
@@ -232,9 +299,79 @@ export const schedule: ModuleCases = {
   ),
 
   planDay: rule(
-    (c: PlanContext, techId: string, date: string, jobs: PlanJob[], known?: Known) =>
-      planDay(c, techId, date, jobs, driveOf(known)),
+    (
+      c: PlanContext,
+      techId: string,
+      date: string,
+      jobs: PlanJob[],
+      known?: Known,
+      opts?: { partners?: PartnerDay[]; names?: Record<string, string> },
+    ) => planDay(c, techId, date, jobs, driveOf(known), opts),
     [
+      // Shared jobs (owner, 2026-10-24): Jake free, so the 25-minute-better order; Jake busy
+      // where Saguaro would land, so Saguaro stays; Jake's day unknown, so nothing moves.
+      [
+        OWNER,
+        "dana",
+        "2026-10-21",
+        O_DANA,
+        OWNER_KNOWN,
+        { partners: partners(O_DANA), names: O_NAMES },
+      ],
+      [
+        OWNER,
+        "dana",
+        "2026-10-21",
+        O_DANA,
+        OWNER_KNOWN,
+        { partners: partners(O_JAKE), names: O_NAMES },
+      ],
+      [OWNER, "dana", "2026-10-21", O_DANA, OWNER_KNOWN, { names: O_NAMES }],
+      [OWNER, "dana", "2026-10-21", O_DANA.slice(2), OWNER_KNOWN, { names: O_NAMES }],
+      [OWNER, "dana", "2026-10-21", O_DANA, OWNER_KNOWN],
+      // From Jake's side: times only, the order is Dana's.
+      [
+        OWNER,
+        "jake",
+        "2026-10-21",
+        O_DANA,
+        OWNER_KNOWN,
+        { partners: partners(O_DANA, "dana"), names: O_NAMES },
+      ],
+      // Every reason with its count; a time promised stays even when shared.
+      [
+        OWNER,
+        "dana",
+        "2026-10-21",
+        [
+          shared("a", O_ABBY, "15:00", "16:00", { status: "in_progress", second_tech_id: null }),
+          shared("b", O_IAN, "18:28", "19:28", { lock_time: true, second_tech_id: null }),
+          shared("c", O_SAGUARO, "21:00", "22:00"),
+        ],
+        OWNER_KNOWN,
+        { names: O_NAMES },
+      ],
+      [
+        OWNER,
+        "dana",
+        "2026-10-21",
+        O_DANA.map((j) => (j.id === "saguaro" ? { ...j, lock_time: true } : j)),
+        OWNER_KNOWN,
+        { partners: partners(O_DANA), names: O_NAMES },
+      ],
+      // One shared stop stays; the rest are already in the best order.
+      [
+        OWNER,
+        "dana",
+        "2026-10-21",
+        [
+          shared("a", O_ABBY, "15:00", "16:00", { second_tech_id: null }),
+          shared("b", O_SAGUARO, "16:15", "17:15", { second_tech_id: null }),
+          shared("c", O_IAN, "18:28", "19:28"),
+        ],
+        OWNER_KNOWN,
+        { names: O_NAMES },
+      ],
       [CTX, "t1", "2026-10-19", DAY_JOBS],
       [CTX, "t1", "2026-10-21", []],
       // A fixed time, a pool with no location, out-of-order stops.
@@ -293,6 +430,98 @@ export const schedule: ModuleCases = {
             scheduled_start: "2026-10-21T19:00:00Z",
           }),
         ],
+      ],
+    ],
+  ),
+  partnerProblem: rule(
+    (c: PlanContext, partner: PartnerDay, moves: PartnerMove[], known?: Known) =>
+      partnerProblem(c, partner, moves, driveOf(known)),
+    [
+      [OWNER, { techId: "jake", jobs: O_JAKE }, [], OWNER_KNOWN],
+      // Saguaro at 9:15 makes Jake late for his 9:30; Ian at 3:35 PM fits.
+      [OWNER, { techId: "jake", jobs: O_JAKE }, [pm("saguaro", O_SAGUARO, 555)], OWNER_KNOWN],
+      [OWNER, { techId: "jake", jobs: O_JAKE }, [pm("ian", O_IAN, 935)], OWNER_KNOWN],
+      // Moved together, checked together.
+      [
+        OWNER,
+        { techId: "jake", jobs: O_DANA },
+        [pm("saguaro", O_SAGUARO, 555), pm("ian", O_IAN, 650)],
+        OWNER_KNOWN,
+      ],
+      // Over the end of the day, before they can get there, into a job.
+      [OWNER, { techId: "jake", jobs: [O_OTHER_JOB] }, [pm("n", O_SAGUARO, 990)], OWNER_KNOWN],
+      [OWNER, { techId: "jake", jobs: [O_OTHER_JOB] }, [pm("n", O_IAN, 465, 30)], OWNER_KNOWN],
+      [OWNER, { techId: "jake", jobs: [O_OTHER_JOB] }, [pm("n", O_IAN, 540, 30)], OWNER_KNOWN],
+      // From Jake's home.
+      [
+        ctx({
+          depot: O_SHOP,
+          starts: [
+            {
+              user_id: "jake",
+              start_from: "home",
+              home_address: "home",
+              home_geocoded_address: null,
+              home_latitude: 0,
+              home_longitude: 4,
+            },
+          ],
+        }),
+        { techId: "jake", jobs: [] },
+        [pm("n", O_OTHER, 480)],
+        OWNER_KNOWN,
+      ],
+    ],
+  ),
+  keptNote: rule(
+    (kept: KeptStop[], names?: Record<string, string>) => keptNote(kept, names),
+    [
+      [[]],
+      [[{ id: "a", reason: "shared", techId: "jake" }], O_NAMES],
+      [
+        [
+          { id: "a", reason: "shared", techId: "jake" },
+          { id: "b", reason: "time" },
+          { id: "c", reason: "shared", techId: "jake" },
+          { id: "d", reason: "started" },
+          { id: "e", reason: "shared", techId: "dana" },
+        ],
+        O_NAMES,
+      ],
+      [[{ id: "a", reason: "shared" }]],
+    ],
+  ),
+  nothingMoved: rule(
+    (kept: KeptStop[], names?: Record<string, string>) => nothingMoved(kept, names),
+    [
+      [[{ id: "a", reason: "started" }]],
+      [
+        [
+          { id: "a", reason: "started" },
+          { id: "b", reason: "started" },
+        ],
+      ],
+      [[{ id: "a", reason: "time" }]],
+      [
+        [
+          { id: "a", reason: "time" },
+          { id: "b", reason: "time" },
+        ],
+      ],
+      [
+        [
+          { id: "a", reason: "shared", techId: "jake" },
+          { id: "b", reason: "shared", techId: "jake" },
+          { id: "c", reason: "shared", techId: "jake" },
+        ],
+        O_NAMES,
+      ],
+      [
+        [
+          { id: "a", reason: "shared", techId: "jake" },
+          { id: "b", reason: "time" },
+        ],
+        O_NAMES,
       ],
     ],
   ),
@@ -427,6 +656,90 @@ export const schedule: ModuleCases = {
           index: 0,
           targetDay: DAY_JOBS,
         }),
+      ],
+      // A shared job by hand (owner, 2026-10-24): Jake free, Jake busy at 4:00 PM, Jake's day
+      // unknown, another day, and no names.
+      [
+        OWNER,
+        move({
+          job: O_DANA[1]!,
+          tech: "dana",
+          index: 2,
+          targetDay: O_DANA,
+          fromDay: O_DANA,
+          partnerDay: O_DANA,
+          names: O_NAMES,
+        }),
+        OWNER_KNOWN,
+      ],
+      [
+        OWNER,
+        move({
+          job: O_DANA[1]!,
+          tech: "dana",
+          index: 2,
+          targetDay: O_DANA,
+          fromDay: O_DANA,
+          partnerDay: [
+            ...O_DANA,
+            shared("late", O_OTHER, "23:00", "23:45", {
+              assigned_user_id: "jake",
+              second_tech_id: null,
+            }),
+          ],
+          names: O_NAMES,
+        }),
+        OWNER_KNOWN,
+      ],
+      [
+        OWNER,
+        move({
+          job: O_DANA[1]!,
+          tech: "dana",
+          index: 2,
+          targetDay: O_DANA,
+          fromDay: O_DANA,
+          names: O_NAMES,
+        }),
+        OWNER_KNOWN,
+      ],
+      [
+        OWNER,
+        move({
+          job: O_DANA[1]!,
+          tech: "dana",
+          date: "2026-10-22",
+          index: 0,
+          targetDay: [],
+          fromDay: O_DANA,
+          partnerDay: [
+            shared("early", O_OTHER, "15:00", "15:30", {
+              assigned_user_id: "jake",
+              second_tech_id: null,
+            }),
+          ],
+          names: O_NAMES,
+        }),
+        OWNER_KNOWN,
+      ],
+      [
+        OWNER,
+        move({
+          job: O_DANA[1]!,
+          tech: "dana",
+          index: 2,
+          targetDay: O_DANA,
+          fromDay: O_DANA,
+          partnerDay: [
+            O_OTHER_JOB,
+            O_DANA[2]!,
+            shared("x", O_SHOP, "22:40", "23:59", {
+              assigned_user_id: "jake",
+              second_tech_id: null,
+            }),
+          ],
+        }),
+        OWNER_KNOWN,
       ],
       // New York, onto the day the clocks go back.
       [NY, move({ job: waiting, date: "2026-11-01", index: 1, targetDay: NY_JOBS })],

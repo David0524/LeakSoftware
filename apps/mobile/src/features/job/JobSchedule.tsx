@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { StyleSheet, View } from "react-native";
+import { Alert, StyleSheet, View } from "react-native";
 import {
   JOB_LOCKS,
   JOB_LOCK_HELP,
@@ -91,11 +91,24 @@ export function useJobMove(onResult: (r: MoveResult) => void) {
       property: j.property ?? null,
     }));
 
-  function save(change: {
-    updates: Parameters<typeof saveJobChanges>[1];
-    message?: string;
-    error?: string;
-  }) {
+  function save(
+    change: {
+      updates: Parameters<typeof saveJobChanges>[1];
+      message?: string;
+      error?: string;
+      confirm?: { title: string; message: string; action: string };
+    },
+    asked = false,
+  ) {
+    // A shared job running into its second tech's day asks first (owner, 2026-10-24).
+    const ask = change.confirm;
+    if (ask && !change.error && !asked) {
+      Alert.alert(ask.title, ask.message, [
+        { text: "Cancel", style: "cancel" },
+        { text: ask.action, onPress: () => save(change, true) },
+      ]);
+      return;
+    }
     if (change.error) {
       onResult({ error: change.error });
       return;
@@ -122,6 +135,9 @@ export function useJobMove(onResult: (r: MoveResult) => void) {
         fromDay: j.assigned_user_id && fromDate ? dayJobsOf(j.assigned_user_id, fromDate) : [],
         seesAll,
         userId: me,
+        // A shared job's second tech's day (owners and admins), to ask before running into it.
+        partnerDay: manager && j.second_tech_id && d ? dayJobsOf(j.second_tech_id, d) : null,
+        names: Object.fromEntries(team.map((t) => [t.user_id, t.name])),
       },
       drive,
     );

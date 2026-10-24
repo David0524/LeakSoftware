@@ -4,7 +4,7 @@ import { useActionState, useCallback, useEffect, useRef, useState, useTransition
 import { scheduleJob } from "@/app/actions/jobs";
 import { moveJob, type RouteResult } from "@/app/actions/routes";
 import { Suggestions } from "./route-board";
-import { Sheet } from "./sheet";
+import { Sheet, useConfirm } from "./sheet";
 import { JOB_LOCKS, JOB_LOCK_HELP, JOB_LOCK_LABELS, type JobLock } from "@leakbook/core";
 import { LockIcon } from "./icons";
 import { Segmented } from "./segmented";
@@ -108,6 +108,32 @@ function ScheduleForm({
   const [picked, setPicked] = useState<RouteResult>({});
   const [placing, start] = useTransition();
   const [lock, setLock] = useState<JobLock>(defaults.lock ?? "none");
+  const [confirmMove, confirmSheet] = useConfirm();
+  /**
+   * A picked suggestion. A shared job whose new time runs into its second tech's day isn't
+   * saved yet (owner, 2026-10-24): an alert asks, and Move Anyway sends it again.
+   */
+  const place = (s: { techId: string; date: string; position: number }, anyway = false) =>
+    start(async () => {
+      const r = await whenOffline(
+        moveJob({ job: jobId, tech: s.techId, date: s.date, index: s.position, anyway }),
+        { error: NO_CONNECTION },
+      );
+      if (r.confirm && !anyway) {
+        const ask = r.confirm;
+        setTimeout(async () => {
+          const ok = await confirmMove({
+            title: ask.title,
+            message: ask.message,
+            confirmLabel: ask.action,
+            alert: true,
+          });
+          if (ok) place(s, true);
+        });
+        return;
+      }
+      setPicked(r);
+    });
   const saved = useRef(onSaved);
   useEffect(() => {
     saved.current = onSaved;
@@ -123,19 +149,8 @@ function ScheduleForm({
     <div className="space-y-4">
       {canSuggest ? (
         <div>
-          <Suggestions
-            target={{ job: jobId }}
-            onPick={(s) =>
-              start(async () =>
-                setPicked(
-                  await whenOffline(
-                    moveJob({ job: jobId, tech: s.techId, date: s.date, index: s.position }),
-                    { error: NO_CONNECTION },
-                  ),
-                ),
-              )
-            }
-          />
+          <Suggestions target={{ job: jobId }} onPick={(s) => place(s)} />
+          {confirmSheet}
           {placing ? <p role="status">Scheduling…</p> : null}
           {picked.error ? <Notice tone="error">{picked.error}</Notice> : null}
           {picked.message ? (
