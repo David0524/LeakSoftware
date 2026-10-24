@@ -30,22 +30,34 @@ export function TopScroller({
     const ro = new ResizeObserver(measure);
     ro.observe(r);
     for (const child of Array.from(r.children)) ro.observe(child);
-    // Each bar follows the other; the guard stops them echoing.
-    let from: HTMLElement | null = null;
+    // Each bar follows the other. Only the one being used leads: setting the other's
+    // scrollLeft fires its scroll event a frame later, and letting that echo back made a
+    // trackpad's glide stutter (owner, 2026-10-24: "spazzy"). The row leads unless the top bar
+    // was last touched or scrolled with the wheel.
+    let lead: HTMLElement = r;
+    const take = (el: HTMLElement) => () => (lead = el);
     const follow = (src: HTMLElement, dst: HTMLElement) => () => {
-      if (from && from !== src) return;
-      from = src;
-      dst.scrollLeft = src.scrollLeft;
-      requestAnimationFrame(() => (from = null));
+      if (lead !== src) return;
+      if (Math.abs(dst.scrollLeft - src.scrollLeft) >= 1) dst.scrollLeft = src.scrollLeft;
     };
     const onRow = follow(r, t);
     const onTop = follow(t, r);
+    const leadRow = take(r);
+    const leadTop = take(t);
     r.addEventListener("scroll", onRow, { passive: true });
     t.addEventListener("scroll", onTop, { passive: true });
+    for (const kind of ["pointerdown", "wheel", "touchstart", "keydown"] as const) {
+      r.addEventListener(kind, leadRow, { passive: true });
+      t.addEventListener(kind, leadTop, { passive: true });
+    }
     return () => {
       ro.disconnect();
       r.removeEventListener("scroll", onRow);
       t.removeEventListener("scroll", onTop);
+      for (const kind of ["pointerdown", "wheel", "touchstart", "keydown"] as const) {
+        r.removeEventListener(kind, leadRow);
+        t.removeEventListener(kind, leadTop);
+      }
     };
   }, []);
 

@@ -1052,10 +1052,11 @@ export function RouteBoard({
             {mode === "day" ? (
               // On a computer or tablet the techs sit side by side in one row that slides
               // sideways (owner, 2026-10-21: "make the techs slide horizontally instead of
-              // doing multiple rows"); on phones they stack.
+              // doing multiple rows"); on phones they stack. Columns snap into place only for
+              // touch: with a trackpad or mouse, snapping fought the glide (owner, 2026-10-24).
               <TopScroller
                 data-testid="day-columns"
-                className="grid grid-cols-[minmax(0,1fr)] gap-5 md:-mx-1 md:flex md:snap-x md:snap-proximity md:scroll-px-1 md:items-start md:overflow-x-auto md:overscroll-x-contain md:px-1 md:pb-2 md:[scrollbar-width:thin] md:[&>*]:w-[22rem] md:[&>*]:shrink-0 md:[&>*]:snap-start"
+                className="grid grid-cols-[minmax(0,1fr)] gap-5 md:-mx-1 md:flex md:snap-x md:snap-proximity md:pointer-fine:snap-none md:scroll-px-1 md:items-start md:overflow-x-auto md:overscroll-x-contain md:px-1 md:pb-2 md:[scrollbar-width:thin] md:[&>*]:w-[22rem] md:[&>*]:shrink-0 md:[&>*]:snap-start"
               >
                 {columns.map((c) => (
                   <DayColumn
