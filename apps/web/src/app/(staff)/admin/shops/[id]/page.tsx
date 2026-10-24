@@ -5,6 +5,7 @@ import { Suspense } from "react";
 import {
   formatCents,
   formatPhone,
+  heardFromText,
   servicesLabel,
   shopPriceCents,
   shopStanding,
@@ -177,6 +178,7 @@ async function Shop({
               ["Address", address || null],
               ["Time zone", s.timezone],
               ["Last active", relDays(s.last_active_at)],
+              ["Heard from", heardFromText(s.heard_from, s.heard_from_other) ?? "No answer"],
             ]}
           />
           <div className="mt-4 flex gap-2">

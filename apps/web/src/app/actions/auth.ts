@@ -3,7 +3,14 @@
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import { after } from "next/server";
-import { isUsNumber, parseServices, safePath, toE164 } from "@leakbook/core";
+import {
+  heardFromOther,
+  isUsNumber,
+  parseHeardFrom,
+  parseServices,
+  safePath,
+  toE164,
+} from "@leakbook/core";
 import { ACTIVE_COMPANY_COOKIE, getOffice, getUser } from "@/lib/auth";
 import { siteOrigin } from "@/lib/origin";
 import { createClient } from "@/lib/supabase/server";
@@ -33,6 +40,12 @@ export interface PayState extends FormState {
 }
 
 const text = (f: FormData, k: string) => String(f.get(k) ?? "").trim();
+
+/** "How did you hear about us?" (owner, 2026-10-24): optional; anything unknown is dropped. */
+function heardFrom(form: FormData) {
+  const key = parseHeardFrom(text(form, "heard_from"));
+  return { heard_from: key, heard_from_other: heardFromOther(key, text(form, "heard_from_other")) };
+}
 
 /** Only same-site paths, so a crafted link cannot send someone elsewhere after sign-in. */
 const safeNext = (next: string) => safePath(next);
@@ -103,6 +116,7 @@ export async function startTrial(_: FormState, form: FormData): Promise<FormStat
     phone: text(form, "phone"),
     services: parseServices(text(form, "services")) ?? "pool",
   };
+  const heard = heardFrom(form);
   const password = String(form.get("password") ?? "");
   const fields: Record<string, string> = {};
   if (!values.name) fields.name = "Enter your name.";
@@ -112,7 +126,12 @@ export async function startTrial(_: FormState, form: FormData): Promise<FormStat
   const phone = toE164(values.phone);
   if (!isUsNumber(phone)) fields.phone = "Enter a US or Canadian phone number.";
   if (password.length < 10) fields.password = "Use at least 10 characters.";
-  if (Object.keys(fields).length) return { fields, values };
+  const kept = {
+    ...values,
+    heard_from: heard.heard_from ?? "",
+    heard_from_other: heard.heard_from_other ?? "",
+  };
+  if (Object.keys(fields).length) return { fields, values: kept };
 
   const supabase = await createClient();
   const { data, error } = await supabase.auth.signUp({
@@ -124,6 +143,8 @@ export async function startTrial(_: FormState, form: FormData): Promise<FormStat
         company_name: values.company,
         services: values.services,
         phone,
+        // Kept with the account too, so a shop made after the email confirmation gets it.
+        ...(heard.heard_from ? heard : {}),
       },
       emailRedirectTo: `${await origin()}/auth/confirm?next=/setup`,
     },
@@ -134,7 +155,7 @@ export async function startTrial(_: FormState, form: FormData): Promise<FormStat
         error.code === "user_already_exists"
           ? "An account with this email already exists. Sign in instead."
           : error.message,
-      values,
+      values: kept,
     };
   }
   // On the leads list, now with the account, whether or not they go on to pay.
@@ -148,8 +169,10 @@ export async function startTrial(_: FormState, form: FormData): Promise<FormStat
     company_name: values.company,
     company_timezone: text(form, "timezone") || null,
     company_services: values.services,
+    company_heard_from: heard.heard_from,
+    company_heard_from_other: heard.heard_from_other,
   });
-  if (companyError) return { error: companyError.message, values };
+  if (companyError) return { error: companyError.message, values: kept };
   await supabase.from("profile").update({ phone }).eq("id", data.session.user.id);
   await requireCard(String(companyId));
   redirect("/welcome");
@@ -160,14 +183,22 @@ export async function createCompany(_: FormState, form: FormData): Promise<FormS
   const user = await getUser();
   if (!user) redirect("/sign-in");
   const company = text(form, "company");
-  if (!company) return { fields: { company: "Enter your company name." } };
+  const heard = heardFrom(form);
+  const kept = {
+    company,
+    heard_from: heard.heard_from ?? "",
+    heard_from_other: heard.heard_from_other ?? "",
+  };
+  if (!company) return { fields: { company: "Enter your company name." }, values: kept };
   const supabase = await createClient();
   const { data: companyId, error } = await supabase.rpc("create_company", {
     company_name: company,
     company_timezone: text(form, "timezone") || null,
     company_services: parseServices(text(form, "services")) ?? "pool",
+    company_heard_from: heard.heard_from,
+    company_heard_from_other: heard.heard_from_other,
   });
-  if (error) return { error: error.message, values: { company } };
+  if (error) return { error: error.message, values: kept };
   await requireCard(String(companyId));
   redirect("/welcome");
 }

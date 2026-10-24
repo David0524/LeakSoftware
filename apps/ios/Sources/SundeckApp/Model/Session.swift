@@ -101,11 +101,14 @@ public final class Session {
         }
     }
 
-    /// Creates an account. False means the person must confirm their email first.
-    public func signUp(name: String, email: String, password: String) async throws -> Bool {
+    /// Creates an account. False means the person must confirm their email first. `heardFrom`:
+    /// the answer to "How did you hear about us?", kept with the account for its shop.
+    public func signUp(
+        name: String, email: String, password: String, heardFrom: String? = nil, heardFromOther: String? = nil
+    ) async throws -> Bool {
         let hasSession = try await auth.signUp(
             name: name.trimmingCharacters(in: .whitespaces), email: email.trimmingCharacters(in: .whitespaces),
-            password: password)
+            password: password, heardFrom: heardFrom, heardFromOther: heardFromOther)
         if hasSession, let current = await auth.currentSession() { remember(current.user) }
         return hasSession
     }

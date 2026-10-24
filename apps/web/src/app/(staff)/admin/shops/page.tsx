@@ -3,6 +3,8 @@ import Link from "next/link";
 import { Suspense } from "react";
 import {
   formatCents,
+  heardFromCounts,
+  heardFromText,
   searchShops,
   servicesLabel,
   shopPriceCents,
@@ -71,6 +73,7 @@ async function Shops({
     const st = shopStanding(s);
     counts.set(st, (counts.get(st) ?? 0) + 1);
   }
+  const sources = heardFromCounts(found);
   const rows = sortShops(
     show === "all" ? found : found.filter((s) => shopStanding(s) === show),
     sort,
@@ -123,6 +126,21 @@ async function Shops({
           </Link>
         ))}
       </nav>
+      {sources.length ? (
+        // Where shops heard of Sundeck Pro (owner, 2026-10-24), for the shops searched for.
+        <section aria-labelledby="heard-from" className="card mb-5 p-4" data-testid="heard-from">
+          <h2 id="heard-from" className="font-semibold">
+            How Shops Heard About Us
+          </h2>
+          <ul className="mt-2 flex flex-wrap gap-x-6 gap-y-1">
+            {sources.map((c) => (
+              <li key={c.key ?? "none"} className={c.key ? undefined : "text-text-muted"}>
+                {c.label} <span className="font-semibold tabular-nums">{c.count}</span>
+              </li>
+            ))}
+          </ul>
+        </section>
+      ) : null}
       {rows.length === 0 ? (
         <Empty>{q ? `No shops match “${q}”.` : "No shops here."}</Empty>
       ) : (
@@ -173,6 +191,9 @@ async function Shops({
                   href={sortHref}
                   align="right"
                 />
+                <th scope="col" className="px-3 py-2 font-semibold text-text-muted">
+                  Heard From
+                </th>
               </tr>
             </thead>
             <tbody>
@@ -203,6 +224,14 @@ async function Shops({
                   <td className="whitespace-nowrap">{fmtDate(s.created_at)}</td>
                   <td className="whitespace-nowrap">{relDays(s.last_active_at)}</td>
                   <td className="text-right tabular-nums">{s.jobs_30d}</td>
+                  <td
+                    className="max-w-48 truncate"
+                    title={heardFromText(s.heard_from, s.heard_from_other) ?? undefined}
+                  >
+                    {heardFromText(s.heard_from, s.heard_from_other) ?? (
+                      <span className="text-text-muted">No answer</span>
+                    )}
+                  </td>
                 </tr>
               ))}
             </tbody>

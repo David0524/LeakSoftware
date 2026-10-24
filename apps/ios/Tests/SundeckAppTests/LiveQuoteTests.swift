@@ -113,7 +113,9 @@ private struct LiveQuoteAuth: AuthBackend {
         SignInResult(user: SignedInUser(id: "live", email: "tech@demo.leakbook.test"), needsCode: false)
     }
     func signIn(email: String, password: String) async throws -> SignInResult { throw AuthMessage("not used") }
-    func signUp(name: String, email: String, password: String) async throws -> Bool { false }
+    func signUp(name: String, email: String, password: String, heardFrom: String?, heardFromOther: String?)
+        async throws -> Bool
+    { false }
     func verifyCode(_ code: String) async throws {}
     func refresh() async throws {}
     func signOut() async {}

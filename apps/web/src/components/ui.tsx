@@ -294,6 +294,7 @@ export function GroupedField({
   hint,
   error,
   stacked = false,
+  labelHidden = false,
   className,
   ...input
 }: ComponentProps<"input"> & {
@@ -301,6 +302,8 @@ export function GroupedField({
   hint?: string;
   error?: string;
   stacked?: boolean;
+  /** Only for screen readers: the field's placeholder and the row above say what it is. */
+  labelHidden?: boolean;
 }) {
   const auto = useId();
   const id = input.id ?? `${input.name ?? "field"}-${auto}`;
@@ -315,8 +318,8 @@ export function GroupedField({
         <label
           htmlFor={id}
           className={cx(
-            "block max-sm:shrink-0 sm:mb-1 sm:font-medium",
-            !stacked && "max-sm:w-(--label-w)",
+            labelHidden ? "sr-only" : "block max-sm:shrink-0 sm:mb-1 sm:font-medium",
+            !stacked && !labelHidden && "max-sm:w-(--label-w)",
           )}
         >
           {label}
@@ -345,6 +348,7 @@ export function GroupedSelect({
   hint,
   error,
   options,
+  stacked = false,
   className,
   ...select
 }: ComponentProps<"select"> & {
@@ -352,15 +356,25 @@ export function GroupedSelect({
   hint?: string;
   error?: string;
   options: { value: string; label: string }[];
+  /** A long label above the choice on phones too, the choice then on the left. */
+  stacked?: boolean;
 }) {
   const auto = useId();
   const id = select.id ?? `${select.name ?? "field"}-${auto}`;
   return (
     <div className={cx(GROUP_ROW, className)}>
-      <div className="max-sm:flex max-sm:min-h-11 max-sm:items-center max-sm:gap-3">
+      <div
+        className={cx(
+          "max-sm:flex max-sm:min-h-11 max-sm:gap-3",
+          stacked ? "max-sm:flex-col max-sm:gap-0 max-sm:pt-2.5" : "max-sm:items-center",
+        )}
+      >
         <label
           htmlFor={id}
-          className="block max-sm:w-(--label-w) max-sm:shrink-0 sm:mb-1 sm:font-medium"
+          className={cx(
+            "block max-sm:shrink-0 sm:mb-1 sm:font-medium",
+            !stacked && "max-sm:w-(--label-w)",
+          )}
         >
           {label}
         </label>
@@ -371,7 +385,10 @@ export function GroupedSelect({
           aria-describedby={error || hint ? `${id}-note` : undefined}
           className={cx(
             "block min-h-11 w-full min-w-0 text-text",
-            "max-sm:flex-1 max-sm:rounded-md max-sm:bg-transparent max-sm:text-right max-sm:text-text-muted max-sm:[text-align-last:right]",
+            "max-sm:flex-1 max-sm:rounded-md max-sm:bg-transparent",
+            stacked
+              ? "max-sm:text-link"
+              : "max-sm:text-right max-sm:text-text-muted max-sm:[text-align-last:right]",
             "sm:rounded-[10px] sm:border sm:border-control-border sm:bg-surface sm:px-3 sm:py-2",
             "sm:focus:outline-3 sm:focus:outline-offset-1 sm:focus:outline-focus",
           )}

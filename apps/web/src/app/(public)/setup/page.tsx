@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 import { Suspense } from "react";
 import { AuthCard, FormSkeleton } from "@/components/auth-card";
-import { parseServices } from "@leakbook/core";
+import { heardFromOther, parseHeardFrom, parseServices } from "@leakbook/core";
 import { SetupForm } from "@/components/auth-forms";
 import { getUser } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
@@ -41,10 +41,14 @@ async function SetupBody() {
     .eq("user_id", user.id)
     .is("deleted_at", null);
   if (count) redirect("/home");
+  // The answers from sign-up come along (the email confirmation came in between).
+  const heardFrom = parseHeardFrom(user.user_metadata?.heard_from);
   return (
     <SetupForm
       suggested={String(user.user_metadata?.company_name ?? "")}
       services={parseServices(user.user_metadata?.services) ?? "pool"}
+      heardFrom={heardFrom}
+      heardFromOther={heardFromOther(heardFrom, user.user_metadata?.heard_from_other)}
     />
   );
 }

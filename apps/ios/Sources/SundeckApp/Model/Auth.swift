@@ -1,4 +1,5 @@
 import Foundation
+import SundeckCore
 import Supabase
 
 /// Who is signed in, as the app needs it.
@@ -26,8 +27,10 @@ public protocol AuthBackend: Sendable {
     /// there's no session at all.
     func currentSession() async -> SignInResult?
     func signIn(email: String, password: String) async throws -> SignInResult
-    /// False when the account must confirm its email first (no session yet).
-    func signUp(name: String, email: String, password: String) async throws -> Bool
+    /// False when the account must confirm its email first (no session yet). `heardFrom`: the
+    /// answer to "How did you hear about us?" (an option key), kept with the account.
+    func signUp(name: String, email: String, password: String, heardFrom: String?, heardFromOther: String?)
+        async throws -> Bool
     func verifyCode(_ code: String) async throws
     /// Refreshes the access token; throws when the sign-in is no longer accepted, or an error
     /// whose text `isConnectionError` matches when only the network failed.
@@ -90,10 +93,18 @@ public struct SupabaseAuthBackend: AuthBackend {
         }
     }
 
-    public func signUp(name: String, email: String, password: String) async throws -> Bool {
+    public func signUp(
+        name: String, email: String, password: String, heardFrom: String?, heardFromOther: String?
+    ) async throws -> Bool {
+        var data: [String: AnyJSON] = ["full_name": .string(name)]
+        if let heardFrom = parseHeardFrom(heardFrom) {
+            data["heard_from"] = .string(heardFrom)
+            if let other = SundeckCore.heardFromOther(heardFrom, heardFromOther) {
+                data["heard_from_other"] = .string(other)
+            }
+        }
         do {
-            let response = try await client.auth.signUp(
-                email: email, password: password, data: ["full_name": .string(name)])
+            let response = try await client.auth.signUp(email: email, password: password, data: data)
             return response.session != nil
         } catch {
             throw AuthMessage.friendly(message(error))

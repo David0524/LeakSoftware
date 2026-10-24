@@ -1,5 +1,6 @@
 #if os(iOS)
     import Supabase
+    import SundeckCore
     import SundeckSync
     import SwiftUI
 
@@ -303,6 +304,8 @@
         @State private var name = ""
         @State private var email = ""
         @State private var password = ""
+        @State private var heardFrom = ""
+        @State private var heardFromOther = ""
         @State private var error: String?
         @State private var confirmEmail = false
         @State private var busy = false
@@ -322,6 +325,7 @@
                     .autocorrectionDisabled()
                     SecureFieldRow(label: "Password", text: $password, contentType: .newPassword)
                 }
+                HeardFromRows(key: $heardFrom, other: $heardFromOther)
                 if let error { Notice(kind: .error, text: error) }
                 if confirmEmail {
                     Notice(
@@ -353,11 +357,64 @@
             busy = true
             defer { busy = false }
             do {
-                let signedIn = try await session.signUp(name: name, email: email, password: password)
+                let signedIn = try await session.signUp(
+                    name: name, email: email, password: password, heardFrom: heardFrom, heardFromOther: heardFromOther)
                 confirmEmail = !signedIn
                 error = nil
             } catch {
                 self.error = String(describing: error)
+            }
+        }
+    }
+
+    /// "How did you hear about us?" (owner, 2026-10-24), as on the website's sign-up: optional,
+    /// the question with the chosen answer under it opening the system menu, and "Other" opens a
+    /// short text field. Empty `key`: not answered.
+    struct HeardFromRows: View {
+        @Binding var key: String
+        @Binding var other: String
+
+        private func label(_ key: String) -> String {
+            heardFromOptions.first { $0.key == key }?.label ?? heardFromNone
+        }
+
+        var body: some View {
+            Grouped {
+                Menu {
+                    Picker(heardFromQuestion, selection: $key) {
+                        Text(heardFromNone).tag("")
+                        ForEach(heardFromOptions, id: \.key) { Text($0.label).tag($0.key) }
+                    }
+                } label: {
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text(heardFromQuestion).textRole(.body).foregroundStyle(Color.text)
+                        HStack(spacing: 6) {
+                            Text(label(key)).textRole(.body).foregroundStyle(Color.link)
+                            Image(systemName: "chevron.up.chevron.down").font(.footnote).foregroundStyle(Color.link)
+                        }
+                    }
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .padding(.horizontal, CGFloat(Spacing.rowHorizontal))
+                    .padding(.vertical, CGFloat(Spacing.rowVertical))
+                    .frame(minHeight: minTarget)
+                    .contentShape(Rectangle())
+                }
+                .accessibilityLabel(heardFromQuestion)
+                .accessibilityValue(label(key))
+                if key == "other" {
+                    TextField(
+                        "", text: $other, prompt: Text(heardFromOtherPlaceholder).foregroundStyle(Color.placeholder)
+                    )
+                    .textRole(.body)
+                    .foregroundStyle(Color.text)
+                    .onChange(of: other) { _, new in
+                        if new.count > heardFromOtherMax { other = String(new.prefix(heardFromOtherMax)) }
+                    }
+                    .accessibilityLabel("Where you heard about us")
+                    .padding(.horizontal, CGFloat(Spacing.rowHorizontal))
+                    .padding(.vertical, CGFloat(Spacing.rowVertical))
+                    .frame(minHeight: minTarget)
+                }
             }
         }
     }

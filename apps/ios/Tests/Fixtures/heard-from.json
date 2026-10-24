@@ -1,0 +1,146 @@
+{
+  "HEARD_FROM_OPTIONS": [
+    {
+      "args": [],
+      "result": [
+        {
+          "key": "google",
+          "label": "Google"
+        },
+        {
+          "key": "app_store",
+          "label": "App Store or Google Play"
+        },
+        {
+          "key": "pool_pro",
+          "label": "Another Pool Pro"
+        },
+        {
+          "key": "customer_referral",
+          "label": "Customer Referral"
+        },
+        {
+          "key": "pool_supplier",
+          "label": "Pool Supplier"
+        },
+        {
+          "key": "route_broker",
+          "label": "Route Broker"
+        },
+        {
+          "key": "social_media",
+          "label": "Social Media"
+        },
+        {
+          "key": "industry_group",
+          "label": "Industry Group or Forum"
+        },
+        {
+          "key": "trade_show",
+          "label": "Trade Show or Event"
+        },
+        {
+          "key": "advertisement",
+          "label": "Advertisement"
+        },
+        {
+          "key": "card",
+          "label": "Laminate Card"
+        },
+        {
+          "key": "other",
+          "label": "Other"
+        }
+      ]
+    }
+  ],
+  "parseHeardFrom": [
+    {
+      "args": [
+        " Card "
+      ],
+      "result": "card"
+    },
+    {
+      "args": [
+        "google"
+      ],
+      "result": "google"
+    },
+    {
+      "args": [
+        "Laminate Card"
+      ],
+      "result": null
+    },
+    {
+      "args": [
+        ""
+      ],
+      "result": null
+    },
+    {
+      "args": [
+        null
+      ],
+      "result": null
+    },
+    {
+      "args": [
+        "OTHER"
+      ],
+      "result": "other"
+    }
+  ],
+  "heardFromOther": [
+    {
+      "args": [
+        "other",
+        "  a  truck\nwrap "
+      ],
+      "result": "a truck wrap"
+    },
+    {
+      "args": [
+        "other",
+        "   "
+      ],
+      "result": null
+    },
+    {
+      "args": [
+        "google",
+        "ignored"
+      ],
+      "result": null
+    },
+    {
+      "args": [
+        null,
+        "ignored"
+      ],
+      "result": null
+    },
+    {
+      "args": [
+        "other",
+        null
+      ],
+      "result": null
+    },
+    {
+      "args": [
+        "other",
+        "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+      ],
+      "result": "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+    },
+    {
+      "args": [
+        "other",
+        "yyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyy z"
+      ],
+      "result": "yyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyy"
+    }
+  ]
+}

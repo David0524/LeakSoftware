@@ -9,7 +9,7 @@ import {
 } from "react";
 import { AppState } from "react-native";
 import type { Session, User } from "@supabase/supabase-js";
-import type { Company, Membership } from "@leakbook/core";
+import { heardFromOther, parseHeardFrom, type Company, type Membership } from "@leakbook/core";
 import { endLiveStop } from "../lib/liveStop";
 import {
   endSignIn,
@@ -47,10 +47,13 @@ interface SessionValue {
   verifyCode(code: string): Promise<string | null>;
   cancelCode(): Promise<void>;
   signIn(email: string, password: string): Promise<string | null>;
+  /** `heardFrom`: "How did you hear about us?" (an option key), kept with the account. */
   signUp(
     fullName: string,
     email: string,
     password: string,
+    heardFrom?: string | null,
+    heardFromOtherText?: string,
   ): Promise<{ error?: string; confirmEmail?: boolean }>;
   signOut(): Promise<void>;
 }
@@ -185,11 +188,19 @@ export function SessionProvider({ children }: { children: ReactNode }) {
       remember({ id: data.user.id, email: data.user.email ?? email.trim() });
       return null;
     },
-    signUp: async (fullName, email, password) => {
+    signUp: async (fullName, email, password, heardFrom, heardFromOtherText) => {
+      const heard = parseHeardFrom(heardFrom);
+      const other = heardFromOther(heard, heardFromOtherText);
       const { data, error } = await supabase.auth.signUp({
         email: email.trim(),
         password,
-        options: { data: { full_name: fullName.trim() } },
+        options: {
+          data: {
+            full_name: fullName.trim(),
+            ...(heard ? { heard_from: heard } : {}),
+            ...(other ? { heard_from_other: other } : {}),
+          },
+        },
       });
       if (error) return { error: friendlyAuthError(error.message) };
       if (!data.session) return { confirmEmail: true };

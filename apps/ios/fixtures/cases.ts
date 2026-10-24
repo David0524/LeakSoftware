@@ -27,6 +27,7 @@ import { massEmail } from "./cases/mass-email";
 import { customerCounts } from "./cases/customer-counts";
 import { receipts } from "./cases/receipts";
 import { signedOut } from "./cases/signed-out";
+import { heardFrom } from "./cases/heard-from";
 
 /** One fixture file per entry: apps/ios/Tests/Fixtures/<name>.json. */
 export const modules: Record<string, ModuleCases> = {
@@ -58,4 +59,5 @@ export const modules: Record<string, ModuleCases> = {
   "customer-counts": customerCounts,
   receipts,
   "signed-out": signedOut,
+  "heard-from": heardFrom,
 };

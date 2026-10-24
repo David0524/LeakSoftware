@@ -1,12 +1,25 @@
-import { router } from "expo-router";
+import { router, useLocalSearchParams } from "expo-router";
 import { useRef, useState } from "react";
 import { type TextInput } from "react-native";
+import {
+  HEARD_FROM_NONE,
+  HEARD_FROM_OPTIONS,
+  HEARD_FROM_OTHER_MAX,
+  HEARD_FROM_OTHER_PLACEHOLDER,
+  HEARD_FROM_QUESTION,
+  heardFromLink,
+  type HeardFrom,
+} from "@leakbook/core";
 import { AuthFrame } from "../../features/auth/AuthFrame";
-import { Button, FieldGroup, FieldRow, Notice } from "../../ui/components";
+import { Button, FieldGroup, FieldRow, Notice, PickerRow } from "../../ui/components";
 import { useSession } from "../../state/session";
 
 export default function SignUp() {
   const { signUp } = useSession();
+  // A sign-up link's ?from=<option> (or ?ref=) picks the answer (owner, 2026-10-24).
+  const params = useLocalSearchParams<{ from?: string; ref?: string }>();
+  const [heardFrom, setHeardFrom] = useState<HeardFrom | null>(() => heardFromLink(params));
+  const [heardOther, setHeardOther] = useState("");
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -21,7 +34,7 @@ export default function SignUp() {
     if (password.length < 10) return setError("Use a password of at least 10 characters.");
     setBusy(true);
     setError(null);
-    const r = await signUp(name, email, password);
+    const r = await signUp(name, email, password, heardFrom, heardOther);
     setBusy(false);
     if (r.error) setError(r.error);
     if (r.confirmEmail) setConfirm(true);
@@ -79,6 +92,27 @@ export default function SignUp() {
           onSubmitEditing={submit}
           hint="At least 10 characters."
         />
+      </FieldGroup>
+      {/* "How did you hear about us?" (owner, 2026-10-24): optional, same list as the website. */}
+      <FieldGroup>
+        <PickerRow
+          label={HEARD_FROM_QUESTION}
+          placeholder={HEARD_FROM_NONE}
+          options={HEARD_FROM_OPTIONS.map((o) => ({ value: o.key, label: o.label }))}
+          value={heardFrom}
+          onChange={setHeardFrom}
+        />
+        {heardFrom === "other" ? (
+          <FieldRow
+            label="Where you heard about us"
+            layout="full"
+            placeholder={HEARD_FROM_OTHER_PLACEHOLDER}
+            value={heardOther}
+            onChangeText={setHeardOther}
+            maxLength={HEARD_FROM_OTHER_MAX}
+            autoCorrect={false}
+          />
+        ) : null}
       </FieldGroup>
       {error ? <Notice tone="error">{error}</Notice> : null}
       <Button title={busy ? "Creating…" : "Create Account"} wide onPress={submit} disabled={busy} />

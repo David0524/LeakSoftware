@@ -4,6 +4,7 @@ import { redirect } from "next/navigation";
 import { Suspense } from "react";
 import {
   formatPhone,
+  heardFromText,
   LEAD_STAGE_LABELS,
   leadPaid,
   leadStage,
@@ -126,6 +127,9 @@ async function Leads({
                       {[
                         pkg ? SERVICES_LABELS[pkg] : null,
                         l.people ? `${l.people} people` : null,
+                        l.heard_from
+                          ? `Heard from ${heardFromText(l.heard_from, l.heard_from_other)}`
+                          : null,
                         `Signed up ${day.format(new Date(l.created_at))}`,
                         l.contacted_at ? `Called ${day.format(new Date(l.contacted_at))}` : null,
                       ]

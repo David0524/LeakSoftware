@@ -61,7 +61,9 @@ final class FakeAuth: AuthBackend, @unchecked Sendable {
         }
     }
 
-    func signUp(name: String, email: String, password: String) async throws -> Bool { false }
+    func signUp(name: String, email: String, password: String, heardFrom: String?, heardFromOther: String?)
+        async throws -> Bool
+    { false }
 
     func verifyCode(_ code: String) async throws {
         try lock.withLock {
