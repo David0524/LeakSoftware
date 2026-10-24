@@ -30,6 +30,7 @@ import { signedOut } from "./cases/signed-out";
 import { heardFrom } from "./cases/heard-from";
 import { setupGate } from "./cases/setup-gate";
 import { password } from "./cases/password";
+import { linkShare } from "./cases/link-share";
 
 /** One fixture file per entry: apps/ios/Tests/Fixtures/<name>.json. */
 export const modules: Record<string, ModuleCases> = {
@@ -64,4 +65,5 @@ export const modules: Record<string, ModuleCases> = {
   "heard-from": heardFrom,
   "setup-gate": setupGate,
   password,
+  "link-share": linkShare,
 };

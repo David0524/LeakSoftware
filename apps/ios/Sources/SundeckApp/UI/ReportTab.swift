@@ -364,13 +364,8 @@
                 HStack(spacing: 12) { sendButtons(reportId: reportId, primary: primary) }
                 VStack(alignment: .leading, spacing: 12) { sendButtons(reportId: reportId, primary: primary) }
             }
-            .sheet(
-                isPresented: Binding(
-                    get: { flow.share != nil && sharingFrom == reportId },
-                    set: { if !$0 { flow.shareFinished() } })
-            ) {
-                ShareSheet(text: flow.share ?? "")
-            }
+            // Messages gets the link as a link, with the report's preview card (2026-10-24).
+            .linkShareSheet(sharingFrom == reportId ? flow.share : nil) { flow.shareFinished() }
             if let busy = flow.busy, busy == .email || busy == .text, sendingFrom == reportId {
                 ProgressSteps(steps: ReportProgress.steps(busy), current: flow.step)
             }
@@ -586,6 +581,7 @@
         var button = "Copy Link"
         var monospaced = false
         @State private var copied = false
+        @State private var sharing: String?
 
         var body: some View {
             VStack(alignment: .leading, spacing: 4) {
@@ -604,7 +600,10 @@
                     }
                     .buttonStyle(.secondary)
                     .fixedSize()
-                    ShareLink(item: text) {
+                    // A link goes to the share sheet as a link, with its preview card (2026-10-24).
+                    Button {
+                        sharing = text
+                    } label: {
                         Image(systemName: "square.and.arrow.up").font(.system(size: 18, weight: .medium))
                             .foregroundStyle(Color.link)
                             .frame(width: minTarget, height: minTarget)
@@ -614,6 +613,7 @@
                 }
             }
             .sensoryFeedback(.success, trigger: copied)
+            .linkShareSheet(sharing) { sharing = nil }
         }
     }
 
@@ -623,17 +623,6 @@
 
         func makeUIViewController(context: Context) -> SFSafariViewController { SFSafariViewController(url: url) }
         func updateUIViewController(_ controller: SFSafariViewController, context: Context) {}
-    }
-
-    /// The system share sheet with a text message (Expo's `Share.share`).
-    struct ShareSheet: UIViewControllerRepresentable {
-        var text: String
-
-        func makeUIViewController(context: Context) -> UIActivityViewController {
-            UIActivityViewController(activityItems: [text], applicationActivities: nil)
-        }
-
-        func updateUIViewController(_ controller: UIActivityViewController, context: Context) {}
     }
 
     /// Primary or secondary pill.

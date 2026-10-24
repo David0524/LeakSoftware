@@ -1,0 +1,114 @@
+{
+  "splitShareMessage": [
+    {
+      "args": [
+        "Bluefin Pool Co.: your invoice. View and pay it here: https://sundeckpro.com/i/0123456789abcdef0123456789abcdef"
+      ],
+      "result": {
+        "text": "Bluefin Pool Co.: your invoice. View and pay it here:",
+        "url": "https://sundeckpro.com/i/0123456789abcdef0123456789abcdef"
+      }
+    },
+    {
+      "args": [
+        "Bluefin Pool Co.: your repair quote. Review and accept it here: https://sundeckpro.com/q/0123456789abcdef0123456789abcdef"
+      ],
+      "result": {
+        "text": "Bluefin Pool Co.: your repair quote. Review and accept it here:",
+        "url": "https://sundeckpro.com/q/0123456789abcdef0123456789abcdef"
+      }
+    },
+    {
+      "args": [
+        "Bluefin Pool Co.: your leak detection report: https://sundeckpro.com/r/0123456789abcdef0123456789abcdef  "
+      ],
+      "result": {
+        "text": "Bluefin Pool Co.: your leak detection report:",
+        "url": "https://sundeckpro.com/r/0123456789abcdef0123456789abcdef"
+      }
+    },
+    {
+      "args": [
+        "https://sundeckpro.com/r/0123456789abcdef0123456789abcdef"
+      ],
+      "result": {
+        "text": "",
+        "url": "https://sundeckpro.com/r/0123456789abcdef0123456789abcdef"
+      }
+    },
+    {
+      "args": [
+        "  http://localhost:3000/r/0123456789abcdef0123456789abcdef\n"
+      ],
+      "result": {
+        "text": "",
+        "url": "http://localhost:3000/r/0123456789abcdef0123456789abcdef"
+      }
+    },
+    {
+      "args": [
+        "Bluefin Pool Co.: on our way, about 10 minutes out."
+      ],
+      "result": {
+        "text": "Bluefin Pool Co.: on our way, about 10 minutes out.",
+        "url": null
+      }
+    },
+    {
+      "args": [
+        "See https://sundeckpro.com/r/x for details."
+      ],
+      "result": {
+        "text": "See https://sundeckpro.com/r/x for details.",
+        "url": null
+      }
+    },
+    {
+      "args": [
+        ""
+      ],
+      "result": {
+        "text": "",
+        "url": null
+      }
+    }
+  ],
+  "customerLinkToken": [
+    {
+      "args": [
+        "https://sundeckpro.com/q/0123456789abcdef0123456789abcdef"
+      ],
+      "result": "0123456789abcdef0123456789abcdef"
+    },
+    {
+      "args": [
+        "https://sundeckpro.com/i/0123456789abcdef0123456789abcdef/pdf"
+      ],
+      "result": "0123456789abcdef0123456789abcdef"
+    },
+    {
+      "args": [
+        "http://localhost:3000/r/0123456789abcdef0123456789abcdef?print=1"
+      ],
+      "result": "0123456789abcdef0123456789abcdef"
+    },
+    {
+      "args": [
+        "https://sundeckpro.com/invite/0123456789abcdef0123456789abcdef"
+      ],
+      "result": null
+    },
+    {
+      "args": [
+        "https://sundeckpro.com/r/short"
+      ],
+      "result": null
+    },
+    {
+      "args": [
+        ""
+      ],
+      "result": null
+    }
+  ]
+}

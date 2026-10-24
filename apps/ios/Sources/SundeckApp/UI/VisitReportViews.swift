@@ -101,9 +101,8 @@
                     .card()
                 }
                 .browser($browsing)
-                .sheet(isPresented: Binding(get: { share != nil }, set: { if !$0 { share = nil } })) {
-                    ShareSheet(text: share ?? "")
-                }
+                // Messages gets the link as a link, with the report's preview card (2026-10-24).
+                .linkShareSheet(share) { share = nil }
             }
         }
 
