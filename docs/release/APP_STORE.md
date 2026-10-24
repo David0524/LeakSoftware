@@ -213,7 +213,9 @@ Pool service & leak detection
 
 ### 2.1 Age Rating
 
-Apple's current questionnaire (2025 onward). Answers:
+Apple's current questionnaire (the 4+, 9+, 13+, 16+ and 18+ ratings from 2025, plus the social
+media questions added in 2026). Owner's answers (2026-10-24): Messaging **Yes**, user-generated
+content **No**, everything else **None** or **No**.
 
 | Question | Answer | Why |
 |---|---|---|
@@ -221,14 +223,19 @@ Apple's current questionnaire (2025 onward). Answers:
 | Age assurance | No | |
 | Unrestricted web access | No | The in-app browser opens only Sundeck Pro's own pages (privacy, terms, status, two-step sign-in) and the shop's customer links. |
 | User-generated content | No | Photos, notes, and reports are private business records, seen only by the shop's own team and the customer they're sent to; nothing is published to other users. |
-| Messaging and chat | Yes | The shop texts its own customers from its business number (SMS through Twilio). Not chat between app users. |
+| Social media (and "disabled for users under 13") | No | No feed, likes, comments, shares, or discovery. |
+| Messaging and chat | Yes | The shop texts its own customers from its business number (SMS through Twilio), and the team sees those conversations. Not chat between app users. |
 | Advertising | No | |
 | Profanity or crude humor; horror or fear; alcohol, tobacco, or drugs; mature or suggestive themes; sexual content or nudity; violence (cartoon, realistic, prolonged, graphic); guns or weapons | None | |
 | Medical or treatment information; health or wellness topics | None / No | Water chemistry is for pools, not people. |
 | Gambling, simulated gambling, contests, loot boxes | None / No | |
 
-Expected rating: **4+** (Apple may set a higher one because of messaging; any rating is fine
-for a business app).
+**Likely rating: 4+.** In Apple's age rating table (App Store Connect Help, "Age ratings values
+and definitions", read 2026-10-24), messaging and chat is listed among what a 4+ app may
+contain; 13+ is set by social media, 16+ by unrestricted web access, and none of those apply.
+Two regions rate messaging on its own: **Brazil A12** (messaging and advertising sit under A12
+there) and Korea "All". Apple generates the rating from the answers, so the summary App Store
+Connect shows before submitting is the one that counts; any rating is fine for a business app.
 
 ---
 
