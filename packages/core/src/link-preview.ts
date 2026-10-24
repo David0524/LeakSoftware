@@ -78,6 +78,7 @@ export function linkPreviewDocType(
   if (row.kind === "quote") return "Quote";
   if (row.kind === "invoice") return "Invoice";
   if (row.template_key === "maintenance") return "Maintenance Visit Report";
+  if (row.template_key === "maintenance_month") return "Monthly Service Report";
   return reportTitle(row.job_type);
 }
 

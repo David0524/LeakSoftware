@@ -50,8 +50,14 @@ export function visitReportBar(input: {
       ? { line: "Sends by itself when you finish", action: null, label: null }
       : null;
   return {
-    // A done visit in an Automatic shop that hasn't gone out yet (no signal, or it failed).
-    line: mode === "auto" ? "Not sent yet" : "Ready to send",
+    // A done visit in an Automatic shop that hasn't gone out yet (no signal, or it failed). In a
+    // Monthly shop it goes with the month's invoice; Send Visit Report still sends it now.
+    line:
+      mode === "auto"
+        ? "Not sent yet"
+        : mode === "monthly"
+          ? "Goes with the monthly invoice"
+          : "Ready to send",
     action: "send",
     label: VISIT_REPORT_BAR_LABELS.send,
   };

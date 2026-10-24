@@ -21,7 +21,7 @@ select is((select count(*) from severity_level where company_id = (select id fro
 select results_eq(
   format($$ select category, count(*) from price_book_item where company_id = %L group by category order by category $$,
          (select id from pool_shop)),
-  $$ values ('Chemicals'::text, 5::bigint), ('Repair', 5), ('Service', 6) $$,
+  $$ values ('Chemicals'::text, 14::bigint), ('Repair', 5), ('Service', 6) $$,
   'pool: a pool service price book (services, chemicals, repairs)');
 select is((select count(*) from price_book_item where company_id = (select id from pool_shop)
             and name like 'Leak detection%'), 0::bigint, 'pool: no detection fees');
@@ -36,11 +36,11 @@ select is((select count(*) from component_type where company_id = (select id fro
             and job_type = 'detection'), 27::bigint, 'both: the inspection checklist arrives');
 select is((select count(*) from test_type where company_id = (select id from pool_shop)), 4::bigint,
   'both: and the leak tests');
-select is((select count(*) from price_book_item where company_id = (select id from pool_shop)), 27::bigint,
+select is((select count(*) from price_book_item where company_id = (select id from pool_shop)), 36::bigint,
   'both: both price books, each once');
 select lives_ok(format($$ select add_package_defaults(%L, 'both') $$, (select id from pool_shop)),
   'running it again is harmless');
-select is((select count(*) from price_book_item where company_id = (select id from pool_shop)), 27::bigint,
+select is((select count(*) from price_book_item where company_id = (select id from pool_shop)), 36::bigint,
   'and adds nothing twice');
 reset role;
 

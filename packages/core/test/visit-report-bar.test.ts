@@ -16,6 +16,13 @@ const bar = (o: Partial<Parameters<typeof visitReportBar>[0]>) =>
 describe("visitReportBar", () => {
   it("offers Send Visit Report on a done visit in a Manual shop", () => {
     expect(bar({})).toEqual({ line: "Ready to send", action: "send", label: "Send Visit Report" });
+    // Monthly shops: it goes with the month's invoice, and can still be sent now.
+    expect(bar({ mode: "monthly" })).toEqual({
+      line: "Goes with the monthly invoice",
+      action: "send",
+      label: "Send Visit Report",
+    });
+    expect(bar({ mode: "monthly", status: "in_progress" })).toBeNull();
   });
 
   it("offers View Report once it's sent, with the time", () => {

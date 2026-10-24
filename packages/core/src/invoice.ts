@@ -93,8 +93,16 @@ export function invoiceBalance(i: Pick<Invoice, "total_cents" | "amount_paid_cen
 }
 
 /** The text a tech sends with the invoice link. */
-export function invoiceShareText(shopName: string, link: string): string {
-  return `${shopName}: your invoice. View and pay it here: ${link}`;
+export function invoiceShareText(
+  shopName: string,
+  link: string,
+  reportLink?: string | null,
+): string {
+  // A monthly invoice in a shop that sends visit reports monthly carries the month's service
+  // report too (owner, 2026-10-24: "in hand with the invoice").
+  return reportLink
+    ? `${shopName}: your invoice and service report. Invoice: ${link} Service report: ${reportLink}`
+    : `${shopName}: your invoice. View and pay it here: ${link}`;
 }
 
 /** CSV text (RFC 4180): fields with commas, quotes, or line breaks are quoted. */

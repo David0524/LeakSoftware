@@ -536,14 +536,28 @@ export const pricing: ModuleCases = {
     ]),
   ),
   // A visit report's water test (owner, 2026-10-20).
+  // With the levels the tech aimed for (owner, 2026-10-24).
   waterTestRows: rule(
-    (r: Record<string, number | null>) => waterTestRows(r),
+    (r: Record<string, number | null>, goals: Record<string, number | null> | null) =>
+      waterTestRows(r, goals),
     [
-      [{}],
-      [{ fc: 1, ph: 7.5, ta: 140 }],
-      [{ fc: 3, ph: 7.4, ta: 80, ch: 250, cya: 60, salt: 3000 }],
-      [{ fc: 9, ph: 8.2, ta: 60, ch: 500, cya: 100, salt: 2500 }],
-      [{ ph: null, cya: 0 }],
+      [{}, null],
+      [{ fc: 1, ph: 7.5, ta: 140 }, null],
+      [{ fc: 3, ph: 7.4, ta: 80, ch: 250, cya: 60, salt: 3000 }, null],
+      [{ fc: 9, ph: 8.2, ta: 60, ch: 500, cya: 100, salt: 2500 }, null],
+      [{ ph: null, cya: 0 }, null],
+      [
+        { fc: 1, ph: 7.8, cya: 30 },
+        { fc: 4, cya: 40 },
+      ],
+      [
+        { fc: 5, ph: 7.3, ta: 85 },
+        { fc: 6, ph: 7.2, ta: null },
+      ],
+      [
+        { fc: 2.5, ch: 450 },
+        { fc: -1, ch: 500 },
+      ],
     ],
   ),
   // The Invoices list (owner, 2026-10-20).

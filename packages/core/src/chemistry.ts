@@ -112,7 +112,54 @@ export interface DoseStep {
   /** Why, in words: "pH 8.0 → 7.5". */
   why: string;
   note?: string;
+  /**
+   * The chemical the step adds, as the price book knows it (price_book_item.chemical; owner,
+   * 2026-10-24: added chemicals): null for an action (drain, hold off on chlorine).
+   */
+  chemical: ChemicalKey | null;
+  /**
+   * The amount in `unit`, as the tech measures and the shop bills it: gallons the way the
+   * measure reads (thirds and quarters under a gallon, cups and splashes as their part of a
+   * gallon), pounds by the measure's steps, salt in bags. Null for an action.
+   */
+  quantity: number | null;
+  unit: "gal" | "lb" | "bag" | null;
 }
+
+/**
+ * The chemicals a dose step or a price book item can be (price_book_item.chemical), so a
+ * suggestion finds the shop's price for it. Both strengths of liquid chlorine and of muriatic
+ * acid are one chemical: the shop sells "Liquid chlorine".
+ */
+export const CHEMICAL_KEYS = [
+  "liquid_chlorine",
+  "muriatic_acid",
+  "dry_acid",
+  "cal_hypo",
+  "tabs",
+  "baking_soda",
+  "soda_ash",
+  "calcium_chloride",
+  "stabilizer",
+  "salt",
+  "algaecide",
+  "clarifier",
+  "enzyme",
+  "phosphate_remover",
+] as const;
+export type ChemicalKey = (typeof CHEMICAL_KEYS)[number];
+
+const CHLORINE_CHEMICAL: Record<ChlorineProduct, ChemicalKey> = {
+  liquid12: "liquid_chlorine",
+  liquid10: "liquid_chlorine",
+  calhypo65: "cal_hypo",
+  calhypo73: "cal_hypo",
+};
+const ACID_CHEMICAL: Record<AcidProduct, ChemicalKey> = {
+  muriatic31: "muriatic_acid",
+  muriatic145: "muriatic_acid",
+  dryacid: "dry_acid",
+};
 
 export interface ReadingStatus {
   key: ReadingKey;
@@ -286,11 +333,58 @@ export function doseSummary(result: ChemistryResult, ready: boolean): string {
   return rest.length ? `${what} · ${rest.length} more` : what;
 }
 
-/** The exact amount and the everyday measure, for a liquid (fl oz) or a dry product (oz). */
-function dose(qty: number, liquid: boolean, bag?: number) {
+const NO_DOSE = { chemical: null, quantity: null, unit: null } as const;
+
+const round2 = (n: number) => Math.round(n * 100) / 100;
+
+/**
+ * Gallons as the everyday measure reads them, so the amount added (and billed) is the amount
+ * the tech was told to pour: a splash or cups as their part of a gallon, then the measure's
+ * thirds and quarters, then quarters and halves.
+ */
+export function gallonQuantity(flOz: number): number {
+  if (flOz < 6) return Math.max(0.01, round2(flOz / 128));
+  if (flOz <= 24) return round2(Math.max(0.5, Math.round((flOz / 8) * 2) / 2) / 16);
+  const gallons = flOz / 128;
+  if (gallons < 0.875) {
+    const [part] = PART_GALLON.reduce((a, b) =>
+      Math.abs(b[0] - gallons) < Math.abs(a[0] - gallons) ? b : a,
+    );
+    return round2(part);
+  }
+  const step = gallons > 4 ? 0.5 : 0.25;
+  return Math.max(0.25, Math.round(gallons / step) * step);
+}
+
+/** Pounds (or bags) as the dry measure reads them: a scoop is its weight, then the steps. */
+export function dryQuantity(oz: number, bag?: number): number {
+  if (bag) return Math.max(0.5, Math.round((oz / 16 / bag) * 2) / 2);
+  if (oz < 6) return Math.max(0.01, round2(oz / 16));
+  const lb = oz / 16;
+  const step = lb <= 10 ? 0.5 : lb <= 40 ? 1 : 5;
+  return Math.max(0.5, Math.round(lb / step) * step);
+}
+
+/**
+ * The exact amount and the everyday measure, for a liquid (fl oz) or a dry product (oz), with
+ * the chemical and its quantity in the unit it's sold by.
+ */
+function dose(qty: number, liquid: boolean, chemical: ChemicalKey, bag?: number) {
   return liquid
-    ? { amount: fluidAmount(qty), measure: gallonMeasure(qty) }
-    : { amount: weightAmount(qty), measure: dryMeasure(qty, bag) };
+    ? {
+        amount: fluidAmount(qty),
+        measure: gallonMeasure(qty),
+        chemical,
+        quantity: gallonQuantity(qty),
+        unit: "gal" as const,
+      }
+    : {
+        amount: weightAmount(qty),
+        measure: dryMeasure(qty, bag),
+        chemical,
+        quantity: dryQuantity(qty, bag),
+        unit: bag ? ("bag" as const) : ("lb" as const),
+      };
 }
 
 export function calculateChemistry(input: ChemistryInput): ChemistryResult {
@@ -326,6 +420,7 @@ export function calculateChemistry(input: ChemistryInput): ChemistryResult {
     measure: null,
     why: why(key, from, to),
     note: "Nothing added lowers it; fresh water does.",
+    ...NO_DOSE,
   });
 
   // Alkalinity first: it steadies pH.
@@ -337,7 +432,7 @@ export function calculateChemistry(input: ChemistryInput): ChemistryResult {
       steps.push({
         key: "ta",
         product: "Baking soda",
-        ...dose((d / 10) * PER_10K.bakingSodaTa * k, false),
+        ...dose((d / 10) * PER_10K.bakingSodaTa * k, false, "baking_soda"),
         why: why("ta", ta.value, ta.range.target),
       });
     } else {
@@ -345,7 +440,7 @@ export function calculateChemistry(input: ChemistryInput): ChemistryResult {
       steps.push({
         key: "ta",
         product: ACID_PRODUCTS[acid],
-        ...dose(amt, isLiquid(acid)),
+        ...dose(amt, isLiquid(acid), ACID_CHEMICAL[acid]),
         why: why("ta", ta.value, ta.range.target),
         note: "Add in two or three doses a few hours apart, running the pump, and aerate to bring pH back up.",
       });
@@ -362,7 +457,7 @@ export function calculateChemistry(input: ChemistryInput): ChemistryResult {
       steps.push({
         key: "ph",
         product: "Soda ash",
-        ...dose((d / 0.2) * PER_10K.sodaAshPh * buffer * k, false),
+        ...dose((d / 0.2) * PER_10K.sodaAshPh * buffer * k, false, "soda_ash"),
         why: why("ph", ph.value, ph.range.target),
       });
     } else {
@@ -370,7 +465,7 @@ export function calculateChemistry(input: ChemistryInput): ChemistryResult {
       steps.push({
         key: "ph",
         product: ACID_PRODUCTS[acid],
-        ...dose(amt, isLiquid(acid)),
+        ...dose(amt, isLiquid(acid), ACID_CHEMICAL[acid]),
         why: why("ph", ph.value, ph.range.target),
         note: "Pour into the deep end with the pump running. Add acid to water, never water to acid.",
       });
@@ -382,7 +477,11 @@ export function calculateChemistry(input: ChemistryInput): ChemistryResult {
     steps.push({
       key: "ch",
       product: "Calcium chloride 77%",
-      ...dose(((ch.range.target - ch.value) / 10) * PER_10K.calciumChlorideCh * k, false),
+      ...dose(
+        ((ch.range.target - ch.value) / 10) * PER_10K.calciumChlorideCh * k,
+        false,
+        "calcium_chloride",
+      ),
       why: why("ch", ch.value, ch.range.target),
     });
   } else if (ch?.status === "high") {
@@ -394,7 +493,7 @@ export function calculateChemistry(input: ChemistryInput): ChemistryResult {
     steps.push({
       key: "cya",
       product: "Stabilizer (cyanuric acid)",
-      ...dose(((cya.range.target - cya.value) / 10) * PER_10K.cyaUp * k, false),
+      ...dose(((cya.range.target - cya.value) / 10) * PER_10K.cyaUp * k, false, "stabilizer"),
       why: why("cya", cya.value, cya.range.target),
       note: "Dissolves slowly; put it in a sock in the skimmer basket. Retest in a week.",
     });
@@ -407,7 +506,7 @@ export function calculateChemistry(input: ChemistryInput): ChemistryResult {
     steps.push({
       key: "salt",
       product: "Pool salt",
-      ...dose(((salt.range.target - salt.value) / 100) * PER_10K.saltUp * k, false, 40),
+      ...dose(((salt.range.target - salt.value) / 100) * PER_10K.saltUp * k, false, "salt", 40),
       why: why("salt", salt.value, salt.range.target),
       note: "Brush it toward the main drain until it dissolves.",
     });
@@ -422,7 +521,7 @@ export function calculateChemistry(input: ChemistryInput): ChemistryResult {
     steps.push({
       key: "fc",
       product: CHLORINE_PRODUCTS[chlorine],
-      ...dose(amt, isLiquid(chlorine)),
+      ...dose(amt, isLiquid(chlorine), CHLORINE_CHEMICAL[chlorine]),
       why: why("fc", fc.value, fc.range.target),
       ...(chlorine.startsWith("calhypo")
         ? { note: "Also raises calcium a little. Pre-dissolve in a bucket of pool water." }
@@ -434,6 +533,7 @@ export function calculateChemistry(input: ChemistryInput): ChemistryResult {
       product: "Hold off on chlorine",
       amount: null,
       measure: null,
+      ...NO_DOSE,
       why: why("fc", fc.value, fc.range.target),
       note: "Sun and time bring it down. Don't swim above 10 ppm.",
     });
@@ -465,6 +565,8 @@ export interface ChemicalReading {
   chlorine_product?: ChlorineProduct | null;
   acid_product?: AcidProduct | null;
   notes?: string | null;
+  /** The Aim For levels the tech used (owner, 2026-10-24); keys are reading keys. */
+  goals?: Partial<Record<ReadingKey, number | null>> | null;
 }
 
 export const READING_LABELS: Record<ReadingKey, string> = {
@@ -506,7 +608,14 @@ export function readingSummary(r: Partial<Record<ReadingKey, number | null>>): s
  * A visit report's water test (owner, 2026-10-20): each reading taken, with the range the pool
  * aims for and whether it was low, in range, or high, in the calculator's order.
  */
-export function waterTestRows(r: Partial<Record<ReadingKey, number | null>>): {
+export function waterTestRows(
+  r: Partial<Record<ReadingKey, number | null>>,
+  /**
+   * The levels the tech aimed for (chemical_reading.goals, owner 2026-10-24): a reading with one
+   * shows that level under Aim for and is judged by it, as the calculator did.
+   */
+  goals?: Partial<Record<ReadingKey, number | null>> | null,
+): {
   key: ReadingKey;
   label: string;
   value: number;
@@ -520,13 +629,15 @@ export function waterTestRows(r: Partial<Record<ReadingKey, number | null>>): {
     .filter((k) => r[k] != null && Number.isFinite(Number(r[k])))
     .map((k) => {
       const value = Number(r[k]);
-      const range = t[k];
+      const goal = goals?.[k];
+      const chosen = isNum(goal) && goal >= 0;
+      const range = goalRange(t[k], k, goal);
       const status = value < range.low ? "low" : value > range.high ? "high" : "ok";
       return {
         key: k,
         label: READING_LABELS[k],
         value,
-        range: `${range.low}–${range.high}`,
+        range: chosen ? fmt(goal, k) : `${range.low}–${range.high}`,
         status,
         statusLabel: status === "ok" ? "In range" : status === "low" ? "Low" : "High",
       };

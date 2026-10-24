@@ -315,7 +315,7 @@ export function filterAge(lastReplaced: string | null | undefined, today: string
 // cleanings, photos, etc. ... Include manual send and auto send. Owner/admin can turn that off")
 // ---------------------------------------------------------------------------
 
-export type VisitReportMode = "manual" | "auto" | "off";
+export type VisitReportMode = "manual" | "auto" | "monthly" | "off";
 
 /** Settings › Report Templates › Visit reports, in the order shown. */
 export const VISIT_REPORT_MODES: { value: VisitReportMode; label: string; hint: string }[] = [
@@ -325,11 +325,54 @@ export const VISIT_REPORT_MODES: { value: VisitReportMode; label: string; hint: 
     hint: "Each visit’s report goes to the customer when the visit is completed.",
   },
   { value: "manual", label: "By Hand", hint: "Techs send it with Send Visit Report." },
+  {
+    value: "monthly",
+    label: "Monthly",
+    hint: "One report a month goes with the customer’s monthly invoice.",
+  },
   { value: "off", label: "Off", hint: "No visit reports." },
 ];
 
 /** The shop's choice (company.settings.visit_reports); by hand when unset. */
 export function visitReportMode(settings: unknown): VisitReportMode {
   const v = (settings as { visit_reports?: unknown } | null)?.visit_reports;
-  return v === "auto" || v === "off" || v === "manual" ? v : "manual";
+  return v === "auto" || v === "off" || v === "manual" || v === "monthly" ? v : "manual";
+}
+
+// When reports go out (owner, 2026-10-24: "the option for them to go out either when the tech
+// leaves the home, or on a monthly basis ... with in hand with the invoice"): the setting shows
+// Each Visit | Monthly | Off, and Each Visit has a Send Automatically switch. Stored as the one
+// visit_reports value above: auto, manual, monthly, off.
+
+export type VisitReportTiming = "each" | "monthly" | "off";
+
+export const VISIT_REPORT_TIMINGS: { value: VisitReportTiming; label: string }[] = [
+  { value: "each", label: "Each Visit" },
+  { value: "monthly", label: "Monthly" },
+  { value: "off", label: "Off" },
+];
+
+export const VISIT_REPORT_TEXT = {
+  title: "Send Visit Reports",
+  automatic: "Send Automatically",
+  automaticOn:
+    "Each visit’s report goes to the customer when the tech completes the visit, by email (or a company text when there’s no email).",
+  automaticOff: "Techs send it with Send Visit Report.",
+  monthlyWhat: "One report a month",
+  monthlyWhatDetail:
+    "Every visit that month: readings, chemicals added, what was done, and photos.",
+  monthlyWhen: "Sent with the monthly invoice",
+  monthlyWhenDetail: "One email or text with both links, when you send the month’s invoice.",
+  monthlyFooter:
+    "Customers with no invoice that month get the report on its own on the 1st. Techs can still send one visit’s report with Send Visit Report.",
+  off: "No visit reports.",
+} as const;
+
+export function visitReportTiming(mode: VisitReportMode): VisitReportTiming {
+  return mode === "monthly" ? "monthly" : mode === "off" ? "off" : "each";
+}
+
+/** The stored mode for a timing and the Send Automatically switch. */
+export function visitReportModeFor(timing: VisitReportTiming, automatic: boolean): VisitReportMode {
+  return timing === "each" ? (automatic ? "auto" : "manual") : timing;
 }

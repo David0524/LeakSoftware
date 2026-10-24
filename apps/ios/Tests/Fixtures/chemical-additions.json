@@ -1,0 +1,4403 @@
+{
+  "CHEMICAL_KEYS": [
+    {
+      "args": [],
+      "result": [
+        "liquid_chlorine",
+        "muriatic_acid",
+        "dry_acid",
+        "cal_hypo",
+        "tabs",
+        "baking_soda",
+        "soda_ash",
+        "calcium_chloride",
+        "stabilizer",
+        "salt",
+        "algaecide",
+        "clarifier",
+        "enzyme",
+        "phosphate_remover"
+      ]
+    }
+  ],
+  "UNIT_STEPS": [
+    {
+      "args": [],
+      "result": {
+        "gal": 0.25,
+        "qt": 0.5,
+        "lb": 0.5,
+        "oz": 1,
+        "bag": 0.5,
+        "tab": 1,
+        "each": 1
+      }
+    }
+  ],
+  "CHARGE_CHEMICALS_TEXT": [
+    {
+      "args": [],
+      "result": {
+        "label": "Charge for Chemicals",
+        "on": "Chemicals techs add on visits go on the customer’s monthly invoice at these prices, one line per chemical, and on the visit report with their prices.",
+        "off": "Chemicals techs add are recorded and shown on visit reports, without prices."
+      }
+    }
+  ],
+  "gallonQuantity": [
+    {
+      "args": [
+        0
+      ],
+      "result": 0.01
+    },
+    {
+      "args": [
+        3
+      ],
+      "result": 0.02
+    },
+    {
+      "args": [
+        5.9
+      ],
+      "result": 0.05
+    },
+    {
+      "args": [
+        6
+      ],
+      "result": 0.06
+    },
+    {
+      "args": [
+        8
+      ],
+      "result": 0.06
+    },
+    {
+      "args": [
+        16
+      ],
+      "result": 0.13
+    },
+    {
+      "args": [
+        24
+      ],
+      "result": 0.19
+    },
+    {
+      "args": [
+        25
+      ],
+      "result": 0.25
+    },
+    {
+      "args": [
+        39
+      ],
+      "result": 0.33
+    },
+    {
+      "args": [
+        47
+      ],
+      "result": 0.33
+    },
+    {
+      "args": [
+        64
+      ],
+      "result": 0.5
+    },
+    {
+      "args": [
+        96
+      ],
+      "result": 0.75
+    },
+    {
+      "args": [
+        111
+      ],
+      "result": 0.75
+    },
+    {
+      "args": [
+        112
+      ],
+      "result": 1
+    },
+    {
+      "args": [
+        300
+      ],
+      "result": 2.25
+    },
+    {
+      "args": [
+        512
+      ],
+      "result": 4
+    },
+    {
+      "args": [
+        600
+      ],
+      "result": 4.5
+    },
+    {
+      "args": [
+        700
+      ],
+      "result": 5.5
+    }
+  ],
+  "dryQuantity": [
+    {
+      "args": [
+        0,
+        null
+      ],
+      "result": 0.01
+    },
+    {
+      "args": [
+        3,
+        null
+      ],
+      "result": 0.19
+    },
+    {
+      "args": [
+        5.9,
+        null
+      ],
+      "result": 0.37
+    },
+    {
+      "args": [
+        6,
+        null
+      ],
+      "result": 0.5
+    },
+    {
+      "args": [
+        24,
+        null
+      ],
+      "result": 1.5
+    },
+    {
+      "args": [
+        27,
+        null
+      ],
+      "result": 1.5
+    },
+    {
+      "args": [
+        160,
+        null
+      ],
+      "result": 10
+    },
+    {
+      "args": [
+        161,
+        null
+      ],
+      "result": 10
+    },
+    {
+      "args": [
+        200,
+        null
+      ],
+      "result": 13
+    },
+    {
+      "args": [
+        640,
+        null
+      ],
+      "result": 40
+    },
+    {
+      "args": [
+        700,
+        null
+      ],
+      "result": 45
+    },
+    {
+      "args": [
+        800,
+        null
+      ],
+      "result": 50
+    },
+    {
+      "args": [
+        2128,
+        40
+      ],
+      "result": 3.5
+    },
+    {
+      "args": [
+        800,
+        40
+      ],
+      "result": 1.5
+    },
+    {
+      "args": [
+        80,
+        40
+      ],
+      "result": 0.5
+    }
+  ],
+  "formatQuantity": [
+    {
+      "args": [
+        0.5,
+        "gal"
+      ],
+      "result": "½ gal"
+    },
+    {
+      "args": [
+        2.75,
+        "gal"
+      ],
+      "result": "2¾ gal"
+    },
+    {
+      "args": [
+        0.33,
+        "gal"
+      ],
+      "result": "⅓ gal"
+    },
+    {
+      "args": [
+        0.67,
+        "gal"
+      ],
+      "result": "⅔ gal"
+    },
+    {
+      "args": [
+        0.13,
+        "gal"
+      ],
+      "result": "2 cups"
+    },
+    {
+      "args": [
+        0.03,
+        "gal"
+      ],
+      "result": "½ cup"
+    },
+    {
+      "args": [
+        0.01,
+        "gal"
+      ],
+      "result": "½ cup"
+    },
+    {
+      "args": [
+        0.25,
+        "gal"
+      ],
+      "result": "¼ gal"
+    },
+    {
+      "args": [
+        1,
+        "gal"
+      ],
+      "result": "1 gal"
+    },
+    {
+      "args": [
+        4.5,
+        "gal"
+      ],
+      "result": "4½ gal"
+    },
+    {
+      "args": [
+        1.5,
+        "lb"
+      ],
+      "result": "1½ lb"
+    },
+    {
+      "args": [
+        0.25,
+        "lb"
+      ],
+      "result": "¼ lb"
+    },
+    {
+      "args": [
+        3,
+        "tab"
+      ],
+      "result": "3 tabs"
+    },
+    {
+      "args": [
+        1,
+        "tab"
+      ],
+      "result": "1 tab"
+    },
+    {
+      "args": [
+        2,
+        "bag"
+      ],
+      "result": "2 bags"
+    },
+    {
+      "args": [
+        0.5,
+        "bag"
+      ],
+      "result": "½ bag"
+    },
+    {
+      "args": [
+        1.2,
+        "qt"
+      ],
+      "result": "1.2 qt"
+    },
+    {
+      "args": [
+        2,
+        "each"
+      ],
+      "result": "2"
+    },
+    {
+      "args": [
+        1,
+        "Each"
+      ],
+      "result": "1"
+    },
+    {
+      "args": [
+        24,
+        "oz"
+      ],
+      "result": "24 oz"
+    },
+    {
+      "args": [
+        1.05,
+        "lb"
+      ],
+      "result": "1.05 lb"
+    },
+    {
+      "args": [
+        12,
+        "tab "
+      ],
+      "result": "12 tabs"
+    }
+  ],
+  "additionLabel": [
+    {
+      "args": [
+        0.5,
+        "gal",
+        "Liquid chlorine"
+      ],
+      "result": "½ gal Liquid chlorine"
+    },
+    {
+      "args": [
+        2,
+        "each",
+        "Phosphate remover"
+      ],
+      "result": "2 × Phosphate remover"
+    },
+    {
+      "args": [
+        3,
+        "tab",
+        "Chlorine tabs"
+      ],
+      "result": "3 tabs Chlorine tabs"
+    },
+    {
+      "args": [
+        1,
+        "bag",
+        "Salt"
+      ],
+      "result": "1 bag Salt"
+    }
+  ],
+  "unitPriceLabel": [
+    {
+      "args": [
+        800,
+        "gal"
+      ],
+      "result": "$8.00 / gal"
+    },
+    {
+      "args": [
+        3500,
+        "each"
+      ],
+      "result": "$35.00 each"
+    },
+    {
+      "args": [
+        250,
+        "tab"
+      ],
+      "result": "$2.50 / tab"
+    },
+    {
+      "args": [
+        123456,
+        "lb"
+      ],
+      "result": "$1,234.56 / lb"
+    }
+  ],
+  "stepQuantity": [
+    {
+      "args": [
+        0.33,
+        "gal",
+        1
+      ],
+      "result": 0.5
+    },
+    {
+      "args": [
+        0.33,
+        "gal",
+        -1
+      ],
+      "result": 0.25
+    },
+    {
+      "args": [
+        0.25,
+        "gal",
+        -1
+      ],
+      "result": 0.25
+    },
+    {
+      "args": [
+        0.5,
+        "gal",
+        1
+      ],
+      "result": 0.75
+    },
+    {
+      "args": [
+        3,
+        "tab",
+        1
+      ],
+      "result": 4
+    },
+    {
+      "args": [
+        3,
+        "tab",
+        -1
+      ],
+      "result": 2
+    },
+    {
+      "args": [
+        1,
+        "tab",
+        -1
+      ],
+      "result": 1
+    },
+    {
+      "args": [
+        1.5,
+        "lb",
+        -1
+      ],
+      "result": 1
+    },
+    {
+      "args": [
+        1.5,
+        "lb",
+        1
+      ],
+      "result": 2
+    },
+    {
+      "args": [
+        0.6,
+        "qt",
+        1
+      ],
+      "result": 1
+    },
+    {
+      "args": [
+        2,
+        "jug",
+        1
+      ],
+      "result": 3
+    },
+    {
+      "args": [
+        7,
+        "oz",
+        -1
+      ],
+      "result": 6
+    },
+    {
+      "args": [
+        0,
+        "gal",
+        1
+      ],
+      "result": 0.25
+    }
+  ],
+  "convertQuantity": [
+    {
+      "args": [
+        0.5,
+        "gal",
+        "qt"
+      ],
+      "result": 2
+    },
+    {
+      "args": [
+        2,
+        "qt",
+        "gal"
+      ],
+      "result": 0.5
+    },
+    {
+      "args": [
+        1.5,
+        "lb",
+        "oz"
+      ],
+      "result": 24
+    },
+    {
+      "args": [
+        24,
+        "oz",
+        "lb"
+      ],
+      "result": 1.5
+    },
+    {
+      "args": [
+        1,
+        "gal",
+        "lb"
+      ],
+      "result": null
+    },
+    {
+      "args": [
+        1,
+        "gal",
+        "gal"
+      ],
+      "result": 1
+    },
+    {
+      "args": [
+        1,
+        "Gal",
+        "QT"
+      ],
+      "result": 4
+    },
+    {
+      "args": [
+        0.33,
+        "gal",
+        "oz"
+      ],
+      "result": 42.24
+    }
+  ],
+  "chargesChemicals": [
+    {
+      "args": [
+        null
+      ],
+      "result": false
+    },
+    {
+      "args": [
+        {}
+      ],
+      "result": false
+    },
+    {
+      "args": [
+        {
+          "charge_chemicals": true
+        }
+      ],
+      "result": true
+    },
+    {
+      "args": [
+        {
+          "charge_chemicals": "true"
+        }
+      ],
+      "result": false
+    },
+    {
+      "args": [
+        {
+          "charge_chemicals": false
+        }
+      ],
+      "result": false
+    }
+  ],
+  "chargeChemicalsSettings": [
+    {
+      "args": [
+        true,
+        "2026-10-24"
+      ],
+      "result": {
+        "charge_chemicals": true,
+        "charge_chemicals_from": "2026-10-01"
+      }
+    },
+    {
+      "args": [
+        false,
+        "2026-10-24"
+      ],
+      "result": {
+        "charge_chemicals": false
+      }
+    },
+    {
+      "args": [
+        true,
+        "2027-01-01"
+      ],
+      "result": {
+        "charge_chemicals": true,
+        "charge_chemicals_from": "2027-01-01"
+      }
+    }
+  ],
+  "chemicalItems": [
+    {
+      "args": [],
+      "result": [
+        "cl",
+        "acid",
+        "tabs",
+        "hypo",
+        "cya",
+        "salt",
+        "soda",
+        "ash",
+        "jug",
+        "algae",
+        "rem"
+      ]
+    }
+  ],
+  "itemForChemical": [
+    {
+      "args": [
+        "liquid_chlorine"
+      ],
+      "result": "cl"
+    },
+    {
+      "args": [
+        "muriatic_acid"
+      ],
+      "result": "acid"
+    },
+    {
+      "args": [
+        "tabs"
+      ],
+      "result": "tabs"
+    },
+    {
+      "args": [
+        "enzyme"
+      ],
+      "result": null
+    },
+    {
+      "args": [
+        null
+      ],
+      "result": null
+    }
+  ],
+  "suggestionText": [
+    {
+      "args": [
+        {
+          "gallons": 20000,
+          "readings": {
+            "fc": 1,
+            "ph": 7.8,
+            "ta": 90,
+            "ch": 260,
+            "cya": 30
+          },
+          "chlorine": "liquid12",
+          "acid": "muriatic31",
+          "goals": {
+            "fc": 4,
+            "cya": 40
+          }
+        }
+      ],
+      "result": [
+        "¼ gal muriatic acid",
+        "1½ lb stabilizer",
+        "½ gal liquid chlorine"
+      ]
+    },
+    {
+      "args": [
+        {
+          "gallons": 15000,
+          "readings": {
+            "fc": 1,
+            "ph": 7,
+            "ta": 60,
+            "ch": 150,
+            "cya": 10,
+            "salt": 2400
+          },
+          "chlorine": "calhypo65",
+          "acid": "dryacid"
+        }
+      ],
+      "result": [
+        "8½ lb baking soda",
+        "1½ lb soda ash",
+        "27 lb calcium chloride",
+        "3½ lb stabilizer",
+        "2½ bags pool salt",
+        "½ lb cal-hypo"
+      ]
+    },
+    {
+      "args": [
+        {
+          "gallons": 8000,
+          "readings": {
+            "ph": 8.2,
+            "ta": 150,
+            "ch": 900,
+            "fc": 12
+          },
+          "chlorine": "liquid10",
+          "acid": "muriatic145"
+        }
+      ],
+      "result": [
+        "2 gal muriatic acid",
+        "⅔ gal muriatic acid",
+        "Drain and refill about 70%",
+        "Hold off on chlorine"
+      ]
+    },
+    {
+      "args": [
+        {
+          "gallons": 20000,
+          "readings": {
+            "fc": 4,
+            "ph": 7.5,
+            "ta": 100,
+            "ch": 300,
+            "cya": 40
+          },
+          "chlorine": "liquid12",
+          "acid": "muriatic31"
+        }
+      ],
+      "result": []
+    }
+  ],
+  "suggestedAddition": [
+    {
+      "args": [
+        {
+          "gallons": 20000,
+          "readings": {
+            "fc": 1,
+            "ph": 7.8,
+            "ta": 90,
+            "ch": 260,
+            "cya": 30
+          },
+          "chlorine": "liquid12",
+          "acid": "muriatic31",
+          "goals": {
+            "fc": 4,
+            "cya": 40
+          }
+        },
+        true
+      ],
+      "result": [
+        {
+          "price_book_item_id": "acid",
+          "name": "Muriatic acid",
+          "unit": "gal",
+          "reading_key": "ph",
+          "suggested_quantity": 0.25,
+          "quantity": 0.25,
+          "unit_price_cents": 1500
+        },
+        {
+          "price_book_item_id": "cya",
+          "name": "Stabilizer (CYA)",
+          "unit": "lb",
+          "reading_key": "cya",
+          "suggested_quantity": 1.5,
+          "quantity": 1.5,
+          "unit_price_cents": 900
+        },
+        {
+          "price_book_item_id": "cl",
+          "name": "Liquid chlorine",
+          "unit": "gal",
+          "reading_key": "fc",
+          "suggested_quantity": 0.5,
+          "quantity": 0.5,
+          "unit_price_cents": 800
+        }
+      ]
+    },
+    {
+      "args": [
+        {
+          "gallons": 20000,
+          "readings": {
+            "fc": 1,
+            "ph": 7.8,
+            "ta": 90,
+            "ch": 260,
+            "cya": 30
+          },
+          "chlorine": "liquid12",
+          "acid": "muriatic31",
+          "goals": {
+            "fc": 4,
+            "cya": 40
+          }
+        },
+        false
+      ],
+      "result": [
+        {
+          "price_book_item_id": null,
+          "name": "Muriatic acid",
+          "unit": "gal",
+          "reading_key": "ph",
+          "suggested_quantity": 0.25,
+          "quantity": 0.25,
+          "unit_price_cents": 0
+        },
+        {
+          "price_book_item_id": null,
+          "name": "Stabilizer (cyanuric acid)",
+          "unit": "lb",
+          "reading_key": "cya",
+          "suggested_quantity": 1.5,
+          "quantity": 1.5,
+          "unit_price_cents": 0
+        },
+        {
+          "price_book_item_id": null,
+          "name": "Liquid chlorine",
+          "unit": "gal",
+          "reading_key": "fc",
+          "suggested_quantity": 0.5,
+          "quantity": 0.5,
+          "unit_price_cents": 0
+        }
+      ]
+    },
+    {
+      "args": [
+        {
+          "gallons": 15000,
+          "readings": {
+            "fc": 1,
+            "ph": 7,
+            "ta": 60,
+            "ch": 150,
+            "cya": 10,
+            "salt": 2400
+          },
+          "chlorine": "calhypo65",
+          "acid": "dryacid"
+        },
+        true
+      ],
+      "result": [
+        {
+          "price_book_item_id": "soda",
+          "name": "Baking soda",
+          "unit": "lb",
+          "reading_key": "ta",
+          "suggested_quantity": 8.5,
+          "quantity": 8.5,
+          "unit_price_cents": 300
+        },
+        {
+          "price_book_item_id": "ash",
+          "name": "Soda ash",
+          "unit": "oz",
+          "reading_key": "ph",
+          "suggested_quantity": 24,
+          "quantity": 24,
+          "unit_price_cents": 30
+        },
+        {
+          "price_book_item_id": "jug",
+          "name": "Calcium, jug",
+          "unit": "jug",
+          "reading_key": "ch",
+          "suggested_quantity": 27,
+          "quantity": 1,
+          "unit_price_cents": 2000
+        },
+        {
+          "price_book_item_id": "cya",
+          "name": "Stabilizer (CYA)",
+          "unit": "lb",
+          "reading_key": "cya",
+          "suggested_quantity": 3.5,
+          "quantity": 3.5,
+          "unit_price_cents": 900
+        },
+        {
+          "price_book_item_id": "salt",
+          "name": "Salt, 40 lb bag",
+          "unit": "bag",
+          "reading_key": "salt",
+          "suggested_quantity": 2.5,
+          "quantity": 2.5,
+          "unit_price_cents": 1800
+        },
+        {
+          "price_book_item_id": "hypo",
+          "name": "Shock (cal-hypo)",
+          "unit": "lb",
+          "reading_key": "fc",
+          "suggested_quantity": 0.5,
+          "quantity": 0.5,
+          "unit_price_cents": 600
+        }
+      ]
+    },
+    {
+      "args": [
+        {
+          "gallons": 15000,
+          "readings": {
+            "fc": 1,
+            "ph": 7,
+            "ta": 60,
+            "ch": 150,
+            "cya": 10,
+            "salt": 2400
+          },
+          "chlorine": "calhypo65",
+          "acid": "dryacid"
+        },
+        false
+      ],
+      "result": [
+        {
+          "price_book_item_id": null,
+          "name": "Baking soda",
+          "unit": "lb",
+          "reading_key": "ta",
+          "suggested_quantity": 8.5,
+          "quantity": 8.5,
+          "unit_price_cents": 0
+        },
+        {
+          "price_book_item_id": null,
+          "name": "Soda ash",
+          "unit": "lb",
+          "reading_key": "ph",
+          "suggested_quantity": 1.5,
+          "quantity": 1.5,
+          "unit_price_cents": 0
+        },
+        {
+          "price_book_item_id": null,
+          "name": "Calcium chloride",
+          "unit": "lb",
+          "reading_key": "ch",
+          "suggested_quantity": 27,
+          "quantity": 27,
+          "unit_price_cents": 0
+        },
+        {
+          "price_book_item_id": null,
+          "name": "Stabilizer (cyanuric acid)",
+          "unit": "lb",
+          "reading_key": "cya",
+          "suggested_quantity": 3.5,
+          "quantity": 3.5,
+          "unit_price_cents": 0
+        },
+        {
+          "price_book_item_id": null,
+          "name": "Pool salt",
+          "unit": "bag",
+          "reading_key": "salt",
+          "suggested_quantity": 2.5,
+          "quantity": 2.5,
+          "unit_price_cents": 0
+        },
+        {
+          "price_book_item_id": null,
+          "name": "Cal-hypo",
+          "unit": "lb",
+          "reading_key": "fc",
+          "suggested_quantity": 0.5,
+          "quantity": 0.5,
+          "unit_price_cents": 0
+        }
+      ]
+    },
+    {
+      "args": [
+        {
+          "gallons": 8000,
+          "readings": {
+            "ph": 8.2,
+            "ta": 150,
+            "ch": 900,
+            "fc": 12
+          },
+          "chlorine": "liquid10",
+          "acid": "muriatic145"
+        },
+        true
+      ],
+      "result": [
+        {
+          "price_book_item_id": "acid",
+          "name": "Muriatic acid",
+          "unit": "gal",
+          "reading_key": "ta",
+          "suggested_quantity": 2,
+          "quantity": 2,
+          "unit_price_cents": 1500
+        },
+        {
+          "price_book_item_id": "acid",
+          "name": "Muriatic acid",
+          "unit": "gal",
+          "reading_key": "ph",
+          "suggested_quantity": 0.67,
+          "quantity": 0.67,
+          "unit_price_cents": 1500
+        },
+        null,
+        null
+      ]
+    },
+    {
+      "args": [
+        {
+          "gallons": 8000,
+          "readings": {
+            "ph": 8.2,
+            "ta": 150,
+            "ch": 900,
+            "fc": 12
+          },
+          "chlorine": "liquid10",
+          "acid": "muriatic145"
+        },
+        false
+      ],
+      "result": [
+        {
+          "price_book_item_id": null,
+          "name": "Muriatic acid",
+          "unit": "gal",
+          "reading_key": "ta",
+          "suggested_quantity": 2,
+          "quantity": 2,
+          "unit_price_cents": 0
+        },
+        {
+          "price_book_item_id": null,
+          "name": "Muriatic acid",
+          "unit": "gal",
+          "reading_key": "ph",
+          "suggested_quantity": 0.67,
+          "quantity": 0.67,
+          "unit_price_cents": 0
+        },
+        null,
+        null
+      ]
+    },
+    {
+      "args": [
+        {
+          "gallons": 20000,
+          "readings": {
+            "fc": 4,
+            "ph": 7.5,
+            "ta": 100,
+            "ch": 300,
+            "cya": 40
+          },
+          "chlorine": "liquid12",
+          "acid": "muriatic31"
+        },
+        true
+      ],
+      "result": []
+    },
+    {
+      "args": [
+        {
+          "gallons": 20000,
+          "readings": {
+            "fc": 4,
+            "ph": 7.5,
+            "ta": 100,
+            "ch": 300,
+            "cya": 40
+          },
+          "chlorine": "liquid12",
+          "acid": "muriatic31"
+        },
+        false
+      ],
+      "result": []
+    }
+  ],
+  "itemAddition": [
+    {
+      "args": [
+        "tabs",
+        null
+      ],
+      "result": {
+        "price_book_item_id": "tabs",
+        "name": "Chlorine tabs (3″)",
+        "unit": "tab",
+        "reading_key": null,
+        "suggested_quantity": null,
+        "quantity": 1,
+        "unit_price_cents": 250
+      }
+    },
+    {
+      "args": [
+        "cl",
+        null
+      ],
+      "result": {
+        "price_book_item_id": "cl",
+        "name": "Liquid chlorine",
+        "unit": "gal",
+        "reading_key": null,
+        "suggested_quantity": null,
+        "quantity": 1,
+        "unit_price_cents": 800
+      }
+    },
+    {
+      "args": [
+        "algae",
+        null
+      ],
+      "result": {
+        "price_book_item_id": "algae",
+        "name": "Algaecide",
+        "unit": "qt",
+        "reading_key": null,
+        "suggested_quantity": null,
+        "quantity": 1,
+        "unit_price_cents": 1500
+      }
+    },
+    {
+      "args": [
+        "pump",
+        2
+      ],
+      "result": {
+        "price_book_item_id": "pump",
+        "name": "Replace pump motor",
+        "unit": "each",
+        "reading_key": null,
+        "suggested_quantity": null,
+        "quantity": 2,
+        "unit_price_cents": 65000
+      }
+    },
+    {
+      "args": [
+        "cya",
+        1.5
+      ],
+      "result": {
+        "price_book_item_id": "cya",
+        "name": "Stabilizer (CYA)",
+        "unit": "lb",
+        "reading_key": null,
+        "suggested_quantity": null,
+        "quantity": 1.5,
+        "unit_price_cents": 900
+      }
+    }
+  ],
+  "chemicalRows": [
+    {
+      "args": [
+        {
+          "gallons": 20000,
+          "readings": {
+            "fc": 1,
+            "ph": 7.8,
+            "ta": 90,
+            "ch": 260,
+            "cya": 30
+          },
+          "chlorine": "liquid12",
+          "acid": "muriatic31",
+          "goals": {
+            "fc": 4,
+            "cya": 40
+          }
+        }
+      ],
+      "result": {
+        "rows": [
+          {
+            "key": "fc",
+            "step": {
+              "key": "fc",
+              "product": "Liquid chlorine 12.5%",
+              "amount": "64 fl oz",
+              "measure": "½ gallon",
+              "chemical": "liquid_chlorine",
+              "quantity": 0.5,
+              "unit": "gal",
+              "why": "Free chlorine 1 → 4"
+            },
+            "order": 3,
+            "suggestion": {
+              "price_book_item_id": "cl",
+              "name": "Liquid chlorine",
+              "unit": "gal",
+              "reading_key": "fc",
+              "suggested_quantity": 0.5,
+              "quantity": 0.5,
+              "unit_price_cents": 800
+            },
+            "added": [
+              {
+                "id": "1",
+                "job_id": "j",
+                "property_id": "p",
+                "price_book_item_id": "cl",
+                "name": "Liquid chlorine",
+                "unit": "gal",
+                "reading_key": "fc",
+                "suggested_quantity": 0.5,
+                "quantity": 0.5,
+                "customer_supplied": false,
+                "note": null,
+                "unit_price_cents": 800,
+                "taxable": true,
+                "billed_invoice_id": null,
+                "added_at": "2026-10-23T14:00:00Z",
+                "sort_order": 0,
+                "deleted_at": null
+              },
+              {
+                "id": "6",
+                "job_id": "j",
+                "property_id": "p",
+                "price_book_item_id": "cl",
+                "name": "Liquid chlorine",
+                "unit": "gal",
+                "reading_key": "fc",
+                "suggested_quantity": 0.5,
+                "quantity": 0.25,
+                "customer_supplied": false,
+                "note": null,
+                "unit_price_cents": 800,
+                "taxable": true,
+                "billed_invoice_id": null,
+                "added_at": "2026-10-23T13:00:00Z",
+                "sort_order": 1,
+                "deleted_at": null
+              }
+            ]
+          },
+          {
+            "key": "ph",
+            "step": {
+              "key": "ph",
+              "product": "Muriatic acid 31.45%",
+              "amount": "35 fl oz",
+              "measure": "¼ gallon",
+              "chemical": "muriatic_acid",
+              "quantity": 0.25,
+              "unit": "gal",
+              "why": "pH 7.8 → 7.5",
+              "note": "Pour into the deep end with the pump running. Add acid to water, never water to acid."
+            },
+            "order": 1,
+            "suggestion": {
+              "price_book_item_id": "acid",
+              "name": "Muriatic acid",
+              "unit": "gal",
+              "reading_key": "ph",
+              "suggested_quantity": 0.25,
+              "quantity": 0.25,
+              "unit_price_cents": 1500
+            },
+            "added": [
+              {
+                "id": "2",
+                "job_id": "j",
+                "property_id": "p",
+                "price_book_item_id": "acid",
+                "name": "Muriatic acid",
+                "unit": "gal",
+                "reading_key": "ph",
+                "suggested_quantity": 0.5,
+                "quantity": 0.25,
+                "customer_supplied": false,
+                "note": null,
+                "unit_price_cents": 1500,
+                "taxable": true,
+                "billed_invoice_id": null,
+                "added_at": "2026-10-23T14:00:00Z",
+                "sort_order": 1,
+                "deleted_at": null
+              }
+            ]
+          },
+          {
+            "key": "ta",
+            "step": null,
+            "order": null,
+            "suggestion": null,
+            "added": []
+          },
+          {
+            "key": "ch",
+            "step": null,
+            "order": null,
+            "suggestion": null,
+            "added": []
+          },
+          {
+            "key": "cya",
+            "step": {
+              "key": "cya",
+              "product": "Stabilizer (cyanuric acid)",
+              "amount": "1.7 lb",
+              "measure": "1½ lb",
+              "chemical": "stabilizer",
+              "quantity": 1.5,
+              "unit": "lb",
+              "why": "Stabilizer 30 → 40",
+              "note": "Dissolves slowly; put it in a sock in the skimmer basket. Retest in a week."
+            },
+            "order": 2,
+            "suggestion": {
+              "price_book_item_id": "cya",
+              "name": "Stabilizer (CYA)",
+              "unit": "lb",
+              "reading_key": "cya",
+              "suggested_quantity": 1.5,
+              "quantity": 1.5,
+              "unit_price_cents": 900
+            },
+            "added": []
+          },
+          {
+            "key": "salt",
+            "step": null,
+            "order": null,
+            "suggestion": null,
+            "added": []
+          }
+        ],
+        "extras": [
+          {
+            "id": "3",
+            "job_id": "j",
+            "property_id": "p",
+            "price_book_item_id": "tabs",
+            "name": "Chlorine tabs (3″)",
+            "unit": "tab",
+            "reading_key": null,
+            "suggested_quantity": 0.5,
+            "quantity": 3,
+            "customer_supplied": false,
+            "note": "In the floater",
+            "unit_price_cents": 250,
+            "taxable": true,
+            "billed_invoice_id": null,
+            "added_at": "2026-10-23T14:00:00Z",
+            "sort_order": 2,
+            "deleted_at": null
+          },
+          {
+            "id": "4",
+            "job_id": "j",
+            "property_id": "p",
+            "price_book_item_id": "algae",
+            "name": "Algaecide",
+            "unit": "qt",
+            "reading_key": null,
+            "suggested_quantity": 0.5,
+            "quantity": 1,
+            "customer_supplied": true,
+            "note": null,
+            "unit_price_cents": 1500,
+            "taxable": true,
+            "billed_invoice_id": null,
+            "added_at": "2026-10-23T14:00:00Z",
+            "sort_order": 3,
+            "deleted_at": null
+          }
+        ]
+      }
+    },
+    {
+      "args": [
+        {
+          "gallons": 15000,
+          "readings": {
+            "fc": 1,
+            "ph": 7,
+            "ta": 60,
+            "ch": 150,
+            "cya": 10,
+            "salt": 2400
+          },
+          "chlorine": "calhypo65",
+          "acid": "dryacid"
+        }
+      ],
+      "result": {
+        "rows": [
+          {
+            "key": "fc",
+            "step": {
+              "key": "fc",
+              "product": "Cal-hypo 65%",
+              "amount": "6 oz",
+              "measure": "½ lb",
+              "chemical": "cal_hypo",
+              "quantity": 0.5,
+              "unit": "lb",
+              "why": "Free chlorine 1 → 3",
+              "note": "Also raises calcium a little. Pre-dissolve in a bucket of pool water."
+            },
+            "order": 6,
+            "suggestion": {
+              "price_book_item_id": "hypo",
+              "name": "Shock (cal-hypo)",
+              "unit": "lb",
+              "reading_key": "fc",
+              "suggested_quantity": 0.5,
+              "quantity": 0.5,
+              "unit_price_cents": 600
+            },
+            "added": [
+              {
+                "id": "1",
+                "job_id": "j",
+                "property_id": "p",
+                "price_book_item_id": "cl",
+                "name": "Liquid chlorine",
+                "unit": "gal",
+                "reading_key": "fc",
+                "suggested_quantity": 0.5,
+                "quantity": 0.5,
+                "customer_supplied": false,
+                "note": null,
+                "unit_price_cents": 800,
+                "taxable": true,
+                "billed_invoice_id": null,
+                "added_at": "2026-10-23T14:00:00Z",
+                "sort_order": 0,
+                "deleted_at": null
+              },
+              {
+                "id": "6",
+                "job_id": "j",
+                "property_id": "p",
+                "price_book_item_id": "cl",
+                "name": "Liquid chlorine",
+                "unit": "gal",
+                "reading_key": "fc",
+                "suggested_quantity": 0.5,
+                "quantity": 0.25,
+                "customer_supplied": false,
+                "note": null,
+                "unit_price_cents": 800,
+                "taxable": true,
+                "billed_invoice_id": null,
+                "added_at": "2026-10-23T13:00:00Z",
+                "sort_order": 1,
+                "deleted_at": null
+              }
+            ]
+          },
+          {
+            "key": "ph",
+            "step": {
+              "key": "ph",
+              "product": "Soda ash",
+              "amount": "1.4 lb",
+              "measure": "1½ lb",
+              "chemical": "soda_ash",
+              "quantity": 1.5,
+              "unit": "lb",
+              "why": "pH 7.0 → 7.5"
+            },
+            "order": 2,
+            "suggestion": {
+              "price_book_item_id": "ash",
+              "name": "Soda ash",
+              "unit": "oz",
+              "reading_key": "ph",
+              "suggested_quantity": 24,
+              "quantity": 24,
+              "unit_price_cents": 30
+            },
+            "added": [
+              {
+                "id": "2",
+                "job_id": "j",
+                "property_id": "p",
+                "price_book_item_id": "acid",
+                "name": "Muriatic acid",
+                "unit": "gal",
+                "reading_key": "ph",
+                "suggested_quantity": 0.5,
+                "quantity": 0.25,
+                "customer_supplied": false,
+                "note": null,
+                "unit_price_cents": 1500,
+                "taxable": true,
+                "billed_invoice_id": null,
+                "added_at": "2026-10-23T14:00:00Z",
+                "sort_order": 1,
+                "deleted_at": null
+              }
+            ]
+          },
+          {
+            "key": "ta",
+            "step": {
+              "key": "ta",
+              "product": "Baking soda",
+              "amount": "8.4 lb",
+              "measure": "8½ lb",
+              "chemical": "baking_soda",
+              "quantity": 8.5,
+              "unit": "lb",
+              "why": "Alkalinity 60 → 100"
+            },
+            "order": 1,
+            "suggestion": {
+              "price_book_item_id": "soda",
+              "name": "Baking soda",
+              "unit": "lb",
+              "reading_key": "ta",
+              "suggested_quantity": 8.5,
+              "quantity": 8.5,
+              "unit_price_cents": 300
+            },
+            "added": []
+          },
+          {
+            "key": "ch",
+            "step": {
+              "key": "ch",
+              "product": "Calcium chloride 77%",
+              "amount": "27 lb",
+              "measure": "27 lb",
+              "chemical": "calcium_chloride",
+              "quantity": 27,
+              "unit": "lb",
+              "why": "Calcium 150 → 300"
+            },
+            "order": 3,
+            "suggestion": {
+              "price_book_item_id": "jug",
+              "name": "Calcium, jug",
+              "unit": "jug",
+              "reading_key": "ch",
+              "suggested_quantity": 27,
+              "quantity": 1,
+              "unit_price_cents": 2000
+            },
+            "added": []
+          },
+          {
+            "key": "cya",
+            "step": {
+              "key": "cya",
+              "product": "Stabilizer (cyanuric acid)",
+              "amount": "3.7 lb",
+              "measure": "3½ lb",
+              "chemical": "stabilizer",
+              "quantity": 3.5,
+              "unit": "lb",
+              "why": "Stabilizer 10 → 40",
+              "note": "Dissolves slowly; put it in a sock in the skimmer basket. Retest in a week."
+            },
+            "order": 4,
+            "suggestion": {
+              "price_book_item_id": "cya",
+              "name": "Stabilizer (CYA)",
+              "unit": "lb",
+              "reading_key": "cya",
+              "suggested_quantity": 3.5,
+              "quantity": 3.5,
+              "unit_price_cents": 900
+            },
+            "added": []
+          },
+          {
+            "key": "salt",
+            "step": {
+              "key": "salt",
+              "product": "Pool salt",
+              "amount": "100 lb",
+              "measure": "2½ bags",
+              "chemical": "salt",
+              "quantity": 2.5,
+              "unit": "bag",
+              "why": "Salt 2400 → 3200",
+              "note": "Brush it toward the main drain until it dissolves."
+            },
+            "order": 5,
+            "suggestion": {
+              "price_book_item_id": "salt",
+              "name": "Salt, 40 lb bag",
+              "unit": "bag",
+              "reading_key": "salt",
+              "suggested_quantity": 2.5,
+              "quantity": 2.5,
+              "unit_price_cents": 1800
+            },
+            "added": []
+          }
+        ],
+        "extras": [
+          {
+            "id": "3",
+            "job_id": "j",
+            "property_id": "p",
+            "price_book_item_id": "tabs",
+            "name": "Chlorine tabs (3″)",
+            "unit": "tab",
+            "reading_key": null,
+            "suggested_quantity": 0.5,
+            "quantity": 3,
+            "customer_supplied": false,
+            "note": "In the floater",
+            "unit_price_cents": 250,
+            "taxable": true,
+            "billed_invoice_id": null,
+            "added_at": "2026-10-23T14:00:00Z",
+            "sort_order": 2,
+            "deleted_at": null
+          },
+          {
+            "id": "4",
+            "job_id": "j",
+            "property_id": "p",
+            "price_book_item_id": "algae",
+            "name": "Algaecide",
+            "unit": "qt",
+            "reading_key": null,
+            "suggested_quantity": 0.5,
+            "quantity": 1,
+            "customer_supplied": true,
+            "note": null,
+            "unit_price_cents": 1500,
+            "taxable": true,
+            "billed_invoice_id": null,
+            "added_at": "2026-10-23T14:00:00Z",
+            "sort_order": 3,
+            "deleted_at": null
+          }
+        ]
+      }
+    },
+    {
+      "args": [
+        {
+          "gallons": 8000,
+          "readings": {
+            "ph": 8.2,
+            "ta": 150,
+            "ch": 900,
+            "fc": 12
+          },
+          "chlorine": "liquid10",
+          "acid": "muriatic145"
+        }
+      ],
+      "result": {
+        "rows": [
+          {
+            "key": "fc",
+            "step": {
+              "key": "fc",
+              "product": "Hold off on chlorine",
+              "amount": null,
+              "measure": null,
+              "chemical": null,
+              "quantity": null,
+              "unit": null,
+              "why": "Free chlorine 12 → 4",
+              "note": "Sun and time bring it down. Don't swim above 10 ppm."
+            },
+            "order": 4,
+            "suggestion": null,
+            "added": [
+              {
+                "id": "1",
+                "job_id": "j",
+                "property_id": "p",
+                "price_book_item_id": "cl",
+                "name": "Liquid chlorine",
+                "unit": "gal",
+                "reading_key": "fc",
+                "suggested_quantity": 0.5,
+                "quantity": 0.5,
+                "customer_supplied": false,
+                "note": null,
+                "unit_price_cents": 800,
+                "taxable": true,
+                "billed_invoice_id": null,
+                "added_at": "2026-10-23T14:00:00Z",
+                "sort_order": 0,
+                "deleted_at": null
+              },
+              {
+                "id": "6",
+                "job_id": "j",
+                "property_id": "p",
+                "price_book_item_id": "cl",
+                "name": "Liquid chlorine",
+                "unit": "gal",
+                "reading_key": "fc",
+                "suggested_quantity": 0.5,
+                "quantity": 0.25,
+                "customer_supplied": false,
+                "note": null,
+                "unit_price_cents": 800,
+                "taxable": true,
+                "billed_invoice_id": null,
+                "added_at": "2026-10-23T13:00:00Z",
+                "sort_order": 1,
+                "deleted_at": null
+              }
+            ]
+          },
+          {
+            "key": "ph",
+            "step": {
+              "key": "ph",
+              "product": "Muriatic acid 14.5%",
+              "amount": "85 fl oz",
+              "measure": "⅔ gallon",
+              "chemical": "muriatic_acid",
+              "quantity": 0.67,
+              "unit": "gal",
+              "why": "pH 8.2 → 7.5",
+              "note": "Pour into the deep end with the pump running. Add acid to water, never water to acid."
+            },
+            "order": 2,
+            "suggestion": {
+              "price_book_item_id": "acid",
+              "name": "Muriatic acid",
+              "unit": "gal",
+              "reading_key": "ph",
+              "suggested_quantity": 0.67,
+              "quantity": 0.67,
+              "unit_price_cents": 1500
+            },
+            "added": [
+              {
+                "id": "2",
+                "job_id": "j",
+                "property_id": "p",
+                "price_book_item_id": "acid",
+                "name": "Muriatic acid",
+                "unit": "gal",
+                "reading_key": "ph",
+                "suggested_quantity": 0.5,
+                "quantity": 0.25,
+                "customer_supplied": false,
+                "note": null,
+                "unit_price_cents": 1500,
+                "taxable": true,
+                "billed_invoice_id": null,
+                "added_at": "2026-10-23T14:00:00Z",
+                "sort_order": 1,
+                "deleted_at": null
+              }
+            ]
+          },
+          {
+            "key": "ta",
+            "step": {
+              "key": "ta",
+              "product": "Muriatic acid 14.5%",
+              "amount": "1 gal 112 fl oz",
+              "measure": "2 gallons",
+              "chemical": "muriatic_acid",
+              "quantity": 2,
+              "unit": "gal",
+              "why": "Alkalinity 150 → 100",
+              "note": "Add in two or three doses a few hours apart, running the pump, and aerate to bring pH back up."
+            },
+            "order": 1,
+            "suggestion": {
+              "price_book_item_id": "acid",
+              "name": "Muriatic acid",
+              "unit": "gal",
+              "reading_key": "ta",
+              "suggested_quantity": 2,
+              "quantity": 2,
+              "unit_price_cents": 1500
+            },
+            "added": []
+          },
+          {
+            "key": "ch",
+            "step": {
+              "key": "ch",
+              "product": "Drain and refill about 70%",
+              "amount": null,
+              "measure": null,
+              "why": "Calcium 900 → 300",
+              "note": "Nothing added lowers it; fresh water does.",
+              "chemical": null,
+              "quantity": null,
+              "unit": null
+            },
+            "order": 3,
+            "suggestion": null,
+            "added": []
+          },
+          {
+            "key": "cya",
+            "step": null,
+            "order": null,
+            "suggestion": null,
+            "added": []
+          },
+          {
+            "key": "salt",
+            "step": null,
+            "order": null,
+            "suggestion": null,
+            "added": []
+          }
+        ],
+        "extras": [
+          {
+            "id": "3",
+            "job_id": "j",
+            "property_id": "p",
+            "price_book_item_id": "tabs",
+            "name": "Chlorine tabs (3″)",
+            "unit": "tab",
+            "reading_key": null,
+            "suggested_quantity": 0.5,
+            "quantity": 3,
+            "customer_supplied": false,
+            "note": "In the floater",
+            "unit_price_cents": 250,
+            "taxable": true,
+            "billed_invoice_id": null,
+            "added_at": "2026-10-23T14:00:00Z",
+            "sort_order": 2,
+            "deleted_at": null
+          },
+          {
+            "id": "4",
+            "job_id": "j",
+            "property_id": "p",
+            "price_book_item_id": "algae",
+            "name": "Algaecide",
+            "unit": "qt",
+            "reading_key": null,
+            "suggested_quantity": 0.5,
+            "quantity": 1,
+            "customer_supplied": true,
+            "note": null,
+            "unit_price_cents": 1500,
+            "taxable": true,
+            "billed_invoice_id": null,
+            "added_at": "2026-10-23T14:00:00Z",
+            "sort_order": 3,
+            "deleted_at": null
+          }
+        ]
+      }
+    },
+    {
+      "args": [
+        {
+          "gallons": 20000,
+          "readings": {
+            "fc": 4,
+            "ph": 7.5,
+            "ta": 100,
+            "ch": 300,
+            "cya": 40
+          },
+          "chlorine": "liquid12",
+          "acid": "muriatic31"
+        }
+      ],
+      "result": {
+        "rows": [
+          {
+            "key": "fc",
+            "step": null,
+            "order": null,
+            "suggestion": null,
+            "added": [
+              {
+                "id": "1",
+                "job_id": "j",
+                "property_id": "p",
+                "price_book_item_id": "cl",
+                "name": "Liquid chlorine",
+                "unit": "gal",
+                "reading_key": "fc",
+                "suggested_quantity": 0.5,
+                "quantity": 0.5,
+                "customer_supplied": false,
+                "note": null,
+                "unit_price_cents": 800,
+                "taxable": true,
+                "billed_invoice_id": null,
+                "added_at": "2026-10-23T14:00:00Z",
+                "sort_order": 0,
+                "deleted_at": null
+              },
+              {
+                "id": "6",
+                "job_id": "j",
+                "property_id": "p",
+                "price_book_item_id": "cl",
+                "name": "Liquid chlorine",
+                "unit": "gal",
+                "reading_key": "fc",
+                "suggested_quantity": 0.5,
+                "quantity": 0.25,
+                "customer_supplied": false,
+                "note": null,
+                "unit_price_cents": 800,
+                "taxable": true,
+                "billed_invoice_id": null,
+                "added_at": "2026-10-23T13:00:00Z",
+                "sort_order": 1,
+                "deleted_at": null
+              }
+            ]
+          },
+          {
+            "key": "ph",
+            "step": null,
+            "order": null,
+            "suggestion": null,
+            "added": [
+              {
+                "id": "2",
+                "job_id": "j",
+                "property_id": "p",
+                "price_book_item_id": "acid",
+                "name": "Muriatic acid",
+                "unit": "gal",
+                "reading_key": "ph",
+                "suggested_quantity": 0.5,
+                "quantity": 0.25,
+                "customer_supplied": false,
+                "note": null,
+                "unit_price_cents": 1500,
+                "taxable": true,
+                "billed_invoice_id": null,
+                "added_at": "2026-10-23T14:00:00Z",
+                "sort_order": 1,
+                "deleted_at": null
+              }
+            ]
+          },
+          {
+            "key": "ta",
+            "step": null,
+            "order": null,
+            "suggestion": null,
+            "added": []
+          },
+          {
+            "key": "ch",
+            "step": null,
+            "order": null,
+            "suggestion": null,
+            "added": []
+          },
+          {
+            "key": "cya",
+            "step": null,
+            "order": null,
+            "suggestion": null,
+            "added": []
+          },
+          {
+            "key": "salt",
+            "step": null,
+            "order": null,
+            "suggestion": null,
+            "added": []
+          }
+        ],
+        "extras": [
+          {
+            "id": "3",
+            "job_id": "j",
+            "property_id": "p",
+            "price_book_item_id": "tabs",
+            "name": "Chlorine tabs (3″)",
+            "unit": "tab",
+            "reading_key": null,
+            "suggested_quantity": 0.5,
+            "quantity": 3,
+            "customer_supplied": false,
+            "note": "In the floater",
+            "unit_price_cents": 250,
+            "taxable": true,
+            "billed_invoice_id": null,
+            "added_at": "2026-10-23T14:00:00Z",
+            "sort_order": 2,
+            "deleted_at": null
+          },
+          {
+            "id": "4",
+            "job_id": "j",
+            "property_id": "p",
+            "price_book_item_id": "algae",
+            "name": "Algaecide",
+            "unit": "qt",
+            "reading_key": null,
+            "suggested_quantity": 0.5,
+            "quantity": 1,
+            "customer_supplied": true,
+            "note": null,
+            "unit_price_cents": 1500,
+            "taxable": true,
+            "billed_invoice_id": null,
+            "added_at": "2026-10-23T14:00:00Z",
+            "sort_order": 3,
+            "deleted_at": null
+          }
+        ]
+      }
+    }
+  ],
+  "openSuggestions": [
+    {
+      "args": [
+        {
+          "gallons": 20000,
+          "readings": {
+            "fc": 1,
+            "ph": 7.8,
+            "ta": 90,
+            "ch": 260,
+            "cya": 30
+          },
+          "chlorine": "liquid12",
+          "acid": "muriatic31",
+          "goals": {
+            "fc": 4,
+            "cya": 40
+          }
+        },
+        true
+      ],
+      "result": [
+        {
+          "price_book_item_id": "cl",
+          "name": "Liquid chlorine",
+          "unit": "gal",
+          "reading_key": "fc",
+          "suggested_quantity": 0.5,
+          "quantity": 0.5,
+          "unit_price_cents": 800
+        },
+        {
+          "price_book_item_id": "acid",
+          "name": "Muriatic acid",
+          "unit": "gal",
+          "reading_key": "ph",
+          "suggested_quantity": 0.25,
+          "quantity": 0.25,
+          "unit_price_cents": 1500
+        },
+        {
+          "price_book_item_id": "cya",
+          "name": "Stabilizer (CYA)",
+          "unit": "lb",
+          "reading_key": "cya",
+          "suggested_quantity": 1.5,
+          "quantity": 1.5,
+          "unit_price_cents": 900
+        }
+      ]
+    },
+    {
+      "args": [
+        {
+          "gallons": 20000,
+          "readings": {
+            "fc": 1,
+            "ph": 7.8,
+            "ta": 90,
+            "ch": 260,
+            "cya": 30
+          },
+          "chlorine": "liquid12",
+          "acid": "muriatic31",
+          "goals": {
+            "fc": 4,
+            "cya": 40
+          }
+        },
+        false
+      ],
+      "result": [
+        {
+          "price_book_item_id": "cya",
+          "name": "Stabilizer (CYA)",
+          "unit": "lb",
+          "reading_key": "cya",
+          "suggested_quantity": 1.5,
+          "quantity": 1.5,
+          "unit_price_cents": 900
+        }
+      ]
+    },
+    {
+      "args": [
+        {
+          "gallons": 15000,
+          "readings": {
+            "fc": 1,
+            "ph": 7,
+            "ta": 60,
+            "ch": 150,
+            "cya": 10,
+            "salt": 2400
+          },
+          "chlorine": "calhypo65",
+          "acid": "dryacid"
+        },
+        true
+      ],
+      "result": [
+        {
+          "price_book_item_id": "hypo",
+          "name": "Shock (cal-hypo)",
+          "unit": "lb",
+          "reading_key": "fc",
+          "suggested_quantity": 0.5,
+          "quantity": 0.5,
+          "unit_price_cents": 600
+        },
+        {
+          "price_book_item_id": "ash",
+          "name": "Soda ash",
+          "unit": "oz",
+          "reading_key": "ph",
+          "suggested_quantity": 24,
+          "quantity": 24,
+          "unit_price_cents": 30
+        },
+        {
+          "price_book_item_id": "soda",
+          "name": "Baking soda",
+          "unit": "lb",
+          "reading_key": "ta",
+          "suggested_quantity": 8.5,
+          "quantity": 8.5,
+          "unit_price_cents": 300
+        },
+        {
+          "price_book_item_id": "jug",
+          "name": "Calcium, jug",
+          "unit": "jug",
+          "reading_key": "ch",
+          "suggested_quantity": 27,
+          "quantity": 1,
+          "unit_price_cents": 2000
+        },
+        {
+          "price_book_item_id": "cya",
+          "name": "Stabilizer (CYA)",
+          "unit": "lb",
+          "reading_key": "cya",
+          "suggested_quantity": 3.5,
+          "quantity": 3.5,
+          "unit_price_cents": 900
+        },
+        {
+          "price_book_item_id": "salt",
+          "name": "Salt, 40 lb bag",
+          "unit": "bag",
+          "reading_key": "salt",
+          "suggested_quantity": 2.5,
+          "quantity": 2.5,
+          "unit_price_cents": 1800
+        }
+      ]
+    },
+    {
+      "args": [
+        {
+          "gallons": 15000,
+          "readings": {
+            "fc": 1,
+            "ph": 7,
+            "ta": 60,
+            "ch": 150,
+            "cya": 10,
+            "salt": 2400
+          },
+          "chlorine": "calhypo65",
+          "acid": "dryacid"
+        },
+        false
+      ],
+      "result": [
+        {
+          "price_book_item_id": "soda",
+          "name": "Baking soda",
+          "unit": "lb",
+          "reading_key": "ta",
+          "suggested_quantity": 8.5,
+          "quantity": 8.5,
+          "unit_price_cents": 300
+        },
+        {
+          "price_book_item_id": "jug",
+          "name": "Calcium, jug",
+          "unit": "jug",
+          "reading_key": "ch",
+          "suggested_quantity": 27,
+          "quantity": 1,
+          "unit_price_cents": 2000
+        },
+        {
+          "price_book_item_id": "cya",
+          "name": "Stabilizer (CYA)",
+          "unit": "lb",
+          "reading_key": "cya",
+          "suggested_quantity": 3.5,
+          "quantity": 3.5,
+          "unit_price_cents": 900
+        },
+        {
+          "price_book_item_id": "salt",
+          "name": "Salt, 40 lb bag",
+          "unit": "bag",
+          "reading_key": "salt",
+          "suggested_quantity": 2.5,
+          "quantity": 2.5,
+          "unit_price_cents": 1800
+        }
+      ]
+    },
+    {
+      "args": [
+        {
+          "gallons": 8000,
+          "readings": {
+            "ph": 8.2,
+            "ta": 150,
+            "ch": 900,
+            "fc": 12
+          },
+          "chlorine": "liquid10",
+          "acid": "muriatic145"
+        },
+        true
+      ],
+      "result": [
+        {
+          "price_book_item_id": "acid",
+          "name": "Muriatic acid",
+          "unit": "gal",
+          "reading_key": "ph",
+          "suggested_quantity": 0.67,
+          "quantity": 0.67,
+          "unit_price_cents": 1500
+        },
+        {
+          "price_book_item_id": "acid",
+          "name": "Muriatic acid",
+          "unit": "gal",
+          "reading_key": "ta",
+          "suggested_quantity": 2,
+          "quantity": 2,
+          "unit_price_cents": 1500
+        }
+      ]
+    },
+    {
+      "args": [
+        {
+          "gallons": 8000,
+          "readings": {
+            "ph": 8.2,
+            "ta": 150,
+            "ch": 900,
+            "fc": 12
+          },
+          "chlorine": "liquid10",
+          "acid": "muriatic145"
+        },
+        false
+      ],
+      "result": [
+        {
+          "price_book_item_id": "acid",
+          "name": "Muriatic acid",
+          "unit": "gal",
+          "reading_key": "ta",
+          "suggested_quantity": 2,
+          "quantity": 2,
+          "unit_price_cents": 1500
+        }
+      ]
+    },
+    {
+      "args": [
+        {
+          "gallons": 20000,
+          "readings": {
+            "fc": 4,
+            "ph": 7.5,
+            "ta": 100,
+            "ch": 300,
+            "cya": 40
+          },
+          "chlorine": "liquid12",
+          "acid": "muriatic31"
+        },
+        true
+      ],
+      "result": []
+    },
+    {
+      "args": [
+        {
+          "gallons": 20000,
+          "readings": {
+            "fc": 4,
+            "ph": 7.5,
+            "ta": 100,
+            "ch": 300,
+            "cya": 40
+          },
+          "chlorine": "liquid12",
+          "acid": "muriatic31"
+        },
+        false
+      ],
+      "result": []
+    }
+  ],
+  "additionsCents": [
+    {
+      "args": [
+        [
+          {
+            "id": "1",
+            "job_id": "j",
+            "property_id": "p",
+            "price_book_item_id": "cl",
+            "name": "Liquid chlorine",
+            "unit": "gal",
+            "reading_key": "fc",
+            "suggested_quantity": 0.5,
+            "quantity": 0.5,
+            "customer_supplied": false,
+            "note": null,
+            "unit_price_cents": 800,
+            "taxable": true,
+            "billed_invoice_id": null,
+            "added_at": "2026-10-23T14:00:00Z",
+            "sort_order": 0,
+            "deleted_at": null
+          },
+          {
+            "id": "2",
+            "job_id": "j",
+            "property_id": "p",
+            "price_book_item_id": "acid",
+            "name": "Muriatic acid",
+            "unit": "gal",
+            "reading_key": "ph",
+            "suggested_quantity": 0.5,
+            "quantity": 0.25,
+            "customer_supplied": false,
+            "note": null,
+            "unit_price_cents": 1500,
+            "taxable": true,
+            "billed_invoice_id": null,
+            "added_at": "2026-10-23T14:00:00Z",
+            "sort_order": 1,
+            "deleted_at": null
+          },
+          {
+            "id": "3",
+            "job_id": "j",
+            "property_id": "p",
+            "price_book_item_id": "tabs",
+            "name": "Chlorine tabs (3″)",
+            "unit": "tab",
+            "reading_key": null,
+            "suggested_quantity": 0.5,
+            "quantity": 3,
+            "customer_supplied": false,
+            "note": "In the floater",
+            "unit_price_cents": 250,
+            "taxable": true,
+            "billed_invoice_id": null,
+            "added_at": "2026-10-23T14:00:00Z",
+            "sort_order": 2,
+            "deleted_at": null
+          },
+          {
+            "id": "4",
+            "job_id": "j",
+            "property_id": "p",
+            "price_book_item_id": "algae",
+            "name": "Algaecide",
+            "unit": "qt",
+            "reading_key": null,
+            "suggested_quantity": 0.5,
+            "quantity": 1,
+            "customer_supplied": true,
+            "note": null,
+            "unit_price_cents": 1500,
+            "taxable": true,
+            "billed_invoice_id": null,
+            "added_at": "2026-10-23T14:00:00Z",
+            "sort_order": 3,
+            "deleted_at": null
+          },
+          {
+            "id": "5",
+            "job_id": "j",
+            "property_id": "p",
+            "price_book_item_id": "cl",
+            "name": "Liquid chlorine",
+            "unit": "gal",
+            "reading_key": "fc",
+            "suggested_quantity": 0.5,
+            "quantity": 0.5,
+            "customer_supplied": false,
+            "note": null,
+            "unit_price_cents": 800,
+            "taxable": true,
+            "billed_invoice_id": null,
+            "added_at": "2026-10-23T14:00:00Z",
+            "sort_order": 4,
+            "deleted_at": "2026-10-23T15:00:00Z"
+          },
+          {
+            "id": "6",
+            "job_id": "j",
+            "property_id": "p",
+            "price_book_item_id": "cl",
+            "name": "Liquid chlorine",
+            "unit": "gal",
+            "reading_key": "fc",
+            "suggested_quantity": 0.5,
+            "quantity": 0.25,
+            "customer_supplied": false,
+            "note": null,
+            "unit_price_cents": 800,
+            "taxable": true,
+            "billed_invoice_id": null,
+            "added_at": "2026-10-23T13:00:00Z",
+            "sort_order": 1,
+            "deleted_at": null
+          }
+        ]
+      ],
+      "result": 1725
+    },
+    {
+      "args": [
+        [
+          {
+            "id": "m1",
+            "job_id": "j",
+            "property_id": "p",
+            "price_book_item_id": "cl",
+            "name": "Liquid chlorine",
+            "unit": "gal",
+            "reading_key": "fc",
+            "suggested_quantity": 0.5,
+            "quantity": 0.75,
+            "customer_supplied": false,
+            "note": null,
+            "unit_price_cents": 800,
+            "taxable": true,
+            "billed_invoice_id": null,
+            "added_at": "2026-10-02T14:00:00Z",
+            "sort_order": 0,
+            "deleted_at": null
+          },
+          {
+            "id": "m2",
+            "job_id": "j",
+            "property_id": "p",
+            "price_book_item_id": "cl",
+            "name": "Liquid chlorine",
+            "unit": "gal",
+            "reading_key": "fc",
+            "suggested_quantity": 0.5,
+            "quantity": 1,
+            "customer_supplied": false,
+            "note": null,
+            "unit_price_cents": 800,
+            "taxable": true,
+            "billed_invoice_id": null,
+            "added_at": "2026-10-09T14:00:00Z",
+            "sort_order": 0,
+            "deleted_at": null
+          },
+          {
+            "id": "m3",
+            "job_id": "j",
+            "property_id": "p",
+            "price_book_item_id": "cl",
+            "name": "Liquid chlorine",
+            "unit": "gal",
+            "reading_key": "fc",
+            "suggested_quantity": 0.5,
+            "quantity": 0.5,
+            "customer_supplied": false,
+            "note": null,
+            "unit_price_cents": 900,
+            "taxable": true,
+            "billed_invoice_id": null,
+            "added_at": "2026-10-16T14:00:00Z",
+            "sort_order": 0,
+            "deleted_at": null
+          },
+          {
+            "id": "m4",
+            "job_id": "j",
+            "property_id": "p",
+            "price_book_item_id": "cl",
+            "name": "Chlorine tabs (3″)",
+            "unit": "tab",
+            "reading_key": "fc",
+            "suggested_quantity": 0.5,
+            "quantity": 12,
+            "customer_supplied": false,
+            "note": null,
+            "unit_price_cents": 250,
+            "taxable": true,
+            "billed_invoice_id": null,
+            "added_at": "2026-10-16T15:00:00Z",
+            "sort_order": 0,
+            "deleted_at": null
+          },
+          {
+            "id": "m5",
+            "job_id": "j",
+            "property_id": "p",
+            "price_book_item_id": "cl",
+            "name": "Algaecide",
+            "unit": "qt",
+            "reading_key": "fc",
+            "suggested_quantity": 0.5,
+            "quantity": 1,
+            "customer_supplied": true,
+            "note": null,
+            "unit_price_cents": 1500,
+            "taxable": true,
+            "billed_invoice_id": null,
+            "added_at": "2026-10-23T14:00:00Z",
+            "sort_order": 0,
+            "deleted_at": null
+          },
+          {
+            "id": "m6",
+            "job_id": "j",
+            "property_id": "p",
+            "price_book_item_id": "cl",
+            "name": "Liquid chlorine",
+            "unit": "gal",
+            "reading_key": "fc",
+            "suggested_quantity": 0.5,
+            "quantity": 2,
+            "customer_supplied": false,
+            "note": null,
+            "unit_price_cents": 800,
+            "taxable": true,
+            "billed_invoice_id": null,
+            "added_at": "2026-10-01T03:30:00Z",
+            "sort_order": 0,
+            "deleted_at": null
+          },
+          {
+            "id": "m7",
+            "job_id": "j",
+            "property_id": "p",
+            "price_book_item_id": "cl",
+            "name": "Liquid chlorine",
+            "unit": "gal",
+            "reading_key": "fc",
+            "suggested_quantity": 0.5,
+            "quantity": 1,
+            "customer_supplied": false,
+            "note": null,
+            "unit_price_cents": 800,
+            "taxable": true,
+            "billed_invoice_id": null,
+            "added_at": "2026-08-20T14:00:00Z",
+            "sort_order": 0,
+            "deleted_at": null
+          },
+          {
+            "id": "m8",
+            "job_id": "j",
+            "property_id": "p",
+            "price_book_item_id": "cl",
+            "name": "Liquid chlorine",
+            "unit": "gal",
+            "reading_key": "fc",
+            "suggested_quantity": 0.5,
+            "quantity": 1,
+            "customer_supplied": false,
+            "note": null,
+            "unit_price_cents": 800,
+            "taxable": true,
+            "billed_invoice_id": null,
+            "added_at": "2026-07-20T14:00:00Z",
+            "sort_order": 0,
+            "deleted_at": null
+          },
+          {
+            "id": "m9",
+            "job_id": "j",
+            "property_id": "p",
+            "price_book_item_id": "cl",
+            "name": "Liquid chlorine",
+            "unit": "gal",
+            "reading_key": "fc",
+            "suggested_quantity": 0.5,
+            "quantity": 9,
+            "customer_supplied": false,
+            "note": null,
+            "unit_price_cents": 800,
+            "taxable": true,
+            "billed_invoice_id": null,
+            "added_at": "2026-10-20T14:00:00Z",
+            "sort_order": 0,
+            "deleted_at": "2026-10-21T00:00:00Z"
+          },
+          {
+            "id": "m10",
+            "job_id": "j",
+            "property_id": "p",
+            "price_book_item_id": "cl",
+            "name": "Phosphate remover",
+            "unit": "each",
+            "reading_key": "fc",
+            "suggested_quantity": 0.5,
+            "quantity": 2,
+            "customer_supplied": false,
+            "note": null,
+            "unit_price_cents": 3500,
+            "taxable": true,
+            "billed_invoice_id": null,
+            "added_at": "2026-10-20T14:00:00Z",
+            "sort_order": 0,
+            "deleted_at": null
+          }
+        ]
+      ],
+      "result": 15050
+    },
+    {
+      "args": [
+        []
+      ],
+      "result": 0
+    }
+  ],
+  "chemicalCardLine": [
+    {
+      "args": [
+        "FC 1 · pH 7.8",
+        [
+          {
+            "id": "1",
+            "job_id": "j",
+            "property_id": "p",
+            "price_book_item_id": "cl",
+            "name": "Liquid chlorine",
+            "unit": "gal",
+            "reading_key": "fc",
+            "suggested_quantity": 0.5,
+            "quantity": 0.5,
+            "customer_supplied": false,
+            "note": null,
+            "unit_price_cents": 800,
+            "taxable": true,
+            "billed_invoice_id": null,
+            "added_at": "2026-10-23T14:00:00Z",
+            "sort_order": 0,
+            "deleted_at": null
+          },
+          {
+            "id": "2",
+            "job_id": "j",
+            "property_id": "p",
+            "price_book_item_id": "acid",
+            "name": "Muriatic acid",
+            "unit": "gal",
+            "reading_key": "ph",
+            "suggested_quantity": 0.5,
+            "quantity": 0.25,
+            "customer_supplied": false,
+            "note": null,
+            "unit_price_cents": 1500,
+            "taxable": true,
+            "billed_invoice_id": null,
+            "added_at": "2026-10-23T14:00:00Z",
+            "sort_order": 1,
+            "deleted_at": null
+          },
+          {
+            "id": "3",
+            "job_id": "j",
+            "property_id": "p",
+            "price_book_item_id": "tabs",
+            "name": "Chlorine tabs (3″)",
+            "unit": "tab",
+            "reading_key": null,
+            "suggested_quantity": 0.5,
+            "quantity": 3,
+            "customer_supplied": false,
+            "note": "In the floater",
+            "unit_price_cents": 250,
+            "taxable": true,
+            "billed_invoice_id": null,
+            "added_at": "2026-10-23T14:00:00Z",
+            "sort_order": 2,
+            "deleted_at": null
+          },
+          {
+            "id": "4",
+            "job_id": "j",
+            "property_id": "p",
+            "price_book_item_id": "algae",
+            "name": "Algaecide",
+            "unit": "qt",
+            "reading_key": null,
+            "suggested_quantity": 0.5,
+            "quantity": 1,
+            "customer_supplied": true,
+            "note": null,
+            "unit_price_cents": 1500,
+            "taxable": true,
+            "billed_invoice_id": null,
+            "added_at": "2026-10-23T14:00:00Z",
+            "sort_order": 3,
+            "deleted_at": null
+          },
+          {
+            "id": "5",
+            "job_id": "j",
+            "property_id": "p",
+            "price_book_item_id": "cl",
+            "name": "Liquid chlorine",
+            "unit": "gal",
+            "reading_key": "fc",
+            "suggested_quantity": 0.5,
+            "quantity": 0.5,
+            "customer_supplied": false,
+            "note": null,
+            "unit_price_cents": 800,
+            "taxable": true,
+            "billed_invoice_id": null,
+            "added_at": "2026-10-23T14:00:00Z",
+            "sort_order": 4,
+            "deleted_at": "2026-10-23T15:00:00Z"
+          },
+          {
+            "id": "6",
+            "job_id": "j",
+            "property_id": "p",
+            "price_book_item_id": "cl",
+            "name": "Liquid chlorine",
+            "unit": "gal",
+            "reading_key": "fc",
+            "suggested_quantity": 0.5,
+            "quantity": 0.25,
+            "customer_supplied": false,
+            "note": null,
+            "unit_price_cents": 800,
+            "taxable": true,
+            "billed_invoice_id": null,
+            "added_at": "2026-10-23T13:00:00Z",
+            "sort_order": 1,
+            "deleted_at": null
+          }
+        ]
+      ],
+      "result": "5 added · FC 1 · pH 7.8"
+    },
+    {
+      "args": [
+        "",
+        []
+      ],
+      "result": "Add today’s readings"
+    },
+    {
+      "args": [
+        "",
+        [
+          {
+            "id": "1",
+            "job_id": "j",
+            "property_id": "p",
+            "price_book_item_id": "cl",
+            "name": "Liquid chlorine",
+            "unit": "gal",
+            "reading_key": "fc",
+            "suggested_quantity": 0.5,
+            "quantity": 0.5,
+            "customer_supplied": false,
+            "note": null,
+            "unit_price_cents": 800,
+            "taxable": true,
+            "billed_invoice_id": null,
+            "added_at": "2026-10-23T14:00:00Z",
+            "sort_order": 0,
+            "deleted_at": null
+          },
+          {
+            "id": "2",
+            "job_id": "j",
+            "property_id": "p",
+            "price_book_item_id": "acid",
+            "name": "Muriatic acid",
+            "unit": "gal",
+            "reading_key": "ph",
+            "suggested_quantity": 0.5,
+            "quantity": 0.25,
+            "customer_supplied": false,
+            "note": null,
+            "unit_price_cents": 1500,
+            "taxable": true,
+            "billed_invoice_id": null,
+            "added_at": "2026-10-23T14:00:00Z",
+            "sort_order": 1,
+            "deleted_at": null
+          },
+          {
+            "id": "3",
+            "job_id": "j",
+            "property_id": "p",
+            "price_book_item_id": "tabs",
+            "name": "Chlorine tabs (3″)",
+            "unit": "tab",
+            "reading_key": null,
+            "suggested_quantity": 0.5,
+            "quantity": 3,
+            "customer_supplied": false,
+            "note": "In the floater",
+            "unit_price_cents": 250,
+            "taxable": true,
+            "billed_invoice_id": null,
+            "added_at": "2026-10-23T14:00:00Z",
+            "sort_order": 2,
+            "deleted_at": null
+          },
+          {
+            "id": "4",
+            "job_id": "j",
+            "property_id": "p",
+            "price_book_item_id": "algae",
+            "name": "Algaecide",
+            "unit": "qt",
+            "reading_key": null,
+            "suggested_quantity": 0.5,
+            "quantity": 1,
+            "customer_supplied": true,
+            "note": null,
+            "unit_price_cents": 1500,
+            "taxable": true,
+            "billed_invoice_id": null,
+            "added_at": "2026-10-23T14:00:00Z",
+            "sort_order": 3,
+            "deleted_at": null
+          },
+          {
+            "id": "5",
+            "job_id": "j",
+            "property_id": "p",
+            "price_book_item_id": "cl",
+            "name": "Liquid chlorine",
+            "unit": "gal",
+            "reading_key": "fc",
+            "suggested_quantity": 0.5,
+            "quantity": 0.5,
+            "customer_supplied": false,
+            "note": null,
+            "unit_price_cents": 800,
+            "taxable": true,
+            "billed_invoice_id": null,
+            "added_at": "2026-10-23T14:00:00Z",
+            "sort_order": 4,
+            "deleted_at": "2026-10-23T15:00:00Z"
+          },
+          {
+            "id": "6",
+            "job_id": "j",
+            "property_id": "p",
+            "price_book_item_id": "cl",
+            "name": "Liquid chlorine",
+            "unit": "gal",
+            "reading_key": "fc",
+            "suggested_quantity": 0.5,
+            "quantity": 0.25,
+            "customer_supplied": false,
+            "note": null,
+            "unit_price_cents": 800,
+            "taxable": true,
+            "billed_invoice_id": null,
+            "added_at": "2026-10-23T13:00:00Z",
+            "sort_order": 1,
+            "deleted_at": null
+          }
+        ]
+      ],
+      "result": "5 added"
+    },
+    {
+      "args": [
+        "FC 3",
+        []
+      ],
+      "result": "FC 3"
+    }
+  ],
+  "chemicalTotals": [
+    {
+      "args": [
+        [
+          {
+            "id": "1",
+            "job_id": "j",
+            "property_id": "p",
+            "price_book_item_id": "cl",
+            "name": "Liquid chlorine",
+            "unit": "gal",
+            "reading_key": "fc",
+            "suggested_quantity": 0.5,
+            "quantity": 0.5,
+            "customer_supplied": false,
+            "note": null,
+            "unit_price_cents": 800,
+            "taxable": true,
+            "billed_invoice_id": null,
+            "added_at": "2026-10-23T14:00:00Z",
+            "sort_order": 0,
+            "deleted_at": null
+          },
+          {
+            "id": "2",
+            "job_id": "j",
+            "property_id": "p",
+            "price_book_item_id": "acid",
+            "name": "Muriatic acid",
+            "unit": "gal",
+            "reading_key": "ph",
+            "suggested_quantity": 0.5,
+            "quantity": 0.25,
+            "customer_supplied": false,
+            "note": null,
+            "unit_price_cents": 1500,
+            "taxable": true,
+            "billed_invoice_id": null,
+            "added_at": "2026-10-23T14:00:00Z",
+            "sort_order": 1,
+            "deleted_at": null
+          },
+          {
+            "id": "3",
+            "job_id": "j",
+            "property_id": "p",
+            "price_book_item_id": "tabs",
+            "name": "Chlorine tabs (3″)",
+            "unit": "tab",
+            "reading_key": null,
+            "suggested_quantity": 0.5,
+            "quantity": 3,
+            "customer_supplied": false,
+            "note": "In the floater",
+            "unit_price_cents": 250,
+            "taxable": true,
+            "billed_invoice_id": null,
+            "added_at": "2026-10-23T14:00:00Z",
+            "sort_order": 2,
+            "deleted_at": null
+          },
+          {
+            "id": "4",
+            "job_id": "j",
+            "property_id": "p",
+            "price_book_item_id": "algae",
+            "name": "Algaecide",
+            "unit": "qt",
+            "reading_key": null,
+            "suggested_quantity": 0.5,
+            "quantity": 1,
+            "customer_supplied": true,
+            "note": null,
+            "unit_price_cents": 1500,
+            "taxable": true,
+            "billed_invoice_id": null,
+            "added_at": "2026-10-23T14:00:00Z",
+            "sort_order": 3,
+            "deleted_at": null
+          },
+          {
+            "id": "5",
+            "job_id": "j",
+            "property_id": "p",
+            "price_book_item_id": "cl",
+            "name": "Liquid chlorine",
+            "unit": "gal",
+            "reading_key": "fc",
+            "suggested_quantity": 0.5,
+            "quantity": 0.5,
+            "customer_supplied": false,
+            "note": null,
+            "unit_price_cents": 800,
+            "taxable": true,
+            "billed_invoice_id": null,
+            "added_at": "2026-10-23T14:00:00Z",
+            "sort_order": 4,
+            "deleted_at": "2026-10-23T15:00:00Z"
+          },
+          {
+            "id": "6",
+            "job_id": "j",
+            "property_id": "p",
+            "price_book_item_id": "cl",
+            "name": "Liquid chlorine",
+            "unit": "gal",
+            "reading_key": "fc",
+            "suggested_quantity": 0.5,
+            "quantity": 0.25,
+            "customer_supplied": false,
+            "note": null,
+            "unit_price_cents": 800,
+            "taxable": true,
+            "billed_invoice_id": null,
+            "added_at": "2026-10-23T13:00:00Z",
+            "sort_order": 1,
+            "deleted_at": null
+          }
+        ]
+      ],
+      "result": [
+        {
+          "name": "Liquid chlorine",
+          "unit": "gal",
+          "quantity": 0.75,
+          "unit_price_cents": 800,
+          "total_cents": 600,
+          "customer_supplied": false
+        },
+        {
+          "name": "Muriatic acid",
+          "unit": "gal",
+          "quantity": 0.25,
+          "unit_price_cents": 1500,
+          "total_cents": 375,
+          "customer_supplied": false
+        },
+        {
+          "name": "Chlorine tabs (3″)",
+          "unit": "tab",
+          "quantity": 3,
+          "unit_price_cents": 250,
+          "total_cents": 750,
+          "customer_supplied": false
+        },
+        {
+          "name": "Algaecide",
+          "unit": "qt",
+          "quantity": 1,
+          "unit_price_cents": 0,
+          "total_cents": 0,
+          "customer_supplied": true
+        }
+      ]
+    },
+    {
+      "args": [
+        [
+          {
+            "id": "m1",
+            "job_id": "j",
+            "property_id": "p",
+            "price_book_item_id": "cl",
+            "name": "Liquid chlorine",
+            "unit": "gal",
+            "reading_key": "fc",
+            "suggested_quantity": 0.5,
+            "quantity": 0.75,
+            "customer_supplied": false,
+            "note": null,
+            "unit_price_cents": 800,
+            "taxable": true,
+            "billed_invoice_id": null,
+            "added_at": "2026-10-02T14:00:00Z",
+            "sort_order": 0,
+            "deleted_at": null
+          },
+          {
+            "id": "m2",
+            "job_id": "j",
+            "property_id": "p",
+            "price_book_item_id": "cl",
+            "name": "Liquid chlorine",
+            "unit": "gal",
+            "reading_key": "fc",
+            "suggested_quantity": 0.5,
+            "quantity": 1,
+            "customer_supplied": false,
+            "note": null,
+            "unit_price_cents": 800,
+            "taxable": true,
+            "billed_invoice_id": null,
+            "added_at": "2026-10-09T14:00:00Z",
+            "sort_order": 0,
+            "deleted_at": null
+          },
+          {
+            "id": "m3",
+            "job_id": "j",
+            "property_id": "p",
+            "price_book_item_id": "cl",
+            "name": "Liquid chlorine",
+            "unit": "gal",
+            "reading_key": "fc",
+            "suggested_quantity": 0.5,
+            "quantity": 0.5,
+            "customer_supplied": false,
+            "note": null,
+            "unit_price_cents": 900,
+            "taxable": true,
+            "billed_invoice_id": null,
+            "added_at": "2026-10-16T14:00:00Z",
+            "sort_order": 0,
+            "deleted_at": null
+          },
+          {
+            "id": "m4",
+            "job_id": "j",
+            "property_id": "p",
+            "price_book_item_id": "cl",
+            "name": "Chlorine tabs (3″)",
+            "unit": "tab",
+            "reading_key": "fc",
+            "suggested_quantity": 0.5,
+            "quantity": 12,
+            "customer_supplied": false,
+            "note": null,
+            "unit_price_cents": 250,
+            "taxable": true,
+            "billed_invoice_id": null,
+            "added_at": "2026-10-16T15:00:00Z",
+            "sort_order": 0,
+            "deleted_at": null
+          },
+          {
+            "id": "m5",
+            "job_id": "j",
+            "property_id": "p",
+            "price_book_item_id": "cl",
+            "name": "Algaecide",
+            "unit": "qt",
+            "reading_key": "fc",
+            "suggested_quantity": 0.5,
+            "quantity": 1,
+            "customer_supplied": true,
+            "note": null,
+            "unit_price_cents": 1500,
+            "taxable": true,
+            "billed_invoice_id": null,
+            "added_at": "2026-10-23T14:00:00Z",
+            "sort_order": 0,
+            "deleted_at": null
+          },
+          {
+            "id": "m6",
+            "job_id": "j",
+            "property_id": "p",
+            "price_book_item_id": "cl",
+            "name": "Liquid chlorine",
+            "unit": "gal",
+            "reading_key": "fc",
+            "suggested_quantity": 0.5,
+            "quantity": 2,
+            "customer_supplied": false,
+            "note": null,
+            "unit_price_cents": 800,
+            "taxable": true,
+            "billed_invoice_id": null,
+            "added_at": "2026-10-01T03:30:00Z",
+            "sort_order": 0,
+            "deleted_at": null
+          },
+          {
+            "id": "m7",
+            "job_id": "j",
+            "property_id": "p",
+            "price_book_item_id": "cl",
+            "name": "Liquid chlorine",
+            "unit": "gal",
+            "reading_key": "fc",
+            "suggested_quantity": 0.5,
+            "quantity": 1,
+            "customer_supplied": false,
+            "note": null,
+            "unit_price_cents": 800,
+            "taxable": true,
+            "billed_invoice_id": null,
+            "added_at": "2026-08-20T14:00:00Z",
+            "sort_order": 0,
+            "deleted_at": null
+          },
+          {
+            "id": "m8",
+            "job_id": "j",
+            "property_id": "p",
+            "price_book_item_id": "cl",
+            "name": "Liquid chlorine",
+            "unit": "gal",
+            "reading_key": "fc",
+            "suggested_quantity": 0.5,
+            "quantity": 1,
+            "customer_supplied": false,
+            "note": null,
+            "unit_price_cents": 800,
+            "taxable": true,
+            "billed_invoice_id": null,
+            "added_at": "2026-07-20T14:00:00Z",
+            "sort_order": 0,
+            "deleted_at": null
+          },
+          {
+            "id": "m9",
+            "job_id": "j",
+            "property_id": "p",
+            "price_book_item_id": "cl",
+            "name": "Liquid chlorine",
+            "unit": "gal",
+            "reading_key": "fc",
+            "suggested_quantity": 0.5,
+            "quantity": 9,
+            "customer_supplied": false,
+            "note": null,
+            "unit_price_cents": 800,
+            "taxable": true,
+            "billed_invoice_id": null,
+            "added_at": "2026-10-20T14:00:00Z",
+            "sort_order": 0,
+            "deleted_at": "2026-10-21T00:00:00Z"
+          },
+          {
+            "id": "m10",
+            "job_id": "j",
+            "property_id": "p",
+            "price_book_item_id": "cl",
+            "name": "Phosphate remover",
+            "unit": "each",
+            "reading_key": "fc",
+            "suggested_quantity": 0.5,
+            "quantity": 2,
+            "customer_supplied": false,
+            "note": null,
+            "unit_price_cents": 3500,
+            "taxable": true,
+            "billed_invoice_id": null,
+            "added_at": "2026-10-20T14:00:00Z",
+            "sort_order": 0,
+            "deleted_at": null
+          }
+        ]
+      ],
+      "result": [
+        {
+          "name": "Liquid chlorine",
+          "unit": "gal",
+          "quantity": 5.75,
+          "unit_price_cents": 800,
+          "total_cents": 4600,
+          "customer_supplied": false
+        },
+        {
+          "name": "Liquid chlorine",
+          "unit": "gal",
+          "quantity": 0.5,
+          "unit_price_cents": 900,
+          "total_cents": 450,
+          "customer_supplied": false
+        },
+        {
+          "name": "Chlorine tabs (3″)",
+          "unit": "tab",
+          "quantity": 12,
+          "unit_price_cents": 250,
+          "total_cents": 3000,
+          "customer_supplied": false
+        },
+        {
+          "name": "Phosphate remover",
+          "unit": "each",
+          "quantity": 2,
+          "unit_price_cents": 3500,
+          "total_cents": 7000,
+          "customer_supplied": false
+        },
+        {
+          "name": "Algaecide",
+          "unit": "qt",
+          "quantity": 1,
+          "unit_price_cents": 0,
+          "total_cents": 0,
+          "customer_supplied": true
+        }
+      ]
+    },
+    {
+      "args": [
+        []
+      ],
+      "result": []
+    }
+  ],
+  "monthName": [
+    {
+      "args": [
+        "2026-10-23",
+        "America/New_York"
+      ],
+      "result": "October"
+    },
+    {
+      "args": [
+        "2026-10-01T03:30:00Z",
+        "America/New_York"
+      ],
+      "result": "September"
+    },
+    {
+      "args": [
+        "2026-10-01T03:30:00Z",
+        "UTC"
+      ],
+      "result": "October"
+    },
+    {
+      "args": [
+        "2026-12-01",
+        "Pacific/Honolulu"
+      ],
+      "result": "December"
+    }
+  ],
+  "monthlyUsage": [
+    {
+      "args": [
+        [
+          {
+            "id": "m1",
+            "job_id": "j",
+            "property_id": "p",
+            "price_book_item_id": "cl",
+            "name": "Liquid chlorine",
+            "unit": "gal",
+            "reading_key": "fc",
+            "suggested_quantity": 0.5,
+            "quantity": 0.75,
+            "customer_supplied": false,
+            "note": null,
+            "unit_price_cents": 800,
+            "taxable": true,
+            "billed_invoice_id": null,
+            "added_at": "2026-10-02T14:00:00Z",
+            "sort_order": 0,
+            "deleted_at": null
+          },
+          {
+            "id": "m2",
+            "job_id": "j",
+            "property_id": "p",
+            "price_book_item_id": "cl",
+            "name": "Liquid chlorine",
+            "unit": "gal",
+            "reading_key": "fc",
+            "suggested_quantity": 0.5,
+            "quantity": 1,
+            "customer_supplied": false,
+            "note": null,
+            "unit_price_cents": 800,
+            "taxable": true,
+            "billed_invoice_id": null,
+            "added_at": "2026-10-09T14:00:00Z",
+            "sort_order": 0,
+            "deleted_at": null
+          },
+          {
+            "id": "m3",
+            "job_id": "j",
+            "property_id": "p",
+            "price_book_item_id": "cl",
+            "name": "Liquid chlorine",
+            "unit": "gal",
+            "reading_key": "fc",
+            "suggested_quantity": 0.5,
+            "quantity": 0.5,
+            "customer_supplied": false,
+            "note": null,
+            "unit_price_cents": 900,
+            "taxable": true,
+            "billed_invoice_id": null,
+            "added_at": "2026-10-16T14:00:00Z",
+            "sort_order": 0,
+            "deleted_at": null
+          },
+          {
+            "id": "m4",
+            "job_id": "j",
+            "property_id": "p",
+            "price_book_item_id": "cl",
+            "name": "Chlorine tabs (3″)",
+            "unit": "tab",
+            "reading_key": "fc",
+            "suggested_quantity": 0.5,
+            "quantity": 12,
+            "customer_supplied": false,
+            "note": null,
+            "unit_price_cents": 250,
+            "taxable": true,
+            "billed_invoice_id": null,
+            "added_at": "2026-10-16T15:00:00Z",
+            "sort_order": 0,
+            "deleted_at": null
+          },
+          {
+            "id": "m5",
+            "job_id": "j",
+            "property_id": "p",
+            "price_book_item_id": "cl",
+            "name": "Algaecide",
+            "unit": "qt",
+            "reading_key": "fc",
+            "suggested_quantity": 0.5,
+            "quantity": 1,
+            "customer_supplied": true,
+            "note": null,
+            "unit_price_cents": 1500,
+            "taxable": true,
+            "billed_invoice_id": null,
+            "added_at": "2026-10-23T14:00:00Z",
+            "sort_order": 0,
+            "deleted_at": null
+          },
+          {
+            "id": "m6",
+            "job_id": "j",
+            "property_id": "p",
+            "price_book_item_id": "cl",
+            "name": "Liquid chlorine",
+            "unit": "gal",
+            "reading_key": "fc",
+            "suggested_quantity": 0.5,
+            "quantity": 2,
+            "customer_supplied": false,
+            "note": null,
+            "unit_price_cents": 800,
+            "taxable": true,
+            "billed_invoice_id": null,
+            "added_at": "2026-10-01T03:30:00Z",
+            "sort_order": 0,
+            "deleted_at": null
+          },
+          {
+            "id": "m7",
+            "job_id": "j",
+            "property_id": "p",
+            "price_book_item_id": "cl",
+            "name": "Liquid chlorine",
+            "unit": "gal",
+            "reading_key": "fc",
+            "suggested_quantity": 0.5,
+            "quantity": 1,
+            "customer_supplied": false,
+            "note": null,
+            "unit_price_cents": 800,
+            "taxable": true,
+            "billed_invoice_id": null,
+            "added_at": "2026-08-20T14:00:00Z",
+            "sort_order": 0,
+            "deleted_at": null
+          },
+          {
+            "id": "m8",
+            "job_id": "j",
+            "property_id": "p",
+            "price_book_item_id": "cl",
+            "name": "Liquid chlorine",
+            "unit": "gal",
+            "reading_key": "fc",
+            "suggested_quantity": 0.5,
+            "quantity": 1,
+            "customer_supplied": false,
+            "note": null,
+            "unit_price_cents": 800,
+            "taxable": true,
+            "billed_invoice_id": null,
+            "added_at": "2026-07-20T14:00:00Z",
+            "sort_order": 0,
+            "deleted_at": null
+          },
+          {
+            "id": "m9",
+            "job_id": "j",
+            "property_id": "p",
+            "price_book_item_id": "cl",
+            "name": "Liquid chlorine",
+            "unit": "gal",
+            "reading_key": "fc",
+            "suggested_quantity": 0.5,
+            "quantity": 9,
+            "customer_supplied": false,
+            "note": null,
+            "unit_price_cents": 800,
+            "taxable": true,
+            "billed_invoice_id": null,
+            "added_at": "2026-10-20T14:00:00Z",
+            "sort_order": 0,
+            "deleted_at": "2026-10-21T00:00:00Z"
+          },
+          {
+            "id": "m10",
+            "job_id": "j",
+            "property_id": "p",
+            "price_book_item_id": "cl",
+            "name": "Phosphate remover",
+            "unit": "each",
+            "reading_key": "fc",
+            "suggested_quantity": 0.5,
+            "quantity": 2,
+            "customer_supplied": false,
+            "note": null,
+            "unit_price_cents": 3500,
+            "taxable": true,
+            "billed_invoice_id": null,
+            "added_at": "2026-10-20T14:00:00Z",
+            "sort_order": 0,
+            "deleted_at": null
+          }
+        ],
+        "America/New_York",
+        null
+      ],
+      "result": [
+        {
+          "month": "2026-10",
+          "label": "October",
+          "line": "2¼ gal Liquid chlorine, 12 tabs Chlorine tabs (3″), 2 × Phosphate remover, 1 qt Algaecide"
+        },
+        {
+          "month": "2026-09",
+          "label": "September",
+          "line": "2 gal Liquid chlorine"
+        },
+        {
+          "month": "2026-08",
+          "label": "August",
+          "line": "1 gal Liquid chlorine"
+        }
+      ]
+    },
+    {
+      "args": [
+        [
+          {
+            "id": "m1",
+            "job_id": "j",
+            "property_id": "p",
+            "price_book_item_id": "cl",
+            "name": "Liquid chlorine",
+            "unit": "gal",
+            "reading_key": "fc",
+            "suggested_quantity": 0.5,
+            "quantity": 0.75,
+            "customer_supplied": false,
+            "note": null,
+            "unit_price_cents": 800,
+            "taxable": true,
+            "billed_invoice_id": null,
+            "added_at": "2026-10-02T14:00:00Z",
+            "sort_order": 0,
+            "deleted_at": null
+          },
+          {
+            "id": "m2",
+            "job_id": "j",
+            "property_id": "p",
+            "price_book_item_id": "cl",
+            "name": "Liquid chlorine",
+            "unit": "gal",
+            "reading_key": "fc",
+            "suggested_quantity": 0.5,
+            "quantity": 1,
+            "customer_supplied": false,
+            "note": null,
+            "unit_price_cents": 800,
+            "taxable": true,
+            "billed_invoice_id": null,
+            "added_at": "2026-10-09T14:00:00Z",
+            "sort_order": 0,
+            "deleted_at": null
+          },
+          {
+            "id": "m3",
+            "job_id": "j",
+            "property_id": "p",
+            "price_book_item_id": "cl",
+            "name": "Liquid chlorine",
+            "unit": "gal",
+            "reading_key": "fc",
+            "suggested_quantity": 0.5,
+            "quantity": 0.5,
+            "customer_supplied": false,
+            "note": null,
+            "unit_price_cents": 900,
+            "taxable": true,
+            "billed_invoice_id": null,
+            "added_at": "2026-10-16T14:00:00Z",
+            "sort_order": 0,
+            "deleted_at": null
+          },
+          {
+            "id": "m4",
+            "job_id": "j",
+            "property_id": "p",
+            "price_book_item_id": "cl",
+            "name": "Chlorine tabs (3″)",
+            "unit": "tab",
+            "reading_key": "fc",
+            "suggested_quantity": 0.5,
+            "quantity": 12,
+            "customer_supplied": false,
+            "note": null,
+            "unit_price_cents": 250,
+            "taxable": true,
+            "billed_invoice_id": null,
+            "added_at": "2026-10-16T15:00:00Z",
+            "sort_order": 0,
+            "deleted_at": null
+          },
+          {
+            "id": "m5",
+            "job_id": "j",
+            "property_id": "p",
+            "price_book_item_id": "cl",
+            "name": "Algaecide",
+            "unit": "qt",
+            "reading_key": "fc",
+            "suggested_quantity": 0.5,
+            "quantity": 1,
+            "customer_supplied": true,
+            "note": null,
+            "unit_price_cents": 1500,
+            "taxable": true,
+            "billed_invoice_id": null,
+            "added_at": "2026-10-23T14:00:00Z",
+            "sort_order": 0,
+            "deleted_at": null
+          },
+          {
+            "id": "m6",
+            "job_id": "j",
+            "property_id": "p",
+            "price_book_item_id": "cl",
+            "name": "Liquid chlorine",
+            "unit": "gal",
+            "reading_key": "fc",
+            "suggested_quantity": 0.5,
+            "quantity": 2,
+            "customer_supplied": false,
+            "note": null,
+            "unit_price_cents": 800,
+            "taxable": true,
+            "billed_invoice_id": null,
+            "added_at": "2026-10-01T03:30:00Z",
+            "sort_order": 0,
+            "deleted_at": null
+          },
+          {
+            "id": "m7",
+            "job_id": "j",
+            "property_id": "p",
+            "price_book_item_id": "cl",
+            "name": "Liquid chlorine",
+            "unit": "gal",
+            "reading_key": "fc",
+            "suggested_quantity": 0.5,
+            "quantity": 1,
+            "customer_supplied": false,
+            "note": null,
+            "unit_price_cents": 800,
+            "taxable": true,
+            "billed_invoice_id": null,
+            "added_at": "2026-08-20T14:00:00Z",
+            "sort_order": 0,
+            "deleted_at": null
+          },
+          {
+            "id": "m8",
+            "job_id": "j",
+            "property_id": "p",
+            "price_book_item_id": "cl",
+            "name": "Liquid chlorine",
+            "unit": "gal",
+            "reading_key": "fc",
+            "suggested_quantity": 0.5,
+            "quantity": 1,
+            "customer_supplied": false,
+            "note": null,
+            "unit_price_cents": 800,
+            "taxable": true,
+            "billed_invoice_id": null,
+            "added_at": "2026-07-20T14:00:00Z",
+            "sort_order": 0,
+            "deleted_at": null
+          },
+          {
+            "id": "m9",
+            "job_id": "j",
+            "property_id": "p",
+            "price_book_item_id": "cl",
+            "name": "Liquid chlorine",
+            "unit": "gal",
+            "reading_key": "fc",
+            "suggested_quantity": 0.5,
+            "quantity": 9,
+            "customer_supplied": false,
+            "note": null,
+            "unit_price_cents": 800,
+            "taxable": true,
+            "billed_invoice_id": null,
+            "added_at": "2026-10-20T14:00:00Z",
+            "sort_order": 0,
+            "deleted_at": "2026-10-21T00:00:00Z"
+          },
+          {
+            "id": "m10",
+            "job_id": "j",
+            "property_id": "p",
+            "price_book_item_id": "cl",
+            "name": "Phosphate remover",
+            "unit": "each",
+            "reading_key": "fc",
+            "suggested_quantity": 0.5,
+            "quantity": 2,
+            "customer_supplied": false,
+            "note": null,
+            "unit_price_cents": 3500,
+            "taxable": true,
+            "billed_invoice_id": null,
+            "added_at": "2026-10-20T14:00:00Z",
+            "sort_order": 0,
+            "deleted_at": null
+          }
+        ],
+        "UTC",
+        2
+      ],
+      "result": [
+        {
+          "month": "2026-10",
+          "label": "October",
+          "line": "4¼ gal Liquid chlorine, 12 tabs Chlorine tabs (3″), 2 × Phosphate remover, 1 qt Algaecide"
+        },
+        {
+          "month": "2026-08",
+          "label": "August",
+          "line": "1 gal Liquid chlorine"
+        }
+      ]
+    },
+    {
+      "args": [
+        [
+          {
+            "id": "m1",
+            "job_id": "j",
+            "property_id": "p",
+            "price_book_item_id": "cl",
+            "name": "Liquid chlorine",
+            "unit": "gal",
+            "reading_key": "fc",
+            "suggested_quantity": 0.5,
+            "quantity": 0.75,
+            "customer_supplied": false,
+            "note": null,
+            "unit_price_cents": 800,
+            "taxable": true,
+            "billed_invoice_id": null,
+            "added_at": "2026-10-02T14:00:00Z",
+            "sort_order": 0,
+            "deleted_at": null
+          },
+          {
+            "id": "m2",
+            "job_id": "j",
+            "property_id": "p",
+            "price_book_item_id": "cl",
+            "name": "Liquid chlorine",
+            "unit": "gal",
+            "reading_key": "fc",
+            "suggested_quantity": 0.5,
+            "quantity": 1,
+            "customer_supplied": false,
+            "note": null,
+            "unit_price_cents": 800,
+            "taxable": true,
+            "billed_invoice_id": null,
+            "added_at": "2026-10-09T14:00:00Z",
+            "sort_order": 0,
+            "deleted_at": null
+          },
+          {
+            "id": "m3",
+            "job_id": "j",
+            "property_id": "p",
+            "price_book_item_id": "cl",
+            "name": "Liquid chlorine",
+            "unit": "gal",
+            "reading_key": "fc",
+            "suggested_quantity": 0.5,
+            "quantity": 0.5,
+            "customer_supplied": false,
+            "note": null,
+            "unit_price_cents": 900,
+            "taxable": true,
+            "billed_invoice_id": null,
+            "added_at": "2026-10-16T14:00:00Z",
+            "sort_order": 0,
+            "deleted_at": null
+          },
+          {
+            "id": "m4",
+            "job_id": "j",
+            "property_id": "p",
+            "price_book_item_id": "cl",
+            "name": "Chlorine tabs (3″)",
+            "unit": "tab",
+            "reading_key": "fc",
+            "suggested_quantity": 0.5,
+            "quantity": 12,
+            "customer_supplied": false,
+            "note": null,
+            "unit_price_cents": 250,
+            "taxable": true,
+            "billed_invoice_id": null,
+            "added_at": "2026-10-16T15:00:00Z",
+            "sort_order": 0,
+            "deleted_at": null
+          },
+          {
+            "id": "m5",
+            "job_id": "j",
+            "property_id": "p",
+            "price_book_item_id": "cl",
+            "name": "Algaecide",
+            "unit": "qt",
+            "reading_key": "fc",
+            "suggested_quantity": 0.5,
+            "quantity": 1,
+            "customer_supplied": true,
+            "note": null,
+            "unit_price_cents": 1500,
+            "taxable": true,
+            "billed_invoice_id": null,
+            "added_at": "2026-10-23T14:00:00Z",
+            "sort_order": 0,
+            "deleted_at": null
+          },
+          {
+            "id": "m6",
+            "job_id": "j",
+            "property_id": "p",
+            "price_book_item_id": "cl",
+            "name": "Liquid chlorine",
+            "unit": "gal",
+            "reading_key": "fc",
+            "suggested_quantity": 0.5,
+            "quantity": 2,
+            "customer_supplied": false,
+            "note": null,
+            "unit_price_cents": 800,
+            "taxable": true,
+            "billed_invoice_id": null,
+            "added_at": "2026-10-01T03:30:00Z",
+            "sort_order": 0,
+            "deleted_at": null
+          },
+          {
+            "id": "m7",
+            "job_id": "j",
+            "property_id": "p",
+            "price_book_item_id": "cl",
+            "name": "Liquid chlorine",
+            "unit": "gal",
+            "reading_key": "fc",
+            "suggested_quantity": 0.5,
+            "quantity": 1,
+            "customer_supplied": false,
+            "note": null,
+            "unit_price_cents": 800,
+            "taxable": true,
+            "billed_invoice_id": null,
+            "added_at": "2026-08-20T14:00:00Z",
+            "sort_order": 0,
+            "deleted_at": null
+          },
+          {
+            "id": "m8",
+            "job_id": "j",
+            "property_id": "p",
+            "price_book_item_id": "cl",
+            "name": "Liquid chlorine",
+            "unit": "gal",
+            "reading_key": "fc",
+            "suggested_quantity": 0.5,
+            "quantity": 1,
+            "customer_supplied": false,
+            "note": null,
+            "unit_price_cents": 800,
+            "taxable": true,
+            "billed_invoice_id": null,
+            "added_at": "2026-07-20T14:00:00Z",
+            "sort_order": 0,
+            "deleted_at": null
+          },
+          {
+            "id": "m9",
+            "job_id": "j",
+            "property_id": "p",
+            "price_book_item_id": "cl",
+            "name": "Liquid chlorine",
+            "unit": "gal",
+            "reading_key": "fc",
+            "suggested_quantity": 0.5,
+            "quantity": 9,
+            "customer_supplied": false,
+            "note": null,
+            "unit_price_cents": 800,
+            "taxable": true,
+            "billed_invoice_id": null,
+            "added_at": "2026-10-20T14:00:00Z",
+            "sort_order": 0,
+            "deleted_at": "2026-10-21T00:00:00Z"
+          },
+          {
+            "id": "m10",
+            "job_id": "j",
+            "property_id": "p",
+            "price_book_item_id": "cl",
+            "name": "Phosphate remover",
+            "unit": "each",
+            "reading_key": "fc",
+            "suggested_quantity": 0.5,
+            "quantity": 2,
+            "customer_supplied": false,
+            "note": null,
+            "unit_price_cents": 3500,
+            "taxable": true,
+            "billed_invoice_id": null,
+            "added_at": "2026-10-20T14:00:00Z",
+            "sort_order": 0,
+            "deleted_at": null
+          }
+        ],
+        "America/Los_Angeles",
+        5
+      ],
+      "result": [
+        {
+          "month": "2026-10",
+          "label": "October",
+          "line": "2¼ gal Liquid chlorine, 12 tabs Chlorine tabs (3″), 2 × Phosphate remover, 1 qt Algaecide"
+        },
+        {
+          "month": "2026-09",
+          "label": "September",
+          "line": "2 gal Liquid chlorine"
+        },
+        {
+          "month": "2026-08",
+          "label": "August",
+          "line": "1 gal Liquid chlorine"
+        },
+        {
+          "month": "2026-07",
+          "label": "July",
+          "line": "1 gal Liquid chlorine"
+        }
+      ]
+    },
+    {
+      "args": [
+        [],
+        "UTC",
+        null
+      ],
+      "result": []
+    }
+  ],
+  "reportAddedRows": [
+    {
+      "args": [
+        {
+          "fc": 1,
+          "ph": 7.8,
+          "ta": 60,
+          "cya": 30,
+          "salt": 2400
+        },
+        {
+          "fc": 4,
+          "cya": 40
+        },
+        true
+      ],
+      "result": [
+        {
+          "label": "½ gal Liquid chlorine",
+          "why": "To raise free chlorine",
+          "price": "$4.00",
+          "supplied": false
+        },
+        {
+          "label": "¼ gal Muriatic acid",
+          "why": "To lower pH",
+          "price": "$3.75",
+          "supplied": false
+        },
+        {
+          "label": "2 lb Baking soda",
+          "why": "To raise alkalinity",
+          "price": "$6.00",
+          "supplied": false
+        },
+        {
+          "label": "3 tabs Chlorine tabs",
+          "why": "In the floater",
+          "price": "$7.50",
+          "supplied": false
+        },
+        {
+          "label": "1 qt Algaecide",
+          "why": null,
+          "price": null,
+          "supplied": true
+        },
+        {
+          "label": "1½ lb Stabilizer",
+          "why": "To raise stabilizer",
+          "price": "$13.50",
+          "supplied": false
+        },
+        {
+          "label": "1 bag Salt",
+          "why": "To raise salt",
+          "price": "$18.00",
+          "supplied": false
+        }
+      ]
+    },
+    {
+      "args": [
+        {
+          "fc": 1,
+          "ph": 7.8,
+          "ta": 60,
+          "cya": 30,
+          "salt": 2400
+        },
+        {
+          "fc": 4,
+          "cya": 40
+        },
+        false
+      ],
+      "result": [
+        {
+          "label": "½ gal Liquid chlorine",
+          "why": "To raise free chlorine",
+          "price": null,
+          "supplied": false
+        },
+        {
+          "label": "¼ gal Muriatic acid",
+          "why": "To lower pH",
+          "price": null,
+          "supplied": false
+        },
+        {
+          "label": "2 lb Baking soda",
+          "why": "To raise alkalinity",
+          "price": null,
+          "supplied": false
+        },
+        {
+          "label": "3 tabs Chlorine tabs",
+          "why": "In the floater",
+          "price": null,
+          "supplied": false
+        },
+        {
+          "label": "1 qt Algaecide",
+          "why": null,
+          "price": null,
+          "supplied": true
+        },
+        {
+          "label": "1½ lb Stabilizer",
+          "why": "To raise stabilizer",
+          "price": null,
+          "supplied": false
+        },
+        {
+          "label": "1 bag Salt",
+          "why": "To raise salt",
+          "price": null,
+          "supplied": false
+        }
+      ]
+    },
+    {
+      "args": [
+        {
+          "fc": 1,
+          "ph": 7.2,
+          "ta": 140
+        },
+        null,
+        true
+      ],
+      "result": [
+        {
+          "label": "½ gal Liquid chlorine",
+          "why": "To raise free chlorine",
+          "price": "$4.00",
+          "supplied": false
+        },
+        {
+          "label": "¼ gal Muriatic acid",
+          "why": "To raise pH",
+          "price": "$3.75",
+          "supplied": false
+        },
+        {
+          "label": "2 lb Baking soda",
+          "why": "To lower alkalinity",
+          "price": "$6.00",
+          "supplied": false
+        },
+        {
+          "label": "3 tabs Chlorine tabs",
+          "why": "In the floater",
+          "price": "$7.50",
+          "supplied": false
+        },
+        {
+          "label": "1 qt Algaecide",
+          "why": null,
+          "price": null,
+          "supplied": true
+        },
+        {
+          "label": "1½ lb Stabilizer",
+          "why": null,
+          "price": "$13.50",
+          "supplied": false
+        },
+        {
+          "label": "1 bag Salt",
+          "why": null,
+          "price": "$18.00",
+          "supplied": false
+        }
+      ]
+    },
+    {
+      "args": [
+        null,
+        null,
+        true
+      ],
+      "result": [
+        {
+          "label": "½ gal Liquid chlorine",
+          "why": null,
+          "price": "$4.00",
+          "supplied": false
+        },
+        {
+          "label": "¼ gal Muriatic acid",
+          "why": null,
+          "price": "$3.75",
+          "supplied": false
+        },
+        {
+          "label": "2 lb Baking soda",
+          "why": null,
+          "price": "$6.00",
+          "supplied": false
+        },
+        {
+          "label": "3 tabs Chlorine tabs",
+          "why": "In the floater",
+          "price": "$7.50",
+          "supplied": false
+        },
+        {
+          "label": "1 qt Algaecide",
+          "why": null,
+          "price": null,
+          "supplied": true
+        },
+        {
+          "label": "1½ lb Stabilizer",
+          "why": null,
+          "price": "$13.50",
+          "supplied": false
+        },
+        {
+          "label": "1 bag Salt",
+          "why": null,
+          "price": "$18.00",
+          "supplied": false
+        }
+      ]
+    }
+  ],
+  "reportAddedTotal": [
+    {
+      "args": [
+        true,
+        false
+      ],
+      "result": "$52.75"
+    },
+    {
+      "args": [
+        false,
+        false
+      ],
+      "result": null
+    },
+    {
+      "args": [
+        true,
+        true
+      ],
+      "result": null
+    }
+  ]
+}

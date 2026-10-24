@@ -209,6 +209,25 @@ describe("visit reports", () => {
     expect(visitReportMode({ visit_reports: "auto" })).toBe("auto");
     expect(visitReportMode({ visit_reports: "off" })).toBe("off");
     expect(visitReportMode({ visit_reports: "weekly" })).toBe("manual");
-    expect(VISIT_REPORT_MODES.map((m) => m.label)).toEqual(["Automatic", "By Hand", "Off"]);
+    expect(visitReportMode({ visit_reports: "monthly" })).toBe("monthly");
+    expect(VISIT_REPORT_MODES.map((m) => m.label)).toEqual([
+      "Automatic",
+      "By Hand",
+      "Monthly",
+      "Off",
+    ]);
+  });
+
+  it("show as Each Visit (with Send Automatically), Monthly, or Off", async () => {
+    const { VISIT_REPORT_TIMINGS, visitReportTiming, visitReportModeFor } = await import("../src");
+    expect(VISIT_REPORT_TIMINGS.map((t) => t.label)).toEqual(["Each Visit", "Monthly", "Off"]);
+    expect(visitReportTiming("auto")).toBe("each");
+    expect(visitReportTiming("manual")).toBe("each");
+    expect(visitReportTiming("monthly")).toBe("monthly");
+    expect(visitReportTiming("off")).toBe("off");
+    expect(visitReportModeFor("each", true)).toBe("auto");
+    expect(visitReportModeFor("each", false)).toBe("manual");
+    expect(visitReportModeFor("monthly", true)).toBe("monthly");
+    expect(visitReportModeFor("off", false)).toBe("off");
   });
 });

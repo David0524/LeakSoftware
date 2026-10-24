@@ -1,6 +1,12 @@
 import {
   VISIT_REPORT_MODES,
+  VISIT_REPORT_TEXT,
+  VISIT_REPORT_TIMINGS,
   visitReportMode,
+  visitReportModeFor,
+  visitReportTiming,
+  type VisitReportMode,
+  type VisitReportTiming,
   CLEANING_DUE_SOON_DAYS,
   CLEANING_MONTHS,
   cadenceLabel,
@@ -240,7 +246,22 @@ export const maintenance: ModuleCases = {
       [{}],
       [{ visit_reports: "auto" }],
       [{ visit_reports: "off" }],
+      [{ visit_reports: "monthly" }],
       [{ visit_reports: "weekly" }],
     ],
+  ),
+  // When reports go out (owner, 2026-10-24): Each Visit (with Send Automatically), Monthly, Off.
+  VISIT_REPORT_TIMINGS: rule(() => VISIT_REPORT_TIMINGS, [[]]),
+  VISIT_REPORT_TEXT: rule(() => VISIT_REPORT_TEXT, [[]]),
+  visitReportTiming: rule(
+    (mode: VisitReportMode) => visitReportTiming(mode),
+    (["auto", "manual", "monthly", "off"] as VisitReportMode[]).map((m) => [m]),
+  ),
+  visitReportModeFor: rule(
+    (timing: VisitReportTiming, automatic: boolean) => visitReportModeFor(timing, automatic),
+    (["each", "monthly", "off"] as VisitReportTiming[]).flatMap((t) => [
+      [t, true] as [VisitReportTiming, boolean],
+      [t, false] as [VisitReportTiming, boolean],
+    ]),
   ),
 };

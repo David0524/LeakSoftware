@@ -32,6 +32,7 @@ import { termsConsent } from "./cases/terms-consent";
 import { setupGate } from "./cases/setup-gate";
 import { password } from "./cases/password";
 import { linkShare } from "./cases/link-share";
+import { chemicalAdditions } from "./cases/chemical-additions";
 
 /** One fixture file per entry: apps/ios/Tests/Fixtures/<name>.json. */
 export const modules: Record<string, ModuleCases> = {
@@ -58,6 +59,7 @@ export const modules: Record<string, ModuleCases> = {
   "wrap-up": wrapUpCases,
   "visit-report-bar": visitReportBarCases,
   repairs,
+  "chemical-additions": chemicalAdditions,
   "answer-icons": answerIcons,
   "mass-email": massEmail,
   "customer-counts": customerCounts,

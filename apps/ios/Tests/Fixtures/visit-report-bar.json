@@ -163,6 +163,47 @@
         "America/Los_Angeles"
       ],
       "result": null
+    },
+    {
+      "args": [
+        "maintenance",
+        "done",
+        "monthly",
+        null,
+        "2026-10-22T20:00:00Z",
+        "America/Los_Angeles"
+      ],
+      "result": {
+        "line": "Goes with the monthly invoice",
+        "action": "send",
+        "label": "Send Visit Report"
+      }
+    },
+    {
+      "args": [
+        "maintenance",
+        "in_progress",
+        "monthly",
+        null,
+        "2026-10-22T20:00:00Z",
+        "America/Los_Angeles"
+      ],
+      "result": null
+    },
+    {
+      "args": [
+        "maintenance",
+        "done",
+        "monthly",
+        "2026-10-22T21:14:00Z",
+        "2026-10-22T20:00:00Z",
+        "America/Los_Angeles"
+      ],
+      "result": {
+        "line": "Visit report sent · 2:14 PM",
+        "action": "view",
+        "label": "View Report"
+      }
     }
   ],
   "VISIT_REPORT_BAR_LABELS": [
