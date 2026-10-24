@@ -257,10 +257,19 @@
         @State private var busy = false
         @State private var browser: BrowserPage?
 
+        /// "New to Sundeck Pro? Start a free trial." opened the website's sign-up, whose trial
+        /// takes a card: a call to action to buy outside the app, which App Review's 3.1.1 and
+        /// 3.1.3(f) don't allow (docs/release/APP_STORE.md, "App Review risks"). Off for the App
+        /// Store; set true to bring the link back. Create an Account (free) stays.
+        static let offersTrialLink = false
+
         var body: some View {
             AuthFrame(title: "Sign In") {
-                // Buying happens on the website (App Store rule 3.1.1, spec 8.4).
-                InlineLinkText(text: "New to Sundeck Pro?", link: "Start a free trial.") { browser = .site("sign-up") }
+                if Self.offersTrialLink {
+                    InlineLinkText(text: "New to Sundeck Pro?", link: "Start a free trial.") {
+                        browser = .site("sign-up")
+                    }
+                }
             } content: {
                 // The server ended this phone's sign-in (owner, 2026-10-22); its work waits here.
                 if let notice = session.signedOutNotice {
