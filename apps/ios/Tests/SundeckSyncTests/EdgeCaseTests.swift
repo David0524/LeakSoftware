@@ -162,4 +162,88 @@ import Testing
                 == [["record_table": .text("media")]])
         #expect(try db.query("select value from sync_meta where key = 'schema_version'") == [["value": .text("4")]])
     }
+
+    // MARK: Signing out while a sync is running
+
+    /// A server of three pages, each waiting until the test lets it through.
+    final class SlowServer: SyncTransport, @unchecked Sendable {
+        let gates = Locked<[CheckedContinuation<Void, Never>]>([])
+        let company: String
+        init(company: String) { self.company = company }
+
+        func push(_ mutations: [Mutation], deviceId: String) async throws -> PushResponse {
+            PushResponse(
+                serverHLC: fakeServerHLC, results: mutations.map { MutationResult(id: $0.id, status: .applied) })
+        }
+
+        func pull(cursor: PullCursor, pageSize: Int) async throws -> PullPage {
+            var n = 1
+            if case .object(let fields) = cursor, case .string(let from)? = fields["from"] { n = (Int(from) ?? 0) + 1 }
+            await withCheckedContinuation { gate in gates.withLock { $0.append(gate) } }
+            return PullPage(
+                rows: [pulled("customer", ["id": .string("c\(n)"), "company_id": .string(company)], xid: String(n))],
+                done: n >= 3, cursor: .object(["from": .string(String(n))]), serverHLC: fakeServerHLC)
+        }
+
+        func scope() async throws -> String? { "scope" }
+
+        /// Lets the next waiting page through; false when none is waiting yet.
+        func release() -> Bool {
+            guard let gate = gates.withLock({ $0.isEmpty ? nil : $0.removeFirst() }) else { return false }
+            gate.resume()
+            return true
+        }
+    }
+
+    /// Lets every page through until `task` is done.
+    func drain(_ server: SlowServer, _ task: Task<SyncSummary, Never>) async -> SyncSummary {
+        let done = Locked(false)
+        let watcher = Task {
+            _ = await task.value
+            done.withLock { $0 = true }
+        }
+        while !done.current {
+            _ = server.release()
+            try? await Task.sleep(nanoseconds: 1_000_000)
+        }
+        _ = await watcher.value
+        return await task.value
+    }
+
+    /// Waits until a page is waiting at the server, then lets it through.
+    func releaseOne(_ server: SlowServer) async {
+        while !server.release() { try? await Task.sleep(nanoseconds: 1_000_000) }
+    }
+
+    @Test func signingOutMidSyncSavesNothingMoreOfTheOldSignIn() async throws {
+        let store = try LocalStore.open(memoryDatabase())
+        let server = SlowServer(company: c)
+        let engine = SyncEngine(store: store, transport: server)
+        let running = Task { await engine.sync() }
+        await releaseOne(server)
+        while try store.list("customer").isEmpty { try await Task.sleep(nanoseconds: 1_000_000) }
+        // Sign out: the phone is cleared while the next page is still on its way.
+        try store.clearAll()
+        let summary = await drain(server, running)
+        #expect(summary.error != nil)
+        #expect(try store.list("customer").isEmpty)
+        #expect(try store.cursor() == cursor())
+        #expect(try store.scope() == nil)
+    }
+
+    @Test func aSyncAskedForAfterTheClearStartsOver() async throws {
+        let store = try LocalStore.open(memoryDatabase())
+        let server = SlowServer(company: c)
+        let engine = SyncEngine(store: store, transport: server)
+        let running = Task { await engine.sync() }
+        await releaseOne(server)
+        while try store.list("customer").isEmpty { try await Task.sleep(nanoseconds: 1_000_000) }
+        try store.clearAll()
+        let fresh = Task { await engine.sync() }
+        let summary = await drain(server, fresh)
+        #expect(summary.error == nil)
+        #expect(try store.list("customer").map { $0["id"] } == [.string("c1"), .string("c2"), .string("c3")])
+        #expect(try store.scope() == "scope")
+        #expect(await running.value.error != nil)
+    }
 }

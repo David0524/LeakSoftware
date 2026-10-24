@@ -5,6 +5,17 @@ export class AuthError extends Error {
   override name = "AuthError";
 }
 
+/**
+ * The phone was cleared (signed out) while a sync was running: what that sync still brings
+ * back belongs to the old sign-in, so it stops instead of saving it.
+ */
+export class SyncCancelled extends Error {
+  override name = "SyncCancelled";
+  constructor(message = "Signed out while syncing.") {
+    super(message);
+  }
+}
+
 /** The phone is out of storage: the change was not saved (the transaction rolled back). */
 export class StorageFullError extends Error {
   override name = "StorageFullError";

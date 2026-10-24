@@ -90,6 +90,8 @@ export function isNetworkFailure(e: unknown): boolean {
  */
 export class SyncEngine {
   private running: Promise<SyncSummary> | null = null;
+  /** The store's generation when the running sync started. */
+  private runningGeneration = 0;
   private readonly pushBatch: number;
   private readonly pullPage: number;
   private readonly firstPullPage: number;
@@ -128,17 +130,28 @@ export class SyncEngine {
   }
 
   sync(): Promise<SyncSummary> {
-    this.running ??= this.run().finally(() => {
-      this.running = null;
-    });
+    // One running for a sign-in the phone has since cleared saves nothing more: wait for it to
+    // stop, then start over for whoever is signed in now.
+    if (this.running && this.runningGeneration !== this.store.generation)
+      return this.running.then(() => this.sync());
+    if (!this.running) {
+      this.runningGeneration = this.store.generation;
+      this.running = this.run().finally(() => {
+        this.running = null;
+      });
+    }
     return this.running;
   }
 
   private async run(): Promise<SyncSummary> {
     const summary: SyncSummary = { pushed: 0, rejected: 0, pulled: 0, pending: 0 };
+    // Signing out clears the phone (clearAll) and may do so while this sync waits on the
+    // server: from then on nothing it brings back is saved (rows, cursor, scope), or the next
+    // sign-in would carry on from the old one's cursor with a partial download.
+    const generation = this.store.generation;
     try {
-      await this.push(summary);
-      await this.pull(summary);
+      await this.push(summary, generation);
+      await this.pull(summary, generation);
     } catch (e) {
       summary.error = e instanceof Error ? e.message : String(e);
       if (e instanceof AuthError) summary.authFailed = true;
@@ -147,7 +160,7 @@ export class SyncEngine {
     return summary;
   }
 
-  private async push(summary: SyncSummary): Promise<void> {
+  private async push(summary: SyncSummary, generation: number): Promise<void> {
     for (;;) {
       const batch = this.store.pendingBatch(this.pushBatch);
       if (batch.mutations.length === 0) return;
@@ -157,10 +170,12 @@ export class SyncEngine {
       try {
         response = await this.transport.push(batch.mutations, this.store.deviceId);
       } catch (e) {
+        this.store.checkGeneration(generation);
         this.store.noteFailure(allSeqs, e instanceof Error ? e.message : String(e));
         throw e;
       }
 
+      this.store.checkGeneration(generation);
       this.store.receiveClock(response.server_hlc);
       const handled = new Set<string>();
       const held: number[] = [];
@@ -193,10 +208,11 @@ export class SyncEngine {
     }
   }
 
-  private async pull(summary: SyncSummary): Promise<void> {
+  private async pull(summary: SyncSummary, generation: number): Promise<void> {
     // When what this user may see has changed, start from the beginning and keep only what
     // comes back: newly visible jobs arrive whole, and jobs taken away leave the device.
     const scope = this.transport.scope ? await this.transport.scope() : null;
+    this.store.checkGeneration(generation);
     const last = this.store.getScope();
     const restart = scope !== null && last !== null && scope !== last;
     const seen = restart ? new Set<string>() : null;
@@ -231,7 +247,7 @@ export class SyncEngine {
       const ahead = page.done ? null : this.fetchPage(page.cursor, pageSize);
       // Saving can fail; a failed request ahead is then not worth reporting.
       ahead?.catch(() => undefined);
-      this.store.applyPage(page);
+      this.store.applyPage(page, generation);
       if (seen) for (const r of page.rows) seen.add(`${r.table}:${r.row.id}`);
       summary.pulled += page.rows.length;
       if (download) {
@@ -239,6 +255,7 @@ export class SyncEngine {
         this.onDownload?.({ pulled: { ...download.pulled }, totals: download.totals });
         if (counting) {
           download.totals = await counting;
+          this.store.checkGeneration(generation);
           counting = null;
           this.onDownload?.({ pulled: { ...download.pulled }, totals: download.totals });
         }

@@ -7,6 +7,7 @@ import {
   isAuthFailure,
   isStorageFull,
   type Mutation,
+  type PullCursor,
   type PullPage,
   type PushResponse,
   type SqlDatabase,
@@ -162,5 +163,82 @@ describe("an app update with changes still waiting", () => {
     ).toEqual({
       value: "4",
     });
+  });
+});
+
+describe("signing out while a sync is running", () => {
+  /** A server of three pages, each waiting until the test lets it through. */
+  class SlowServer implements SyncTransport {
+    gates: (() => void)[] = [];
+    async push(mutations: Mutation[]): Promise<PushResponse> {
+      return {
+        server_hlc: "1800000000000-0000-server",
+        results: mutations.map((m) => ({ id: m.id, status: "applied" as const })),
+      };
+    }
+    async pull(cursor: PullCursor): Promise<PullPage> {
+      const n = Number(cursor.from ?? 0) + 1;
+      await new Promise<void>((r) => this.gates.push(r));
+      return {
+        rows: [
+          {
+            table: "customer",
+            xid: String(n),
+            row: { id: `c${n}`, company_id: C, name: `Row ${n}` },
+          },
+        ],
+        done: n >= 3,
+        cursor: { from: String(n) },
+        server_hlc: "1800000000000-0000-server",
+      };
+    }
+    async scope() {
+      return "scope";
+    }
+  }
+  const tick = () => new Promise((r) => setTimeout(r, 0));
+  /** Lets every page through until `p` settles. */
+  async function drain(server: SlowServer, p: Promise<unknown>) {
+    let finished = false;
+    void p.then(() => (finished = true));
+    while (!finished) {
+      server.gates.shift()?.();
+      await tick();
+    }
+  }
+
+  it("saves nothing more of the old sign-in: no rows, no cursor, no scope", async () => {
+    const store = LocalStore.open(memoryDb());
+    const server = new SlowServer();
+    const engine = new SyncEngine(store, server);
+    const running = engine.sync();
+    await tick();
+    server.gates.shift()!();
+    await tick();
+    expect(store.list("customer")).toHaveLength(1);
+    // Sign out: the phone is cleared while the next page is still on its way.
+    store.clearAll();
+    await drain(server, running);
+    expect((await running).error).toBeTruthy();
+    expect(store.list("customer")).toHaveLength(0);
+    expect(store.getCursor()).toEqual({});
+    expect(store.getScope()).toBeNull();
+  });
+
+  it("a sync asked for after the clear starts over instead of joining the old one", async () => {
+    const store = LocalStore.open(memoryDb());
+    const server = new SlowServer();
+    const engine = new SyncEngine(store, server);
+    const running = engine.sync();
+    await tick();
+    server.gates.shift()!();
+    await tick();
+    store.clearAll();
+    const fresh = engine.sync();
+    await drain(server, fresh);
+    expect((await fresh).error).toBeUndefined();
+    expect(store.list("customer").map((r) => r.id)).toEqual(["c1", "c2", "c3"]);
+    expect(store.getScope()).toBe("scope");
+    expect((await running).error).toBeTruthy();
   });
 });

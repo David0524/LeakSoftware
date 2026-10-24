@@ -34,6 +34,8 @@ public actor SyncEngine {
     private let sleep: @Sendable (Double) async -> Void
     private let now: @Sendable () -> Date
     private var running: Task<SyncSummary, Never>?
+    /// The store's generation when the running sync started.
+    private var runningGeneration = 0
     /// Told as each page of a first download is applied (`PullProgress`).
     private var onProgress: (@Sendable (PullProgress) -> Void)?
 
@@ -70,19 +72,28 @@ public actor SyncEngine {
     }
 
     public func sync() async -> SyncSummary {
-        if let running { return await running.value }
-        let task = Task { await self.run() }
+        if let running, runningGeneration == store.generation { return await running.value }
+        // One running for a sign-in the phone has since cleared saves nothing more: wait for it
+        // to stop, then start over for whoever is signed in now (unless another call already has).
+        if let running { _ = await running.value }
+        if let running, runningGeneration == store.generation { return await running.value }
+        let generation = store.generation
+        let task = Task { await self.run(generation) }
         running = task
+        runningGeneration = generation
         let summary = await task.value
-        running = nil
+        if running == task { running = nil }
         return summary
     }
 
-    private func run() async -> SyncSummary {
+    /// Signing out clears the phone (`clearAll`) and may do so while this sync waits on the
+    /// server: from then on nothing it brings back is saved (rows, cursor, scope), or the next
+    /// sign-in would carry on from the old one's cursor with a partial download.
+    private func run(_ generation: Int) async -> SyncSummary {
         var summary = SyncSummary()
         do {
-            try await push(&summary)
-            try await pull(&summary)
+            try await push(&summary, generation)
+            try await pull(&summary, generation)
         } catch {
             summary.error = String(describing: error)
             if error is AuthError { summary.authFailed = true }
@@ -91,7 +102,7 @@ public actor SyncEngine {
         return summary
     }
 
-    private func push(_ summary: inout SyncSummary) async throws {
+    private func push(_ summary: inout SyncSummary, _ generation: Int) async throws {
         while true {
             let batch = try store.pendingBatch(maxMutations: pushBatch)
             if batch.mutations.isEmpty { return }
@@ -101,10 +112,12 @@ public actor SyncEngine {
             do {
                 response = try await transport.push(batch.mutations, deviceId: store.deviceId)
             } catch {
+                try store.checkGeneration(generation)
                 try store.noteFailure(allSeqs, error: String(describing: error))
                 throw error
             }
 
+            try store.checkGeneration(generation)
             try store.receiveClock(response.serverHLC)
             var handled = Set<String>()
             var held: [Int] = []
@@ -138,10 +151,11 @@ public actor SyncEngine {
         }
     }
 
-    private func pull(_ summary: inout SyncSummary) async throws {
+    private func pull(_ summary: inout SyncSummary, _ generation: Int) async throws {
         // When what this user may see has changed, start from the beginning and keep only what
         // comes back: newly visible jobs arrive whole, and jobs taken away leave the device.
         let scope = try await transport.scope()
+        try store.checkGeneration(generation)
         let last = try store.scope()
         let restart = scope != nil && last != nil && scope != last
         var seen: Set<String>? = restart ? [] : nil
@@ -180,7 +194,7 @@ public actor SyncEngine {
                     try await pullWithRetry(transport, cursor: cursor, size: size, delays: delays, sleep: sleep)
                 }
             do {
-                try store.applyPage(page)
+                try store.applyPage(page, generation: generation)
             } catch {
                 next?.cancel()
                 throw error
@@ -194,12 +208,14 @@ public actor SyncEngine {
                 if let count = counting {
                     counting = nil
                     progress!.totals = await count.value
+                    try store.checkGeneration(generation)
                     onProgress?(progress!)
                 }
             }
             guard let next else { break }
             page = try await next.value
         }
+        try store.checkGeneration(generation)
         // Only after a complete pull: an interrupted one starts over next time.
         if let seen { try store.keepOnly(seen) }
         if let scope { try store.setScope(scope) }

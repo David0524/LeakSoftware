@@ -374,9 +374,19 @@ public final class LocalStore: @unchecked Sendable {
 
     /// Applies one page of server rows and its cursor atomically. Pending local edits are laid
     /// back over each row so unpushed work never disappears from the screen.
-    public func applyPage(_ page: PullPage) throws {
+    /// Changes each time the phone is cleared (`clearAll`). A sync notes it when it starts and
+    /// saves nothing once it has changed: rows still arriving belong to the sign-in that left.
+    public var generation: Int { lock.withLock { cleared } }
+
+    /// Throws `SyncCancelled` when the phone was cleared since `generation`.
+    public func checkGeneration(_ generation: Int?) throws {
+        if let generation, generation != self.generation { throw SyncCancelled() }
+    }
+
+    public func applyPage(_ page: PullPage, generation: Int? = nil) throws {
         try guardFull {
             try database.transaction {
+                try checkGeneration(generation)
                 for pulled in page.rows {
                     let pending = try database.query(
                         "select fields from sync_outbox where table_name = ? and row_id = ? and status = 'pending' order by seq",

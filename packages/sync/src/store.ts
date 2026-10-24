@@ -1,4 +1,5 @@
 import { uuidv7 } from "@leakbook/core";
+import { SyncCancelled } from "./errors";
 import { HybridClock, compareHlc, type HlcState } from "./hlc";
 import type { FieldChange, JsonValue, Mutation, PullCursor, PullPage, Row } from "./types";
 
@@ -429,11 +430,26 @@ export class LocalStore {
   }
 
   /**
-   * Apply one page of server rows and its cursor atomically. Pending local edits are laid
-   * back over each row so unpushed work never disappears from the screen.
+   * Changes each time the phone is cleared (clearAll). A sync notes it when it starts and saves
+   * nothing once it has changed: rows still arriving belong to the sign-in that left.
    */
-  applyPage(page: PullPage): void {
+  get generation(): number {
+    return this.cleared;
+  }
+
+  /** Throws SyncCancelled when the phone was cleared since `generation`. */
+  checkGeneration(generation: number | undefined): void {
+    if (generation !== undefined && generation !== this.cleared) throw new SyncCancelled();
+  }
+
+  /**
+   * Apply one page of server rows and its cursor atomically. Pending local edits are laid
+   * back over each row so unpushed work never disappears from the screen. With `generation`
+   * (the sync's), a page that arrives after the phone was cleared is not saved.
+   */
+  applyPage(page: PullPage, generation?: number): void {
     this.db.transaction(() => {
+      this.checkGeneration(generation);
       for (const { table, row } of page.rows) {
         const pending = this.db.all<{ fields: string }>(
           "select fields from sync_outbox where table_name = ? and row_id = ? and status = 'pending' order by seq",

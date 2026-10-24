@@ -9,6 +9,13 @@ public struct AuthError: Error, CustomStringConvertible {
     public init(_ message: String) { description = message }
 }
 
+/// The phone was cleared (signed out) while a sync was running: what that sync still brings back
+/// belongs to the old sign-in, so it stops instead of saving it.
+public struct SyncCancelled: Error, CustomStringConvertible {
+    public let description = "Signed out while syncing."
+    public init() {}
+}
+
 /// The phone is out of storage: the change was not saved (the transaction rolled back).
 public struct StorageFullError: Error, CustomStringConvertible {
     public let description = "Phone storage is full. Free up some space; nothing already saved is lost."
