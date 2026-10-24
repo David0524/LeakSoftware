@@ -7,7 +7,7 @@ name: App Store screenshots
 # `app-store-screenshots` artifact. Only by hand: Actions › App Store screenshots › Run workflow.
 # Then:
 #   gh run download <run id> -n app-store-screenshots -D <folder>
-# and upload 01 to 10, in order, to App Store Connect › the version › iPhone 6.9" Display.
+# and build the captioned set from them with apps/ios/AppStore/compose.py (APP_STORE.md, section 6).
 
 on:
   workflow_dispatch:

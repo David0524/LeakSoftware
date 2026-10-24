@@ -24,8 +24,8 @@ Apple calls during review).
 iPhone 6.9" Display only. The app is iPhone only (`TARGETED_DEVICE_FAMILY: "1"` in
 `apps/ios/AppHost/project.yml`), so no iPad screenshots. App Store Connect scales the 6.9"
 set down for every smaller iPhone, so it's the only set needed. See section 6 for how they're
-made and what each shows. Upload `01` to `10` in order; the first three show in search
-results.
+made and what each shows. Upload the seven captioned pictures (`01-today.png` to
+`07-pool-visit.png`) in order; the first three show in search results.
 
 ### 1.2 Promotional Text (170)
 
@@ -330,36 +330,52 @@ don't ask. That is the right answer as we read the rules, with one thing to know
 **Size:** 6.9" iPhone, **1320 × 2868** pixels, portrait, PNG, no transparency. (1290 × 2796
 is also accepted; the 6.5" sizes 1284 × 2778 or 1242 × 2688 are only an alternative.)
 
-**How they're made:** the `App Store screenshots` workflow
-(`.github/workflows/app-store-screenshots.yml`, run by hand) renders ten screens of the real
-app with the demo shop used in the launch film (Canyon State Leak Detections, a made-up shop
-with made-up customers and 555 phone numbers), at exactly 1320 × 2868 with a 9:41 status bar
-drawn in, checks the size and that there's no transparency, and saves them as the
-`app-store-screenshots` artifact. The code is `storeShot` and the `store*` tests in
-`apps/ios/Tests/SundeckAppScreenshots/LaunchVideoShots.swift`, which reuse the film's seeded
-data. Download with `gh run download <run id> -n app-store-screenshots -D <folder>`.
+**What they are:** seven captioned pictures. Each has a headline in Barlow Semi Condensed
+ExtraBold, one line under it in Public Sans, and a real app screen in a plain rounded phone
+frame we draw ourselves (no Apple device artwork), on flat brand navy. The screens are the app's
+own, with the demo shop used in the launch film (Canyon State Leak Detections, a made-up shop
+with made-up customers and 555 phone numbers), cut to one screen from the top, never edited. The
+phone runs off the bottom of the picture, so the app's floating bars and the tab bar stay out of
+view.
 
-**Look at every picture before uploading** (CLAUDE.md, "Look before you ship"): the shots are
-drawn off screen, so they show the iOS 18 to 25 look (no Liquid Glass) and no live map; a
-screen whose best part is below the fold can be moved with `storeShot(…, scrolled: points)`.
+**How they're made** (reproducible; colors from `brand/tokens.json`):
 
-| # | File | Screen | Caption (optional, if frames with text are added) |
-|---|---|---|---|
-| 1 | `01-today.png` | Today: the day's stops in route order | Your whole day, in route order |
-| 2 | `02-schedule.png` | Schedule, Day view (day map folded) | Every tech's route, planned |
-| 3 | `03-pool-visit.png` | A pool service visit's checklist | A checklist for every visit |
-| 4 | `04-what-to-add.png` | The chemical calculator's What to Add | Exactly what to add, and in what order |
-| 5 | `05-leak-checklist.png` | A leak job's checklist | Every skimmer, return, light, and drain |
-| 6 | `06-findings.png` | Findings pinned on the pool drawing | Leaks pinned on the customer's pool |
-| 7 | `07-signature.png` | The customer's review and signature | Signed on the spot |
-| 8 | `08-report.png` | Sending the report | A professional report before you leave |
-| 9 | `09-quote.png` | The repair quote from the price book | Quotes from your price book |
-| 10 | `10-messages.png` | Texting the customer from the shop's number | One number for the whole team |
+1. Download the raw screens (each workflow is run by hand or on push):
+   - `gh run download <run id> -n app-store-screenshots -D <store>` from the **App Store
+     screenshots** workflow (`.github/workflows/app-store-screenshots.yml`: ten screens at
+     1320 × 2868 from `storeShot` in
+     `apps/ios/Tests/SundeckAppScreenshots/LaunchVideoShots.swift`);
+   - `gh run download <run id> -n launch-video-iphone -D <film>` from **Launch video iPhone
+     screens** (the same shop's screens, `lv-*.png`);
+   - optionally `gh run download <run id> -n iphone-screenshots -D <ci>` from CI, as a fallback.
+2. `python3 apps/ios/AppStore/compose.py --store <store> --film <film> --ci <ci>` writes the
+   seven PNGs and `contact-sheet.jpg` to `video-delivery/app-store-screenshots/final/` (render:
+   `apps/ios/AppStore/frame.html` and `render.mjs`, Chromium through apps/web's Playwright). Each
+   shot takes the first of its sources that exists (listed in `compose.py`).
+3. **Look at every picture and the contact sheet** before uploading (CLAUDE.md, "Look before you
+   ship"), including the bottom row at App Store search size.
 
-**The day map:** a live map can't be drawn off screen, so Schedule is shot with its map
-folded. For a shot with the map, take it on a real 6.9" iPhone (iPhone 16 or 17 Pro Max)
-running the TestFlight build with the demo shop: the phone's own screenshot is exactly
-1320 × 2868 and shows the real Liquid Glass and status bar. It can replace `02-schedule.png`.
+| # | File | Screen (source) | Headline | Line under it |
+|---|---|---|---|---|
+| 1 | `01-today.png` | Today: Up next and the day's three stops (`lv-today`) | Your Whole Day, in Route Order | Next stop, drive time and gate code up front. |
+| 2 | `02-findings.png` | Findings: two leaks pinned on the pool drawing, the failed pressure test (`lv-findings`) | Pin Each Leak on the Pool | Draw the pool. Log every pressure test. |
+| 3 | `03-leak-checklist.png` | A leak job's checklist, a return marked leaking with its note (`lv-checklist`) | Check Every Line, Note Every Leak | Skimmers, returns, lights and drains. |
+| 4 | `04-report.png` | Review and Sign: the report the customer reads (`07-review`; until that run, CI's `17-review`) | The Report, Done Before You Leave | Read and signed on your phone. |
+| 5 | `05-quote.png` | The repair quote, lines added from the findings (`lv-quote`) | Quote the Repair From the Findings | Prices come from your own price book. |
+| 6 | `06-messages.png` | Texting Rebecca from the shop's number (`10-messages`) | Text Customers From the Shop Number | One business line for the whole team. |
+| 7 | `07-pool-visit.png` | A pool service visit: chemical, regular cleanings, checklist (`lv-cleanings`) | Pool Service Visits, Too | Readings, cleanings and a checklist. |
+
+Captions say what the app does, plainly: no buying, subscribing, trials or prices anywhere in
+them (guideline 3.1.3, section 7). Title Case for headlines, sentence case for the line under.
+
+**Left out on purpose:** the signature step (the drawn signature doesn't render off screen, so
+the store set shows the report instead), What to Add (a short sheet that leaves the lower half
+of the phone empty), and Schedule's day map (next paragraph).
+
+**The day map:** a live map can't be drawn off screen, so no shot shows it. For a shot with the
+map, take it on a real 6.9" iPhone (iPhone 16 or 17 Pro Max) running the TestFlight build with
+the demo shop: the phone's own screenshot is exactly 1320 × 2868 and shows the real Liquid Glass
+and status bar. Put it in `<store>` as `02-schedule.png` and add a shot for it in `compose.py`.
 
 ---
 

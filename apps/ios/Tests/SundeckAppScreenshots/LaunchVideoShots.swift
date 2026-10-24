@@ -34,17 +34,26 @@
     private func storeShot(_ name: String, scrolled: CGFloat? = nil, _ view: some View) async throws {
         guard appStoreShots else { return }
         Chrome.install()
-        let window = UIWindow(frame: CGRect(origin: .zero, size: storeScreen))
+        // Drawn like `snapshot`: in the simulator's scene when there is one (a window drawn with
+        // layer.render left Today blank, 2026-10-24), off screen otherwise.
+        let scene = UIApplication.shared.connectedScenes.compactMap { $0 as? UIWindowScene }.first
+        let window = scene.map { UIWindow(windowScene: $0) } ?? UIWindow(frame: .zero)
+        window.frame = CGRect(origin: .zero, size: storeScreen)
         window.overrideUserInterfaceStyle = .light
         let content = view.environment(\.dynamicTypeSize, .large)
             .environment(\.drawsGlass, false)
             .environment(\.drawsLiveMaps, false)
             .environment(\.keepsTitleFont, true)
         let host = UIHostingController(rootView: content)
-        // The status bar (Dynamic Island) and home indicator areas of the 6.9-inch iPhone.
-        host.additionalSafeAreaInsets = UIEdgeInsets(top: 62, left: 0, bottom: 34, right: 0)
         window.rootViewController = host
         window.makeKeyAndVisible()
+        window.layoutIfNeeded()
+        // The status bar (Dynamic Island) and home indicator areas of the 6.9-inch iPhone: only
+        // what the window doesn't have already. A Pro Max simulator gives the window both, and
+        // adding them again left an empty band under the status bar (2026-10-24).
+        host.additionalSafeAreaInsets = UIEdgeInsets(
+            top: max(0, 62 - window.safeAreaInsets.top), left: 0,
+            bottom: max(0, 34 - window.safeAreaInsets.bottom), right: 0)
         for _ in 0..<15 {
             try await Task.sleep(for: .milliseconds(100))
             window.layoutIfNeeded()
@@ -64,7 +73,11 @@
         let image = UIGraphicsImageRenderer(size: storeScreen, format: format).image { context in
             UIColor.white.setFill()
             context.fill(CGRect(origin: .zero, size: storeScreen))
-            window.layer.render(in: context.cgContext)
+            if scene != nil {
+                window.drawHierarchy(in: window.bounds, afterScreenUpdates: true)
+            } else {
+                window.layer.render(in: context.cgContext)
+            }
             drawStatusBar(width: storeScreen.width)
         }
         window.isHidden = true
@@ -542,7 +555,9 @@
             list = wrapUp(wrapUpInput(store: store, companyId: "c1", settings: nil, job: job))
             try await snapshot(
                 "lv-signed", height: 3600, WrapUpStepSheet(job: job, step: sign, title: sign.title(list)).app(env))
-            try await storeShot("07-signature", WrapUpStepSheet(job: job, step: sign, title: sign.title(list)).app(env))
+            // The report as Rebecca reads it before signing. (The signature step's drawn strokes
+            // don't render off screen, so the store shows the report instead.)
+            try await storeShot("07-review", NavigationStack { ReviewScreen(jobId: job.id) }.app(env))
             let report = WrapUpOpen(step: .report, refId: nil)
             try await snapshot(
                 "lv-send-report", height: 3600,
