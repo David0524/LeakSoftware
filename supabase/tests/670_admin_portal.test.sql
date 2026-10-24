@@ -170,13 +170,24 @@ select isnt(admin_health(), null, 'health');
 -- ---------------------------------------------------------------------------
 insert into subscription (company_id) values ((select cb from ids)) on conflict (company_id) do nothing;
 update subscription set status = 'trialing', trial_ends_at = now() - interval '2 days',
-  stripe_subscription_id = null, plan = 'standard' where company_id = (select cb from ids);
+  stripe_subscription_id = null, plan = 'standard', onboarded_at = null
+where company_id = (select cb from ids);
+select is((select onboarded_at from subscription where company_id = (select cb from ids)), null,
+  'the owner never finished setting up');
 select is(app.company_locked((select cb from ids)), true, 'a shop past its trial is read-only');
 select throws_ok(format($$ select admin_extend_trial(%L, 10) $$, (select cb from ids)), '22023', null,
   'trials extend by 7, 14 or 30 days');
 select is(admin_extend_trial((select cb from ids), 14)::date, (now() + interval '14 days')::date,
   'an ended trial is extended from today');
 select is(app.company_locked((select cb from ids)), false, 'and the shop works again');
+-- Extending counts as setup finished (owner, 2026-10-24), so the owner isn't held at /welcome
+-- or Finish Setting Up; a date already there stays.
+select ok((select onboarded_at > now() - interval '1 minute' from subscription
+  where company_id = (select cb from ids)), 'extending marks setup finished');
+update subscription set onboarded_at = '2026-10-01' where company_id = (select cb from ids);
+select lives_ok(format($$ select admin_extend_trial(%L, 7) $$, (select cb from ids)), 'extend again');
+select is((select onboarded_at from subscription where company_id = (select cb from ids)),
+  '2026-10-01'::timestamptz, 'a shop already set up keeps its date');
 select lives_ok(format($$ select admin_set_demo(%L, true) $$, (select cb from ids)), 'Make Demo Shop');
 select is((select plan || '/' || status from subscription where company_id = (select cb from ids)), 'demo/active',
   'is a demo shop');

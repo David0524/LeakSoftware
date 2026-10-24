@@ -21,8 +21,8 @@ directly, not into this file.
 |---|---|---|---|
 | H1 | High | A shop whose payments keep failing is never made read-only | Fixed (`20261022002200_past_due_lock.sql`) |
 | H2 | High | Admin portal access depends on an auth setting of the live project that isn't in its required state | Owner action needed (details sent privately) |
-| M1 | Medium | One shop can use up the map allowance every shop shares | Open |
-| M2 | Medium | Uploads have no size or type limit, and unpaid shops can still upload | Open |
+| M1 | Medium | One shop can use up the map allowance every shop shares | Fixed (`20261022002400_map_shop_caps.sql`) |
+| M2 | Medium | Uploads have no size or type limit, and unpaid shops can still upload | Fixed (`20261022002500_upload_limits.sql`) |
 | M3 | Medium | Sign-in, two-step codes and sign-up have no rate limit of our own | Open |
 | M4 | Medium | The browser's Mapbox token isn't covered by the map budget | Needs a check in Mapbox |
 | L1 | Low | `x-map-note` could carry a signed Apple map address | Fixed |
@@ -70,7 +70,7 @@ a later code change can key staff on something only the server can set.
 
 ## Medium
 
-### M1. One shop can use up every shop's map allowance
+### M1. One shop can use up every shop's map allowance (fixed)
 
 - **Path:** `public.mapbox_take(target_company, api_kind, how_many)` is granted to
   `authenticated` and checks only membership. It counts against monthly (and for Apple, daily)
@@ -83,8 +83,13 @@ a later code change can key staff on something only the server can set.
   `mapbox_take`), lower the per-call ceiling to what the server asks for, and refuse locked
   shops; or revoke it from `authenticated` and call it with the service key after the routes'
   existing membership checks.
+- **Fixed (2026-10-24):** `20261022002400_map_shop_caps.sql` gives each shop a daily cap per kind
+  (sized well above the busiest shop's day; DECISIONS 2026-10-24), lowers one call to 625 units,
+  and makes `mapbox_take` service-key only (the phones never called it; the website's routes
+  check membership first). A shop past its cap gets a plain message. Test
+  `562_map_shop_caps`.
 
-### M2. Uploads: no limits, and unpaid shops can upload
+### M2. Uploads: no limits, and unpaid shops can upload (fixed)
 
 - **Path:** buckets `media`, `texts`, `company-assets` (`20261012000700_storage.sql`,
   `20261012003500_company_texting.sql`) have no `file_size_limit` or `allowed_mime_types`, and no
@@ -95,6 +100,11 @@ a later code change can key staff on something only the server can set.
 - **Recommendation:** per-bucket size limits and MIME lists (photos, videos, audio, PDF), and a
   restrictive insert policy refusing locked shops. Check first that the phones keep a refused
   upload queued (DECISIONS: changes made while read-only go up once paid).
+- **Fixed (2026-10-24):** `20261022002500_upload_limits.sql` sets each bucket's size limit and
+  types (media 50 MB, texts 10 MB, logos 2 MB, PDFs 50 MB) and adds restrictive insert and update
+  policies refusing locked shops. Checked first: both phones' upload queues keep a refused file
+  and retry it. The apps and website say plainly when a file is too large, the wrong type, or
+  the shop is read-only. Test `796_upload_limits`.
 
 ### M3. No rate limit of our own on sign-in, two-step and sign-up
 
