@@ -27,6 +27,11 @@ on:
         description: "Upload to Google Play (internal testing). Off for the first, manual upload."
         type: boolean
         default: true
+      backend:
+        description: "Supabase project the app uses: dev, or production (config/supabase-prod.json)"
+        type: choice
+        options: [dev, production]
+        default: dev
 
 concurrency:
   group: android
@@ -141,6 +146,26 @@ jobs:
             --value "$dir/google-services.json" --visibility secret --non-interactive
           echo "GOOGLE_SERVICES_JSON=$dir/google-services.json" >> "$GITHUB_ENV"
 
+      - name: Point the app at its backend
+        # Which Supabase project and website the app uses (docs/release/PRODUCTION.md), from
+        # config/supabase-<backend>.json: public values only, which the app reads as
+        # EXPO_PUBLIC_* (apps/mobile/src/lib/config.ts). Set on EAS's production environment
+        # every run, so a build never keeps the last run's choice.
+        env:
+          EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
+          BACKEND: ${{ inputs.backend }}
+        run: |
+          file="../../config/supabase-$BACKEND.json"
+          test -f "$file" || { echo "::error::config/supabase-$BACKEND.json is missing (docs/release/PRODUCTION.md)"; exit 1; }
+          url=$(node -p "require('$file').url")
+          key=$(node -p "require('$file').publishableKey")
+          web=$(node -p "require('$file').webUrl")
+          for pair in "EXPO_PUBLIC_SUPABASE_URL=$url" "EXPO_PUBLIC_SUPABASE_ANON_KEY=$key" "EXPO_PUBLIC_API_URL=$web"; do
+            npx eas-cli@latest env:set production --name "${pair%%=*}" --value "${pair#*=}" \
+              --type string --visibility plaintext --non-interactive
+          done
+          echo "BACKEND=$BACKEND ($url)" >> "$GITHUB_ENV"
+
       - name: Build the app bundle (EAS Build)
         env:
           EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
@@ -170,7 +195,7 @@ jobs:
           {
             echo "### Android build ready"
             echo
-            echo "Sundeck Pro **$VERSION**."
+            echo "Sundeck Pro **$VERSION**, backend **$BACKEND**."
             echo
             if [ "$SUBMIT" = "true" ]; then
               echo "Uploaded to Google Play's internal testing track. Play Console › Sundeck Pro › Test and release › Testing › Internal testing."

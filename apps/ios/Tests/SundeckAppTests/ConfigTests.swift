@@ -18,9 +18,34 @@ import Testing
             let webUrl: String
         }
         let dev = try JSONDecoder().decode(Dev.self, from: Data(contentsOf: json))
+        #expect(AppConfig.devSupabaseURL.absoluteString == dev.url)
+        #expect(AppConfig.devSupabasePublishableKey == dev.publishableKey)
+        #expect(AppConfig.defaultWebURL.absoluteString == dev.webUrl)
+        // A test bundle sets nothing, so the dev project is used.
         #expect(AppConfig.supabaseURL.absoluteString == dev.url)
         #expect(AppConfig.supabasePublishableKey == dev.publishableKey)
         #expect(AppConfig.webURL.absoluteString == dev.webUrl)
+    }
+
+    /// A production build's Info.plist values win; empty or unexpanded ones fall back to dev.
+    @Test func buildSettingsChooseTheProject() {
+        let prod: [String: Any] = [
+            "SundeckSupabaseURL": "https://abcdefghijklmnopqrst.supabase.co/",
+            "SundeckSupabaseKey": "sb_publishable_prod",
+            "SundeckWebURL": "https://sundeckpro.com",
+        ]
+        #expect(
+            AppConfig.url(prod, "SundeckSupabaseURL")?.absoluteString
+                == "https://abcdefghijklmnopqrst.supabase.co")
+        #expect(AppConfig.setting(prod, "SundeckSupabaseKey") == "sb_publishable_prod")
+        #expect(AppConfig.url(prod, "SundeckWebURL")?.absoluteString == "https://sundeckpro.com")
+        let unset: [String: Any] = [
+            "SundeckSupabaseURL": "$(SUNDECK_SUPABASE_URL)", "SundeckSupabaseKey": "",
+        ]
+        #expect(AppConfig.url(unset, "SundeckSupabaseURL") == nil)
+        #expect(AppConfig.setting(unset, "SundeckSupabaseKey") == nil)
+        #expect(AppConfig.url(nil, "SundeckWebURL") == nil)
+        #expect(AppConfig.url(["SundeckWebURL": "http://insecure.example"], "SundeckWebURL") == nil)
     }
 }
 

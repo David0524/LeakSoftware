@@ -14,6 +14,12 @@
 	<string>Sundeck Pro uses the microphone to record voice notes and the sound on job videos.</string>
 	<key>NSLocationWhenInUseUsageDescription</key>
 	<string>Sundeck Pro notes where a job’s photos, videos, voice notes, and signatures are taken, so the report shows the work was done at the pool. It checks only at those moments, never in the background.</string>
+	<key>SundeckSupabaseURL</key>
+	<string>$(SUNDECK_SUPABASE_URL)</string>
+	<key>SundeckSupabaseKey</key>
+	<string>$(SUNDECK_SUPABASE_KEY)</string>
+	<key>SundeckWebURL</key>
+	<string>$(SUNDECK_WEB_URL)</string>
 	<key>NSSupportsLiveActivities</key>
 	<true/>
 	<key>CFBundleURLTypes</key>

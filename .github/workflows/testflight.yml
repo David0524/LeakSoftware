@@ -14,6 +14,12 @@ name: TestFlight
 
 on:
   workflow_dispatch:
+    inputs:
+      backend:
+        description: "Supabase project the app uses: dev, or production (config/supabase-prod.json)"
+        type: choice
+        options: [dev, production]
+        default: dev
   push:
     tags: ["ios-v*"]
 
@@ -38,6 +44,22 @@ jobs:
       - name: Build number
         # GitHub expressions can't add, so the shell does: 1000 + this workflow's run number.
         run: echo "BUILD_NUMBER=$((1000 + GITHUB_RUN_NUMBER))" >> "$GITHUB_ENV"
+
+      - name: Backend
+        # Which Supabase project and website the app uses (docs/release/PRODUCTION.md), from
+        # config/supabase-<backend>.json: public values only (URL and publishable key), set as
+        # build settings that Info.plist passes to AppConfig. A tag build uses dev.
+        env:
+          BACKEND: ${{ inputs.backend || 'dev' }}
+        run: |
+          file="config/supabase-$BACKEND.json"
+          test -f "$file" || { echo "::error::$file is missing (docs/release/PRODUCTION.md)"; exit 1; }
+          {
+            echo "BACKEND=$BACKEND"
+            echo "SUNDECK_SUPABASE_URL=$(node -p "require('./$file').url")"
+            echo "SUNDECK_SUPABASE_KEY=$(node -p "require('./$file').publishableKey")"
+            echo "SUNDECK_WEB_URL=$(node -p "require('./$file').webUrl")"
+          } >> "$GITHUB_ENV"
 
       - name: Make the Xcode project (XcodeGen)
         working-directory: apps/ios/AppHost
@@ -97,6 +119,16 @@ jobs:
           CODE_SIGN_STYLE=Automatic
           CURRENT_PROJECT_VERSION="$BUILD_NUMBER"
           MARKETING_VERSION="$MARKETING_VERSION"
+          SUNDECK_SUPABASE_URL="$SUNDECK_SUPABASE_URL"
+          SUNDECK_SUPABASE_KEY="$SUNDECK_SUPABASE_KEY"
+          SUNDECK_WEB_URL="$SUNDECK_WEB_URL"
+
+      - name: Check the app uses the chosen backend
+        run: |
+          plist="$RUNNER_TEMP/SundeckPro.xcarchive/Products/Applications/SundeckPro.app/Info.plist"
+          url=$(/usr/libexec/PlistBuddy -c 'Print :SundeckSupabaseURL' "$plist")
+          test "$url" = "$SUNDECK_SUPABASE_URL" || { echo "The app has '$url', not $SUNDECK_SUPABASE_URL"; exit 1; }
+          echo "Backend $BACKEND: $url"
 
       - name: Check the privacy manifest is in the app
         # App Store Connect refuses a build whose required-reason APIs aren't declared
@@ -141,7 +173,7 @@ jobs:
           {
             echo "### Uploaded to TestFlight"
             echo
-            echo "Sundeck Pro **$MARKETING_VERSION ($BUILD_NUMBER)**. Apple processes it for a few minutes before testers can install it."
+            echo "Sundeck Pro **$MARKETING_VERSION ($BUILD_NUMBER)**, backend **$BACKEND** ($SUNDECK_SUPABASE_URL). Apple processes it for a few minutes before testers can install it."
             echo
             echo "[App Store Connect › TestFlight](https://appstoreconnect.apple.com/apps/$APP_STORE_APP_ID/testflight/ios)"
           } >> "$GITHUB_STEP_SUMMARY"
