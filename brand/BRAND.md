@@ -113,7 +113,7 @@ Copy the results into the apps: `apps/web/public/sundeck-{logo,logo-reverse,mark
 
 - **Clear space:** keep empty space around the logo at least the width of the dot.
 - **Minimum size:** horizontal logo 120 px wide (1 in printed); mark 16 px tall. Below 48 px use the favicon's small-size cut (thicker, wider-spaced wave lines, bigger dot).
-- **Wordmark:** Barlow Semi Condensed ExtraBold, outlined. "Tide" navy, "mark" water blue on light; all white on dark; all black for one color.
+- **Wordmark:** Barlow Semi Condensed ExtraBold, outlined. "Sundeck" navy, "Pro" water blue on light; all white on dark; all black for one color.
 - **Do not:** recolor the pin outside the brand colors, add shadows or gradients, outline the mark, stretch it, set the wordmark in another font, or put the full-color mark on a busy photo.
 - **Powered by:** customer documents use `sundeck-mark.svg` at 16–20 px next to "Powered by Sundeck Pro" in Public Sans, in the footer only.
 
