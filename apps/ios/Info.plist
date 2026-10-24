@@ -9,11 +9,11 @@
 	<key>ITSAppUsesNonExemptEncryption</key>
 	<false/>
 	<key>NSCameraUsageDescription</key>
-	<string>Sundeck Pro takes photos and videos of leaks and equipment for your inspection report.</string>
+	<string>Sundeck Pro uses the camera for photos and videos of pools, equipment, and leaks, which go in the job’s report.</string>
 	<key>NSMicrophoneUsageDescription</key>
-	<string>Sundeck Pro records voice notes and the sound on inspection videos.</string>
+	<string>Sundeck Pro uses the microphone to record voice notes and the sound on job videos.</string>
 	<key>NSLocationWhenInUseUsageDescription</key>
-	<string>Sundeck Pro tags photos with where they were taken so reports show they were taken on site.</string>
+	<string>Sundeck Pro notes where a job’s photos, videos, voice notes, and signatures are taken, so the report shows the work was done at the pool. It checks only at those moments, never in the background.</string>
 	<key>NSSupportsLiveActivities</key>
 	<true/>
 	<key>CFBundleURLTypes</key>

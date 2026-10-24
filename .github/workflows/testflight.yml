@@ -98,6 +98,14 @@ jobs:
           CURRENT_PROJECT_VERSION="$BUILD_NUMBER"
           MARKETING_VERSION="$MARKETING_VERSION"
 
+      - name: Check the privacy manifest is in the app
+        # App Store Connect refuses a build whose required-reason APIs aren't declared
+        # (ITMS-91053); apps/ios/PrivacyInfo.xcprivacy declares them (AppHost/project.yml).
+        run: |
+          manifest="$RUNNER_TEMP/SundeckPro.xcarchive/Products/Applications/SundeckPro.app/PrivacyInfo.xcprivacy"
+          test -f "$manifest" || { echo "PrivacyInfo.xcprivacy is missing from the app"; exit 1; }
+          plutil -lint "$manifest"
+
       - name: Export and upload to App Store Connect
         env:
           ASC_KEY_ID: ${{ secrets.ASC_KEY_ID }}

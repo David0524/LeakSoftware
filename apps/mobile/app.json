@@ -49,21 +49,21 @@
       [
         "expo-audio",
         {
-          "microphonePermission": "Sundeck Pro records voice notes and the sound on inspection videos."
+          "microphonePermission": "Sundeck Pro uses the microphone to record voice notes and the sound on job videos."
         }
       ],
       [
         "expo-image-picker",
         {
-          "cameraPermission": "Sundeck Pro takes photos and videos of leaks and equipment for your inspection report.",
-          "microphonePermission": "Sundeck Pro records voice notes and the sound on inspection videos.",
+          "cameraPermission": "Sundeck Pro uses the camera for photos and videos of pools, equipment, and leaks, which go in the job’s report.",
+          "microphonePermission": "Sundeck Pro uses the microphone to record voice notes and the sound on job videos.",
           "photosPermission": false
         }
       ],
       [
         "expo-location",
         {
-          "locationWhenInUsePermission": "Sundeck Pro tags photos with where they were taken so reports show they were taken on site."
+          "locationWhenInUsePermission": "Sundeck Pro notes where a job’s photos, videos, voice notes, and signatures are taken, so the report shows the work was done at the pool. It checks only at those moments, never in the background."
         }
       ],
       "@sentry/react-native",

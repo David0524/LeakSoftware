@@ -28,6 +28,10 @@ targets:
     sources:
       - path: App
       - path: Assets.xcassets
+      # The app's privacy manifest (required-reason APIs and the data it collects), at the
+      # bundle's root as Apple expects.
+      - path: ../PrivacyInfo.xcprivacy
+        buildPhase: resources
     dependencies:
       - package: SundeckPackage
         product: SundeckPro
