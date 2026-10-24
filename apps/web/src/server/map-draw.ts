@@ -59,8 +59,8 @@ export async function drawMapImage(input: {
   else if (!(await take("apple_snapshot"))) note = "apple: allowance used";
   else {
     const route = await legsFor("apple");
-    const draw = async (legs: RoutePaths["legs"] | null) => {
-      const snap = appleSnapshot(pins, size, apple, theme, color, legs);
+    const draw = async (legs: RoutePaths["legs"] | null, wholeZoom = false) => {
+      const snap = appleSnapshot(pins, size, apple, theme, color, legs, wholeZoom);
       const res = await fetchImpl(snap.url).catch((e: unknown) => {
         note = `apple unreachable: ${e instanceof Error ? e.message : String(e)}`;
         return null;
@@ -88,7 +88,11 @@ export async function drawMapImage(input: {
         return null;
       }
     };
-    let res = await draw(route.legs.length ? route.legs : null);
+    const roads = route.legs.length ? route.legs : null;
+    let res = await draw(roads);
+    // Apple turned down the fractional zoom: a whole one.
+    if (res && res.status === 400 && (await take("apple_snapshot"))) res = await draw(roads, true);
+    if (res?.ok) note = "";
     // Apple refused the longer address: the straight route, as before.
     if (
       res &&
@@ -98,7 +102,7 @@ export async function drawMapImage(input: {
       (await take("apple_snapshot"))
     ) {
       console.error(`Map image: Apple ${res.status} with the road route; drawing it straight`);
-      res = await draw(null);
+      res = await draw(null, true);
       if (res?.ok) return { ok: true, res, by: "apple", complete: false };
     }
     if (res?.ok) return { ok: true, res, by: "apple", complete: route.complete };

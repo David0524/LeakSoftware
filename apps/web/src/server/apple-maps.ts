@@ -1,6 +1,7 @@
 import "server-only";
 import { createPrivateKey, sign, type KeyObject } from "node:crypto";
 import {
+  crowdedAt,
   fitLegs,
   joinLegs,
   mapView,
@@ -8,7 +9,7 @@ import {
   routeLegs,
   routeOrder,
   routeTierStyle,
-  viewSpan,
+  projectPoint,
   type AddressSuggestion,
   type LatLng,
   type MapPin,
@@ -128,6 +129,19 @@ export interface AppleSnapshot {
  * (compositePins), at the same view. Signed per Apple's documentation: ES256 over the path and
  * query (teamId and keyId included), Base64URL, added as the last parameter.
  */
+/**
+ * The view as Apple will draw it: the zoom to 2 decimals, or down to a whole number (a little
+ * wider, so everything still fits), with pins one size smaller while they'd overlap there.
+ */
+function framedFor(view: MapView, pins: Omit<MapPin, "id">[], wholeZoom: boolean): MapView {
+  const zoom = wholeZoom ? Math.floor(view.zoom) : Math.floor(view.zoom * 100) / 100;
+  const at = pins.map((p) => ({ ...projectPoint(p.at, zoom), tone: p.tone }));
+  const order: MapView["tier"][] = ["full", "medium", "small"];
+  let i = order.indexOf(view.tier);
+  while (i < order.length - 1 && crowdedAt(at, routeTierStyle(order[i]!))) i++;
+  return { ...view, zoom, tier: order[i]! };
+}
+
 export function appleSnapshot(
   pins: Omit<MapPin, "id">[],
   size: { w: number; h: number },
@@ -137,18 +151,21 @@ export function appleSnapshot(
   color?: string | null,
   /** Each leg's line, in route order (core routeLegPaths); straight lines without. */
   legs?: LatLng[][] | null,
+  /** A whole-number zoom, for when Apple turns down a fractional one. */
+  wholeZoom = false,
 ): AppleSnapshot {
   const snap = snapshotSize(size);
   const { w, h } = snap;
   const order = routeOrder(pins).map((p) => p.at);
   const route = legs ?? routeLegs(order).map((l) => [l.from, l.to]);
-  const view = mapView(pins, { w, h }, routeExtent(legs));
+  const view = framedFor(mapView(pins, { w, h }, routeExtent(legs)), pins, wholeZoom);
   const sizes = routeTierStyle(view.tier);
-  const span = viewSpan(view, { w, h });
   const q = new URLSearchParams();
-  // The middle and the span (degrees, which can't be read two ways), rather than a zoom level.
+  // The middle and the zoom we framed. Apple answered 400 to a span in degrees (`spn`) on the
+  // live site (2026-10-24), so it gets `z`: the exact zoom, or a whole one when it turns that
+  // down too.
   q.set("center", `${view.center.lat.toFixed(6)},${view.center.lng.toFixed(6)}`);
-  q.set("spn", `${span.latDelta.toFixed(6)},${span.lngDelta.toFixed(6)}`);
+  q.set("z", wholeZoom ? String(view.zoom) : view.zoom.toFixed(2));
   q.set("size", `${w}x${h}`);
   q.set("scale", String(snap.scale));
   q.set("colorScheme", theme);

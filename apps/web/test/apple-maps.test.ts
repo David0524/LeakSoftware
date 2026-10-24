@@ -163,13 +163,21 @@ describe("Apple Snapshots", () => {
     const snap = appleSnapshot(day, { w: 360, h: 180 }, keys);
     const q = new URL(snap.url).searchParams;
     // Framed by us (core mapView), never Apple's "auto", so the pins drawn on it land right.
-    expect(snap.view).toEqual(mapView(day, { w: 360, h: 180 }));
-    const span = viewSpan(snap.view, { w: 360, h: 180 });
+    const framed = mapView(day, { w: 360, h: 180 });
+    expect(snap.view.center).toEqual(framed.center);
+    expect(snap.view.zoom).toBe(Math.floor(framed.zoom * 100) / 100);
     expect(q.get("center")).toBe(
       `${snap.view.center.lat.toFixed(6)},${snap.view.center.lng.toFixed(6)}`,
     );
-    expect(q.get("spn")).toBe(`${span.latDelta.toFixed(6)},${span.lngDelta.toFixed(6)}`);
-    expect(q.get("z")).toBeNull();
+    // Apple answered 400 to `spn` on the live site; it gets the zoom.
+    expect(q.get("spn")).toBeNull();
+    expect(q.get("z")).toBe(snap.view.zoom.toFixed(2));
+    // Or a whole zoom (wider, still fitting), pins smaller only while they'd overlap there.
+    const whole = appleSnapshot(day, { w: 360, h: 180 }, keys, "light", null, null, true);
+    expect(new URL(whole.url).searchParams.get("z")).toBe(String(Math.floor(framed.zoom)));
+    expect(["full", "medium", "small"].indexOf(whole.view.tier)).toBeGreaterThanOrEqual(
+      ["full", "medium", "small"].indexOf(framed.tier),
+    );
     expect(q.get("size")).toBe("360x180");
     expect(q.get("scale")).toBe("2");
     expect(snap.size).toEqual({ w: 360, h: 180, scale: 2 });
