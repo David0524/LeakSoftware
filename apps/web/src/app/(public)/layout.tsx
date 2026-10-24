@@ -2,7 +2,7 @@ import Link from "next/link";
 import { Logo } from "@/components/logo";
 import { LightOnly } from "@/components/light-only";
 import { buttonClass, cx } from "@/components/ui";
-import { CONTACT_EMAIL } from "@/lib/site";
+import { CONTACT_EMAIL, COPYRIGHT } from "@/lib/site";
 
 export default function PublicLayout({ children }: LayoutProps<"/">) {
   return (
@@ -67,6 +67,7 @@ export default function PublicLayout({ children }: LayoutProps<"/">) {
             </a>
           ))}
         </nav>
+        <p>{COPYRIGHT}</p>
       </footer>
     </>
   );
