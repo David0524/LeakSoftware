@@ -24,7 +24,7 @@ export type VisitSendResult =
       delivered: "email" | "text" | null;
     };
 
-const short = (shop: string) => `${shop}: your pool visit report`;
+const short = (shop: string) => `${shop}: your maintenance visit report`;
 
 /**
  * Send a visit's report. `automatic` is the send that follows completing a visit: it happens
@@ -101,7 +101,7 @@ export async function sendVisitReport(
         to: email,
         cc,
         replyTo: snapshot.company.email,
-        subject: `Your pool visit report from ${shop}`,
+        subject: `Your maintenance visit report from ${shop}`,
         text: `${greeting}\n\nHere’s what we did at ${where} today: the water test, the checklist, and photos.\n${link}\n\n${shop}${snapshot.company.phone ? `\n${snapshot.company.phone}` : ""}`,
         html: `<p>${esc(greeting)}</p><p>Here’s what we did at ${esc(where)} today: the water test, the checklist, and photos.</p><p><a href="${link}">View your visit report</a></p><p>${esc(shop)}${snapshot.company.phone ? `<br>${esc(snapshot.company.phone)}` : ""}</p>`,
       });

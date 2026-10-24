@@ -96,7 +96,7 @@ export function VisitReportView({
         </div>
         <div className="flex items-center gap-4 sm:ml-auto">
           <div className="text-[0.9375rem] sm:text-right">
-            <h1 className="font-display text-xl font-bold">Pool Visit Report</h1>
+            <h1 className="font-display text-xl font-bold">Maintenance Visit Report</h1>
             <p>
               {day(when)}
               {version > 1 ? ` · version ${version}` : ""}

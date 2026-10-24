@@ -173,7 +173,7 @@ test("New Job books a maintenance visit, or starts a plan for a new customer", a
   await expect(visit.getByText(/^Visit report (texted|ready)/)).toBeVisible();
   const report = visit.getByRole("link", { name: "View Visit Report" });
   await page.goto((await report.getAttribute("href"))!);
-  await expect(page.getByRole("heading", { name: "Pool Visit Report" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Maintenance Visit Report" })).toBeVisible();
   await page.goBack();
 
   // Weekly: the plan, on the new customer's page.

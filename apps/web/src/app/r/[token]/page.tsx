@@ -33,7 +33,7 @@ const loadReport = cache(async (token: string, countView: boolean) => {
 });
 
 /** The browser tab says what the report is (owner, 2026-10-22: "Pool maintenance companies do
- * repairs too"): Repair Report, Pool Inspection Report, Pool Visit Report, Leak Detection Report.
+ * repairs too"): Repair Report, Pool Inspection Report, Maintenance Visit Report, Leak Detection Report.
  * A shared link previews the report as it was sent (server/link-preview), from a lookup that
  * counts no view. */
 export async function generateMetadata({ params }: PageProps<"/r/[token]">): Promise<Metadata> {
@@ -43,7 +43,7 @@ export async function generateMetadata({ params }: PageProps<"/r/[token]">): Pro
     !r || !r.live
       ? "Report"
       : r.template_key === "maintenance"
-        ? "Pool Visit Report"
+        ? "Maintenance Visit Report"
         : r.template_key === "partner"
           ? "Leak Detection Report (Technical)"
           : reportTitle(r.job_type);
