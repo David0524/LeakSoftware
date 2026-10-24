@@ -7,7 +7,11 @@
 //
 // Applied migrations are recorded in supabase_migrations.schema_migrations, the same table
 // the Supabase CLI uses, so `supabase db push` can take over later.
-import { readFileSync, readdirSync } from "node:fs";
+//
+// Without --ref it targets the dev project (config/supabase-dev.json), as session branches do.
+// The production project (config/supabase-prod.json, docs/release/PRODUCTION.md) takes
+// --production as well, so it's never changed by accident, and never takes --seed.
+import { existsSync, readFileSync, readdirSync } from "node:fs";
 import { join } from "node:path";
 
 const root = join(import.meta.dirname, "..");
@@ -16,6 +20,16 @@ const flag = (name) => args.includes(name);
 const refArg = args.includes("--ref") ? args[args.indexOf("--ref") + 1] : undefined;
 const ref =
   refArg ?? JSON.parse(readFileSync(join(root, "config", "supabase-dev.json"), "utf8")).projectRef;
+const prodFile = join(root, "config", "supabase-prod.json");
+const prodRef = existsSync(prodFile) ? JSON.parse(readFileSync(prodFile, "utf8")).projectRef : null;
+if (ref === prodRef && !flag("--production")) {
+  console.error(`${ref} is the production project. Add --production to deploy to it.`);
+  process.exit(2);
+}
+if (flag("--seed") && (ref === prodRef || flag("--production"))) {
+  console.error("The demo seed never goes to production.");
+  process.exit(2);
+}
 
 async function query(sql) {
   const headers = { "content-type": "application/json" };
@@ -36,13 +50,23 @@ async function query(sql) {
 
 const quote = (s) => `'${s.replaceAll("'", "''")}'`;
 
-await query(`
-  create schema if not exists supabase_migrations;
-  create table if not exists supabase_migrations.schema_migrations (
-    version text primary key, statements text[], name text);
-`);
+// A dry run changes nothing, not even the bookkeeping table on a new project.
+if (!flag("--dry-run")) {
+  await query(`
+    create schema if not exists supabase_migrations;
+    create table if not exists supabase_migrations.schema_migrations (
+      version text primary key, statements text[], name text);
+  `);
+}
+const [{ ready }] = await query(
+  "select to_regclass('supabase_migrations.schema_migrations') is not null as ready",
+);
 const applied = new Set(
-  (await query("select version from supabase_migrations.schema_migrations")).map((r) => r.version),
+  ready
+    ? (await query("select version from supabase_migrations.schema_migrations")).map(
+        (r) => r.version,
+      )
+    : [],
 );
 
 const files = readdirSync(join(root, "supabase", "migrations"))

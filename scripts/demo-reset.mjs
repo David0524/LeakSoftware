@@ -26,7 +26,7 @@
 // Every address is a realistic Phoenix street address on the city's grid, with coordinates
 // and geocoded_address stored, so nothing is looked up or shown as not on the map.
 import { spawnSync } from "node:child_process";
-import { readFileSync, writeFileSync } from "node:fs";
+import { existsSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 
 const root = join(import.meta.dirname, "..");
@@ -38,6 +38,16 @@ const local = option("--local");
 const ref =
   option("--ref") ??
   JSON.parse(readFileSync(join(root, "config", "supabase-dev.json"), "utf8")).projectRef;
+// The demo company lives on the dev project only (docs/release/PRODUCTION.md).
+const prodFile = join(root, "config", "supabase-prod.json");
+if (
+  !local &&
+  existsSync(prodFile) &&
+  JSON.parse(readFileSync(prodFile, "utf8")).projectRef === ref
+) {
+  console.error(`${ref} is the production project. The demo never goes there.`);
+  process.exit(2);
+}
 
 const DEMO = "Demo Leak Co.";
 // The demo shop is the one the demo owner signs in to: its name can change (the owner renamed

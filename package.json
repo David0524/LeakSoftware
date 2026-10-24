@@ -14,6 +14,8 @@
     "format:check": "prettier --check .",
     "tokens": "pnpm --filter @leakbook/tokens run build",
     "db:deploy": "NODE_USE_ENV_PROXY=1 node scripts/deploy-db.mjs",
+    "db:provision": "NODE_USE_ENV_PROXY=1 node scripts/provision-project.mjs",
+    "review:account": "NODE_USE_ENV_PROXY=1 node scripts/review-account.mjs",
     "demo:reset": "NODE_USE_ENV_PROXY=1 node scripts/demo-reset.mjs",
     "test:hosted": "NODE_USE_ENV_PROXY=1 pnpm --filter @leakbook/sync test:hosted",
     "test:ios": "swift test --package-path apps/ios",
