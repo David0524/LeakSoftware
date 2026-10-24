@@ -7,13 +7,15 @@ name: Logo stills
 # and composited on navy and white (post.py). Artifact `logo-stills`: <view>.png (RGBA),
 # <view>-navy.jpg, <view>-white.jpg, and icon/icon-<look>.png (the icon's glass layers, square,
 # unmasked, background left out, for the mockup page). Start it by hand: from the Actions tab
-# once this file is on the default branch, or before that by pushing a tag named
-# logo-stills-* (GitHub only dispatches workflows the default branch has), with the defaults.
+# once this file is on the default branch (GitHub only dispatches workflows the default branch
+# has), or with the defaults by pushing a commit that touches the stills and says
+# "[render stills]" in its message (any other push skips every job).
 
 on:
   push:
-    tags:
-      - logo-stills-*
+    paths:
+      - apps/video/logo3d/stills/**
+      - .github/workflows/logo-stills.yml
   workflow_dispatch:
     inputs:
       samples:
@@ -41,6 +43,7 @@ env:
 
 jobs:
   plan:
+    if: github.event_name == 'workflow_dispatch' || contains(github.event.head_commit.message, '[render stills]')
     runs-on: ubuntu-latest
     outputs:
       matrix: ${{ steps.m.outputs.matrix }}
