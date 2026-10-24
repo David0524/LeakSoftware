@@ -17,6 +17,92 @@
 
     private let launchShots = ProcessInfo.processInfo.environment["LAUNCH_VIDEO_SHOTS"] == "1"
 
+    // The App Store screenshots (docs/release/APP_STORE.md, "Screenshots") come from the same
+    // shop and the same screens: .github/workflows/app-store-screenshots.yml runs this suite with
+    // APP_STORE_SHOTS=1 and keeps app-store/*.png. The film's lv-*.png are drawn alongside.
+    private let appStoreShots = ProcessInfo.processInfo.environment["APP_STORE_SHOTS"] == "1"
+
+    /// The 6.9-inch iPhone (16 and 17 Pro Max): 440 × 956 points at 3x is 1320 × 2868 pixels, the
+    /// size App Store Connect asks for first.
+    private let storeScreen = CGSize(width: 440, height: 956)
+
+    /// One App Store screenshot: `view` laid out on the 6.9-inch iPhone's screen, with its status
+    /// bar and home indicator areas, a 9:41 status bar drawn in, saved as app-store/<name>.png at
+    /// exactly 1320 × 2868. Rendered off screen like the other shots, so it shows the flat look of
+    /// iOS 18 to 25 and no live maps. Does nothing without APP_STORE_SHOTS=1.
+    @MainActor
+    private func storeShot(_ name: String, scrolled: CGFloat? = nil, _ view: some View) async throws {
+        guard appStoreShots else { return }
+        Chrome.install()
+        let window = UIWindow(frame: CGRect(origin: .zero, size: storeScreen))
+        window.overrideUserInterfaceStyle = .light
+        let content = view.environment(\.dynamicTypeSize, .large)
+            .environment(\.drawsGlass, false)
+            .environment(\.drawsLiveMaps, false)
+            .environment(\.keepsTitleFont, true)
+        let host = UIHostingController(rootView: content)
+        // The status bar (Dynamic Island) and home indicator areas of the 6.9-inch iPhone.
+        host.additionalSafeAreaInsets = UIEdgeInsets(top: 62, left: 0, bottom: 34, right: 0)
+        window.rootViewController = host
+        window.makeKeyAndVisible()
+        for _ in 0..<15 {
+            try await Task.sleep(for: .milliseconds(100))
+            window.layoutIfNeeded()
+        }
+        if let scrolled, let scroll = pageScrollView(in: window) {
+            scroll.setContentOffset(
+                CGPoint(x: scroll.contentOffset.x, y: scroll.contentOffset.y + scrolled), animated: false)
+            for _ in 0..<6 {
+                try await Task.sleep(for: .milliseconds(100))
+                window.layoutIfNeeded()
+            }
+        }
+        let format = UIGraphicsImageRendererFormat()
+        format.scale = 3
+        // App Store Connect takes screenshots without transparency.
+        format.opaque = true
+        let image = UIGraphicsImageRenderer(size: storeScreen, format: format).image { context in
+            UIColor.white.setFill()
+            context.fill(CGRect(origin: .zero, size: storeScreen))
+            window.layer.render(in: context.cgContext)
+            drawStatusBar(width: storeScreen.width)
+        }
+        window.isHidden = true
+        let png = try #require(image.pngData())
+        let pixels = CGSize(width: image.size.width * image.scale, height: image.size.height * image.scale)
+        #expect(pixels == CGSize(width: 1320, height: 2868), "\(name) is \(pixels)")
+        #expect(!isBlank(image), "\(name) rendered blank")
+        if let folder = ProcessInfo.processInfo.environment["SCREENSHOT_DIR"], !folder.isEmpty {
+            let store = URL(fileURLWithPath: folder).appendingPathComponent("app-store")
+            try FileManager.default.createDirectory(at: store, withIntermediateDirectories: true)
+            try png.write(to: store.appendingPathComponent("\(name).png"))
+        }
+    }
+
+    /// The status bar Apple's own screenshots show: 9:41 beside the Dynamic Island, full bars,
+    /// Wi-Fi and a full battery, in black on the light screens.
+    @MainActor
+    private func drawStatusBar(width: CGFloat) {
+        let ink = UIColor.black
+        let middle: CGFloat = 32
+        let time = NSAttributedString(
+            string: "9:41",
+            attributes: [.font: UIFont.systemFont(ofSize: 17, weight: .semibold), .foregroundColor: ink])
+        let timeSize = time.size()
+        time.draw(at: CGPoint(x: 78 - timeSize.width / 2, y: middle - timeSize.height / 2))
+        let config = UIImage.SymbolConfiguration(pointSize: 15, weight: .semibold)
+        var x = width - 30
+        for symbol in ["battery.100", "wifi", "cellularbars"] {
+            guard
+                let glyph = UIImage(systemName: symbol, withConfiguration: config)?
+                    .withTintColor(ink, renderingMode: .alwaysOriginal)
+            else { continue }
+            x -= glyph.size.width
+            glyph.draw(at: CGPoint(x: x, y: middle - glyph.size.height / 2))
+            x -= 6
+        }
+    }
+
     private struct LaunchAuth: AuthBackend {
         func currentSession() async -> SignInResult? {
             SignInResult(user: SignedInUser(id: "u1", email: "dana@canyonstate.example"), needsCode: false)
@@ -391,7 +477,7 @@
         return strokes.map { flat in stride(from: 0, to: flat.count - 1, by: 2).map { SIMD2(flat[$0], flat[$0 + 1]) } }
     }
 
-    @Suite(.serialized, .enabled(if: launchShots)) @MainActor struct LaunchVideoShots {
+    @Suite(.serialized, .enabled(if: launchShots || appStoreShots)) @MainActor struct LaunchVideoShots {
         /// Today, Today with the first stop done, and Today in dark mode at 6 AM.
         @Test func today() async throws {
             let env = try launchEnvironment()
@@ -399,11 +485,14 @@
             try launchRoute(store)
             env.session.reloadCompanies()
             try await snapshot("lv-today", height: 1500, MainView().app(env))
+            try await storeShot("01-today", MainView().app(env))
             try await snapshot("lv-today-dark", dark: true, height: 1500, MainView().app(env))
             let visit = try #require(try seedCleanings(store))
             try await snapshot("lv-today-pool", height: 1500, MainView().app(env))
             try await snapshot(
                 "lv-cleanings", height: 2400, NavigationStack { JobScreen(jobId: visit, section: .checklist) }.app(env))
+            try await storeShot(
+                "03-pool-visit", NavigationStack { JobScreen(jobId: visit, section: .checklist) }.app(env))
             let today = try localDate(Date(), "America/Phoenix")
             if let first = try store.list("job").first(where: { $0["number"] == 1100 }) {
                 try store.write("job", id: first.id, companyId: "c1", ["stop_done_on": .string(today)])
@@ -426,11 +515,15 @@
             try await snapshot(
                 "lv-checklist", height: 3000,
                 NavigationStack { JobScreen(jobId: ids.job, section: .checklist) }.app(env))
+            try await storeShot(
+                "05-leak-checklist", NavigationStack { JobScreen(jobId: ids.job, section: .checklist) }.app(env))
             try await snapshot(
                 "lv-pressure-test", TestEditor(jobId: ids.job, testId: ids.test, typeId: nil, componentId: nil).app(env)
             )
             try await snapshot(
                 "lv-findings", height: 2200, NavigationStack { JobScreen(jobId: ids.job, section: .findings) }.app(env))
+            try await storeShot(
+                "06-findings", NavigationStack { JobScreen(jobId: ids.job, section: .findings) }.app(env))
             try await snapshot(
                 "lv-voice-note", height: 2000,
                 NavigationStack { ComponentScreen(jobId: ids.job, componentId: ids.light) }.app(env))
@@ -449,14 +542,19 @@
             list = wrapUp(wrapUpInput(store: store, companyId: "c1", settings: nil, job: job))
             try await snapshot(
                 "lv-signed", height: 3600, WrapUpStepSheet(job: job, step: sign, title: sign.title(list)).app(env))
+            try await storeShot("07-signature", WrapUpStepSheet(job: job, step: sign, title: sign.title(list)).app(env))
             let report = WrapUpOpen(step: .report, refId: nil)
             try await snapshot(
                 "lv-send-report", height: 3600,
                 WrapUpStepSheet(job: job, step: report, title: report.title(list)).app(env))
+            try await storeShot(
+                "08-report", WrapUpStepSheet(job: job, step: report, title: report.title(list)).app(env))
             let quoteStep = WrapUpOpen(step: .quote, refId: quote)
             try await snapshot(
                 "lv-quote", height: 3600,
                 WrapUpStepSheet(job: job, step: quoteStep, title: quoteStep.title(list)).app(env))
+            try await storeShot(
+                "09-quote", WrapUpStepSheet(job: job, step: quoteStep, title: quoteStep.title(list)).app(env))
             // In the backyard with no signal: two answers saved on the phone, waiting to sync.
             sync.networkChanged(online: false)
             let inspection = JobInspection(store, jobId: job.id)
@@ -554,16 +652,15 @@
         /// What to Add from the visit's readings, and a cash payment with its receipt by text.
         @Test func poolAndMoney() async throws {
             let env = try launchEnvironment()
-            try await snapshot(
-                "lv-what-to-add", height: 1200,
-                FormSheet(title: "What to Add", cancelTitle: "Close") {
-                    DoseList(
-                        result: calculateChemistry(
-                            ChemistryInput(
-                                gallons: 18000, readings: Readings(fc: 1.5, ph: 7.9, ta: 90, ch: 250, cya: 40),
-                                chlorine: .liquid12, acid: .muriatic31)))
-                }
-                .app(env))
+            let whatToAdd = FormSheet(title: "What to Add", cancelTitle: "Close") {
+                DoseList(
+                    result: calculateChemistry(
+                        ChemistryInput(
+                            gallons: 18000, readings: Readings(fc: 1.5, ph: 7.9, ta: 90, ch: 250, cya: 40),
+                            chlorine: .liquid12, acid: .muriatic31)))
+            }
+            try await snapshot("lv-what-to-add", height: 1200, whatToAdd.app(env))
+            try await storeShot("04-what-to-add", whatToAdd.app(env))
             let invoice = try JSONDecoder().decode(
                 InvoiceRecord.self,
                 from: Data(
@@ -582,6 +679,70 @@
                 email: "rebecca.quinn@example.com", phone: "4805550171", texting: true)
             receipt.channel = .text
             try await snapshot("lv-send-receipt", SendReceiptSheet(form: receipt) { _ in }.app(env))
+        }
+
+        /// App Store only: Schedule's day with the route in order. The day map is folded, since a
+        /// live map can't be drawn into a picture (DayMapCanvas).
+        @Test func storeSchedule() async throws {
+            guard appStoreShots else { return }
+            let env = try launchEnvironment()
+            try launchRoute(env.session.sync.store)
+            env.session.reloadCompanies()
+            let mapWasOpen = UserDefaults.standard.object(forKey: "schedule.dayMapOpen")
+            UserDefaults.standard.set(false, forKey: "schedule.dayMapOpen")
+            defer { UserDefaults.standard.set(mapWasOpen, forKey: "schedule.dayMapOpen") }
+            try await storeShot("02-schedule", NavigationStack { ScheduleScreen() }.app(env))
+        }
+
+        /// App Store only: texting Rebecca from the company number, the report and quote sent.
+        @Test func storeMessages() async throws {
+            guard appStoreShots else { return }
+            let env = try launchEnvironment()
+            let store = env.session.sync.store
+            try launchRoute(store)
+            env.session.reloadCompanies()
+            let rebecca = try #require(try store.list("customer").first { $0["name"] == "Rebecca Quinn" }?.id)
+            let ago = { (minutes: Double) in
+                isoTimestamp(milliseconds: (Date().timeIntervalSince1970 - minutes * 60) * 1000)
+            }
+            let text = { (id: String, minutes: Double, dir: String, body: String) -> PulledRow in
+                PulledRow(
+                    table: "text_message", xid: "6",
+                    row: [
+                        "id": .string(id), "company_id": "c1", "conversation_id": "cv1",
+                        "created_at": .string(ago(minutes)), "direction": .string(dir), "body": .string(body),
+                        "media": [], "status": .string(dir == "out" ? "delivered" : "received"),
+                        "sent_by": dir == "out" ? JSONValue.string("u1") : .null,
+                    ])
+            }
+            try store.applyPage(
+                PullPage(
+                    rows: [
+                        PulledRow(
+                            table: "phone_line", xid: "6",
+                            row: [
+                                "id": "pl1", "company_id": "c1", "number": "+16025550100", "status": "active",
+                                "pictures": true,
+                            ]),
+                        PulledRow(
+                            table: "conversation", xid: "6",
+                            row: [
+                                "id": "cv1", "company_id": "c1", "phone": "+14805550171",
+                                "customer_id": .string(rebecca), "last_at": .string(ago(4)),
+                                "last_preview": "That was fast. Go ahead with the repair, thank you!",
+                                "unread": false, "opted_out": false,
+                            ]),
+                        text(
+                            "st1", 130, "out",
+                            "Hi Rebecca, it’s Dana with Canyon State. I’m on my way, about 15 minutes out."),
+                        text("st2", 126, "in", "Great, the gate code is 1955."),
+                        text(
+                            "st3", 12, "out",
+                            "We found two leaks: a break in the return line under the deck, and the light niche. Your report and the repair quote are in your email."
+                        ),
+                        text("st4", 4, "in", "That was fast. Go ahead with the repair, thank you!"),
+                    ], done: true, cursor: [:], serverHLC: "1760000000006-0000-srv"))
+            try await storeShot("10-messages", NavigationStack { ConversationScreen(conversationId: "cv1") }.app(env))
         }
     }
 #endif

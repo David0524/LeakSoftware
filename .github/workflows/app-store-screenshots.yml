@@ -1,0 +1,73 @@
+name: App Store screenshots
+
+# The iPhone app's App Store screenshots (docs/release/APP_STORE.md, "Screenshots"). The
+# LaunchVideoShots suite, with APP_STORE_SHOTS=1, renders ten screens of the app with the demo
+# shop (Canyon State Leak Detections) at the 6.9-inch iPhone's size, exactly 1320 × 2868 pixels,
+# and this job checks every picture is that size before saving them as the
+# `app-store-screenshots` artifact. Only by hand: Actions › App Store screenshots › Run workflow.
+# Then:
+#   gh run download <run id> -n app-store-screenshots -D <folder>
+# and upload 01 to 10, in order, to App Store Connect › the version › iPhone 6.9" Display.
+
+on:
+  workflow_dispatch:
+
+concurrency:
+  group: app-store-screenshots-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  screens:
+    name: App Store screenshots (iPhone 6.9")
+    runs-on: macos-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+      - run: xcodebuild -version && swift --version
+      - name: Screens in the iPhone simulator
+        working-directory: apps/ios
+        run: |
+          # A Pro Max if this Xcode has one (the pictures are drawn at 1320 × 2868 either way).
+          device=$(xcrun simctl list devices available -j | python3 -c '
+          import json, sys
+          devices = json.load(sys.stdin)["devices"]
+          runtimes = sorted((k for k in devices if "iOS" in k), reverse=True)
+          phones = [d for k in runtimes for d in devices[k] if d["name"].startswith("iPhone")]
+          for name in ("iPhone 17 Pro Max", "iPhone 16 Pro Max"):
+              match = [d for d in phones if d["name"] == name]
+              if match:
+                  print(match[0]["udid"])
+                  break
+          else:
+              print(phones[0]["udid"])')
+          xcrun simctl list devices | grep "$device"
+          mkdir -p "$RUNNER_TEMP/shots"
+          TEST_RUNNER_SCREENSHOT_DIR="$RUNNER_TEMP/shots" TEST_RUNNER_APP_STORE_SHOTS=1 \
+            xcodebuild test -scheme SundeckPro-Package -destination "id=$device" \
+            -only-testing:SundeckAppScreenshots/LaunchVideoShots \
+            -skipPackagePluginValidation CODE_SIGNING_ALLOWED=NO
+      - name: Check the sizes
+        run: |
+          cd "$RUNNER_TEMP/shots/app-store"
+          ls -1 *.png
+          test "$(ls -1 *.png | wc -l)" -eq 10 || { echo "Expected 10 screenshots"; exit 1; }
+          for f in *.png; do
+            w=$(sips -g pixelWidth "$f" | awk '/pixelWidth/ {print $2}')
+            h=$(sips -g pixelHeight "$f" | awk '/pixelHeight/ {print $2}')
+            alpha=$(sips -g hasAlpha "$f" | awk '/hasAlpha/ {print $2}')
+            echo "$f ${w}x${h} alpha=$alpha"
+            test "$w" = 1320 && test "$h" = 2868 || { echo "$f is ${w}x${h}, not 1320x2868"; exit 1; }
+            test "$alpha" = no || { echo "$f has transparency"; exit 1; }
+          done
+      - uses: actions/upload-artifact@v4
+        with:
+          name: app-store-screenshots
+          path: ${{ runner.temp }}/shots/app-store
+          retention-days: 30
+      - uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: app-store-screenshots-crash-reports
+          path: ~/Library/Logs/DiagnosticReports/xctest*
+          if-no-files-found: ignore
+          retention-days: 14
