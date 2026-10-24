@@ -33,6 +33,9 @@ on:
       icon_samples:
         description: Cycles samples for the icon layers
         default: "384"
+      icons:
+        description: Icon layers, icon-<each> (look[-drop], drop frost or pearl; empty for none)
+        default: default dark clear
 
 concurrency:
   group: logo-stills-${{ github.ref }}
@@ -47,18 +50,28 @@ jobs:
     runs-on: ubuntu-latest
     outputs:
       matrix: ${{ steps.m.outputs.matrix }}
+      views: ${{ steps.m.outputs.views }}
     steps:
+      # A push whose message also says "[white icons]" renders only the white-drop icon layers
+      # (frost and pearl, each default, dark and clear), not the stills.
       - id: m
         env:
-          VIEWS: ${{ inputs.views || 'face three-quarter below hero' }}
+          VIEWS: ${{ github.event_name == 'workflow_dispatch' && inputs.views || 'face three-quarter below hero' }}
+          ICONS: ${{ github.event_name == 'workflow_dispatch' && inputs.icons || 'default dark clear' }}
           STRIPS: ${{ inputs.strips || '6' }}
+          MSG: ${{ github.event.head_commit.message }}
         run: |
           python3 - <<'PY' >> "$GITHUB_OUTPUT"
           import json, os
+          views, icons = os.environ["VIEWS"].split(), os.environ["ICONS"].split()
+          if "[white icons]" in os.environ.get("MSG", ""):
+              views = []
+              icons = [f"{k}-{d}" for d in ("frost", "pearl") for k in ("default", "dark", "clear")]
           n = int(os.environ["STRIPS"])
-          jobs = [{"view": v, "strip": f"{i}/{n}"} for v in os.environ["VIEWS"].split() for i in range(n)]
-          jobs += [{"view": f"icon-{k}", "strip": ""} for k in ("default", "dark", "clear")]
+          jobs = [{"view": v, "strip": f"{i}/{n}"} for v in views for i in range(n)]
+          jobs += [{"view": f"icon-{k}", "strip": ""} for k in icons]
           print("matrix=" + json.dumps({"include": jobs}))
+          print("views=" + " ".join(views))
           PY
 
   render:
@@ -109,7 +122,7 @@ jobs:
 
   finish:
     name: Join, bloom and composite
-    needs: render
+    needs: [plan, render]
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -121,11 +134,12 @@ jobs:
       - run: pip install --quiet numpy pillow
       - name: Finish
         env:
-          VIEWS: ${{ inputs.views || 'face three-quarter below hero' }}
+          VIEWS: ${{ needs.plan.outputs.views }}
         run: |
           ls parts
-          python3 apps/video/logo3d/stills/post.py parts out $VIEWS
-          mkdir -p out/icon && cp parts/icon-*.png out/icon/
+          mkdir -p out/icon
+          if [ -n "$VIEWS" ]; then python3 apps/video/logo3d/stills/post.py parts out $VIEWS; fi
+          cp parts/icon-*.png out/icon/ 2>/dev/null || true
           ls -la out out/icon
       - uses: actions/upload-artifact@v4
         with:

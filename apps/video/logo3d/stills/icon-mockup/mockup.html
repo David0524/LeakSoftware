@@ -3,7 +3,8 @@
   Sundeck Pro iOS 26 icon mockup (a look, nothing ships). Query string:
     look=default|dark|clear   the Home Screen appearance
     mode=home|large           a phone Home Screen at real size, or the icon alone at 1024 px
-    layers=DIR                where icon-<look>.png (stills.py's glass layers) are
+    layers=DIR                where icon-<look>[-<drop>].png (stills.py's glass layers) are
+    drop=frost|pearl          the white drop variants (owner, 2026-10-24); omitted, the clear one
   Neighbouring apps are plain placeholder squares in neutral colours; no Apple icons or marks.
   shoot.mjs screenshots it with Playwright.
 -->
@@ -267,6 +268,7 @@
       const look = q.get("look") || "default";
       const mode = q.get("mode") || "home";
       const layers = q.get("layers") || "layers";
+      const drop = q.get("drop"); // frost or pearl (a white drop); none: the clear glass drop
       document.body.classList.add(look, mode);
 
       // The continuous-corner (superellipse) mask, as the system rounds an app icon.
@@ -286,7 +288,7 @@
       document.documentElement.style.setProperty("--squircle", squircle());
 
       const ours = () =>
-        `<div class="app ours"><div class="bg"></div><img src="${layers}/icon-${look}.png" alt=""><div class="rim"></div></div>`;
+        `<div class="app ours"><div class="bg"></div><img src="${layers}/icon-${look}${drop ? "-" + drop : ""}.png" alt=""><div class="rim"></div></div>`;
       const ph = (c, r) =>
         `<div class="app ph" style="--c:${c};--r:${r}"><div class="bg"></div><div class="shape"></div><div class="rim"></div></div>`;
 

@@ -10,8 +10,9 @@ bob are taken out, the film made transparent and each view framed.
 
     blender -b -P apps/video/logo3d/stills/stills.py -- --view V --out DIR [options]
 
-      --view V        face, three-quarter, below or hero (the stills), or icon-default,
-                      icon-dark, icon-clear (the icon's glass layers, face-on, orthographic)
+      --view V        face, three-quarter, below or hero (the stills), or icon-<look>[-<drop>]
+                      (the icon's glass layers, face-on, orthographic): look default, dark
+                      or clear; drop omitted (clear glass), frost or pearl (white)
       --size N        long side in pixels (default 4096; the stills are 4:5 portrait,
                       the icon square)
       --samples N     Cycles samples (default 512, adaptive, denoised)
@@ -76,6 +77,7 @@ sys.argv = saved_argv
 scene = bpy.context.scene
 pin, drop, dot, wave_layers = ns["pin"], ns["drop"], ns["dot"], ns["wave_layers"]
 PIN_Z = ns["PIN_Z"]
+set_input = ns["set_input"]
 
 # No sea, no camera move, no bob: a still object in a dark studio.
 for name in ("Sea", "Camera", "Target"):
@@ -255,8 +257,63 @@ def icon_plate(top, bottom, lift):
     plate.visible_diffuse = False
 
 
+def clear_drop(look):
+    """The first mockup's drop: clear Liquid Glass, a little frosted (a tenth of it a white
+    diffuse the lights shade from the top), so it reads as a lighter layer over the background."""
+    nt = bpy.data.materials["Drop"].node_tree
+    outn = next(n for n in nt.nodes if n.type == "OUTPUT_MATERIAL")
+    bsdf = nt.nodes["Principled BSDF"]
+    frost = nt.nodes.new("ShaderNodeBsdfDiffuse")
+    frost.inputs["Color"].default_value = {
+        "default": (0.55, 0.78, 1.0, 1), "dark": (0.6, 0.7, 0.85, 1), "clear": (0.9, 0.94, 1.0, 1)}[look]
+    mixs = nt.nodes.new("ShaderNodeMixShader")
+    mixs.inputs["Fac"].default_value = {"default": 0.06, "dark": 0.05, "clear": 0.16}[look]
+    nt.links.new(bsdf.outputs[0], mixs.inputs[1])
+    nt.links.new(frost.outputs[0], mixs.inputs[2])
+    nt.links.new(mixs.outputs[0], outn.inputs["Surface"])
+
+
+def white_drop(kind, look):
+    """A white drop, keeping the glass's depth, edge highlights and shadow.
+    frost: frosted white glass, translucent, the background faintly through it (part white
+    base, part rough transmission; in Clear the transmission stays smooth enough for Cycles to
+    pass the wallpaper through, so the frost is see-through there as on a real Home Screen).
+    pearl: nearly solid white, a pearly, lightly frosted surface: mostly white base under a
+    clear coat, with a faint thin-film sheen."""
+    m = bpy.data.materials["Drop"]
+    nt = m.node_tree
+    b = nt.nodes["Principled BSDF"]
+    b.inputs["Base Color"].default_value = (0.94, 0.955, 0.975, 1)
+    # (In Clear the frost's transmission stays under Cycles' transparent-glass roughness
+    # threshold, 0.1, everywhere, or the polish marks would flip patches opaque.)
+    rough = {"frost": 0.03 if look == "clear" else 0.3, "pearl": 0.22}[kind]
+    trans = {"frost": 0.72 if look == "clear" else 0.5, "pearl": 0.12}[kind]
+    set_input(b, ["Transmission Weight", "Transmission"], trans)
+    set_input(b, ["Coat Weight", "Clearcoat"], 1.0)
+    set_input(b, ["Thin Film Thickness"], {"frost": 0.0, "pearl": 260.0}[kind])
+    set_input(b, ["Thin Film IOR"], 1.45)
+    set_input(b, ["Dispersion"], 0.0)
+    if "Subsurface Weight" in b.inputs and kind == "pearl":
+        b.inputs["Subsurface Weight"].default_value = 0.35
+        b.inputs["Subsurface Radius"].default_value = (0.3, 0.32, 0.38)
+        b.inputs["Subsurface Scale"].default_value = 0.05
+    # micro_surface (scene.py) drives the roughness through a Map Range: move its range.
+    rng = next(n for n in nt.nodes if n.type == "MAP_RANGE")
+    rng.inputs["To Min"].default_value = rough
+    rng.inputs["To Max"].default_value = rough + (0.03 if rough < 0.1 else 0.05)
+    if "Coat Roughness" in b.inputs:
+        for lk in list(b.inputs["Coat Roughness"].links):
+            nt.links.remove(lk)
+        b.inputs["Coat Roughness"].default_value = 0.03
+
+
 if ICON:
-    look = VIEW.split("-", 1)[1]
+    # icon-<look>[-<drop>]: look default, dark or clear; drop glass (clear Liquid Glass, the
+    # first mockup), frost or pearl (white, owner 2026-10-24: "the droplet should be white.
+    # Frosted maybe but white").
+    parts = VIEW.split("-")
+    look = parts[1]
+    white = parts[2] if len(parts) > 2 else None
     pin.rotation_euler = (math.radians(90), 0, 0)
     # Flatter: a raised glass layer on the icon, not a gem.
     pin.scale = (1.0, 1.0, 0.38)
@@ -284,25 +341,26 @@ if ICON:
         db.inputs["Emission Color"].default_value = (0.5, 0.5, 0.5, 1)
         bpy.data.lights["Dot glow"].color = (1.0, 1.0, 1.0)
         bpy.data.lights["Dot glow"].energy = 6
+        if white == "pearl":
+            # White on a white drop would vanish: in Clear the waves and dot become a cool
+            # grey (still colourless), so the mark reads as one tone set on the white.
+            for layer in wave_layers:
+                wb = layer.data.materials[0].node_tree.nodes["Principled BSDF"]
+                wb.inputs["Base Color"].default_value = (0.32, 0.37, 0.45, 1)
+                wb.inputs["Emission Color"].default_value = (0.05, 0.06, 0.08, 1)
+                set_input(wb, ["Transmission Weight", "Transmission"], 0.0)
+            db.inputs["Base Color"].default_value = (0.32, 0.37, 0.45, 1)
+            db.inputs["Emission Color"].default_value = (0.0, 0.0, 0.0, 1)
+            bpy.data.lights["Dot glow"].energy = 0
     else:
         # Default and dark keep the colours; the dot's glow is kept faint, since the HIG asks
         # for no baked glows (the system lights the layers itself).
         bpy.data.lights["Dot glow"].energy = 18 if look == "default" else 12
         icon_plate(*ICON_BG[look], lift=1.25 if look == "default" else 1.6)
-    # The icon's glass is a layer of Liquid Glass, not a lens in the dark: a little frosted
-    # (a tenth of it a white diffuse that the lights shade from the top), so it reads as a
-    # lighter layer over the background in every look.
-    nt = bpy.data.materials["Drop"].node_tree
-    outn = next(n for n in nt.nodes if n.type == "OUTPUT_MATERIAL")
-    bsdf = nt.nodes["Principled BSDF"]
-    frost = nt.nodes.new("ShaderNodeBsdfDiffuse")
-    frost.inputs["Color"].default_value = {
-        "default": (0.55, 0.78, 1.0, 1), "dark": (0.6, 0.7, 0.85, 1), "clear": (0.9, 0.94, 1.0, 1)}[look]
-    mixs = nt.nodes.new("ShaderNodeMixShader")
-    mixs.inputs["Fac"].default_value = {"default": 0.06, "dark": 0.05, "clear": 0.16}[look]
-    nt.links.new(bsdf.outputs[0], mixs.inputs[1])
-    nt.links.new(frost.outputs[0], mixs.inputs[2])
-    nt.links.new(mixs.outputs[0], outn.inputs["Surface"])
+    if white:
+        white_drop(white, look)
+    else:
+        clear_drop(look)
     # What the glass reflects at grazing angles: the icon's own surroundings, not black.
     wbg = scene.world.node_tree.nodes["Background"]
     for lk in list(wbg.inputs["Color"].links):
@@ -321,10 +379,11 @@ if ICON:
     # would drift from the exact brand gradient drawn around it.
     scene.view_settings.view_transform = "Standard"
     scene.view_settings.look = "None"
-    scene.view_settings.exposure = -0.2
+    scene.view_settings.exposure = -0.2 if not white else 0.25
     # A soft light from above and in front.
     l = bpy.data.lights.new("Icon key", "AREA")
-    l.energy, l.size, l.color = 140, 3.0, (1, 1, 1)
+    # (Stronger on a white drop, so it reads white, not grey.)
+    l.energy, l.size, l.color = 140 if not white else 300, 3.0, (1, 1, 1)
     lo = bpy.data.objects.new("Icon key", l)
     lo.location = (0, -4.0, PIN_Z + 4.5)
     lo.rotation_euler = (Vector((0, 0, PIN_Z)) - lo.location).to_track_quat("-Z", "Y").to_euler()
