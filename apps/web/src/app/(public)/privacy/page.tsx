@@ -76,8 +76,9 @@ export default function PrivacyPage() {
           <li>
             <strong>Usage and errors:</strong> which screens each person opens and for how long
             (only while the app or website is open in front of them), the device’s platform and app
-            version, and errors they run into. Changes to records are logged with who made them and
-            when. We use this to support shops and improve Sundeck Pro.
+            version, and errors they run into. Changes to records are logged with who made them,
+            when, and from which device (an ID the app makes for itself, not the phone’s own). We
+            use this to support shops and improve Sundeck Pro.
           </li>
           <li>
             <strong>Notifications:</strong> if you turn them on, your phone’s push notification
