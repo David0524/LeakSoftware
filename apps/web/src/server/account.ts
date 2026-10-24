@@ -68,6 +68,7 @@ export async function deleteAccount(
       `Email ${SUPPORT_EMAIL} from ${user.email ?? "your account's address"} to delete your account.`,
     );
   await sendEmail({
+    companyId: null,
     from: fromAddress("Sundeck Pro"),
     to: SUPPORT_EMAIL,
     replyTo: user.email ?? null,

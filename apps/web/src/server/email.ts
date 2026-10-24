@@ -1,10 +1,16 @@
 import { mkdir, writeFile } from "node:fs/promises";
 import { join } from "node:path";
+import { heldId, reviewRecipients, reviewShops } from "./review-shop";
 
 // Email delivery (BUILD_PLAN 6.5). Resend in production; tests write messages to a folder
 // (EMAIL_OUTBOX_DIR) so the end-to-end suite can open the link a customer would get.
 
 export interface Email {
+  /**
+   * The shop it's sent for, or null for Sundeck Pro's own mail (account emails, support). The
+   * App Review shop's email is recorded as sent but not delivered (review-shop.ts).
+   */
+  companyId: string | null;
   from: string;
   to: string;
   /** The customer's other addresses (M8.5); they see each other, like a family email. */
@@ -33,6 +39,18 @@ export function emailConfigured(): boolean {
 }
 
 export async function sendEmail(email: Email, fetchImpl: typeof fetch = fetch): Promise<Sent> {
+  // The App Review shop: only sundeckpro.com recipients get it; otherwise it's recorded as
+  // sent and goes nowhere.
+  if ((await reviewShops([email.companyId])).size) {
+    const kept = reviewRecipients(email);
+    if (!kept) return { id: heldId() };
+    email = kept;
+  }
+  return deliver(email, fetchImpl);
+}
+
+/** The test outbox, or Resend. */
+async function deliver(email: Email, fetchImpl: typeof fetch): Promise<Sent> {
   const outbox = process.env.EMAIL_OUTBOX_DIR;
   if (!process.env.RESEND_API_KEY && outbox) {
     await mkdir(outbox, { recursive: true });
@@ -103,12 +121,38 @@ export async function sendEmailBatch(
   fetchImpl: typeof fetch = fetch,
   pause: (ms: number) => Promise<void> = (ms) => new Promise((r) => setTimeout(r, ms)),
 ): Promise<BatchResult[]> {
+  // The App Review shop's emails are recorded as sent and go nowhere, but to sundeckpro.com.
+  const review = await reviewShops(emails.map((e) => e.companyId));
+  if (!review.size) return deliverBatch(emails, fetchImpl, pause);
+  const results: BatchResult[] = emails.map(() => ({ id: "" }));
+  const going: { at: number; email: Email }[] = [];
+  emails.forEach((email, at) => {
+    const kept = email.companyId && review.has(email.companyId) ? reviewRecipients(email) : email;
+    if (kept) going.push({ at, email: kept });
+    else results[at] = { id: heldId() };
+  });
+  const sent = going.length
+    ? await deliverBatch(
+        going.map((g) => g.email),
+        fetchImpl,
+        pause,
+      )
+    : [];
+  going.forEach((g, i) => (results[g.at] = sent[i]!));
+  return results;
+}
+
+async function deliverBatch(
+  emails: Email[],
+  fetchImpl: typeof fetch,
+  pause: (ms: number) => Promise<void>,
+): Promise<BatchResult[]> {
   if (!process.env.RESEND_API_KEY) {
     if (!process.env.EMAIL_OUTBOX_DIR) throw new EmailNotConfigured();
     const results: BatchResult[] = [];
     for (const email of emails) {
       try {
-        results.push(await sendEmail(email, fetchImpl));
+        results.push(await deliver(email, fetchImpl));
       } catch (e) {
         results.push({ error: e instanceof Error ? e.message : String(e) });
       }

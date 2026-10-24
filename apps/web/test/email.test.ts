@@ -5,6 +5,7 @@ import { afterEach, describe, expect, it } from "vitest";
 import { EmailNotConfigured, fromAddress, sendEmail } from "../src/server/email";
 
 const email = {
+  companyId: null,
   from: fromAddress('Demo "Leak" Co.'),
   to: "sam@example.com",
   replyTo: "office@demo.test",

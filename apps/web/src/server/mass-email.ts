@@ -181,6 +181,7 @@ export async function sendMassEmailTest(
   });
   try {
     await sendEmail({
+      companyId,
       from: fromAddress(r.shop.name, "news"),
       to: me.email,
       replyTo: r.shop.email,
@@ -247,6 +248,7 @@ export async function sendMassEmail(
       unsubscribeUrl: `${origin}/unsubscribe/${p.token}`,
     });
     return {
+      companyId,
       from: fromAddress(r.shop.name, "news"),
       to: p.email,
       replyTo: r.shop.email,

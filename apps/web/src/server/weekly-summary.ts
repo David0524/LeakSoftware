@@ -89,6 +89,7 @@ export async function runWeeklySummaries(
       }
       try {
         const sent = await sendEmail({
+          companyId: shop.company_id,
           from: from(),
           to: r.email,
           replyTo: supportEmail ?? null,

@@ -51,6 +51,8 @@ export async function recordFeatureRequest(
   if (emailConfigured()) {
     try {
       await sendEmail({
+        // To Sundeck Pro itself, never a customer.
+        companyId: null,
         from: fromAddress(company.name),
         to: CONTACT_EMAIL,
         replyTo: user.email,

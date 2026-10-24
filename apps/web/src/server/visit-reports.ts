@@ -97,6 +97,7 @@ export async function sendVisitReport(
     const where = snapshot.property.address;
     try {
       const mail = await sendEmail({
+        companyId,
         from: fromAddress(shop),
         to: email,
         cc,

@@ -40,9 +40,9 @@ export interface NumberSearch extends FormState {
 }
 
 export async function findNumbers(_: NumberSearch, form: FormData): Promise<NumberSearch> {
-  await requireManager();
+  const office = await requireManager();
   const areaCode = text(form, "area_code");
-  const found = await findLineNumbers(areaCode);
+  const found = await findLineNumbers(office.company.id, areaCode);
   return { ...found, values: { area_code: areaCode } };
 }
 

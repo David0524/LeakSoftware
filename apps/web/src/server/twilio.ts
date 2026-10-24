@@ -37,15 +37,21 @@ export interface SentText {
   status: "queued" | "sent" | "failed";
 }
 
-/** Send a text (and pictures, as MMS) from the shop's number. */
-export async function sendText(input: {
-  from: string;
-  to: string;
-  body: string;
-  mediaUrls?: string[];
-  statusCallback?: string;
-}): Promise<SentText> {
-  if (!twilioConfigured()) return { sid: `demo-${randomUUID()}`, status: "sent" };
+/**
+ * Send a text (and pictures, as MMS) from the shop's number. `hold`: the App Review shop
+ * (review-shop.ts): recorded as sent like demo mode, never handed to Twilio.
+ */
+export async function sendText(
+  input: {
+    from: string;
+    to: string;
+    body: string;
+    mediaUrls?: string[];
+    statusCallback?: string;
+  },
+  { hold = false }: { hold?: boolean } = {},
+): Promise<SentText> {
+  if (hold || !twilioConfigured()) return { sid: `demo-${randomUUID()}`, status: "sent" };
   const form = new URLSearchParams({ To: input.to, Body: input.body });
   // With a registered campaign (A2P 10DLC), texts go through its Messaging Service.
   if (process.env.TWILIO_MESSAGING_SERVICE_SID) {

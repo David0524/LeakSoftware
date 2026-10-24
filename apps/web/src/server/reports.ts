@@ -365,6 +365,7 @@ export async function sendReport(
     : `Your ${what} for ${snapshot.property.address} is ready.`;
   try {
     const sent = await sendEmail({
+      companyId: report.company_id as string,
       from: fromAddress(shop),
       to: to!,
       cc,

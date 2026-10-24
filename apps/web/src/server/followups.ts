@@ -50,6 +50,7 @@ export async function runFollowups(
     const email = followupEmail(f, origin);
     try {
       const sent = await sendEmail({
+        companyId: f.company_id,
         from: fromAddress(f.company.name),
         to,
         cc,

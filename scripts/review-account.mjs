@@ -31,8 +31,12 @@
 //
 // Nothing it makes reaches a real person: customers have example.com addresses and 555-01xx
 // numbers (reserved for fiction), every customer is opted out of reminder and review emails,
-// the shop's quote and invoice reminders are off, visit reports go only when sent by hand, and
-// the shop has no texting number. What a reviewer can still do by hand is in PRODUCTION.md.
+// the shop's quote and invoice reminders are off, and visit reports go only when sent by hand.
+// And it's the App Review shop (company.review_shop, migration 20261022002800): whatever a
+// reviewer does by hand, the server records the shop's texts and emails as sent without
+// handing them to Twilio or Resend (email to sundeckpro.com still goes, for testing), and
+// refuses phone number purchases and calls. Its texting number is made up ((602) 555-0100, the
+// shop's own), so Messages works as in any shop; nobody can text or call it.
 import { randomInt } from "node:crypto";
 import { readFileSync, existsSync } from "node:fs";
 import { join } from "node:path";
@@ -50,6 +54,8 @@ export const SHOP = {
   name: "Palo Verde Pool Service (App Review)",
   timezone: "America/Phoenix",
   phone: "(602) 555-0100",
+  /** The made-up texting number (the shop's own phone, reserved for fiction). */
+  texting: "+16025550100",
   email: "appreview@sundeckpro.com",
   street: "2602 N 16th St",
   city: "Phoenix",
@@ -339,11 +345,21 @@ begin
       geocoded_address = (data -> 'shop' ->> 'street') || ', ' || (data -> 'shop' ->> 'city') || ', '
         || (data -> 'shop' ->> 'state') || ' ' || (data -> 'shop' ->> 'zip'),
       review_url = null,
+      -- The App Review shop: nothing it sends reaches a real person (server-enforced).
+      review_shop = true,
       -- Nothing goes out by itself: no quote or invoice reminders, no review requests, visit
       -- reports only when sent by hand.
       settings = settings || '{"reminders": {"quote_days": [], "invoice_days": []},
                                "review_requests": false, "visit_reports": "manual"}'::jsonb
   where id = co;
+
+  -- A made-up texting number, so Messages works as in any shop. Never bought: with
+  -- review_shop on, the server refuses numbers and records texts without sending them.
+  if not exists (select 1 from public.phone_line
+                 where company_id = co and status <> 'released' and deleted_at is null) then
+    insert into public.phone_line (company_id, number, source, status, provider_sid)
+    values (co, data -> 'shop' ->> 'texting', 'new', 'active', 'review-shop');
+  end if;
 
   -- Billing, through the Admin portal's own functions: Extend Trial (also marks setup
   -- finished), then Make Demo (no card, no charge, no trial end).
@@ -648,7 +664,10 @@ async function main() {
     "  Billing: admin_extend_trial(30) (setup finished), then admin_set_demo: demo plan, no card, never locked",
   );
   console.log(
-    "  Sends nothing by itself: reminders off, review requests off, visit reports by hand, no texting number",
+    "  Sends nothing by itself: reminders off, review requests off, visit reports by hand",
+  );
+  console.log(
+    `  App Review shop (review_shop): texts and emails recorded, not sent (but to sundeckpro.com); no number purchases or calls; made-up texting number ${SHOP.texting}`,
   );
   console.log(
     `\nMake: ${data.customers.length} customers with one pool each (example.com emails, (602) 555-01xx phones, opted out of reminder emails)`,
@@ -684,7 +703,7 @@ async function main() {
   await query(`begin;\n${reviewSql(data, { ownerHash, techHash })}\ncommit;`);
 
   const [after] = await query(`
-    select c.id, c.name, s.plan, s.status, s.card_required, s.onboarded_at is not null as onboarded,
+    select c.id, c.name, c.review_shop, s.plan, s.status, s.card_required, s.onboarded_at is not null as onboarded,
       app.company_locked(c.id) as locked,
       (select count(*) from public.customer where company_id = c.id and deleted_at is null)::int as customers,
       (select count(*) from public.service_plan where company_id = c.id and deleted_at is null)::int as plans,
@@ -719,10 +738,15 @@ async function main() {
   console.log(
     `  ${after.sent_reports} sent reports, ${after.sent_quotes} sent quotes, ${after.sent_invoices} sent invoices, ${after.phone_lines} texting numbers`,
   );
+  console.log(`  App Review shop (nothing reaches a real person): ${after.review_shop}`);
   if (after.locked || held || after.plan !== "demo") {
     console.error(
       "\nThe shop would hit the card gate or the lock. Look into it before submitting.",
     );
+    process.exitCode = 1;
+  }
+  if (!after.review_shop) {
+    console.error("\nThe App Review switch is off: the shop could text and email real people.");
     process.exitCode = 1;
   }
   console.log("\nSign-ins for App Store Connect › App Review Information (shown once; not saved):");

@@ -117,6 +117,7 @@ export async function sendInvoice(
     d.balance_cents > 0 ? `Amount due: ${formatCents(d.balance_cents)}.` : "Nothing is due.";
   try {
     const email = await sendEmail({
+      companyId: inv?.company_id as string,
       from: fromAddress(shop),
       to: to!,
       cc,
@@ -167,9 +168,13 @@ export async function sendReceipt(
     const cc = ccFor(d, to);
     const shop = d.company.name;
     const link = `${origin}/i/${d.token}`;
+    // The shop, so the App Review shop's receipts are held (review-shop.ts).
+    const { data: job } = await db.from("job").select("company_id").eq("id", d.job_id).single();
+    if (!job) return false;
     const greeting = d.customer?.name ? `Hi ${d.customer.name},` : "Hello,";
     const what = `We received your payment. Invoice${d.number ? ` #${d.number}` : ""} for ${formatCents(d.total_cents)} is paid in full.`;
     const email = await sendEmail({
+      companyId: job.company_id as string,
       from: fromAddress(shop),
       to,
       cc,
@@ -189,18 +194,15 @@ export async function sendReceipt(
     });
     if (error) {
       // The webhook runs as the server, not a member: write the log row directly.
-      const { data: job } = await db.from("job").select("company_id").eq("id", d.job_id).single();
-      if (job) {
-        await db.from("message").insert({
-          company_id: job.company_id,
-          job_id: d.job_id,
-          channel: "email",
-          recipient,
-          template: "receipt",
-          status: "sent",
-          provider_id: email.id,
-        });
-      }
+      await db.from("message").insert({
+        company_id: job.company_id,
+        job_id: d.job_id,
+        channel: "email",
+        recipient,
+        template: "receipt",
+        status: "sent",
+        provider_id: email.id,
+      });
     }
     return true;
   } catch {
@@ -298,6 +300,7 @@ export async function sendPaymentReceipt(
   const sentTo = [to, ...cc].join(", ");
   try {
     const email = await sendEmail({
+      companyId,
       from: fromAddress(shop),
       to,
       cc,

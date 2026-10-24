@@ -48,7 +48,7 @@ export async function confirmationRequired(fetchImpl: typeof fetch = fetch): Pro
 }
 
 async function send(to: string, message: AccountEmail) {
-  await sendEmail({ from: from(), to, replyTo: SUPPORT_EMAIL, ...message });
+  await sendEmail({ companyId: null, from: from(), to, replyTo: SUPPORT_EMAIL, ...message });
 }
 
 export const ACCOUNT_EXISTS = "An account with this email already exists. Sign in instead.";

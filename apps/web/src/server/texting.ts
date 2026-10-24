@@ -11,6 +11,7 @@ import {
 } from "@leakbook/core";
 import { adminClient } from "./admin";
 import { notifyText } from "./notify-events";
+import { REVIEW_CALLS_MESSAGE, isReviewShop } from "./review-shop";
 import { LIMIT_MESSAGE, READ_ONLY_MESSAGE, shopWritable, takeAllowance } from "./usage";
 import { fetchTwilioFile, sendText, startBridgeCall, twilioConfigured, twiml, xml } from "./twilio";
 
@@ -233,13 +234,18 @@ export async function sendCompanyText(user: Db, userId: string, input: SendInput
   let errorText: string | null = null;
   let providerSid: string | null = null;
   try {
-    const sent = await sendText({
-      from: line.number,
-      to: phone,
-      body,
-      mediaUrls,
-      statusCallback: `${origin}/api/twilio/status`,
-    });
+    // The App Review shop's texts are recorded as sent and never reach Twilio.
+    const hold = await isReviewShop(companyId, db);
+    const sent = await sendText(
+      {
+        from: line.number,
+        to: phone,
+        body,
+        mediaUrls,
+        statusCallback: `${origin}/api/twilio/status`,
+      },
+      { hold },
+    );
     status = sent.status;
     providerSid = sent.sid;
   } catch (e) {
@@ -504,6 +510,9 @@ export async function startCall(user: Db, userId: string, conversationId: string
   if (!(await shopWritable(user, conv.company_id as string)))
     throw new TextingError(READ_ONLY_MESSAGE);
   const db = admin();
+  // A call rings a real phone (the caller's own first): never from the App Review shop.
+  if (await isReviewShop(conv.company_id as string, db))
+    throw new TextingError(REVIEW_CALLS_MESSAGE);
   const line = await activeLine(db, conv.company_id as string);
   if (line?.status !== "active")
     throw new TextingError("Set up a company number first (Settings › Phone and Texting).");

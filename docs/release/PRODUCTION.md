@@ -210,26 +210,31 @@ route and jobs are current.
   card, never ends and never locks, like the demo shop. A trial alone would lock the shop 30 days
   later, possibly mid-review.
 - **Sends nothing by itself:** customers are opted out of reminder and review emails, quote and
-  invoice reminders are off, visit reports go only when sent by hand, and the shop has no
-  texting number.
+  invoice reminders are off, and visit reports go only when sent by hand.
+- **The App Review shop switch** (`company.review_shop`, migration
+  `20261022002800_review_shop.sql`; set only by the service role, so by this script, never by a
+  member): whatever a reviewer does by hand, nothing reaches a real person, and the flows look
+  normal (`apps/web/src/server/review-shop.ts`):
+  - Texts are recorded as sent and never handed to Twilio, as on a server without Twilio keys.
+    The shop gets a made-up texting number, `(602) 555-0100` (its own phone, reserved for
+    fiction), so Messages works as in any shop; nobody can text or call it.
+  - Emails (reports, quotes, invoices, receipts, reminders, Email Customers, the weekly summary)
+    are recorded as sent and never handed to Resend, except to addresses at `sundeckpro.com`,
+    which still get them, for testing.
+  - Phone numbers can't be searched for, bought or set up: "Phone numbers can’t be added to the
+    App Review shop." Calls aren't placed (a call rings the caller's own phone first): "Calls
+    can’t be placed from the App Review shop." Every platform shows the server's words.
+  - Invites aren't emailed by Sundeck Pro (the owner copies the link), so there's nothing to
+    hold there. Sign-in, password reset and confirmation emails go to the person's own address,
+    as for everyone.
 - It refuses `--apply` on the dev project without `--allow-dev`. Putting it on dev (for a
   TestFlight review of a dev build) is the owner's call.
 - Make `appreview@sundeckpro.com` a Google Workspace alias or group of yours, so a password
   reset a reviewer asks for reaches you.
 
-**What a reviewer can still do by hand, on a server with Twilio and Resend keys** (owner's
-decision):
-
-- **Buy a real texting number and text or call any US number.** The owner login can open
-  Settings › Phone and Texting (website, iPhone or Android), pick a number, and Sundeck Pro buys
-  it on its Twilio account (about $1.15 a month), then text any number typed in, or ring the
-  reviewer's own phone for a call. Options: give reviewers the tech login only (techs can't
-  set up the number), or have Claude add a "review shop" switch so the server treats that shop
-  like demo mode (texts saved, not sent; made-up numbers).
-- **Email a report, quote or invoice to any address typed in.** To the sample customers it
-  goes to example.com, which accepts no mail, so Resend records a bounce; a handful won't hurt
-  the sending reputation, many would. The same switch could keep the review shop's email in the
-  outbox.
+Without the switch, the owner login could buy a real Twilio number, text or call any US
+number, and email reports, quotes and invoices to any address (owner's decision, 2026-10-24:
+build the switch).
 
 **App Store Connect › App Review Information:** sign-in required, the owner login and its
 password, and notes like: "Sign in with the account above (a shop owner in our sample shop).
@@ -273,8 +278,8 @@ our website; the app has no purchases."
    you want to keep testing against dev, give dev its own address (for example
    `dev.sundeckpro.com` on a Vercel branch with the Preview variables); Claude then points dev's
    site URL and the dev builds' web address there.
-5. The App Review shop's texting and email (section 9): tech login only, or a review-shop
-   switch on the server.
+5. ~~The App Review shop's texting and email~~: decided 2026-10-24, the review-shop switch
+   (section 9).
 6. Leaked-password protection (Pro, off on dev): turning it on refuses passwords found in
    known leaks, which the apps' password checklist can't predict. Recommended to leave off until
    the apps say why.

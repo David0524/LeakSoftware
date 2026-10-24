@@ -5,6 +5,7 @@ import { join } from "node:path";
 import {
   DEMO_OWNER,
   OWNER,
+  SHOP,
   TECH,
   buildReviewShop,
   makePassword,
@@ -67,6 +68,11 @@ assert.ok(!/Demo Leak Co\./.test(sql));
 assert.ok(!/00000000-0000-4000-8000-/.test(sql), "no seeded demo ids");
 assert.ok(sql.includes(OWNER.email) && sql.includes(TECH.email));
 assert.ok(sql.includes("admin_set_demo") && sql.includes("admin_extend_trial"));
+// It's the App Review shop: the server sends nothing of its to real people. Its texting number
+// is made up (reserved for fiction), and never bought.
+assert.ok(/review_shop = true/.test(sql));
+assert.match(SHOP.texting, /^\+1602555010\d$/);
+assert.ok(sql.includes("insert into public.phone_line"));
 assert.ok(
   !reviewSql(buildReviewShop({ withTech: false }), { ownerHash: "h", techHash: null }).includes(
     TECH.email,

@@ -46,7 +46,7 @@ export async function POST(request: Request) {
     return jsonError("Only owners and admins can change the company number.", 403);
   switch (body.action) {
     case "search": {
-      const found = await findLineNumbers(str("area_code"));
+      const found = await findLineNumbers(id, str("area_code"));
       return "error" in found ? jsonError(found.error, 400) : Response.json(found);
     }
     case "take":

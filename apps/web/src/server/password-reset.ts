@@ -37,7 +37,7 @@ export async function sendPasswordReset(rawEmail: string): Promise<ResetOutcome>
   const hashed = data?.properties?.hashed_token;
   if (error || !hashed) return "no_account";
   const message = passwordResetEmail(resetLink(await siteOrigin(), hashed));
-  await sendEmail({ from: from(), to: email, replyTo: SUPPORT_EMAIL, ...message });
+  await sendEmail({ companyId: null, from: from(), to: email, replyTo: SUPPORT_EMAIL, ...message });
   return "sent";
 }
 
@@ -49,7 +49,13 @@ export async function sendPasswordChanged(email: string): Promise<void> {
       signInUrl: `${await siteOrigin()}/sign-in`,
       supportEmail: SUPPORT_EMAIL,
     });
-    await sendEmail({ from: from(), to: email, replyTo: SUPPORT_EMAIL, ...message });
+    await sendEmail({
+      companyId: null,
+      from: from(),
+      to: email,
+      replyTo: SUPPORT_EMAIL,
+      ...message,
+    });
   } catch (error) {
     console.error("[password-reset] couldn't send the password-changed email:", error);
   }

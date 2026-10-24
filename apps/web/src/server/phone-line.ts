@@ -2,6 +2,7 @@ import "server-only";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { isManagerRole, isUsNumber, toE164, uuidv7 } from "@leakbook/core";
 import { adminClient } from "./admin";
+import { REVIEW_NUMBERS_MESSAGE, isReviewShop } from "./review-shop";
 import { TextingError, activeLine, type PhoneLine } from "./texting";
 import { TwilioError, buyNumber, searchNumbers, twilioConfigured } from "./twilio";
 import { READ_ONLY_MESSAGE, shopWritable } from "./usage";
@@ -25,8 +26,10 @@ export function phoneConfigured(): boolean {
   return twilioConfigured() && !!adminClient();
 }
 
-export async function findLineNumbers(areaCode: string) {
+export async function findLineNumbers(companyId: string, areaCode: string) {
   try {
+    // The App Review shop never gets a number (review-shop.ts): say so before a search.
+    if (await isReviewShop(companyId)) return { error: REVIEW_NUMBERS_MESSAGE };
     const numbers = await searchNumbers(areaCode);
     if (!numbers.length) return { error: "No numbers there right now. Try a nearby area code." };
     return { numbers };
@@ -45,6 +48,7 @@ async function addLine(
   if (!(await shopWritable(user, companyId))) return { error: READ_ONLY_MESSAGE };
   const db = adminClient();
   if (!db) return { error: NOT_SET_UP };
+  if (await isReviewShop(companyId, db)) return { error: REVIEW_NUMBERS_MESSAGE };
   if (await activeLine(db, companyId)) return { error: "This shop already has a number." };
   const { error } = await db.from("phone_line").insert({
     id: uuidv7(),
@@ -78,6 +82,8 @@ export async function takeLineNumber(
   if (!(await shopWritable(user, companyId))) return { error: READ_ONLY_MESSAGE };
   const db = adminClient();
   if (!db) return { error: NOT_SET_UP };
+  // Never buy a number for the App Review shop (it would be real, and paid for).
+  if (await isReviewShop(companyId, db)) return { error: REVIEW_NUMBERS_MESSAGE };
   const id = uuidv7();
   const { error: held } = await db
     .from("phone_line")

@@ -2,6 +2,9 @@
 
 Newest first. Each entry: date, decision, reason.
 
+## 2026-10-24 (owner: approved for the App Store launch: the App Review shop switch)
+- **The App Review shop can't reach real people** (`company.review_shop`, `20261022002800_review_shop.sql`). Set only by the service role (`scripts/review-account.mjs` turns it on for the shop it makes); members can't write it, directly or through sync. With it on, the website's server, which every platform sends through: records texts as sent without handing them to Twilio (the same branch as demo mode, a server without Twilio keys); records emails as sent without handing them to Resend, except to addresses at `sundeckpro.com`, for testing (reports, invoices, receipts, quote and invoice reminders, visit reports, Email Customers and its test, the weekly summary); and refuses phone number searches, purchases and set-ups ("Phone numbers can’t be added to the App Review shop.") and calls ("Calls can’t be placed from the App Review shop.": a call rings the caller's own phone first, a real person). The script gives the shop a made-up texting number, (602) 555-0100, so Messages works as in any shop. Demo mode was a server-wide fallback (no keys), not a per-shop switch, so the switch reuses its branches rather than adding a second way to fake a send. Invites were never emailed (the owner shares the link), so there was nothing to hold there.
+
 ## 2026-10-24 (owner: the company's legal details)
 - **The company is Sundeck Pro, LLC, a Nevada LLC, at 8450 W Charleston Blvd, Las Vegas, NV 89117.** The privacy policy, terms (Nevada law) and App Store copyright ("© 2026 Sundeck Pro, LLC") name it. The D-U-N-S number is requested (through Apple, sent on to Dun & Bradstreet with the documents); until it comes, the iPhone app ships under the owner's individual Apple account and moves to the LLC afterwards.
 
