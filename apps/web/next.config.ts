@@ -14,6 +14,15 @@ const pdfFiles = [
   `${packageDir("@sparticuz/chromium", 1)}/bin/**/*`,
 ];
 
+// Link-preview cards (server/link-preview.tsx) are set in the brand's faces with the mark.
+const cardFiles = [
+  "../../brand/fonts/BarlowSemiCondensed-Bold.ttf",
+  "../../brand/fonts/BarlowSemiCondensed-ExtraBold.ttf",
+  "../../brand/fonts/PublicSans-Medium.ttf",
+  "../../brand/fonts/PublicSans-SemiBold.ttf",
+  "./public/sundeck-mark.svg",
+];
+
 const nextConfig: NextConfig = {
   transpilePackages: ["@leakbook/core", "@leakbook/tokens"],
   // Headless Chromium for report PDFs stays a plain Node dependency.
@@ -26,6 +35,9 @@ const nextConfig: NextConfig = {
     "/jobs/\\[id\\]": pdfFiles,
     // Map pin images number their stops in the brand's display face.
     "/api/map/pin/\\[pin\\]": ["../../brand/fonts/BarlowSemiCondensed-Bold.ttf"],
+    "/q/\\[token\\]/card.png": cardFiles,
+    "/i/\\[token\\]/card.png": cardFiles,
+    "/r/\\[token\\]/card.png": cardFiles,
   },
   cacheComponents: true,
   partialPrefetching: true,

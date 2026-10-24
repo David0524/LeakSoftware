@@ -29,8 +29,12 @@ import {
 } from "@/components/doc-ui";
 import { PdfLink } from "@/components/pdf-link";
 import { DocSkeleton } from "@/components/page-skeleton";
+import { documentMetadata, fromPreviewFetcher } from "@/server/link-preview";
 
-export const metadata: Metadata = { title: "Invoice", robots: { index: false } };
+/** The tab says "Invoice"; a shared link previews the invoice itself (server/link-preview). */
+export async function generateMetadata({ params }: PageProps<"/i/[token]">): Promise<Metadata> {
+  return documentMetadata("invoice", (await params).token, "Invoice");
+}
 
 interface TokenInvoice {
   invoice_id: string;
@@ -99,9 +103,10 @@ async function InvoicePage({ params, searchParams }: PageProps<"/i/[token]">) {
   const { token } = await params;
   const { paid, print } = await searchParams;
   const db = publicClient();
+  // A link-preview fetcher (Messages, Mail, Slack) reading the page isn't the customer opening it.
   const { data } = await db.rpc("invoice_for_token", {
     link_token: token,
-    count_view: !paid && !print,
+    count_view: !paid && !print && !(await fromPreviewFetcher()),
   });
   const i = data as TokenInvoice | null;
   if (!i) notFound();

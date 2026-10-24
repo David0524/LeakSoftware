@@ -1,8 +1,12 @@
 import type { Metadata } from "next";
 import { LegalPage } from "@/components/legal-page";
 import { SUPPORT_EMAIL } from "@/lib/site";
+import { sharePreview } from "@/lib/share-preview";
 
-export const metadata: Metadata = { title: "Terms of Service · Sundeck Pro" };
+export const metadata: Metadata = {
+  title: "Terms of Service · Sundeck Pro",
+  ...sharePreview("Terms of Service · Sundeck Pro", "The terms for using Sundeck Pro."),
+};
 
 /** Terms of service: the App Store and Google Play listings link here. */
 export default function TermsPage() {

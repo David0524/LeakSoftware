@@ -17,11 +17,12 @@ import { getUser } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import { adminClient } from "@/server/admin";
 import { notifyReportOpened } from "@/server/notify-events";
+import { documentMetadata, fromPreviewFetcher, loadLinkPreview } from "@/server/link-preview";
 import { publicClient } from "@/server/reports";
 
 /**
- * The report for a link, once per request: the page and the browser tab's title share this one
- * lookup (React `cache`), so naming the tab after the report costs no extra database call.
+ * The report for a link, once per request. `countView` is false for a reprint and for a
+ * link-preview fetcher (Messages, Mail, Slack), so one customer visit counts one view.
  */
 const loadReport = cache(async (token: string, countView: boolean) => {
   const { data } = await publicClient().rpc("report_for_token", {
@@ -32,22 +33,21 @@ const loadReport = cache(async (token: string, countView: boolean) => {
 });
 
 /** The browser tab says what the report is (owner, 2026-10-22: "Pool maintenance companies do
- * repairs too"): Repair Report, Pool Inspection Report, Pool Visit Report, Leak Detection Report. */
-export async function generateMetadata({
-  params,
-  searchParams,
-}: PageProps<"/r/[token]">): Promise<Metadata> {
+ * repairs too"): Repair Report, Pool Inspection Report, Pool Visit Report, Leak Detection Report.
+ * A shared link previews the report as it was sent (server/link-preview), from a lookup that
+ * counts no view. */
+export async function generateMetadata({ params }: PageProps<"/r/[token]">): Promise<Metadata> {
   const { token } = await params;
-  const { print } = await searchParams;
-  const r = await loadReport(token, !print);
-  const title = !r
-    ? "Report"
-    : r.template_key === "maintenance"
-      ? "Pool Visit Report"
-      : r.template_key === "partner"
-        ? "Leak Detection Report (Technical)"
-        : reportTitle(r.snapshot.job.type);
-  return { title, robots: { index: false } };
+  const r = await loadLinkPreview(token);
+  const title =
+    !r || !r.live
+      ? "Report"
+      : r.template_key === "maintenance"
+        ? "Pool Visit Report"
+        : r.template_key === "partner"
+          ? "Leak Detection Report (Technical)"
+          : reportTitle(r.job_type);
+  return documentMetadata("report", token, title);
 }
 
 interface TokenReport {
@@ -78,12 +78,14 @@ async function Report({ params, searchParams }: PageProps<"/r/[token]">) {
   const { token } = await params;
   const { print } = await searchParams;
   const db = publicClient();
-  const r = await loadReport(token, !print);
+  const customer = !print && !(await fromPreviewFetcher());
+  const r = await loadReport(token, customer);
   if (!r) notFound();
   // The team hears the first time the customer opens it (owner, 2026-10-22), not when someone
-  // from the shop looks at the link themselves. Sent after the page, so it never slows it.
+  // from the shop looks at the link themselves, nor when Messages fetches its preview as the tech
+  // texts it. Sent after the page, so it never slows it.
   const admin = adminClient();
-  if (!print && admin && !(await fromTheShop(r.company_id)))
+  if (customer && admin && !(await fromTheShop(r.company_id)))
     after(() => notifyReportOpened(admin, token));
 
   const s = r.snapshot;

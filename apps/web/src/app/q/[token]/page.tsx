@@ -20,8 +20,12 @@ import {
   actionCardClass,
 } from "@/components/doc-ui";
 import { DocSkeleton } from "@/components/page-skeleton";
+import { documentMetadata, fromPreviewFetcher } from "@/server/link-preview";
 
-export const metadata: Metadata = { title: "Repair Quote", robots: { index: false } };
+/** The tab says "Repair Quote"; a shared link previews the quote itself (server/link-preview). */
+export async function generateMetadata({ params }: PageProps<"/q/[token]">): Promise<Metadata> {
+  return documentMetadata("quote", (await params).token, "Repair Quote");
+}
 
 interface TokenQuote {
   quote_id: string;
@@ -85,7 +89,11 @@ async function QuotePage({ params, searchParams }: PageProps<"/q/[token]">) {
   const { paid, print } = await searchParams;
   const isPrint = !!print;
   const db = publicClient();
-  const { data } = await db.rpc("quote_for_token", { link_token: token, count_view: !paid });
+  // A link-preview fetcher (Messages, Mail, Slack) reading the page isn't the customer opening it.
+  const { data } = await db.rpc("quote_for_token", {
+    link_token: token,
+    count_view: !paid && !(await fromPreviewFetcher()),
+  });
   const q = data as TokenQuote | null;
   if (!q) notFound();
   // The shop passes the card fee on: card or bank, chosen before paying (owner, 2026-10-19).

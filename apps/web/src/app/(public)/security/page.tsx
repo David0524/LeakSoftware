@@ -2,9 +2,14 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { LegalPage } from "@/components/legal-page";
 import { SUPPORT_EMAIL } from "@/lib/site";
+import { sharePreview } from "@/lib/share-preview";
 
 export const metadata: Metadata = {
   title: "Security · Sundeck Pro",
+  ...sharePreview(
+    "Security · Sundeck Pro",
+    "How Sundeck Pro protects shops’ records and their customers’ information.",
+  ),
   description: "How Sundeck Pro protects shops’ records and their customers’ information.",
 };
 

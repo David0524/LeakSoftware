@@ -2,6 +2,7 @@ import { expect, test } from "@playwright/test";
 import { adminClient, signedInClient } from "./backend";
 import { OWNER, RUN, TECH, signIn, wrapUpStep } from "./helpers";
 import { lastEmailTo } from "./outbox";
+import { expectDocumentPreview } from "./link-preview";
 import { PHONE, draftQuote, sendFromOffice, sessionEvent, webhook } from "./money";
 
 // M9 "Done when" (the handoff's definition of done, web part): a quote accepted and its
@@ -31,6 +32,8 @@ test("a repair is invoiced with its deposit credited, paid by check and card, wi
       { onConflict: "company_id" },
     );
   const quoteLink = await sendFromOffice(page, quote.number);
+  // Texted or emailed, the link previews the quote, not Sundeck Pro (owner, 2026-10-24).
+  await expectDocumentPreview(request, quoteLink, /^.+: Quote( for .+)?$/);
   const phone = await browser.newContext(PHONE);
   const customer = await phone.newPage();
   await customer.goto(quoteLink);
@@ -75,6 +78,7 @@ test("a repair is invoiced with its deposit credited, paid by check and card, wi
   await expect(panel.getByText("Invoice sent. Copy the link for the customer.")).toBeVisible();
   const link = await panel.getByLabel("Customer link").inputValue();
   const token = link.split("/").pop()!;
+  await expectDocumentPreview(request, link, /^.+: Invoice( for .+)?$/);
   const { data: job } = await tech.from("job").select("status").eq("id", repairJob).single();
   expect(job!.status).toBe("invoiced");
 

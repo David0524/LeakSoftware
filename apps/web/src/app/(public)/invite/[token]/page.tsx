@@ -5,8 +5,15 @@ import { InviteForm } from "@/components/auth-forms";
 import { Banner } from "@/components/doc-ui";
 import { getUser } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
+import { sharePreview } from "@/lib/share-preview";
 
-export const metadata: Metadata = { title: "Join Your Team · Sundeck Pro" };
+export const metadata: Metadata = {
+  title: "Join Your Team · Sundeck Pro",
+  ...sharePreview(
+    "You’re invited to join your team on Sundeck Pro",
+    "Routes, checklists, reports, quotes and payments for your pool shop, on iPhone, Android and the web.",
+  ),
+};
 
 export default function InvitePage({ params }: PageProps<"/invite/[token]">) {
   return (

@@ -7,8 +7,15 @@ import { AuthCard, FormSkeleton } from "@/components/auth-card";
 import { SignInForm } from "@/components/auth-forms";
 import { Banner } from "@/components/doc-ui";
 import { getUser } from "@/lib/auth";
+import { sharePreview } from "@/lib/share-preview";
 
-export const metadata: Metadata = { title: "Sign In · Sundeck Pro" };
+export const metadata: Metadata = {
+  title: "Sign In · Sundeck Pro",
+  ...sharePreview(
+    "Sign in to Sundeck Pro",
+    "One app for the whole pool shop: routes, checklists, reports, quotes and payments.",
+  ),
+};
 
 export default function SignInPage({ searchParams }: PageProps<"/sign-in">) {
   return (

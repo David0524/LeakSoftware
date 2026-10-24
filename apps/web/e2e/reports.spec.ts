@@ -1,6 +1,7 @@
 import { expect, test, type Page } from "@playwright/test";
 import { OWNER, RUN, openChecklist, sendUnsigned, signIn, wrapUpStep } from "./helpers";
 import { adminClient } from "./backend";
+import { expectDocumentPreview } from "./link-preview";
 import { lastEmailTo } from "./outbox";
 
 // M7 "Done when": both templates as a web page and a PDF on the sample job, and the email a
@@ -40,7 +41,7 @@ async function expectPdf(page: Page, token: string) {
   expect(body.length).toBeGreaterThan(10_000);
 }
 
-test("homeowner report: draft, edit, email, and the customer's link", async ({ page }) => {
+test("homeowner report: draft, edit, email, and the customer's link", async ({ page, request }) => {
   await openSampleJob(page);
   const panel = await writeDraft(page, "homeowner");
 
@@ -74,6 +75,8 @@ test("homeowner report: draft, edit, email, and the customer's link", async ({ p
   const link = email.text.match(/https?:\/\/\S+\/r\/([a-f0-9]+)/);
   expect(link).not.toBeNull();
   const token = link![1]!;
+  // Its link previews the report, and Messages fetching that preview isn't the customer opening it.
+  await expectDocumentPreview(request, link![0]!, /^.+: Leak Detection Report( for .+)?$/);
 
   // The customer opens the link signed out.
   const admin = adminClient();

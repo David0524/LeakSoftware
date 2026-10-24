@@ -1,8 +1,15 @@
 import type { Metadata } from "next";
 import { LegalPage } from "@/components/legal-page";
 import { SUPPORT_EMAIL } from "@/lib/site";
+import { sharePreview } from "@/lib/share-preview";
 
-export const metadata: Metadata = { title: "Privacy Policy · Sundeck Pro" };
+export const metadata: Metadata = {
+  title: "Privacy Policy · Sundeck Pro",
+  ...sharePreview(
+    "Privacy Policy · Sundeck Pro",
+    "What Sundeck Pro collects, why, and how shops and their customers stay in control.",
+  ),
+};
 
 /** Privacy policy: the App Store and Google Play listings link here. */
 export default function PrivacyPage() {

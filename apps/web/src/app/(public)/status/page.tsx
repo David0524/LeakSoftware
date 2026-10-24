@@ -3,8 +3,12 @@ import { connection } from "next/server";
 import { Suspense } from "react";
 import { SUPPORT_EMAIL } from "@/lib/site";
 import { checkHealth } from "@/server/health";
+import { sharePreview } from "@/lib/share-preview";
 
-export const metadata: Metadata = { title: "System Status · Sundeck Pro" };
+export const metadata: Metadata = {
+  title: "System Status · Sundeck Pro",
+  ...sharePreview("System Status · Sundeck Pro", "Is Sundeck Pro working right now?"),
+};
 
 /** Is Sundeck Pro working right now? (M11). The field app keeps working offline either way. */
 export default function StatusPage() {
