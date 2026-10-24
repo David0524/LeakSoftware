@@ -14,8 +14,11 @@ const C = tokens.color;
 const INK = C.role.light.text;
 const MUTED = C.role.light.textMuted;
 const QUIET = C.neutral["500"];
-/** White, so a logo saved on a white background (most JPEGs) sits on the card cleanly. */
-const PAGE = C.brand.paper;
+/** A white card framed in light pool blue (owner, 2026-10-24: "The white looks super plain";
+ * "White on blue is definitely better"). The card stays white, so a logo saved on a white
+ * background (most JPEGs) sits on it cleanly. */
+const FRAME = C.role.light.diagramWater;
+const CARD = C.brand.paper;
 const DISPLAY = "Barlow Semi Condensed";
 const BODY = "Public Sans";
 
@@ -51,9 +54,10 @@ export function LinkPreviewArt({
         display: "flex",
         flexDirection: "column",
         alignItems: "center",
-        backgroundColor: PAGE,
+        backgroundColor: FRAME,
         color: INK,
         fontFamily: BODY,
+        padding: 34,
       }}
     >
       <div
@@ -63,118 +67,130 @@ export function LinkPreviewArt({
           display: "flex",
           flexDirection: "column",
           alignItems: "center",
-          justifyContent: "center",
-          padding: "30px 80px 0",
+          borderRadius: 40,
+          backgroundColor: CARD,
         }}
       >
-        {logo && !neutral ? (
-          // eslint-disable-next-line @next/next/no-img-element -- drawn by next/og, not a page
-          <img
-            src={logo.src}
-            width={logo.width}
-            height={logo.height}
-            alt=""
-            style={{ width: logo.width, height: logo.height }}
-          />
-        ) : (
-          <div
-            style={{
-              display: "block",
-              maxWidth: 1000,
-              textAlign: "center",
-              fontFamily: DISPLAY,
-              fontWeight: 800,
-              fontSize: neutral ? 76 : longName ? 64 : 80,
-              lineHeight: 1.05,
-              lineClamp: 2,
-              color: INK,
-            }}
-          >
-            {card.shop}
-          </div>
-        )}
-
-        {neutral ? (
-          <div
-            style={{
-              display: "flex",
-              marginTop: 28,
-              fontSize: 46,
-              fontWeight: 500,
-              color: MUTED,
-              textAlign: "center",
-            }}
-          >
-            {card.headline}
-          </div>
-        ) : (
-          <div
-            style={{
-              display: "flex",
-              flexDirection: "column",
-              alignItems: "center",
-              marginTop: 30,
-              maxWidth: 1040,
-            }}
-          >
-            <div style={{ display: "flex", fontSize: 46, fontWeight: 600, color: MUTED }}>
-              {card.docType}
-            </div>
+        <div
+          style={{
+            flex: 1,
+            width: "100%",
+            display: "flex",
+            flexDirection: "column",
+            alignItems: "center",
+            justifyContent: "center",
+            padding: "30px 80px 0",
+          }}
+        >
+          {logo && !neutral ? (
+            // eslint-disable-next-line @next/next/no-img-element -- drawn by next/og, not a page
+            <img
+              src={logo.src}
+              width={logo.width}
+              height={logo.height}
+              alt=""
+              style={{ width: logo.width, height: logo.height }}
+            />
+          ) : (
             <div
               style={{
                 display: "block",
-                marginTop: card.money ? -2 : 6,
+                maxWidth: 1000,
                 textAlign: "center",
                 fontFamily: DISPLAY,
-                fontWeight: 700,
-                fontSize: card.money ? 148 : card.headline.length > 24 ? 70 : 92,
-                lineHeight: card.money ? 1.05 : 1.05,
+                fontWeight: 800,
+                fontSize: neutral ? 76 : longName ? 64 : 80,
+                lineHeight: 1.05,
                 lineClamp: 2,
                 color: INK,
-                fontVariantNumeric: "tabular-nums",
+              }}
+            >
+              {card.shop}
+            </div>
+          )}
+
+          {neutral ? (
+            <div
+              style={{
+                display: "flex",
+                marginTop: 28,
+                fontSize: 46,
+                fontWeight: 500,
+                color: MUTED,
+                textAlign: "center",
               }}
             >
               {card.headline}
             </div>
-            {card.caption ? (
+          ) : (
+            <div
+              style={{
+                display: "flex",
+                flexDirection: "column",
+                alignItems: "center",
+                marginTop: 30,
+                maxWidth: 1040,
+              }}
+            >
+              <div style={{ display: "flex", fontSize: 46, fontWeight: 600, color: MUTED }}>
+                {card.docType}
+              </div>
               <div
                 style={{
                   display: "block",
-                  marginTop: card.money ? 2 : 10,
+                  marginTop: card.money ? -2 : 6,
                   textAlign: "center",
-                  fontSize: 44,
-                  fontWeight: 500,
-                  color: MUTED,
-                  lineClamp: 1,
+                  fontFamily: DISPLAY,
+                  fontWeight: 700,
+                  fontSize: card.money ? 148 : card.headline.length > 24 ? 70 : 92,
+                  lineHeight: card.money ? 1.05 : 1.05,
+                  lineClamp: 2,
+                  color: INK,
+                  fontVariantNumeric: "tabular-nums",
                 }}
               >
-                {card.caption}
+                {card.headline}
               </div>
-            ) : null}
-          </div>
-        )}
-      </div>
+              {card.caption ? (
+                <div
+                  style={{
+                    display: "block",
+                    marginTop: card.money ? 2 : 10,
+                    textAlign: "center",
+                    fontSize: 44,
+                    fontWeight: 500,
+                    color: MUTED,
+                    lineClamp: 1,
+                  }}
+                >
+                  {card.caption}
+                </div>
+              ) : null}
+            </div>
+          )}
+        </div>
 
-      <div
-        style={{
-          width: 1040,
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-          gap: 12,
-          marginBottom: 26,
-          paddingTop: 18,
-          borderTop: `2px solid ${C.neutral["100"]}`,
-          fontSize: 30,
-          fontWeight: 500,
-          color: QUIET,
-        }}
-      >
-        {mark ? (
-          // eslint-disable-next-line @next/next/no-img-element -- drawn by next/og, not a page
-          <img src={mark} width={22} height={32} alt="" style={{ width: 22, height: 32 }} />
-        ) : null}
-        <div style={{ display: "flex" }}>{LINK_PREVIEW_TEXT.sentWith}</div>
+        <div
+          style={{
+            width: 980,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            gap: 12,
+            marginBottom: 26,
+            paddingTop: 18,
+            borderTop: `2px solid ${C.neutral["100"]}`,
+            fontSize: 30,
+            fontWeight: 500,
+            color: QUIET,
+          }}
+        >
+          {mark ? (
+            // eslint-disable-next-line @next/next/no-img-element -- drawn by next/og, not a page
+            <img src={mark} width={22} height={32} alt="" style={{ width: 22, height: 32 }} />
+          ) : null}
+          <div style={{ display: "flex" }}>{LINK_PREVIEW_TEXT.sentWith}</div>
+        </div>
       </div>
     </div>
   );

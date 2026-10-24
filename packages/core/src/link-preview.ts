@@ -225,8 +225,11 @@ export function linkPreview(row: LinkPreviewRow, now: Date = new Date()): LinkPr
  * A short fingerprint of what the card shows, for its image URL (`card.png?v=…`): the URL changes
  * whenever the card would, so the image can be kept by caches. FNV-1a, not for security.
  */
+/** Bumped when the card's look changes, so caches fetch the new picture (2: white on blue). */
+const CARD_DESIGN = 2;
+
 export function linkPreviewVersion(p: LinkPreview): string {
-  const text = JSON.stringify([p.title, p.description, p.card]);
+  const text = JSON.stringify([CARD_DESIGN, p.title, p.description, p.card]);
   let a = 0x811c9dc5;
   let b = 0x01000193;
   for (let i = 0; i < text.length; i++) {
