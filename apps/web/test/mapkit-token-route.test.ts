@@ -17,9 +17,15 @@ vi.mock("@/lib/supabase/server", () => ({
 vi.mock("@/server/bearer-member", () => ({
   memberRole: (_s: unknown, company: unknown) => member(company),
 }));
+const SHOP_CAP = "Your shop has used today’s maps and address lookups. They’re back tomorrow.";
 vi.mock("@/server/routing", () => ({
-  mapboxBudget: (_db: unknown, company: string, kind: string, n: number) =>
-    budget(company, kind, n),
+  SHOP_MAP_CAP_MESSAGE: SHOP_CAP,
+  takeMapBudget: async (_db: unknown, company: string, kind: string, n: number) => {
+    const r = await budget(company, kind, n);
+    return r === true
+      ? { ok: true }
+      : { ok: false, message: r || "This month’s maps are used up." };
+  },
 }));
 vi.mock("@/lib/origin", () => ({ siteOrigin: async () => "https://sundeckpro.test" }));
 
@@ -72,6 +78,13 @@ describe("GET /api/mapkit-token", () => {
     budget.mockResolvedValue(false);
     expect((await get()).status).toBe(429);
     expect(budget).toHaveBeenCalledWith("c1", "apple_map_view", 1);
+  });
+
+  it("says so in plain words past the shop's own share of the day (security review M1)", async () => {
+    budget.mockResolvedValue(SHOP_CAP);
+    const res = await get();
+    expect(res.status).toBe(429);
+    expect(((await res.json()) as { error: string }).error).toBe(SHOP_CAP);
   });
 
   it("signs a 30-minute token for this site, counted as one map view", async () => {

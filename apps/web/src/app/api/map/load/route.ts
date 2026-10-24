@@ -1,7 +1,7 @@
 import { createClient as cookieClient } from "@/lib/supabase/server";
 import { bearerSession, jsonError } from "@/server/bearer";
 import { memberRole } from "@/server/bearer-member";
-import { mapboxBudget } from "@/server/routing";
+import { takeMapBudget } from "@/server/routing";
 
 /**
  * POST { company_id }: may an interactive map load now (Enlarge)? Each load counts against
@@ -19,7 +19,7 @@ export async function POST(request: Request) {
   const companyId = body?.company_id;
   if (!(await memberRole({ db, userId, email: "" }, companyId)))
     return jsonError("You’re not on this shop’s team.", 403);
-  if (!(await mapboxBudget(db, companyId as string, "map_load", 1)))
-    return jsonError("This month’s maps are used up.", 429);
+  const took = await takeMapBudget(db, companyId as string, "map_load", 1);
+  if (!took.ok) return jsonError(took.message, 429);
   return new Response(null, { status: 204 });
 }

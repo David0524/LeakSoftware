@@ -8,6 +8,7 @@ import {
   type LatLng,
 } from "@leakbook/core";
 import { resolveMapProvider } from "@/lib/map-provider";
+import { adminClient } from "./admin";
 import { appleKeys, appleSuggester } from "./apple-maps";
 
 // Routing (owner request, 2026-10-13; docs/ROUTE_OPTIMIZATION_HANDOFF.md). Every call to a
@@ -275,22 +276,46 @@ function appleSuggestFor(db: SupabaseClient, companyId: string): AppleSuggest | 
   return appleSuggester(keys, fetch, () => mapboxBudget(db, companyId, "apple_service", 1));
 }
 
+/** Shown when a shop has used its own day's share of the maps (security review M1). */
+export const SHOP_MAP_CAP_MESSAGE =
+  "Your shop has used today’s maps and address lookups. They’re back tomorrow.";
+
 /**
- * Take from Mapbox's monthly free tier, shared by every shop (app.mapbox_budget): false past
- * about 90% of it, so the account is never billed. Callers fall back as they do with no key.
+ * Take from the map allowance shared by every shop (app.mapbox_budget), within the shop's own
+ * daily share of it (security review M1). Refused past about 90% of the free tier, so the
+ * account is never billed, or past the shop's share; `message` then says which, in plain words.
+ * Callers fall back as they do with no key.
+ *
+ * public.mapbox_take is for the server only (service key), so it is called with the admin
+ * client; callers check the person is on the shop's team first. `db` stands in only where the
+ * server has no service key (local tests), and the database then refuses.
  */
+export async function takeMapBudget(
+  db: SupabaseClient,
+  companyId: string,
+  api: MapBudgetKind,
+  units: number,
+): Promise<{ ok: true } | { ok: false; message: string }> {
+  const client = adminClient() ?? db;
+  const { data, error } = await client.rpc("mapbox_take", {
+    target_company: companyId,
+    api_kind: api,
+    how_many: units,
+  });
+  if (!error && data === true) return { ok: true };
+  if (error?.code === "53400") return { ok: false, message: SHOP_MAP_CAP_MESSAGE };
+  if (error) console.error(`Map allowance (${api}): ${error.message}`);
+  return { ok: false, message: "This month’s maps are used up." };
+}
+
+/** takeMapBudget, as yes or no. */
 export async function mapboxBudget(
   db: SupabaseClient,
   companyId: string,
   api: MapBudgetKind,
   units: number,
 ): Promise<boolean> {
-  const { data, error } = await db.rpc("mapbox_take", {
-    target_company: companyId,
-    api_kind: api,
-    how_many: units,
-  });
-  return !error && data === true;
+  return (await takeMapBudget(db, companyId, api, units)).ok;
 }
 
 export function routingConfigured(): boolean {

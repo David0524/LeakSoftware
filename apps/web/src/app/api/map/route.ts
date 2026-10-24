@@ -7,7 +7,7 @@ import { mapsConfigured, resolveMapProvider } from "@/lib/map-provider";
 import { appleKeys } from "@/server/apple-maps";
 import { drawMapImage } from "@/server/map-draw";
 import { legFetcher, routePaths } from "@/server/route-paths";
-import { mapboxBudget } from "@/server/routing";
+import { SHOP_MAP_CAP_MESSAGE, takeMapBudget } from "@/server/routing";
 
 /** Map images each shop may draw per day (MAP_DAILY_LIMIT, default 1500). */
 function mapLimit(): number {
@@ -60,6 +60,8 @@ export async function GET(request: Request) {
   // The tech's team color (owner, 2026-10-23); missing or unknown is water blue.
   const color = url.searchParams.get("color");
 
+  // Past the shop's own share of the maps (security review M1), it says so in plain words.
+  let shopCapped = false;
   const drawn = await drawMapImage({
     pins,
     size: { w, h },
@@ -68,12 +70,20 @@ export async function GET(request: Request) {
     apple: resolveMapProvider() === "apple" ? appleKeys() : null,
     pinBase: await siteOrigin(),
     mapboxToken: process.env.MAPBOX_TOKEN,
-    take: (kind) => mapboxBudget(db, companyId!, kind, 1),
+    take: async (kind) => {
+      const took = await takeMapBudget(db, companyId!, kind, 1);
+      if (!took.ok && took.message === SHOP_MAP_CAP_MESSAGE) shopCapped = true;
+      return took.ok;
+    },
     // The route along the roads (owner, 2026-10-23): each leg saved once per shop.
     paths: (provider, points) =>
       routePaths(db, companyId!, provider, points, legFetcher(db, companyId!, provider)),
   });
-  if (!drawn.ok) return jsonError(drawn.message, drawn.status);
+  if (!drawn.ok)
+    return jsonError(
+      drawn.status === 429 && shopCapped ? SHOP_MAP_CAP_MESSAGE : drawn.message,
+      drawn.status,
+    );
   return image(drawn.res, drawn.complete, drawn.by, drawn.note);
 }
 

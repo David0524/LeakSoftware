@@ -4,7 +4,7 @@ import { siteOrigin } from "@/lib/origin";
 import { bearerSession, jsonError } from "@/server/bearer";
 import { memberRole } from "@/server/bearer-member";
 import { appleKeys, mapkitToken } from "@/server/apple-maps";
-import { mapboxBudget } from "@/server/routing";
+import { SHOP_MAP_CAP_MESSAGE, takeMapBudget } from "@/server/routing";
 
 const NO_STORE = { "cache-control": "private, no-store" };
 
@@ -31,8 +31,12 @@ export async function GET(request: Request) {
     return refuse("You’re not on this shop’s team.", 403);
   const keys = resolveMapProvider() === "apple" ? appleKeys() : null;
   if (!keys) return refuse("Apple Maps isn’t set up.", 404);
-  if (!(await mapboxBudget(db, companyId!, "apple_map_view", 1)))
-    return refuse("Today’s maps are used up.", 429);
+  const took = await takeMapBudget(db, companyId!, "apple_map_view", 1);
+  if (!took.ok)
+    return refuse(
+      took.message === SHOP_MAP_CAP_MESSAGE ? took.message : "Today’s maps are used up.",
+      429,
+    );
   return new Response(mapkitToken(keys, await siteOrigin()), {
     headers: { "content-type": "text/plain; charset=utf-8", ...NO_STORE },
   });

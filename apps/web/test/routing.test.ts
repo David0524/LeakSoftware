@@ -8,6 +8,8 @@ import {
   geocodeAddress,
   mapbox,
   nominatim,
+  SHOP_MAP_CAP_MESSAGE,
+  takeMapBudget,
   type RoutingProvider,
 } from "../src/server/routing";
 
@@ -307,5 +309,29 @@ describe("Mapbox", () => {
       (async () => new Response("no", { status: 401 })) as unknown as typeof fetch,
     );
     await expect(m.geocode("x")).rejects.toThrow("Mapbox geocoding 401");
+  });
+});
+
+describe("takeMapBudget (security review M1)", () => {
+  const answering = (data: unknown, error: unknown) =>
+    ({ rpc: async () => ({ data, error }) }) as unknown as SupabaseClient;
+
+  it("takes when there's room", async () => {
+    expect(await takeMapBudget(answering(true, null), "c", "static_image", 1)).toEqual({
+      ok: true,
+    });
+  });
+
+  it("says plainly when the shop has used its own day", async () => {
+    const capped = answering(null, { code: "53400", message: "x" });
+    expect(await takeMapBudget(capped, "c", "static_image", 1)).toEqual({
+      ok: false,
+      message: SHOP_MAP_CAP_MESSAGE,
+    });
+  });
+
+  it("falls back past the allowance every shop shares", async () => {
+    const used = await takeMapBudget(answering(false, null), "c", "static_image", 1);
+    expect(used).toEqual({ ok: false, message: "This month’s maps are used up." });
   });
 });
