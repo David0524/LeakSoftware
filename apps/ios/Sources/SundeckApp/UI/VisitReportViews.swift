@@ -129,8 +129,9 @@
         }
     }
 
-    /// Settings › Report Templates › Visit reports (pool shops): Automatic / By Hand / Off, saved
-    /// to the shop's settings through sync, with the chosen mode's hint.
+    /// Settings › Report Templates › Visit reports (pool shops; owner, 2026-10-20 and 2026-10-24):
+    /// Each Visit (with Send Automatically) | Monthly | Off, saved to the shop's settings through
+    /// sync as one `visit_reports` value (website components/visit-report-setting.tsx).
     struct VisitReportSettingGroup: View {
         @Environment(Session.self) private var session
         @Environment(SyncService.self) private var sync
@@ -139,28 +140,79 @@
         var body: some View {
             if let company = session.company, offersPool(company.settings) {
                 let mode = visitReportMode(company.settings)
+                let timing = visitReportTiming(mode)
                 VStack(alignment: .leading, spacing: 8) {
                     SectionLabel(VisitReportText.settingsGroup)
-                    VStack(alignment: .leading, spacing: 8) {
+                    VStack(alignment: .leading, spacing: 12) {
+                        Text(VisitReportTimingText.title).textRole(.bodyMedium).foregroundStyle(Color.text)
                         Segmented(
                             selection: Binding(
-                                get: { mode },
-                                set: { next in
-                                    do {
-                                        try VisitReportSettingsWrites.setMode(
-                                            sync, companyId: company.id, settings: company.settings, next)
-                                        session.reloadCompanies()
-                                    } catch {
-                                        self.error = String(describing: error)
-                                    }
-                                }), options: visitReportModes, label: \.label, title: "Visit reports",
+                                get: { timing },
+                                set: { setMode(company, visitReportModeFor($0, automatic: mode == .auto)) }),
+                            options: visitReportTimings, label: \.label, title: VisitReportTimingText.title,
                             fillsWidth: true)
-                        Text(mode.hint).textRole(.secondary).foregroundStyle(Color.textMuted)
+                        switch timing {
+                        case .each:
+                            Toggle(
+                                isOn: Binding(get: { mode == .auto }, set: { setMode(company, $0 ? .auto : .manual) })
+                            ) {
+                                Text(VisitReportTimingText.automatic).textRole(.bodyMedium).foregroundStyle(Color.text)
+                            }
+                            .tint(Color.pass)
+                            .frame(minHeight: minTarget)
+                            Text(mode == .auto ? VisitReportTimingText.automaticOn : VisitReportTimingText.automaticOff)
+                                .textRole(.secondary)
+                                .foregroundStyle(Color.textMuted)
+                        case .monthly:
+                            VStack(alignment: .leading, spacing: 0) {
+                                monthlyRow(
+                                    "doc.text", VisitReportTimingText.monthlyWhat,
+                                    VisitReportTimingText.monthlyWhatDetail)
+                                Hairline().padding(.leading, 52)
+                                monthlyRow(
+                                    "creditcard", VisitReportTimingText.monthlyWhen,
+                                    VisitReportTimingText.monthlyWhenDetail)
+                            }
+                            .background(
+                                RoundedRectangle(cornerRadius: CGFloat(Radius.grouped), style: .continuous)
+                                    .fill(Color.well))
+                            Text(VisitReportTimingText.monthlyFooter).textRole(.secondary).foregroundStyle(
+                                Color.textMuted)
+                        case .off:
+                            Text(VisitReportTimingText.off).textRole(.secondary).foregroundStyle(Color.textMuted)
+                        }
                     }
                     .card()
                     Text(VisitReportText.settingsFooter).textRole(.footnote).foregroundStyle(Color.textMuted)
                     if let error { Notice(kind: .error, text: error) }
                 }
+            }
+        }
+
+        private func monthlyRow(_ symbol: String, _ title: String, _ detail: String) -> some View {
+            HStack(alignment: .top, spacing: 12) {
+                Image(systemName: symbol)
+                    .font(.system(size: 20))
+                    .foregroundStyle(Color.link)
+                    .frame(width: 24)
+                    .accessibilityHidden(true)
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(title).textRole(.bodyMedium).foregroundStyle(Color.text)
+                    Text(detail).textRole(.secondary).foregroundStyle(Color.textMuted)
+                }
+            }
+            .padding(.horizontal, 16)
+            .padding(.vertical, 12)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .accessibilityElement(children: .combine)
+        }
+
+        private func setMode(_ company: CompanyContext, _ next: VisitReportMode) {
+            do {
+                try VisitReportSettingsWrites.setMode(sync, companyId: company.id, settings: company.settings, next)
+                session.reloadCompanies()
+            } catch {
+                self.error = String(describing: error)
             }
         }
     }

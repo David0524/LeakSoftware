@@ -58,7 +58,7 @@ import Testing
             Dictionary(uniqueKeysWithValues: ReadingKey.allCases.map { ($0.rawValue, $0.limit) })
         }
         checkRule(module, "readingSummary") { c in readingSummary(try c.arg(0)) }
-        checkRule(module, "waterTestRows") { c in waterTestRows(try c.arg(0)) }
+        checkRule(module, "waterTestRows") { c in waterTestRows(try c.arg(0), goals: try c.arg(1)) }
     }
 
     /// pricing.ts' `invoiceList`.

@@ -196,6 +196,54 @@ public struct DoseStep: Codable, Equatable, Sendable {
     /// Why, in words: "pH 8.0 → 7.5".
     public var why: String
     public var note: String?
+    /// The chemical the step adds, as the price book knows it (`chemicalKeys`); nil for an
+    /// action (drain, hold off on chlorine). Owner, 2026-10-24: added chemicals.
+    public var chemical: String?
+    /// The amount in `unit` ("gal", "lb", "bag"), as the tech measures and the shop bills it.
+    public var quantity: Double?
+    public var unit: String?
+}
+
+/// `CHEMICAL_KEYS`: what a dose step or a price book item can be (`price_book_item.chemical`).
+public let chemicalKeys = [
+    "liquid_chlorine", "muriatic_acid", "dry_acid", "cal_hypo", "tabs", "baking_soda", "soda_ash",
+    "calcium_chloride", "stabilizer", "salt", "algaecide", "clarifier", "enzyme", "phosphate_remover",
+]
+
+extension ChlorineProduct {
+    /// Both strengths of liquid chlorine are the one chemical the shop sells.
+    var chemical: String { isLiquid ? "liquid_chlorine" : "cal_hypo" }
+}
+
+extension AcidProduct {
+    var chemical: String { isLiquid ? "muriatic_acid" : "dry_acid" }
+}
+
+private func round2(_ n: Double) -> Double { ECMA.round(n * 100) / 100 }
+
+/// Gallons as the everyday measure reads them (`gallonQuantity`): a splash or cups as their part
+/// of a gallon, then the measure's thirds and quarters, then quarters and halves.
+public func gallonQuantity(_ flOz: Double) -> Double {
+    if flOz < 6 { return max(0.01, round2(flOz / 128)) }
+    if flOz <= 24 { return round2(max(0.5, ECMA.round((flOz / 8) * 2) / 2) / 16) }
+    let gallons = flOz / 128
+    if gallons < 0.875 {
+        let part = partGallon.dropFirst().reduce(partGallon[0]) { a, b in
+            abs(b.0 - gallons) < abs(a.0 - gallons) ? b : a
+        }
+        return round2(part.0)
+    }
+    let step = gallons > 4 ? 0.5 : 0.25
+    return max(0.25, ECMA.round(gallons / step) * step)
+}
+
+/// Pounds (or bags) as the dry measure reads them (`dryQuantity`).
+public func dryQuantity(_ oz: Double, _ bag: Double? = nil) -> Double {
+    if let bag, bag != 0, !bag.isNaN { return max(0.5, ECMA.round((oz / 16 / bag) * 2) / 2) }
+    if oz < 6 { return max(0.01, round2(oz / 16)) }
+    let lb = oz / 16
+    let step = lb <= 10 ? 0.5 : lb <= 40 ? 1 : 5
+    return max(0.5, ECMA.round(lb / step) * step)
 }
 
 /// How one reading compares with its range.
@@ -357,9 +405,14 @@ public func doseSummary(_ result: ChemistryResult, _ ready: Bool) -> String {
     return rest > 0 ? "\(what) · \(rest) more" : what
 }
 
-/// The exact amount and the everyday measure, for a liquid (fl oz) or a dry product (oz).
-private func dose(_ qty: Double, _ liquid: Bool, _ bag: Double? = nil) -> (amount: String, measure: String) {
-    liquid ? (fluidAmount(qty), gallonMeasure(qty)) : (weightAmount(qty), dryMeasure(qty, bag))
+private typealias Dose = (amount: String, measure: String, chemical: String, quantity: Double, unit: String)
+
+/// The exact amount and the everyday measure, for a liquid (fl oz) or a dry product (oz), with
+/// the chemical and its quantity in the unit it's sold by.
+private func dose(_ qty: Double, _ liquid: Bool, _ chemical: String, _ bag: Double? = nil) -> Dose {
+    liquid
+        ? (fluidAmount(qty), gallonMeasure(qty), chemical, gallonQuantity(qty), "gal")
+        : (weightAmount(qty), dryMeasure(qty, bag), chemical, dryQuantity(qty, bag), bag == nil ? "lb" : "bag")
 }
 
 /// What to add, in order, and how each reading stands.
@@ -384,10 +437,12 @@ public func calculateChemistry(_ input: ChemistryInput) -> ChemistryResult {
         "\(key.label) \(fmt(from, key)) → \(fmt(to, key))"
     }
     func step(
-        _ key: ReadingKey, _ product: String, _ dose: (amount: String, measure: String)?, _ why: String,
+        _ key: ReadingKey, _ product: String, _ dose: Dose?, _ why: String,
         note: String? = nil
     ) -> DoseStep {
-        DoseStep(key: key, product: product, amount: dose?.amount, measure: dose?.measure, why: why, note: note)
+        DoseStep(
+            key: key, product: product, amount: dose?.amount, measure: dose?.measure, why: why, note: note,
+            chemical: dose?.chemical, quantity: dose?.quantity, unit: dose?.unit)
     }
     func drain(_ key: ReadingKey, _ from: Double, _ to: Double) -> DoseStep {
         let percent = min(90, (((from - to) / from) * 20).rounded(.up) * 5)
@@ -403,12 +458,15 @@ public func calculateChemistry(_ input: ChemistryInput) -> ChemistryResult {
         let d = ta.range.target - ta.value
         if d > 0 {
             steps.append(
-                step(.ta, "Baking soda", dose((d / 10) * bakingSodaTa * k, false), why(.ta, ta.value, ta.range.target)))
+                step(
+                    .ta, "Baking soda", dose((d / 10) * bakingSodaTa * k, false, "baking_soda"),
+                    why(.ta, ta.value, ta.range.target)))
         } else {
             let amt = (-d / 10) * input.acid.perTa * k
             steps.append(
                 step(
-                    .ta, input.acid.label, dose(amt, input.acid.isLiquid), why(.ta, ta.value, ta.range.target),
+                    .ta, input.acid.label, dose(amt, input.acid.isLiquid, input.acid.chemical),
+                    why(.ta, ta.value, ta.range.target),
                     note:
                         "Add in two or three doses a few hours apart, running the pump, and aerate to bring pH back up."
                 ))
@@ -423,13 +481,14 @@ public func calculateChemistry(_ input: ChemistryInput) -> ChemistryResult {
         if d > 0 {
             steps.append(
                 step(
-                    .ph, "Soda ash", dose((d / 0.2) * sodaAshPh * buffer * k, false),
+                    .ph, "Soda ash", dose((d / 0.2) * sodaAshPh * buffer * k, false, "soda_ash"),
                     why(.ph, ph.value, ph.range.target)))
         } else {
             let amt = (-d / 0.2) * input.acid.perPh * buffer * k
             steps.append(
                 step(
-                    .ph, input.acid.label, dose(amt, input.acid.isLiquid), why(.ph, ph.value, ph.range.target),
+                    .ph, input.acid.label, dose(amt, input.acid.isLiquid, input.acid.chemical),
+                    why(.ph, ph.value, ph.range.target),
                     note: "Pour into the deep end with the pump running. Add acid to water, never water to acid."))
         }
     }
@@ -439,7 +498,7 @@ public func calculateChemistry(_ input: ChemistryInput) -> ChemistryResult {
             steps.append(
                 step(
                     .ch, "Calcium chloride 77%",
-                    dose(((ch.range.target - ch.value) / 10) * calciumChlorideCh * k, false),
+                    dose(((ch.range.target - ch.value) / 10) * calciumChlorideCh * k, false, "calcium_chloride"),
                     why(.ch, ch.value, ch.range.target)))
         } else if ch.status == .high {
             steps.append(drain(.ch, ch.value, ch.range.target))
@@ -450,7 +509,8 @@ public func calculateChemistry(_ input: ChemistryInput) -> ChemistryResult {
         if cya.status == .low {
             steps.append(
                 step(
-                    .cya, "Stabilizer (cyanuric acid)", dose(((cya.range.target - cya.value) / 10) * cyaUp * k, false),
+                    .cya, "Stabilizer (cyanuric acid)",
+                    dose(((cya.range.target - cya.value) / 10) * cyaUp * k, false, "stabilizer"),
                     why(.cya, cya.value, cya.range.target),
                     note: "Dissolves slowly; put it in a sock in the skimmer basket. Retest in a week."))
         } else if cya.status == .high {
@@ -462,7 +522,7 @@ public func calculateChemistry(_ input: ChemistryInput) -> ChemistryResult {
         if salt.status == .low {
             steps.append(
                 step(
-                    .salt, "Pool salt", dose(((salt.range.target - salt.value) / 100) * saltUp * k, false, 40),
+                    .salt, "Pool salt", dose(((salt.range.target - salt.value) / 100) * saltUp * k, false, "salt", 40),
                     why(.salt, salt.value, salt.range.target),
                     note: "Brush it toward the main drain until it dissolves."))
         } else if salt.status == .high {
@@ -476,7 +536,8 @@ public func calculateChemistry(_ input: ChemistryInput) -> ChemistryResult {
             let amt = (fc.range.target - fc.value) * input.chlorine.per10k * k
             steps.append(
                 step(
-                    .fc, input.chlorine.label, dose(amt, input.chlorine.isLiquid), why(.fc, fc.value, fc.range.target),
+                    .fc, input.chlorine.label, dose(amt, input.chlorine.isLiquid, input.chlorine.chemical),
+                    why(.fc, fc.value, fc.range.target),
                     note: input.chlorine.isLiquid
                         ? nil : "Also raises calcium a little. Pre-dissolve in a bucket of pool water."))
         } else if fc.status == .high {
@@ -512,6 +573,8 @@ public struct ChemicalReading: Codable, Equatable, Sendable {
     public var chlorineProduct: ChlorineProduct?
     public var acidProduct: AcidProduct?
     public var notes: String?
+    /// The Aim For levels the tech used (owner, 2026-10-24).
+    public var goals: Readings?
 
     enum CodingKeys: String, CodingKey {
         case id
@@ -522,14 +585,14 @@ public struct ChemicalReading: Codable, Equatable, Sendable {
         case gallons, fc, ph, ta, ch, cya, salt
         case chlorineProduct = "chlorine_product"
         case acidProduct = "acid_product"
-        case notes
+        case notes, goals
     }
 
     public init(
         id: String, propertyId: String, jobId: String? = nil, recordedAt: String, recordedBy: String? = nil,
         gallons: Double? = nil, fc: Double? = nil, ph: Double? = nil, ta: Double? = nil, ch: Double? = nil,
         cya: Double? = nil, salt: Double? = nil, chlorineProduct: ChlorineProduct? = nil,
-        acidProduct: AcidProduct? = nil, notes: String? = nil
+        acidProduct: AcidProduct? = nil, notes: String? = nil, goals: Readings? = nil
     ) {
         self.id = id
         self.propertyId = propertyId
@@ -546,6 +609,7 @@ public struct ChemicalReading: Codable, Equatable, Sendable {
         self.chlorineProduct = chlorineProduct
         self.acidProduct = acidProduct
         self.notes = notes
+        self.goals = goals
     }
 
     /// The readings that were taken.
@@ -620,17 +684,22 @@ public struct WaterTestRow: Codable, Equatable, Sendable {
     public var statusLabel: String
 }
 
-/// Each reading taken, in the calculator's order, against its range (`waterTestRows`).
-public func waterTestRows(_ r: Readings) -> [WaterTestRow] {
+/// Each reading taken, in the calculator's order, against its range (`waterTestRows`). A reading
+/// the tech aimed for a level shows that level and is judged by it (owner, 2026-10-24).
+public func waterTestRows(_ r: Readings, goals: Readings? = nil) -> [WaterTestRow] {
     let t = targets(r.cya)
     let order: [ReadingKey] = [.fc, .ph, .ta, .ch, .cya, .salt]
     return order.compactMap { k in
         guard let value = r[k], value.isFinite else { return nil }
-        let range = t[k]
+        let goal = finite(goals?[k])
+        let chosen = goal.map { $0 >= 0 } ?? false
+        let range = goalRange(t[k], k, goal)
         let status = value < range.low ? "low" : value > range.high ? "high" : "ok"
         return WaterTestRow(
             key: k, label: k.label, value: value,
-            range: "\(ECMA.numberString(range.low))–\(ECMA.numberString(range.high))", status: status,
+            range: chosen
+                ? fmt(goal!, k) : "\(ECMA.numberString(range.low))–\(ECMA.numberString(range.high))",
+            status: status,
             statusLabel: status == "ok" ? "In range" : status == "low" ? "Low" : "High")
     }
 }

@@ -40,7 +40,13 @@ public func visitReportBar(
     if status != "done" {
         return mode == .auto ? VisitReportBar(line: "Sends by itself when you finish", action: nil, label: nil) : nil
     }
-    // A done visit in an Automatic shop that hasn't gone out yet (no signal, or it failed).
-    return VisitReportBar(
-        line: mode == .auto ? "Not sent yet" : "Ready to send", action: .send, label: VisitReportBarAction.send.label)
+    // A done visit in an Automatic shop that hasn't gone out yet (no signal, or it failed). In a
+    // Monthly shop it goes with the month's invoice; Send Visit Report still sends it now.
+    let line =
+        switch mode {
+        case .auto: "Not sent yet"
+        case .monthly: "Goes with the monthly invoice"
+        default: "Ready to send"
+        }
+    return VisitReportBar(line: line, action: .send, label: VisitReportBarAction.send.label)
 }

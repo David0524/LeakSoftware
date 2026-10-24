@@ -406,15 +406,17 @@ public func cleaningDueSpoken(_ name: String, _ due: CleaningCountdown) -> Strin
 
 // MARK: - Visit reports (owner, 2026-10-20)
 
-/// Whether a maintenance visit's report goes out by itself, by hand, or not at all.
+/// Whether a maintenance visit's report goes out by itself, by hand, monthly with the invoice
+/// (owner, 2026-10-24), or not at all.
 public enum VisitReportMode: String, Codable, CaseIterable, Sendable {
-    case auto, manual, off
+    case auto, manual, monthly, off
 
     /// `VISIT_REPORT_MODES`' label.
     public var label: String {
         switch self {
         case .auto: "Automatic"
         case .manual: "By Hand"
+        case .monthly: "Monthly"
         case .off: "Off"
         }
     }
@@ -423,13 +425,14 @@ public enum VisitReportMode: String, Codable, CaseIterable, Sendable {
         switch self {
         case .auto: "Each visit’s report goes to the customer when the visit is completed."
         case .manual: "Techs send it with Send Visit Report."
+        case .monthly: "One report a month goes with the customer’s monthly invoice."
         case .off: "No visit reports."
         }
     }
 }
 
 /// `VISIT_REPORT_MODES`, in the website's order.
-public let visitReportModes: [VisitReportMode] = [.auto, .manual, .off]
+public let visitReportModes: [VisitReportMode] = [.auto, .manual, .monthly, .off]
 
 /// The shop's choice (company.settings.visit_reports); by hand when unset.
 public func visitReportMode(_ settings: JSONValue?) -> VisitReportMode {
@@ -437,4 +440,63 @@ public func visitReportMode(_ settings: JSONValue?) -> VisitReportMode {
         return .manual
     }
     return mode
+}
+
+/// When reports go out, as the setting shows it: Each Visit (with Send Automatically), Monthly,
+/// or Off (`VisitReportTiming`).
+public enum VisitReportTiming: String, Codable, CaseIterable, Sendable {
+    case each, monthly, off
+
+    /// `VISIT_REPORT_TIMINGS`' label.
+    public var label: String {
+        switch self {
+        case .each: "Each Visit"
+        case .monthly: "Monthly"
+        case .off: "Off"
+        }
+    }
+}
+
+/// `VISIT_REPORT_TIMINGS`, in the website's order.
+public let visitReportTimings: [VisitReportTiming] = [.each, .monthly, .off]
+
+/// `VISIT_REPORT_TEXT`: the setting's words.
+public enum VisitReportTimingText {
+    public static let title = "Send Visit Reports"
+    public static let automatic = "Send Automatically"
+    public static let automaticOn =
+        "Each visit’s report goes to the customer when the tech completes the visit, by email (or a company text when there’s no email)."
+    public static let automaticOff = "Techs send it with Send Visit Report."
+    public static let monthlyWhat = "One report a month"
+    public static let monthlyWhatDetail =
+        "Every visit that month: readings, chemicals added, what was done, and photos."
+    public static let monthlyWhen = "Sent with the monthly invoice"
+    public static let monthlyWhenDetail = "One email or text with both links, when you send the month’s invoice."
+    public static let monthlyFooter =
+        "Customers with no invoice that month get the report on its own on the 1st. Techs can still send one visit’s report with Send Visit Report."
+    public static let off = "No visit reports."
+
+    /// Keyed as `VISIT_REPORT_TEXT`.
+    public static let all: [String: String] = [
+        "title": title, "automatic": automatic, "automaticOn": automaticOn, "automaticOff": automaticOff,
+        "monthlyWhat": monthlyWhat, "monthlyWhatDetail": monthlyWhatDetail, "monthlyWhen": monthlyWhen,
+        "monthlyWhenDetail": monthlyWhenDetail, "monthlyFooter": monthlyFooter, "off": off,
+    ]
+}
+
+public func visitReportTiming(_ mode: VisitReportMode) -> VisitReportTiming {
+    switch mode {
+    case .monthly: .monthly
+    case .off: .off
+    case .auto, .manual: .each
+    }
+}
+
+/// The stored mode for a timing and the Send Automatically switch.
+public func visitReportModeFor(_ timing: VisitReportTiming, automatic: Bool) -> VisitReportMode {
+    switch timing {
+    case .each: automatic ? .auto : .manual
+    case .monthly: .monthly
+    case .off: .off
+    }
 }

@@ -13,6 +13,7 @@ import Testing
                 "CLEANING_MONTHS", "CLEANING_DUE_SOON_DAYS", "cleaningMonthsLabel", "cleaningKind",
                 "cleaningCountdown", "cleaningShortLabel", "cleaningDueSpoken", "cleaningCadence", "cleaningSummary",
                 "FILTER_REPLACE_KEY", "cleaningDefaultMonths", "filterAge", "VISIT_REPORT_MODES", "visitReportMode",
+                "VISIT_REPORT_TIMINGS", "VISIT_REPORT_TEXT", "visitReportTiming", "visitReportModeFor",
             ])
     }
 
@@ -21,6 +22,16 @@ import Testing
             visitReportModes.map { ["value": $0.rawValue, "label": $0.label, "hint": $0.hint] }
         }
         checkRule(module, "visitReportMode") { c in visitReportMode(try c.arg(0, as: JSONValue?.self)).rawValue }
+        checkRule(module, "VISIT_REPORT_TIMINGS") { _ in
+            visitReportTimings.map { ["value": $0.rawValue, "label": $0.label] }
+        }
+        checkRule(module, "VISIT_REPORT_TEXT") { _ in VisitReportTimingText.all }
+        checkRule(module, "visitReportTiming") { c in
+            visitReportTiming(try c.arg(0, as: VisitReportMode.self)).rawValue
+        }
+        checkRule(module, "visitReportModeFor") { c in
+            visitReportModeFor(try c.arg(0, as: VisitReportTiming.self), automatic: try c.arg(1)).rawValue
+        }
     }
 
     struct SummaryCleaning: Decodable {

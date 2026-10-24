@@ -45,7 +45,10 @@
                 .card()
                 readings(pool)
                     .card()
-                if let pool { log(pool) }
+                if let pool {
+                    added(pool)
+                    log(pool)
+                }
                 // Room to scroll the last fields clear of the docked bar.
                 Color.clear.frame(height: 56)
             }
@@ -95,6 +98,22 @@
                     }
                 } else {
                     Text(ChemicalLogText.noPool).textRole(.secondary).foregroundStyle(Color.textMuted)
+                }
+            }
+        }
+
+        /// What the pool took each month (owner, 2026-10-24), from what techs added on visits.
+        @ViewBuilder private func added(_ pool: ChemicalPool) -> some View {
+            if let company = session.company {
+                let months = monthlyUsage(
+                    poolAdditions(sync.store, companyId: company.id, propertyId: pool.propertyId),
+                    timeZone: company.timeZone)
+                if !months.isEmpty {
+                    Grouped(label: "Chemicals added", footer: "Added on visits, by month.") {
+                        ForEach(months, id: \.month) { m in
+                            ListRow(m.label, detail: m.line).monospacedDigit()
+                        }
+                    }
                 }
             }
         }

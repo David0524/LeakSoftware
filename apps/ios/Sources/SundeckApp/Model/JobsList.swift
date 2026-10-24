@@ -248,7 +248,10 @@ public func reportList(
     let views = Dictionary(
         ((try? jobViews(store, companyId: companyId)) ?? []).map { ($0.id, $0) }, uniquingKeysWith: { a, _ in a })
     // The insurance report is gone (owner, 2026-10-20: "Remove the insurance stuff").
-    let templates = ["homeowner": "Homeowner report", "partner": "Pool company report"]
+    let templates = [
+        "homeowner": "Homeowner report", "partner": "Pool company report", "maintenance": "Visit report",
+        "maintenance_month": "Monthly service report",
+    ]
     let reports = ((try? store.list("report", companyId: companyId)) ?? []).filter { r in
         let status = r["status"]?.string ?? "draft"
         guard r["deleted_at"]?.string == nil, status != "superseded" else { return false }

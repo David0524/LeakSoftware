@@ -220,6 +220,8 @@ public struct ChemicalForm: Equatable, Sendable {
     public var goals: [ReadingKey: String] = [:]
     public var chlorine: ChlorineProduct = .liquid12
     public var acid: AcidProduct = .muriatic31
+    /// A visit's notes on its readings (the visit's Chemicals, owner 2026-10-24).
+    public var notes = ""
 
     public init(gallons: Double? = nil, goals: [String: String] = [:]) {
         if let gallons, gallons > 0 { self.gallons = gallonsWithCommas(String(Int(gallons.rounded()))) }

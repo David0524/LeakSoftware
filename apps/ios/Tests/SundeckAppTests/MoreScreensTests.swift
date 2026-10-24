@@ -419,7 +419,7 @@ import Testing
         #expect(
             ChemicalCardText.line(store, companyId: "c1", propertyId: "p", now: now, timeZone: "America/Phoenix")
                 == "Add today’s readings")
-        #expect(ChemicalCardText.title == "Chemical" && ChemicalCardText.whatToAdd == "What to Add")
+        #expect(ChemicalCardText.title == "Chemicals" && ChemicalCardText.whatToAdd == "What to Add")
         #expect(ChemicalCardText.needsInput == "Add the gallons and a reading.")
 
         // No network: the row and its outbox entry are written locally.

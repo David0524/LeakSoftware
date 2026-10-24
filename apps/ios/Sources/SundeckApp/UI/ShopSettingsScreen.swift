@@ -93,6 +93,9 @@
             let services = company?.services ?? .both
             let manager = isManagerRole(company?.role)
             let canAdd = manager && (page == .priceBook || page == .exclusions)
+            // Charge for Chemicals (owner, 2026-10-24) sits with the prices it uses, just above the
+            // price book's Chemicals group, as on the website: owners and admins of pool shops.
+            let charge = page == .priceBook && manager && company.map { offersPool($0.settings) } == true
             List {
                 // The segmented control isn't clipped by the list's rounded corners (ListTopSection).
                 ListTopSection {
@@ -109,6 +112,9 @@
                     }
                     .plainListRow()
                 }
+                if charge, let company, !groups.contains(where: { $0.title == "Chemicals" }) {
+                    ChargeChemicalsSection(company: company)
+                }
                 if page == .team {
                     teamGroups(manager: manager, owner: company?.role == "owner")
                     if manager { profilesGroup }
@@ -121,6 +127,8 @@
                     Section { EmptyState(text: "No items yet.").plainListRow() }
                 } else {
                     ForEach(Array(groups.enumerated()), id: \.offset) { _, group in
+                        let chemicals = charge && group.title == "Chemicals"
+                        if chemicals, let company { ChargeChemicalsSection(company: company) }
                         Section {
                             ForEach(group.items) { item in
                                 Button {
@@ -148,7 +156,7 @@
                                 .rowMenu(item.name, manager ? menu(item) : [])
                             }
                         } header: {
-                            if let title = group.title { SectionLabel(title) }
+                            if let title = group.title, !chemicals { SectionLabel(title) }
                         }
                     }
                 }
@@ -384,6 +392,45 @@
             default: groups = []
             }
             loaded = true
+        }
+    }
+
+    /// Settings › Price Book › Charge for Chemicals: a switch that saves when flipped, through the
+    /// sync layer, with what on and off mean under it (website components/charge-chemicals.tsx).
+    struct ChargeChemicalsSection: View {
+        var company: CompanyContext
+        @Environment(Session.self) private var session
+        @Environment(SyncService.self) private var sync
+        @State private var error: String?
+
+        var body: some View {
+            let on = chargesChemicals(company.settings)
+            Section {
+                SwitchRow(
+                    ChargeChemicalsText.label,
+                    isOn: Binding(
+                        get: { on },
+                        set: { next in
+                            do {
+                                try ChargeChemicalsWrites.set(sync, company: company, on: next)
+                                session.reloadCompanies()
+                            } catch {
+                                self.error = String(describing: error)
+                            }
+                        })
+                )
+                .surfaceRow()
+                .listRowInsets(EdgeInsets())
+            } header: {
+                SectionLabel("Chemicals")
+            } footer: {
+                VStack(alignment: .leading, spacing: 4) {
+                    Text(on ? ChargeChemicalsText.on : ChargeChemicalsText.off)
+                        .textRole(.footnote)
+                        .foregroundStyle(Color.textMuted)
+                    if let error { Text(error).textRole(.footnote).foregroundStyle(Color.fail) }
+                }
+            }
         }
     }
 

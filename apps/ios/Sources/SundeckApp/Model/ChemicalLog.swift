@@ -149,13 +149,27 @@ func decodeChemicalReading(_ row: Row) -> ChemicalReading? {
         }
     }
     guard let property = row["property_id"]?.string else { return nil }
+    // The Aim For levels the tech used on a visit (owner, 2026-10-24), keyed by reading.
+    var goals: Readings?
+    if case .object(let o) = row["goals"] {
+        func g(_ key: ReadingKey) -> Double? {
+            switch o[key.rawValue] {
+            case .number(let v): v
+            case .string(let s): Double(s)
+            default: nil
+            }
+        }
+        let levels = Readings(fc: g(.fc), ph: g(.ph), ta: g(.ta), ch: g(.ch), cya: g(.cya), salt: g(.salt))
+        if ReadingKey.allCases.contains(where: { levels[$0] != nil }) { goals = levels }
+    }
     return ChemicalReading(
         id: row.id, propertyId: property, jobId: row["job_id"]?.string,
         recordedAt: row["recorded_at"]?.string ?? row["created_at"]?.string ?? "",
         recordedBy: row["recorded_by"]?.string, gallons: n("gallons"), fc: n("fc"), ph: n("ph"), ta: n("ta"),
         ch: n("ch"), cya: n("cya"), salt: n("salt"),
         chlorineProduct: row["chlorine_product"]?.string.flatMap(ChlorineProduct.init(rawValue:)),
-        acidProduct: row["acid_product"]?.string.flatMap(AcidProduct.init(rawValue:)), notes: row["notes"]?.string)
+        acidProduct: row["acid_product"]?.string.flatMap(AcidProduct.init(rawValue:)), notes: row["notes"]?.string,
+        goals: goals)
 }
 
 /// The pool's readings, newest first (removed ones left out).
@@ -196,7 +210,7 @@ public func latestChemicalLine(
 /// Chemical on a visit's Checklist, opened in place (owner, 2026-10-19: "it should be a dropdown
 /// rather than its own page"). Website components/chem-dropdown.tsx.
 public enum ChemicalCardText {
-    public static let title = "Chemical"
+    public static let title = "Chemicals"
     /// Closed, before any readings were submitted for the pool.
     public static let empty = "Add today’s readings"
     public static let whatToAdd = "What to Add"
