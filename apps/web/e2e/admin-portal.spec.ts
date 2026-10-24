@@ -4,18 +4,22 @@ import { E2E_STAFF_EMAIL } from "./staff";
 import { nextWindow, totp } from "./totp";
 
 // The Admin portal (owner, 2026-10-22): Sundeck Pro staff only, after two-step sign-in, on a
-// computer. Admin Sign In is in the landing page footer. Staff open a shop's own office to
+// computer. Admin is in the landing page footer on a computer. Staff open a shop's own office to
 // help (View Only here), with a banner, and every step is in the Activity Log.
 
 const STAFF = { email: E2E_STAFF_EMAIL, password: "Sundeck-staff-e2e-1" };
 
-test("the landing page has Admin Sign In; the portal is for a computer", async ({ page }) => {
+test("the landing page has Admin on a computer only; the portal is for a computer", async ({
+  page,
+}) => {
   await page.goto("/");
-  await expect(page.getByRole("link", { name: "Admin Sign In" })).toHaveAttribute(
+  const footer = page.getByRole("navigation", { name: "About Sundeck Pro" });
+  await expect(footer.getByRole("link", { name: "Admin", exact: true })).toHaveAttribute(
     "href",
     "/sign-in?next=/admin",
   );
   await page.setViewportSize({ width: 390, height: 844 });
+  await expect(footer.getByRole("link", { name: "Admin", exact: true })).toBeHidden();
   await page.goto("/admin");
   // Signed out: to sign-in first.
   await page.waitForURL((url) => url.pathname === "/sign-in");
