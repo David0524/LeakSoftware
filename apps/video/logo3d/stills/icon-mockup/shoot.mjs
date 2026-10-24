@@ -31,7 +31,9 @@ for (const f of readdirSync(layers)) copyFileSync(join(layers, f), join(work, "l
 const browser = await chromium.launch(
   process.env.PW_CHROMIUM_PATH ? { executablePath: process.env.PW_CHROMIUM_PATH } : {},
 );
-for (const look of ["default", "dark", "clear"]) {
+// LOOKS (env) limits the looks, e.g. LOOKS="default clear" while others still render.
+const looks = (process.env.LOOKS || "default dark clear").split(/\s+/).filter(Boolean);
+for (const look of looks) {
   for (const [mode, w, h, scale] of [
     ["home", 393, 852, 3],
     ["large", 1024, 1024, 1],
