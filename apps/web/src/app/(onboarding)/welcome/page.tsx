@@ -7,6 +7,7 @@ import { getOffice } from "@/lib/auth";
 import { getAccess, getCompany } from "@/lib/data";
 import { createClient } from "@/lib/supabase/server";
 import { billingConfigured } from "@/server/billing";
+import { stripePublishableKey } from "@/server/stripe";
 
 export const metadata: Metadata = { title: "Start Your Free Trial · Sundeck Pro" };
 
@@ -46,6 +47,7 @@ async function WelcomeBody() {
       people={Math.max(1, count ?? 1)}
       trialEnds={(sub?.trial_ends_at as string | null) ?? null}
       billing={billingConfigured()}
+      publishableKey={stripePublishableKey()}
     />
   );
 }

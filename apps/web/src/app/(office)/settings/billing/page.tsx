@@ -7,6 +7,7 @@ import { PageHeader } from "@/components/ui";
 import { OWNER_ONLY, getOffice } from "@/lib/auth";
 import { getAccess } from "@/lib/data";
 import { billingConfigured, currentPrice } from "@/server/billing";
+import { stripePublishableKey } from "@/server/stripe";
 
 export const metadata: Metadata = { title: "Sundeck Pro Billing · Sundeck Pro" };
 
@@ -74,7 +75,7 @@ export default async function BillingPage({ searchParams }: PageProps<"/settings
                       Billed monthly by your package and the people on your team. Any days left on
                       your free trial carry over: you’re charged when the trial ends.
                     </p>
-                    <BillingButton kind="subscribe" />
+                    <BillingButton kind="subscribe" publishableKey={stripePublishableKey()} />
                   </>
                 )}
               </>

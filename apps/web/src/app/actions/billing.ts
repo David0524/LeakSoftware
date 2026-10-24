@@ -5,16 +5,19 @@ import { requireOwner } from "@/lib/auth";
 import { getCompany } from "@/lib/data";
 import { siteOrigin } from "@/lib/origin";
 import { createClient } from "@/lib/supabase/server";
-import { portalUrl, subscribeUrl } from "@/server/billing";
-import type { FormState } from "./auth";
+import { portalUrl, subscribeCheckout, type SubscribeStart } from "@/server/billing";
+import type { FormState, SubscribeState } from "./auth";
 
-/** Owners: subscribe to Sundeck Pro through Stripe Checkout. */
-export async function subscribe(): Promise<FormState> {
+/**
+ * Owners: subscribe to Sundeck Pro through Stripe Checkout, embedded on the billing page when
+ * the publishable key is set (its client secret comes back), else on Stripe's page.
+ */
+export async function subscribe(): Promise<SubscribeState> {
   const office = await requireOwner();
   const company = await getCompany(office);
-  let url: string;
+  let start: SubscribeStart;
   try {
-    url = await subscribeUrl(
+    start = await subscribeCheckout(
       { id: company.id, name: company.name },
       office.user.email ?? null,
       await siteOrigin(),
@@ -22,7 +25,8 @@ export async function subscribe(): Promise<FormState> {
   } catch (e) {
     return { error: e instanceof Error ? e.message : String(e) };
   }
-  redirect(url);
+  if (start.kind === "embedded") return { clientSecret: start.clientSecret };
+  redirect(start.url);
 }
 
 /** Owners: Stripe's billing portal (card, receipts, cancel). */

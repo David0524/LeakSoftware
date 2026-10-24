@@ -25,9 +25,10 @@ export function stripeClient(): Stripe | null {
 }
 
 /** The platform's publishable key: with it, Checkout is shown on our own pages. */
-function publishableKey(): string | null {
+export function stripePublishableKey(): string | null {
   return process.env.STRIPE_PUBLISHABLE_KEY || null;
 }
+const publishableKey = stripePublishableKey;
 
 /** True when the server can take payments: Stripe key and service key both present. */
 export function paymentsConfigured(): boolean {

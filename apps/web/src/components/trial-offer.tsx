@@ -13,13 +13,15 @@ import {
 } from "@leakbook/core";
 import { redeemCode, startCheckout } from "@/app/actions/onboarding";
 import { Logo } from "./logo";
+import { SubscriptionCheckout } from "./subscription-checkout";
 import { Button, cx } from "./ui";
 import { orOffline } from "@/lib/offline";
 
 // A new shop's trial page (/welcome), straight after sign-up (owner, 2026-10-24: the
 // questionnaire that came first is gone). The price for the shop's package and team, what's
-// included, then the card on Stripe's page for the 30-day free trial, or a demo code (VIP26).
-// Copy: packages/core/src/trial-offer.ts.
+// included, then the card for the 30-day free trial, or a demo code (VIP26). With Stripe's
+// publishable key the card form is embedded beside the offer (owner, 2026-10-24); without it
+// the button opens Stripe's page. Copy: packages/core/src/trial-offer.ts.
 
 const dollars = (c: number) => formatCents(c).replace(/\.00$/, "");
 const longDate = (iso: string) =>
@@ -30,6 +32,7 @@ export function TrialOffer({
   people,
   trialEnds,
   billing,
+  publishableKey = null,
 }: {
   services: Services;
   /** Active people on the team: the price follows them. */
@@ -37,6 +40,8 @@ export function TrialOffer({
   trialEnds: string | null;
   /** Whether this server takes cards (Stripe billing); without it only a demo code gets in. */
   billing: boolean;
+  /** Stripe's publishable key: with it (and billing), the card form is on this page. */
+  publishableKey?: string | null;
 }) {
   const offer = TRIAL_OFFER[trialPackage(services)];
   const [state, act, pending] = useActionState(orOffline(startCheckout), {});
@@ -45,6 +50,18 @@ export function TrialOffer({
   // Every new shop comes to this payment page (owner, 2026-10-16). Without Stripe on the
   // server, cards can't be taken yet; a demo code (VIP26) still gets a shop in.
   const [showCode, setShowCode] = useState(!billing);
+  const embedded = billing && Boolean(publishableKey);
+  const chargeNote = `You won’t be charged until ${trialEnds ? longDate(trialEnds) : "30 days from today"}; cancel before then in Settings › Sundeck Pro Billing and you never will be.`;
+  const codeLink =
+    billing && !showCode ? (
+      <button
+        type="button"
+        onClick={() => setShowCode(true)}
+        className="mx-auto mt-1 block min-h-11 px-3 text-link"
+      >
+        Have a Demo Code?
+      </button>
+    ) : null;
   // Phones: full screen, the button pinned above the home indicator. Wider screens: a window
   // centered under the logo, like a Mac setup assistant.
   return (
@@ -56,79 +73,88 @@ export function TrialOffer({
         className={cx(
           "mx-auto flex w-full max-w-md flex-1 flex-col px-4 pt-10 pb-8",
           "sm:max-w-lg sm:flex-none sm:rounded-[1.25rem] sm:bg-surface sm:px-10 sm:pt-8 sm:pb-10",
+          // Embedded: the offer and the card form side by side on wide screens, stacked below.
+          embedded && "lg:grid lg:max-w-5xl lg:grid-cols-2 lg:items-start lg:gap-x-10",
           "sm:shadow-[0_1px_2px_rgb(18_38_58/0.06),0_6px_20px_rgb(18_38_58/0.05)]",
           "sm:[&_.card]:bg-bg sm:[&_.card]:shadow-none sm:[&_.grouped]:bg-bg",
         )}
         data-testid="trial-offer"
       >
-        <h1 className="mb-6 font-display text-[2.125rem] leading-tight font-extrabold">
-          {offer.promise}
-        </h1>
-        <div className="card p-5">
-          <p className="font-display text-5xl font-extrabold" data-testid="onboarding-price">
-            {price}
-            <span className="font-sans text-lg font-normal text-text-muted"> / month</span>
-          </p>
-          <p className="mt-1 text-text-muted">
-            {tier.name}, for {people === 1 ? "1 person" : `${people} people`}. The price follows the
-            people on your team.
-          </p>
-          {/* Both: Pool Maintenance plus the leak detection add-on, spelled out (owner,
+        <div>
+          <h1 className="mb-6 font-display text-[2.125rem] leading-tight font-extrabold">
+            {offer.promise}
+          </h1>
+          <div className="card p-5">
+            <p className="font-display text-5xl font-extrabold" data-testid="onboarding-price">
+              {price}
+              <span className="font-sans text-lg font-normal text-text-muted"> / month</span>
+            </p>
+            <p className="mt-1 text-text-muted">
+              {tier.name}, for {people === 1 ? "1 person" : `${people} people`}. The price follows
+              the people on your team.
+            </p>
+            {/* Both: Pool Maintenance plus the leak detection add-on, spelled out (owner,
               2026-10-19). */}
-          {services === "both" ? (
-            <ul className="mt-3 space-y-1 text-[0.9375rem]" data-testid="onboarding-price-lines">
-              {servicesPriceLines(services, people).map((l) => (
-                <li key={l.label} className="flex justify-between gap-3">
-                  <span>{l.label}</span>
-                  <span className="tabular-nums">{dollars(l.cents)}</span>
+            {services === "both" ? (
+              <ul className="mt-3 space-y-1 text-[0.9375rem]" data-testid="onboarding-price-lines">
+                {servicesPriceLines(services, people).map((l) => (
+                  <li key={l.label} className="flex justify-between gap-3">
+                    <span>{l.label}</span>
+                    <span className="tabular-nums">{dollars(l.cents)}</span>
+                  </li>
+                ))}
+              </ul>
+            ) : null}
+            <ul className="mt-4 space-y-2">
+              {[
+                ...offer.included,
+                ...(services === "both"
+                  ? ["Leak detection: inspections, tests, reports, and repair quotes"]
+                  : []),
+              ].map((f) => (
+                <li key={f} className="flex gap-3">
+                  <span aria-hidden="true" className="text-status-pass">
+                    ✓
+                  </span>
+                  {f}
                 </li>
               ))}
             </ul>
-          ) : null}
-          <ul className="mt-4 space-y-2">
-            {[
-              ...offer.included,
-              ...(services === "both"
-                ? ["Leak detection: inspections, tests, reports, and repair quotes"]
-                : []),
-            ].map((f) => (
-              <li key={f} className="flex gap-3">
-                <span aria-hidden="true" className="text-status-pass">
-                  ✓
-                </span>
-                {f}
-              </li>
-            ))}
-          </ul>
+          </div>
         </div>
-        {state.error ? (
+        {embedded ? (
+          <div className="mt-6 lg:mt-0" data-testid="trial-checkout">
+            <h2 className="mb-1 font-display text-[1.75rem] leading-tight font-extrabold">
+              30 days free
+            </h2>
+            <p className="mb-4 text-text-muted">Then {price} a month. Add a card to start.</p>
+            <SubscriptionCheckout publishableKey={publishableKey!} start={startCheckout} />
+            <p className="mt-3 text-center text-[0.9375rem] text-text-muted">{chargeNote}</p>
+            {showCode ? <DemoCode /> : codeLink}
+          </div>
+        ) : null}
+        {embedded ? null : state.error ? (
           <p role="alert" className="mt-4 text-status-fail">
             {state.error}
           </p>
         ) : null}
-        {showCode ? <DemoCode /> : null}
-        <form
-          action={act}
-          className="sticky bottom-0 -mx-4 mt-auto bg-bg/90 px-4 pt-6 pb-[max(1rem,env(safe-area-inset-bottom))] backdrop-blur sm:static sm:mx-0 sm:mt-8 sm:bg-transparent sm:p-0 sm:backdrop-blur-none"
-        >
-          <Button type="submit" disabled={pending || !billing} className="w-full">
-            Start 30-Day Free Trial
-          </Button>
-          <p className="mt-3 text-center text-[0.9375rem] text-text-muted">
-            {billing
-              ? `Add a card on Stripe’s secure page. You won’t be charged until ${trialEnds ? longDate(trialEnds) : "30 days from today"}; cancel before then in Settings › Sundeck Pro Billing and you never will be.`
-              : "Card payments aren’t connected yet. Use a demo code above to continue."}
-          </p>
-          {billing && !showCode ? (
-            <button
-              type="button"
-              onClick={() => setShowCode(true)}
-              className="mx-auto mt-1 block min-h-11 px-3 text-link"
-            >
-              Have a Demo Code?
-            </button>
-          ) : null}
-        </form>
+        {embedded ? null : showCode ? <DemoCode /> : null}
+        {embedded ? null : (
+          <form
+            action={act}
+            className="sticky bottom-0 -mx-4 mt-auto bg-bg/90 px-4 pt-6 pb-[max(1rem,env(safe-area-inset-bottom))] backdrop-blur sm:static sm:mx-0 sm:mt-8 sm:bg-transparent sm:p-0 sm:backdrop-blur-none"
+          >
+            <Button type="submit" disabled={pending || !billing} className="w-full">
+              Start 30-Day Free Trial
+            </Button>
+            <p className="mt-3 text-center text-[0.9375rem] text-text-muted">
+              {billing
+                ? `Add a card on Stripe’s secure page. ${chargeNote}`
+                : "Card payments aren’t connected yet. Use a demo code above to continue."}
+            </p>
+            {codeLink}
+          </form>
+        )}
       </div>
     </div>
   );

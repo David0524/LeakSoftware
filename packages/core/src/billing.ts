@@ -1,4 +1,6 @@
 import { dateFormat } from "./intl";
+import { zonedTimeToIso } from "./forms";
+import { localDate } from "./job-list";
 // Sundeck Pro billing (M10): the shop's subscription state, as public.company_access returns
 // it, put into words for the banner and the Billing page.
 
@@ -83,4 +85,28 @@ export function billingSummary(a: CompanyAccess, now: Date = new Date()): string
     default:
       return "Canceled.";
   }
+}
+
+const DAY_MS = 86_400_000;
+
+/**
+ * The trial end to give Stripe Checkout, in Unix seconds, or null to start billing now.
+ *
+ * Stripe needs a trial end at least two days out, and Checkout shows the trial as whole days,
+ * rounded down: a 30-day trial that started a few minutes before Checkout read "29 days free"
+ * (owner, 2026-10-24). So the days left are rounded up, the way the app counts them, and the
+ * trial ends at the end of that last day in the shop's time zone: Checkout reads 30 days, and
+ * nobody is charged before the date the trial page promised. The webhook then copies Stripe's
+ * trial end into subscription.trial_ends_at, so the app and Stripe agree.
+ */
+export function checkoutTrialEnd(
+  trialEndsAt: string | null,
+  now: Date,
+  timeZone: string,
+): number | null {
+  const ends = trialEndsAt ? Date.parse(trialEndsAt) : NaN;
+  if (!Number.isFinite(ends) || ends <= now.getTime() + 2 * DAY_MS) return null;
+  const days = Math.ceil((ends - now.getTime()) / DAY_MS);
+  const lastDay = localDate(new Date(now.getTime() + days * DAY_MS), timeZone);
+  return Math.floor(Date.parse(zonedTimeToIso(lastDay, "23:59", timeZone)) / 1000) + 59;
 }

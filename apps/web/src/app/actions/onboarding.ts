@@ -6,19 +6,28 @@ import { getCompany } from "@/lib/data";
 import { siteOrigin } from "@/lib/origin";
 import { adminClient } from "@/server/admin";
 import { createClient } from "@/lib/supabase/server";
-import { BillingNotConfigured, finishOnboarding, subscribeUrl } from "@/server/billing";
-import type { FormState } from "./auth";
+import {
+  BillingNotConfigured,
+  finishOnboarding,
+  subscribeCheckout,
+  type SubscribeStart,
+} from "@/server/billing";
+import type { FormState, SubscribeState } from "./auth";
 
 // A new shop's trial page (/welcome), straight after sign-up (owner, 2026-10-24). The shop is
 // read-only until its card is in (or a demo code is used); then setup is done.
 
-/** Owners: add the card on Stripe's page; it comes back to /welcome/done. */
-export async function startCheckout(): Promise<FormState> {
+/**
+ * Owners: add the card. With the publishable key, Stripe's form is embedded on /welcome (owner,
+ * 2026-10-24) and this returns its client secret; without it, Stripe's page. Either way Stripe
+ * comes back to /welcome/done.
+ */
+export async function startCheckout(): Promise<SubscribeState> {
   const office = await requireOwner();
   const company = await getCompany(office);
-  let url: string;
+  let start: SubscribeStart;
   try {
-    url = await subscribeUrl(
+    start = await subscribeCheckout(
       { id: company.id, name: company.name },
       office.user.email ?? null,
       await siteOrigin(),
@@ -31,10 +40,11 @@ export async function startCheckout(): Promise<FormState> {
       error:
         e instanceof BillingNotConfigured
           ? e.message
-          : "Couldn’t open the card page. Try again in a moment.",
+          : "Couldn’t open the card form. Try again in a moment.",
     };
   }
-  redirect(url);
+  if (start.kind === "embedded") return { clientSecret: start.clientSecret };
+  redirect(start.url);
 }
 
 /**

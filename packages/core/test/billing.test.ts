@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { accessNotice, billingSummary, type CompanyAccess } from "../src";
+import { accessNotice, billingSummary, checkoutTrialEnd, type CompanyAccess } from "../src";
 
 const now = new Date("2026-10-13T12:00:00Z");
 const base: CompanyAccess = {
@@ -39,5 +39,34 @@ describe("billing notices", () => {
         now,
       ),
     ).toBe("Active. Renews on November 13, 2026.");
+  });
+});
+
+describe("checkoutTrialEnd", () => {
+  const signup = "2026-10-24T14:05:00Z";
+  const trialEnds = new Date(Date.parse(signup) + 30 * 86_400_000).toISOString();
+  const wholeDays = (end: number, at: Date) => Math.floor((end * 1000 - at.getTime()) / 86_400_000);
+
+  it("shows a full 30 days at Checkout a few minutes after sign-up, ending at day 30's close", () => {
+    const at = new Date(Date.parse(signup) + 7 * 60_000);
+    const end = checkoutTrialEnd(trialEnds, at, "America/New_York")!;
+    expect(wholeDays(end, at)).toBe(30);
+    // 23:59:59 in New York on Nov. 23 (EST after the clocks change on Nov. 1).
+    expect(new Date(end * 1000).toISOString()).toBe("2026-11-24T04:59:59.000Z");
+    expect(end * 1000).toBeGreaterThanOrEqual(Date.parse(trialEnds));
+  });
+  it("counts what's left when the card comes later, never adding a day", () => {
+    const at = new Date(Date.parse(signup) + 10 * 86_400_000 + 3_600_000);
+    const end = checkoutTrialEnd(trialEnds, at, "America/Los_Angeles")!;
+    expect(wholeDays(end, at)).toBe(20);
+    expect(new Date(end * 1000).toISOString()).toBe("2026-11-24T07:59:59.000Z");
+  });
+  it("starts billing now with two days or less left, or no trial", () => {
+    const at = new Date(Date.parse(trialEnds) - 2 * 86_400_000);
+    expect(checkoutTrialEnd(trialEnds, at, "America/New_York")).toBeNull();
+    expect(checkoutTrialEnd(null, at, "America/New_York")).toBeNull();
+    expect(
+      checkoutTrialEnd(trialEnds, new Date(at.getTime() - 60_000), "America/New_York"),
+    ).not.toBeNull();
   });
 });

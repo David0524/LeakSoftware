@@ -2,6 +2,7 @@ import "server-only";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type Stripe from "stripe";
 import {
+  checkoutTrialEnd,
   companyServices,
   PLANS,
   planForServices,
@@ -9,7 +10,7 @@ import {
   type Services,
 } from "@leakbook/core";
 import { adminClient } from "./admin";
-import { stripeClient } from "./stripe";
+import { stripeClient, stripePublishableKey } from "./stripe";
 
 // Sundeck Pro billing (M10): the shop's own subscription to Sundeck Pro, through Stripe Billing on
 // the platform account (not the shop's Connect account). Checkout starts it; webhooks keep
@@ -97,18 +98,25 @@ export async function packageProduct(stripe: Stripe, name: string): Promise<stri
   return id;
 }
 
+/** Where the owner adds the card: Checkout embedded on our page, or Stripe's own page. */
+export type SubscribeStart =
+  { kind: "embedded"; clientSecret: string } | { kind: "page"; url: string };
+
 /**
  * Stripe Checkout for the subscription, priced for the shop's package and people. Time left
  * on the free trial carries over. New shops come here from the trial page and go back to it.
+ * With the publishable key set, the form is embedded on the page (owner, 2026-10-24); without
+ * it, the owner goes to Stripe's page.
  */
-export async function subscribeUrl(
+export async function subscribeCheckout(
   company: { id: string; name: string },
   ownerEmail: string | null,
   origin: string,
   stripe: Stripe | null = stripeClient(),
   db: SupabaseClient | null = adminClient(),
   from: "billing" | "welcome" = "billing",
-): Promise<string> {
+  embedded: boolean = Boolean(stripePublishableKey()),
+): Promise<SubscribeStart> {
   if (!stripe || !db) throw new BillingNotConfigured();
   const price = await shopPrice(db, company.id);
   const { data: sub } = await db
@@ -129,10 +137,30 @@ export async function subscribeUrl(
       .update({ stripe_customer_id: customer })
       .eq("company_id", company.id);
   }
-  // Stripe needs a trial end at least two days out; less than that, billing starts now.
-  const trialEnd = sub?.trial_ends_at ? Math.floor(Date.parse(sub.trial_ends_at) / 1000) : 0;
-  const keepTrial = trialEnd > Date.now() / 1000 + 2 * 86_400;
+  // Whole days left, ending at the close of the last one in the shop's time zone, so Checkout
+  // reads "30 days free" right after sign-up; two days or less left, billing starts now
+  // (checkoutTrialEnd). The webhook copies Stripe's trial end back into trial_ends_at.
+  const { data: zone } = await db
+    .from("company")
+    .select("timezone")
+    .eq("id", company.id)
+    .maybeSingle();
+  const trialEnd = checkoutTrialEnd(
+    (sub?.trial_ends_at as string | null | undefined) ?? null,
+    new Date(),
+    (zone?.timezone as string | undefined) ?? "America/New_York",
+  );
+  const done =
+    from === "welcome"
+      ? `${origin}/welcome/done?session_id={CHECKOUT_SESSION_ID}`
+      : `${origin}/settings/billing?subscribed=1`;
   const session = await stripe.checkout.sessions.create({
+    ...(embedded
+      ? { ui_mode: "embedded_page" as const, return_url: done }
+      : {
+          success_url: done,
+          cancel_url: from === "welcome" ? `${origin}/welcome` : `${origin}/settings/billing`,
+        }),
     mode: "subscription",
     customer,
     client_reference_id: company.id,
@@ -150,16 +178,15 @@ export async function subscribeUrl(
     metadata: { kind: "tidemark_subscription", company_id: company.id },
     subscription_data: {
       metadata: { company_id: company.id },
-      ...(keepTrial ? { trial_end: trialEnd } : {}),
+      ...(trialEnd ? { trial_end: trialEnd } : {}),
     },
-    success_url:
-      from === "welcome"
-        ? `${origin}/welcome/done?session_id={CHECKOUT_SESSION_ID}`
-        : `${origin}/settings/billing?subscribed=1`,
-    cancel_url: from === "welcome" ? `${origin}/welcome` : `${origin}/settings/billing`,
   });
+  if (embedded) {
+    if (!session.client_secret) throw new Error("Stripe didn’t return a checkout session.");
+    return { kind: "embedded", clientSecret: session.client_secret };
+  }
   if (!session.url) throw new Error("Stripe didn’t return a checkout link.");
-  return session.url;
+  return { kind: "page", url: session.url };
 }
 
 /** Stripe's billing portal: change the card, see receipts, cancel. */
@@ -379,6 +406,21 @@ export async function confirmCheckout(
     } as unknown as Stripe.Event,
     db,
   );
+  // The subscription too, so the trial end Stripe bills is in trial_ends_at before the
+  // webhook arrives.
+  const subscription =
+    typeof s.subscription === "string"
+      ? await stripe.subscriptions.retrieve(s.subscription)
+      : s.subscription;
+  if (subscription?.metadata?.company_id === companyId)
+    await applyBillingEvent(
+      {
+        id: `return_${subscription.id}`,
+        type: "customer.subscription.updated",
+        data: { object: subscription },
+      } as unknown as Stripe.Event,
+      db,
+    );
   await finishOnboarding(db, companyId);
   return true;
 }
