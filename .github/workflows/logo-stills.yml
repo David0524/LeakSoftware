@@ -1,0 +1,126 @@
+name: Logo stills
+
+# Still renders of the glass drop from the 3D logo clip (apps/video/logo3d/stills/stills.py,
+# built on apps/video/logo3d/blender/scene.py), on a transparent background at 4096 px, and the
+# glass layers of the iOS 26 app icon mockup. By hand only: each still is cut into horizontal
+# strips rendered on parallel Linux runners (Cycles on CPU), then joined, given the dot's bloom
+# and composited on navy and white (post.py). Artifact `logo-stills`: <view>.png (RGBA),
+# <view>-navy.jpg, <view>-white.jpg, and icon/icon-<look>.png (the icon's glass layers, square,
+# unmasked, background left out for default/dark and clear, for the mockup page).
+
+on:
+  workflow_dispatch:
+    inputs:
+      samples:
+        description: Cycles samples for the stills
+        default: "512"
+      size:
+        description: Long side in pixels
+        default: "4096"
+      views:
+        description: Views (space-separated)
+        default: face three-quarter below hero
+      strips:
+        description: Strips per still (runners per view)
+        default: "6"
+      icon_samples:
+        description: Cycles samples for the icon layers
+        default: "384"
+
+concurrency:
+  group: logo-stills-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  BLENDER: "4.2.3"
+
+jobs:
+  plan:
+    runs-on: ubuntu-latest
+    outputs:
+      matrix: ${{ steps.m.outputs.matrix }}
+    steps:
+      - id: m
+        env:
+          VIEWS: ${{ inputs.views }}
+          STRIPS: ${{ inputs.strips }}
+        run: |
+          python3 - <<'PY' >> "$GITHUB_OUTPUT"
+          import json, os
+          n = int(os.environ["STRIPS"])
+          jobs = [{"view": v, "strip": f"{i}/{n}"} for v in os.environ["VIEWS"].split() for i in range(n)]
+          jobs += [{"view": f"icon-{k}", "strip": ""} for k in ("default", "dark", "clear")]
+          print("matrix=" + json.dumps({"include": jobs}))
+          PY
+
+  render:
+    name: ${{ matrix.view }} ${{ matrix.strip }}
+    needs: plan
+    runs-on: ubuntu-latest
+    timeout-minutes: 340
+    strategy:
+      fail-fast: true
+      matrix: ${{ fromJSON(needs.plan.outputs.matrix) }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Blender
+        id: cache
+        uses: actions/cache@v4
+        with:
+          path: blender
+          key: blender-${{ env.BLENDER }}-linux
+      - if: steps.cache.outputs.cache-hit != 'true'
+        run: |
+          curl -sSL -o b.tar.xz "https://download.blender.org/release/Blender${BLENDER%.*}/blender-${BLENDER}-linux-x64.tar.xz"
+          mkdir blender && tar -xf b.tar.xz -C blender --strip-components=1
+      - run: sudo apt-get update -q && sudo apt-get install -yq libxi6 libxxf86vm1 libxfixes3 libxrender1 libgl1 libxkbcommon0 libsm6
+      - name: Render
+        env:
+          VIEW: ${{ matrix.view }}
+          STRIP: ${{ matrix.strip }}
+          SAMPLES: ${{ inputs.samples }}
+          ICON_SAMPLES: ${{ inputs.icon_samples }}
+          SIZE: ${{ inputs.size }}
+        run: |
+          if [ -n "$STRIP" ]; then
+            extra=(--strip "$STRIP" --samples "$SAMPLES" --size "$SIZE")
+          else
+            extra=(--samples "$ICON_SAMPLES" --size 2048)
+          fi
+          start=$(date +%s)
+          ./blender/blender -b -P apps/video/logo3d/stills/stills.py -- --view "$VIEW" --out out "${extra[@]}" \
+            | grep -E "^Saved|^Error|Traceback|^View|^Rendering|^  File" || true
+          echo "Render took $(( $(date +%s) - start )) s"
+          ls out | grep -q png
+          echo "NAME=$(echo "$VIEW-$STRIP" | tr '/' 'of')" >> "$GITHUB_ENV"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: part-${{ env.NAME }}
+          path: out
+          retention-days: 3
+
+  finish:
+    name: Join, bloom and composite
+    needs: render
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: part-*
+          path: parts
+          merge-multiple: true
+      - run: pip install --quiet numpy pillow
+      - name: Finish
+        env:
+          VIEWS: ${{ inputs.views }}
+        run: |
+          ls parts
+          python3 apps/video/logo3d/stills/post.py parts out $VIEWS
+          mkdir -p out/icon && cp parts/icon-*.png out/icon/
+          ls -la out out/icon
+      - uses: actions/upload-artifact@v4
+        with:
+          name: logo-stills
+          path: out
+          retention-days: 14
