@@ -245,6 +245,13 @@ export function mapboxDirections(
 /** How long a "no road route" answer stands (app.route_leg_retry_after). */
 const RETRY_NO_ROUTE_MS = 7 * 24 * 3600 * 1000;
 
+/**
+ * How long a saved road path is used before it's asked for again (owner, 2026-10-24): Apple's
+ * developer terms let us keep its map data only temporarily, so every path is re-checked monthly.
+ * Until the new answer arrives the old path is still drawn.
+ */
+const KEEP_PATH_MS = 30 * 24 * 3600 * 1000;
+
 /** New legs each shop may ask for per day (ROUTE_LEG_DAILY_LIMIT, default 1000). */
 function legDailyLimit(): number {
   const n = Number(process.env.ROUTE_LEG_DAILY_LIMIT);
@@ -273,6 +280,7 @@ export async function routePaths(
 ): Promise<RoutePaths> {
   const legs = routeLegs(points);
   const found = new Map<string, LatLng[] | null>();
+  const stale = new Set<string>();
   if (legs.length) {
     const fromKeys = [...new Set(legs.map((l) => l.key.split(">")[0]!))];
     const { data } = await db
@@ -293,12 +301,17 @@ export async function routePaths(
       if (!wanted.has(key)) continue;
       if (r.polyline) {
         const path = decodePolyline(r.polyline);
-        if (path && path.length > 1) found.set(key, path);
+        if (path && path.length > 1) {
+          found.set(key, path);
+          if (now - Date.parse(r.fetched_at) >= KEEP_PATH_MS) stale.add(key);
+        }
       } else if (now - Date.parse(r.fetched_at) < RETRY_NO_ROUTE_MS) found.set(key, null);
     }
   }
   const missing = [
-    ...new Map(legs.filter((l) => !found.has(l.key)).map((l) => [l.key, l])).values(),
+    ...new Map(
+      legs.filter((l) => !found.has(l.key) || stale.has(l.key)).map((l) => [l.key, l]),
+    ).values(),
   ];
   const ask = missing.slice(0, MAX_NEW_LEGS);
   if (fetcher && ask.length) {
@@ -318,6 +331,7 @@ export async function routePaths(
         const polyline = path ? legPolyline(path) : null;
         rows.push({ from, to, polyline });
         found.set(leg.key, polyline ? decodePolyline(polyline) : null);
+        stale.delete(leg.key);
       });
       if (rows.length) {
         const { error: saveError } = await db.rpc("save_route_legs", {
@@ -330,7 +344,7 @@ export async function routePaths(
     }
   }
   const { legs: lines } = routeLegPaths(points, (k) => found.get(k));
-  return { legs: lines, complete: legs.every((l) => found.has(l.key)) };
+  return { legs: lines, complete: legs.every((l) => found.has(l.key) && !stale.has(l.key)) };
 }
 
 /**

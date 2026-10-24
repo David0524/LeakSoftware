@@ -27,6 +27,9 @@
         private let limit = 2000
         /// How long "no road route" stands before the leg is asked again.
         private let retryNoRoute: TimeInterval = 7 * 24 * 3600
+        /// How long a road path is used before it's asked for again (owner, 2026-10-24): Apple's
+        /// terms let us keep its map data only temporarily. The old path is drawn until then.
+        private let keepPath: TimeInterval = 30 * 24 * 3600
         private var legs: [String: Leg] = [:]
         private var paths: [String: [LatLng]] = [:]
         private var loaded = false
@@ -74,7 +77,8 @@
 
         private func needs(_ key: String) -> Bool {
             guard let leg = legs[key] else { return true }
-            return leg.polyline == nil && Date().timeIntervalSince(leg.fetchedAt) > retryNoRoute
+            let age = Date().timeIntervalSince(leg.fetchedAt)
+            return leg.polyline == nil ? age > retryNoRoute : age > keepPath
         }
 
         private func path(_ key: String) -> [LatLng]? {

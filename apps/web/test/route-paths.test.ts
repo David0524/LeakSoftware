@@ -331,6 +331,39 @@ describe("saved legs", () => {
     expect(old.asked).toEqual([legKey(SHOP, A)]);
   });
 
+  it("asks again for a path saved over 30 days ago, drawing the old one meanwhile", async () => {
+    const path = road(SHOP, A);
+    const recent = fetcher(() => path);
+    const fresh = await routePaths(
+      fakeDb({ rows: [row(SHOP, A, path, new Date(Date.now() - 29 * 24 * 3600 * 1000))] }).db,
+      "co",
+      "apple",
+      [SHOP, A],
+      recent.f,
+    );
+    expect(recent.asked).toEqual([]);
+    expect(fresh.complete).toBe(true);
+
+    const monthOld = [row(SHOP, A, path, new Date(Date.now() - 31 * 24 * 3600 * 1000))];
+    const again = fetcher(() => path);
+    const f = fakeDb({ rows: monthOld });
+    const r = await routePaths(f.db, "co", "apple", [SHOP, A], again.f);
+    expect(again.asked).toEqual([legKey(SHOP, A)]);
+    expect(f.saved).toHaveLength(1);
+    expect(r.complete).toBe(true);
+
+    // The service fails: the old path is still drawn, and the image isn't kept long.
+    const failed = await routePaths(
+      fakeDb({ rows: monthOld }).db,
+      "co",
+      "apple",
+      [SHOP, A],
+      fetcher(() => undefined).f,
+    );
+    expect(failed.legs[0]!.length).toBeGreaterThan(2);
+    expect(failed.complete).toBe(false);
+  });
+
   it("saves each path simplified, and the line still meets every pin", async () => {
     // A long road with a point every ~1 m along a straight stretch: a few points are enough.
     const long = Array.from({ length: 2001 }, (_, i) => ({
