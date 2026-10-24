@@ -52,6 +52,11 @@ jobs:
           ls -1 *.png
           test "$(ls -1 *.png | wc -l)" -eq 10 || { echo "Expected 10 screenshots"; exit 1; }
           for f in *.png; do
+            # The simulator saves PNGs with an alpha channel, which App Store Connect refuses:
+            # flatten each one (through JPEG at its best quality, which has no alpha).
+            sips -s format jpeg -s formatOptions best "$f" --out "${f%.png}.flat.jpg" >/dev/null
+            sips -s format png "${f%.png}.flat.jpg" --out "$f" >/dev/null
+            rm "${f%.png}.flat.jpg"
             w=$(sips -g pixelWidth "$f" | awk '/pixelWidth/ {print $2}')
             h=$(sips -g pixelHeight "$f" | awk '/pixelHeight/ {print $2}')
             alpha=$(sips -g hasAlpha "$f" | awk '/hasAlpha/ {print $2}')
