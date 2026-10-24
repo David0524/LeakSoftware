@@ -25,6 +25,8 @@ const base: LeadRow = {
   reached_payment: null,
   people: null,
   goal: null,
+  heard_from: null,
+  heard_from_other: null,
 };
 
 describe("leads", () => {

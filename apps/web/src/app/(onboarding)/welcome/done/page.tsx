@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 import { Suspense } from "react";
-import { companyServices, onboardingPackage } from "@leakbook/core";
+import { companyServices, trialPackage } from "@leakbook/core";
 import { ButtonLink, Row } from "@/components/ui";
 import { getOffice } from "@/lib/auth";
 import { getAccess, getCompany } from "@/lib/data";
@@ -10,7 +10,7 @@ import { createClient } from "@/lib/supabase/server";
 
 export const metadata: Metadata = { title: "You’re All Set · Sundeck Pro" };
 
-/** Back from Checkout (or the end of onboarding without billing): the next few things to do. */
+/** Back from Checkout (or a demo code): the next few things to do. */
 export default function DonePage({ searchParams }: PageProps<"/welcome/done">) {
   return (
     <Suspense fallback={<div className="flex-1" aria-label="Loading" />}>
@@ -47,8 +47,8 @@ async function DoneBody({
       .limit(1)
       .maybeSingle(),
   ]);
-  if (access?.needs_card) redirect("/welcome?step=card");
-  const pkg = onboardingPackage(companyServices(company.settings));
+  if (access?.needs_card) redirect("/welcome");
+  const pkg = trialPackage(companyServices(company.settings));
   const steps =
     pkg === "leak"
       ? [

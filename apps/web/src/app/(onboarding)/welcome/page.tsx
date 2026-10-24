@@ -1,61 +1,52 @@
 import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 import { Suspense } from "react";
-import {
-  companyServices,
-  onboardingPackage,
-  parseOnboardingAnswers,
-  type OnboardingAnswers,
-} from "@leakbook/core";
-import { Onboarding } from "@/components/onboarding";
+import { companyServices } from "@leakbook/core";
+import { TrialOffer } from "@/components/trial-offer";
 import { getOffice } from "@/lib/auth";
 import { getAccess, getCompany } from "@/lib/data";
 import { createClient } from "@/lib/supabase/server";
 import { billingConfigured } from "@/server/billing";
 
-export const metadata: Metadata = { title: "Set Up Your Shop · Sundeck Pro" };
+export const metadata: Metadata = { title: "Start Your Free Trial · Sundeck Pro" };
 
-/** New-shop onboarding (owner, 2026-10-16): owners of a new shop come here after sign-up. */
-export default function WelcomePage({ searchParams }: PageProps<"/welcome">) {
+/**
+ * A new shop's owner comes here straight from sign-up (owner, 2026-10-24: no questionnaire
+ * first): the trial's price and the card, then into the app.
+ */
+export default function WelcomePage() {
   return (
     <Suspense fallback={<div className="flex-1" aria-label="Loading" />}>
-      <WelcomeBody searchParams={searchParams} />
+      <WelcomeBody />
     </Suspense>
   );
 }
 
-async function WelcomeBody({
-  searchParams,
-}: {
-  searchParams: PageProps<"/welcome">["searchParams"];
-}) {
+async function WelcomeBody() {
   const office = await getOffice();
   if (!office.isOwner) redirect("/home");
-  const [access, company, { step }] = await Promise.all([
-    getAccess(office),
-    getCompany(office),
-    searchParams,
-  ]);
+  const [access, company] = await Promise.all([getAccess(office), getCompany(office)]);
   if (!access || access.onboarded !== false) redirect("/home");
-  const { data: sub } = await (
-    await createClient()
-  )
-    .from("subscription")
-    .select("onboarding, trial_ends_at")
-    .eq("company_id", office.company.id)
-    .maybeSingle();
-  const services = companyServices(company.settings);
-  const pkg = onboardingPackage(services);
-  const saved = parseOnboardingAnswers(sub?.onboarding);
+  const supabase = await createClient();
+  const [{ data: sub }, { count }] = await Promise.all([
+    supabase
+      .from("subscription")
+      .select("trial_ends_at")
+      .eq("company_id", office.company.id)
+      .maybeSingle(),
+    supabase
+      .from("membership")
+      .select("id", { count: "exact", head: true })
+      .eq("company_id", office.company.id)
+      .eq("status", "active")
+      .is("deleted_at", null),
+  ]);
   return (
-    <Onboarding
-      pkg={pkg}
-      services={services}
-      company={company.name}
-      billing={billingConfigured()}
+    <TrialOffer
+      services={companyServices(company.settings)}
+      people={Math.max(1, count ?? 1)}
       trialEnds={(sub?.trial_ends_at as string | null) ?? null}
-      saved={saved?.package === pkg ? (saved as OnboardingAnswers) : null}
-      startAt={step === "card" ? "card" : null}
+      billing={billingConfigured()}
     />
   );
 }

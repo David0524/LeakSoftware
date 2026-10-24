@@ -49,6 +49,8 @@ const shop = (over: Partial<AdminShop> = {}): AdminShop => ({
   payouts_on: true,
   payments_details_submitted: true,
   stripe_account_id: "acct_1",
+  heard_from: "other",
+  heard_from_other: "Truck wrap",
   ...over,
 });
 
@@ -176,5 +178,7 @@ describe("lists", () => {
     expect(csv.split("\r\n")[0]).toMatch(/^Shop,Package,Standing,People,Monthly price/);
     expect(csv).toContain(`"'=Pools, Inc."`);
     expect(csv).toContain("Pool Maintenance,Paying,3,");
+    expect(csv.split("\r\n")[0]).toMatch(/,Heard from$/);
+    expect(csv).toContain(",Other: Truck wrap");
   });
 });

@@ -37,34 +37,12 @@ test("a new shop signs up and runs the whole loop, then subscribes", async ({
   await page.getByRole("radio", { name: "Leak Detection" }).click();
   await page.getByRole("button", { name: "Start Free Trial" }).click();
 
-  // Onboarding for leak detection (owner, 2026-10-16): a goal, what's in the way, the shop's
-  // choices, a sample inspection report in the shop's color, then the payment page.
+  // Straight to the trial page (owner, 2026-10-24: no questionnaire first).
   await page.waitForURL((url) => url.pathname === "/welcome");
-  await expect(page.getByRole("heading", { name: "Reports that sell the repair." })).toBeVisible();
-  await page.getByRole("button", { name: "Get Started" }).click();
-  await page.getByRole("radio", { name: /Win more repair jobs/ }).click();
-  await page.getByRole("button", { name: "Continue" }).click();
-  await page.getByRole("checkbox", { name: /Reports take my evenings/ }).click();
-  await page.getByRole("button", { name: "Continue" }).click();
-  await expect(page.getByText("Finish the report on site", { exact: false })).toBeVisible();
-  await page.getByRole("button", { name: "Set Up My Shop" }).click();
-  await page.getByRole("button", { name: "More people" }).click();
-  await expect(page.getByText(/^Team: \$99 a month/)).toBeVisible();
-  await page.getByRole("radio", { name: "Red" }).click();
-  await page.getByRole("radio", { name: "25%" }).click();
-  await page.getByRole("button", { name: "Save and Continue" }).click();
-  await expect(page.getByRole("heading", { name: "Try an inspection" })).toBeVisible();
-  await expect(page.getByRole("button", { name: "Mark 4 More" })).toBeDisabled();
-  for (const spot of ["Skimmer", "Main drain", "Return lines", "Light niche"]) {
-    await page
-      .getByRole("radiogroup", { name: spot })
-      .getByRole("radio", { name: spot === "Skimmer" ? "Leaking" : "Not Leaking", exact: true })
-      .click();
-  }
-  await page.getByRole("button", { name: "Write Report" }).click();
-  await expect(page.getByTestId("onboarding-sample")).toContainText("We found a leak: skimmer.");
-  await page.getByRole("button", { name: "Keep Going" }).click();
-  await expect(page.getByTestId("onboarding-price")).toContainText("$99");
+  await expect(
+    page.getByRole("heading", { name: "Reports that sell the repair, starting today." }),
+  ).toBeVisible();
+  await expect(page.getByTestId("onboarding-price")).toContainText("$49");
   // In with the demo code (CI has no Stripe keys), then back on an ordinary trial as if the
   // card were in, since this test goes on to subscribe and to be locked when canceled.
   await page.getByLabel("Demo code").fill("VIP26");
@@ -89,14 +67,25 @@ test("a new shop signs up and runs the whole loop, then subscribes", async ({
   const owner = await signedInClient(OWNER.email, OWNER.password);
   const { data: membership } = await owner.from("membership").select("company_id").single();
   const companyId = membership!.company_id as string;
-  // The choices were applied: the report color and a 25% deposit.
+  // A new shop starts on the defaults (navy, no deposit); the owner asks for a 25% deposit,
+  // as in Settings › Payments.
   const { data: chosen } = await owner
     .from("company")
     .select("brand_primary, settings")
     .eq("id", companyId)
     .single();
-  expect(chosen!.brand_primary).toBe("#A12B2B");
-  expect(chosen!.settings.deposit.value_bps).toBe(2500);
+  expect(chosen!.brand_primary).toBe("#12263A");
+  expect(chosen!.settings.deposit.value_bps).toBe(0);
+  const { error: depositError } = await owner
+    .from("company")
+    .update({
+      settings: {
+        ...chosen!.settings,
+        deposit: { ...chosen!.settings.deposit, type: "percent", value_bps: 2500 },
+      },
+    })
+    .eq("id", companyId);
+  expect(depositError).toBeNull();
 
   // 2. Connect Stripe: onboarding made the account; Stripe reports it ready.
   const account = `acct_new_${RUN}`;
@@ -201,7 +190,7 @@ test("a new shop signs up and runs the whole loop, then subscribes", async ({
   const quoteLink = await quotePanel.getByLabel("Customer link").inputValue();
   await closeWrapUpStep(page);
 
-  // 7. The customer accepts on a phone and pays the 25% deposit chosen in onboarding.
+  // 7. The customer accepts on a phone and pays the 25% deposit set above.
   const phone = await browser.newContext(PHONE);
   const customer = await phone.newPage();
   await customer.goto(quoteLink);

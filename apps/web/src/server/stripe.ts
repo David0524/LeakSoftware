@@ -450,7 +450,7 @@ export async function applyEvent(
   let outcome: WebhookOutcome = "ignored";
   // The shop's own Sundeck Pro subscription (M10), on the platform account.
   if (await applyBillingEvent(event, d)) {
-    // A new shop's card is in: its onboarding choices apply (also done on the return page).
+    // A new shop’s card is in: its setup is done (also done on the return page).
     const company = (event.data.object as { metadata?: { company_id?: string } }).metadata
       ?.company_id;
     if (event.type === "checkout.session.completed" && company) await finishOnboarding(d, company);

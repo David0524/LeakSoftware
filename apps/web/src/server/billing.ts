@@ -3,7 +3,6 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import type Stripe from "stripe";
 import {
   companyServices,
-  parseOnboardingAnswers,
   PLANS,
   planForServices,
   servicesPriceCents,
@@ -24,7 +23,7 @@ export class BillingNotConfigured extends Error {
   }
 }
 
-/** Onboarding keeps its answers with the server key; without it, new shops skip it. */
+/** The trial page marks a new shop set up with the server key; without it, new shops skip it. */
 export function onboardingAvailable(): boolean {
   return Boolean(process.env.SUPABASE_SERVICE_ROLE_KEY);
 }
@@ -100,7 +99,7 @@ export async function packageProduct(stripe: Stripe, name: string): Promise<stri
 
 /**
  * Stripe Checkout for the subscription, priced for the shop's package and people. Time left
- * on the free trial carries over. New shops come here from onboarding and go back to it.
+ * on the free trial carries over. New shops come here from the trial page and go back to it.
  */
 export async function subscribeUrl(
   company: { id: string; name: string },
@@ -157,7 +156,7 @@ export async function subscribeUrl(
       from === "welcome"
         ? `${origin}/welcome/done?session_id={CHECKOUT_SESSION_ID}`
         : `${origin}/settings/billing?subscribed=1`,
-    cancel_url: from === "welcome" ? `${origin}/welcome?step=card` : `${origin}/settings/billing`,
+    cancel_url: from === "welcome" ? `${origin}/welcome` : `${origin}/settings/billing`,
   });
   if (!session.url) throw new Error("Stripe didn’t return a checkout link.");
   return session.url;
@@ -339,45 +338,23 @@ export async function syncAllSubscriptionPrices(db: SupabaseClient): Promise<num
 }
 
 /**
- * Applies the owner's onboarding choices (report color; leak detection's deposit) and marks
- * onboarding done. Runs once the card is in (Checkout), since the shop is read-only before
- * that; with no billing on the server it runs at the end of onboarding. Safe to repeat.
+ * Marks a new shop's setup done, so its owner goes on into the app. Runs once the card is in
+ * (Checkout) or a demo code was used. The questionnaire whose choices this used to apply is
+ * gone (owner, 2026-10-24): a new shop keeps the defaults (navy report color, no deposit), which
+ * the owner changes in Settings. Safe to repeat.
  */
 export async function finishOnboarding(db: SupabaseClient, companyId: string): Promise<void> {
-  const { data: sub, error } = await db
-    .from("subscription")
-    .select("onboarding, onboarded_at")
-    .eq("company_id", companyId)
-    .maybeSingle();
-  if (error) throw new Error(error.message);
-  if (!sub || sub.onboarded_at) return;
-  const answers = parseOnboardingAnswers(sub.onboarding);
-  if (answers) {
-    const { data: company } = await db
-      .from("company")
-      .select("settings")
-      .eq("id", companyId)
-      .single();
-    const settings = { ...((company?.settings ?? {}) as Record<string, unknown>) };
-    if (answers.depositBps !== undefined) {
-      const deposit = (settings.deposit ?? {}) as Record<string, unknown>;
-      settings.deposit = { ...deposit, type: "percent", value_bps: answers.depositBps };
-    }
-    const { error: saved } = await db
-      .from("company")
-      .update({ brand_primary: answers.color, settings })
-      .eq("id", companyId);
-    if (saved) throw new Error(saved.message);
-  }
-  await db
+  const { error } = await db
     .from("subscription")
     .update({ onboarded_at: new Date().toISOString() })
-    .eq("company_id", companyId);
+    .eq("company_id", companyId)
+    .is("onboarded_at", null);
+  if (error) throw new Error(error.message);
 }
 
 /**
- * The return page from onboarding's Checkout: links the subscription and applies the
- * onboarding at once, without waiting for the webhook (which does the same). Only for the
+ * The return page from the trial page's Checkout: links the subscription and finishes setup at
+ * once, without waiting for the webhook (which does the same). Only for the
  * signed-in owner's own shop and a finished session.
  */
 export async function confirmCheckout(

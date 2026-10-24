@@ -1,7 +1,6 @@
 "use server";
 
 import { redirect } from "next/navigation";
-import { parseOnboardingAnswers } from "@leakbook/core";
 import { requireOwner } from "@/lib/auth";
 import { getCompany } from "@/lib/data";
 import { siteOrigin } from "@/lib/origin";
@@ -10,22 +9,8 @@ import { createClient } from "@/lib/supabase/server";
 import { BillingNotConfigured, finishOnboarding, subscribeUrl } from "@/server/billing";
 import type { FormState } from "./auth";
 
-// New-shop onboarding (owner, 2026-10-16). The shop is read-only until its card is in, so
-// the answers are kept on the subscription by the server and applied after Checkout.
-
-/** Owners: keep the onboarding answers (validated) for after the card. */
-export async function saveOnboarding(raw: unknown): Promise<{ error?: string }> {
-  const office = await requireOwner();
-  const answers = parseOnboardingAnswers(raw);
-  if (!answers) return { error: "Something’s missing. Go back a step and try again." };
-  const admin = adminClient();
-  if (!admin) return {};
-  const { error } = await admin
-    .from("subscription")
-    .update({ onboarding: answers })
-    .eq("company_id", office.company.id);
-  return error ? { error: "Couldn’t save. Check your connection and try again." } : {};
-}
+// A new shop's trial page (/welcome), straight after sign-up (owner, 2026-10-24). The shop is
+// read-only until its card is in (or a demo code is used); then setup is done.
 
 /** Owners: add the card on Stripe's page; it comes back to /welcome/done. */
 export async function startCheckout(): Promise<FormState> {
@@ -54,7 +39,7 @@ export async function startCheckout(): Promise<FormState> {
 
 /**
  * Owners: a demo code instead of a card (owner, 2026-10-16: VIP26). A valid code makes the
- * shop a demo shop (no card, no charge); the onboarding choices apply and setup is done.
+ * shop a demo shop (no card, no charge), and setup is done.
  */
 export async function redeemCode(_: FormState, form: FormData): Promise<FormState> {
   const office = await requireOwner();

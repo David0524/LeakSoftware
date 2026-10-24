@@ -25,6 +25,9 @@ export interface LeadRow {
   reached_payment: boolean | null;
   people: number | null;
   goal: string | null;
+  /** "How did you hear about us?", once the shop exists (heard-from.ts). */
+  heard_from: string | null;
+  heard_from_other: string | null;
 }
 
 export type LeadStage = "form" | "no_shop" | "setup" | "payment" | "paid" | "code" | "canceled";

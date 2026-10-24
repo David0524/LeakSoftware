@@ -1,6 +1,7 @@
 import type { Cents } from "./money";
 import { centsToDollars, toCsv } from "./invoice";
 import { companyServices, type Services } from "./models";
+import { heardFromText } from "./heard-from";
 import { servicesPriceCents } from "./plans";
 
 // The Admin portal's numbers (owner, 2026-10-22: "Analytics, customer data, finances"). Shops
@@ -44,6 +45,9 @@ export interface AdminShop {
   payouts_on: boolean;
   payments_details_submitted: boolean;
   stripe_account_id: string | null;
+  /** "How did you hear about us?" at sign-up (heard-from.ts); null when not answered. */
+  heard_from: string | null;
+  heard_from_other: string | null;
 }
 
 /**
@@ -226,6 +230,7 @@ export function shopsCsv(shops: AdminShop[]): string {
       "Jobs (all)",
       "Customers",
       "Payments on",
+      "Heard from",
     ],
     ...shops.map((s) => [
       s.name,
@@ -247,6 +252,7 @@ export function shopsCsv(shops: AdminShop[]): string {
       s.jobs_total,
       s.customers,
       s.payments_on ? "Yes" : "No",
+      heardFromText(s.heard_from, s.heard_from_other),
     ]),
   ]);
 }

@@ -1,68 +1,18 @@
 import { describe, expect, it } from "vitest";
-import {
-  ONBOARDING,
-  onboardingPackage,
-  painsToAnswer,
-  parseOnboardingAnswers,
-  servicesPriceCents,
-} from "../src";
+import { servicesPriceCents, TRIAL_OFFER, trialPackage } from "../src";
 
-describe("onboarding", () => {
+describe("trial offer", () => {
   it("follows Pool Maintenance for Both", () => {
-    expect(onboardingPackage("pool")).toBe("maintenance");
-    expect(onboardingPackage("both")).toBe("maintenance");
-    expect(onboardingPackage("leak")).toBe("leak");
+    expect(trialPackage("pool")).toBe("maintenance");
+    expect(trialPackage("both")).toBe("maintenance");
+    expect(trialPackage("leak")).toBe("leak");
   });
 
-  it("answers every goal's package with five to seven choices", () => {
-    for (const c of Object.values(ONBOARDING)) {
-      expect(c.goals.length).toBeGreaterThanOrEqual(5);
-      expect(c.goals.length).toBeLessThanOrEqual(7);
-      expect(c.pains.length).toBeGreaterThanOrEqual(5);
-      for (const id of c.defaultPains) expect(c.pains.map((p) => p.id)).toContain(id);
+  it("says what each package includes", () => {
+    for (const offer of Object.values(TRIAL_OFFER)) {
+      expect(offer.promise).toMatch(/\.$/);
+      expect(offer.included.length).toBeGreaterThanOrEqual(3);
     }
-  });
-
-  it("keeps only known answers and fills the defaults", () => {
-    expect(
-      parseOnboardingAnswers({
-        package: "leak",
-        goal: "repairs",
-        pains: ["speed", "nope", "quotes"],
-        people: "3",
-        color: "#A12B2B",
-        depositBps: 2500,
-        chlorine: "calhypo65",
-      }),
-    ).toEqual({
-      package: "leak",
-      goal: "repairs",
-      pains: ["speed", "quotes"],
-      people: 3,
-      color: "#A12B2B",
-      depositBps: 2500,
-    });
-    expect(
-      parseOnboardingAnswers({ package: "maintenance", goal: "repairs", color: "red", people: 0 }),
-    ).toEqual({
-      package: "maintenance",
-      goal: null,
-      pains: [],
-      people: 1,
-      color: "#12263A",
-      chlorine: "liquid12",
-    });
-    expect(parseOnboardingAnswers({ package: "both" })).toBeNull();
-    expect(parseOnboardingAnswers(null)).toBeNull();
-  });
-
-  it("answers the picked pains, or the usual three", () => {
-    expect(painsToAnswer("leak", ["quotes"]).map((p) => p.id)).toEqual(["quotes"]);
-    expect(painsToAnswer("maintenance", []).map((p) => p.id)).toEqual([
-      "proof",
-      "billing",
-      "chemistry",
-    ]);
   });
 });
 
