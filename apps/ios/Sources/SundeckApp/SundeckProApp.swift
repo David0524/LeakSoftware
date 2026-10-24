@@ -155,7 +155,9 @@
         }
 
         private func watchNetwork() {
-            monitor.pathUpdateHandler = { [weak self] path in
+            // Called on the monitor's own queue. `@Sendable` says so: a plain closure made in this
+            // main-actor class could be taken for main-actor code, which Swift 6 checks at run time.
+            monitor.pathUpdateHandler = { @Sendable [weak self] path in
                 let online = path.status == .satisfied
                 Task { @MainActor in self?.session.sync.networkChanged(online: online) }
             }
@@ -224,8 +226,14 @@
                 } else if phase == .background {
                     app.client.auth.stopAutoRefresh()
                 }
-                if phase != .active {
-                    Task { await UsageRecorder.shared.flush(app.api, companyId: session.company?.id) }
+                if phase == .background {
+                    // Sent once, on reaching the background (inactive comes first and is often only
+                    // a glance at Control Center), with iOS's time to finish it.
+                    Task {
+                        let time = BackgroundTime("Usage")
+                        await UsageRecorder.shared.flush(app.api, companyId: session.company?.id)
+                        time.end()
+                    }
                 }
                 guard phase == .active else { return }
                 sync.appBecameActive()

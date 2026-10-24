@@ -1,0 +1,31 @@
+# The App Store project (project.yml) plus a UI test that runs the real app in the iPhone
+# simulator: .github/workflows/iphone-backgrounding.yml. Kept out of project.yml so TestFlight
+# builds are unchanged. Generate with `xcodegen generate --spec uitest.yml`.
+include:
+  - path: project.yml
+targets:
+  SundeckProUITests:
+    type: bundle.ui-testing
+    platform: iOS
+    sources:
+      - path: UITests
+    dependencies:
+      - target: SundeckPro
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.sundeckpro.app.uitests
+        TEST_TARGET_NAME: SundeckPro
+        GENERATE_INFOPLIST_FILE: YES
+        TARGETED_DEVICE_FAMILY: "1"
+        # XCTest's UI calls are main-actor; Swift 5 mode keeps this small test free of
+        # annotations (the app itself stays on Swift 6).
+        SWIFT_VERSION: "5.0"
+schemes:
+  SundeckProUITests:
+    build:
+      targets:
+        SundeckPro: all
+        SundeckProUITests: [test]
+    test:
+      targets:
+        - SundeckProUITests

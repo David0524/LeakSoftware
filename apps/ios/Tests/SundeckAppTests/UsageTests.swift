@@ -77,4 +77,29 @@ import Testing
         #expect(r.pending.isEmpty)
         #expect(StubServer.calls(host).last?.path == "/api/usage")
     }
+
+    /// Leaving the app sends twice at once (inactive, then background, owner 2026-10-24: "The app
+    /// crashes a lot the moment I close out of it"): both took the same batch, and the second
+    /// removed more events than were left, which traps. Now one send runs at a time; the other
+    /// waits for it, and nothing is sent twice or lost.
+    @Test func twoSendsAtOnceNeitherCrashNorSendTwice() async {
+        let clock = Clock()
+        let r = UsageRecorder(platform: "ios", version: "1") { clock.now }
+        r.screenChanged("/today")
+        clock.advance(5)
+        r.foreground(false)
+        #expect(r.pending.count == 1)
+
+        let host = "usage-\(UUID().uuidString.prefix(8).lowercased()).test"
+        StubServer.set(host, "/api/usage", 204, [:])
+        let stub = URLSessionConfiguration.ephemeral
+        stub.protocolClasses = [StubServer.self]
+        var api = WebAPI(baseURL: URL(string: "https://\(host)")!) { "token" }
+        api.session = URLSession(configuration: stub)
+        async let first: Void = r.flush(api, companyId: "c1")
+        async let second: Void = r.flush(api, companyId: "c1")
+        _ = await (first, second)
+        #expect(r.pending.isEmpty)
+        #expect(StubServer.calls(host).count == 1)
+    }
 }

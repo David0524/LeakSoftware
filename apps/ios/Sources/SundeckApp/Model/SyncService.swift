@@ -441,23 +441,72 @@ private func sqlText(_ value: SQLValue?) -> String? {
 }
 
 /// Time iOS gives the app to finish what it started after it leaves the screen (about 30
-/// seconds); ended when the sync finishes or when iOS says time is up. Nothing on other systems.
+/// seconds); ended when the work finishes, when iOS says time is up, or when this is let go,
+/// whichever comes first. Nothing on other systems.
+///
+/// The identifier lives in a locked box that the expiration handler holds strongly (not through
+/// a weak `self`), so iOS's "time is up" always ends this exact task, even after the owner is
+/// gone; a task left running past its time gets the app killed as it closes (0xbada5e47). The
+/// handler is made outside the main actor: Swift 6 checks a main-actor closure's thread when it
+/// runs, and a check failing there would crash the app at the same moment.
 @MainActor final class BackgroundTime {
-    #if canImport(UIKit)
-        private var id: UIBackgroundTaskIdentifier = .invalid
-    #endif
+    private let task = BackgroundTaskBox()
 
     init(_ name: String) {
         #if canImport(UIKit)
-            id = UIApplication.shared.beginBackgroundTask(withName: name) { [weak self] in self?.end() }
+            let task = self.task
+            task.set(UIApplication.shared.beginBackgroundTask(withName: name, expirationHandler: Self.expiry(task)))
         #endif
     }
 
+    deinit { task.end() }
+
+    func end() { task.end() }
+
+    #if canImport(UIKit)
+        /// iOS's "time is up": ends the task it was made for, on the main thread.
+        private nonisolated static func expiry(_ task: BackgroundTaskBox) -> @Sendable () -> Void {
+            { task.end() }
+        }
+    #endif
+}
+
+/// One background task's identifier, ended exactly once from any thread.
+final class BackgroundTaskBox: @unchecked Sendable {
+    private let lock = NSLock()
+    #if canImport(UIKit)
+        private var id: UIBackgroundTaskIdentifier = .invalid
+        private var ended = false
+
+        /// The identifier iOS gave; ended at once if `end()` already ran (time was up first).
+        func set(_ id: UIBackgroundTaskIdentifier) {
+            lock.lock()
+            let endNow = ended
+            if !endNow { self.id = id }
+            lock.unlock()
+            if endNow { Self.endTask(id) }
+        }
+    #endif
+
     func end() {
         #if canImport(UIKit)
-            guard id != .invalid else { return }
-            UIApplication.shared.endBackgroundTask(id)
-            id = .invalid
+            lock.lock()
+            let id = self.id
+            self.id = .invalid
+            ended = true
+            lock.unlock()
+            Self.endTask(id)
         #endif
     }
+
+    #if canImport(UIKit)
+        private static func endTask(_ id: UIBackgroundTaskIdentifier) {
+            guard id != .invalid else { return }
+            if Thread.isMainThread {
+                MainActor.assumeIsolated { UIApplication.shared.endBackgroundTask(id) }
+            } else {
+                DispatchQueue.main.async { MainActor.assumeIsolated { UIApplication.shared.endBackgroundTask(id) } }
+            }
+        }
+    #endif
 }

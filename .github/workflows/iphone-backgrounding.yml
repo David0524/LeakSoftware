@@ -1,0 +1,77 @@
+name: iPhone backgrounding
+
+# Owner, 2026-10-24: "The app crashes a lot the moment I close out of it." Runs the real app in
+# the iPhone simulator signed in as the demo tech (dev project): Today and Schedule, then the
+# Home Screen for 35 seconds and back, five times, then closes it (AppHost/UITests). Any crash
+# report the simulator wrote for the app is saved as the `iphone-backgrounding-crashes` artifact
+# and printed in the log. Runs on a push that changes the test or this file, or by hand.
+
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - apps/ios/AppHost/UITests/**
+      - apps/ios/AppHost/uitest.yml
+      - .github/workflows/iphone-backgrounding.yml
+
+concurrency:
+  group: iphone-backgrounding-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  backgrounding:
+    name: Leave and come back (simulator)
+    runs-on: macos-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+      - run: xcodebuild -version && brew install xcodegen
+      - name: Generate the project with the UI test
+        working-directory: apps/ios/AppHost
+        run: xcodegen generate --spec uitest.yml
+      - name: Run the app, leave and come back
+        working-directory: apps/ios/AppHost
+        run: |
+          device=$(xcrun simctl list devices available -j | python3 -c '
+          import json, sys
+          devices = json.load(sys.stdin)["devices"]
+          runtimes = sorted((k for k in devices if "iOS" in k), reverse=True)
+          print(next(d["udid"] for k in runtimes for d in devices[k] if d["name"].startswith("iPhone")))')
+          echo "device=$device" >> "$GITHUB_ENV"
+          touch "$RUNNER_TEMP/started"
+          xcodebuild test -project SundeckPro.xcodeproj -scheme SundeckProUITests \
+            -destination "id=$device" -resultBundlePath "$RUNNER_TEMP/backgrounding.xcresult" \
+            -skipPackagePluginValidation CODE_SIGNING_ALLOWED=NO
+      - name: Collect crash reports
+        if: always()
+        run: |
+          mkdir -p "$RUNNER_TEMP/crashes"
+          # The simulator's apps write their reports to the Mac's own folder; the device's own
+          # folder is checked too.
+          for dir in ~/Library/Logs/DiagnosticReports \
+            ~/Library/Developer/CoreSimulator/Devices/"$device"/data/Library/Logs/CrashReporter; do
+            [ -d "$dir" ] || continue
+            find "$dir" -newer "$RUNNER_TEMP/started" -type f \( -iname '*Sundeck*' -o -iname '*xctest*' \) \
+              -exec cp {} "$RUNNER_TEMP/crashes/" \;
+          done
+          ls -la "$RUNNER_TEMP/crashes"
+          for f in "$RUNNER_TEMP/crashes"/*; do
+            [ -f "$f" ] || continue
+            echo "::group::$(basename "$f")"
+            head -c 20000 "$f"
+            echo "::endgroup::"
+          done
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: iphone-backgrounding-crashes
+          path: ${{ runner.temp }}/crashes
+          if-no-files-found: ignore
+          retention-days: 14
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: iphone-backgrounding-results
+          path: ${{ runner.temp }}/backgrounding.xcresult
+          if-no-files-found: ignore
+          retention-days: 14

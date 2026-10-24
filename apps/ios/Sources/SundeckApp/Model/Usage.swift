@@ -118,18 +118,41 @@ public final class UsageRecorder {
         return .object(body)
     }
 
-    /// Sends what's waiting; what couldn't be sent stays (the most recent 1,000).
+    /// A send in progress: the next one waits for it (`flush`).
+    private var sending: Task<Void, Never>?
+
+    /// Sends what's waiting; what couldn't be sent stays (the most recent 1,000). One send at a
+    /// time: leaving the app called this twice at once (inactive, then background; the minute's
+    /// send can overlap too), and two sends of the same batch each removed it, so the second
+    /// removed more than was left and crashed the app as it closed (owner, 2026-10-24). A call
+    /// while one runs waits for it, then sends what's still waiting.
     public func flush(_ api: WebAPI, companyId: String?) async {
+        while let running = sending { await running.value }
         guard !pending.isEmpty else { return }
+        // Cleared inside the task, so a caller waiting on it never sees it still set once done.
+        let task = Task {
+            await send(api, companyId: companyId)
+            sending = nil
+        }
+        sending = task
+        await task.value
+    }
+
+    private func send(_ api: WebAPI, companyId: String?) async {
         let batch = pending.prefix(200)
         do {
             _ = try await api.post("api/usage", body(companyId: companyId, events: batch))
-            pending.removeFirst(batch.count)
+            dropSent(batch.count)
         } catch let failure as WebAPI.Failure where !failure.tryAgainLater {
             // Refused for good (a 4xx other than sign-in): sending it again won't help.
-            pending.removeFirst(batch.count)
+            dropSent(batch.count)
         } catch {
             if pending.count > 1000 { pending.removeFirst(pending.count - 1000) }
         }
+    }
+
+    /// Removes the batch just sent from the front (never more than is there).
+    private func dropSent(_ count: Int) {
+        pending.removeFirst(min(count, pending.count))
     }
 }
