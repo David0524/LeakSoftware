@@ -463,7 +463,7 @@
             /// Shrunk like job photos, as the website and Android do (core TEXT_PICTURE_LIMITS:
             /// long edge 2048 px, JPEG at 0.8): a 48 MP photo goes as about 1 MB, well under the
             /// texts bucket's 10 MB and the carriers' 5 MB. Drawn upright at 1×.
-            private static func shrunk(_ image: UIImage) -> Data? {
+            nonisolated private static func shrunk(_ image: UIImage) -> Data? {
                 let pixels = CGSize(width: image.size.width * image.scale, height: image.size.height * image.scale)
                 let size =
                     fitWithin(Double(pixels.width), Double(pixels.height), Double(TextPictureLimits.longEdge))

@@ -19,8 +19,13 @@ export async function signIn(page: Page, who: { email: string; password: string 
 
 export async function signOut(page: Page) {
   // On a computer, Sign Out is in the account menu at the end of the header.
+  // Right after a navigation the header may not be hydrated yet and the first click does
+  // nothing, so open the menu until Sign Out shows.
   const out = page.getByRole("button", { name: "Sign Out" });
-  if (!(await out.isVisible())) await page.getByRole("button", { name: /: account$/ }).click();
+  await expect(async () => {
+    if (!(await out.isVisible())) await page.getByRole("button", { name: /: account$/ }).click();
+    await expect(out).toBeVisible({ timeout: 2_000 });
+  }).toPass({ timeout: 30_000 });
   await out.click();
   await page.waitForURL((url) => url.pathname === "/");
   await expect(page.getByRole("banner").getByRole("link", { name: "Sign In" })).toBeVisible();
