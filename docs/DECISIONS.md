@@ -2,6 +2,9 @@
 
 Newest first. Each entry: date, decision, reason.
 
+## 2026-10-24 (owner: "I think C remains the cleanest")
+- **The app icon stays the current flat mark** (`brand/logo/png/icon-1024.png`), after comparing it with two iOS 26 Liquid Glass versions (a white frosted and a white pearl 3D drop) in Default, Dark and Clear. The renders and the mockup tool stay in `apps/video/logo3d/stills/` for later.
+
 ## 2026-10-24 (owner: Optimize said "Already the best order" on a day of stops shared with Jake Turner; a drag then saved 25 minutes)
 - **Optimize may move a shared (two-tech) job when its new time also fits the other tech's day:** no new overlap with their other jobs that day, travel included, from their own start (home or the shop); none of their jobs later than it is now; and their day not running further past its end. Every shared job is free at first; one that doesn't fit is put back at its time and the day is planned again until every moved one fits (core `planTechDay`, `partnerProblem`; Swift copies checked by the `schedule` fixtures). Started jobs and times promised to the customer (Time or Both locks) never move, shared or not.
 - **The other tech's day is checked only for owners and admins** (website, iPhone, Android), who see every job and where each tech starts. A tech's view of a teammate's day may be partial (techs limited to their own jobs; a tech sees only their own home start), so a tech's Optimize keeps shared jobs at their times and says so. Optimize on the second tech's own day moves a shared job's time only; its place in the order stays the main tech's.
