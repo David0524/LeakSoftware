@@ -13,7 +13,7 @@ import {
   type FormState,
 } from "@/app/actions/auth";
 import { captureLead } from "@/app/actions/leads";
-import { parseServices, type Services } from "@leakbook/core";
+import { TERMS_CONSENT, parseServices, type Services } from "@leakbook/core";
 import { Banner } from "./doc-ui";
 import { HeardFromField } from "./heard-from-field";
 import { PasswordField } from "./password-field";
@@ -31,6 +31,29 @@ function TimezoneInput() {
         if (el) el.value = Intl.DateTimeFormat().resolvedOptions().timeZone;
       }}
     />
+  );
+}
+
+/**
+ * "By creating an account, you agree to the Terms and Privacy Policy." under the create button
+ * (owner, 2026-10-24), the same on both apps: quiet secondary text, 15 pt, centered. The pages
+ * open in a new tab, so what's typed stays.
+ */
+function TermsConsent() {
+  const c = TERMS_CONSENT;
+  const link = (href: string, label: string) => (
+    <Link href={href} target="_blank" rel="noopener" className="text-link underline">
+      {label}
+    </Link>
+  );
+  return (
+    <p className="text-center text-[0.9375rem] text-text-muted" data-testid="terms-consent">
+      {c.before}
+      {link(c.termsPath, c.terms)}
+      {c.between}
+      {link(c.privacyPath, c.privacy)}
+      {c.after}
+    </p>
   );
 }
 
@@ -279,6 +302,7 @@ export function TrialForm({
       <Button type="submit" disabled={pending} className="w-full">
         {pending ? "Setting Up…" : "Start Free Trial"}
       </Button>
+      <TermsConsent />
       <p className="text-center text-[0.8125rem] text-text-muted">
         We may call or text to help you get set up.
       </p>
@@ -406,6 +430,7 @@ export function InviteForm({
       <Button type="submit" disabled={pending} className="w-full">
         {pending ? "Joining…" : mode === "sign-up" ? "Create Account and Join" : "Sign In and Join"}
       </Button>
+      {mode === "sign-up" ? <TermsConsent /> : null}
       <Button
         type="button"
         kind="quiet"

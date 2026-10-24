@@ -663,6 +663,11 @@
             // Forgot Password? (owner, 2026-10-22).
             try await snapshot(
                 "01-forgot-password", NavigationStack { ForgotPasswordView(email: "dana@bluewave.test") }.app(env))
+            // Create an Account, with the Terms and Privacy Policy line (owner, 2026-10-24).
+            let signUp = { NavigationStack { SignUpView() }.app(env) }
+            try await snapshot("01-sign-up", height: 1000, signUp())
+            try await snapshot("01-sign-up-dark", dark: true, height: 1000, signUp())
+            try await snapshot("01-sign-up-large-text", largeText: true, height: 1800, signUp())
             // Signed out by the server, with unsent changes kept (owner, 2026-10-22).
             let ended = try sampleEnvironment(signedIn: false, endedByServer: true)
             try await snapshot("01-sign-in-signed-out", SignInFlow().app(ended))

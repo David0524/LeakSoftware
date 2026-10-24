@@ -12,6 +12,7 @@ describe("Create an Account", () => {
     password: "Pool-Leak-42",
     heard_from: null,
     heard_from_other: null,
+    accepted_terms: true as const,
   };
 
   it("posts to the website, signed out, and says when the email must be confirmed", async () => {

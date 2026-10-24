@@ -10,6 +10,8 @@ export interface SignUpRequest {
   password: string;
   heard_from: string | null;
   heard_from_other: string | null;
+  /** The screen shows "By creating an account, you agree to the Terms and Privacy Policy." */
+  accepted_terms: true;
 }
 
 /** `confirmEmail`: the account waits on its email; false: sign in with the password now. */

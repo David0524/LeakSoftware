@@ -28,6 +28,7 @@ import { customerCounts } from "./cases/customer-counts";
 import { receipts } from "./cases/receipts";
 import { signedOut } from "./cases/signed-out";
 import { heardFrom } from "./cases/heard-from";
+import { termsConsent } from "./cases/terms-consent";
 import { setupGate } from "./cases/setup-gate";
 import { password } from "./cases/password";
 import { linkShare } from "./cases/link-share";
@@ -63,6 +64,7 @@ export const modules: Record<string, ModuleCases> = {
   receipts,
   "signed-out": signedOut,
   "heard-from": heardFrom,
+  "terms-consent": termsConsent,
   "setup-gate": setupGate,
   password,
   "link-share": linkShare,

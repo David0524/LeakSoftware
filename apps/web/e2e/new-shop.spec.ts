@@ -35,10 +35,27 @@ test("a new shop signs up and runs the whole loop, then subscribes", async ({
   await page.getByLabel("Password", { exact: true }).fill(OWNER.password);
   // One app, two packages: this shop does leak detection.
   await page.getByRole("radio", { name: "Leak Detection" }).click();
+  // Under the button, the terms line with its two links (owner, 2026-10-24).
+  const consent = page.getByTestId("terms-consent");
+  await expect(consent).toHaveText(
+    "By creating an account, you agree to the Terms and Privacy Policy.",
+  );
+  await expect(consent.getByRole("link", { name: "Terms" })).toHaveAttribute("href", "/terms");
+  await expect(consent.getByRole("link", { name: "Privacy Policy" })).toHaveAttribute(
+    "href",
+    "/privacy",
+  );
   await page.getByRole("button", { name: "Start Free Trial" }).click();
 
   // Straight to the trial page (owner, 2026-10-24: no questionnaire first).
   await page.waitForURL((url) => url.pathname === "/welcome");
+  // The account recorded when it agreed.
+  const { data: agreed } = await admin!
+    .from("profile")
+    .select("accepted_terms_at")
+    .eq("email", OWNER.email.toLowerCase())
+    .single();
+  expect(agreed?.accepted_terms_at).toBeTruthy();
   await expect(
     page.getByRole("heading", { name: "Reports that sell the repair, starting today." }),
   ).toBeVisible();

@@ -414,6 +414,7 @@
                 }
                 .buttonStyle(.primary(fullWidth: true, size: .field))
                 .disabled(busy)
+                TermsConsentText()
                 Button("I Already Have an Account") { dismiss() }
                     .buttonStyle(.quiet)
                     .frame(maxWidth: .infinity)
@@ -440,6 +441,44 @@
             } catch {
                 self.error = String(describing: error)
             }
+        }
+    }
+
+    /// "By creating an account, you agree to the Terms and Privacy Policy." under Create Account
+    /// (owner, 2026-10-24), as on the website's sign-ups and the Android app: quiet secondary
+    /// text, 15 pt, centered. The two links open in the in-app browser, as Privacy Policy and
+    /// Terms of Service do in More.
+    struct TermsConsentText: View {
+        @State private var browser: BrowserPage?
+
+        var body: some View {
+            Text(attributed)
+                .textRole(.secondary)
+                .foregroundStyle(Color.textMuted)
+                .multilineTextAlignment(.center)
+                .frame(maxWidth: .infinity)
+                .environment(
+                    \.openURL,
+                    OpenURLAction { url in
+                        browser = BrowserPage(url: url)
+                        return .handled
+                    }
+                )
+                .browserSheet($browser)
+        }
+
+        private var attributed: AttributedString {
+            let consent = termsConsent
+            func link(_ title: String, _ path: String) -> AttributedString {
+                var part = AttributedString(title)
+                part.link = BrowserPage.site(String(path.drop { $0 == "/" })).url
+                part.foregroundColor = Color.link
+                part.underlineStyle = .single
+                return part
+            }
+            return AttributedString(consent.before) + link(consent.terms, consent.termsPath)
+                + AttributedString(consent.between) + link(consent.privacy, consent.privacyPath)
+                + AttributedString(consent.after)
         }
     }
 

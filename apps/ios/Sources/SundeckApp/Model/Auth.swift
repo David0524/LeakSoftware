@@ -102,8 +102,11 @@ public struct SupabaseAuthBackend: AuthBackend {
         // Through the website (owner, 2026-10-24), like its own sign-up: the password rules, the
         // limit on sign-ups, and a confirmation email whose link works on any phone or computer
         // (POST /api/auth/sign-up; apps/mobile data/sign-up.ts).
+        // The screen shows "By creating an account, you agree to the Terms and Privacy Policy."
+        // (owner, 2026-10-24); the server records when the account agreed.
         var body: [String: JSONValue] = [
             "name": .string(name), "email": .string(email), "password": .string(password),
+            "accepted_terms": .bool(true),
         ]
         if let heardFrom = parseHeardFrom(heardFrom) {
             body["heard_from"] = .string(heardFrom)

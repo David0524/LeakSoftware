@@ -244,6 +244,7 @@ export function SessionProvider({ children }: { children: ReactNode }) {
         password,
         heard_from: heard,
         heard_from_other: other,
+        accepted_terms: true,
       });
       if ("error" in made) return { error: friendlyAuthError(made.error) };
       if (made.confirmEmail) return { confirmEmail: true };

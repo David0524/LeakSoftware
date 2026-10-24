@@ -1,0 +1,22 @@
+{
+  "TERMS_CONSENT": [
+    {
+      "args": [],
+      "result": {
+        "before": "By creating an account, you agree to the ",
+        "terms": "Terms",
+        "between": " and ",
+        "privacy": "Privacy Policy",
+        "after": ".",
+        "termsPath": "/terms",
+        "privacyPath": "/privacy"
+      }
+    }
+  ],
+  "termsConsentText": [
+    {
+      "args": [],
+      "result": "By creating an account, you agree to the Terms and Privacy Policy."
+    }
+  ]
+}

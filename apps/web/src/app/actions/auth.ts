@@ -195,6 +195,9 @@ export async function startTrial(_: FormState, form: FormData): Promise<FormStat
       phone,
       // Kept with the account too, so a shop made after the email confirmation gets it.
       ...(heard.heard_from ? heard : {}),
+      // The form says "By creating an account, you agree to the Terms and Privacy Policy.";
+      // the database records when (profile.accepted_terms_at).
+      accepted_terms: true,
     },
     next: "/setup",
   });
@@ -263,7 +266,8 @@ export async function acceptInvite(_: FormState, form: FormData): Promise<FormSt
       const account = await createAccount(supabase, {
         email,
         password,
-        data: { full_name: name },
+        // Under the terms line, as on Start Free Trial.
+        data: { full_name: name, accepted_terms: true },
         next: `/invite/${token}`,
       });
       if (account.kind === "error") return { error: account.error, values };

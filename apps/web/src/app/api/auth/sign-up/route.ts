@@ -7,7 +7,9 @@ import { EMAIL_PATTERN } from "@/server/password-reset";
 
 /**
  * Create an Account from the iPhone and Android apps (owner, 2026-10-24), signed out:
- * { name, email, password, heard_from?, heard_from_other? } -> { confirmEmail } or { error }.
+ * { name, email, password, heard_from?, heard_from_other?, accepted_terms? } -> { confirmEmail }
+ * or { error }. `accepted_terms: true`: the screen showed "By creating an account, you agree to
+ * the Terms and Privacy Policy." (apps from 2026-10-24); the database records when.
  * Through the server, like the website's sign-up: the password rules, the limit on sign-ups
  * per email and visitor, and the confirmation email the server sends, whose link works on any
  * phone or computer. `confirmEmail: false` (no confirmation on this project): the app signs in
@@ -38,6 +40,7 @@ export async function POST(request: Request) {
       full_name: name,
       ...(heard ? { heard_from: heard } : {}),
       ...(other ? { heard_from_other: other } : {}),
+      ...(body.accepted_terms === true ? { accepted_terms: true } : {}),
     },
     next: "/setup",
   });

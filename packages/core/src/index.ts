@@ -28,6 +28,7 @@ export * from "./chemistry";
 export * from "./texting";
 export * from "./trial-offer";
 export * from "./heard-from";
+export * from "./terms-consent";
 export * from "./getting-started";
 export * from "./leads";
 export * from "./import";

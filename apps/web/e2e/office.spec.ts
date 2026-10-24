@@ -216,6 +216,9 @@ test("owner invites a tech, who joins and cannot reach settings", async ({ page,
   await expect(tech.getByText(/invited you to Sundeck Pro as a tech/)).toBeVisible();
   await tech.getByLabel("Your name").fill(`E2E Tech ${RUN}`);
   await tech.getByLabel("Choose a password", { exact: true }).fill("E2e-password-123");
+  await expect(tech.getByTestId("terms-consent")).toHaveText(
+    "By creating an account, you agree to the Terms and Privacy Policy.",
+  );
   await tech.getByRole("button", { name: "Create Account and Join" }).click();
   await tech.waitForURL("**/today");
   const nav = tech.getByRole("navigation", { name: "Main" });
