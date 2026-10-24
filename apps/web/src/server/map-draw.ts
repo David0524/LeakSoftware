@@ -66,7 +66,7 @@ export async function drawMapImage(input: {
         return null;
       });
       if (res && !res.ok)
-        note = `apple ${res.status}: ${(
+        note = `apple ${res.status} (z ${new URL(snap.url).searchParams.get("z")}, tier ${snap.view.tier}): ${(
           await res
             .clone()
             .text()

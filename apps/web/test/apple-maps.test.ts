@@ -187,10 +187,13 @@ describe("Apple Snapshots", () => {
     expect(q.get("imgs")).toBeNull();
     const sizes = routeTierStyle(snap.view.tier);
     const [casing, line] = JSON.parse(q.get("overlays")!);
-    expect(casing).toMatchObject({ strokeColor: "ffffff", lineWidth: sizes.casingWidth });
+    expect(casing).toMatchObject({
+      strokeColor: "ffffff",
+      lineWidth: Math.round(sizes.casingWidth),
+    });
     expect(line).toMatchObject({
       strokeColor: "1f6fae",
-      lineWidth: sizes.lineWidth,
+      lineWidth: Math.round(sizes.lineWidth),
       strokeOpacity: 1,
     });
     // From the shop, through the stops, back to the shop.
@@ -277,7 +280,7 @@ describe("Apple Snapshots: the route along the roads, smaller zoomed out (owner,
     const snap = appleSnapshot(city, { w: 360, h: 180 }, keys, "light", "orange");
     expect(snap.view.tier).toBe("small");
     const [casing, stroke] = JSON.parse(new URL(snap.url).searchParams.get("overlays")!);
-    expect([casing.lineWidth, stroke.lineWidth]).toEqual([4, 2.5]);
+    expect([casing.lineWidth, stroke.lineWidth]).toEqual([4, 3]);
     const roads = roadLegs(city, 50, 0.05);
     expect(
       appleSnapshot(city, { w: 360, h: 180 }, keys, "light", "orange", roads).view.zoom,

@@ -182,8 +182,12 @@ export function appleSnapshot(
         JSON.stringify(
           // A white casing under the line, so it reads on any street.
           [
-            { strokeColor: "ffffff", lineWidth: sizes.casingWidth },
-            { strokeColor: hex(routeHex(color, theme)), lineWidth: sizes.lineWidth },
+            // Whole points: the medium size's 4.25 and 6.5 are rounded for Apple.
+            { strokeColor: "ffffff", lineWidth: Math.max(1, Math.round(sizes.casingWidth)) },
+            {
+              strokeColor: hex(routeHex(color, theme)),
+              lineWidth: Math.max(1, Math.round(sizes.lineWidth)),
+            },
           ].map((style) => ({ points: line.map(at), ...style, strokeOpacity: 1 })),
         ),
       );
