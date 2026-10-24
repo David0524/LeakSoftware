@@ -1,23 +1,24 @@
 name: 3D logo clip
 
-# The link-preview animation (apps/video/logo3d/blender/scene.py): the Sundeck Pro mark as a
-# glass drop over the night sea, rendered in Blender Cycles. 270 frames (an 8-second loop and a
-# 1-second tail) are split across 18 Linux runners in parallel (CPU; GitHub's macOS runners have
-# no Metal GPU for Cycles), then joined: the tail dissolves into the first second, so the sea
-# (which runs forward the whole time) loops with no seam, and encoded. Artifact `logo-3d`:
-# sundeck-pro.mp4 (1280 x 720, H.264, faststart, no audio) and sundeck-pro.jpg (the face-on
-# frame), for apps/web/public/og/. Runs on a push that changes the scene or this file, or by
-# hand (with samples, or EEVEE as the fast fallback).
+# The link-preview animation (apps/video/logo3d/blender/scene_day.py): the Sundeck Pro glass mark
+# over a tropical infinity pool by day, rendered in Blender Cycles. 360 frames (a 12-second loop;
+# frame 361 would be frame 1, so it loops with no dissolve) are split across 20 Linux runners
+# (GitHub's limit at once), 18 frames each, at 1920 x 1080 (CPU; GitHub's macOS runners have no
+# Metal GPU for Cycles), then encoded twice. Artifact `logo-3d`:
+#   sundeck-pro.mp4          1280 x 720, H.264, faststart, no audio, capped at 3 Mbit/s so the
+#                            12 s clip stays under ~4.5 MB for Messages (og:video,
+#                            apps/web/public/og/)
+#   sundeck-pro.jpg          the face-on hold (frame 1), 1200 x 630, the og:image poster
+#   sundeck-pro-1080p.mp4    the 1920 x 1080 master, kept by the owner
+# Runs on a push that changes the scene or this file, or by hand (with samples).
+# The night clip's scene.py is kept but no longer rendered here.
 
 on:
   workflow_dispatch:
     inputs:
       samples:
-        description: Cycles samples
-        default: "160"
-      engine:
-        description: CYCLES or EEVEE
-        default: CYCLES
+        description: Cycles samples (96 fits the 20 runners at 1080p; see the note on the job)
+        default: "96"
   push:
     paths:
       - apps/video/logo3d/blender/**
@@ -34,11 +35,14 @@ jobs:
   frames:
     name: Frames ${{ matrix.chunk }}
     runs-on: ubuntu-latest
+    # About 12 minutes a frame at 1080p and 96 samples on 4 cores (measured locally: 268 s a frame
+    # at 720p and 80 samples, scaled), so about 3.6 hours for 18 frames, with room under the job
+    # limit if a runner is slower. Not fail-fast: a chunk that fails can be re-run on its own.
     timeout-minutes: 340
     strategy:
-      fail-fast: true
+      fail-fast: false
       matrix:
-        chunk: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17]
+        chunk: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19]
     steps:
       - uses: actions/checkout@v4
       - name: Blender
@@ -54,11 +58,11 @@ jobs:
       - run: sudo apt-get update -q && sudo apt-get install -yq libxi6 libxxf86vm1 libxfixes3 libxrender1 libgl1 libxkbcommon0 libsm6
       - name: Render frames
         run: |
-          a=$(( ${{ matrix.chunk }} * 15 + 1 )); b=$(( a + 14 ))
-          ./blender/blender -b -P apps/video/logo3d/blender/scene.py -- --out frames \
-            --frames "$a-$b" --samples "${{ inputs.samples || '160' }}" --engine "${{ inputs.engine || 'CYCLES' }}" \
+          a=$(( ${{ matrix.chunk }} * 18 + 1 )); b=$(( a + 17 ))
+          ./blender/blender -b -P apps/video/logo3d/blender/scene_day.py -- --out frames \
+            --frames "$a-$b" --samples "${{ inputs.samples || '96' }}" --res 1920x1080 \
             | grep -E "^Saved|Error|Traceback|Cycles device" || true
-          test "$(ls frames | wc -l)" -eq 15
+          test "$(ls frames | wc -l)" -eq 18
       - uses: actions/upload-artifact@v4
         with:
           name: frames-${{ matrix.chunk }}
@@ -75,31 +79,21 @@ jobs:
           pattern: frames-*
           path: frames
           merge-multiple: true
-      - run: sudo apt-get update -q && sudo apt-get install -yq ffmpeg python3-pil
+      - run: sudo apt-get update -q && sudo apt-get install -yq ffmpeg
       - name: Encode
         run: |
-          test "$(ls frames | wc -l)" -eq 270
-          # The loop: frames 31-270, with 241-270 dissolving into 1-30 (the camera and pin repeat
-          # every 240 frames, so only the sea differs, and it changes smoothly).
-          python3 - <<'PY'
-          import os
-          from PIL import Image
-          os.makedirs("loop", exist_ok=True)
-          for k in range(240):
-              n = k + 31
-              im = Image.open(f"frames/f{n:04d}.png").convert("RGB")
-              if n > 240:
-                  w = (n - 240) / 31
-                  im = Image.blend(im, Image.open(f"frames/f{n - 240:04d}.png").convert("RGB"), w)
-              im.save(f"loop/l{k + 1:04d}.png")
-          PY
+          test "$(ls frames | wc -l)" -eq 360
           mkdir out
-          # 1080p frames scaled to 720p (supersampled), sized for Messages (well under 10 MB).
-          ffmpeg -v error -y -framerate 30 -i loop/l%04d.png -vf "scale=1280:720:flags=lanczos" \
+          # Every element moves on the 360-frame period, so frames 1-360 loop as they are.
+          ffmpeg -v error -y -framerate 30 -i frames/f%04d.png \
+            -c:v libx264 -profile:v high -level 4.2 -pix_fmt yuv420p -preset slower -crf 16 \
+            -movflags +faststart -an out/sundeck-pro-1080p.mp4
+          # 1080p frames scaled to 720p (supersampled), capped for Messages.
+          ffmpeg -v error -y -framerate 30 -i frames/f%04d.png -vf "scale=1280:720:flags=lanczos" \
             -c:v libx264 -profile:v high -level 4.0 -pix_fmt yuv420p -preset slower -crf 21 \
-            -movflags +faststart -an out/sundeck-pro.mp4
-          # The poster: the face-on frame (135), 1200 x 630.
-          ffmpeg -v error -y -i frames/f0135.png -vf "scale=1200:675:flags=lanczos,crop=1200:630:0:22" \
+            -maxrate 3M -bufsize 6M -movflags +faststart -an out/sundeck-pro.mp4
+          # The poster: the face-on hold (frame 1), 1200 x 630.
+          ffmpeg -v error -y -i frames/f0001.png -vf "scale=1200:675:flags=lanczos,crop=1200:630:0:22" \
             -q:v 2 out/sundeck-pro.jpg
           ls -la out
       - uses: actions/upload-artifact@v4
