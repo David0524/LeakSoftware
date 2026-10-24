@@ -312,14 +312,17 @@ export function GroupedField({
       <div
         className={cx(
           "max-sm:flex max-sm:min-h-11 max-sm:gap-3",
-          stacked ? "max-sm:flex-col max-sm:gap-0 max-sm:pt-2.5" : "max-sm:items-center",
+          stacked
+            ? "max-sm:flex-col max-sm:gap-0 max-sm:pt-2.5"
+            : // Narrower than 280px (a phone zoomed to 200%), the label goes above, as in PasswordField.
+              "max-sm:items-center max-[280px]:flex-col max-[280px]:items-stretch max-[280px]:gap-0 max-[280px]:pt-2.5",
         )}
       >
         <label
           htmlFor={id}
           className={cx(
             labelHidden ? "sr-only" : "block max-sm:shrink-0 sm:mb-1 sm:font-medium",
-            !stacked && !labelHidden && "max-sm:w-(--label-w)",
+            !stacked && !labelHidden && "max-sm:w-(--label-w) max-[280px]:w-auto",
           )}
         >
           {label}

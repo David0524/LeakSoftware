@@ -34,10 +34,12 @@ export function PasswordField({
     .join(" ");
   return (
     <div className={cx(GROUP_ROW, className)}>
-      <div className="max-sm:flex max-sm:min-h-11 max-sm:items-center max-sm:gap-3">
+      {/* Narrower than 280px (a phone zoomed to 200%), the label goes above so the field and
+          its eye button keep their room. */}
+      <div className="max-sm:flex max-sm:min-h-11 max-sm:items-center max-sm:gap-3 max-[280px]:flex-col max-[280px]:items-stretch max-[280px]:gap-0 max-[280px]:pt-2.5">
         <label
           htmlFor={id}
-          className="block max-sm:w-(--label-w) max-sm:shrink-0 sm:mb-1 sm:font-medium"
+          className="block max-sm:w-(--label-w) max-sm:shrink-0 max-[280px]:w-auto sm:mb-1 sm:font-medium"
         >
           {label}
         </label>
