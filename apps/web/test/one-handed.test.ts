@@ -284,6 +284,16 @@ describe("parseQuantity (invoice lines)", () => {
     for (const bad of ["1e309", "Infinity", "1e3", "-1", "0", "abc", "1.234", "100000", "NaN"])
       expect(parseQuantity(bad)).toBeNull();
   });
+
+  it("takes every quantity with two decimals, though most aren't exact in floating point", () => {
+    // 1.1 × 100 is 110.00000000000001 and 1.15 × 100 is 114.99999999999999.
+    for (const ok of ["1.1", "1.15", "0.07", "2.3", "4.35", "99999.99"])
+      expect(parseQuantity(ok), ok).toBe(Number(ok));
+    for (let i = 1; i < 10_000; i++) {
+      const typed = (i / 100).toFixed(2);
+      expect(parseQuantity(typed), typed).toBe(Number(typed));
+    }
+  });
 });
 
 describe("orOffline (no signal)", () => {

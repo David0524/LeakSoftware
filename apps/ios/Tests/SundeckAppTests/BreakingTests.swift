@@ -199,6 +199,14 @@ import Testing
         #expect(invoiceLineQuantity("1.005") == nil && invoiceLineQuantity("abc") == nil)
         #expect(invoiceLineQuantity("") == 1 && invoiceLineQuantity(" 2,5 ") == 2.5)
     }
+
+    @Test func everyQuantityWithTwoDecimalsIsTaken() {
+        // Most aren't exact in floating point: 1.1 × 100 is 110.00000000000001.
+        for i in 1..<10_000 {
+            let typed = String(format: "%.2f", Double(i) / 100)
+            #expect(invoiceLineQuantity(typed) == Double(typed), "\(typed)")
+        }
+    }
 }
 
 /// Discard changes, everywhere (owner, 2026-10-20): what each editor counts as unsaved, and a

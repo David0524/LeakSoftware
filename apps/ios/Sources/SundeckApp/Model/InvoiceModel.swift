@@ -218,10 +218,13 @@ public func invoiceURL(_ webURL: URL, _ token: String) -> URL {
 /// more than 0, at most two decimals, and a real number ("1e309" is too big to be one).
 public func invoiceLineQuantity(_ text: String) -> Double? {
     let q = text.trimmingCharacters(in: .whitespaces)
-    guard let n = q.isEmpty ? 1 : Double(q.replacingOccurrences(of: ",", with: ".")), n.isFinite, n > 0,
-        (n * 100).rounded() == n * 100
+    guard let n = q.isEmpty ? 1 : Double(q.replacingOccurrences(of: ",", with: ".")), n.isFinite, n > 0
     else { return nil }
-    return n
+    // At most two decimals. Most two-decimal numbers aren't exact in floating point (1.1 × 100 is
+    // 110.00000000000001, 1.15 × 100 is 114.99999999999999), so a whole number of hundredths is
+    // one within a millionth; 1.005 is half a hundredth off and stays refused.
+    let hundredths = (n * 100).rounded()
+    return abs(n * 100 - hundredths) < 1e-6 ? hundredths / 100 : nil
 }
 
 @MainActor

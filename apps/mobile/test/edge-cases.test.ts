@@ -206,6 +206,13 @@ describe("readings, quantities and money as typed", () => {
     for (const bad of ["1e309", "Infinity", "-1", "0", "-0", "abc", "1.005", "NaN"])
       expect(parseLineQuantity(bad), bad).toBeNull();
   });
+  it("takes every quantity with two decimals, though most aren't exact in floating point", () => {
+    // 1.1 × 100 is 110.00000000000001 and 1.15 × 100 is 114.99999999999999.
+    for (let i = 1; i < 10_000; i++) {
+      const typed = (i / 100).toFixed(2);
+      expect(parseLineQuantity(typed), typed).toBe(Number(typed));
+    }
+  });
   it("money stays whole cents", () => {
     for (const v of ["125", "125.5", "$1,250.99", "0.07", "-0"]) {
       const c = parseDollars(v);
