@@ -74,7 +74,7 @@ export async function GET(request: Request) {
       routePaths(db, companyId!, provider, points, legFetcher(db, companyId!, provider)),
   });
   if (!drawn.ok) return jsonError(drawn.message, drawn.status);
-  return image(drawn.res, drawn.complete);
+  return image(drawn.res, drawn.complete, drawn.by, drawn.note);
 }
 
 /**
@@ -82,9 +82,12 @@ export async function GET(request: Request) {
  * minutes while a leg is still drawn straight (an error, or the day's allowance), so the road
  * route shows once it's there.
  */
-function image(res: Response, complete: boolean): Response {
+function image(res: Response, complete: boolean, by: string, note?: string): Response {
   return new Response(res.body, {
     headers: {
+      // Which service drew it, and why not Apple when it wasn't (no secrets).
+      "x-map-by": by,
+      ...(note ? { "x-map-note": note.replace(/[^\x20-\x7e]/g, " ") } : {}),
       "content-type": res.headers.get("content-type") ?? "image/png",
       "cache-control": `private, max-age=${complete ? 86400 : 300}`,
     },

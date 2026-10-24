@@ -18,8 +18,10 @@ export type Drawn =
       by: "apple" | "mapbox";
       /** Every leg of the route is settled (false: a leg is straight for now; ask again soon). */
       complete: boolean;
+      /** Why Apple wasn't used, when it wasn't. */
+      note?: string;
     }
-  | { ok: false; status: 429 | 502; message: string };
+  | { ok: false; status: 429 | 502; message: string; note?: string };
 
 export async function drawMapImage(input: {
   pins: Omit<MapPin, "id">[];
@@ -43,6 +45,8 @@ export async function drawMapImage(input: {
 }): Promise<Drawn> {
   const { pins, size, theme, color, apple, pinBase, mapboxToken, take, fetchImpl = fetch } = input;
   const order = routeOrder(pins).map((p) => p.at);
+  // Why Apple wasn't used, when it wasn't (sent back as the x-map-note header, no secrets).
+  let note = "";
   const legsFor = async (provider: PathProvider): Promise<RoutePaths> => {
     if (!input.paths || order.length < 2) return { legs: [], complete: true };
     return input.paths(provider, order).catch((e: unknown) => {
@@ -50,11 +54,24 @@ export async function drawMapImage(input: {
       return { legs: [], complete: false };
     });
   };
-  if (apple && pins.length && (await take("apple_snapshot"))) {
+  if (!apple) note = "apple: no keys or provider";
+  else if (!pins.length) note = "apple: no pins";
+  else if (!(await take("apple_snapshot"))) note = "apple: allowance used";
+  else {
     const route = await legsFor("apple");
     const draw = async (legs: RoutePaths["legs"] | null) => {
       const snap = appleSnapshot(pins, size, apple, theme, color, legs);
-      const res = await fetchImpl(snap.url).catch(() => null);
+      const res = await fetchImpl(snap.url).catch((e: unknown) => {
+        note = `apple unreachable: ${e instanceof Error ? e.message : String(e)}`;
+        return null;
+      });
+      if (res && !res.ok)
+        note = `apple ${res.status}: ${(
+          await res
+            .clone()
+            .text()
+            .catch(() => "")
+        ).slice(0, 160)}`;
       if (!res?.ok) return res;
       try {
         return await compositePins({
@@ -66,6 +83,7 @@ export async function drawMapImage(input: {
           theme,
         });
       } catch (e) {
+        note = `pins: ${e instanceof Error ? e.message : String(e)}`.slice(0, 200);
         console.error(`Map image: drawing the pins ${e instanceof Error ? e.message : String(e)}`);
         return null;
       }
@@ -104,5 +122,5 @@ export async function drawMapImage(input: {
     console.error(`Map image: Mapbox ${res?.status ?? "unreachable"}`);
     return { ok: false, status: 502, message: "The map couldn’t be drawn." };
   }
-  return { ok: true, res, by: "mapbox", complete: route.complete };
+  return { ok: true, res, by: "mapbox", complete: route.complete, note };
 }
