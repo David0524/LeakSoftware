@@ -8,10 +8,12 @@ import {
   appleSuggester,
   mapkitToken,
   resetAppleServerToken,
+  SNAPSHOT_MAX_URL,
   snapshotFits,
   snapshotSize,
   type AppleKeys,
 } from "../src/server/apple-maps";
+import { routeLegs, routeOrder, type LatLng } from "@leakbook/core";
 import { drawMapImage } from "../src/server/map-draw";
 import { suggestAddresses, type RoutingProvider } from "../src/server/routing";
 import { appleMapsConfigured, mapsConfigured, resolveMapProvider } from "../src/lib/map-provider";
@@ -38,11 +40,12 @@ function readJwt(jwt: string, publicKey: KeyObject) {
   return { ok, header: decode(head!), claims: decode(body!) };
 }
 
-const SHOP = { tone: "shop" as const, label: "", at: { lat: 33.45, lng: -112.07 } };
+// A day a few streets across (zoom 13 and closer), so its pins are full size.
+const SHOP = { tone: "shop" as const, label: "", at: { lat: 33.41, lng: -112.0 } };
 const stop = (n: number, tone: "todo" | "done" | "current" = "todo") => ({
   tone,
   label: String(n),
-  at: { lat: 33.4 + n / 100, lng: -112 - n / 100 },
+  at: { lat: 33.4 + n / 500, lng: -112 - n / 500 },
 });
 
 describe("which map service", () => {
@@ -160,7 +163,7 @@ describe("Apple Snapshots", () => {
     expect(q.get("poi")).toBe("0");
     const annotations = JSON.parse(q.get("annotations")!);
     expect(annotations[0]).toEqual({
-      point: "33.45000,-112.07000",
+      point: "33.41000,-112.00000",
       color: "12263a",
       markerStyle: "balloon",
     });
@@ -245,7 +248,7 @@ describe("Apple Snapshots", () => {
     ).searchParams;
     const [start] = JSON.parse(q.get("annotations")!);
     expect(start).toEqual({
-      point: "33.45000,-112.07000",
+      point: "33.41000,-112.00000",
       color: "12263a",
       markerStyle: "balloon",
       glyphText: "⌂",
@@ -256,7 +259,7 @@ describe("Apple Snapshots", () => {
     const { keys } = throwaway();
     const one = new URL(appleSnapshotUrl([stop(1)], { w: 360, h: 240 }, keys, "dark")).searchParams;
     expect(one.get("colorScheme")).toBe("dark");
-    expect(one.get("center")).toBe("33.41000,-112.01000");
+    expect(one.get("center")).toBe("33.40200,-112.00200");
     expect(one.get("z")).toBe("13");
     expect(one.get("overlays")).toBeNull();
     expect(snapshotSize({ w: 960, h: 640 })).toEqual({ w: 640, h: 427, scale: 3 });
@@ -267,6 +270,91 @@ describe("Apple Snapshots", () => {
     expect(snapshotFits([SHOP, ...[1, 2, 3, 4, 5, 6, 7, 8, 9].map((n) => stop(n))])).toBe(true);
     expect(snapshotFits([SHOP, stop(10)])).toBe(false);
     expect(snapshotFits([])).toBe(false);
+  });
+});
+
+describe("Apple Snapshots: the route along the roads, smaller zoomed out (owner, 2026-10-23)", () => {
+  /** Each leg as a road that curves `amp` degrees either side, `n` points long. */
+  const roadLegs = (
+    pins: { tone: "shop" | "todo" | "done" | "current"; at: LatLng }[],
+    n = 300,
+    amp = 0.002,
+  ) =>
+    routeLegs(routeOrder(pins).map((p) => p.at)).map((l) =>
+      Array.from({ length: n + 1 }, (_, i) => {
+        const t = i / n;
+        const w = Math.sin(t * Math.PI * 3) * amp;
+        return {
+          lat: l.from.lat + (l.to.lat - l.from.lat) * t + w,
+          lng: l.from.lng + (l.to.lng - l.from.lng) * t - w,
+        };
+      }),
+    );
+  const line = (url: string) => JSON.parse(new URL(url).searchParams.get("overlays")!)[1].points;
+
+  it("follows the roads through every pin, within the address length Apple takes", () => {
+    const { keys } = throwaway();
+    const day = [SHOP, stop(1), stop(2), stop(3)];
+    const url = appleSnapshotUrl(
+      day,
+      { w: 360, h: 240 },
+      keys,
+      "light",
+      "https://app.example.com",
+      "blue",
+      roadLegs(day),
+    );
+    expect(url.length).toBeLessThanOrEqual(SNAPSHOT_MAX_URL);
+    const points: string[] = line(url);
+    expect(points.length).toBeGreaterThan(5);
+    expect(points[0]).toBe(points.at(-1));
+  });
+
+  it("a long day's roads are simplified to fit, never left off", () => {
+    const { keys } = throwaway();
+    const day = [SHOP, ...[1, 2, 3, 4, 5, 6, 7, 8, 9].map((n) => stop(n))];
+    const url = appleSnapshotUrl(
+      day,
+      { w: 360, h: 180 },
+      keys,
+      "light",
+      "https://app.example.com",
+      "blue",
+      roadLegs(day, 3000, 0.004),
+    );
+    expect(url.length).toBeLessThanOrEqual(SNAPSHOT_MAX_URL);
+    expect(line(url).length).toBeGreaterThanOrEqual(day.length + 1);
+  });
+
+  it("draws a spread-out day with small dots (no numbers) and a thin line", () => {
+    const { keys } = throwaway();
+    const city = [
+      SHOP,
+      { tone: "todo" as const, label: "1", at: { lat: 33.6, lng: -111.9 } },
+      { tone: "current" as const, label: "2", at: { lat: 33.3, lng: -112.25 } },
+    ];
+    const q = new URL(
+      appleSnapshotUrl(
+        city,
+        { w: 360, h: 180 },
+        keys,
+        "light",
+        "https://app.example.com",
+        "orange",
+      ),
+    ).searchParams;
+    expect(
+      JSON.parse(q.get("imgs")!).map((i: { url: string; width: number }) => [
+        i.url.split("/").pop(),
+        i.width,
+      ]),
+    ).toEqual([
+      ["shop-s.png", 14],
+      ["todo-orange-s.png", 15],
+      ["current-orange-s.png", 20],
+    ]);
+    const [casing, stroke] = JSON.parse(q.get("overlays")!);
+    expect([casing.lineWidth, stroke.lineWidth]).toEqual([4, 2.5]);
   });
 });
 
@@ -311,8 +399,76 @@ describe("drawing a day-map image", () => {
 
   it("uses Apple when it can", async () => {
     const h = harness({ token: "pk" });
-    expect(await h.draw()).toMatchObject({ ok: true, by: "apple" });
+    expect(await h.draw()).toMatchObject({ ok: true, by: "apple", complete: true });
     expect(h.taken).toEqual(["apple_snapshot"]);
+  });
+
+  it("asks for the road route from the service that draws the image", async () => {
+    const providers: string[] = [];
+    const draw = (apple: boolean, complete = true) => {
+      const asked: string[] = [];
+      return {
+        asked,
+        drawn: drawMapImage({
+          pins,
+          size: { w: 360, h: 240 },
+          theme: "light",
+          apple: apple ? throwaway().keys : null,
+          mapboxToken: "pk",
+          take: async () => true,
+          paths: async (provider, points) => {
+            providers.push(provider);
+            // The route's points in order: from the shop, through the stops, back.
+            expect(points).toEqual([SHOP.at, stop(1).at, stop(2).at, SHOP.at]);
+            return {
+              legs: routeLegs(points).map((l) => [
+                l.from,
+                { lat: l.from.lat, lng: l.to.lng },
+                l.to,
+              ]),
+              complete,
+            };
+          },
+          fetchImpl: (async (url: string) => {
+            asked.push(url);
+            return png();
+          }) as unknown as typeof fetch,
+        }),
+      };
+    };
+    const a = draw(true);
+    expect(await a.drawn).toMatchObject({ ok: true, by: "apple", complete: true });
+    expect(providers).toEqual(["apple"]);
+    // The bend at each leg's corner is on the line.
+    expect(decodeURIComponent(a.asked[0]!)).toContain('"33.41000,-112.00200"');
+
+    const m = draw(false, false);
+    expect(await m.drawn).toMatchObject({ ok: true, by: "mapbox", complete: false });
+    expect(providers).toEqual(["apple", "mapbox"]);
+  });
+
+  it("draws the straight route when Apple refuses the longer address", async () => {
+    const asked: string[] = [];
+    const drawn = await drawMapImage({
+      pins,
+      size: { w: 360, h: 240 },
+      theme: "light",
+      apple: throwaway().keys,
+      mapboxToken: "pk",
+      take: async () => true,
+      paths: async (_provider, points) => ({
+        legs: routeLegs(points).map((l) => [l.from, { lat: l.from.lat, lng: l.to.lng }, l.to]),
+        complete: true,
+      }),
+      fetchImpl: (async (url: string) => {
+        asked.push(url);
+        return JSON.parse(new URL(url).searchParams.get("overlays") ?? "[]")[0]?.points.length > 4
+          ? new Response("too long", { status: 413 })
+          : png();
+      }) as unknown as typeof fetch,
+    });
+    expect(drawn).toMatchObject({ ok: true, by: "apple", complete: false });
+    expect(asked).toHaveLength(2);
   });
 
   it("falls back to Mapbox on an Apple error, past Apple's allowance, or with 10 stops", async () => {

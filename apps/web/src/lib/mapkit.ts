@@ -15,6 +15,7 @@ export interface MkAnnotation {
 export interface MkMap {
   colorScheme: string;
   region: {
+    span?: { latitudeDelta: number; longitudeDelta: number };
     toBoundingRegion(): {
       northLatitude: number;
       southLatitude: number;
@@ -24,6 +25,7 @@ export interface MkMap {
   };
   addAnnotations(a: MkAnnotation[]): void;
   addOverlay(o: unknown): void;
+  removeOverlay(o: unknown): void;
   showItems(items: unknown[], options?: Record<string, unknown>): void;
   setCenterAnimated(c: MkCoordinate, animate?: boolean): void;
   addEventListener(type: string, fn: (e: { annotation?: MkAnnotation }) => void): void;

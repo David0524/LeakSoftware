@@ -40,6 +40,7 @@ export * from "./search";
 export * from "./activity";
 export * from "./week-plan";
 export * from "./day-map";
+export * from "./route-path";
 export * from "./service-days";
 export * from "./download";
 export * from "./team";

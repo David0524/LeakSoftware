@@ -1,20 +1,42 @@
 "use client";
 
 import { useEffect, useRef } from "react";
-import { ROUTE_STYLE } from "@leakbook/core";
-import { markSelected, pinElement, routeHex, routeLine, type LivePin } from "./map-pins";
+import { ROUTE_STYLE, ROUTE_STYLE_SMALL, ROUTE_ZOOM, routeStyleAt } from "@leakbook/core";
+import {
+  fetchRoutePath,
+  markSelected,
+  pinElement,
+  routeHex,
+  routeLine,
+  stylePin,
+  type LivePin,
+} from "./map-pins";
 
 // The enlarged day map, live (HIG maps.md › Best practices: "In general, make your map
 // interactive"): pan and zoom, the same pins as the map image (numbers in the tech's color, the
 // shop as a house), the route in the tech's color through the stops in order, and a pin and its row in the list
 // selected together. Mapbox GL JS loads only when this opens, so the Schedule page never
-// carries it. A muted style (light, or dark in dark mode) keeps the pins forward.
+// carries it. A muted style (light, or dark in dark mode) keeps the pins forward. Since
+// 2026-10-23 (owner) the route follows the roads (Mapbox's paths, from /api/map/path; straight
+// until they come, or where there's none), and its line and pins shrink as the map zooms out.
+
+/** A line width that follows the zoom: ROUTE_STYLE_SMALL's zoomed out, ROUTE_STYLE's zoomed in. */
+const byZoom = (key: "lineWidth" | "casingWidth"): ExpressionSpecification => [
+  "interpolate",
+  ["linear"],
+  ["zoom"],
+  ROUTE_ZOOM.small,
+  ROUTE_STYLE_SMALL[key],
+  ROUTE_ZOOM.full,
+  ROUTE_STYLE[key],
+];
 
 export type { LivePin } from "./map-pins";
 
 type MapboxGl = typeof import("mapbox-gl").default;
 type MapboxMap = import("mapbox-gl").Map;
 type MapboxMarker = import("mapbox-gl").Marker;
+type ExpressionSpecification = import("mapbox-gl").ExpressionSpecification;
 
 export function InteractiveMap({
   company,
@@ -52,6 +74,7 @@ export function InteractiveMap({
   useEffect(() => {
     let gone = false;
     let made: MapboxMap | null = null;
+    const stop = new AbortController();
     (async () => {
       // Each live map counts against Mapbox's monthly free tier for every shop together (owner,
       // 2026-10-20: "ensure I do not surpass the free tier"): ask first, once per opening.
@@ -109,38 +132,59 @@ export function InteractiveMap({
       });
       made.on("load", () => {
         if (!made) return;
-        const line = routeLine(pins);
+        const line = routeLine(pins).map((p) => p.at);
         if (line.length > 1) {
-          made.addSource("route", {
-            type: "geojson",
-            data: {
-              type: "Feature",
-              properties: {},
-              geometry: { type: "LineString", coordinates: line.map((p) => [p.at.lng, p.at.lat]) },
+          const shape = (path: { lat: number; lng: number }[]) => ({
+            type: "Feature" as const,
+            properties: {},
+            geometry: {
+              type: "LineString" as const,
+              coordinates: path.map((p) => [p.lng, p.lat]),
             },
           });
-          // The route in the tech's color on a white casing, so it reads on any street.
+          made.addSource("route", { type: "geojson", data: shape(line) });
+          // The route in the tech's color on a white casing, so it reads on any street; both
+          // thinner as the map zooms out (owner, 2026-10-23).
           made.addLayer({
             id: "route-casing",
             type: "line",
             source: "route",
             layout: { "line-join": "round", "line-cap": "round" },
-            paint: { "line-color": "#ffffff", "line-width": ROUTE_STYLE.casingWidth },
+            paint: { "line-color": "#ffffff", "line-width": byZoom("casingWidth") },
           });
           made.addLayer({
             id: "route",
             type: "line",
             source: "route",
             layout: { "line-join": "round", "line-cap": "round" },
-            paint: { "line-color": hex, "line-width": ROUTE_STYLE.lineWidth },
+            paint: { "line-color": hex, "line-width": byZoom("lineWidth") },
+          });
+          // The road path, once the server has it.
+          void fetchRoutePath(company, pins, "mapbox", stop.signal).then((path) => {
+            const source = made?.getSource("route") as
+              { setData?: (d: ReturnType<typeof shape>) => void } | undefined;
+            if (path && !gone) source?.setData?.(shape(path));
           });
         }
       });
       markers.current = pins.map((p) =>
-        new gl.Marker({ element: pinElement(p, hex, () => select.current(p.label)) })
+        new gl.Marker({
+          element: pinElement(p, hex, () => select.current(p.label), routeStyleAt(made!.getZoom())),
+        })
           .setLngLat([p.at.lng, p.at.lat])
           .addTo(made!),
       );
+      // Pins shrink as the map zooms out, once a frame at most.
+      let frame = 0;
+      made.on("zoom", () => {
+        if (frame) return;
+        frame = requestAnimationFrame(() => {
+          frame = 0;
+          if (!made || gone) return;
+          const s = routeStyleAt(made.getZoom());
+          for (const m of markers.current) stylePin(m.getElement(), s);
+        });
+      });
       markSelected(
         markers.current.map((m) => m.getElement()),
         selected,
@@ -148,6 +192,7 @@ export function InteractiveMap({
     })();
     return () => {
       gone = true;
+      stop.abort();
       markers.current = [];
       made?.remove();
       map.current = null;

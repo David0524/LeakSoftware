@@ -18,7 +18,11 @@
     // casing, 34 pt stops in that color, done stops fainter, and the stop you're on larger with a
     // white ring and a navy ring outside it. Apple's full-color map, as on the website (owner,
     // 2026-10-23: the muted one looked dull), with no points of interest so the pins stay
-    // forward; Apple's logo and legal link stay uncovered in the bottom corners.
+    // forward; Apple's logo and legal link stay uncovered in the bottom corners. Since 2026-10-23
+    // (owner) the route follows the roads (MapKit's paths on the phone, Model/RoadPaths.swift;
+    // straight until they come, or where there's none), and as the map zooms out its line thins
+    // and its pins shrink to small dots without numbers (core `routeStyleAt`), the stop you're on
+    // still a little larger and ringed.
 
     extension LatLng {
         var coordinate: CLLocationCoordinate2D { CLLocationCoordinate2D(latitude: lat, longitude: lng) }
@@ -43,13 +47,15 @@
         var selected = false
         /// The still map on Schedule draws its pins a little smaller than the large map.
         var scale: CGFloat = 1
+        /// The route's sizes at the map's zoom (core `routeStyleAt`): smaller zoomed out.
+        var sizes: RouteSizes = routeStyleAt(routeZoom.full)
 
         private var current: Bool { annotation.tone == .current }
         private var done: Bool { annotation.tone == .done }
 
         /// The circle with its white edge (inside the navy ring for the stop you're on).
         private var size: CGFloat {
-            let s = routeStyle
+            let s = sizes
             let points =
                 annotation.isShop
                 ? s.startPinSize : current ? s.currentPinSize - 2 * s.currentNavyRing : s.pinSize
@@ -57,8 +63,10 @@
         }
 
         private var edge: CGFloat {
-            let s = routeStyle
-            return CGFloat(current ? s.currentWhiteRing : annotation.isShop ? 2 : done ? s.pinEdge + 1 : s.pinEdge)
+            let s = sizes
+            let shopEdge = s.numbers ? 2 : s.pinEdge
+            return CGFloat(
+                current ? s.currentWhiteRing : annotation.isShop ? shopEdge : done ? s.pinEdge + 1 : s.pinEdge)
                 * scale
         }
 
@@ -77,7 +85,10 @@
         var body: some View {
             ZStack {
                 fill
-                if annotation.isShop {
+                // Zoomed out, the dots are too small for a number or the house: just the dot.
+                if !sizes.numbers {
+                    EmptyView()
+                } else if annotation.isShop {
                     Image(systemName: "house.fill")
                         .font(.system(size: size * 0.46, weight: .semibold))
                 } else {
@@ -90,9 +101,9 @@
             .foregroundStyle(done ? Color.text : .white)
             .frame(width: size, height: size)
             .overlay(Circle().strokeBorder(done ? route : .white, lineWidth: edge))
-            .padding(current ? CGFloat(routeStyle.currentNavyRing) * scale : 0)
+            .padding(current ? CGFloat(sizes.currentNavyRing) * scale : 0)
             .background { if current { Circle().fill(Color.navy) } }
-            .shadow(color: .black.opacity(0.3), radius: 2, y: 1)
+            .shadow(color: .black.opacity(0.3), radius: sizes.numbers ? 2 : 1, y: 1)
             .padding(selected ? 3 : 0)
             .overlay { if selected { Circle().strokeBorder(route, lineWidth: 3) } }
             .scaleEffect(selected ? 1.15 : 1)
@@ -131,10 +142,30 @@
         var selected: String?
         var pinScale: CGFloat = 1
         var onPick: ((String) -> Void)?
+        /// The route along the roads (straight until MapKit's paths come).
+        @State private var road: [LatLng] = []
+        /// The map's zoom, to a quarter step (so the pins redraw only when their size changes).
+        @State private var zoom = routeZoom.full
+        @State private var width: CGFloat = 0
+
+        private var sizes: RouteSizes { routeStyleAt(zoom) }
 
         var body: some View {
             if drawsLiveMaps {
                 live
+                    .onGeometryChange(for: CGFloat.self) {
+                        $0.size.width
+                    } action: {
+                        width = $0
+                    }
+                    .onMapCameraChange(frequency: .continuous) { context in
+                        let z = (zoomForSpan(context.region.span.longitudeDelta, Double(width)) * 4).rounded() / 4
+                        if z != zoom { zoom = z }
+                    }
+                    .task(id: model.line) {
+                        road = RoadPaths.shared.kept(model.line)
+                        road = await RoadPaths.shared.route(model.line)
+                    }
             } else {
                 // A still stand-in of the same size: the map's tint, no tiles.
                 Rectangle().fill(Color.water.opacity(0.1)).accessibilityHidden(true)
@@ -142,19 +173,21 @@
         }
 
         private var live: some View {
-            Map(position: $position, interactionModes: interactive ? [.pan, .zoom, .rotate] : []) {
-                if model.line.count > 1 {
-                    // The route in the tech's color on a white casing, so it reads on any street.
-                    MapPolyline(coordinates: model.line.map(\.coordinate))
+            let line = road.count > 1 ? road : model.line
+            return Map(position: $position, interactionModes: interactive ? [.pan, .zoom, .rotate] : []) {
+                if line.count > 1 {
+                    // The route in the tech's color on a white casing, so it reads on any street;
+                    // thinner zoomed out.
+                    MapPolyline(coordinates: line.map(\.coordinate))
                         .stroke(
                             Color.white,
                             style: StrokeStyle(
-                                lineWidth: CGFloat(routeStyle.casingWidth), lineCap: .round, lineJoin: .round))
-                    MapPolyline(coordinates: model.line.map(\.coordinate))
+                                lineWidth: CGFloat(sizes.casingWidth), lineCap: .round, lineJoin: .round))
+                    MapPolyline(coordinates: line.map(\.coordinate))
                         .stroke(
                             model.color.color,
                             style: StrokeStyle(
-                                lineWidth: CGFloat(routeStyle.lineWidth), lineCap: .round, lineJoin: .round))
+                                lineWidth: CGFloat(sizes.lineWidth), lineCap: .round, lineJoin: .round))
                 }
                 // The shop first, so stops draw over it where they're close.
                 ForEach(model.annotations.sorted { $0.isShop && !$1.isShop }) { a in
@@ -174,7 +207,8 @@
         }
 
         @ViewBuilder private func pin(_ a: DayMapAnnotation) -> some View {
-            let dot = MapPinDot(annotation: a, route: model.color.color, selected: selected == a.id, scale: pinScale)
+            let dot = MapPinDot(
+                annotation: a, route: model.color.color, selected: selected == a.id, scale: pinScale, sizes: sizes)
             if let onPick, !a.isShop {
                 Button {
                     onPick(a.id)

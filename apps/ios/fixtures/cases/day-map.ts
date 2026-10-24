@@ -2,10 +2,24 @@ import {
   dayMapPins,
   decodePins,
   encodePins,
+  fitZoom,
+  imageTier,
   MAP_PIN_LIMIT,
+  metersPerPoint,
+  pinSizeAt,
+  projectPoint,
   ROUTE_STYLE,
+  ROUTE_STYLE_SMALL,
+  ROUTE_TIER_ZOOM,
+  ROUTE_ZOOM,
   routeColor,
+  routeStyleAt,
+  routeTierStyle,
+  zoomForSpan,
+  type LatLng,
   type MapPin,
+  type PinTone,
+  type RouteTier,
 } from "@leakbook/core";
 import { rule, type ModuleCases } from "../case";
 
@@ -17,6 +31,127 @@ const at = (i: number) => ({ lat: 33.4 + i * 0.01, lng: -111.9 - i * 0.003 });
 export const dayMap: ModuleCases = {
   MAP_PIN_LIMIT: rule(() => MAP_PIN_LIMIT, [[]]),
   ROUTE_STYLE: rule(() => ROUTE_STYLE, [[]]),
+  // Smaller zoomed out (owner, 2026-10-23: "thinner lines and smaller dots when zoomed out").
+  ROUTE_STYLE_SMALL: rule(() => ROUTE_STYLE_SMALL, [[]]),
+  ROUTE_ZOOM: rule(() => ROUTE_ZOOM, [[]]),
+  routeStyleAt: rule(
+    (zoom: number) => routeStyleAt(zoom),
+    [[2], [10], [10.4], [10.9], [11.37], [11.5], [12.1], [12.75], [13], [16.2], [-3]],
+  ),
+  routeTierStyle: rule(
+    (tier: RouteTier) => ({ zoom: ROUTE_TIER_ZOOM[tier], ...routeTierStyle(tier) }),
+    [["full"], ["medium"], ["small"]],
+  ),
+  pinSizeAt: rule(
+    (tone: PinTone, zoom: number) => pinSizeAt(tone, routeStyleAt(zoom)),
+    [
+      ["shop", 13],
+      ["current", 11],
+      ["done", 10],
+      ["todo", 12.5],
+    ],
+  ),
+  imageTier: rule(
+    (zoom: number, pins: { x: number; y: number; tone: PinTone }[]) => imageTier(zoom, pins),
+    [
+      [14, []],
+      [
+        13,
+        [
+          { x: 0, y: 0, tone: "todo" },
+          { x: 100, y: 0, tone: "todo" },
+        ],
+      ],
+      [
+        12,
+        [
+          { x: 0, y: 0, tone: "todo" },
+          { x: 100, y: 0, tone: "todo" },
+        ],
+      ],
+      [
+        11.2,
+        [
+          { x: 0, y: 0, tone: "todo" },
+          { x: 100, y: 0, tone: "todo" },
+        ],
+      ],
+      // The nearest tier: full from 12.25, medium from 10.75.
+      [12.25, []],
+      [12.2, []],
+      [10.75, []],
+      [10.7, []],
+      // Crowded: 30 apart overlaps at full size, not at medium; 20 apart only fits small dots.
+      [
+        14,
+        [
+          { x: 0, y: 0, tone: "shop" },
+          { x: 30, y: 0, tone: "todo" },
+          { x: 200, y: 7, tone: "todo" },
+        ],
+      ],
+      [
+        14,
+        [
+          { x: 0, y: 0, tone: "todo" },
+          { x: 12, y: 16, tone: "todo" },
+        ],
+      ],
+      [
+        14,
+        [
+          { x: 0, y: 0, tone: "todo" },
+          { x: 36, y: 0, tone: "current" },
+        ],
+      ],
+      [
+        14,
+        [
+          { x: 0, y: 0, tone: "todo" },
+          { x: 0.5, y: 0.5, tone: "done" },
+        ],
+      ],
+    ],
+  ),
+  projectPoint: rule(
+    (p: LatLng, zoom: number) => projectPoint(p, zoom),
+    [
+      [{ lat: 0, lng: 0 }, 0],
+      [SHOP, 13],
+      [{ lat: -33.8688, lng: 151.2093 }, 11.25],
+      [{ lat: 89, lng: -180 }, 2],
+    ],
+  ),
+  zoomForSpan: rule(
+    (lngDelta: number, width: number) => zoomForSpan(lngDelta, width),
+    [
+      [360, 256],
+      [0.05, 390],
+      [0.4, 361],
+      [0, 390],
+      [0.05, 0],
+    ],
+  ),
+  fitZoom: rule(
+    (points: LatLng[], size: { w: number; h: number }, padding: number, maxZoom?: number) =>
+      fitZoom(points, size, padding, maxZoom),
+    [
+      [[SHOP], { w: 360, h: 180 }, 44],
+      [[SHOP, SHOP], { w: 360, h: 180 }, 44, 15],
+      [[SHOP, at(1), at(5)], { w: 360, h: 180 }, 44],
+      [[SHOP, at(1), at(30)], { w: 640, h: 427 }, 40],
+      [[SHOP, { lat: 33.4152, lng: -111.7 }], { w: 300, h: 300 }, 0],
+      [[SHOP, at(2)], { w: 50, h: 50 }, 44],
+    ],
+  ),
+  metersPerPoint: rule(
+    (lat: number, zoom: number) => metersPerPoint(lat, zoom),
+    [
+      [0, 0],
+      [33.4152, 13],
+      [-60, 9.5],
+    ],
+  ),
   // A route's color (owner, 2026-10-23): the tech's, else water blue.
   routeColor: rule(
     (key: string | null) => routeColor(key),

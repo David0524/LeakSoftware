@@ -1,7 +1,7 @@
 import { readFile } from "node:fs/promises";
 import { join } from "node:path";
 import { ImageResponse } from "next/og";
-import { ROUTE_STYLE } from "@leakbook/core";
+import { routeTierStyle } from "@leakbook/core";
 import { tokens } from "@leakbook/tokens";
 import { donePin, parsePinImageName, pinImageSize } from "@/components/map-pins";
 
@@ -13,6 +13,9 @@ import { donePin, parsePinImageName, pinImageSize } from "@/components/map-pins"
 // they draw an image, so they're public and kept for a year; they show nothing about a job.
 // Names (components/map-pins.ts pinImageName): "todo-3-orange", "done-1-blue-dark",
 // "current-2-green", "shop", "home"; older names without a color ("todo-3") are water blue.
+// Since 2026-10-23 (owner: "thinner lines and smaller dots when zoomed out") each also comes
+// smaller for zoomed-out images: "-m" (medium, still numbered) and "-s" (a small dot with no
+// number: "todo-orange-s", "shop-s"), at core routeTierStyle's sizes.
 
 const SHADOW = "0 1px 3px rgba(0,0,0,0.35)";
 
@@ -25,37 +28,43 @@ const display = readFile(
 export async function GET(_req: Request, ctx: { params: Promise<{ pin: string }> }) {
   const pin = parsePinImageName((await ctx.params).pin);
   if (!pin) return new Response("Not found", { status: 404 });
-  const px = pinImageSize(pin.tone) * 2;
-  const s = ROUTE_STYLE;
+  const px = pinImageSize(pin.tone, pin.tier) * 2;
+  const s = routeTierStyle(pin.tier);
+  // The numbers (and the start's house) scale with the dot; the small dot has none.
+  // (34 → 34 and 30 px for one and two digits; the stop you're on 40 → 36 and 32, as before.)
+  const num = (size: number, label: string, current = false) =>
+    Math.round(size * 2 * (label.length > 1 ? (current ? 0.4 : 0.44) : current ? 0.45 : 0.5));
   let body;
   if (pin.tone === "shop") {
     body = (
       <div
         style={{
           display: "flex",
-          width: px - 4,
-          height: px - 4,
+          width: s.startPinSize * 2 - 4,
+          height: s.startPinSize * 2 - 4,
           borderRadius: 9999,
-          border: "4px solid #fff",
+          border: `${s.numbers ? 4 : s.pinEdge * 2}px solid #fff`,
           background: pin.hex,
           alignItems: "center",
           justifyContent: "center",
           boxShadow: SHADOW,
         }}
       >
-        <svg
-          viewBox="0 0 24 24"
-          width="30"
-          height="30"
-          fill="none"
-          stroke="#fff"
-          strokeWidth="2.4"
-          strokeLinecap="round"
-          strokeLinejoin="round"
-        >
-          <path d="M4 11l8-7 8 7" />
-          <path d="M6 10v10h12V10" />
-        </svg>
+        {s.numbers ? (
+          <svg
+            viewBox="0 0 24 24"
+            width={Math.round(s.startPinSize * 2 * 0.54)}
+            height={Math.round(s.startPinSize * 2 * 0.54)}
+            fill="none"
+            stroke="#fff"
+            strokeWidth="2.4"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          >
+            <path d="M4 11l8-7 8 7" />
+            <path d="M6 10v10h12V10" />
+          </svg>
+        ) : null}
       </div>
     );
   } else if (pin.tone === "current") {
@@ -83,11 +92,11 @@ export async function GET(_req: Request, ctx: { params: Promise<{ pin: string }>
             color: "#fff",
             alignItems: "center",
             justifyContent: "center",
-            fontSize: pin.label.length > 1 ? 32 : 36,
+            fontSize: num(s.currentPinSize, pin.label, true),
             fontWeight: 700,
           }}
         >
-          {pin.label}
+          {s.numbers ? pin.label : null}
         </div>
       </div>
     );
@@ -108,12 +117,12 @@ export async function GET(_req: Request, ctx: { params: Promise<{ pin: string }>
           color: done?.text ?? "#fff",
           alignItems: "center",
           justifyContent: "center",
-          fontSize: pin.label.length > 1 ? 30 : 34,
+          fontSize: num(s.pinSize, pin.label),
           fontWeight: 700,
           boxShadow: SHADOW,
         }}
       >
-        {pin.label}
+        {s.numbers ? pin.label : null}
       </div>
     );
   }

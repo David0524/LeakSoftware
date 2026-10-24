@@ -8,6 +8,7 @@ import { media } from "./cases/media";
 import { notifications } from "./cases/notifications";
 import { pricing } from "./cases/pricing";
 import { routing } from "./cases/routing";
+import { routePath } from "./cases/route-path";
 import { routeStartCases } from "./cases/route-start";
 import { schedule } from "./cases/schedule";
 import { search } from "./cases/search";
@@ -38,6 +39,7 @@ export const modules: Record<string, ModuleCases> = {
   notifications,
   pricing,
   routing,
+  "route-path": routePath,
   "route-start": routeStartCases,
   schedule,
   search,

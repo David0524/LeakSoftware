@@ -21,6 +21,701 @@
       }
     }
   ],
+  "ROUTE_STYLE_SMALL": [
+    {
+      "args": [],
+      "result": {
+        "pinSize": 13,
+        "currentPinSize": 18,
+        "pinEdge": 1.5,
+        "currentWhiteRing": 2,
+        "currentNavyRing": 1.5,
+        "startPinSize": 14,
+        "lineWidth": 2.5,
+        "casingWidth": 4
+      }
+    }
+  ],
+  "ROUTE_ZOOM": [
+    {
+      "args": [],
+      "result": {
+        "full": 13,
+        "small": 10,
+        "numbersFrom": 20
+      }
+    }
+  ],
+  "routeStyleAt": [
+    {
+      "args": [
+        2
+      ],
+      "result": {
+        "pinSize": 13,
+        "currentPinSize": 18,
+        "pinEdge": 1.5,
+        "currentWhiteRing": 2,
+        "currentNavyRing": 1.5,
+        "startPinSize": 14,
+        "lineWidth": 2.5,
+        "casingWidth": 4,
+        "numbers": false
+      }
+    },
+    {
+      "args": [
+        10
+      ],
+      "result": {
+        "pinSize": 13,
+        "currentPinSize": 18,
+        "pinEdge": 1.5,
+        "currentWhiteRing": 2,
+        "currentNavyRing": 1.5,
+        "startPinSize": 14,
+        "lineWidth": 2.5,
+        "casingWidth": 4,
+        "numbers": false
+      }
+    },
+    {
+      "args": [
+        10.4
+      ],
+      "result": {
+        "pinSize": 15.75,
+        "currentPinSize": 21,
+        "pinEdge": 1.5,
+        "currentWhiteRing": 2.25,
+        "currentNavyRing": 1.5,
+        "startPinSize": 15.75,
+        "lineWidth": 3,
+        "casingWidth": 4.75,
+        "numbers": false
+      }
+    },
+    {
+      "args": [
+        10.9
+      ],
+      "result": {
+        "pinSize": 19.25,
+        "currentPinSize": 24.5,
+        "pinEdge": 1.75,
+        "currentWhiteRing": 2.25,
+        "currentNavyRing": 1.75,
+        "startPinSize": 18.25,
+        "lineWidth": 3.5,
+        "casingWidth": 5.5,
+        "numbers": false
+      }
+    },
+    {
+      "args": [
+        11.37
+      ],
+      "result": {
+        "pinSize": 22.5,
+        "currentPinSize": 28,
+        "pinEdge": 1.75,
+        "currentWhiteRing": 2.5,
+        "currentNavyRing": 1.75,
+        "startPinSize": 20.5,
+        "lineWidth": 4,
+        "casingWidth": 6.25,
+        "numbers": true
+      }
+    },
+    {
+      "args": [
+        11.5
+      ],
+      "result": {
+        "pinSize": 23.5,
+        "currentPinSize": 29,
+        "pinEdge": 1.75,
+        "currentWhiteRing": 2.5,
+        "currentNavyRing": 1.75,
+        "startPinSize": 21,
+        "lineWidth": 4.25,
+        "casingWidth": 6.5,
+        "numbers": true
+      }
+    },
+    {
+      "args": [
+        12.1
+      ],
+      "result": {
+        "pinSize": 27.75,
+        "currentPinSize": 33.5,
+        "pinEdge": 1.75,
+        "currentWhiteRing": 2.75,
+        "currentNavyRing": 1.75,
+        "startPinSize": 23.75,
+        "lineWidth": 5,
+        "casingWidth": 7.5,
+        "numbers": true
+      }
+    },
+    {
+      "args": [
+        12.75
+      ],
+      "result": {
+        "pinSize": 32.25,
+        "currentPinSize": 38.25,
+        "pinEdge": 2,
+        "currentWhiteRing": 3,
+        "currentNavyRing": 2,
+        "startPinSize": 26.75,
+        "lineWidth": 5.75,
+        "casingWidth": 8.5,
+        "numbers": true
+      }
+    },
+    {
+      "args": [
+        13
+      ],
+      "result": {
+        "pinSize": 34,
+        "currentPinSize": 40,
+        "pinEdge": 2,
+        "currentWhiteRing": 3,
+        "currentNavyRing": 2,
+        "startPinSize": 28,
+        "lineWidth": 6,
+        "casingWidth": 9,
+        "numbers": true
+      }
+    },
+    {
+      "args": [
+        16.2
+      ],
+      "result": {
+        "pinSize": 34,
+        "currentPinSize": 40,
+        "pinEdge": 2,
+        "currentWhiteRing": 3,
+        "currentNavyRing": 2,
+        "startPinSize": 28,
+        "lineWidth": 6,
+        "casingWidth": 9,
+        "numbers": true
+      }
+    },
+    {
+      "args": [
+        -3
+      ],
+      "result": {
+        "pinSize": 13,
+        "currentPinSize": 18,
+        "pinEdge": 1.5,
+        "currentWhiteRing": 2,
+        "currentNavyRing": 1.5,
+        "startPinSize": 14,
+        "lineWidth": 2.5,
+        "casingWidth": 4,
+        "numbers": false
+      }
+    }
+  ],
+  "routeTierStyle": [
+    {
+      "args": [
+        "full"
+      ],
+      "result": {
+        "zoom": 13,
+        "pinSize": 34,
+        "currentPinSize": 40,
+        "pinEdge": 2,
+        "currentWhiteRing": 3,
+        "currentNavyRing": 2,
+        "startPinSize": 28,
+        "lineWidth": 6,
+        "casingWidth": 9,
+        "numbers": true
+      }
+    },
+    {
+      "args": [
+        "medium"
+      ],
+      "result": {
+        "zoom": 11.5,
+        "pinSize": 23.5,
+        "currentPinSize": 29,
+        "pinEdge": 1.75,
+        "currentWhiteRing": 2.5,
+        "currentNavyRing": 1.75,
+        "startPinSize": 21,
+        "lineWidth": 4.25,
+        "casingWidth": 6.5,
+        "numbers": true
+      }
+    },
+    {
+      "args": [
+        "small"
+      ],
+      "result": {
+        "zoom": 10,
+        "pinSize": 13,
+        "currentPinSize": 18,
+        "pinEdge": 1.5,
+        "currentWhiteRing": 2,
+        "currentNavyRing": 1.5,
+        "startPinSize": 14,
+        "lineWidth": 2.5,
+        "casingWidth": 4,
+        "numbers": false
+      }
+    }
+  ],
+  "pinSizeAt": [
+    {
+      "args": [
+        "shop",
+        13
+      ],
+      "result": 28
+    },
+    {
+      "args": [
+        "current",
+        11
+      ],
+      "result": 25.25
+    },
+    {
+      "args": [
+        "done",
+        10
+      ],
+      "result": 13
+    },
+    {
+      "args": [
+        "todo",
+        12.5
+      ],
+      "result": 30.5
+    }
+  ],
+  "imageTier": [
+    {
+      "args": [
+        14,
+        []
+      ],
+      "result": "full"
+    },
+    {
+      "args": [
+        13,
+        [
+          {
+            "x": 0,
+            "y": 0,
+            "tone": "todo"
+          },
+          {
+            "x": 100,
+            "y": 0,
+            "tone": "todo"
+          }
+        ]
+      ],
+      "result": "full"
+    },
+    {
+      "args": [
+        12,
+        [
+          {
+            "x": 0,
+            "y": 0,
+            "tone": "todo"
+          },
+          {
+            "x": 100,
+            "y": 0,
+            "tone": "todo"
+          }
+        ]
+      ],
+      "result": "medium"
+    },
+    {
+      "args": [
+        11.2,
+        [
+          {
+            "x": 0,
+            "y": 0,
+            "tone": "todo"
+          },
+          {
+            "x": 100,
+            "y": 0,
+            "tone": "todo"
+          }
+        ]
+      ],
+      "result": "medium"
+    },
+    {
+      "args": [
+        12.25,
+        []
+      ],
+      "result": "full"
+    },
+    {
+      "args": [
+        12.2,
+        []
+      ],
+      "result": "medium"
+    },
+    {
+      "args": [
+        10.75,
+        []
+      ],
+      "result": "medium"
+    },
+    {
+      "args": [
+        10.7,
+        []
+      ],
+      "result": "small"
+    },
+    {
+      "args": [
+        14,
+        [
+          {
+            "x": 0,
+            "y": 0,
+            "tone": "shop"
+          },
+          {
+            "x": 30,
+            "y": 0,
+            "tone": "todo"
+          },
+          {
+            "x": 200,
+            "y": 7,
+            "tone": "todo"
+          }
+        ]
+      ],
+      "result": "medium"
+    },
+    {
+      "args": [
+        14,
+        [
+          {
+            "x": 0,
+            "y": 0,
+            "tone": "todo"
+          },
+          {
+            "x": 12,
+            "y": 16,
+            "tone": "todo"
+          }
+        ]
+      ],
+      "result": "small"
+    },
+    {
+      "args": [
+        14,
+        [
+          {
+            "x": 0,
+            "y": 0,
+            "tone": "todo"
+          },
+          {
+            "x": 36,
+            "y": 0,
+            "tone": "current"
+          }
+        ]
+      ],
+      "result": "medium"
+    },
+    {
+      "args": [
+        14,
+        [
+          {
+            "x": 0,
+            "y": 0,
+            "tone": "todo"
+          },
+          {
+            "x": 0.5,
+            "y": 0.5,
+            "tone": "done"
+          }
+        ]
+      ],
+      "result": "small"
+    }
+  ],
+  "projectPoint": [
+    {
+      "args": [
+        {
+          "lat": 0,
+          "lng": 0
+        },
+        0
+      ],
+      "result": {
+        "x": 128,
+        "y": 128
+      }
+    },
+    {
+      "args": [
+        {
+          "lat": 33.4152,
+          "lng": -111.8315
+        },
+        13
+      ],
+      "result": {
+        "x": 397110.2947555555,
+        "y": 841841.3596298294
+      }
+    },
+    {
+      "args": [
+        {
+          "lat": -33.8688,
+          "lng": 151.2093
+        },
+        11.25
+      ],
+      "result": {
+        "x": 573624.1650657172,
+        "y": 374149.72953344276
+      }
+    },
+    {
+      "args": [
+        {
+          "lat": 89,
+          "lng": -180
+        },
+        2
+      ],
+      "result": {
+        "x": 0,
+        "y": 1.6772247409192573
+      }
+    }
+  ],
+  "zoomForSpan": [
+    {
+      "args": [
+        360,
+        256
+      ],
+      "result": 0
+    },
+    {
+      "args": [
+        0.05,
+        390
+      ],
+      "result": 13.421111504966648
+    },
+    {
+      "args": [
+        0.4,
+        361
+      ],
+      "result": 10.309636218104208
+    },
+    {
+      "args": [
+        0,
+        390
+      ],
+      "result": 13
+    },
+    {
+      "args": [
+        0.05,
+        0
+      ],
+      "result": 13
+    }
+  ],
+  "fitZoom": [
+    {
+      "args": [
+        [
+          {
+            "lat": 33.4152,
+            "lng": -111.8315
+          }
+        ],
+        {
+          "w": 360,
+          "h": 180
+        },
+        44
+      ],
+      "result": 16
+    },
+    {
+      "args": [
+        [
+          {
+            "lat": 33.4152,
+            "lng": -111.8315
+          },
+          {
+            "lat": 33.4152,
+            "lng": -111.8315
+          }
+        ],
+        {
+          "w": 360,
+          "h": 180
+        },
+        44,
+        15
+      ],
+      "result": 15
+    },
+    {
+      "args": [
+        [
+          {
+            "lat": 33.4152,
+            "lng": -111.8315
+          },
+          {
+            "lat": 33.41,
+            "lng": -111.903
+          },
+          {
+            "lat": 33.449999999999996,
+            "lng": -111.915
+          }
+        ],
+        {
+          "w": 360,
+          "h": 180
+        },
+        44
+      ],
+      "result": 11.398358033541156
+    },
+    {
+      "args": [
+        [
+          {
+            "lat": 33.4152,
+            "lng": -111.8315
+          },
+          {
+            "lat": 33.41,
+            "lng": -111.903
+          },
+          {
+            "lat": 33.699999999999996,
+            "lng": -111.99000000000001
+          }
+        ],
+        {
+          "w": 640,
+          "h": 427
+        },
+        40
+      ],
+      "result": 10.453521419618074
+    },
+    {
+      "args": [
+        [
+          {
+            "lat": 33.4152,
+            "lng": -111.8315
+          },
+          {
+            "lat": 33.4152,
+            "lng": -111.7
+          }
+        ],
+        {
+          "w": 300,
+          "h": 300
+        },
+        0
+      ],
+      "result": 11.647537082195317
+    },
+    {
+      "args": [
+        [
+          {
+            "lat": 33.4152,
+            "lng": -111.8315
+          },
+          {
+            "lat": 33.42,
+            "lng": -111.906
+          }
+        ],
+        {
+          "w": 50,
+          "h": 50
+        },
+        44
+      ],
+      "result": 4.23846886052963
+    }
+  ],
+  "metersPerPoint": [
+    {
+      "args": [
+        0,
+        0
+      ],
+      "result": 156543.03392
+    },
+    {
+      "args": [
+        33.4152,
+        13
+      ],
+      "result": 15.950531212605418
+    },
+    {
+      "args": [
+        -60,
+        9.5
+      ],
+      "result": 108.0982820628396
+    }
+  ],
   "routeColor": [
     {
       "args": [

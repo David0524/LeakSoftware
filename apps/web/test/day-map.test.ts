@@ -141,6 +141,7 @@ describe("map pins in the tech's color", () => {
       home: false,
       hex: tokens.color.tech.light.orange,
       dark: false,
+      tier: "full",
     });
     expect(parsePinImageName("current-12-green-dark.png")?.hex).toBe(tokens.color.tech.dark.green);
     expect(parsePinImageName("todo-3.png")?.hex).toBe(tokens.color.brand.water);
@@ -149,6 +150,34 @@ describe("map pins in the tech's color", () => {
     expect(parsePinImageName("todo-100.png")).toBeNull();
     expect(parsePinImageName("todo-3-mauve.png")).toBeNull();
     expect(parsePinImageName("todo-3-orange")).toBeNull();
+  });
+
+  it("names and reads back the smaller pins of zoomed-out images (owner, 2026-10-23)", () => {
+    expect(pinImageName({ tone: "todo", label: "3" }, "orange", "light", "medium")).toBe(
+      "todo-3-orange-m",
+    );
+    // The small dot has no number, so one image serves every stop of a tone.
+    expect(pinImageName({ tone: "done", label: "7" }, "green", "dark", "small")).toBe(
+      "done-green-dark-s",
+    );
+    expect(pinImageName({ tone: "shop", label: "", home: true }, null, "light", "small")).toBe(
+      "home-s",
+    );
+    expect(parsePinImageName("todo-3-orange-m.png")).toMatchObject({ label: "3", tier: "medium" });
+    expect(parsePinImageName("done-green-dark-s.png")).toMatchObject({
+      tone: "done",
+      label: "",
+      dark: true,
+      tier: "small",
+    });
+    expect(parsePinImageName("shop-s.png")).toMatchObject({ tone: "shop", tier: "small" });
+    // A number on the small dot, or none on the others, isn't a pin.
+    expect(parsePinImageName("todo-3-orange-s.png")).toBeNull();
+    expect(parsePinImageName("todo-orange-m.png")).toBeNull();
+    expect(parsePinImageName("todo-orange.png")).toBeNull();
+    expect(pinImageSize("todo", "small")).toBeLessThan(pinImageSize("todo", "medium"));
+    expect(pinImageSize("current", "small")).toBeGreaterThan(pinImageSize("todo", "small"));
+    expect(pinImageSize("todo")).toBe(36);
   });
 
   it("colors routes by tech, water blue without one, and fades done stops", () => {

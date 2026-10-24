@@ -103,6 +103,180 @@ export const ROUTE_STYLE = {
   casingWidth: 9,
 } as const;
 
+/**
+ * The route's order on every map: the start (shop or home), each stop in turn, and back to the
+ * start. A day with no start is just its stops.
+ */
+export function routeOrder<P extends { tone: PinTone }>(pins: P[]): P[] {
+  const start = pins.find((p) => p.tone === "shop");
+  const stops = pins.filter((p) => p.tone !== "shop");
+  return [...(start ? [start] : []), ...stops, ...(start && stops.length ? [start] : [])];
+}
+
+/**
+ * Zoomed out, a route shrinks (owner, 2026-10-23: "thinner lines and smaller dots when zoomed out
+ * of the map so it doesn't look like one blob"): at ROUTE_ZOOM.full (a few streets across) and
+ * closer, ROUTE_STYLE as it is; at ROUTE_ZOOM.small (a city across) and farther, these small
+ * dots without numbers on a thin line; in between, every size steps smoothly from one to the
+ * other. The stop you're on stays a little larger, with its rings, so it's easy to find. Zoom is
+ * the web map zoom level (256-point tiles; 13 shows about 5 km across a phone).
+ */
+export const ROUTE_STYLE_SMALL = {
+  pinSize: 13,
+  currentPinSize: 18,
+  pinEdge: 1.5,
+  currentWhiteRing: 2,
+  currentNavyRing: 1.5,
+  startPinSize: 14,
+  lineWidth: 2.5,
+  casingWidth: 4,
+} as const;
+
+export const ROUTE_ZOOM = {
+  /** At this zoom and closer: ROUTE_STYLE. */
+  full: 13,
+  /** At this zoom and farther: ROUTE_STYLE_SMALL. */
+  small: 10,
+  /** A pin shows its number (and the start its house) from this size, in points. */
+  numbersFrom: 20,
+} as const;
+
+/** A route's sizes at one zoom (points), and whether its pins show their numbers. */
+export interface RouteSizes {
+  pinSize: number;
+  currentPinSize: number;
+  pinEdge: number;
+  currentWhiteRing: number;
+  currentNavyRing: number;
+  startPinSize: number;
+  lineWidth: number;
+  casingWidth: number;
+  numbers: boolean;
+}
+
+const SIZE_KEYS = [
+  "pinSize",
+  "currentPinSize",
+  "pinEdge",
+  "currentWhiteRing",
+  "currentNavyRing",
+  "startPinSize",
+  "lineWidth",
+  "casingWidth",
+] as const;
+
+/** The route's sizes at `zoom`, each to the nearest quarter point. */
+export function routeStyleAt(zoom: number): RouteSizes {
+  const z = Number.isFinite(zoom) ? zoom : ROUTE_ZOOM.full;
+  const t = Math.max(0, Math.min(1, (z - ROUTE_ZOOM.small) / (ROUTE_ZOOM.full - ROUTE_ZOOM.small)));
+  const out = {} as Record<(typeof SIZE_KEYS)[number], number>;
+  for (const k of SIZE_KEYS) {
+    const v = ROUTE_STYLE_SMALL[k] + (ROUTE_STYLE[k] - ROUTE_STYLE_SMALL[k]) * t;
+    out[k] = Math.round(v * 4) / 4;
+  }
+  return { ...out, numbers: out.pinSize >= ROUTE_ZOOM.numbersFrom };
+}
+
+/**
+ * A map image's three sizes (its pins are drawn ahead as small images, so an image uses one of
+ * these rather than any size between): full, medium (halfway) and small.
+ */
+export type RouteTier = "full" | "medium" | "small";
+
+export const ROUTE_TIER_ZOOM: Record<RouteTier, number> = { full: 13, medium: 11.5, small: 10 };
+
+export function routeTierStyle(tier: RouteTier): RouteSizes {
+  return routeStyleAt(ROUTE_TIER_ZOOM[tier]);
+}
+
+/** A pin's size at `sizes` (the start's, the stop you're on, or any other stop's). */
+export function pinSizeAt(tone: PinTone, sizes: RouteSizes): number {
+  return tone === "shop"
+    ? sizes.startPinSize
+    : tone === "current"
+      ? sizes.currentPinSize
+      : sizes.pinSize;
+}
+
+/**
+ * The size a map image draws its route at: the tier nearest the live map's size at its zoom
+ * (full from zoom 12.25, medium from 10.75, else small), then a smaller one while any two pins
+ * would overlap (pins in image points at that zoom; projectPoint).
+ */
+export function imageTier(
+  zoom: number,
+  pins: { x: number; y: number; tone: PinTone }[],
+): RouteTier {
+  const order: RouteTier[] = ["full", "medium", "small"];
+  let i = order.findIndex(
+    (t, k) =>
+      k === order.length - 1 || zoom >= (ROUTE_TIER_ZOOM[t] + ROUTE_TIER_ZOOM[order[k + 1]!]) / 2,
+  );
+  for (; i < order.length - 1; i++) {
+    const sizes = routeTierStyle(order[i]!);
+    const crowded = pins.some((a, j) =>
+      pins.some(
+        (b, k) =>
+          k > j &&
+          Math.hypot(a.x - b.x, a.y - b.y) <
+            (pinSizeAt(a.tone, sizes) + pinSizeAt(b.tone, sizes)) / 2,
+      ),
+    );
+    if (!crowded) break;
+  }
+  return order[i]!;
+}
+
+// ---------------------------------------------------------------------------
+// Where a map image ends up (web Mercator, 256-point tiles)
+// ---------------------------------------------------------------------------
+
+/** A point in map points at `zoom` (x east, y south), for distances between pins on an image. */
+export function projectPoint(p: LatLng, zoom: number): { x: number; y: number } {
+  const scale = 256 * 2 ** zoom;
+  const lat = Math.max(-85, Math.min(85, p.lat));
+  const s = Math.sin((lat * Math.PI) / 180);
+  return {
+    x: ((p.lng + 180) / 360) * scale,
+    y: (0.5 - Math.log((1 + s) / (1 - s)) / (4 * Math.PI)) * scale,
+  };
+}
+
+/** The zoom at which a map `width` points wide shows `lngDelta` degrees of longitude across. */
+export function zoomForSpan(lngDelta: number, width: number): number {
+  if (!(lngDelta > 0) || !(width > 0)) return ROUTE_ZOOM.full;
+  return Math.log2((width * 360) / (256 * lngDelta));
+}
+
+/**
+ * The zoom a map image of `size` points ends up at when it fits `points` with `padding` points
+ * spare on each side (as Apple's and Mapbox's "auto" do), at most `maxZoom`. One point: `maxZoom`.
+ */
+export function fitZoom(
+  points: LatLng[],
+  size: { w: number; h: number },
+  padding: number,
+  maxZoom = 16,
+): number {
+  if (points.length < 2) return maxZoom;
+  const at0 = points.map((p) => projectPoint(p, 0));
+  const xs = at0.map((p) => p.x);
+  const ys = at0.map((p) => p.y);
+  const dx = Math.max(...xs) - Math.min(...xs);
+  const dy = Math.max(...ys) - Math.min(...ys);
+  const w = Math.max(1, size.w - 2 * padding);
+  const h = Math.max(1, size.h - 2 * padding);
+  const zx = dx > 0 ? Math.log2(w / dx) : Infinity;
+  const zy = dy > 0 ? Math.log2(h / dy) : Infinity;
+  const z = Math.min(zx, zy, maxZoom);
+  return Number.isFinite(z) ? z : maxZoom;
+}
+
+/** Meters one map point covers at `lat` and `zoom`. */
+export function metersPerPoint(lat: number, zoom: number): number {
+  return (156_543.03392 * Math.cos((lat * Math.PI) / 180)) / 2 ** zoom;
+}
+
 const TONE_CODE: Record<PinTone, string> = { shop: "s", todo: "t", current: "c", done: "d" };
 const CODE_TONE = Object.fromEntries(
   Object.entries(TONE_CODE).map(([k, v]) => [v, k as PinTone]),

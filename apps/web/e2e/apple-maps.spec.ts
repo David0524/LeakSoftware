@@ -42,11 +42,12 @@ const STUB = `(() => {
       this.el.style.cssText = "position:absolute;inset:0;background:#dfe7ee;display:flex;flex-wrap:wrap;gap:4px;padding:8px";
       el.appendChild(this.el);
       this.overlays = [];
-      this.region = { toBoundingRegion: () => ({ northLatitude: 90, southLatitude: -90, eastLongitude: 180, westLongitude: -180 }) };
+      this.region = { span: { latitudeDelta: 0.05, longitudeDelta: 0.05 }, toBoundingRegion: () => ({ northLatitude: 90, southLatitude: -90, eastLongitude: 180, westLongitude: -180 }) };
     },
   };
   mapkit.Map.prototype.addAnnotations = function (list) { for (const a of list) this.el.appendChild(a.factory()); };
   mapkit.Map.prototype.addOverlay = function (o) { this.overlays.push(o); this.el.dataset.overlays = String(this.overlays.length); };
+  mapkit.Map.prototype.removeOverlay = function (o) { this.overlays = this.overlays.filter((x) => x !== o); this.el.dataset.overlays = String(this.overlays.length); };
   mapkit.Map.prototype.showItems = function () {};
   mapkit.Map.prototype.setCenterAnimated = function () {};
   mapkit.Map.prototype.addEventListener = function () {};

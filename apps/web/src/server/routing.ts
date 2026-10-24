@@ -249,7 +249,11 @@ function routingProvider(): RoutingProvider | null {
   return { ...m, geocode: freeGeocoder().geocode, paidGeocode: m.geocode };
 }
 
-/** The kinds in app.mapbox_budget: Mapbox's, and Apple's (docs/plans/apple-maps.md). */
+/**
+ * The kinds in app.mapbox_budget: Mapbox's, and Apple's (docs/plans/apple-maps.md). Mapbox
+ * Directions ("directions") gives road paths for Mapbox's maps; Apple's directions are
+ * "apple_service" calls.
+ */
 export type MapBudgetKind =
   | "static_image"
   | "geocode_temp"
@@ -258,7 +262,8 @@ export type MapBudgetKind =
   | "geocode_paid"
   | "apple_snapshot"
   | "apple_service"
-  | "apple_map_view";
+  | "apple_map_view"
+  | "directions";
 
 /** Apple's address autocomplete as a suggester, when the website is on Apple Maps. */
 export type AppleSuggest = (text: string, near: LatLng | null) => Promise<AddressSuggestion[]>;
