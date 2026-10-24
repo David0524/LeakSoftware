@@ -107,10 +107,9 @@ https://sundeckpro.com/
 
 ### 1.7 Version
 
-`1.0.0`. **The build must say the same:** `CFBundleShortVersionString` is still `0.1.0` in
-`apps/ios/Info.plist` (and `LiveActivity-Info.plist`, and `MARKETING_VERSION` in
-`apps/ios/AppHost/project.yml`). Raise all three to `1.0.0` before the release build; it was
-left alone here because another change to those files was in progress.
+`1.0.0`, the same as the build's `CFBundleShortVersionString` (`apps/ios/Info.plist`, with
+`LiveActivity-Info.plist` and `MARKETING_VERSION` in `apps/ios/AppHost/project.yml`; raised from
+0.1.0 on 2026-10-24). Raise all three together for the next version.
 
 ### 1.8 Copyright
 
