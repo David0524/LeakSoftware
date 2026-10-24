@@ -188,6 +188,7 @@ body {
   gap: 12px;
 }
 .btn {
+  white-space: nowrap;
   /* The app's own primary button (filled blue, white text): plain and flat, so it reads as
      a product's button, not an ad (owner, 2026-10-23: "still feels scammy"). */
   background: var(--blue);
@@ -204,7 +205,20 @@ body {
   font-weight: 700;
   font-size: 52px;
 }
+.cta .row {
+  display: flex;
+  align-items: baseline;
+  gap: 24px;
+  white-space: nowrap;
+}
+.price {
+  font-family: Public;
+  font-weight: 600;
+  font-size: 38px;
+  color: rgba(18, 38, 58, 0.7);
+}
 .contact {
+  white-space: nowrap;
   margin-left: auto;
   text-align: right;
   font-size: 38px;
