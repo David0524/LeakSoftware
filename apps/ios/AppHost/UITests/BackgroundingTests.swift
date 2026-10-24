@@ -20,9 +20,14 @@ final class BackgroundingTests: XCTestCase {
             return false
         }
         app.launch()
+        // The database key is in the Keychain: an unsigned build can't reach it and stops here.
+        XCTAssertFalse(
+            app.staticTexts["Sundeck Pro Couldn’t Start"].waitForExistence(timeout: 5),
+            "The app couldn't open its storage (is the simulator build signed?)")
         signIn(app)
         let today = app.tabBars.buttons["Today"]
-        XCTAssertTrue(today.waitForExistence(timeout: 120), "The app didn't open after signing in")
+        // The first download runs before Today shows.
+        XCTAssertTrue(today.waitForExistence(timeout: 240), "The app didn't open after signing in")
         attach(app, "signed-in")
 
         for round in 1...5 {

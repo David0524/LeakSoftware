@@ -39,9 +39,12 @@ jobs:
           print(next(d["udid"] for k in runtimes for d in devices[k] if d["name"].startswith("iPhone")))')
           echo "device=$device" >> "$GITHUB_ENV"
           touch "$RUNNER_TEMP/started"
+          # Signed to run locally, not unsigned: an unsigned app has no Keychain, so it can't
+          # read its database key and stops at "Sundeck Pro Couldn't Start" (run 40063990357).
           xcodebuild test -project SundeckPro.xcodeproj -scheme SundeckProUITests \
             -destination "id=$device" -resultBundlePath "$RUNNER_TEMP/backgrounding.xcresult" \
-            -skipPackagePluginValidation CODE_SIGNING_ALLOWED=NO
+            -skipPackagePluginValidation \
+            CODE_SIGN_IDENTITY=- CODE_SIGN_STYLE=Manual DEVELOPMENT_TEAM= PROVISIONING_PROFILE_SPECIFIER=
       - name: Collect crash reports
         if: always()
         run: |
