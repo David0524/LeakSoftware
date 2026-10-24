@@ -94,8 +94,11 @@ import Testing
         StubServer.set(host, "/api/usage", 204, [:])
         let stub = URLSessionConfiguration.ephemeral
         stub.protocolClasses = [StubServer.self]
-        var api = WebAPI(baseURL: URL(string: "https://\(host)")!) { "token" }
-        api.session = URLSession(configuration: stub)
+        let api: WebAPI = {
+            var api = WebAPI(baseURL: URL(string: "https://\(host)")!) { "token" }
+            api.session = URLSession(configuration: stub)
+            return api
+        }()
         async let first: Void = r.flush(api, companyId: "c1")
         async let second: Void = r.flush(api, companyId: "c1")
         _ = await (first, second)
