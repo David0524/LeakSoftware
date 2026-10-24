@@ -105,6 +105,14 @@ export function formatBytes(bytes: number | null | undefined): string {
 }
 
 /**
+ * Pictures in texts are shrunk before they're sent, like job photos but a little sharper (MMS
+ * shows them full screen): long edge 2048 px, JPEG at 0.8. A 48 MP photo then comes to about
+ * 1 MB, well under the texts bucket's 10 MB and the carriers' 5 MB a message. GIFs are sent as
+ * they are, so they keep moving.
+ */
+export const TEXT_PICTURE_LIMITS = { longEdge: 2048, quality: 0.8 } as const;
+
+/**
  * What each storage bucket takes (security review M2; the buckets' file_size_limit and
  * allowed_mime_types, 20261022002500_upload_limits.sql). The apps check these before
  * uploading; the storage server refuses anything past them.

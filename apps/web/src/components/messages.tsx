@@ -2,6 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import { useActionState, useEffect, useId, useRef, useState, useTransition } from "react";
+import { shrinkTextPictures } from "@/lib/shrink-photo";
 import { saveFailed } from "./instant";
 import {
   callCustomer,
@@ -43,6 +44,8 @@ export function Composer({
   const [chosen, setChosen] = useState(0);
   // Sent: clear the form, and open a new conversation. Done in the action, not an effect.
   const [state, action, pending] = useActionState(async (prev: SendState, data: FormData) => {
+    // Shrunk first, like the apps (owner, 2026-10-24): a 48 MP photo goes as about 1 MB.
+    await shrinkTextPictures(data);
     const next = await orOffline(sendMessage)(prev, data);
     if (next.sentAt) {
       form.current?.reset();

@@ -460,12 +460,29 @@
                 }
             }
 
+            /// Shrunk like job photos, as the website and Android do (core TEXT_PICTURE_LIMITS:
+            /// long edge 2048 px, JPEG at 0.8): a 48 MP photo goes as about 1 MB, well under the
+            /// texts bucket's 10 MB and the carriers' 5 MB. Drawn upright at 1×.
+            private static func shrunk(_ image: UIImage) -> Data? {
+                let pixels = CGSize(width: image.size.width * image.scale, height: image.size.height * image.scale)
+                let size =
+                    fitWithin(Double(pixels.width), Double(pixels.height), Double(TextPictureLimits.longEdge))
+                    .map { CGSize(width: $0.width, height: $0.height) } ?? pixels
+                let format = UIGraphicsImageRendererFormat()
+                format.scale = 1
+                format.opaque = true
+                let resized = UIGraphicsImageRenderer(size: size, format: format).image { _ in
+                    image.draw(in: CGRect(origin: .zero, size: size))
+                }
+                return resized.jpegData(compressionQuality: TextPictureLimits.quality)
+            }
+
             // The provider calls back on its own queue, so its callback is `@Sendable` (not tied to
             // the main thread, which crashed when it ran elsewhere).
             private static func jpeg(_ provider: NSItemProvider) async -> Data? {
                 await withCheckedContinuation { continuation in
                     provider.loadObject(ofClass: UIImage.self) { @Sendable object, _ in
-                        continuation.resume(returning: (object as? UIImage)?.jpegData(compressionQuality: 0.8))
+                        continuation.resume(returning: (object as? UIImage).flatMap(Self.shrunk))
                     }
                 }
             }

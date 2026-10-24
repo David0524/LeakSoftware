@@ -106,6 +106,13 @@ public enum MediaLimits {
     public static let voiceMaxSeconds = 300
 }
 
+/// Pictures in texts are shrunk before they're sent: long edge 2048 px, JPEG at 0.8. Port of
+/// core's TEXT_PICTURE_LIMITS.
+public enum TextPictureLimits {
+    public static let longEdge = 2048
+    public static let quality = 0.8
+}
+
 /// What each storage bucket takes (security review M2; the buckets' file_size_limit and
 /// allowed_mime_types). Port of core's UPLOAD_LIMITS.
 public enum UploadBucket: Sendable {

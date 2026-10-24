@@ -14,7 +14,7 @@ import Testing
             "enabledSignaturePurposes", "reportSignOffPurposes", "signatureStoragePath", "inkLength", "strokePath",
             "signatureSvg", "signatureStatement", "REPORT_BLOCKS", "testOutcomeLabel",
             "PEN_POINTS_MAX", "penShape", "penPath", "clampTextSize", "moveText", "resizeText",
-            "UPLOAD_LIMITS", "uploadRefusal", "uploadRefusalMessage",
+            "UPLOAD_LIMITS", "uploadRefusal", "uploadRefusalMessage", "TEXT_PICTURE_LIMITS",
         ]
         #expect(Fixtures.rules(module) == checked)
     }
@@ -45,6 +45,9 @@ import Testing
                 "media": UploadBucket.media.maxBytes, "texts": UploadBucket.texts.maxBytes,
                 "logo": UploadBucket.logo.maxBytes,
             ]
+        }
+        checkRule(module, "TEXT_PICTURE_LIMITS") { _ in
+            ["longEdge": Double(TextPictureLimits.longEdge), "quality": TextPictureLimits.quality]
         }
         checkRule(module, "uploadRefusal") { c in
             UploadRefusal(status: try c.arg(0, as: Int?.self), message: try c.arg(1, as: String?.self))

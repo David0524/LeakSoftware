@@ -5,6 +5,7 @@ import * as ImagePicker from "expo-image-picker";
 import * as Location from "expo-location";
 import {
   MEDIA_LIMITS,
+  TEXT_PICTURE_LIMITS,
   extensionForMime,
   fitWithin,
   mimeFromFileName,
@@ -174,7 +175,14 @@ function exifTime(exif: Record<string, unknown> | null | undefined): string | nu
  * Pick a photo or video already on the phone (the camera roll). Its capture time comes from
  * the photo itself when it has one. Videos over the limit are refused, as when recording.
  */
-export async function chooseFromLibrary(kind: "photo" | "video"): Promise<CapturedFile | null> {
+export async function chooseFromLibrary(
+  kind: "photo" | "video",
+  /** A photo's long edge and JPEG quality; job photos by default (MEDIA_LIMITS). */
+  photo: { longEdge: number; quality: number } = {
+    longEdge: MEDIA_LIMITS.photoLongEdge,
+    quality: MEDIA_LIMITS.photoQuality,
+  },
+): Promise<CapturedFile | null> {
   const result = await ImagePicker.launchImageLibraryAsync({
     mediaTypes: kind === "photo" ? ["images"] : ["videos"],
     quality: 1,
@@ -185,7 +193,16 @@ export async function chooseFromLibrary(kind: "photo" | "video"): Promise<Captur
   const asset = result.assets[0];
   if (kind === "video" && (asset.duration ?? 0) > (MEDIA_LIMITS.videoMaxSeconds + 1) * 1000)
     throw new MediaError(`Videos can be up to ${MEDIA_LIMITS.videoMaxSeconds} seconds.`);
-  return prepareCapture(kind, asset, exifTime(asset.exif) ?? new Date().toISOString());
+  return prepareCapture(kind, asset, exifTime(asset.exif) ?? new Date().toISOString(), photo);
+}
+
+/**
+ * A picture for a text, shrunk like the iPhone app and the website do (core
+ * TEXT_PICTURE_LIMITS: long edge 2048 px, JPEG at 0.8), so it stays well under the texts
+ * bucket's 10 MB and the carriers' 5 MB.
+ */
+export function chooseTextPicture(): Promise<CapturedFile | null> {
+  return chooseFromLibrary("photo", TEXT_PICTURE_LIMITS);
 }
 
 /** Photos picked from the library at once (owner, 2026-10-22); the iPhone app's is the same. */
@@ -242,6 +259,10 @@ async function prepareCapture(
   kind: "photo" | "video",
   asset: ImagePicker.ImagePickerAsset,
   capturedAt: string,
+  photo: { longEdge: number; quality: number } = {
+    longEdge: MEDIA_LIMITS.photoLongEdge,
+    quality: MEDIA_LIMITS.photoQuality,
+  },
 ): Promise<CapturedFile> {
   if (kind === "video") {
     return {
@@ -255,13 +276,14 @@ async function prepareCapture(
     };
   }
 
-  // Photos: long edge 2048 px, JPEG 0.7. Also turns HEIC into JPEG and drops EXIF.
+  // Photos: long edge 2048 px, JPEG 0.7 (0.8 for texts). Also turns HEIC into JPEG and drops
+  // EXIF.
   const ctx = ImageManipulator.manipulate(asset.uri);
-  const size = fitWithin(asset.width, asset.height, MEDIA_LIMITS.photoLongEdge);
+  const size = fitWithin(asset.width, asset.height, photo.longEdge);
   if (size) ctx.resize(size);
   const image = await ctx.renderAsync();
   const saved = await image.saveAsync({
-    compress: MEDIA_LIMITS.photoQuality,
+    compress: photo.quality,
     format: SaveFormat.JPEG,
   });
   return {

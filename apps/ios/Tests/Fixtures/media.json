@@ -30,6 +30,15 @@
       }
     }
   ],
+  "TEXT_PICTURE_LIMITS": [
+    {
+      "args": [],
+      "result": {
+        "longEdge": 2048,
+        "quality": 0.8
+      }
+    }
+  ],
   "uploadRefusal": [
     {
       "args": [

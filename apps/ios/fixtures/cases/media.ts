@@ -33,6 +33,7 @@ import {
   strokePath,
   textShape,
   UPLOAD_LIMITS,
+  TEXT_PICTURE_LIMITS,
   uploadRefusal,
   uploadRefusalMessage,
   type MarkupColor,
@@ -151,6 +152,7 @@ export const media: ModuleCases = {
   MEDIA_LIMITS: rule(() => MEDIA_LIMITS, [[]]),
   MEDIA_KIND_LABELS: rule(() => MEDIA_KIND_LABELS, [[]]),
   UPLOAD_LIMITS: rule(() => UPLOAD_LIMITS, [[]]),
+  TEXT_PICTURE_LIMITS: rule(() => TEXT_PICTURE_LIMITS, [[]]),
   uploadRefusal: rule(
     (status: number | null, message: string | null) => uploadRefusal(status, message),
     [

@@ -10,7 +10,7 @@ import {
   View,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { chooseFromLibrary } from "../../lib/media";
+import { chooseTextPicture } from "../../lib/media";
 import { Button, T } from "../../ui/components";
 import { Glass } from "../../ui/Glass";
 import { color, MAX_TEXT_SCALE, minTap, shape, space, type } from "../../ui/theme";
@@ -67,7 +67,8 @@ export function Composer({
 
   async function addPicture() {
     try {
-      const file = await chooseFromLibrary("photo");
+      // Shrunk like the iPhone app and the website (core TEXT_PICTURE_LIMITS).
+      const file = await chooseTextPicture();
       if (file) setPicture({ uri: file.uri, type: file.mime });
     } catch (e) {
       Alert.alert("Couldn’t add the photo", e instanceof Error ? e.message : String(e));
