@@ -11,6 +11,8 @@ in premultiplied colour, with its own coverage: on a transparent background the 
 soft orange haze that shows on both dark and light backgrounds.
 
     python3 post.py IN_DIR OUT_DIR VIEW [VIEW ...]
+
+(.github/workflows/logo-stills.yml runs it after the parallel renders.)
 """
 
 import glob
