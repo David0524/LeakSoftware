@@ -48,3 +48,27 @@ test("a page form with changes asks before a tab leaves it", async ({ page }) =>
   await ask(page).getByRole("button", { name: "Discard Changes" }).click();
   await expect(page).toHaveURL(/\/today$/);
 });
+
+test("a field typed into while the page is still loading still asks", async ({ page }) => {
+  // The guard sits in its own Suspense boundary and can start listening after the page is
+  // usable (company-save.spec.ts was flaky on it): hold the scripts back, type into the page's
+  // HTML, then let them load.
+  await signIn(page, OWNER, "/jobs");
+  let release = () => {};
+  const held = new Promise<void>((r) => (release = r));
+  await page.route("**/_next/static/**/*.js", async (route) => {
+    await held;
+    await route.continue();
+  });
+  await page.goto("/jobs/new", { waitUntil: "commit" });
+  const name = page.getByLabel("Name", { exact: true });
+  await name.fill("Typed early");
+  release();
+  await page.waitForLoadState("networkidle");
+  await expect(name).toHaveValue("Typed early");
+  const today = page.getByRole("navigation", { name: "Main" }).getByRole("link", { name: "Today" });
+  await today.click();
+  await expect(ask(page)).toBeVisible();
+  await ask(page).getByRole("button", { name: "Keep Editing" }).click();
+  await expect(page).toHaveURL(/\/jobs\/new$/);
+});

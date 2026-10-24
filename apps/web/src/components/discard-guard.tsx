@@ -20,6 +20,41 @@ function tracked(form: HTMLFormElement) {
   );
 }
 
+/** What each tracked form held when it was first touched, or last submitted. */
+const baseline = new Map<HTMLFormElement, string>();
+const formOf = (el: EventTarget | null) => (el instanceof Element ? el.closest("form") : null);
+
+/** A form starts being watched the moment a field in it is first touched. */
+function onFirstFocus(e: FocusEvent) {
+  const form = formOf(e.target);
+  if (form && tracked(form) && !baseline.has(form)) baseline.set(form, signature(fieldsOf(form)));
+}
+
+/**
+ * A form touched before anyone was listening (typed into while the page was still loading): its
+ * starting point is what the page's HTML gave its typed fields. Holding focus, or a typed field
+ * that differs from the HTML, marks such a form.
+ */
+function catchUp() {
+  for (const form of document.querySelectorAll("form")) {
+    if (baseline.has(form) || !tracked(form)) continue;
+    const loaded = signature(fieldsOf(form, { loaded: true }));
+    if (form.contains(document.activeElement) || signature(fieldsOf(form)) !== loaded)
+      baseline.set(form, loaded);
+  }
+}
+
+// Listening starts when this module loads, not when the guard mounts: the guard sits in its own
+// Suspense boundary in the root layout, which can hydrate after the page, so a field tapped in
+// between was never watched and a link left it without asking (e2e/company-save.spec.ts, flaky
+// in CI run 40064153635).
+const LISTENING = "__leakbookDiscardListening";
+if (typeof document !== "undefined" && !(globalThis as Record<string, unknown>)[LISTENING]) {
+  (globalThis as Record<string, unknown>)[LISTENING] = true;
+  document.addEventListener("focusin", onFirstFocus, true);
+  catchUp();
+}
+
 /** Watches every page form; mounted once, in the root layout. */
 export function DiscardGuard() {
   const router = useRouter();
@@ -34,9 +69,6 @@ export function DiscardGuard() {
   }, [pathname]);
 
   useEffect(() => {
-    // What each form held when it was first touched, or last submitted.
-    const baseline = new Map<HTMLFormElement, string>();
-    const formOf = (el: EventTarget | null) => (el instanceof Element ? el.closest("form") : null);
     const dirty = () => {
       for (const [form, before] of baseline) {
         if (!form.isConnected) baseline.delete(form);
@@ -49,11 +81,6 @@ export function DiscardGuard() {
       entryRef.current = false;
     };
 
-    const onFocus = (e: FocusEvent) => {
-      const form = formOf(e.target);
-      if (form && tracked(form) && !baseline.has(form))
-        baseline.set(form, signature(fieldsOf(form)));
-    };
     const onInput = (e: Event) => {
       const form = formOf(e.target);
       if (!form || !tracked(form)) return;
@@ -126,7 +153,12 @@ export function DiscardGuard() {
       e.returnValue = "";
     };
 
-    document.addEventListener("focusin", onFocus);
+    // Anything typed before now (the module loaded, or this boundary hydrated, late).
+    catchUp();
+    if (!entryRef.current && dirty()) {
+      pushEntry();
+      entryRef.current = true;
+    }
     document.addEventListener("input", onInput);
     document.addEventListener("change", onInput);
     // A segmented control's choice lives in a hidden input, which fires no input event.
@@ -135,7 +167,6 @@ export function DiscardGuard() {
     document.addEventListener("click", onClick, true);
     window.addEventListener("beforeunload", onUnload);
     return () => {
-      document.removeEventListener("focusin", onFocus);
       document.removeEventListener("input", onInput);
       document.removeEventListener("change", onInput);
       document.removeEventListener("click", onInput);

@@ -253,12 +253,15 @@ function SaveBar({
     const el = form.current;
     if (!el) return;
     const measure = () => signature(fieldsOf(el));
-    baseline.current ??= measure();
+    // What was loaded, typed fields as the page's HTML gave them: a field typed into while the
+    // page was still loading counts as a change.
+    baseline.current ??= signature(fieldsOf(el, { loaded: true }));
     // Read after the event's own updates have drawn (a swatch's color, a segment's choice).
     const check = () =>
       setTimeout(() => {
         if (el.isConnected) setChanged(measure() !== baseline.current);
       }, 0);
+    check();
     el.addEventListener("input", check);
     el.addEventListener("change", check);
     el.addEventListener("click", check);

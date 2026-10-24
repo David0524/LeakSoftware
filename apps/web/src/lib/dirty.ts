@@ -34,8 +34,17 @@ export function signature(fields: FieldValue[]): string {
   );
 }
 
-/** The fields under an element (a sheet's panel, a form). */
-export function fieldsOf(root: ParentNode): FieldValue[] {
+/** Fields typed into, whose value the page's HTML gave them (as opposed to choices). */
+const UNTYPED = new Set(["hidden", "checkbox", "radio", "file", ...NOT_EDITED]);
+const typedInto = (el: Element) =>
+  el instanceof HTMLTextAreaElement || (el instanceof HTMLInputElement && !UNTYPED.has(el.type));
+
+/**
+ * The fields under an element (a sheet's panel, a form). `loaded` reads the typed ones as the
+ * page's HTML gave them, not as they are now: what they held before an edit made while the page's
+ * scripts weren't yet listening.
+ */
+export function fieldsOf(root: ParentNode, { loaded = false } = {}): FieldValue[] {
   const els = root.querySelectorAll<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>(
     "input, select, textarea",
   );
@@ -45,7 +54,7 @@ export function fieldsOf(root: ParentNode): FieldValue[] {
     .map((el, i) => ({
       key: el.name || el.id || String(i),
       type: el instanceof HTMLInputElement ? el.type : el.tagName.toLowerCase(),
-      value: el.value,
+      value: loaded && typedInto(el) ? (el as HTMLInputElement).defaultValue : el.value,
       checked: el instanceof HTMLInputElement ? el.checked : undefined,
       autosave: el.closest("[data-autosave]") !== null,
       files: el instanceof HTMLInputElement ? (el.files?.length ?? 0) : undefined,
