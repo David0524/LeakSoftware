@@ -8,10 +8,12 @@ import {
   HEARD_FROM_OTHER_PLACEHOLDER,
   HEARD_FROM_QUESTION,
   heardFromLink,
+  passwordProblem,
   type HeardFrom,
 } from "@leakbook/core";
 import { AuthFrame } from "../../features/auth/AuthFrame";
 import { Button, FieldGroup, FieldRow, Notice, PickerRow } from "../../ui/components";
+import { PasswordRow } from "../../ui/PasswordRow";
 import { useSession } from "../../state/session";
 
 export default function SignUp() {
@@ -31,7 +33,8 @@ export default function SignUp() {
 
   async function submit() {
     if (!name.trim() || !email.trim()) return setError("Enter your name and email.");
-    if (password.length < 10) return setError("Use a password of at least 10 characters.");
+    const weak = passwordProblem(password);
+    if (weak) return setError(weak);
     setBusy(true);
     setError(null);
     const r = await signUp(name, email, password, heardFrom, heardOther);
@@ -76,21 +79,19 @@ export default function SignUp() {
           textContentType="username"
           next={passwordRef}
         />
-        <FieldRow
+        <PasswordRow
           ref={passwordRef}
           label="Password"
           value={password}
           onChangeText={setPassword}
           placeholder="Required"
-          secureTextEntry
-          autoCapitalize="none"
-          autoCorrect={false}
           autoComplete="new-password"
           textContentType="newPassword"
-          passwordRules="minlength: 10;"
+          // Suggested passwords follow the rules; their symbols are ones Supabase counts.
+          passwordRules="minlength: 10; required: lower; required: upper; required: digit; required: [-!@#$%^&*()_+=;:,.?];"
           returnKeyType="go"
           onSubmitEditing={submit}
-          hint="At least 10 characters."
+          meter
         />
       </FieldGroup>
       {/* "How did you hear about us?" (owner, 2026-10-24): optional, same list as the website. */}

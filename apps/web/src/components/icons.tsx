@@ -212,3 +212,19 @@ export function CleaningIcon({
     <RepeatIcon className={className} />
   );
 }
+
+/** Show a password (eye). */
+export const EyeIcon = ({ className }: { className?: string }) => (
+  <Icon className={className}>
+    <path d="M2.5 12S6 5.5 12 5.5 21.5 12 21.5 12 18 18.5 12 18.5 2.5 12 2.5 12z" />
+    <circle cx="12" cy="12" r="3" />
+  </Icon>
+);
+
+/** Hide a password (eye.slash). */
+export const EyeSlashIcon = ({ className }: { className?: string }) => (
+  <Icon className={className}>
+    <path d="M9.9 5.8A9.5 9.5 0 0 1 12 5.5c6 0 9.5 6.5 9.5 6.5a17 17 0 0 1-2.6 3.4M6.3 7.3A16.5 16.5 0 0 0 2.5 12S6 18.5 12 18.5a9 9 0 0 0 4.4-1.1" />
+    <path d="M9.9 9.9a3 3 0 0 0 4.2 4.2M3.5 3.5l17 17" />
+  </Icon>
+);

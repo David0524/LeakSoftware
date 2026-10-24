@@ -13,3 +13,4 @@ apps/web/playwright-report
 apps/web/e2e/.outbox
 apps/ios/Tests/Fixtures
 apps/video/audio/out
+supabase/templates

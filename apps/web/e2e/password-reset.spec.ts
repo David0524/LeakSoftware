@@ -11,7 +11,7 @@ test("a forgotten password is reset from the email's link", async ({ page }) => 
   test.setTimeout(180_000);
   const admin = adminClient();
   test.skip(!admin, "Needs SUPABASE_SERVICE_ROLE_KEY (CI runs it against Supabase in Docker).");
-  const who = { email: `forgot-${RUN}@demo.leakbook.test`, password: "the-old-password" };
+  const who = { email: `forgot-${RUN}@demo.leakbook.test`, password: "The-old-password-1" };
   const { data: created } = await admin!.auth.admin.createUser({
     email: who.email,
     password: who.password,
@@ -52,12 +52,12 @@ test("a forgotten password is reset from the email's link", async ({ page }) => 
     await expect(
       page.getByRole("heading", { level: 1, name: "Choose a New Password" }),
     ).toBeVisible();
-    await page.getByLabel("New password").fill("the-new-password-1");
-    await page.getByLabel("Type it again").fill("the-new-password-2");
+    await page.getByLabel("New password", { exact: true }).fill("The-new-password-1");
+    await page.getByLabel("Type it again", { exact: true }).fill("The-new-password-2");
     await page.getByRole("button", { name: "Save New Password" }).click();
     await expect(page.getByText("The two passwords don’t match.")).toBeVisible();
-    await page.getByLabel("New password").fill("the-new-password-1");
-    await page.getByLabel("Type it again").fill("the-new-password-1");
+    await page.getByLabel("New password", { exact: true }).fill("The-new-password-1");
+    await page.getByLabel("Type it again", { exact: true }).fill("The-new-password-1");
     await page.getByRole("button", { name: "Save New Password" }).click();
     await expect(page.getByText(/Your password is changed\./)).toBeVisible();
     await expect
@@ -75,10 +75,10 @@ test("a forgotten password is reset from the email's link", async ({ page }) => 
     // The old password no longer signs in; the new one does.
     await page.goto("/sign-in?next=%2Fjobs");
     await page.getByLabel("Email").fill(who.email);
-    await page.getByLabel("Password").fill(who.password);
+    await page.getByLabel("Password", { exact: true }).fill(who.password);
     await page.getByRole("button", { name: "Sign In", exact: true }).click();
     await expect(page.getByText(/email and password don’t match/)).toBeVisible();
-    await signIn(page, { email: who.email, password: "the-new-password-1" });
+    await signIn(page, { email: who.email, password: "The-new-password-1" });
     await expect(page.getByRole("heading", { name: "Jobs", level: 1 })).toBeVisible();
     await signOut(page);
   } finally {

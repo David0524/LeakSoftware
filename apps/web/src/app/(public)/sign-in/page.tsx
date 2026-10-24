@@ -41,7 +41,9 @@ async function SignInBody({ searchParams }: Pick<PageProps<"/sign-in">, "searchP
       {params.error ? (
         <div className="mb-4">
           <Banner tone="error">
-            That sign-in link has expired or was already used. Request a new one.
+            {params.error === "confirm"
+              ? "That confirmation link has expired or was already used. If you’ve already confirmed your email, sign in with your password. If not, sign in anyway and we’ll email you a new link."
+              : "That sign-in link has expired or was already used. Request a new one."}
           </Banner>
         </div>
       ) : null}

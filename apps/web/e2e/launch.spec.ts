@@ -46,7 +46,7 @@ test("a tech deletes their account and can't sign in again", async ({ page, brow
   const tech = await guest.newPage();
   await tech.goto(new URL(link).pathname);
   await tech.getByLabel("Your name").fill("Leaving Tech");
-  await tech.getByLabel("Choose a password").fill("e2e-password-123");
+  await tech.getByLabel("Choose a password", { exact: true }).fill("E2e-password-123");
   await tech.getByRole("button", { name: "Create Account and Join" }).click();
   await tech.waitForURL("**/today");
 
@@ -61,7 +61,7 @@ test("a tech deletes their account and can't sign in again", async ({ page, brow
 
   await tech.goto("/sign-in");
   await tech.getByLabel("Email").fill(email);
-  await tech.getByLabel("Password").fill("e2e-password-123");
+  await tech.getByLabel("Password", { exact: true }).fill("E2e-password-123");
   await tech.getByRole("button", { name: "Sign In", exact: true }).click();
   await expect(tech.getByRole("alert")).toBeVisible();
   await guest.close();

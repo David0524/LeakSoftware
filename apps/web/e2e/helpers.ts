@@ -9,7 +9,7 @@ export const RUN = `${Date.now().toString(36)}${Math.random().toString(36).slice
 export async function signIn(page: Page, who: { email: string; password: string }, next = "/jobs") {
   await page.goto(`/sign-in?next=${encodeURIComponent(next)}`);
   await page.getByLabel("Email").fill(who.email);
-  await page.getByLabel("Password").fill(who.password);
+  await page.getByLabel("Password", { exact: true }).fill(who.password);
   await page.getByRole("button", { name: "Sign In", exact: true }).click();
   // `next` may carry a query ("/jobs?status=all"): compare what it names.
   await page.waitForURL(

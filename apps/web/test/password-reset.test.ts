@@ -70,12 +70,15 @@ describe("the reset email", () => {
     expect(email.text).toContain("support@sundeckpro.com");
   });
 
-  it("checks the new password like sign-up: 10 characters, typed twice the same", () => {
+  it("checks the new password like sign-up: the password rules, typed twice the same", () => {
     expect(newPasswordProblem("short", "short")).toBe("Use at least 10 characters.");
-    expect(newPasswordProblem("long enough 1", "long enough 2")).toBe(
+    expect(newPasswordProblem("long enough 1", "long enough 1")).toBe(
+      "Add an uppercase letter and a symbol.",
+    );
+    expect(newPasswordProblem("Long-enough-1", "Long-enough-2")).toBe(
       "The two passwords don’t match.",
     );
-    expect(newPasswordProblem("long enough 1", "long enough 1")).toBeNull();
+    expect(newPasswordProblem("Long-enough-1", "Long-enough-1")).toBeNull();
   });
 });
 
@@ -94,7 +97,7 @@ describe("sendPasswordReset", () => {
   });
 
   it("sends nothing past 3 an hour", async () => {
-    rpc.mockResolvedValue({ data: false });
+    rpc.mockImplementation(async (fn: string) => ({ data: fn !== "take_password_reset" }));
     expect(await sendPasswordReset("dana@bluewave.test")).toBe("too_many");
     expect(generateLink).not.toHaveBeenCalled();
     expect(sent).toHaveLength(0);
@@ -116,5 +119,24 @@ describe("POST /api/auth/password-reset (the apps' Forgot Password?)", () => {
     const res = await post({ email: "not an email" });
     expect(res.status).toBe(400);
     expect((await res.json()).error).toBe("Enter your email.");
+  });
+});
+
+describe("sign-in limits on reset emails", () => {
+  it("counts each request by email and visitor, and says when there were too many", async () => {
+    rpc.mockImplementation(async (fn: string) => ({
+      data: fn === "auth_attempt_allowed" ? false : true,
+    }));
+    expect(await sendPasswordReset("dana@bluewave.test")).toBe("limited");
+    expect(rpc).toHaveBeenCalledWith("auth_attempt_allowed", {
+      attempt_kind: "reset",
+      target_email: "dana@bluewave.test",
+      client_ip: null,
+      take: true,
+    });
+    expect(sent).toHaveLength(0);
+    const res = await post({ email: "dana@bluewave.test" });
+    expect(res.status).toBe(429);
+    expect(await res.json()).toEqual({ error: "Too many attempts. Try again in an hour." });
   });
 });

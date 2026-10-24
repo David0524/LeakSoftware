@@ -15,7 +15,7 @@ test("a sign-up form left half done is on the leads list", async ({ page }) => {
   await page.getByLabel("Company name").fill(`Halfway Leak Co ${RUN}`);
   await page.getByLabel("Email").fill(email);
   await page.getByLabel("Mobile phone").fill("(480) 555-0177");
-  await page.getByLabel("Password").focus();
+  await page.getByLabel("Password", { exact: true }).focus();
 
   // They leave here. The lead is kept, with the number to call.
   await expect

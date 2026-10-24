@@ -11,7 +11,7 @@ test("two-step sign-in protects the shop's data until the code", async ({ page }
   test.setTimeout(180_000);
   const admin = adminClient();
   test.skip(!admin, "Needs SUPABASE_SERVICE_ROLE_KEY (CI runs it against Supabase in Docker).");
-  const who = { email: `two-step-${RUN}@demo.leakbook.test`, password: "sundeck-two-step" };
+  const who = { email: `two-step-${RUN}@demo.leakbook.test`, password: "Sundeck-two-step-1" };
   const { data: created } = await admin!.auth.admin.createUser({
     email: who.email,
     password: who.password,
@@ -46,7 +46,7 @@ test("two-step sign-in protects the shop's data until the code", async ({ page }
   await signOut(page);
   await page.goto("/sign-in?next=%2Fjobs");
   await page.getByLabel("Email").fill(who.email);
-  await page.getByLabel("Password").fill(who.password);
+  await page.getByLabel("Password", { exact: true }).fill(who.password);
   await page.getByRole("button", { name: "Sign In", exact: true }).click();
   await page.waitForURL((url) => url.pathname === "/sign-in/verify");
   await page.getByLabel("Code").fill("000000");

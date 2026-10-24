@@ -2,10 +2,11 @@
 
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
-import { safePath } from "@leakbook/core";
+import { safePath, tooManyAttempts } from "@leakbook/core";
 import { getUser } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import { adminClient } from "@/server/admin";
+import { attemptAllowed, attemptFailed } from "@/server/auth-limits";
 import type { FormState } from "./auth";
 
 // Two-step sign-in (owner, 2026-10-16): an authenticator-app code (Supabase TOTP) after the
@@ -21,11 +22,18 @@ export async function verifyTwoStep(_: FormState, form: FormData): Promise<FormS
   const { data: factors } = await supabase.auth.mfa.listFactors();
   const factor = factors?.totp.find((f) => f.status === "verified");
   if (!factor) redirect("/sign-in");
+  // Limits on repeated codes (security review M3), by account and visitor.
+  const email = (await getUser())?.email ?? null;
+  if (!(await attemptAllowed("two_step", email)))
+    return { fields: { code: tooManyAttempts("two_step") } };
   const { error } = await supabase.auth.mfa.challengeAndVerify({
     factorId: factor.id,
     code: code(form),
   });
-  if (error) return { fields: { code: "That code didn’t work. Try the newest one." } };
+  if (error) {
+    await attemptFailed("two_step", email);
+    return { fields: { code: "That code didn’t work. Try the newest one." } };
+  }
   redirect(safePath(String(form.get("next") ?? "")));
 }
 

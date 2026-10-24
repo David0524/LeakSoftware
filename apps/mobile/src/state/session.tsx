@@ -9,7 +9,13 @@ import {
 } from "react";
 import { AppState } from "react-native";
 import type { Session, User } from "@supabase/supabase-js";
-import { heardFromOther, parseHeardFrom, type Company, type Membership } from "@leakbook/core";
+import {
+  heardFromOther,
+  parseHeardFrom,
+  PASSWORD_HINT,
+  type Company,
+  type Membership,
+} from "@leakbook/core";
 import { endLiveStop } from "../lib/liveStop";
 import {
   endSignIn,
@@ -23,6 +29,7 @@ import { unregisterPush } from "../lib/push";
 import { checkSetup, readSetupNeeded, type SetupCheck } from "../lib/setupGate";
 import { getServices, type Services } from "../lib/services";
 import { useRows, useSyncStatus } from "../data/hooks";
+import { signUpOnServer } from "../data/sign-up";
 
 export type { SignedInUser };
 
@@ -229,20 +236,24 @@ export function SessionProvider({ children }: { children: ReactNode }) {
     signUp: async (fullName, email, password, heardFrom, heardFromOtherText) => {
       const heard = parseHeardFrom(heardFrom);
       const other = heardFromOther(heard, heardFromOtherText);
-      const { data, error } = await supabase.auth.signUp({
+      // Through the website (owner, 2026-10-24), like its own sign-up: the password rules, the
+      // limit on sign-ups, and a confirmation email whose link works on any phone or computer.
+      const made = await signUpOnServer({
+        name: fullName.trim(),
         email: email.trim(),
         password,
-        options: {
-          data: {
-            full_name: fullName.trim(),
-            ...(heard ? { heard_from: heard } : {}),
-            ...(other ? { heard_from_other: other } : {}),
-          },
-        },
+        heard_from: heard,
+        heard_from_other: other,
+      });
+      if ("error" in made) return { error: friendlyAuthError(made.error) };
+      if (made.confirmEmail) return { confirmEmail: true };
+      // No confirmation on this server: sign straight in.
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email: email.trim(),
+        password,
       });
       if (error) return { error: friendlyAuthError(error.message) };
-      if (!data.session) return { confirmEmail: true };
-      remember({ id: data.session.user.id, email: data.session.user.email ?? email.trim() });
+      remember({ id: data.user.id, email: data.user.email ?? email.trim() });
       return {};
     },
     signOut: async () => {
@@ -296,8 +307,9 @@ function friendlyAuthError(message: string): string {
   if (/invalid login credentials/i.test(message)) return "That email and password don't match.";
   if (/already registered|already exists/i.test(message))
     return "An account with this email already exists. Sign in instead.";
-  if (/password/i.test(message) && /least|short|characters/i.test(message)) {
-    return "Use a password of at least 10 characters.";
+  // Supabase's own check of the password rules (owner, 2026-10-24).
+  if (/password/i.test(message) && /least|short|characters|weak|contain/i.test(message)) {
+    return `Choose a stronger password: ${PASSWORD_HINT[0]!.toLowerCase()}${PASSWORD_HINT.slice(1)}`;
   }
   if (/network|fetch/i.test(message)) return "No connection. Connect to the internet to sign in.";
   return message;

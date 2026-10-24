@@ -1,6 +1,7 @@
 import { router } from "expo-router";
 import { useState } from "react";
-import { Button, FieldGroup, FieldRow, Notice, Screen, T } from "../../ui/components";
+import { Button, FieldGroup, Notice, Screen, T } from "../../ui/components";
+import { PasswordRow } from "../../ui/PasswordRow";
 import { useSession } from "../../state/session";
 import { space } from "../../ui/theme";
 
@@ -29,15 +30,12 @@ export default function Reauth() {
         Signed in as {user?.email}. Everything on this phone stays put.
       </T>
       <FieldGroup labelWidth={96}>
-        <FieldRow
+        <PasswordRow
           label="Password"
           value={password}
           onChangeText={setPassword}
           placeholder="Required"
-          secureTextEntry
           autoFocus
-          autoCapitalize="none"
-          autoCorrect={false}
           autoComplete="current-password"
           textContentType="password"
           returnKeyType="go"

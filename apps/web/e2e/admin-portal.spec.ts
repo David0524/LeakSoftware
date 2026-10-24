@@ -7,7 +7,7 @@ import { nextWindow, totp } from "./totp";
 // computer. Admin Sign In is in the landing page footer. Staff open a shop's own office to
 // help (View Only here), with a banner, and every step is in the Activity Log.
 
-const STAFF = { email: E2E_STAFF_EMAIL, password: "sundeck-staff-e2e" };
+const STAFF = { email: E2E_STAFF_EMAIL, password: "Sundeck-staff-e2e-1" };
 
 test("the landing page has Admin Sign In; the portal is for a computer", async ({ page }) => {
   await page.goto("/");
@@ -39,6 +39,9 @@ test("staff sign in with two-step, see the business, and open a shop View Only",
       user_metadata: { full_name: "Sam Staff" },
     });
     id = data.user!.id;
+  } else {
+    // Made before the password rules (2026-10-24): give it the current password.
+    await admin!.auth.admin.updateUserById(id, { password: STAFF.password });
   }
   const { data: old } = await admin!.auth.admin.mfa.listFactors({ userId: id });
   for (const f of old?.factors ?? [])
@@ -61,7 +64,7 @@ test("staff sign in with two-step, see the business, and open a shop View Only",
   await nextWindow();
   await page.goto("/sign-in?next=/admin");
   await page.getByLabel("Email").fill(STAFF.email);
-  await page.getByLabel("Password").fill(STAFF.password);
+  await page.getByLabel("Password", { exact: true }).fill(STAFF.password);
   await page.getByRole("button", { name: "Sign In", exact: true }).click();
   await page.waitForURL((url) => url.pathname === "/sign-in/verify");
   await page.getByLabel("Code").fill(totp(secret));

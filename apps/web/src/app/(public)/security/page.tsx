@@ -41,7 +41,10 @@ export default function SecurityPage() {
             Sign-In). With it on, a password alone opens nothing, on the website, in the app, or
             through our servers directly.
           </li>
-          <li>Passwords are at least 10 characters and are never stored in readable form.</li>
+          <li>
+            Passwords are at least 10 characters with upper- and lowercase letters, a number and a
+            symbol, and are never stored in readable form.
+          </li>
           <li>Removing someone from the team ends their access to the shop’s records at once.</li>
         </ul>
       </section>

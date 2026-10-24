@@ -1,0 +1,4 @@
+<h2>Confirm your email address</h2>
+
+<p>Follow the link below to confirm this email address and finish signing up. It works on any phone or computer.</p>
+<p><a href="{{ if eq .RedirectTo .SiteURL }}{{ printf "%sauth/confirm?next=/setup&token_hash=%s&type=email" .SiteURL .TokenHash }}{{ else }}{{ printf "%s&token_hash=%s&type=email" .RedirectTo .TokenHash }}{{ end }}">Confirm email address</a></p>

@@ -13,7 +13,7 @@ const OWNER = {
   name: "Pat Newshop",
   company: `Clearwater Leak Pros ${RUN}`,
   email: `owner-${RUN}@newshop.test`,
-  password: "sundeck-new-shop",
+  password: "Sundeck-new-shop-1",
 };
 const CUSTOMER = { name: `Casey Rivers ${RUN}`, email: `casey-${RUN}@example.com` };
 
@@ -32,7 +32,7 @@ test("a new shop signs up and runs the whole loop, then subscribes", async ({
   await page.getByLabel("Company name").fill(OWNER.company);
   await page.getByLabel("Email").fill(OWNER.email);
   await page.getByLabel("Mobile phone").fill("480-555-0142");
-  await page.getByLabel("Password").fill(OWNER.password);
+  await page.getByLabel("Password", { exact: true }).fill(OWNER.password);
   // One app, two packages: this shop does leak detection.
   await page.getByRole("radio", { name: "Leak Detection" }).click();
   await page.getByRole("button", { name: "Start Free Trial" }).click();

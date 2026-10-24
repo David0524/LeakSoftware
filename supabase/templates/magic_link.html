@@ -1,0 +1,4 @@
+<h2>Your sign-in link</h2>
+
+<p>Follow the link below to sign in. This link expires shortly and can only be used once. It works on any phone or computer.</p>
+<p><a href="{{ if eq .RedirectTo .SiteURL }}{{ printf "%sauth/confirm?token_hash=%s&type=email" .SiteURL .TokenHash }}{{ else }}{{ printf "%s&token_hash=%s&type=email" .RedirectTo .TokenHash }}{{ end }}">Sign in</a></p>

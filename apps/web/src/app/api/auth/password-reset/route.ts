@@ -1,3 +1,4 @@
+import { tooManyAttempts } from "@leakbook/core";
 import { resetRequestedMessage } from "@/lib/password-reset-email";
 import { SUPPORT_EMAIL } from "@/lib/site";
 import { EMAIL_PATTERN, sendPasswordReset } from "@/server/password-reset";
@@ -12,6 +13,8 @@ export async function POST(request: Request) {
   if (!EMAIL_PATTERN.test(email) || email.length > 200)
     return Response.json({ error: "Enter your email." }, { status: 400 });
   const outcome = await sendPasswordReset(email);
+  if (outcome === "limited")
+    return Response.json({ error: tooManyAttempts("reset") }, { status: 429 });
   if (outcome === "unavailable")
     return Response.json(
       { error: `Email isn’t working right now. Email ${SUPPORT_EMAIL} for help.` },

@@ -154,25 +154,92 @@
         }
     }
 
-    /// A password row of a grouped form.
+    /// A password row of a grouped form, with an eye button to show or hide what's typed and,
+    /// for a new password, the rules as a checklist with a bar (owner, 2026-10-24; as on the
+    /// website and Android: packages/core/src/password.ts, Password.swift).
     struct SecureFieldRow: View {
         var label: String
         @Binding var text: String
         var contentType: UITextContentType = .password
         var labelWidth: CGFloat = 96
+        /// A new password: show the rules as they're met.
+        var meter = false
+        @State private var shown = false
 
         var body: some View {
-            HStack(spacing: 12) {
-                Text(label).textRole(.body).foregroundStyle(Color.text).frame(width: labelWidth, alignment: .leading)
-                SecureField("", text: $text, prompt: Text("Required").foregroundStyle(Color.placeholder))
+            VStack(alignment: .leading, spacing: 4) {
+                HStack(spacing: 12) {
+                    Text(label).textRole(.body).foregroundStyle(Color.text).frame(
+                        width: labelWidth, alignment: .leading)
+                    Group {
+                        if shown {
+                            TextField("", text: $text, prompt: Text("Required").foregroundStyle(Color.placeholder))
+                        } else {
+                            SecureField("", text: $text, prompt: Text("Required").foregroundStyle(Color.placeholder))
+                        }
+                    }
                     .textRole(.body)
                     .foregroundStyle(Color.text)
                     .textContentType(contentType)
+                    .textInputAutocapitalization(.never)
+                    .autocorrectionDisabled()
                     .accessibilityLabel(label)
+                    Button {
+                        shown.toggle()
+                    } label: {
+                        Image(systemName: shown ? "eye.slash" : "eye")
+                            .foregroundStyle(Color.textMuted)
+                            .frame(width: minTarget, height: minTarget)
+                            .contentShape(Rectangle())
+                    }
+                    .buttonStyle(.plain)
+                    .accessibilityLabel(shown ? "Hide password" : "Show password")
+                    .accessibilityAddTraits(shown ? .isSelected : [])
+                }
+                if meter { PasswordMeter(password: text) }
             }
-            .padding(.horizontal, CGFloat(Spacing.rowHorizontal))
+            .padding(.leading, CGFloat(Spacing.rowHorizontal))
+            .padding(.trailing, CGFloat(Spacing.rowHorizontal) - 10)
             .padding(.vertical, CGFloat(Spacing.rowVertical))
             .frame(minHeight: minTarget)
+        }
+    }
+
+    /// The password rules as a checklist with a bar: quiet gray until each is met.
+    struct PasswordMeter: View {
+        var password: String
+
+        var body: some View {
+            let checks = passwordChecks(password)
+            let score = passwordScore(password)
+            VStack(alignment: .leading, spacing: 2) {
+                HStack(spacing: 4) {
+                    ForEach(passwordRules.indices, id: \.self) { i in
+                        Capsule()
+                            .fill(
+                                i < score
+                                    ? (score == passwordRules.count ? Color.pass : Color.brandPrimary) : Color.separator
+                            )
+                            .frame(height: 4)
+                    }
+                }
+                .padding(.bottom, 6)
+                .accessibilityElement()
+                .accessibilityLabel("Password strength")
+                .accessibilityValue("\(score) of \(passwordRules.count) rules met")
+                ForEach(passwordRules, id: \.id) { rule in
+                    let met = checks[rule.id] == true
+                    HStack(spacing: 8) {
+                        Text(met ? "✓" : "○").foregroundStyle(met ? Color.pass : Color.textMuted)
+                        Text(rule.label).foregroundStyle(met ? Color.text : Color.textMuted)
+                    }
+                    .textRole(.secondary)
+                    .accessibilityElement(children: .ignore)
+                    .accessibilityLabel("\(rule.label), \(met ? "met" : "not yet")")
+                }
+            }
+            .padding(.trailing, 10)
+            .padding(.bottom, 4)
         }
     }
 
@@ -314,7 +381,7 @@
             AuthFrame(title: "Create an Account") {
                 Text("If your company already uses Sundeck Pro, ask the owner to invite this email, then sign up here.")
             } content: {
-                Grouped(footer: "At least 10 characters.") {
+                Grouped {
                     LabeledFieldRow(
                         label: "Name", text: $name, placeholder: "Required", labelWidth: 96, contentType: .name)
                     LabeledFieldRow(
@@ -323,7 +390,7 @@
                     )
                     .textInputAutocapitalization(.never)
                     .autocorrectionDisabled()
-                    SecureFieldRow(label: "Password", text: $password, contentType: .newPassword)
+                    SecureFieldRow(label: "Password", text: $password, contentType: .newPassword, meter: true)
                 }
                 HeardFromRows(key: $heardFrom, other: $heardFromOther)
                 if let error { Notice(kind: .error, text: error) }
@@ -350,8 +417,8 @@
                 error = "Enter your name and email."
                 return
             }
-            guard password.count >= 10 else {
-                error = "Use a password of at least 10 characters."
+            if let problem = passwordProblem(password) {
+                error = problem
                 return
             }
             busy = true

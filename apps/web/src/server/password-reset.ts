@@ -3,6 +3,7 @@ import { siteOrigin } from "@/lib/origin";
 import { passwordChangedEmail, passwordResetEmail, resetLink } from "@/lib/password-reset-email";
 import { SUPPORT_EMAIL } from "@/lib/site";
 import { adminClient } from "./admin";
+import { attemptAllowed } from "./auth-limits";
 import { emailConfigured, sendEmail } from "./email";
 
 // Password reset (owner, 2026-10-22). The server makes the recovery token and emails the link
@@ -17,7 +18,8 @@ function from(): string {
 
 export const EMAIL_PATTERN = /^\S+@\S+\.\S+$/;
 
-export type ResetOutcome = "sent" | "no_account" | "too_many" | "unavailable";
+/** `too_many` is answered like `sent`; `limited` (this visitor or address, too often) is said. */
+export type ResetOutcome = "sent" | "no_account" | "too_many" | "limited" | "unavailable";
 
 /**
  * Emails `email` a link to choose a new password, if it has an account. Callers answer the same
@@ -28,6 +30,7 @@ export async function sendPasswordReset(rawEmail: string): Promise<ResetOutcome>
   const admin = adminClient();
   if (!admin || !emailConfigured() || !EMAIL_PATTERN.test(email) || email.length > 200)
     return "unavailable";
+  if (!(await attemptAllowed("reset", email, true))) return "limited";
   const { data: allowed } = await admin.rpc("take_password_reset", { target_email: email });
   if (allowed !== true) return "too_many";
   const { data, error } = await admin.auth.admin.generateLink({ type: "recovery", email });

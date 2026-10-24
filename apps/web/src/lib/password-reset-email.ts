@@ -1,4 +1,5 @@
 import { tokens } from "@leakbook/tokens";
+import { passwordProblem } from "@leakbook/core";
 
 // Password reset emails (owner, 2026-10-22): the link to choose a new password, and the notice
 // once it's changed. Plain like the weekly summary: light, one card, one button.
@@ -69,6 +70,60 @@ export function passwordResetEmail(link: string): AccountEmail {
   };
 }
 
+/**
+ * Confirm the email of a new account (owner, 2026-10-24). The server makes the token and
+ * sends this itself: Supabase's own link only worked in the browser that signed up.
+ */
+export function confirmEmail(link: string): AccountEmail {
+  const subject = "Confirm your email for Sundeck Pro";
+  const intro = "Thanks for signing up for Sundeck Pro. Confirm this email address to finish.";
+  const action = "The button works on any phone or computer, for an hour, once.";
+  const ignore = "If you didn’t sign up, ignore this email and no account is made with it.";
+  return {
+    subject,
+    text: [subject, "", intro, action, "", `Confirm Email: ${link}`, "", ignore].join("\n"),
+    html: page({
+      subject,
+      preview: "Confirm your email to finish signing up.",
+      title: "Confirm your email",
+      paragraphs: [intro, action],
+      button: { label: "Confirm Email", href: link },
+      footer: ignore,
+    }),
+  };
+}
+
+/** A sign-in link, asked for on the sign-in page (Email Me a Sign-In Link). */
+export function signInLinkEmail(link: string): AccountEmail {
+  const subject = "Your Sundeck Pro sign-in link";
+  const intro = "Here’s the link you asked for to sign in to Sundeck Pro.";
+  const action = "It works on any phone or computer, for an hour, once.";
+  const ignore = "If you didn’t ask for it, ignore this email: no one can use the link without it.";
+  return {
+    subject,
+    text: [subject, "", intro, action, "", `Sign In: ${link}`, "", ignore].join("\n"),
+    html: page({
+      subject,
+      preview: "Your link to sign in. It works for an hour.",
+      title: "Sign in",
+      paragraphs: [intro, action],
+      button: { label: "Sign In", href: link },
+      footer: ignore,
+    }),
+  };
+}
+
+/** An email link: /auth/confirm checks the token on the server, then goes on to `next`. */
+export function accountLink(
+  origin: string,
+  hashedToken: string,
+  type: "signup" | "magiclink",
+  next: string,
+): string {
+  const q = new URLSearchParams({ token_hash: hashedToken, type, next });
+  return `${origin}/auth/confirm?${q}`;
+}
+
 /** After the password changed, so someone who didn't change it finds out. */
 export function passwordChangedEmail(input: {
   signInUrl: string;
@@ -102,12 +157,11 @@ export function resetLink(origin: string, hashedToken: string): string {
   return `${origin}/auth/confirm?${q}`;
 }
 
-/** The new password's problem, or null: at least 10 characters (the project's minimum), and typed twice the same. */
+/** The new password's problem, or null: the password rules (packages/core), typed twice the same. */
 export function newPasswordProblem(password: string, confirm: string): string | null {
-  if (password.length < 10) return "Use at least 10 characters.";
-  if (password.length > 72) return "Use 72 characters or fewer.";
-  if (password !== confirm) return "The two passwords don’t match.";
-  return null;
+  return (
+    passwordProblem(password) ?? (password !== confirm ? "The two passwords don’t match." : null)
+  );
 }
 
 /** What every reset request answers, whether or not the address has an account. */

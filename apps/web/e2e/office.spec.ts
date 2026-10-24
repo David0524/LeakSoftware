@@ -23,7 +23,7 @@ test("signed-out visitors see the home page and are sent to sign in", async ({ p
   await expect(page).toHaveURL(/\/sign-in\?next=%2Fjobs/);
 
   await page.getByLabel("Email").fill(OWNER.email);
-  await page.getByLabel("Password").fill("wrong-password");
+  await page.getByLabel("Password", { exact: true }).fill("wrong-password");
   await page.getByRole("button", { name: "Sign In", exact: true }).click();
   await expect(page.getByRole("alert").filter({ hasText: "don’t match" })).toBeVisible();
 });
@@ -34,7 +34,7 @@ test("owners land on the Dashboard on a computer, and on Today on a phone", asyn
 }) => {
   await page.goto("/sign-in");
   await page.getByLabel("Email").fill(OWNER.email);
-  await page.getByLabel("Password").fill(OWNER.password);
+  await page.getByLabel("Password", { exact: true }).fill(OWNER.password);
   await page.getByRole("button", { name: "Sign In", exact: true }).click();
   await page.waitForURL((url) => url.pathname === "/dashboard");
   await expect(page.getByRole("heading", { level: 1, name: "Dashboard" })).toBeVisible();
@@ -49,7 +49,7 @@ test("owners land on the Dashboard on a computer, and on Today on a phone", asyn
   const mobile = await phone.newPage();
   await mobile.goto("/sign-in");
   await mobile.getByLabel("Email").fill(OWNER.email);
-  await mobile.getByLabel("Password").fill(OWNER.password);
+  await mobile.getByLabel("Password", { exact: true }).fill(OWNER.password);
   await mobile.getByRole("button", { name: "Sign In", exact: true }).click();
   await mobile.waitForURL((url) => url.pathname === "/today");
   await phone.close();
@@ -215,7 +215,7 @@ test("owner invites a tech, who joins and cannot reach settings", async ({ page,
   await tech.goto(new URL(link).pathname);
   await expect(tech.getByText(/invited you to Sundeck Pro as a tech/)).toBeVisible();
   await tech.getByLabel("Your name").fill(`E2E Tech ${RUN}`);
-  await tech.getByLabel("Choose a password").fill("e2e-password-123");
+  await tech.getByLabel("Choose a password", { exact: true }).fill("E2e-password-123");
   await tech.getByRole("button", { name: "Create Account and Join" }).click();
   await tech.waitForURL("**/today");
   const nav = tech.getByRole("navigation", { name: "Main" });
@@ -798,7 +798,7 @@ test("an owner invites an admin, who edits the price book but not billing or pay
   await admin.goto(new URL(link).pathname);
   await expect(admin.getByText(/invited you to Sundeck Pro as an admin/)).toBeVisible();
   await admin.getByLabel("Your name").fill(`E2E Admin ${RUN}`);
-  await admin.getByLabel("Choose a password").fill("e2e-password-123");
+  await admin.getByLabel("Choose a password", { exact: true }).fill("E2e-password-123");
   await admin.getByRole("button", { name: "Create Account and Join" }).click();
   await admin.waitForURL((url) => url.pathname !== new URL(link).pathname);
 

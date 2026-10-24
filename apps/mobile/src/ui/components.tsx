@@ -1623,11 +1623,17 @@ export function FieldRow({
   next,
   wrap = false,
   ref,
+  accessory,
+  footer,
   ...input
 }: TextInputProps & {
   label: string;
   error?: string;
   hint?: string;
+  /** A control at the end of an inline row (a password's Show button). */
+  accessory?: ReactNode;
+  /** Shown under the hint, in the row (a new password's checklist). */
+  footer?: ReactNode;
   layout?: "inline" | "stacked" | "full";
   /** The field Return moves to. */
   next?: RefObject<TextInput | null>;
@@ -1712,6 +1718,7 @@ export function FieldRow({
             {label}
           </Text>
           {field}
+          {accessory}
         </View>
       ) : (
         <>
@@ -1725,7 +1732,14 @@ export function FieldRow({
               {label}
             </Text>
           ) : null}
-          {field}
+          {accessory ? (
+            <View style={styles.formInline}>
+              {field}
+              {accessory}
+            </View>
+          ) : (
+            field
+          )}
         </>
       )}
       {error ? (
@@ -1737,6 +1751,7 @@ export function FieldRow({
           {hint}
         </T>
       ) : null}
+      {footer}
       {numeric ? (
         // Number pads have no Return key: a bar above them moves on or closes the keyboard.
         <InputAccessoryView nativeID={accessoryId} backgroundColor={color.bg}>

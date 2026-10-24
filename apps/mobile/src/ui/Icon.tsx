@@ -36,6 +36,9 @@ const ICONS = {
   offline: { sf: "wifi.slash", ion: "cloud-offline-outline" },
   /** Email Customers in the Customers bar. */
   mail: { sf: "envelope", ion: "mail-outline" },
+  /** Show or hide a password. */
+  show: { sf: "eye", ion: "eye-outline" },
+  hide: { sf: "eye.slash", ion: "eye-off-outline" },
 } as const satisfies Record<string, { sf: SFSymbolName; ion: IoniconName }>;
 
 export type IconName = keyof typeof ICONS;

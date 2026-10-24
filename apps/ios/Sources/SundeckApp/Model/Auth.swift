@@ -55,10 +55,13 @@ public struct AuthMessage: Error, Equatable, CustomStringConvertible {
         if lower.contains("already registered") || lower.contains("already exists") {
             return AuthMessage("An account with this email already exists. Sign in instead.")
         }
+        // Supabase's own check of the password rules (owner, 2026-10-24).
         if lower.contains("password"),
             lower.contains("least") || lower.contains("short") || lower.contains("characters")
+                || lower.contains("weak") || lower.contains("contain")
         {
-            return AuthMessage("Use a password of at least 10 characters.")
+            let rule = passwordHint.prefix(1).lowercased() + passwordHint.dropFirst()
+            return AuthMessage("Choose a stronger password: \(rule)")
         }
         if lower.contains("network") || lower.contains("fetch") || lower.contains("offline")
             || lower.contains("internet") || lower.contains("timed out")
@@ -96,16 +99,30 @@ public struct SupabaseAuthBackend: AuthBackend {
     public func signUp(
         name: String, email: String, password: String, heardFrom: String?, heardFromOther: String?
     ) async throws -> Bool {
-        var data: [String: AnyJSON] = ["full_name": .string(name)]
+        // Through the website (owner, 2026-10-24), like its own sign-up: the password rules, the
+        // limit on sign-ups, and a confirmation email whose link works on any phone or computer
+        // (POST /api/auth/sign-up; apps/mobile data/sign-up.ts).
+        var body: [String: JSONValue] = [
+            "name": .string(name), "email": .string(email), "password": .string(password),
+        ]
         if let heardFrom = parseHeardFrom(heardFrom) {
-            data["heard_from"] = .string(heardFrom)
+            body["heard_from"] = .string(heardFrom)
             if let other = SundeckCore.heardFromOther(heardFrom, heardFromOther) {
-                data["heard_from_other"] = .string(other)
+                body["heard_from_other"] = .string(other)
             }
         }
+        let reply: JSONValue
         do {
-            let response = try await client.auth.signUp(email: email, password: password, data: data)
-            return response.session != nil
+            reply = try await WebAPI(baseURL: AppConfig.webURL) { nil }.postSignedOut(
+                "api/auth/sign-up", .object(body))
+        } catch {
+            throw AuthMessage.friendly(String(describing: error))
+        }
+        if reply["confirmEmail"]?.bool != false { return false }
+        // No confirmation on this server: sign straight in.
+        do {
+            _ = try await client.auth.signIn(email: email, password: password)
+            return true
         } catch {
             throw AuthMessage.friendly(message(error))
         }

@@ -1,0 +1,4 @@
+<h2>You've been invited</h2>
+
+<p>You've been invited to create an account. Follow the link below to accept.</p>
+<p><a href="{{ if eq .RedirectTo .SiteURL }}{{ printf "%sauth/confirm?token_hash=%s&type=invite" .SiteURL .TokenHash }}{{ else }}{{ printf "%s&token_hash=%s&type=invite" .RedirectTo .TokenHash }}{{ end }}">Accept invitation</a></p>

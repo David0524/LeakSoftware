@@ -59,3 +59,4 @@ export * from "./receipt";
 export * from "./usage";
 export * from "./setup-gate";
 export * from "./signed-out";
+export * from "./password";

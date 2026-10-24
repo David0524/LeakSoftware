@@ -6,6 +6,7 @@ import { AuthFrame } from "../../features/auth/AuthFrame";
 import { API_URL } from "../../lib/config";
 import { useSession, useSyncStatus } from "../../state/session";
 import { Button, FieldGroup, FieldRow, Notice } from "../../ui/components";
+import { PasswordRow } from "../../ui/PasswordRow";
 import { color, ios, MAX_TEXT_SCALE, type } from "../../ui/theme";
 
 /** Sign In (spec 5.13; the website's sign-in page). */
@@ -75,15 +76,12 @@ export default function SignIn() {
           textContentType="username"
           next={passwordRef}
         />
-        <FieldRow
+        <PasswordRow
           ref={passwordRef}
           label="Password"
           value={password}
           onChangeText={setPassword}
           placeholder="Required"
-          secureTextEntry
-          autoCapitalize="none"
-          autoCorrect={false}
           autoComplete="current-password"
           textContentType="password"
           returnKeyType="go"

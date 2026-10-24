@@ -8,13 +8,17 @@ import {
   isUsNumber,
   parseHeardFrom,
   parseServices,
+  passwordProblem,
   safePath,
   toE164,
+  tooManyAttempts,
 } from "@leakbook/core";
 import { ACTIVE_COMPANY_COOKIE, getOffice, getUser } from "@/lib/auth";
 import { siteOrigin } from "@/lib/origin";
 import { createClient } from "@/lib/supabase/server";
 import { adminClient } from "@/server/admin";
+import { createAccount, signInLinkByEmail } from "@/server/account-email";
+import { attemptAllowed, attemptFailed } from "@/server/auth-limits";
 import { billingConfigured, logPriceSyncError, syncSubscriptionPrice } from "@/server/billing";
 import { saveLead } from "@/server/leads";
 import { EMAIL_PATTERN, sendPasswordChanged, sendPasswordReset } from "@/server/password-reset";
@@ -32,6 +36,11 @@ export interface FormState {
   fields?: Record<string, string>;
   message?: string;
   values?: Record<string, string>;
+}
+
+/** Subscribing: an error, or the embedded Checkout's client secret to show on the page. */
+export interface SubscribeState extends FormState {
+  clientSecret?: string;
 }
 
 /** A pay button's state: an error, or Stripe's embedded Checkout to show in place. */
@@ -57,16 +66,20 @@ export async function signIn(_: FormState, form: FormData): Promise<FormState> {
   const password = String(form.get("password") ?? "");
   const values = { email };
   if (!email || !password) return { error: "Enter your email and password.", values };
+  if (!(await attemptAllowed("sign_in", email)))
+    return { error: tooManyAttempts("sign_in"), values };
   const supabase = await createClient();
   const { data, error } = await supabase.auth.signInWithPassword({ email, password });
   if (error) {
-    return {
-      error:
-        error.code === "invalid_credentials"
-          ? "That email and password don’t match. Try again or use a sign-in link."
-          : error.message,
-      values,
-    };
+    if (error.code === "invalid_credentials") {
+      await attemptFailed("sign_in", email);
+      return {
+        error: "That email and password don’t match. Try again or use a sign-in link.",
+        values,
+      };
+    }
+    if (error.code === "email_not_confirmed") return resendConfirmation(email, values);
+    return { error: error.message, values };
   }
   const next = safeNext(text(form, "next"));
   // Two-step sign-in: the code next, then on to where they were going.
@@ -75,11 +88,43 @@ export async function signIn(_: FormState, form: FormData): Promise<FormState> {
   redirect(next);
 }
 
+/**
+ * The right password, but the email isn't confirmed yet: a new confirmation link, which works
+ * on any device (owner, 2026-10-24).
+ */
+async function resendConfirmation(email: string, values: Record<string, string>) {
+  if (!(await attemptAllowed("link", email, true)))
+    return { error: tooManyAttempts("link"), values };
+  let sent = (await signInLinkByEmail(email, "/setup", "confirm")) === "sent";
+  if (!sent) {
+    // No email on this server: Supabase's own.
+    const supabase = await createClient();
+    const { error } = await supabase.auth.resend({
+      type: "signup",
+      email,
+      options: { emailRedirectTo: `${await origin()}/auth/confirm?next=/setup` },
+    });
+    sent = !error;
+  }
+  return {
+    error: sent
+      ? `Confirm your email first. We sent a new link to ${email}; it works on any phone or computer.`
+      : "Confirm your email first: open the link we emailed you. Couldn’t send a new one just now; try again in a few minutes.",
+    values,
+  };
+}
+
 export async function sendSignInLink(_: FormState, form: FormData): Promise<FormState> {
   const email = text(form, "email");
   if (!email) return { error: "Enter your email.", values: { email } };
-  const supabase = await createClient();
+  if (!(await attemptAllowed("link", email, true)))
+    return { error: tooManyAttempts("link"), values: { email } };
   const next = safeNext(text(form, "next"));
+  // The server's own email, whose link works in any browser; Supabase's when it can't send.
+  const outcome = await signInLinkByEmail(email, next);
+  if (outcome !== "unavailable")
+    return { message: `If ${email} has an account, a sign-in link is on its way.` };
+  const supabase = await createClient();
   const { error } = await supabase.auth.signInWithOtp({
     email,
     options: {
@@ -107,6 +152,9 @@ async function requireCard(companyId: string) {
   await admin.rpc("require_card_at_signup", { required: true });
 }
 
+const checkEmail = (email: string) =>
+  `Check ${email} for a link to confirm your account. It works on any phone or computer, for an hour.`;
+
 /** Start a trial: create the account and the company in one step. */
 export async function startTrial(_: FormState, form: FormData): Promise<FormState> {
   const values = {
@@ -125,44 +173,35 @@ export async function startTrial(_: FormState, form: FormData): Promise<FormStat
   // A number to call (owner, 2026-10-16: leads), US or Canada like texting.
   const phone = toE164(values.phone);
   if (!isUsNumber(phone)) fields.phone = "Enter a US or Canadian phone number.";
-  if (password.length < 10) fields.password = "Use at least 10 characters.";
+  const weak = passwordProblem(password);
+  if (weak) fields.password = weak;
   const kept = {
     ...values,
     heard_from: heard.heard_from ?? "",
     heard_from_other: heard.heard_from_other ?? "",
   };
   if (Object.keys(fields).length) return { fields, values: kept };
+  if (!(await attemptAllowed("sign_up", values.email, true)))
+    return { error: tooManyAttempts("sign_up"), values: kept };
 
   const supabase = await createClient();
-  const { data, error } = await supabase.auth.signUp({
+  const account = await createAccount(supabase, {
     email: values.email,
     password,
-    options: {
-      data: {
-        full_name: values.name,
-        company_name: values.company,
-        services: values.services,
-        phone,
-        // Kept with the account too, so a shop made after the email confirmation gets it.
-        ...(heard.heard_from ? heard : {}),
-      },
-      emailRedirectTo: `${await origin()}/auth/confirm?next=/setup`,
+    data: {
+      full_name: values.name,
+      company_name: values.company,
+      services: values.services,
+      phone,
+      // Kept with the account too, so a shop made after the email confirmation gets it.
+      ...(heard.heard_from ? heard : {}),
     },
+    next: "/setup",
   });
-  if (error) {
-    return {
-      error:
-        error.code === "user_already_exists"
-          ? "An account with this email already exists. Sign in instead."
-          : error.message,
-      values: kept,
-    };
-  }
+  if (account.kind === "error") return { error: account.error, values: kept };
   // On the leads list, now with the account, whether or not they go on to pay.
-  await saveLead({ ...values, phone: phone ?? undefined, userId: data.user?.id });
-  if (!data.session) {
-    return { message: `Check ${values.email} for a link to confirm your account.` };
-  }
+  await saveLead({ ...values, phone: phone ?? undefined, userId: account.userId ?? undefined });
+  if (account.kind === "confirm") return { message: checkEmail(values.email) };
   // Pool Care, Leak Detection, or Both (owner, 2026-10-16): the shop starts with that
   // package's checklist, tests, and price book.
   const { data: companyId, error: companyError } = await supabase.rpc("create_company", {
@@ -173,7 +212,7 @@ export async function startTrial(_: FormState, form: FormData): Promise<FormStat
     company_heard_from_other: heard.heard_from_other,
   });
   if (companyError) return { error: companyError.message, values: kept };
-  await supabase.from("profile").update({ phone }).eq("id", data.session.user.id);
+  await supabase.from("profile").update({ phone }).eq("id", account.userId);
   await requireCard(String(companyId));
   redirect("/welcome");
 }
@@ -217,23 +256,27 @@ export async function acceptInvite(_: FormState, form: FormData): Promise<FormSt
     const values = { name, email };
     if (mode === "sign-up") {
       if (!name) return { fields: { name: "Enter your name." }, values };
-      if (password.length < 10)
-        return { fields: { password: "Use at least 10 characters." }, values };
-      const { data, error } = await supabase.auth.signUp({
+      const weak = passwordProblem(password);
+      if (weak) return { fields: { password: weak }, values };
+      if (!(await attemptAllowed("sign_up", email, true)))
+        return { error: tooManyAttempts("sign_up"), values };
+      const account = await createAccount(supabase, {
         email,
         password,
-        options: {
-          data: { full_name: name },
-          emailRedirectTo: `${await origin()}/auth/confirm?next=/invite/${token}`,
-        },
+        data: { full_name: name },
+        next: `/invite/${token}`,
       });
-      if (error) return { error: error.message, values };
-      if (!data.session)
-        return { message: `Check ${email} for a link to confirm your account, then come back.` };
-      user = data.user;
+      if (account.kind === "error") return { error: account.error, values };
+      if (account.kind === "confirm") return { message: checkEmail(email) };
+      user = { id: account.userId };
     } else {
+      if (!(await attemptAllowed("sign_in", email)))
+        return { error: tooManyAttempts("sign_in"), values };
       const { data, error } = await supabase.auth.signInWithPassword({ email, password });
-      if (error) return { error: "That email and password don’t match.", values };
+      if (error) {
+        if (error.code === "invalid_credentials") await attemptFailed("sign_in", email);
+        return { error: "That email and password don’t match.", values };
+      }
       user = data.user;
     }
   }
@@ -273,6 +316,7 @@ export async function requestPasswordReset(_: FormState, form: FormData): Promis
   const email = text(form, "email");
   if (!EMAIL_PATTERN.test(email)) return { error: "Enter your email.", values: { email } };
   const outcome = await sendPasswordReset(email);
+  if (outcome === "limited") return { error: tooManyAttempts("reset"), values: { email } };
   if (outcome === "unavailable")
     return {
       error: `Email isn’t working right now. Email ${SUPPORT_EMAIL} for help.`,

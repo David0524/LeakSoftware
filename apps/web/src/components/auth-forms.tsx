@@ -16,6 +16,7 @@ import { captureLead } from "@/app/actions/leads";
 import { parseServices, type Services } from "@leakbook/core";
 import { Banner } from "./doc-ui";
 import { HeardFromField } from "./heard-from-field";
+import { PasswordField } from "./password-field";
 import { ServicesChoice } from "./services-form";
 import { Button, buttonClass, FieldGroup, GroupedField } from "./ui";
 import { orOffline } from "@/lib/offline";
@@ -69,13 +70,7 @@ const PHONE = {
   autoComplete: "tel",
   placeholder: "(555) 555-0100",
 } as const;
-const PASSWORD = {
-  type: "password",
-  autoCapitalize: "none",
-  autoCorrect: "off",
-  spellCheck: false,
-  placeholder: "Required",
-} as const;
+const PASSWORD = { placeholder: "Required" } as const;
 
 export function SignInForm({ next }: { next: string }) {
   const [withLink, setWithLink] = useState(false);
@@ -116,7 +111,7 @@ export function SignInForm({ next }: { next: string }) {
           required
           defaultValue={passwordState.values?.email}
         />
-        <GroupedField
+        <PasswordField
           label="Password"
           name="password"
           {...PASSWORD}
@@ -180,7 +175,7 @@ export function NewPasswordForm() {
   return (
     <form action={action} className="space-y-4">
       <FieldGroup labelWidth="9rem">
-        <GroupedField
+        <PasswordField
           label="New password"
           name="password"
           {...PASSWORD}
@@ -188,9 +183,10 @@ export function NewPasswordForm() {
           minLength={10}
           maxLength={72}
           required
+          meter
           error={state.fields?.password}
         />
-        <GroupedField
+        <PasswordField
           label="Type it again"
           name="confirm"
           {...PASSWORD}
@@ -198,7 +194,6 @@ export function NewPasswordForm() {
           required
         />
       </FieldGroup>
-      <p className="text-[0.9375rem] text-text-muted max-sm:px-4">At least 10 characters.</p>
       <Messages state={state} />
       <Button type="submit" disabled={pending} className="w-full">
         {pending ? "Saving…" : "Save New Password"}
@@ -266,12 +261,12 @@ export function TrialForm({
           defaultValue={state.values?.phone}
           error={state.fields?.phone}
         />
-        <GroupedField
+        <PasswordField
           label="Password"
           name="password"
           {...PASSWORD}
           autoComplete="new-password"
-          hint="At least 10 characters."
+          meter
           error={state.fields?.password}
         />
       </FieldGroup>
@@ -397,12 +392,13 @@ export function InviteForm({
             error={state.fields?.name}
           />
         ) : null}
-        <GroupedField
+        <PasswordField
+          key={mode}
           label={mode === "sign-up" ? "Choose a password" : "Password"}
           name="password"
           {...PASSWORD}
           autoComplete={mode === "sign-up" ? "new-password" : "current-password"}
-          hint={mode === "sign-up" ? "At least 10 characters." : undefined}
+          meter={mode === "sign-up"}
           error={state.fields?.password}
         />
       </FieldGroup>

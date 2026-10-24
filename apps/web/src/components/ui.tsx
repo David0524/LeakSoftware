@@ -271,7 +271,7 @@ export const GROUP_ROW =
   "max-sm:pr-4 max-sm:not-first:border-t-[0.5px] max-sm:not-first:border-separator";
 
 /** A field's hint or error, under it (in its row on phones). */
-function FieldNote({ id, hint, error }: { id: string; hint?: string; error?: string }) {
+export function FieldNote({ id, hint, error }: { id: string; hint?: string; error?: string }) {
   return error || hint ? (
     <p
       id={`${id}-note`}
