@@ -9,7 +9,7 @@ import { SupportBanner } from "@/components/support-banner";
 import { UsageTracker } from "@/components/usage-tracker";
 import { InstantProvider } from "@/components/instant";
 import { PullToRefresh } from "@/components/pull-to-refresh";
-import { accessNotice } from "@leakbook/core";
+import { accessNotice, mustFinishSetup } from "@leakbook/core";
 import { cx } from "@/components/ui";
 import { getOffice } from "@/lib/auth";
 import { getAccess, getCompany, mayMakeJobs } from "@/lib/data";
@@ -111,8 +111,9 @@ async function PhoneTabs() {
 async function AccessBanner() {
   const office = await getOffice();
   const access = await getAccess(office);
-  // A new shop's owner finishes onboarding before anything else (owner, 2026-10-16).
-  if (office.isOwner && access?.onboarded === false && onboardingAvailable()) redirect("/welcome");
+  // A new shop's owner finishes onboarding before anything else (owner, 2026-10-16); the same
+  // rule holds the owner in the iPhone and Android apps (owner, 2026-10-24).
+  if (mustFinishSetup(access, office.company.role) && onboardingAvailable()) redirect("/welcome");
   const notice = access ? accessNotice(access) : null;
   if (!notice) return null;
   return (

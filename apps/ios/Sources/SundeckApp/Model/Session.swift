@@ -22,7 +22,14 @@ public enum AppRoute: Equatable, Sendable {
     case code
     /// Signed in, but this phone has no company yet (first download, or an invite to accept).
     case setup
+    /// The owner of a shop whose setup (the card for the trial) isn't finished (owner, 2026-10-24).
+    case finishSetup
     case ready
+}
+
+/// What asking the server about the shop's setup found (Check Again).
+public enum SetupCheck: Equatable, Sendable {
+    case done, needed, offline, failed
 }
 
 /// Who is signed in and in which company. The user is remembered on the phone, so an offline
@@ -41,12 +48,19 @@ public final class Session {
     /// in again (owner, 2026-10-22). Sign In shows `signedOutMessage` and fills in its email.
     public private(set) var signedOutUser: SignedInUser?
 
+    /// Companies last seen needing setup by this person, kept on the phone so an offline launch
+    /// opens the same way (KVKey.setupNeeded).
+    public private(set) var setupNeeded: [String] = []
+    /// public.company_access for a company: whether it's set up, and its plan. Set by the app.
+    @ObservationIgnored public var fetchAccess: (@Sendable (String) async throws -> SetupAccess)?
+
     public init(sync: SyncService, auth: any AuthBackend) {
         self.sync = sync
         self.auth = auth
         user = sync.kv.getJSON(KVKey.user, as: SignedInUser.self)
         signedOutUser = user == nil ? sync.kv.getJSON(KVKey.signedOutUser, as: SignedInUser.self) : nil
         activeCompanyId = sync.kv.get(KVKey.activeCompany)
+        setupNeeded = sync.kv.getJSON(KVKey.setupNeeded, as: [String].self) ?? []
         reloadCompanies()
         sync.sessionEnded = { [weak self] in await self?.sessionEnded() }
     }
@@ -61,7 +75,45 @@ public final class Session {
     public var route: AppRoute {
         if needsCode { return .code }
         guard user != nil else { return .signedOut }
-        return company == nil ? .setup : .ready
+        guard company != nil else { return .setup }
+        return setupHeld ? .finishSetup : .ready
+    }
+
+    /// The owner of a shop whose setup isn't finished: the app shows Finish Setting Up Your
+    /// Account, as the website sends them to its trial page. Admins and techs are never held
+    /// (core `mustFinishSetup`). Port of `setupHeld` in apps/mobile/src/state/session.tsx.
+    public var setupHeld: Bool {
+        guard let company else { return false }
+        return company.role == "owner" && setupNeeded.contains(company.id)
+    }
+
+    /// Asks the server whether this person must finish the shop's setup, and remembers the answer
+    /// (on opening the app, returning to it, and Check Again). Offline, the last answer stands;
+    /// never asked, the person is let in, and the database still refuses changes to a shop that
+    /// needs its card. Port of checkSetup in apps/mobile/src/lib/setupGate.ts.
+    @discardableResult
+    public func checkSetup() async -> SetupCheck {
+        guard user != nil, !needsCode, let company, let fetchAccess else { return .done }
+        let id = company.id
+        guard company.role == "owner" else {
+            saveSetupNeeded(setupNeeded.filter { $0 != id })
+            return .done
+        }
+        let access: SetupAccess
+        do {
+            access = try await fetchAccess(id)
+        } catch {
+            return isConnectionError(String(describing: error)) ? .offline : .failed
+        }
+        let needed = mustFinishSetup(access, role: company.role)
+        let others = setupNeeded.filter { $0 != id }
+        saveSetupNeeded(needed ? others + [id] : others)
+        return needed ? .needed : .done
+    }
+
+    private func saveSetupNeeded(_ ids: [String]) {
+        setupNeeded = ids
+        if ids.isEmpty { sync.kv.remove(KVKey.setupNeeded) } else { sync.kv.setJSON(KVKey.setupNeeded, ids) }
     }
 
     public var company: CompanyContext? {
@@ -143,6 +195,7 @@ public final class Session {
         signedOutUser = nil
         activeCompanyId = nil
         companies = []
+        setupNeeded = []
         await auth.signOut()
     }
 
@@ -199,7 +252,10 @@ public final class Session {
         // Someone else signing in on this phone never sees the last person's work, nor sends its
         // unsent changes (including the work of one the server signed out).
         let previous = user ?? signedOutUser ?? sync.kv.getJSON(KVKey.signedOutUser, as: SignedInUser.self)
-        if let previous, previous.id != newUser.id { sync.clearLocalData() }
+        if let previous, previous.id != newUser.id {
+            sync.clearLocalData()
+            setupNeeded = []
+        }
         sync.kv.remove(KVKey.signedOutUser)
         signedOutUser = nil
         user = newUser

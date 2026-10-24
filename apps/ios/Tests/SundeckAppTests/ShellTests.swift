@@ -553,3 +553,59 @@ struct Shell {
         #expect(sync.barStatus.pending == 2)
     }
 }
+
+/// Finish Setting Up Your Account (owner, 2026-10-24: "shops should have to submit a credit card
+/// for the trial"): an owner whose shop isn't set up waits on a plain screen; techs never do.
+@Suite @MainActor struct FinishSetupTests {
+    private struct Offline: Error, CustomStringConvertible {
+        var description: String { "The Internet connection appears to be offline." }
+    }
+
+    private func shell(role: String, access: SetupAccess?) async throws -> Shell {
+        let s = try Shell()
+        s.session.fetchAccess = { _ in
+            guard let access else { throw Offline() }
+            return access
+        }
+        try await s.session.signIn(email: "owner@shop.test", password: "right")
+        try s.seedCompany(userId: "u-owner@shop.test", role: role)
+        s.session.reloadCompanies()
+        return s
+    }
+
+    @Test func anOwnerWhoseShopIsntSetUpWaitsUntilItIs() async throws {
+        let s = try await shell(role: "owner", access: SetupAccess(onboarded: false, plan: "standard"))
+        #expect(s.session.route == .ready)  // never asked: let in
+        #expect(await s.session.checkSetup() == .needed)
+        #expect(s.session.route == .finishSetup)
+        // A new launch, offline: the last answer stands.
+        let again = Session(sync: s.sync, auth: FakeAuth())
+        #expect(again.route == .finishSetup)
+        again.fetchAccess = { _ in throw Offline() }
+        #expect(await again.checkSetup() == .offline)
+        #expect(again.route == .finishSetup)
+        // Setup finished on the website: Check Again opens the app.
+        s.session.fetchAccess = { _ in SetupAccess(onboarded: true, plan: "standard") }
+        #expect(await s.session.checkSetup() == .done)
+        #expect(s.session.route == .ready)
+        #expect(s.sync.kv.get(KVKey.setupNeeded) == nil)
+    }
+
+    @Test func techsAndDemoShopsAreNeverHeld() async throws {
+        let tech = try await shell(role: "tech", access: SetupAccess(onboarded: false, plan: "standard"))
+        #expect(await tech.session.checkSetup() == .done)
+        #expect(tech.session.route == .ready)
+        let demo = try await shell(role: "owner", access: SetupAccess(onboarded: false, plan: "demo"))
+        #expect(await demo.session.checkSetup() == .done)
+        #expect(demo.session.route == .ready)
+    }
+
+    @Test func signingOutForgetsTheAnswer() async throws {
+        let s = try await shell(role: "owner", access: SetupAccess(onboarded: false, plan: nil))
+        await s.session.checkSetup()
+        #expect(s.session.route == .finishSetup)
+        await s.session.signOut()
+        #expect(s.session.setupNeeded.isEmpty)
+        #expect(s.sync.kv.get(KVKey.setupNeeded) == nil)
+    }
+}

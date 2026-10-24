@@ -57,11 +57,13 @@ public enum KVKey {
     /// foreground), and when the current one began.
     public static let liveStopDismissed = "live_stop:dismissed_on"
     public static let liveStopStarted = "live_stop:started_at"
+    /// Shops last seen needing setup by this person (Session.checkSetup; owner, 2026-10-24).
+    public static let setupNeeded = "access:setup_needed"
 
     /// Cleared when someone signs out (the device id and clock stay in the store).
     public static let signOutClears = [
         signedOutUser, activeCompany, lastSyncedAt, initialSyncDone, teamProfiles, gettingStartedHidden,
-        notificationPrefs, liveStopTarget, liveStopDismissed, liveStopStarted,
+        notificationPrefs, liveStopTarget, liveStopDismissed, liveStopStarted, setupNeeded,
         // Search's Recent is the person's own (docs/plans/search-and-activity.md).
         searchRecent,
         // Reports waiting to send go with the person's work (ReportSendQueue, VisitReportQueue).

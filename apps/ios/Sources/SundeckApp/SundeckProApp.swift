@@ -133,6 +133,10 @@
                     environment.liveStop.end()
                     await environment.push.unregister(api: environment.api)
                 }
+                // Whether a new shop's owner still has to finish setup (Session.checkSetup).
+                session.fetchAccess = { [client] id in
+                    try await client.rpc("company_access", params: ["target_company": id]).execute().value
+                }
                 AppDelegate.environment = environment
                 environment.watchNetwork()
                 return environment
@@ -206,6 +210,7 @@
                 case .signedOut: SignInFlow()
                 case .code: CodeView()
                 case .setup: SetupView()
+                case .finishSetup: FinishSetupView()
                 case .ready: MainView()
                 }
             }
@@ -237,7 +242,10 @@
                 }
                 guard phase == .active else { return }
                 sync.appBecameActive()
-                Task { await session.checkSession() }
+                Task {
+                    await session.checkSession()
+                    await session.checkSetup()
+                }
             }
             .onChange(of: sync.revision) {
                 session.reloadCompanies()
@@ -245,6 +253,10 @@
                 DayStartNotifications.check(session)
             }
             .onChange(of: session.user) { app.walkthrough.reload() }
+            // Finish Setting Up Your Account (owner, 2026-10-24): asked once the shop's row is here.
+            .task(id: "\(session.user?.id ?? "")|\(session.company?.id ?? "")|\(session.company?.role ?? "")") {
+                await session.checkSetup()
+            }
             .task(id: "\(session.user?.id ?? "")|\(session.company?.id ?? "")") {
                 // Usage for the Admin portal (owner, 2026-10-22): sent every minute while signed in.
                 guard session.user != nil else { return }

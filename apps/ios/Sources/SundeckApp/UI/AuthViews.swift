@@ -563,6 +563,55 @@
         }
     }
 
+    /// The owner of a shop whose setup isn't finished (owner, 2026-10-24: "shops should have to
+    /// submit a credit card for the trial"). The website takes them to its trial page; the app only
+    /// says to finish on the website: no link, button or price, since an iPhone app may not send
+    /// people to an outside purchase (App Store rule 3.1.1). Port of apps/mobile/src/app/finish-setup.tsx.
+    struct FinishSetupView: View {
+        @Environment(Session.self) private var session
+        @State private var message: String?
+        @State private var checking = false
+
+        var body: some View {
+            NavigationStack {
+                AuthFrame(title: finishSetupTitle) {
+                    Text("Signed in as \(session.user?.email ?? "")")
+                } content: {
+                    Text(finishSetupBody)
+                        .textRole(.body)
+                        .foregroundStyle(Color.text)
+                        .multilineTextAlignment(.center)
+                        .frame(maxWidth: .infinity)
+                    if let message { Notice(kind: .warning, text: message) }
+                    Button {
+                        Task { await check() }
+                    } label: {
+                        BusyButtonLabel("Check Again", busy: checking, busyTitle: "Checking…")
+                    }
+                    .buttonStyle(.primary(fullWidth: true, size: .field))
+                    .disabled(checking)
+                    Button("Sign Out") { Task { await session.signOut() } }
+                        .buttonStyle(.quiet)
+                        .frame(maxWidth: .infinity)
+                }
+                .toolbar(.hidden, for: .navigationBar)
+            }
+        }
+
+        private func check() async {
+            message = nil
+            checking = true
+            defer { checking = false }
+            // .done opens the app by itself (RootView follows session.route).
+            switch await session.checkSetup() {
+            case .needed: message = finishSetupStill
+            case .offline: message = finishSetupOffline
+            case .failed: message = finishSetupFailed
+            case .done: break
+            }
+        }
+    }
+
     /// The session expired: sign in again with the same email. Nothing on the phone changes.
     struct ReauthView: View {
         @Environment(Session.self) private var session

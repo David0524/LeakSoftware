@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 import { Suspense } from "react";
-import { companyServices } from "@leakbook/core";
+import { companyServices, mustFinishSetup } from "@leakbook/core";
 import { TrialOffer } from "@/components/trial-offer";
 import { getOffice } from "@/lib/auth";
 import { getAccess, getCompany } from "@/lib/data";
@@ -24,9 +24,8 @@ export default function WelcomePage() {
 
 async function WelcomeBody() {
   const office = await getOffice();
-  if (!office.isOwner) redirect("/home");
   const [access, company] = await Promise.all([getAccess(office), getCompany(office)]);
-  if (!access || access.onboarded !== false) redirect("/home");
+  if (!mustFinishSetup(access, office.company.role)) redirect("/home");
   const supabase = await createClient();
   const [{ data: sub }, { count }] = await Promise.all([
     supabase

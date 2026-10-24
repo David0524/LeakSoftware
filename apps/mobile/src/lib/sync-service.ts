@@ -551,6 +551,8 @@ export class SyncService {
       "capture:pending",
       // Recent in search: what this person opened (lib/shopSearch RECENT_KEY).
       "search:recent",
+      // Shops last seen needing setup (lib/setupGate SETUP_NEEDED_KEY).
+      "access:setup_needed",
     ]) {
       this.kv.remove(key);
     }

@@ -85,10 +85,11 @@ export default function RootLayout() {
 
 /**
  * Signed out: auth screens. Waiting on a two-step code: the code screen. Signed in without a
- * company: setup. Otherwise: the app.
+ * company: setup. An owner whose shop isn't set up yet: Finish Setting Up Your Account.
+ * Otherwise: the app.
  */
 function RootStack() {
-  const { user, company, needsCode } = useSession();
+  const { user, company, needsCode, setupHeld } = useSession();
   // Two-step sign-in: the code screen comes before anything else (owner, 2026-10-16).
   const signedIn = Boolean(user) && !needsCode;
   // The app opens as soon as the company's row arrives, a page or so into the first download;
@@ -106,7 +107,11 @@ function RootStack() {
       <Stack.Protected guard={signedIn && !ready}>
         <Stack.Screen name="setup" />
       </Stack.Protected>
-      <Stack.Protected guard={signedIn && ready}>
+      {/* A new shop's owner finishes setup on the website first (owner, 2026-10-24). */}
+      <Stack.Protected guard={signedIn && ready && setupHeld}>
+        <Stack.Screen name="finish-setup" />
+      </Stack.Protected>
+      <Stack.Protected guard={signedIn && ready && !setupHeld}>
         <Stack.Screen name="(app)" />
       </Stack.Protected>
     </Stack>

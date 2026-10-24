@@ -1,0 +1,130 @@
+{
+  "mustFinishSetup": [
+    {
+      "args": [
+        {
+          "onboarded": false,
+          "plan": "standard"
+        },
+        "owner"
+      ],
+      "result": true
+    },
+    {
+      "args": [
+        {
+          "onboarded": false,
+          "plan": null
+        },
+        "owner"
+      ],
+      "result": true
+    },
+    {
+      "args": [
+        {
+          "onboarded": false,
+          "plan": "standard"
+        },
+        "admin"
+      ],
+      "result": false
+    },
+    {
+      "args": [
+        {
+          "onboarded": false,
+          "plan": "standard"
+        },
+        "tech"
+      ],
+      "result": false
+    },
+    {
+      "args": [
+        {
+          "onboarded": false,
+          "plan": "standard"
+        },
+        null
+      ],
+      "result": false
+    },
+    {
+      "args": [
+        {
+          "onboarded": true,
+          "plan": "standard"
+        },
+        "owner"
+      ],
+      "result": false
+    },
+    {
+      "args": [
+        {
+          "onboarded": false,
+          "plan": "demo"
+        },
+        "owner"
+      ],
+      "result": false
+    },
+    {
+      "args": [
+        {
+          "plan": "standard"
+        },
+        "owner"
+      ],
+      "result": false
+    },
+    {
+      "args": [
+        {
+          "onboarded": null,
+          "plan": "standard"
+        },
+        "owner"
+      ],
+      "result": false
+    },
+    {
+      "args": [
+        null,
+        "owner"
+      ],
+      "result": false
+    }
+  ],
+  "FINISH_SETUP_TITLE": [
+    {
+      "args": [],
+      "result": "Finish Setting Up Your Account"
+    }
+  ],
+  "FINISH_SETUP_BODY": [
+    {
+      "args": [],
+      "result": "Your shop’s trial isn’t started yet. Finish setting up on the Sundeck Pro website, then come back here."
+    }
+  ],
+  "FINISH_SETUP_STILL": [
+    {
+      "args": [],
+      "result": "Setup isn’t finished yet. Check again once it’s done."
+    }
+  ],
+  "FINISH_SETUP_OFFLINE": [
+    {
+      "args": [],
+      "result": "No connection. Try again when you’re online."
+    }
+  ],
+  "FINISH_SETUP_FAILED": [
+    {
+      "args": [],
+      "result": "Couldn’t check right now. Try again in a minute."
+    }
+  ]
+}

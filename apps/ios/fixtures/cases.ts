@@ -28,6 +28,7 @@ import { customerCounts } from "./cases/customer-counts";
 import { receipts } from "./cases/receipts";
 import { signedOut } from "./cases/signed-out";
 import { heardFrom } from "./cases/heard-from";
+import { setupGate } from "./cases/setup-gate";
 
 /** One fixture file per entry: apps/ios/Tests/Fixtures/<name>.json. */
 export const modules: Record<string, ModuleCases> = {
@@ -60,4 +61,5 @@ export const modules: Record<string, ModuleCases> = {
   receipts,
   "signed-out": signedOut,
   "heard-from": heardFrom,
+  "setup-gate": setupGate,
 };

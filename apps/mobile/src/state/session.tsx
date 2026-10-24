@@ -20,6 +20,7 @@ import {
   type SignedInUser,
 } from "../lib/signedOut";
 import { unregisterPush } from "../lib/push";
+import { checkSetup, readSetupNeeded, type SetupCheck } from "../lib/setupGate";
 import { getServices, type Services } from "../lib/services";
 import { useRows, useSyncStatus } from "../data/hooks";
 
@@ -38,6 +39,14 @@ interface SessionValue {
   company: Company | null;
   membership: Membership | null;
   setActiveCompany(id: string): void;
+  /**
+   * The owner of a shop whose setup (the card for the trial) isn't finished (owner, 2026-10-24):
+   * the app shows Finish Setting Up Your Account instead of the shop, as the website sends them
+   * to its trial page. Admins and techs are never held (core `mustFinishSetup`).
+   */
+  setupHeld: boolean;
+  /** Asks the server again (Check Again; also on opening the app and returning to it). */
+  checkSetup(): Promise<SetupCheck>;
   /**
    * Two-step sign-in (owner, 2026-10-16): the account has an authenticator code and this
    * session hasn't passed it. Shop data stays closed (the database refuses it), so the app
@@ -67,12 +76,14 @@ export function SessionProvider({ children }: { children: ReactNode }) {
   const [signedOut, setSignedOut] = useState<SignedInUser | null>(() => signedOutUser(kv));
   const [activeId, setActiveId] = useState<string | null>(() => kv.get("active_company"));
   const [needsCode, setNeedsCode] = useState(false);
+  const [setupNeeded, setSetupNeeded] = useState<string[]>(() => readSetupNeeded(kv));
 
   const remember = useCallback(
     (u: SignedInUser) => {
       // A different account on this device must never see the previous account's data, nor
       // send its unsent changes (including one the server signed out).
       rememberSignIn(kv, sync, u);
+      setSetupNeeded(readSetupNeeded(kv));
       setSignedOut(null);
       setUser(u);
       sync.start();
@@ -145,6 +156,31 @@ export function SessionProvider({ children }: { children: ReactNode }) {
   const company = companies.find((c) => c.id === activeId) ?? companies[0] ?? null;
   const membership = memberships.find((m) => m.company_id === company?.id) ?? null;
 
+  // Finish Setting Up Your Account (owner, 2026-10-24): checked when the shop's row is here,
+  // and each time the app comes back to the front. Offline, the last answer stands.
+  const companyId = company?.id ?? null;
+  const role = membership?.role ?? null;
+  const recheckSetup = useCallback(
+    (): Promise<SetupCheck> =>
+      companyId
+        ? checkSetup(supabase, kv, companyId, role).then((result) => {
+            setSetupNeeded(readSetupNeeded(kv));
+            return result;
+          })
+        : Promise.resolve("done"),
+    [supabase, kv, companyId, role],
+  );
+  const signedIn = Boolean(user) && !needsCode;
+  useEffect(() => {
+    if (!signedIn || !companyId || !role) return;
+    void recheckSetup();
+    const app = AppState.addEventListener("change", (state) => {
+      if (state === "active") void recheckSetup();
+    });
+    return () => app.remove();
+  }, [signedIn, companyId, role, recheckSetup]);
+  const setupHeld = Boolean(companyId && role === "owner" && setupNeeded.includes(companyId));
+
   const value: SessionValue = {
     services,
     user,
@@ -152,6 +188,8 @@ export function SessionProvider({ children }: { children: ReactNode }) {
     companies,
     company,
     membership,
+    setupHeld,
+    checkSetup: recheckSetup,
     needsCode,
     verifyCode: async (code) => {
       const { data: factors } = await supabase.auth.mfa.listFactors();
@@ -213,6 +251,7 @@ export function SessionProvider({ children }: { children: ReactNode }) {
       await endLiveStop().catch(() => undefined);
       sync.clearLocalData();
       forgetSignIn(kv);
+      setSetupNeeded([]);
       setUser(null);
       setSignedOut(null);
       setActiveId(null);
