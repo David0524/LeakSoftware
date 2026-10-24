@@ -1,0 +1,346 @@
+<!doctype html>
+<!--
+  Sundeck Pro iOS 26 icon mockup (a look, nothing ships). Query string:
+    look=default|dark|clear   the Home Screen appearance
+    mode=home|large           a phone Home Screen at real size, or the icon alone at 1024 px
+    layers=DIR                where icon-<look>.png (stills.py's glass layers) are
+  Neighbouring apps are plain placeholder squares in neutral colours; no Apple icons or marks.
+  shoot.mjs screenshots it with Playwright.
+-->
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Icon Mockup</title>
+    <style>
+      :root {
+        --navy: #12263a;
+        --water: #1f6fae;
+      }
+      * {
+        box-sizing: border-box;
+        margin: 0;
+      }
+      html,
+      body {
+        background: transparent;
+        font-family:
+          -apple-system, "SF Pro Text", "Inter", "Helvetica Neue", Helvetica, Arial, sans-serif;
+        -webkit-font-smoothing: antialiased;
+      }
+
+      /* ---- The wallpaper: soft colour fields, as an abstract iOS wallpaper ---- */
+      .wall {
+        position: absolute;
+        inset: -60px;
+        background:
+          radial-gradient(60% 45% at 18% 22%, #f2a272 0%, transparent 70%),
+          radial-gradient(55% 40% at 85% 30%, #7fa9d8 0%, transparent 70%),
+          radial-gradient(70% 50% at 70% 85%, #2a5d8c 0%, transparent 75%),
+          radial-gradient(60% 45% at 10% 80%, #c97a8c 0%, transparent 70%),
+          linear-gradient(170deg, #e9c3a5 0%, #9fb6cf 45%, #34577c 100%);
+        filter: blur(30px) saturate(1.1);
+      }
+      .dark .wall {
+        filter: blur(30px) saturate(1.05) brightness(0.42);
+      }
+
+      /* ---- Phone screen (393 x 852 pt) ---- */
+      .phone {
+        position: relative;
+        width: 393px;
+        height: 852px;
+        overflow: hidden;
+        border-radius: 55px;
+        color: #fff;
+      }
+      .status {
+        position: absolute;
+        top: 16px;
+        left: 0;
+        right: 0;
+        display: flex;
+        justify-content: space-between;
+        padding: 0 34px 0 52px;
+        font-weight: 600;
+        font-size: 17px;
+        letter-spacing: -0.2px;
+      }
+      .island {
+        position: absolute;
+        top: 11px;
+        left: 50%;
+        width: 124px;
+        height: 36px;
+        transform: translateX(-50%);
+        background: #000;
+        border-radius: 20px;
+      }
+      .glyphs {
+        display: flex;
+        gap: 6px;
+        align-items: center;
+      }
+      .bars {
+        display: flex;
+        gap: 2px;
+        align-items: flex-end;
+        height: 12px;
+      }
+      .bars i {
+        width: 3px;
+        background: #fff;
+        border-radius: 1px;
+      }
+      .batt {
+        width: 25px;
+        height: 12px;
+        border: 1.3px solid rgba(255, 255, 255, 0.5);
+        border-radius: 4px;
+        padding: 1.5px;
+      }
+      .batt i {
+        display: block;
+        height: 100%;
+        width: 78%;
+        background: #fff;
+        border-radius: 2px;
+      }
+      .grid {
+        position: absolute;
+        top: 74px;
+        left: 27px;
+        right: 27px;
+        display: grid;
+        grid-template-columns: repeat(4, 64px);
+        justify-content: space-between;
+        row-gap: 26px;
+      }
+      .cell {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 5px;
+        width: 64px;
+      }
+      .cell span {
+        font-size: 12px;
+        font-weight: 500;
+        text-shadow: 0 0.5px 2px rgba(0, 0, 0, 0.35);
+        white-space: nowrap;
+      }
+      .search {
+        position: absolute;
+        left: 50%;
+        bottom: 128px;
+        transform: translateX(-50%);
+        padding: 7px 14px;
+        border-radius: 20px;
+        font-size: 13px;
+        font-weight: 600;
+        display: flex;
+        gap: 5px;
+        align-items: center;
+        background: rgba(255, 255, 255, 0.18);
+        backdrop-filter: blur(16px) saturate(1.6);
+        box-shadow:
+          inset 0 0.5px 0 rgba(255, 255, 255, 0.55),
+          inset 0 -0.5px 0 rgba(255, 255, 255, 0.2);
+      }
+      .dock {
+        position: absolute;
+        left: 12px;
+        right: 12px;
+        bottom: 12px;
+        height: 96px;
+        border-radius: 42px;
+        display: flex;
+        justify-content: space-around;
+        align-items: center;
+        padding: 0 14px;
+        background: rgba(255, 255, 255, 0.16);
+        backdrop-filter: blur(20px) saturate(1.6);
+        box-shadow:
+          inset 0 1px 0 rgba(255, 255, 255, 0.5),
+          inset 0 -1px 0 rgba(255, 255, 255, 0.15);
+      }
+      .dark .search,
+      .dark .dock {
+        background: rgba(40, 40, 46, 0.35);
+        box-shadow:
+          inset 0 1px 0 rgba(255, 255, 255, 0.22),
+          inset 0 -1px 0 rgba(255, 255, 255, 0.06);
+      }
+
+      /* ---- An app icon: 64 pt on this phone, masked to the continuous-corner shape ---- */
+      .app {
+        position: relative;
+        width: 64px;
+        height: 64px;
+        -webkit-mask: var(--squircle) center / 100% 100% no-repeat;
+        mask: var(--squircle) center / 100% 100% no-repeat;
+      }
+      .app .bg,
+      .app img,
+      .app .rim {
+        position: absolute;
+        inset: 0;
+        width: 100%;
+        height: 100%;
+      }
+      /* The system's glass edge: a specular line along the top and a fainter one below. */
+      .app .rim {
+        border-radius: 23%;
+        box-shadow:
+          inset 0 0.08em 0.06em rgba(255, 255, 255, 0.55),
+          inset 0 -0.06em 0.06em rgba(255, 255, 255, 0.18),
+          inset 0 0 0 0.03em rgba(255, 255, 255, 0.16);
+        font-size: 16px;
+      }
+      .dark .app .rim {
+        box-shadow:
+          inset 0 0.08em 0.06em rgba(255, 255, 255, 0.28),
+          inset 0 -0.06em 0.06em rgba(255, 255, 255, 0.08),
+          inset 0 0 0 0.03em rgba(255, 255, 255, 0.1);
+      }
+      .clear .app .bg {
+        backdrop-filter: blur(10px) saturate(1.5) brightness(1.08);
+        background: rgba(255, 255, 255, 0.16);
+      }
+      /* Ours */
+      .default .app.ours .bg {
+        background: linear-gradient(180deg, var(--water), var(--navy));
+      }
+      .dark .app.ours .bg {
+        background: linear-gradient(180deg, var(--navy), #03070c);
+      }
+      /* Placeholders: plain neutral squares, each with a simple neutral shape. */
+      .app.ph .bg {
+        background: var(--c);
+      }
+      .dark .app.ph .bg {
+        background: color-mix(in srgb, var(--c) 28%, #1c1c1e);
+      }
+      .clear .app.ph .bg {
+        background: rgba(255, 255, 255, 0.16);
+      }
+      .app.ph .shape {
+        position: absolute;
+        left: 50%;
+        top: 50%;
+        width: 40%;
+        height: 40%;
+        transform: translate(-50%, -50%);
+        background: rgba(255, 255, 255, 0.85);
+        border-radius: var(--r, 50%);
+      }
+      .dark .app.ph .shape {
+        background: color-mix(in srgb, var(--c) 75%, #fff);
+      }
+      .clear .app.ph .shape {
+        background: rgba(255, 255, 255, 0.85);
+      }
+
+      /* ---- Large: the icon alone, 1024 px ---- */
+      .large .app {
+        width: 1024px;
+        height: 1024px;
+      }
+      .large .app .rim {
+        font-size: 256px;
+      }
+      .large .stage {
+        position: relative;
+        width: 1024px;
+        height: 1024px;
+        overflow: hidden;
+      }
+      .large.clear .app .bg {
+        backdrop-filter: blur(60px) saturate(1.5) brightness(1.08);
+      }
+    </style>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script>
+      const q = new URLSearchParams(location.search);
+      const look = q.get("look") || "default";
+      const mode = q.get("mode") || "home";
+      const layers = q.get("layers") || "layers";
+      document.body.classList.add(look, mode);
+
+      // The continuous-corner (superellipse) mask, as the system rounds an app icon.
+      function squircle(n = 5) {
+        const pts = [];
+        for (let i = 0; i < 360; i++) {
+          const t = (i / 360) * 2 * Math.PI;
+          const c = Math.cos(t),
+            s = Math.sin(t);
+          const x = 50 + 50 * Math.sign(c) * Math.abs(c) ** (2 / n);
+          const y = 50 + 50 * Math.sign(s) * Math.abs(s) ** (2 / n);
+          pts.push(`${x.toFixed(3)},${y.toFixed(3)}`);
+        }
+        const svg = `<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><polygon points='${pts.join(" ")}'/></svg>`;
+        return `url("data:image/svg+xml,${encodeURIComponent(svg)}")`;
+      }
+      document.documentElement.style.setProperty("--squircle", squircle());
+
+      const ours = () =>
+        `<div class="app ours"><div class="bg"></div><img src="${layers}/icon-${look}.png" alt=""><div class="rim"></div></div>`;
+      const ph = (c, r) =>
+        `<div class="app ph" style="--c:${c};--r:${r}"><div class="bg"></div><div class="shape"></div><div class="rim"></div></div>`;
+
+      const root = document.getElementById("root");
+      if (mode === "large") {
+        root.innerHTML =
+          look === "clear" ? `<div class="stage"><div class="wall"></div>${ours()}</div>` : ours();
+      } else {
+        // Neutral placeholder apps: greys and muted tones, simple shapes, made-up names.
+        const apps = [
+          ["#8e8e93", "50%", "Notebook"],
+          ["#6d7a86", "22%", "Ledger"],
+          ["#a19a8f", "50% 50% 12% 12%", "Routes"],
+          ["#7f8a7a", "22%", "Supplies"],
+          ["#9a8f9e", "50%", "Payroll"],
+          ["#717c8c", "12%", "Scanner"],
+          ["#8c8274", "50% 12%", "Invoices"],
+          null,
+          ["#6f7f7f", "22%", "Chat"],
+          ["#949aa3", "50%", "Fleet"],
+          ["#83776f", "12%", "Parts"],
+          ["#7a8496", "50%", "Bank"],
+          ["#8f9387", "22%", "Timesheet"],
+          ["#9c8e85", "50%", "Inbox"],
+          ["#76808a", "12%", "Forms"],
+          ["#8a8f99", "50% 12%", "Tasks"],
+        ];
+        const cells = apps
+          .map((a) =>
+            a
+              ? `<div class="cell">${ph(a[0], a[1])}<span>${a[2]}</span></div>`
+              : `<div class="cell">${ours()}<span>Sundeck Pro</span></div>`,
+          )
+          .join("");
+        const dock = [
+          ["#7d8790", "50%"],
+          ["#8e8478", "22%"],
+          ["#7a867c", "12%"],
+          ["#8b8796", "50%"],
+        ]
+          .map((a) => ph(a[0], a[1]))
+          .join("");
+        root.innerHTML = `
+          <div class="phone">
+            <div class="wall"></div>
+            <div class="island"></div>
+            <div class="status"><span>7:30</span>
+              <span class="glyphs"><span class="bars"><i style="height:4px"></i><i style="height:6px"></i><i style="height:9px"></i><i style="height:12px"></i></span><span class="batt"><i></i></span></span>
+            </div>
+            <div class="grid">${cells}</div>
+            <div class="search"><svg width="12" height="12" viewBox="0 0 12 12"><circle cx="5" cy="5" r="3.8" fill="none" stroke="#fff" stroke-width="1.6"/><path d="M8 8l3 3" stroke="#fff" stroke-width="1.6" stroke-linecap="round"/></svg>Search</div>
+            <div class="dock">${dock}</div>
+          </div>`;
+      }
+    </script>
+  </body>
+</html>
