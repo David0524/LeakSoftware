@@ -177,9 +177,13 @@ test("plan a tech's day, move jobs, suggest times, and give directions", async (
   await expect.poll(() => routeNames(page, "Priya Shah")).toEqual(booked);
   await route.getByRole("button", { name: "Optimize" }).click();
   await expect(banner).toContainText(/^Optimized · /);
-  // Optimized again, the order stays: it says so, with nothing to undo.
+  // Optimized again, the order stays: it says so, naming the promised 2:00 PM that kept its
+  // place (owner, 2026-10-24: say why stops stay), with nothing to undo.
   await route.getByRole("button", { name: "Optimize" }).click();
-  await expect(banner).toContainText("Already the best order");
+  await expect(banner).toContainText("No change");
+  await expect(banner).toContainText(
+    "1 stop stayed: time promised to the customer. The rest are already in the best order.",
+  );
   await expect(banner.getByRole("button", { name: "Undo" })).toHaveCount(0);
   // A tap puts it away.
   await banner.click();
