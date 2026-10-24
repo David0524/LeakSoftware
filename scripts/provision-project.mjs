@@ -18,9 +18,10 @@
 //   3. Copies the sign-in settings (password rule, sessions, two-step, passkeys, rate limits,
 //      email subjects) from the dev project, except the site URL and redirect URLs, which are set
 //      to production's. With SUPABASE_SMTP_PASSWORD set (a Resend API key with sending access for
-//      send.sundeckpro.com), also Supabase's email through Resend and the templates in
-//      supabase/templates/; without it, Supabase's built-in email stays (the website sends its
-//      own confirmation, sign-in and reset emails through Resend anyway).
+//      send.sundeckpro.com), also Supabase's email through Resend; with that or SMTP already
+//      set in the dashboard, the templates in supabase/templates/. Without either, Supabase's
+//      built-in email stays (the website sends its own confirmation, sign-in and reset emails
+//      through Resend anyway).
 //   4. Copies the storage per-file limit and the API settings (schemas, row limit, search path;
 //      never the JWT secret). The buckets, their limits and policies are migrations.
 //   5. Copies app.platform_setting (a card at sign-up).
@@ -129,9 +130,11 @@ const TEMPLATES = ["confirmation", "invite", "magic_link", "recovery"];
 
 /**
  * The sign-in settings for the new project: dev's, with production's URLs, email confirmation
- * on, and Resend's SMTP and the repository's templates when `smtpPassword` is given.
+ * on, and Resend's SMTP when `smtpPassword` is given. The repository's templates and a higher
+ * email limit go with custom SMTP, whether set here or already on the project (`customSmtp`,
+ * set in the dashboard): Supabase takes neither on its built-in email.
  */
-export function authSettings(devAuth, { siteUrl, smtpPassword, templates }) {
+export function authSettings(devAuth, { siteUrl, smtpPassword, customSmtp, templates }) {
   const settings = {};
   for (const key of COPIED_AUTH_KEYS) {
     if (devAuth[key] !== undefined && devAuth[key] !== null) settings[key] = devAuth[key];
@@ -140,8 +143,8 @@ export function authSettings(devAuth, { siteUrl, smtpPassword, templates }) {
   settings.uri_allow_list = productionRedirects(siteUrl).join(",");
   // Production keeps email confirmation on (docs/DECISIONS.md), whatever dev has.
   settings.mailer_autoconfirm = false;
-  if (smtpPassword) {
-    Object.assign(settings, SMTP, { smtp_pass: smtpPassword });
+  if (smtpPassword) Object.assign(settings, SMTP, { smtp_pass: smtpPassword });
+  if (smtpPassword || customSmtp) {
     settings.rate_limit_email_sent = SMTP_EMAILS_PER_HOUR;
     for (const name of TEMPLATES) {
       settings[`mailer_templates_${name}_content`] = templates[name];
@@ -441,17 +444,21 @@ async function main() {
     api(from, "/config/auth"),
     api(ref, "/config/auth"),
   ]);
-  const wanted = authSettings(devAuth, { siteUrl, smtpPassword, templates });
+  const customSmtp = Boolean(prodAuth.smtp_host);
+  const wanted = authSettings(devAuth, { siteUrl, smtpPassword, customSmtp, templates });
   const changes = settingsDiff(wanted, prodAuth);
   for (const key of changes) {
     console.log(`  ${key}: ${shown(key, prodAuth[key])} → ${shown(key, wanted[key])}`);
   }
   if (!changes.length) console.log("  already as wanted");
-  if (!smtpPassword) {
+  if (!smtpPassword && !customSmtp) {
     console.log(
-      "  SMTP: not set (no SUPABASE_SMTP_PASSWORD). Supabase's built-in email stays, 2 an hour,\n" +
-        "        with its default templates. The website's own emails don't use it.",
+      "  SMTP: not set (no SUPABASE_SMTP_PASSWORD, none on the project). Supabase's built-in\n" +
+        "        email stays, 2 an hour, with its default templates. The website's own emails\n" +
+        "        don't use it.",
     );
+  } else if (!smtpPassword) {
+    console.log(`  SMTP: the project's own (${prodAuth.smtp_host}), kept`);
   }
   if (apply && (changes.length || smtpPassword)) {
     await api(ref, "/config/auth", { method: "PATCH", body: wanted });

@@ -63,6 +63,16 @@ assert.equal(smtp.smtp_host, "smtp.resend.com");
 assert.equal(smtp.rate_limit_email_sent, 30);
 assert.equal(smtp.mailer_templates_recovery_content, "r");
 
+// SMTP set in the dashboard: the templates and limit go on, the password isn't touched.
+const dashboard = authSettings(dev, {
+  siteUrl: "https://sundeckpro.com/",
+  customSmtp: true,
+  templates,
+});
+assert.ok(!("smtp_pass" in dashboard) && !("smtp_host" in dashboard));
+assert.equal(dashboard.mailer_templates_confirmation_content, "c");
+assert.equal(dashboard.rate_limit_email_sent, 30);
+
 // The SMTP password can't be read back, so it never counts as a difference.
 assert.deepEqual(settingsDiff({ smtp_pass: "x", jwt_exp: 3600 }, { jwt_exp: 3600 }), []);
 assert.deepEqual(settingsDiff({ jwt_exp: 3600 }, { jwt_exp: 7200 }), ["jwt_exp"]);
