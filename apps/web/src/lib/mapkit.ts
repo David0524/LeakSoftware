@@ -27,6 +27,7 @@ export interface MkMap {
   addOverlay(o: unknown): void;
   removeOverlay(o: unknown): void;
   showItems(items: unknown[], options?: Record<string, unknown>): void;
+  setRegionAnimated(region: unknown, animate?: boolean): void;
   setCenterAnimated(c: MkCoordinate, animate?: boolean): void;
   addEventListener(type: string, fn: (e: { annotation?: MkAnnotation }) => void): void;
   destroy(): void;
@@ -37,6 +38,7 @@ export interface MapKit {
   Map: new (el: HTMLElement, options?: Record<string, unknown>) => MkMap;
   Coordinate: new (lat: number, lng: number) => MkCoordinate;
   CoordinateSpan: new (lat: number, lng: number) => unknown;
+  CoordinateRegion: new (center: MkCoordinate, span: unknown) => unknown;
   Padding: new (top: number, right: number, bottom: number, left: number) => unknown;
   Annotation: new (
     at: MkCoordinate,

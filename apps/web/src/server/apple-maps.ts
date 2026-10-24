@@ -2,20 +2,19 @@ import "server-only";
 import { createPrivateKey, sign, type KeyObject } from "node:crypto";
 import {
   fitLegs,
-  fitZoom,
-  imageTier,
   joinLegs,
+  mapView,
   metersPerPoint,
-  projectPoint,
   routeLegs,
   routeOrder,
   routeTierStyle,
+  viewSpan,
   type AddressSuggestion,
   type LatLng,
   type MapPin,
-  type RouteTier,
+  type MapView,
 } from "@leakbook/core";
-import { pinHex, pinImageName, pinImageSize, routeHex } from "@/components/map-pins";
+import { routeHex } from "@/components/map-pins";
 
 // Apple Maps for the website (owner, 2026-10-20, docs/plans/apple-maps.md): the MapKit JS token,
 // signed Snapshot addresses for the day-map images, and the Maps Server API's autocomplete. The
@@ -78,14 +77,6 @@ const hex = (c: string) => c.replace("#", "").toLowerCase();
 const point = (p: LatLng) => `${p.lat.toFixed(5)},${p.lng.toFixed(5)}`;
 
 /**
- * Whether Apple can draw these pins: an annotation's glyph is one character, so only stops
- * numbered 1 to 9. A day with a 10th stop gets its image from Mapbox.
- */
-export function snapshotFits(pins: Omit<MapPin, "id">[]): boolean {
-  return pins.length > 0 && pins.every((p) => p.tone === "shop" || /^[1-9]$/.test(p.label));
-}
-
-/**
  * Apple's size (each side 50–640 points) and scale (1–3) for an image of `size` at 2x: larger
  * images are drawn at fewer points and a higher scale, so the pixels stay the same or close.
  */
@@ -111,120 +102,62 @@ export function snapshotSize(size: { w: number; h: number }): {
  */
 export const SNAPSHOT_MAX_URL = 4000;
 
-/** Points left spare around the pins when Apple fits the map ("auto"), for the zoom estimate. */
-const SNAPSHOT_PADDING = 40;
+/** The road path's points beyond the pins, for framing (none for straight lines). */
+export function routeExtent(legs: LatLng[][] | null | undefined): LatLng[] {
+  return legs ? legs.flatMap((l) => l.slice(1, -1)) : [];
+}
 
-/**
- * The size tier an image's route is drawn at (owner, 2026-10-23: "thinner lines and smaller dots
- * when zoomed out"): from the zoom the image ends up at (fitting `points` in `size` points with
- * `padding` spare) and how crowded its pins are there (core imageTier). One pin: zoom 13, full.
- */
-export function imageRouteTier(
-  pins: Omit<MapPin, "id">[],
-  points: LatLng[],
-  size: { w: number; h: number },
-  padding: number,
-): { tier: RouteTier; zoom: number } {
-  const zoom = pins.length === 1 ? 13 : fitZoom(points, size, padding);
-  const at = pins.map((p) => ({ ...projectPoint(p.at, zoom), tone: p.tone }));
-  return { tier: imageTier(zoom, at), zoom };
+export interface AppleSnapshot {
+  /** The signed Snapshots address: the map and the route, no pins. */
+  url: string;
+  /** What it shows (core mapView), for drawing the pins onto it (map-composite.tsx). */
+  view: MapView;
+  /** Its size in points and its scale (snapshotSize). */
+  size: { w: number; h: number; scale: number };
 }
 
 /**
- * The signed Apple Snapshots address for these pins (owner, 2026-10-23: "Bold tech-colored
- * routes"): stops numbered in the tech's color (`color`, a palette key; water blue without
- * one), the shop in navy, and the route in that color on a white casing in route order (shop,
- * stops, back to the shop), the same as the Mapbox image. Since 2026-10-23 the route follows the
- * roads: `legs` is each leg's line (core routeLegPaths, Apple's paths; straight without one),
- * simplified only as much as the address's length needs; and zoomed out, or with pins crowded,
- * the pins and line are drawn smaller (imageRouteTier). Signed per Apple's documentation: ES256
- * over the path and query (teamId and keyId included), Base64URL, added as the last parameter.
+ * The signed Apple Snapshots address for a day's map (owner, 2026-10-23: "Bold tech-colored
+ * routes"; 2026-10-24: "Why some Apple some Mapbox? Mapbox is way too far zoomed out"): the
+ * map at the middle and span we frame (core mapView: the tightest view that shows every pin
+ * whole, never Apple's "auto"), and the route in the tech's color (`color`, a palette key; water
+ * blue without one) on a white casing in route order (shop, stops, back to the shop). The
+ * route follows the roads: `legs` is each leg's line (core routeLegPaths, Apple's paths;
+ * straight without one), simplified only as much as the address's length needs. No pins: Apple
+ * takes at most 10 different pin images, so ours are drawn onto the image afterwards
+ * (compositePins), at the same view. Signed per Apple's documentation: ES256 over the path and
+ * query (teamId and keyId included), Base64URL, added as the last parameter.
  */
-export function appleSnapshotUrl(
+export function appleSnapshot(
   pins: Omit<MapPin, "id">[],
   size: { w: number; h: number },
   keys: AppleKeys,
   theme: "light" | "dark" = "light",
-  /** This site's address: the pins are its own small circles (api/map/pin), as on the live
-   * map. Without it (tests), Apple's balloon pins. */
-  pinBase?: string,
   /** The tech's team color (a palette key); missing or unknown is water blue. */
   color?: string | null,
   /** Each leg's line, in route order (core routeLegPaths); straight lines without. */
   legs?: LatLng[][] | null,
-): string {
-  const { w, h, scale } = snapshotSize(size);
+): AppleSnapshot {
+  const snap = snapshotSize(size);
+  const { w, h } = snap;
   const order = routeOrder(pins).map((p) => p.at);
   const route = legs ?? routeLegs(order).map((l) => [l.from, l.to]);
-  const { tier, zoom } = imageRouteTier(
-    pins,
-    [...pins.map((p) => p.at), ...route.flat()],
-    { w, h },
-    SNAPSHOT_PADDING,
-  );
-  const sizes = routeTierStyle(tier);
+  const view = mapView(pins, { w, h }, routeExtent(legs));
+  const sizes = routeTierStyle(view.tier);
+  const span = viewSpan(view, { w, h });
   const q = new URLSearchParams();
-  if (pins.length === 1) {
-    q.set("center", point(pins[0]!.at));
-    q.set("z", "13");
-  } else {
-    q.set("center", "auto");
-  }
+  // The middle and the span (degrees, which can't be read two ways), rather than a zoom level.
+  q.set("center", `${view.center.lat.toFixed(6)},${view.center.lng.toFixed(6)}`);
+  q.set("spn", `${span.latDelta.toFixed(6)},${span.lngDelta.toFixed(6)}`);
   q.set("size", `${w}x${h}`);
-  q.set("scale", String(scale));
+  q.set("scale", String(snap.scale));
   q.set("colorScheme", theme);
   q.set("poi", "0");
-  if (pinBase) {
-    // Each pin is a circle, its middle on the place. Apple anchors an image's bottom middle,
-    // and a negative y moves it down (owner, 2026-10-22: Apple's own pins "look huge and
-    // cartoony"). At most 10 different images (Apple's limit): stops 1 to 9 and the start (one
-    // color a map), fewer for small dots, which have no numbers.
-    const names = pins.map((p) => pinImageName(p, color, theme, tier));
-    const unique = [...new Set(names)];
-    const sizeOf = unique.map((_, n) => pinImageSize(pins[names.indexOf(unique[n]!)]!.tone, tier));
-    q.set(
-      "imgs",
-      JSON.stringify(
-        unique.map((n, i) => ({
-          url: `${pinBase}/api/map/pin/${n}.png`,
-          width: sizeOf[i],
-          height: sizeOf[i],
-        })),
-      ),
-    );
-    q.set(
-      "annotations",
-      JSON.stringify(
-        pins.map((p, i) => {
-          const idx = unique.indexOf(names[i]!);
-          return {
-            point: point(p.at),
-            markerStyle: "img",
-            imgIdx: idx,
-            offset: `0,-${sizeOf[idx]! / 2}`,
-          };
-        }),
-      ),
-    );
-  } else {
-    q.set(
-      "annotations",
-      JSON.stringify(
-        pins.map((p) => ({
-          point: point(p.at),
-          color: hex(pinHex(p.tone, color, theme)),
-          markerStyle: "balloon",
-          // The shop's pin is plain; someone's home is a house (⌂), never its street.
-          ...(p.tone === "shop" ? (p.home ? { glyphText: "\u2302" } : {}) : { glyphText: p.label }),
-        })),
-      ),
-    );
-  }
   const unsigned = (lines: LatLng[][] | null) => {
     const out = new URLSearchParams(q);
     const line = lines ? joinLegs(lines) : [];
     // Route points to 4 decimals (about 11 m) when a point of the image covers more than that.
-    const fine = metersPerPoint(order[0]?.lat ?? 0, zoom) < 11;
+    const fine = metersPerPoint(view.center.lat, view.zoom) < 11;
     const at = (p: LatLng) => (fine ? point(p) : `${p.lat.toFixed(4)},${p.lng.toFixed(4)}`);
     if (line.length > 1)
       out.set(
@@ -244,9 +177,13 @@ export function appleSnapshotUrl(
   // The signature adds "&signature=" and 86 characters.
   const fits = (lines: LatLng[][]) =>
     `https://snapshot.apple-mapkit.com${unsigned(lines)}`.length + 100 <= SNAPSHOT_MAX_URL;
-  const half = metersPerPoint(order[0]?.lat ?? 0, zoom) / 2;
+  const half = metersPerPoint(view.center.lat, view.zoom) / 2;
   const path = unsigned(route.length ? fitLegs(route, fits, half) : null);
-  return `https://snapshot.apple-mapkit.com${path}&signature=${base64url(es256(path, keys.privateKey))}`;
+  return {
+    url: `https://snapshot.apple-mapkit.com${path}&signature=${base64url(es256(path, keys.privateKey))}`,
+    view,
+    size: snap,
+  };
 }
 
 // ---------------------------------------------------------------------------

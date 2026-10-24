@@ -268,6 +268,32 @@ describe("saved legs", () => {
     expect(r2).toEqual(r1);
   });
 
+  it("routes the drive home (the last stop back to the shop) like every other leg", async () => {
+    // Owner, 2026-10-24: "the drive home is a straight line and not routed".
+    const home = routeLegs(day).at(-1)!;
+    expect([home.from, home.to]).toEqual([B, SHOP]);
+    const db = fakeDb();
+    const svc = fetcher((leg) => road(leg.from, leg.to));
+    const r = await routePaths(db.db, "co", "apple", day, svc.f);
+    expect(svc.asked.at(-1)).toBe(home.key);
+    expect(db.saved[0]!.rows.at(-1)).toMatchObject({ polyline: expect.any(String) });
+    const last = r.legs.at(-1)!;
+    expect(last.length).toBeGreaterThan(2);
+    expect([last[0], last.at(-1)]).toEqual([B, SHOP]);
+    // Left unanswered (a limit), it's drawn straight for now, not saved, and asked next time.
+    const busy = fakeDb();
+    const r2 = await routePaths(
+      busy.db,
+      "co",
+      "apple",
+      day,
+      fetcher((leg) => (leg.key === home.key ? undefined : road(leg.from, leg.to))).f,
+    );
+    expect(r2.complete).toBe(false);
+    expect(r2.legs.at(-1)).toEqual([B, SHOP]);
+    expect(busy.saved[0]!.rows.map((x) => `${x.from}>${x.to}`)).not.toContain(home.key);
+  });
+
   it("asks only for the legs a moved stop changed", async () => {
     const moved = { lat: 33.4112, lng: -111.903 };
     const f = fakeDb({

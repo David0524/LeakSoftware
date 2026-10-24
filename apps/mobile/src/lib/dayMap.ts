@@ -75,6 +75,9 @@ export function mapUrl(
     `pins=${encodeURIComponent(pins)}`,
     `w=${size.w}`,
     `h=${size.h}`,
+    // The drawing's version, as the website's mapSrc (2026-10-24: framed by us, Apple for every
+    // day), so images kept from before aren't reused.
+    "v=2",
     ...(route !== "blue" ? [`color=${route}`] : []),
     ...(theme === "dark" ? ["theme=dark"] : []),
   ].join("&");

@@ -1,7 +1,13 @@
 "use client";
 
 import { useEffect, useRef } from "react";
-import { ROUTE_STYLE, ROUTE_STYLE_SMALL, ROUTE_ZOOM, routeStyleAt } from "@leakbook/core";
+import {
+  ROUTE_STYLE,
+  ROUTE_STYLE_SMALL,
+  ROUTE_ZOOM,
+  crowdedStyleAt,
+  mapView,
+} from "@leakbook/core";
 import {
   fetchRoutePath,
   markSelected,
@@ -20,14 +26,20 @@ import {
 // 2026-10-23 (owner) the route follows the roads (Mapbox's paths, from /api/map/path; straight
 // until they come, or where there's none), and its line and pins shrink as the map zooms out.
 
+/**
+ * Mapbox GL's zoom on core's scale: GL draws 512-point tiles, so its zoom z shows what z + 1
+ * does on the 256-point tiles core's sizes and Apple use.
+ */
+const coreZoom = (glZoom: number) => glZoom + 1;
+
 /** A line width that follows the zoom: ROUTE_STYLE_SMALL's zoomed out, ROUTE_STYLE's zoomed in. */
 const byZoom = (key: "lineWidth" | "casingWidth"): ExpressionSpecification => [
   "interpolate",
   ["linear"],
   ["zoom"],
-  ROUTE_ZOOM.small,
+  ROUTE_ZOOM.small - 1,
   ROUTE_STYLE_SMALL[key],
-  ROUTE_ZOOM.full,
+  ROUTE_ZOOM.full - 1,
   ROUTE_STYLE[key],
 ];
 
@@ -114,8 +126,9 @@ export function InteractiveMap({
         made = new gl.Map({
           container: box.current,
           style: dark ? "mapbox://styles/mapbox/dark-v11" : "mapbox://styles/mapbox/light-v11",
-          bounds: boundsOf(pins),
-          fitBoundsOptions: { padding: 56, maxZoom: 14 },
+          // Framed as the map images are (core mapView; owner, 2026-10-24: tight, every pin
+          // whole), in GL's zoom.
+          ...glView(pins, box.current),
           attributionControl: true,
           cooperativeGestures: false,
           fadeDuration: reduce ? 0 : 300,
@@ -169,7 +182,12 @@ export function InteractiveMap({
       });
       markers.current = pins.map((p) =>
         new gl.Marker({
-          element: pinElement(p, hex, () => select.current(p.label), routeStyleAt(made!.getZoom())),
+          element: pinElement(
+            p,
+            hex,
+            () => select.current(p.label),
+            crowdedStyleAt(coreZoom(made!.getZoom()), pins),
+          ),
         })
           .setLngLat([p.at.lng, p.at.lat])
           .addTo(made!),
@@ -181,7 +199,7 @@ export function InteractiveMap({
         frame = requestAnimationFrame(() => {
           frame = 0;
           if (!made || gone) return;
-          const s = routeStyleAt(made.getZoom());
+          const s = crowdedStyleAt(coreZoom(made.getZoom()), pins);
           for (const m of markers.current) stylePin(m.getElement(), s);
         });
       });
@@ -230,12 +248,7 @@ export function InteractiveMap({
   );
 }
 
-function boundsOf(pins: LivePin[]): [[number, number], [number, number]] {
-  const lngs = pins.map((p) => p.at.lng);
-  const lats = pins.map((p) => p.at.lat);
-  const pad = pins.length === 1 ? 0.01 : 0;
-  return [
-    [Math.min(...lngs) - pad, Math.min(...lats) - pad],
-    [Math.max(...lngs) + pad, Math.max(...lats) + pad],
-  ];
+function glView(pins: LivePin[], el: HTMLElement): { center: [number, number]; zoom: number } {
+  const view = mapView(pins, { w: el.clientWidth || 640, h: el.clientHeight || 480 });
+  return { center: [view.center.lng, view.center.lat], zoom: view.zoom - 1 };
 }

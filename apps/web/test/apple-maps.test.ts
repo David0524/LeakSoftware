@@ -4,17 +4,27 @@ import { beforeEach, describe, expect, it } from "vitest";
 import {
   appleJwt,
   appleKeys,
-  appleSnapshotUrl,
+  appleSnapshot,
   appleSuggester,
   mapkitToken,
   resetAppleServerToken,
   SNAPSHOT_MAX_URL,
-  snapshotFits,
   snapshotSize,
   type AppleKeys,
 } from "../src/server/apple-maps";
-import { routeLegs, routeOrder, type LatLng } from "@leakbook/core";
+import {
+  mapView,
+  routeLegs,
+  routeOrder,
+  routeTierStyle,
+  viewPoint,
+  viewSpan,
+  type LatLng,
+} from "@leakbook/core";
+import { pinImageSize } from "../src/components/map-pins";
 import { drawMapImage } from "../src/server/map-draw";
+import { compositePins, pinPlacements, pngSize } from "../src/server/map-composite";
+import { solidPng } from "./fixtures/png";
 import { suggestAddresses, type RoutingProvider } from "../src/server/routing";
 import { appleMapsConfigured, mapsConfigured, resolveMapProvider } from "../src/lib/map-provider";
 import { isHandheld, webMapsApp } from "../src/lib/web-maps-app";
@@ -123,7 +133,7 @@ describe("MapKit JS token", () => {
 describe("Apple Snapshots", () => {
   it("signs the path and query, with teamId and keyId, as the last parameter", () => {
     const { keys, publicKey } = throwaway();
-    const url = appleSnapshotUrl(
+    const { url } = appleSnapshot(
       [SHOP, stop(1, "done"), stop(2, "current")],
       { w: 640, h: 320 },
       keys,
@@ -147,129 +157,61 @@ describe("Apple Snapshots", () => {
     expect(q.get("keyId")).toBe("KEY7654321");
   });
 
-  it("numbers stops 1–9 in the same colors as the Mapbox image, and draws the route", () => {
+  it("asks for the map at our middle and span, with the route and no pins (any number of stops)", () => {
     const { keys } = throwaway();
-    const q = new URL(
-      appleSnapshotUrl(
-        [SHOP, stop(1, "done"), stop(2, "current"), stop(3)],
-        { w: 360, h: 240 },
-        keys,
-      ),
-    ).searchParams;
-    expect(q.get("center")).toBe("auto");
-    expect(q.get("size")).toBe("360x240");
+    const day = [SHOP, ...Array.from({ length: 12 }, (_, i) => stop(i + 1))];
+    const snap = appleSnapshot(day, { w: 360, h: 180 }, keys);
+    const q = new URL(snap.url).searchParams;
+    // Framed by us (core mapView), never Apple's "auto", so the pins drawn on it land right.
+    expect(snap.view).toEqual(mapView(day, { w: 360, h: 180 }));
+    const span = viewSpan(snap.view, { w: 360, h: 180 });
+    expect(q.get("center")).toBe(
+      `${snap.view.center.lat.toFixed(6)},${snap.view.center.lng.toFixed(6)}`,
+    );
+    expect(q.get("spn")).toBe(`${span.latDelta.toFixed(6)},${span.lngDelta.toFixed(6)}`);
+    expect(q.get("z")).toBeNull();
+    expect(q.get("size")).toBe("360x180");
     expect(q.get("scale")).toBe("2");
+    expect(snap.size).toEqual({ w: 360, h: 180, scale: 2 });
     expect(q.get("colorScheme")).toBe("light");
     expect(q.get("poi")).toBe("0");
-    const annotations = JSON.parse(q.get("annotations")!);
-    expect(annotations[0]).toEqual({
-      point: "33.41000,-112.00000",
-      color: "12263a",
-      markerStyle: "balloon",
-    });
-    expect(
-      annotations.slice(1).map((a: { glyphText: string; color: string }) => [a.glyphText, a.color]),
-    ).toEqual([
-      ["1", "8fb7d7"],
-      ["2", "1f6fae"],
-      ["3", "1f6fae"],
-    ]);
+    expect(q.get("annotations")).toBeNull();
+    expect(q.get("imgs")).toBeNull();
+    const sizes = routeTierStyle(snap.view.tier);
     const [casing, line] = JSON.parse(q.get("overlays")!);
-    expect(casing).toMatchObject({ strokeColor: "ffffff", lineWidth: 9, strokeOpacity: 1 });
-    expect(line).toMatchObject({ strokeColor: "1f6fae", lineWidth: 6, strokeOpacity: 1 });
+    expect(casing).toMatchObject({ strokeColor: "ffffff", lineWidth: sizes.casingWidth });
+    expect(line).toMatchObject({
+      strokeColor: "1f6fae",
+      lineWidth: sizes.lineWidth,
+      strokeOpacity: 1,
+    });
     // From the shop, through the stops, back to the shop.
-    expect(line.points).toHaveLength(5);
-    expect(line.points[0]).toBe(line.points[4]);
+    expect(line.points).toHaveLength(14);
+    expect(line.points[0]).toBe(line.points[13]);
   });
 
-  it("uses this site's round pins in the tech's color, centered on their places", () => {
+  it("draws the line in the tech's color, dark in dark mode", () => {
     const { keys } = throwaway();
-    const q = new URL(
-      appleSnapshotUrl(
-        [{ ...SHOP, home: true }, stop(1, "done"), stop(2, "current"), stop(3)],
-        { w: 640, h: 320 },
-        keys,
-        "light",
-        "https://app.example.com",
-        "orange",
-      ),
-    ).searchParams;
-    expect(JSON.parse(q.get("imgs")!)).toEqual(
-      [
-        ["home", 28],
-        ["done-1-orange", 36],
-        ["current-2-orange", 42],
-        ["todo-3-orange", 36],
-      ].map(([n, size]) => ({
-        url: `https://app.example.com/api/map/pin/${n}.png`,
-        width: size,
-        height: size,
-      })),
-    );
-    const annotations = JSON.parse(q.get("annotations")!);
-    expect(annotations.map((a: { imgIdx: number }) => a.imgIdx)).toEqual([0, 1, 2, 3]);
-    expect(annotations.map((a: { offset: string }) => a.offset)).toEqual([
-      "0,-14",
-      "0,-18",
-      "0,-21",
-      "0,-18",
-    ]);
-    expect(annotations[1]).toEqual({
-      point: expect.any(String),
-      markerStyle: "img",
-      imgIdx: 1,
-      offset: "0,-18",
-    });
-    expect(JSON.parse(q.get("overlays")!)[1].strokeColor).toBe("d07b27");
+    const color = (theme: "light" | "dark", c: string) =>
+      JSON.parse(
+        new URL(
+          appleSnapshot([SHOP, stop(1)], { w: 640, h: 320 }, keys, theme, c).url,
+        ).searchParams.get("overlays")!,
+      )[1].strokeColor;
+    expect(color("light", "orange")).toBe("d07b27");
+    expect(color("dark", "green")).toBe("4cb07a");
+    const dark = new URL(appleSnapshot([stop(1)], { w: 360, h: 240 }, keys, "dark").url);
+    expect(dark.searchParams.get("colorScheme")).toBe("dark");
   });
 
-  it("draws dark pins and line in the tech's dark color", () => {
+  it("shows a day at one place at the neighborhood zoom, and keeps Apple's size limits", () => {
     const { keys } = throwaway();
-    const q = new URL(
-      appleSnapshotUrl(
-        [SHOP, stop(1)],
-        { w: 640, h: 320 },
-        keys,
-        "dark",
-        "https://app.example.com",
-        "green",
-      ),
-    ).searchParams;
-    expect(JSON.parse(q.get("imgs")!)[1].url).toBe(
-      "https://app.example.com/api/map/pin/todo-1-green-dark.png",
-    );
-    expect(JSON.parse(q.get("overlays")!)[1].strokeColor).toBe("4cb07a");
-  });
-
-  it("draws a home start as a house", () => {
-    const { keys } = throwaway();
-    const q = new URL(
-      appleSnapshotUrl([{ ...SHOP, home: true }, stop(1)], { w: 360, h: 240 }, keys),
-    ).searchParams;
-    const [start] = JSON.parse(q.get("annotations")!);
-    expect(start).toEqual({
-      point: "33.41000,-112.00000",
-      color: "12263a",
-      markerStyle: "balloon",
-      glyphText: "⌂",
-    });
-  });
-
-  it("draws dark for dark mode, centers a single pin, and keeps Apple's size limits", () => {
-    const { keys } = throwaway();
-    const one = new URL(appleSnapshotUrl([stop(1)], { w: 360, h: 240 }, keys, "dark")).searchParams;
-    expect(one.get("colorScheme")).toBe("dark");
-    expect(one.get("center")).toBe("33.40200,-112.00200");
-    expect(one.get("z")).toBe("13");
-    expect(one.get("overlays")).toBeNull();
+    const one = appleSnapshot([stop(1)], { w: 360, h: 240 }, keys);
+    expect(one.view.zoom).toBe(13);
+    expect(new URL(one.url).searchParams.get("center")).toBe("33.402000,-112.002000");
+    expect(new URL(one.url).searchParams.get("overlays")).toBeNull();
     expect(snapshotSize({ w: 960, h: 640 })).toEqual({ w: 640, h: 427, scale: 3 });
     expect(snapshotSize({ w: 10, h: 5000 })).toEqual({ w: 50, h: 640, scale: 3 });
-  });
-
-  it("can't number a 10th stop, so those days go to Mapbox", () => {
-    expect(snapshotFits([SHOP, ...[1, 2, 3, 4, 5, 6, 7, 8, 9].map((n) => stop(n))])).toBe(true);
-    expect(snapshotFits([SHOP, stop(10)])).toBe(false);
-    expect(snapshotFits([])).toBe(false);
   });
 });
 
@@ -295,15 +237,7 @@ describe("Apple Snapshots: the route along the roads, smaller zoomed out (owner,
   it("follows the roads through every pin, within the address length Apple takes", () => {
     const { keys } = throwaway();
     const day = [SHOP, stop(1), stop(2), stop(3)];
-    const url = appleSnapshotUrl(
-      day,
-      { w: 360, h: 240 },
-      keys,
-      "light",
-      "https://app.example.com",
-      "blue",
-      roadLegs(day),
-    );
+    const { url } = appleSnapshot(day, { w: 360, h: 240 }, keys, "light", "blue", roadLegs(day));
     expect(url.length).toBeLessThanOrEqual(SNAPSHOT_MAX_URL);
     const points: string[] = line(url);
     expect(points.length).toBeGreaterThan(5);
@@ -312,13 +246,12 @@ describe("Apple Snapshots: the route along the roads, smaller zoomed out (owner,
 
   it("a long day's roads are simplified to fit, never left off", () => {
     const { keys } = throwaway();
-    const day = [SHOP, ...[1, 2, 3, 4, 5, 6, 7, 8, 9].map((n) => stop(n))];
-    const url = appleSnapshotUrl(
+    const day = [SHOP, ...[1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12].map((n) => stop(n))];
+    const { url } = appleSnapshot(
       day,
       { w: 360, h: 180 },
       keys,
       "light",
-      "https://app.example.com",
       "blue",
       roadLegs(day, 3000, 0.004),
     );
@@ -326,41 +259,86 @@ describe("Apple Snapshots: the route along the roads, smaller zoomed out (owner,
     expect(line(url).length).toBeGreaterThanOrEqual(day.length + 1);
   });
 
-  it("draws a spread-out day with small dots (no numbers) and a thin line", () => {
+  it("frames the road path too, and draws a spread-out day with a thin line", () => {
     const { keys } = throwaway();
     const city = [
       SHOP,
       { tone: "todo" as const, label: "1", at: { lat: 33.6, lng: -111.9 } },
       { tone: "current" as const, label: "2", at: { lat: 33.3, lng: -112.25 } },
     ];
-    const q = new URL(
-      appleSnapshotUrl(
-        city,
-        { w: 360, h: 180 },
-        keys,
-        "light",
-        "https://app.example.com",
-        "orange",
-      ),
-    ).searchParams;
-    expect(
-      JSON.parse(q.get("imgs")!).map((i: { url: string; width: number }) => [
-        i.url.split("/").pop(),
-        i.width,
-      ]),
-    ).toEqual([
-      ["shop-s.png", 14],
-      ["todo-orange-s.png", 15],
-      ["current-orange-s.png", 20],
-    ]);
-    const [casing, stroke] = JSON.parse(q.get("overlays")!);
+    const snap = appleSnapshot(city, { w: 360, h: 180 }, keys, "light", "orange");
+    expect(snap.view.tier).toBe("small");
+    const [casing, stroke] = JSON.parse(new URL(snap.url).searchParams.get("overlays")!);
     expect([casing.lineWidth, stroke.lineWidth]).toEqual([4, 2.5]);
+    const roads = roadLegs(city, 50, 0.05);
+    expect(
+      appleSnapshot(city, { w: 360, h: 180 }, keys, "light", "orange", roads).view.zoom,
+    ).toBeLessThan(snap.view.zoom);
+  });
+});
+
+describe("our pins on Apple's image (owner, 2026-10-24: Apple for every day)", () => {
+  const cluster = [
+    { tone: "shop" as const, label: "", at: { lat: 33.5605, lng: -112.1312 } },
+    ...Array.from({ length: 12 }, (_, i) => ({
+      tone: (i === 0 ? "done" : i === 1 ? "current" : "todo") as "done" | "current" | "todo",
+      label: String(i + 1),
+      at: { lat: 33.553 + (i % 4) * 0.004, lng: -112.142 + Math.floor(i / 4) * 0.006 },
+    })),
+  ];
+
+  it("reads a PNG's pixel size", () => {
+    expect(pngSize(solidPng(720, 360))).toEqual({ w: 720, h: 360 });
+    expect(pngSize(new TextEncoder().encode("not a png at all, no"))).toBeNull();
+  });
+
+  it("puts each pin centered on its place, the stop you're on drawn last", () => {
+    const size = { w: 360, h: 180 };
+    const view = mapView(cluster, size);
+    const placed = pinPlacements(cluster, view, size);
+    expect(placed).toHaveLength(13);
+    expect(placed[0]!.pin.tone).toBe("shop");
+    expect(placed.at(-1)!.pin.tone).toBe("current");
+    for (const p of placed) {
+      const at = viewPoint(p.pin.at, view, size);
+      expect(p.x + p.side / 2).toBeCloseTo(at.x, 9);
+      expect(p.y + p.side / 2).toBeCloseTo(at.y, 9);
+      expect(p.side).toBe(pinImageSize(p.pin.tone, view.tier));
+      // Every pin whole inside the image.
+      expect(p.x).toBeGreaterThan(0);
+      expect(p.y).toBeGreaterThan(0);
+      expect(p.x + p.side).toBeLessThan(size.w);
+      expect(p.y + p.side).toBeLessThan(size.h);
+    }
+  });
+
+  it("draws them onto the image at its scale", async () => {
+    const view = mapView(cluster, { w: 360, h: 180 });
+    const res = await compositePins({
+      image: solidPng(720, 360).buffer as ArrayBuffer,
+      size: { w: 360, h: 180 },
+      view,
+      pins: cluster,
+      color: "orange",
+      theme: "light",
+    });
+    expect(res.headers.get("content-type")).toBe("image/png");
+    expect(pngSize(new Uint8Array(await res.arrayBuffer()))).toEqual({ w: 720, h: 360 });
+    await expect(
+      compositePins({
+        image: new TextEncoder().encode("png").buffer as ArrayBuffer,
+        size: { w: 360, h: 180 },
+        view,
+        pins: cluster,
+        theme: "light",
+      }),
+    ).rejects.toThrow();
   });
 });
 
 describe("drawing a day-map image", () => {
   const pins = [SHOP, stop(1), stop(2)];
-  const png = () => new Response("png", { headers: { "content-type": "image/png" } });
+  const png = () => new Response(solidPng(720, 480), { headers: { "content-type": "image/png" } });
 
   function harness(opts: {
     apple?: boolean;
@@ -471,7 +449,7 @@ describe("drawing a day-map image", () => {
     expect(asked).toHaveLength(2);
   });
 
-  it("falls back to Mapbox on an Apple error, past Apple's allowance, or with 10 stops", async () => {
+  it("falls back to Mapbox on an Apple error or past Apple's allowance, never for 10 stops", async () => {
     const error = harness({ token: "pk", appleStatus: 429 });
     expect(await error.draw()).toMatchObject({ ok: true, by: "mapbox" });
     expect(error.asked).toEqual(["snapshot.apple-mapkit.com", "api.mapbox.com"]);
@@ -480,9 +458,11 @@ describe("drawing a day-map image", () => {
     expect(await usedUp.draw()).toMatchObject({ ok: true, by: "mapbox" });
     expect(usedUp.asked).toEqual(["api.mapbox.com"]);
 
-    const ten = harness({ token: "pk" });
-    expect(await ten.draw([SHOP, stop(10)])).toMatchObject({ ok: true, by: "mapbox" });
-    expect(ten.taken).toEqual(["static_image"]);
+    // Any number of stops on Apple (owner, 2026-10-24: "Why some Apple some Mapbox?").
+    const twelve = harness({ token: "pk" });
+    const day = [SHOP, ...Array.from({ length: 12 }, (_, i) => stop(i + 1))];
+    expect(await twelve.draw(day)).toMatchObject({ ok: true, by: "apple" });
+    expect(twelve.taken).toEqual(["apple_snapshot"]);
   });
 
   it("on Mapbox, tries this site's pins, then Mapbox's own markers if it can't fetch them", async () => {

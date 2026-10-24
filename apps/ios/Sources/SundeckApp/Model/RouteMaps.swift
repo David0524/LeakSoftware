@@ -61,6 +61,18 @@ public struct DayMapModel: Equatable, Sendable {
     /// so the map matches their column; blue (the brand's water blue) when no tech is known.
     public var color: TechColor = .blue
 
+    /// The pins by place, for framing and for sizing them where they'd overlap.
+    public var placed: [PlacedPin] { annotations.map { PlacedPin(at: $0.at, tone: $0.tone) } }
+
+    /// The camera for a map of `w`×`h` points, framed as the website's map images are (core
+    /// `mapView`; owner, 2026-10-24): the tightest view with every pin whole. `fit` without a size.
+    public func fit(w: Double, h: Double) -> MapFit? {
+        guard !annotations.isEmpty, w > 0, h > 0 else { return fit }
+        let view = mapView(placed, w: w, h: h)
+        let span = viewSpan(center: view.center, zoom: view.zoom, w: w, h: h)
+        return MapFit(center: view.center, latDelta: span.latDelta, lngDelta: span.lngDelta)
+    }
+
     /// Whether there's a map to draw (at least one stop has a pin).
     public var drawable: Bool { located > 0 }
     /// "2 stops aren’t on the map", or nil.

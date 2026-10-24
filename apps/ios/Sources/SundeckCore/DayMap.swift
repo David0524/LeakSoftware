@@ -176,15 +176,48 @@ public func imageTier(_ zoom: Double, _ pins: [ImagePin]) -> RouteTier {
         order.indices.first { k in k == order.count - 1 || zoom >= (order[k].zoom + order[k + 1].zoom) / 2 }
         ?? order.count - 1
     while i < order.count - 1 {
-        let sizes = order[i].style
-        let overlap = { (a: ImagePin, b: ImagePin) in
-            hypot(a.x - b.x, a.y - b.y) < (pinSizeAt(a.tone, sizes) + pinSizeAt(b.tone, sizes)) / 2
-        }
-        let crowded = pins.indices.contains { j in pins[(j + 1)...].contains { overlap(pins[j], $0) } }
-        if !crowded { break }
+        if !crowdedAt(pins, order[i].style) { break }
         i += 1
     }
     return order[i]
+}
+
+/// Whether any two stops (in map points) would overlap at `sizes` (`crowdedAt`); the start, drawn
+/// under them, is left out.
+public func crowdedAt(_ pins: [ImagePin], _ sizes: RouteSizes) -> Bool {
+    let stops = pins.filter { $0.tone != .shop }
+    let overlap = { (a: ImagePin, b: ImagePin) in
+        hypot(a.x - b.x, a.y - b.y) < (pinSizeAt(a.tone, sizes) + pinSizeAt(b.tone, sizes)) / 2
+    }
+    return stops.indices.contains { j in stops[(j + 1)...].contains { overlap(stops[j], $0) } }
+}
+
+/// A pin on a live map or in a view, by place (`{ at, tone }`).
+public struct PlacedPin: Codable, Equatable, Sendable {
+    public var at: LatLng
+    public var tone: PinTone
+
+    public init(at: LatLng, tone: PinTone) {
+        self.at = at
+        self.tone = tone
+    }
+}
+
+/// A live map's route sizes at `zoom` (`crowdedStyleAt`; owner, 2026-10-24: no pile of pins):
+/// `routeStyleAt(zoom)`, or the medium or small tier's smaller sizes while pins would overlap.
+public func crowdedStyleAt(_ zoom: Double, _ pins: [PlacedPin]) -> RouteSizes {
+    let base = routeStyleAt(zoom)
+    let at = pins.map { p in
+        let pt = projectPoint(p.at, zoom)
+        return ImagePin(x: pt.x, y: pt.y, tone: p.tone)
+    }
+    if !crowdedAt(at, base) { return base }
+    for tier in [RouteTier.medium, .small] {
+        let sizes = tier.style
+        if sizes.pinSize >= base.pinSize { continue }
+        if tier == .small || !crowdedAt(at, sizes) { return sizes }
+    }
+    return base
 }
 
 /// A map point (`projectPoint`, web Mercator at `zoom`): x east, y south.
@@ -198,6 +231,95 @@ public func projectPoint(_ p: LatLng, _ zoom: Double) -> MapPoint {
     let lat = max(-85, min(85, p.lat))
     let s = sin(lat * Double.pi / 180)
     return MapPoint(x: (p.lng + 180) / 360 * scale, y: (0.5 - log((1 + s) / (1 - s)) / (4 * Double.pi)) * scale)
+}
+
+/// The place at map point `pt` at `zoom` (`unprojectPoint`).
+public func unprojectPoint(_ pt: MapPoint, _ zoom: Double) -> LatLng {
+    let scale = 256 * pow(2, zoom)
+    let n = Double.pi - 2 * Double.pi * pt.y / scale
+    return LatLng(lat: atan(sinh(n)) * 180 / Double.pi, lng: pt.x / scale * 360 - 180)
+}
+
+/// What a map shows (`MapView`): its middle, zoom (256-point tiles) and the size of its route.
+public struct MapView: Codable, Equatable, Sendable {
+    public var center: LatLng
+    public var zoom: Double
+    public var tier: RouteTier
+}
+
+/// `VIEW_MARGIN` and `VIEW_MAX_ZOOM`.
+public let viewMargin = 8.0
+public let viewMaxZoom = 15.0
+
+/// The tightest view of `w`×`h` points showing every pin whole and every `extra` point
+/// (`mapView`; owner, 2026-10-24: framed tightly, no pile of pins).
+public func mapView(_ pins: [PlacedPin], w: Double, h: Double, extra: [LatLng] = []) -> MapView {
+    let points = pins.map(\.at) + extra
+    guard let first = points.first else { return MapView(center: LatLng(lat: 0, lng: 0), zoom: 3, tier: .small) }
+    let spread = points.contains { abs($0.lat - first.lat) > 1e-6 || abs($0.lng - first.lng) > 1e-6 }
+    let maxZoom = spread ? viewMaxZoom : routeZoom.full
+    let order = RouteTier.allCases
+    var view = MapView(center: first, zoom: maxZoom, tier: .small)
+    for (i, tier) in order.enumerated() {
+        let sizes = tier.style
+        let pad =
+            pins.map { pinSizeAt($0.tone, sizes) / 2 + viewMargin }
+            + extra.map { _ in sizes.casingWidth / 2 + viewMargin / 2 }
+        func box(_ z: Double) -> (x0: Double, x1: Double, y0: Double, y1: Double) {
+            let at = points.map { projectPoint($0, z) }
+            var b = (x0: Double.infinity, x1: -Double.infinity, y0: Double.infinity, y1: -Double.infinity)
+            for (k, p) in at.enumerated() {
+                b.x0 = min(b.x0, p.x - pad[k])
+                b.x1 = max(b.x1, p.x + pad[k])
+                b.y0 = min(b.y0, p.y - pad[k])
+                b.y1 = max(b.y1, p.y + pad[k])
+            }
+            return b
+        }
+        func fits(_ z: Double) -> Bool {
+            let b = box(z)
+            return b.x1 - b.x0 <= w && b.y1 - b.y0 <= h
+        }
+        var zoom = maxZoom
+        if !fits(zoom) {
+            var lo = 2.0
+            var hi = maxZoom
+            for _ in 0..<40 {
+                let mid = (lo + hi) / 2
+                if fits(mid) { lo = mid } else { hi = mid }
+            }
+            zoom = lo
+        }
+        let b = box(zoom)
+        let center = unprojectPoint(MapPoint(x: (b.x0 + b.x1) / 2, y: (b.y0 + b.y1) / 2), zoom)
+        let at = pins.map { p in
+            let pt = projectPoint(p.at, zoom)
+            return ImagePin(x: pt.x, y: pt.y, tone: p.tone)
+        }
+        view = MapView(center: center, zoom: zoom, tier: tier)
+        if (order.firstIndex(of: imageTier(zoom, at)) ?? 0) <= i { break }
+    }
+    return view
+}
+
+/// Where `p` lands on a map of `w`×`h` points centered on `center` at `zoom` (`viewPoint`).
+public func viewPoint(_ p: LatLng, center: LatLng, zoom: Double, w: Double, h: Double) -> MapPoint {
+    let a = projectPoint(p, zoom)
+    let c = projectPoint(center, zoom)
+    return MapPoint(x: a.x - c.x + w / 2, y: a.y - c.y + h / 2)
+}
+
+/// The degrees such a map spans (`viewSpan`): from its top edge to its bottom edge, and across.
+public struct ViewSpan: Codable, Equatable, Sendable {
+    public var latDelta: Double
+    public var lngDelta: Double
+}
+
+public func viewSpan(center: LatLng, zoom: Double, w: Double, h: Double) -> ViewSpan {
+    let c = projectPoint(center, zoom)
+    let top = unprojectPoint(MapPoint(x: c.x, y: c.y - h / 2), zoom)
+    let bottom = unprojectPoint(MapPoint(x: c.x, y: c.y + h / 2), zoom)
+    return ViewSpan(latDelta: top.lat - bottom.lat, lngDelta: w * 360 / (256 * pow(2, zoom)))
 }
 
 /// The zoom at which a map `width` points wide shows `lngDelta` degrees across (`zoomForSpan`).

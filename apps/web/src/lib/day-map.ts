@@ -52,6 +52,9 @@ export function dayMap(input: {
   return { pins: located ? encodePins(pins) : null, located, missing };
 }
 
+/** Bumped when map images are drawn differently, so browsers fetch the new drawing. */
+export const MAP_IMAGE_VERSION = "2";
+
 /**
  * The map image's address on this site (GET /api/map). `color` is the tech's team color (owner,
  * 2026-10-23: the route and pins in it); left out for water blue, the default.
@@ -64,6 +67,9 @@ export function mapSrc(
   color?: string | null,
 ): string {
   const q = new URLSearchParams({ company, pins, w: String(size.w), h: String(size.h) });
+  // The drawing's version: images kept by browsers from before the 2026-10-24 framing (mixed
+  // Apple and Mapbox, zoomed out) aren't reused.
+  q.set("v", MAP_IMAGE_VERSION);
   const route = routeColor(color);
   if (route !== "blue") q.set("color", route);
   if (theme === "dark") q.set("theme", "dark");

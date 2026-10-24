@@ -40,6 +40,19 @@ extension ScheduleDataTests {
         #expect(model.drawable && model.missing == 0 && model.note == nil)
         let fit = try #require(model.fit)
         #expect(fit.latDelta > 0.2 - 0.0152 && fit.center.lat > 33.41 && fit.center.lat < 33.62)
+        // The drive home is a leg like any other (owner, 2026-10-24: "the drive home is a straight
+        // line"): the last stop back to the shop, drawn along the road once it has a path.
+        let home = try #require(routeLegs(model.line).last)
+        #expect(home.from == model.line[2] && home.to == ctx.depot)
+        let bend = LatLng(lat: home.from.lat, lng: home.to.lng)
+        let drawn = routeLegPaths(model.line) { $0 == home.key ? [home.from, bend, home.to] : nil }
+        #expect(drawn.legs.last == [home.from, bend, home.to] && drawn.straight == 2)
+        // Framed as the website's images are, for the map's size: every pin inside it.
+        let framed = try #require(model.fit(w: 390, h: 200))
+        for a in model.annotations {
+            #expect(abs(a.at.lat - framed.center.lat) < framed.latDelta / 2)
+            #expect(abs(a.at.lng - framed.center.lng) < framed.lngDelta / 2)
+        }
 
         // Another day: nothing is "now"; a finished stop is done.
         try sync.write("job", id: id(2), companyId: Self.company, ["status": "report_sent"])

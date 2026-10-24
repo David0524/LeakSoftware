@@ -3,15 +3,17 @@ import {
   encodePolyline,
   fitLegs,
   joinLegs,
+  mapView,
   metersPerPoint,
   routeLegs,
   routeOrder,
   routeTierStyle,
   type LatLng,
   type MapPin,
+  type MapView,
 } from "@leakbook/core";
 import { pinHex, pinImageName, routeHex } from "@/components/map-pins";
-import { imageRouteTier } from "./apple-maps";
+import { routeExtent } from "./apple-maps";
 
 // Day maps (owner, 2026-10-20, docs/plans/route-maps.md): a map image of a day's stops from
 // Mapbox Static Images, drawn on the server so the key stays here. Since 2026-10-23 (owner:
@@ -24,8 +26,14 @@ export const MAX_URL = 8192;
 
 const hex = (c: string) => c.replace("#", "").toLowerCase();
 
-/** Points left spare around the pins when Mapbox fits the map ("auto"; the padding we ask for). */
-const PADDING = 44;
+/**
+ * Mapbox's zoom for a view: its styles use 512-point tiles, so a Mapbox zoom shows what one
+ * level more shows on 256-point tiles (core projectPoint, Apple). Rounded down to Mapbox's two
+ * decimals, so the framing never gets tighter than mapView's.
+ */
+export function mapboxZoom(view: MapView): number {
+  return Math.floor((view.zoom - 1) * 100) / 100;
+}
 
 /**
  * The Mapbox Static Images address for these pins: the start (the shop, or home) as a house,
@@ -35,7 +43,9 @@ const PADDING = 44;
  * image; without it, or when the address would be too long, Mapbox's markers. Since 2026-10-23
  * the route follows the roads (`legs`: each leg's line from Mapbox's paths, core
  * routeLegPaths), simplified only as much as Mapbox's 8,192-character address needs; and zoomed
- * out, or with pins crowded, the pins and line are drawn smaller (imageRouteTier).
+ * out, or with pins crowded, the pins and line are drawn smaller. Since 2026-10-24 (owner:
+ * "Mapbox is way too far zoomed out") the view is ours (core mapView, the same as Apple's
+ * image), never Mapbox's "auto", so the pins' sizes are chosen for the zoom the image has.
  */
 export function staticMapUrl(
   pins: Omit<MapPin, "id">[],
@@ -51,12 +61,8 @@ export function staticMapUrl(
   const h = Math.min(1280, Math.max(80, Math.round(size.h)));
   const order = routeOrder(pins).map((p) => p.at);
   const route = legs ?? routeLegs(order).map((l) => [l.from, l.to]);
-  const { tier, zoom } = imageRouteTier(
-    pins,
-    [...pins.map((p) => p.at), ...route.flat()],
-    { w, h },
-    PADDING,
-  );
+  const view = mapView(pins, { w, h }, routeExtent(legs));
+  const { tier, zoom } = view;
   const sizes = routeTierStyle(tier);
   const at = (p: Omit<MapPin, "id">) => `(${p.at.lng.toFixed(5)},${p.at.lat.toFixed(5)})`;
   const markers = pins.map((p) => {
@@ -96,9 +102,9 @@ export function staticMapUrl(
         `path-${width}+${hex(routeHex(color, theme))}-1(${poly})`,
       );
     }
-    return address([...line, ...overlays], pins, { w, h }, token, theme);
+    return address([...line, ...overlays], view, { w, h }, token, theme);
   };
-  const half = metersPerPoint(order[0]?.lat ?? 0, zoom) / 2;
+  const half = metersPerPoint(view.center.lat, zoom) / 2;
   if (images) {
     // This site's pins, unless they'd cost the route more than about 4 points of detail.
     const fitted = route.length
@@ -117,19 +123,18 @@ export function staticMapUrl(
 
 function address(
   overlays: string[],
-  pins: Omit<MapPin, "id">[],
+  view: MapView,
   size: { w: number; h: number },
   token: string,
   theme: "light" | "dark",
 ): string {
-  const view = pins.length === 1 ? `${pins[0]!.at.lng},${pins[0]!.at.lat},13` : "auto";
+  const at = `${view.center.lng.toFixed(6)},${view.center.lat.toFixed(6)},${mapboxZoom(view)}`;
   // Mapbox's light style (dark in dark mode), as the live Mapbox map: modern and low-clutter,
   // so the bold route reads and a day drawn here (10+ stops) sits beside Apple's images
   // (owner, 2026-10-23: the streets style "looks very old").
   const url = new URL(
-    `https://api.mapbox.com/styles/v1/mapbox/${theme === "dark" ? "dark-v11" : "light-v11"}/static/${overlays.join(",")}/${view}/${size.w}x${size.h}@2x`,
+    `https://api.mapbox.com/styles/v1/mapbox/${theme === "dark" ? "dark-v11" : "light-v11"}/static/${overlays.join(",")}/${at}/${size.w}x${size.h}@2x`,
   );
-  if (view === "auto") url.searchParams.set("padding", String(PADDING));
   url.searchParams.set("access_token", token);
   return url.toString();
 }

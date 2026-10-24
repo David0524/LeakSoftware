@@ -41,8 +41,9 @@ documentation:
 ### What this means for the build
 
 - **Stops 1–9** get their number as the pin's glyph.
-- **A day with 10 or more stops:** Apple can't number those pins, so its image comes from Mapbox,
-  as now (within Mapbox's budget). The interactive map numbers every stop on both providers.
+- **A day with 10 or more stops:** Apple can't number those pins, so its image came from Mapbox.
+  Since 2026-10-24 (DECISIONS) Apple draws the map and route only and our pins are drawn onto it,
+  so every day is Apple's. The interactive map numbers every stop on both providers.
 - **Budget guard:** `app.mapbox_budget` gets three Apple rows, counted per calendar month at
   about 90% of the safest reading:
   - `apple_snapshot`: 22,500 a month;
@@ -78,7 +79,8 @@ Apple keys are missing).
 - **Map images:** a server helper signs Apple Snapshot URLs in place of Mapbox Static Images in
   the day-map images, keeping the same cache, sizes, markers and colors.
   - The guard is `mapbox_take(company, 'apple_snapshot', 1)`.
-  - Mapbox takes over when it's out of budget, on any Apple error, or with 10 or more stops.
+  - Mapbox takes over when it's out of budget or on any Apple error (since 2026-10-24, not for 10
+    or more stops: our pins are drawn onto Apple's image).
 - **Address search:** Apple's autocomplete in the address field, guarded as `apple_service`,
   falling back to the current free Census and then OpenStreetMap lookups. Pools keep their
   stored coordinates, and nothing is re-geocoded.

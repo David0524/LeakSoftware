@@ -1,12 +1,13 @@
 import { describe, expect, it } from "vitest";
 import {
   decodePolyline,
+  mapView,
   encodePolyline,
   routeLegPaths,
   routeOrder,
   type LatLng,
 } from "@leakbook/core";
-import { MAX_URL, staticMapUrl } from "../src/server/map-image";
+import { MAX_URL, mapboxZoom, staticMapUrl } from "../src/server/map-image";
 
 describe("map image", () => {
   it("encodes a polyline as Google's example does", () => {
@@ -35,7 +36,13 @@ describe("map image", () => {
     // Done is the route's color at reduced strength; the stop you're on is full strength.
     expect(url).toContain(",pin-l-1+8fb7d7(-112.07500,33.45500)");
     expect(url).toContain(",pin-l-2+1f6fae(-112.08500,33.46000)");
-    expect(url).toContain("/auto/600x300@2x?padding=44&access_token=pk.test");
+    // Framed by us (core mapView), never Mapbox's "auto": its zoom is one less on 512-point tiles.
+    const view = mapView(day, { w: 600, h: 300 });
+    expect(url).toContain(
+      `/${view.center.lng.toFixed(6)},${view.center.lat.toFixed(6)},${mapboxZoom(view)}/600x300@2x?access_token=pk.test`,
+    );
+    expect(mapboxZoom(view)).toBeCloseTo(view.zoom - 1, 1);
+    expect(url).not.toContain("auto");
   });
 
   it("draws the route and stops in the tech's team color, dark in dark mode", () => {
@@ -108,7 +115,7 @@ describe("map image", () => {
       { w: 5000, h: 10 },
       "pk.test",
     );
-    expect(url).toContain("/-112.1,33.5,13/1280x80@2x?access_token=");
+    expect(url).toContain("/-112.100000,33.500000,12/1280x80@2x?access_token=");
     expect(url).not.toContain("path-");
   });
 
@@ -206,13 +213,14 @@ describe("map image", () => {
     expect(staticMapUrl(city, { w: 360, h: 180 }, "pk", "light", "green")).toContain(
       ",pin-s+2e8b57(-112.25000,33.30000)",
     );
-    // Close in (zoom 14), but two stops 200 m apart, about 24 points on this image: full-size
-    // pins (34) would overlap, so the medium ones, still numbered.
+    // Close in, but two stops 130 m apart, about 23 points on this image: full-size pins (34)
+    // would overlap, so the medium ones, still numbered.
     const nextDoor = [
       { tone: "shop" as const, label: "", at: { lat: 33.45, lng: -112.07 } },
       { tone: "todo" as const, label: "1", at: { lat: 33.455, lng: -112.075 } },
-      { tone: "todo" as const, label: "2", at: { lat: 33.4568, lng: -112.075 } },
+      { tone: "todo" as const, label: "2", at: { lat: 33.45617, lng: -112.075 } },
     ];
+    expect(mapView(nextDoor, { w: 360, h: 180 }).tier).toBe("medium");
     const medium = staticMapUrl(
       nextDoor,
       { w: 360, h: 180 },

@@ -200,7 +200,7 @@ export function pinSizeAt(tone: PinTone, sizes: RouteSizes): number {
 
 /**
  * The size a map image draws its route at: the tier nearest the live map's size at its zoom
- * (full from zoom 12.25, medium from 10.75, else small), then a smaller one while any two pins
+ * (full from zoom 12.25, medium from 10.75, else small), then a smaller one while any two stops
  * would overlap (pins in image points at that zoom; projectPoint).
  */
 export function imageTier(
@@ -212,19 +212,42 @@ export function imageTier(
     (t, k) =>
       k === order.length - 1 || zoom >= (ROUTE_TIER_ZOOM[t] + ROUTE_TIER_ZOOM[order[k + 1]!]) / 2,
   );
-  for (; i < order.length - 1; i++) {
-    const sizes = routeTierStyle(order[i]!);
-    const crowded = pins.some((a, j) =>
-      pins.some(
-        (b, k) =>
-          k > j &&
-          Math.hypot(a.x - b.x, a.y - b.y) <
-            (pinSizeAt(a.tone, sizes) + pinSizeAt(b.tone, sizes)) / 2,
-      ),
-    );
-    if (!crowded) break;
-  }
+  for (; i < order.length - 1; i++) if (!crowdedAt(pins, routeTierStyle(order[i]!))) break;
   return order[i]!;
+}
+
+/**
+ * Whether any two stops (in map points) would overlap at `sizes`. The start is left out: it's
+ * drawn under the stops, so a stop at the shop's door shouldn't cost every pin its number.
+ */
+export function crowdedAt(pins: { x: number; y: number; tone: PinTone }[], sizes: RouteSizes) {
+  const stops = pins.filter((p) => p.tone !== "shop");
+  return stops.some((a, j) =>
+    stops.some(
+      (b, k) =>
+        k > j &&
+        Math.hypot(a.x - b.x, a.y - b.y) <
+          (pinSizeAt(a.tone, sizes) + pinSizeAt(b.tone, sizes)) / 2,
+    ),
+  );
+}
+
+/**
+ * A live map's route sizes at `zoom` (owner, 2026-10-24: "the pins are a pile on top of each
+ * other"): routeStyleAt(zoom), or, while any two pins would overlap at those sizes, the medium
+ * or small tier's smaller ones, as the map images step down (imageTier). Small dots may still
+ * touch; numbered pins never pile up.
+ */
+export function crowdedStyleAt(zoom: number, pins: { at: LatLng; tone: PinTone }[]): RouteSizes {
+  const base = routeStyleAt(zoom);
+  const at = pins.map((p) => ({ ...projectPoint(p.at, zoom), tone: p.tone }));
+  if (!crowdedAt(at, base)) return base;
+  for (const tier of ["medium", "small"] as const) {
+    const sizes = routeTierStyle(tier);
+    if (sizes.pinSize >= base.pinSize) continue;
+    if (tier === "small" || !crowdedAt(at, sizes)) return sizes;
+  }
+  return base;
 }
 
 // ---------------------------------------------------------------------------
@@ -240,6 +263,121 @@ export function projectPoint(p: LatLng, zoom: number): { x: number; y: number } 
     x: ((p.lng + 180) / 360) * scale,
     y: (0.5 - Math.log((1 + s) / (1 - s)) / (4 * Math.PI)) * scale,
   };
+}
+
+/** The place at map point `pt` at `zoom` (projectPoint's inverse). */
+export function unprojectPoint(pt: { x: number; y: number }, zoom: number): LatLng {
+  const scale = 256 * 2 ** zoom;
+  const n = Math.PI - (2 * Math.PI * pt.y) / scale;
+  return {
+    lng: (pt.x / scale) * 360 - 180,
+    lat: (Math.atan(Math.sinh(n)) * 180) / Math.PI,
+  };
+}
+
+/**
+ * What a map shows (owner, 2026-10-24: "Mapbox is way too far zoomed out"): its middle, its zoom
+ * (256-point tiles, as projectPoint) and the size its route is drawn at. Every map image is
+ * drawn at exactly this view (never the service's "auto"), so the pins' sizes are chosen for
+ * the zoom the image really has.
+ */
+export interface MapView {
+  center: LatLng;
+  zoom: number;
+  tier: RouteTier;
+}
+
+/** Room between a pin's edge and the map's edge, in points. */
+export const VIEW_MARGIN = 8;
+
+/** The closest a map frames a day (a day at one place shows ROUTE_ZOOM.full). */
+export const VIEW_MAX_ZOOM = 15;
+
+/**
+ * The tightest view of `size` points that shows every pin whole (its circle at the view's tier,
+ * plus VIEW_MARGIN) and every `extra` point (the route's road path) with room for the line. The
+ * tier is the largest one whose pins fit and don't overlap at that zoom (imageTier): a tight
+ * cluster with one far stop gets small dots, never a pile of numbered pins.
+ */
+export function mapView(
+  pins: { at: LatLng; tone: PinTone }[],
+  size: { w: number; h: number },
+  extra: LatLng[] = [],
+): MapView {
+  const points = [...pins.map((p) => p.at), ...extra];
+  if (!points.length) return { center: { lat: 0, lng: 0 }, zoom: 3, tier: "small" };
+  const spread = points.some(
+    (p) => Math.abs(p.lat - points[0]!.lat) > 1e-6 || Math.abs(p.lng - points[0]!.lng) > 1e-6,
+  );
+  const maxZoom = spread ? VIEW_MAX_ZOOM : ROUTE_ZOOM.full;
+  const order: RouteTier[] = ["full", "medium", "small"];
+  let view: MapView | null = null;
+  for (const [i, tier] of order.entries()) {
+    const sizes = routeTierStyle(tier);
+    const pad = [
+      ...pins.map((p) => pinSizeAt(p.tone, sizes) / 2 + VIEW_MARGIN),
+      ...extra.map(() => sizes.casingWidth / 2 + VIEW_MARGIN / 2),
+    ];
+    const box = (z: number) => {
+      const at = points.map((p) => projectPoint(p, z));
+      const xs0 = at.map((p, k) => p.x - pad[k]!);
+      const xs1 = at.map((p, k) => p.x + pad[k]!);
+      const ys0 = at.map((p, k) => p.y - pad[k]!);
+      const ys1 = at.map((p, k) => p.y + pad[k]!);
+      return {
+        x0: Math.min(...xs0),
+        x1: Math.max(...xs1),
+        y0: Math.min(...ys0),
+        y1: Math.max(...ys1),
+      };
+    };
+    const fits = (z: number) => {
+      const b = box(z);
+      return b.x1 - b.x0 <= size.w && b.y1 - b.y0 <= size.h;
+    };
+    let zoom = maxZoom;
+    if (!fits(zoom)) {
+      let lo = 2;
+      let hi = maxZoom;
+      for (let k = 0; k < 40; k++) {
+        const mid = (lo + hi) / 2;
+        if (fits(mid)) lo = mid;
+        else hi = mid;
+      }
+      zoom = lo;
+    }
+    const b = box(zoom);
+    const center = unprojectPoint({ x: (b.x0 + b.x1) / 2, y: (b.y0 + b.y1) / 2 }, zoom);
+    const at = pins.map((p) => ({ ...projectPoint(p.at, zoom), tone: p.tone }));
+    view = { center, zoom, tier };
+    if (order.indexOf(imageTier(zoom, at)) <= i) break;
+  }
+  return view!;
+}
+
+/** Where `p` lands on a map of `size` points showing `view` (x right, y down, in points). */
+export function viewPoint(
+  p: LatLng,
+  view: { center: LatLng; zoom: number },
+  size: { w: number; h: number },
+): { x: number; y: number } {
+  const a = projectPoint(p, view.zoom);
+  const c = projectPoint(view.center, view.zoom);
+  return { x: a.x - c.x + size.w / 2, y: a.y - c.y + size.h / 2 };
+}
+
+/**
+ * The degrees a map of `size` points showing `view` spans (for a service that takes a span, as
+ * Apple's snapshots and MapKit regions do): across, and from its top edge to its bottom edge.
+ */
+export function viewSpan(
+  view: { center: LatLng; zoom: number },
+  size: { w: number; h: number },
+): { latDelta: number; lngDelta: number } {
+  const c = projectPoint(view.center, view.zoom);
+  const top = unprojectPoint({ x: c.x, y: c.y - size.h / 2 }, view.zoom);
+  const bottom = unprojectPoint({ x: c.x, y: c.y + size.h / 2 }, view.zoom);
+  return { latDelta: top.lat - bottom.lat, lngDelta: (size.w * 360) / (256 * 2 ** view.zoom) };
 }
 
 /** The zoom at which a map `width` points wide shows `lngDelta` degrees of longitude across. */

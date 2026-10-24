@@ -4,6 +4,7 @@ import {
   ROUTE_ZOOM,
   START_FROM_COPY,
   TECH_COLORS,
+  crowdedStyleAt,
   decodePolyline,
   encodePins,
   joinLegs,
@@ -290,7 +291,10 @@ export async function fetchRoutePath(
   }
 }
 
-/** The route's sizes at a live map's zoom: its span across (degrees) on `width` points. */
-export function liveRouteSizes(lngDelta: number, width: number): RouteSizes {
-  return routeStyleAt(zoomForSpan(lngDelta, width));
+/**
+ * The route's sizes at a live map's zoom: its span across (degrees) on `width` points; smaller
+ * while `pins` would overlap there (core crowdedStyleAt; owner, 2026-10-24: no pile of pins).
+ */
+export function liveRouteSizes(lngDelta: number, width: number, pins: LivePin[] = []): RouteSizes {
+  return crowdedStyleAt(zoomForSpan(lngDelta, width), pins);
 }

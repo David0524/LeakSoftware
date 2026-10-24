@@ -1,5 +1,10 @@
 import {
+  crowdedStyleAt,
   dayMapPins,
+  mapView,
+  unprojectPoint,
+  viewPoint,
+  viewSpan,
   decodePins,
   encodePins,
   fitZoom,
@@ -27,6 +32,25 @@ import { rule, type ModuleCases } from "../case";
 
 const SHOP = { lat: 33.4152, lng: -111.8315 };
 const at = (i: number) => ({ lat: 33.4 + i * 0.01, lng: -111.9 - i * 0.003 });
+// A day a few streets across (owner, 2026-10-24), and the same with one stop far out east.
+const HOME = { lat: 33.5605, lng: -112.1312 };
+const near = (i: number) => ({
+  lat: 33.553 + (i % 4) * 0.004,
+  lng: -112.142 + Math.floor(i / 4) * 0.006 + (i % 2) * 0.0015,
+});
+const cluster: { at: LatLng; tone: PinTone }[] = [
+  { at: HOME, tone: "shop" },
+  ...Array.from({ length: 11 }, (_, i) => ({
+    at: near(i),
+    tone: (i === 0 ? "current" : "todo") as PinTone,
+  })),
+];
+const spread: { at: LatLng; tone: PinTone }[] = [
+  { at: HOME, tone: "shop" },
+  { at: near(0), tone: "done" },
+  { at: { lat: 33.5, lng: -112.05 }, tone: "current" },
+  { at: { lat: 33.53, lng: -111.99 }, tone: "todo" },
+];
 
 export const dayMap: ModuleCases = {
   MAP_PIN_LIMIT: rule(() => MAP_PIN_LIMIT, [[]]),
@@ -82,6 +106,7 @@ export const dayMap: ModuleCases = {
       [10.75, []],
       [10.7, []],
       // Crowded: 30 apart overlaps at full size, not at medium; 20 apart only fits small dots.
+      // The start is left out (drawn under the stops), so its neighbor at 30 doesn't count.
       [
         14,
         [
@@ -120,6 +145,60 @@ export const dayMap: ModuleCases = {
       [SHOP, 13],
       [{ lat: -33.8688, lng: 151.2093 }, 11.25],
       [{ lat: 89, lng: -180 }, 2],
+    ],
+  ),
+  unprojectPoint: rule(
+    (p: { x: number; y: number }, zoom: number) => unprojectPoint(p, zoom),
+    [
+      [{ x: 128, y: 128 }, 0],
+      [{ x: 0, y: 64 }, 0],
+      [{ x: 1_000_000, y: 1_700_000 }, 13],
+    ],
+  ),
+  mapView: rule(
+    (pins: { at: LatLng; tone: PinTone }[], size: { w: number; h: number }, extra?: LatLng[]) =>
+      mapView(pins, size, extra),
+    [
+      [[], { w: 360, h: 180 }],
+      [[{ at: SHOP, tone: "todo" }], { w: 360, h: 180 }],
+      [cluster, { w: 360, h: 180 }],
+      [[...cluster, { at: SHOP, tone: "todo" }], { w: 360, h: 180 }],
+      [spread, { w: 360, h: 180 }],
+      [spread, { w: 270, h: 180 }, [{ lat: 33.6, lng: -112.2 }]],
+      [spread, { w: 390, h: 200 }],
+    ],
+  ),
+  viewPoint: rule(
+    (p: LatLng, view: { center: LatLng; zoom: number }, size: { w: number; h: number }) =>
+      viewPoint(p, view, size),
+    [
+      [HOME, { center: HOME, zoom: 13 }, { w: 360, h: 180 }],
+      [near(3), { center: HOME, zoom: 13.4 }, { w: 360, h: 180 }],
+      [SHOP, { center: HOME, zoom: 10.2 }, { w: 640, h: 427 }],
+    ],
+  ),
+  viewSpan: rule(
+    (view: { center: LatLng; zoom: number }, size: { w: number; h: number }) =>
+      viewSpan(view, size),
+    [
+      [
+        { center: HOME, zoom: 13 },
+        { w: 360, h: 180 },
+      ],
+      [
+        { center: SHOP, zoom: 10.2 },
+        { w: 640, h: 427 },
+      ],
+    ],
+  ),
+  crowdedStyleAt: rule(
+    (zoom: number, pins: { at: LatLng; tone: PinTone }[]) => crowdedStyleAt(zoom, pins),
+    [
+      [17, cluster],
+      [13, cluster],
+      [12, spread],
+      [9, cluster],
+      [14, []],
     ],
   ),
   zoomForSpan: rule(

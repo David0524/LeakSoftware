@@ -1,13 +1,15 @@
 import "server-only";
 import { routeOrder, type MapPin } from "@leakbook/core";
-import { appleSnapshotUrl, snapshotFits, type AppleKeys } from "./apple-maps";
+import { appleSnapshot, type AppleKeys } from "./apple-maps";
+import { compositePins } from "./map-composite";
 import { staticMapUrl } from "./map-image";
 import type { PathProvider, RoutePaths } from "./route-paths";
 import type { MapBudgetKind } from "./routing";
 
 // Which service draws a day-map image (docs/plans/apple-maps.md): Apple Snapshots on Apple Maps,
-// Mapbox Static Images when Apple can't (out of its allowance, an error, or 10 stops or more),
-// or when the website is on Mapbox.
+// any number of stops (owner, 2026-10-24: "Why some Apple some Mapbox?"; Apple draws the map and
+// the route, our pins are drawn onto it, map-composite.tsx); Mapbox Static Images when Apple
+// can't (out of its allowance, an error), or when the website is on Mapbox.
 
 export type Drawn =
   | {
@@ -27,7 +29,7 @@ export async function drawMapImage(input: {
   color?: string | null;
   /** The Apple key when the website is on Apple Maps, else null. */
   apple: AppleKeys | null;
-  /** This site's address, for Apple to fetch the pin images from. */
+  /** This site's address, for Mapbox to fetch the pin images from. */
   pinBase?: string;
   mapboxToken: string | undefined;
   /** Take from the shared map budget (mapbox_take). */
@@ -48,10 +50,26 @@ export async function drawMapImage(input: {
       return { legs: [], complete: false };
     });
   };
-  if (apple && snapshotFits(pins) && (await take("apple_snapshot"))) {
+  if (apple && pins.length && (await take("apple_snapshot"))) {
     const route = await legsFor("apple");
-    const draw = (legs: RoutePaths["legs"] | null) =>
-      fetchImpl(appleSnapshotUrl(pins, size, apple, theme, pinBase, color, legs)).catch(() => null);
+    const draw = async (legs: RoutePaths["legs"] | null) => {
+      const snap = appleSnapshot(pins, size, apple, theme, color, legs);
+      const res = await fetchImpl(snap.url).catch(() => null);
+      if (!res?.ok) return res;
+      try {
+        return await compositePins({
+          image: await res.arrayBuffer(),
+          size: snap.size,
+          view: snap.view,
+          pins,
+          color,
+          theme,
+        });
+      } catch (e) {
+        console.error(`Map image: drawing the pins ${e instanceof Error ? e.message : String(e)}`);
+        return null;
+      }
+    };
     let res = await draw(route.legs.length ? route.legs : null);
     // Apple refused the longer address: the straight route, as before.
     if (

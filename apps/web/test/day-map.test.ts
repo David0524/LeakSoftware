@@ -71,17 +71,17 @@ describe("day map", () => {
 
   it("builds the image address and its words", () => {
     expect(mapSrc("c1", "s:1.00000,2.00000", { w: 600, h: 300 })).toBe(
-      "/api/map?company=c1&pins=s%3A1.00000%2C2.00000&w=600&h=300",
+      "/api/map?company=c1&pins=s%3A1.00000%2C2.00000&w=600&h=300&v=2",
     );
     // The tech's color (owner, 2026-10-23); water blue is the default, so it's left out.
     expect(mapSrc("c1", "s", { w: 1, h: 1 }, "light", "orange")).toBe(
-      "/api/map?company=c1&pins=s&w=1&h=1&color=orange",
+      "/api/map?company=c1&pins=s&w=1&h=1&v=2&color=orange",
     );
     expect(mapSrc("c1", "s", { w: 1, h: 1 }, "dark", "blue")).toBe(
-      "/api/map?company=c1&pins=s&w=1&h=1&theme=dark",
+      "/api/map?company=c1&pins=s&w=1&h=1&v=2&theme=dark",
     );
     expect(mapSrc("c1", "s", { w: 1, h: 1 }, "light", null)).toBe(
-      "/api/map?company=c1&pins=s&w=1&h=1",
+      "/api/map?company=c1&pins=s&w=1&h=1&v=2",
     );
     expect(mapAlt("Priya Shah", "Monday", 1)).toBe("Map of Priya Shah’s stops on Monday: 1 stop");
     expect(mapAlt("Priya Shah", "Monday", 5)).toBe("Map of Priya Shah’s stops on Monday: 5 stops");

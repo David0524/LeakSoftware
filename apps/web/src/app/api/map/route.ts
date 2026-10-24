@@ -19,9 +19,9 @@ function mapLimit(): number {
  * GET ?company=…&pins=…&w=…&h=…[&color=orange][&theme=dark]: a map image of a day's stops (owner, 2026-10-20,
  * docs/plans/route-maps.md), for the website (signed in) and Android (Authorization: Bearer).
  * The pins come from core's dayMapPins and encodePins. Kept by the browser for a day.
- * On Apple Maps (docs/plans/apple-maps.md) the image is an Apple Snapshot; Mapbox draws it when
- * Apple's allowance is used, Apple answers with an error, or the day has 10 stops or more (an
- * Apple pin's number is one character). The route follows the roads (owner, 2026-10-23): each
+ * On Apple Maps (docs/plans/apple-maps.md) the image is an Apple Snapshot with our pins drawn on
+ * it, for any number of stops (owner, 2026-10-24); Mapbox draws it when Apple's allowance is
+ * used or Apple answers with an error. Both are framed by core mapView. The route follows the roads (owner, 2026-10-23): each
  * leg's path from the same service as the image, saved once per shop (server/route-paths.ts).
  */
 export async function GET(request: Request) {

@@ -11,7 +11,8 @@ import Testing
             Fixtures.rules(module) == [
                 "MAP_PIN_LIMIT", "ROUTE_STYLE", "routeColor", "dayMapPins", "encodePins", "decodePins",
                 "ROUTE_STYLE_SMALL", "ROUTE_ZOOM", "routeStyleAt", "routeTierStyle", "pinSizeAt", "imageTier",
-                "projectPoint", "zoomForSpan", "fitZoom", "metersPerPoint",
+                "projectPoint", "unprojectPoint", "mapView", "viewPoint", "viewSpan", "crowdedStyleAt", "zoomForSpan",
+                "fitZoom", "metersPerPoint",
             ])
     }
 
@@ -70,6 +71,32 @@ import Testing
             return fitZoom(try c.arg(0), w: size.w, h: size.h, padding: try c.arg(2), maxZoom: maxZoom)
         }
         checkRule(module, "metersPerPoint") { c in metersPerPoint(try c.arg(0), try c.arg(1)) }
+    }
+
+    struct View: Decodable {
+        let center: LatLng
+        let zoom: Double
+    }
+
+    /// Framed by us, never the service's "auto" (owner, 2026-10-24).
+    @Test func views() {
+        checkRule(module, "unprojectPoint") { c in unprojectPoint(try c.arg(0), try c.arg(1)) }
+        checkRule(module, "mapView") { c in
+            let size = try c.arg(1, as: Size.self)
+            let extra = try c.arg(2, as: [LatLng]?.self) ?? []
+            return mapView(try c.arg(0), w: size.w, h: size.h, extra: extra)
+        }
+        checkRule(module, "viewPoint") { c in
+            let view = try c.arg(1, as: View.self)
+            let size = try c.arg(2, as: Size.self)
+            return viewPoint(try c.arg(0), center: view.center, zoom: view.zoom, w: size.w, h: size.h)
+        }
+        checkRule(module, "viewSpan") { c in
+            let view = try c.arg(0, as: View.self)
+            let size = try c.arg(1, as: Size.self)
+            return viewSpan(center: view.center, zoom: view.zoom, w: size.w, h: size.h)
+        }
+        checkRule(module, "crowdedStyleAt") { c in crowdedStyleAt(try c.arg(0), try c.arg(1)) }
     }
 
     @Test func pinsRoundTrip() throws {

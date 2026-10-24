@@ -148,7 +148,9 @@
         @State private var zoom = routeZoom.full
         @State private var width: CGFloat = 0
 
-        private var sizes: RouteSizes { routeStyleAt(zoom) }
+        /// Smaller while the pins would overlap at this zoom (core `crowdedStyleAt`; owner,
+        /// 2026-10-24: never a pile of numbered pins).
+        private var sizes: RouteSizes { crowdedStyleAt(zoom, model.placed) }
 
         var body: some View {
             if drawsLiveMaps {
@@ -164,7 +166,14 @@
                     }
                     .task(id: model.line) {
                         road = RoadPaths.shared.kept(model.line)
-                        road = await RoadPaths.shared.route(model.line)
+                        // MapKit asks one leg at a time and stops at its limit; the legs left (the
+                        // drive home is always last) are asked after a wait, while the map shows.
+                        for _ in 0..<4 {
+                            let got = await RoadPaths.shared.route(model.line)
+                            road = got.line
+                            if got.done || Task.isCancelled { break }
+                            try? await Task.sleep(for: RoadPaths.throttleWait)
+                        }
                     }
             } else {
                 // A still stand-in of the same size: the map's tint, no tiles.
@@ -233,6 +242,7 @@
         @AppStorage("schedule.dayMapOpen") private var open = true
         @State private var position: MapCameraPosition = .automatic
         @State private var enlarged = false
+        @State private var width: CGFloat = 0
         /// The map keeps its height at every text size, so the stops still start near the top.
         private let height: CGFloat = 200
 
@@ -288,6 +298,12 @@
             let shape = RoundedRectangle(cornerRadius: CGFloat(Radius.card), style: .continuous)
             return DayMapCanvas(model: model, position: $position, interactive: false, selected: nil, pinScale: 0.88)
                 .frame(height: height)
+                .onGeometryChange(for: CGFloat.self) {
+                    $0.size.width
+                } action: {
+                    width = $0
+                    fit()
+                }
                 .clipShape(shape)
                 .overlay(shape.strokeBorder(Color.text.opacity(0.08), lineWidth: 1).allowsHitTesting(false))
                 .contentShape(shape)
@@ -314,7 +330,7 @@
         }
 
         private func fit() {
-            if let fit = model.fit { position = .region(fit.region) }
+            if let fit = model.fit(w: Double(width), h: Double(height)) { position = .region(fit.region) }
         }
     }
 
@@ -327,6 +343,7 @@
         @State private var position: MapCameraPosition = .automatic
         @State private var selected: String?
         @State private var span: MKCoordinateSpan?
+        @State private var size: CGSize = .zero
 
         var body: some View {
             NavigationStack {
@@ -340,6 +357,13 @@
                         }
                         .onMapCameraChange { span = $0.region.span }
                         .containerRelativeFrame(.vertical) { h, _ in h * 0.55 }
+                        .onGeometryChange(for: CGSize.self) {
+                            $0.size
+                        } action: {
+                            let first = size == .zero
+                            size = $0
+                            if first { fitWhole() }
+                        }
                         .accessibilityElement(children: .contain)
                         .accessibilityLabel(model.label)
                         ScrollView {
@@ -362,9 +386,12 @@
                 }
             }
             .sheetPresentation(detents: [.large])
-            .onAppear {
-                if let fit = model.fit { position = .region(fit.region) }
-            }
+            .onAppear { fitWhole() }
+        }
+
+        /// The whole day, framed as the map images are (core `mapView`).
+        private func fitWhole() {
+            if let fit = model.fit(w: Double(size.width), h: Double(size.height)) { position = .region(fit.region) }
         }
 
         private var list: some View {
@@ -413,7 +440,9 @@
         /// The map moves to the stop, keeping its zoom (closer in when it was showing the whole day).
         private func focus(_ id: String) {
             guard let a = model.annotations.first(where: { $0.id == id }) else { return }
-            let whole = model.fit.map { MKCoordinateSpan(latitudeDelta: $0.latDelta, longitudeDelta: $0.lngDelta) }
+            let whole = model.fit(w: Double(size.width), h: Double(size.height)).map {
+                MKCoordinateSpan(latitudeDelta: $0.latDelta, longitudeDelta: $0.lngDelta)
+            }
             let now = span ?? whole ?? MKCoordinateSpan(latitudeDelta: 0.05, longitudeDelta: 0.05)
             let zoom = MKCoordinateSpan(
                 latitudeDelta: min(now.latitudeDelta, (whole?.latitudeDelta ?? 0.05) / 2),

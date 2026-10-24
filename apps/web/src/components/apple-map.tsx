@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef } from "react";
+import { mapView, viewSpan } from "@leakbook/core";
 import {
   loadMapKit,
   mapkitToken,
@@ -126,10 +127,13 @@ export function AppleMap({
       });
       pinEls.current = els;
       const line = routeLine(pins).map((p) => p.at);
-      const items: unknown[] = [...annotations];
       // The route's sizes at the map's zoom (owner, 2026-10-23: smaller when zoomed out).
       const sizes = () =>
-        liveRouteSizes(made?.region?.span?.longitudeDelta ?? 0, box.current?.clientWidth ?? 0);
+        liveRouteSizes(
+          made?.region?.span?.longitudeDelta ?? 0,
+          box.current?.clientWidth ?? 0,
+          pins,
+        );
       // What's drawn: the casing and line overlays, at the line's width, along `path`.
       const route = { casing: null as unknown, line: null as unknown, width: 0, path: line };
       // The route in the tech's color on a white casing, so it reads on any street.
@@ -159,10 +163,7 @@ export function AppleMap({
         made.addOverlay(stroked);
         Object.assign(route, { casing, line: stroked, width: s.lineWidth, path });
       };
-      if (line.length > 1) {
-        drawRoute(line);
-        items.push(route.line);
-      }
+      if (line.length > 1) drawRoute(line);
       // Restyled as the map zooms, once a frame at most.
       let frame = 0;
       const restyle = () => {
@@ -186,11 +187,17 @@ export function AppleMap({
           if (path && !same && !gone) drawRoute(path);
         });
       made.addAnnotations(annotations);
-      made.showItems(items, {
-        animate: false,
-        padding: new kit.Padding(56, 56, 56, 56),
-        minimumSpan: new kit.CoordinateSpan(0.012, 0.012),
-      });
+      // Framed as the map images are (core mapView; owner, 2026-10-24: tight, every pin whole).
+      const size = { w: box.current?.clientWidth || 640, h: box.current?.clientHeight || 480 };
+      const view = mapView(pins, size);
+      const span = viewSpan(view, size);
+      made.setRegionAnimated(
+        new kit.CoordinateRegion(
+          new kit.Coordinate(view.center.lat, view.center.lng),
+          new kit.CoordinateSpan(span.latDelta, span.lngDelta),
+        ),
+        false,
+      );
       restyle();
       made.addEventListener("select", (e) => {
         const l = e.annotation?.data?.label;
