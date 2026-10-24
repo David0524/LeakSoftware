@@ -46,6 +46,8 @@ import {
   jobHasChecklist,
   writeDraftIntro,
   readingSummary,
+  chargesChemicals,
+  monthName,
   jobLock,
   wrapUp,
   visitReportBar,
@@ -85,6 +87,7 @@ import { createClient } from "@/lib/supabase/server";
 import {
   auditFor,
   getChemicalReadings,
+  getVisitChemicals,
   getCompany,
   getInvoices,
   getJob,
@@ -108,7 +111,7 @@ import { QuotePanel } from "@/components/quote-panel";
 import { RemoveSignature } from "@/components/remove-signature";
 import { ReportPanel } from "@/components/report-panel";
 import { VisitReportPanel } from "@/components/visit-report-panel";
-import { ChemicalDropdown } from "@/components/chem-dropdown";
+import { VisitChemicals } from "@/components/visit-chemicals";
 import { JobSchedule } from "@/components/schedule-form";
 import { emailConfigured } from "@/server/email";
 import { routingConfigured } from "@/server/routing";
@@ -1397,24 +1400,41 @@ async function Timeline({ detail, tz }: { detail: JobDetail; tz: string }) {
   );
 }
 
-/** Chemical for this visit's pool, opened in place: its gallons fill in, Submit saves to its log. */
+/**
+ * The visit's Chemicals, opened in place (owner, 2026-10-19 and 2026-10-24): each reading with
+ * its Aim For, what to add, and what was added, saved as the tech goes.
+ */
 async function Chemical({ detail, tz }: { detail: JobDetail; tz: string }) {
   const office = await getOffice();
-  const property = detail.job.property!;
-  const [latest] = await getChemicalReadings(office, property.id, 1).catch(() => []);
+  const job = detail.job;
+  const property = job.property!;
+  const [readings, visit, company] = await Promise.all([
+    getChemicalReadings(office, property.id, 2).catch(() => []),
+    getVisitChemicals(office, job.id).catch(() => null),
+    getCompany(office),
+  ]);
+  const own = visit?.reading ?? null;
+  const last = readings.find((r) => r.job_id !== job.id);
+  const visitDay = (job as { plan_date?: string | null }).plan_date;
+  const day = visitDay ?? job.scheduled_start ?? job.completed_at ?? new Date().toISOString();
   return (
-    <ChemicalDropdown
-      pool={{
-        propertyId: property.id,
-        jobId: detail.job.id,
-        name: detail.job.customer?.name ?? "this pool",
-      }}
+    <VisitChemicals
+      jobId={job.id}
+      propertyId={property.id}
+      customerName={job.customer?.name?.split(" ")[0] ?? "the customer"}
       initialGallons={property.approx_gallons ?? null}
-      last={
-        latest
-          ? `Last: ${readingSummary(latest)} · ${formatSchedule(latest.recorded_at, new Date(), tz)}`
+      reading={own}
+      lastLine={
+        last
+          ? `Last: ${readingSummary(last)} · ${formatSchedule(last.recorded_at, new Date(), tz)}`
           : null
       }
+      additions={visit?.additions ?? []}
+      items={visit?.items ?? []}
+      charges={chargesChemicals(company.settings)}
+      month={monthName(day, tz)}
+      locked={visit?.locked ?? []}
+      startOpen={!!own || !!visit?.additions.length}
     />
   );
 }

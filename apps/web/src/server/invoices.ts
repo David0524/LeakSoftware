@@ -49,6 +49,8 @@ export interface SendInvoiceResult {
   message: string;
   status: string;
   emailed: boolean;
+  /** The month's service report it went with (a Monthly shop's monthly invoice). */
+  reportLink: string | null;
 }
 
 async function rpc<T>(db: SupabaseClient, fn: string, args: Record<string, unknown>): Promise<T> {
@@ -91,8 +93,21 @@ export async function sendInvoice(
   const link = `${opts.origin}/i/${sent.token}`;
   const d = await rpc<MailDetails>(db, "invoice_mail_details", { target_invoice: invoiceId });
   const shop = d.company.name;
-  const message = invoiceShareText(shop, link);
-  const result = { token: sent.token, link, message, status: sent.status, emailed: false };
+  // A Monthly shop's monthly invoice carries the month's service report (owner, 2026-10-24:
+  // "in hand with the invoice"): frozen now, both links in one email or text.
+  // The invoice is already sent: a report that can't be made never stops it going out.
+  const month = await db.rpc("send_invoice_month_report", { target_invoice: invoiceId });
+  const reportToken = (month.data as { token?: string } | null)?.token;
+  const reportLink = reportToken ? `${opts.origin}/r/${reportToken}` : null;
+  const message = invoiceShareText(shop, link, reportLink);
+  const result = {
+    token: sent.token,
+    link,
+    message,
+    status: sent.status,
+    emailed: false,
+    reportLink,
+  };
 
   if (opts.channel === "sms_device") {
     await db.rpc("log_message", {
@@ -122,9 +137,13 @@ export async function sendInvoice(
       to: to!,
       cc,
       replyTo: d.company.email,
-      subject: `Your invoice from ${shop}`,
-      text: `${greeting}\n\n${what}${d.property ? ` (${d.property})` : ""}. ${due}\nView and pay it here:\n${link}\n\n${shop}${d.company.phone ? `\n${d.company.phone}` : ""}`,
-      html: `<p>${escapeHtml(greeting)}</p><p>${escapeHtml(what)}${d.property ? ` (${escapeHtml(d.property)})` : ""}. ${escapeHtml(due)}</p><p><a href="${link}">View and pay your invoice</a></p><p>${escapeHtml(shop)}${d.company.phone ? `<br>${escapeHtml(d.company.phone)}` : ""}</p>`,
+      subject: reportLink
+        ? `Your invoice and service report from ${shop}`
+        : `Your invoice from ${shop}`,
+      text: reportLink
+        ? `${greeting}\n\n${what}${d.property ? ` (${d.property})` : ""}. ${due}\nView and pay it here:\n${link}\n\nThe month’s service report, with each water test, the chemicals we added, and photos:\n${reportLink}\n\n${shop}${d.company.phone ? `\n${d.company.phone}` : ""}`
+        : `${greeting}\n\n${what}${d.property ? ` (${d.property})` : ""}. ${due}\nView and pay it here:\n${link}\n\n${shop}${d.company.phone ? `\n${d.company.phone}` : ""}`,
+      html: `<p>${escapeHtml(greeting)}</p><p>${escapeHtml(what)}${d.property ? ` (${escapeHtml(d.property)})` : ""}. ${escapeHtml(due)}</p>${reportLink ? "<p>Your service report for the month has each water test, the chemicals we added, and photos.</p>" : ""}<p><a href="${link}">View and pay your invoice</a></p>${reportLink ? `<p><a href="${reportLink}">View your service report</a></p>` : ""}<p>${escapeHtml(shop)}${d.company.phone ? `<br>${escapeHtml(d.company.phone)}` : ""}</p>`,
     });
     await db.rpc("log_message", {
       target_job: d.job_id,

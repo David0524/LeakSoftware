@@ -1,10 +1,10 @@
 import type { Metadata } from "next";
-import { formatAddress, formatSchedule, readingSummary } from "@leakbook/core";
+import { formatAddress, formatSchedule, monthlyUsage, readingSummary } from "@leakbook/core";
 import { ChemCalculator } from "@/components/chem-calculator";
 import { RemoveReading } from "@/components/chem-log";
 import { Grouped, PageHeader, Row } from "@/components/ui";
 import { getOffice } from "@/lib/auth";
-import { getChemicalPool, getChemicalReadings, getTeam } from "@/lib/data";
+import { getChemicalPool, getChemicalReadings, getPoolAdditions, getTeam } from "@/lib/data";
 
 export const metadata: Metadata = { title: "Chemical · Sundeck Pro" };
 
@@ -20,14 +20,15 @@ export default async function ChemicalsPage({ searchParams }: PageProps<"/chemic
   const office = await getOffice();
   const propertyId = typeof property === "string" && UUID.test(property) ? property : null;
   const jobId = typeof job === "string" && UUID.test(job) ? job : null;
-  const [pool, readings, team] = propertyId
+  const [pool, readings, team, added] = propertyId
     ? await Promise.all([
         getChemicalPool(office, propertyId),
         // Until the chemical log reaches the database, the calculator still works.
         getChemicalReadings(office, propertyId).catch(() => []),
         getTeam(office),
+        getPoolAdditions(office, propertyId).catch(() => []),
       ])
-    : [null, [], []];
+    : [null, [], [], []];
   const size = Number(gallons);
   const startGallons =
     pool?.approx_gallons ?? (Number.isFinite(size) && size > 0 ? Math.round(size) : null);
@@ -44,6 +45,18 @@ export default async function ChemicalsPage({ searchParams }: PageProps<"/chemic
         initialGallons={startGallons}
         pool={pool ? { propertyId: pool.id, jobId, name: name ?? "this pool" } : null}
       />
+      {/* What the pool took each month (owner, 2026-10-24), from what techs added on visits. */}
+      {pool && added.length ? (
+        <Grouped
+          title="Chemicals added"
+          className="mt-8 max-w-2xl"
+          footer="Added on visits, by month."
+        >
+          {monthlyUsage(added, tz).map((m) => (
+            <Row key={m.month} label={m.label} detail={m.line} />
+          ))}
+        </Grouped>
+      ) : null}
       {pool ? (
         <Grouped
           title="Chemical log"

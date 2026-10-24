@@ -141,8 +141,10 @@ export async function sendInvoiceAction(
     refresh(form);
     return {
       message: r.emailed
-        ? `Sent to ${text(form, "to")}.`
-        : "Invoice sent. Copy the link for the customer.",
+        ? `Sent to ${text(form, "to")}${r.reportLink ? ", with the month’s service report" : ""}.`
+        : r.reportLink
+          ? "Invoice sent with the month’s service report. Copy the link for the customer; the invoice page links the report."
+          : "Invoice sent. Copy the link for the customer.",
       link: r.link,
     };
   } catch (e) {

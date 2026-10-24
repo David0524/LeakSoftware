@@ -140,3 +140,66 @@ export async function sendVisitReport(
 function esc(s: string) {
   return s.replace(/[&<>"']/g, (c) => `&#${c.charCodeAt(0)};`);
 }
+
+/**
+ * A Monthly shop's report for a customer with no invoice that month (owner, 2026-10-24): the
+ * daily run sends it on its own, once, by email. Customers with an invoice get theirs with it
+ * (server/invoices.ts). `db` is the server's service client.
+ */
+export async function sendMonthReport(
+  db: SupabaseClient,
+  customerId: string,
+  month: string,
+  origin: string,
+): Promise<boolean> {
+  const { data, error } = await db.rpc("send_month_report", {
+    target_customer: customerId,
+    month,
+    target_invoice: null,
+    automatic: true,
+  });
+  if (error) throw dbFailure(error);
+  const sent = data as { token?: string; report_id?: string; skipped?: string };
+  if (!sent.token || !sent.report_id) return false;
+  const link = `${origin}/r/${sent.token}`;
+  const { data: rep } = await db
+    .from("report")
+    .select("company_id, job_id, data_snapshot")
+    .eq("id", sent.report_id)
+    .single();
+  const snapshot = rep?.data_snapshot as ReportSnapshot & { month?: string };
+  const email = (snapshot.customer?.email ?? "").trim();
+  if (!email || !emailConfigured()) return true;
+  const companyId = rep?.company_id as string;
+  if (!(await takeAllowance(companyId, "email", 1))) return true;
+  const shop = snapshot.company.name;
+  const name = new Intl.DateTimeFormat("en-US", { month: "long", timeZone: "UTC" }).format(
+    new Date(`${month.slice(0, 10)}T12:00:00Z`),
+  );
+  const greeting = snapshot.customer?.name ? `Hi ${snapshot.customer.name},` : "Hello,";
+  const where = snapshot.property.address;
+  const log = (delivery: string, extra: Record<string, unknown> = {}) =>
+    db.rpc("log_message", {
+      target_job: rep?.job_id,
+      via: "email",
+      sent_to: email,
+      template_key: "visit_report",
+      delivery,
+      ...extra,
+    });
+  try {
+    const mail = await sendEmail({
+      companyId,
+      from: fromAddress(shop),
+      to: email,
+      replyTo: snapshot.company.email,
+      subject: `Your ${name} service report from ${shop}`,
+      text: `${greeting}\n\nHere’s ${name} at ${where}: each water test, the chemicals we added, and photos.\n${link}\n\n${shop}${snapshot.company.phone ? `\n${snapshot.company.phone}` : ""}`,
+      html: `<p>${esc(greeting)}</p><p>Here’s ${esc(name)} at ${esc(where)}: each water test, the chemicals we added, and photos.</p><p><a href="${link}">View your service report</a></p><p>${esc(shop)}${snapshot.company.phone ? `<br>${esc(snapshot.company.phone)}` : ""}</p>`,
+    });
+    await log("sent", { provider: mail.id });
+  } catch (e) {
+    await log("failed", { failure: e instanceof Error ? e.message : String(e) });
+  }
+  return true;
+}

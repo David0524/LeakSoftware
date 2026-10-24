@@ -13,6 +13,7 @@ import { Banner, DOC_PAGE } from "@/components/doc-ui";
 import { ReportLoading } from "@/components/report-loading";
 import { ReportView } from "@/components/report-view";
 import { VisitReportView, type VisitSnapshot } from "@/components/visit-report-view";
+import { MonthReportView, type MonthSnapshot } from "@/components/month-report-view";
 import { getUser } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import { adminClient } from "@/server/admin";
@@ -44,9 +45,11 @@ export async function generateMetadata({ params }: PageProps<"/r/[token]">): Pro
       ? "Report"
       : r.template_key === "maintenance"
         ? "Maintenance Visit Report"
-        : r.template_key === "partner"
-          ? "Leak Detection Report (Technical)"
-          : reportTitle(r.job_type);
+        : r.template_key === "maintenance_month"
+          ? "Monthly Service Report"
+          : r.template_key === "partner"
+            ? "Leak Detection Report (Technical)"
+            : reportTitle(r.job_type);
   return documentMetadata("report", token, title);
 }
 
@@ -54,7 +57,7 @@ interface TokenReport {
   report_id: string;
   company_id: string;
   job_id: string;
-  template_key: ReportTemplateKey | "maintenance";
+  template_key: ReportTemplateKey | "maintenance" | "maintenance_month";
   version: number;
   status: "sent" | "superseded";
   sent_at: string | null;
@@ -123,7 +126,15 @@ async function Report({ params, searchParams }: PageProps<"/r/[token]">) {
           </Banner>
         </div>
       ) : null}
-      {r.template_key === "maintenance" ? (
+      {r.template_key === "maintenance_month" ? (
+        <MonthReportView
+          snapshot={s as MonthSnapshot}
+          version={r.version}
+          urls={urls}
+          logoUrl={logo.data?.signedUrl ?? null}
+          pdfHref={print ? undefined : `/r/${token}/pdf`}
+        />
+      ) : r.template_key === "maintenance" ? (
         <VisitReportView
           snapshot={s as VisitSnapshot}
           version={r.version}

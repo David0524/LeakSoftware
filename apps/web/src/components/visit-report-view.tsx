@@ -1,4 +1,15 @@
-import { dateFormat, textOnBrand, waterTestRows, type ReportSnapshot } from "@leakbook/core";
+import {
+  dateFormat,
+  monthName,
+  reportAddedRows,
+  reportAddedTotal,
+  saturationIndex,
+  textOnBrand,
+  waterTestRows,
+  type ReadingKey,
+  type ReportAddition,
+  type ReportSnapshot,
+} from "@leakbook/core";
 import { tokens } from "@leakbook/tokens";
 import type { ReactNode } from "react";
 import { ContactLine } from "./contact-line";
@@ -20,12 +31,126 @@ export interface VisitSnapshot extends ReportSnapshot {
     cya: number | null;
     salt: number | null;
     notes: string | null;
+    goals?: Partial<Record<ReadingKey, number | null>> | null;
   }[];
+  /** What was added (owner, 2026-10-24), and whether the shop charged for it when sent. */
+  added?: ReportAddition[];
+  charge_chemicals?: boolean;
+  visit_month?: string | null;
   completed_at?: string | null;
 }
 
 const STATUS = tokens.color.status;
 const TONE = { ok: STATUS.pass, low: STATUS.warning, high: STATUS.warning } as const;
+
+/** The water test's rows, its balance line, and the chemicals added: one visit's chemistry. */
+export function VisitChemistry({
+  snapshot: s,
+  Section,
+}: {
+  snapshot: Pick<
+    VisitSnapshot,
+    "chemicals" | "added" | "charge_chemicals" | "visit_month" | "company"
+  >;
+  Section: (props: { title: string; children: ReactNode }) => ReactNode;
+}) {
+  const reading = s.chemicals?.[0];
+  const water = reading ? waterTestRows(reading, reading.goals) : [];
+  const lsi = reading ? saturationIndex(reading) : null;
+  const charged = !!s.charge_chemicals;
+  const added = s.added ?? [];
+  const rows = reportAddedRows(added, reading, reading?.goals, charged);
+  const total = reportAddedTotal(added, charged);
+  const month = s.visit_month ? monthName(s.visit_month, s.company.timezone) : null;
+  return (
+    <>
+      {water.length ? (
+        <Section title="Water Test">
+          <table className="w-full text-left text-[0.9375rem]">
+            <thead className="text-text-muted">
+              <tr>
+                <th className="py-1 font-medium">Reading</th>
+                <th className="py-1 font-medium">Result</th>
+                <th className="py-1 font-medium">Aim for</th>
+                <th className="py-1 font-medium">
+                  <span className="sr-only">How it measured</span>
+                </th>
+              </tr>
+            </thead>
+            <tbody>
+              {water.map((w) => (
+                <tr key={w.key} className="border-t-[0.5px] border-separator">
+                  <td className="py-2">{w.label}</td>
+                  <td className="py-2 font-semibold">{w.value}</td>
+                  <td className="py-2 text-text-muted">{w.range}</td>
+                  <td className="py-2">
+                    <span
+                      className="rounded-full px-2.5 py-0.5 text-[0.8125rem] font-semibold whitespace-nowrap"
+                      style={{ color: TONE[w.status], backgroundColor: `${TONE[w.status]}1F` }}
+                    >
+                      {w.statusLabel}
+                    </span>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+          {lsi !== null ? (
+            <p
+              className="mt-3 flex justify-between gap-4 border-t-[0.5px] border-separator pt-3 text-[0.9375rem]"
+              data-testid="water-balance"
+            >
+              <span>Water balance</span>
+              <span>
+                <span className="font-semibold tabular-nums">
+                  {lsi > 0 ? "+" : ""}
+                  {lsi.toFixed(1)}
+                </span>{" "}
+                <span className="text-text-muted">
+                  · {lsi < -0.3 ? "Corrosive" : lsi > 0.3 ? "Scale forming" : "Balanced"}
+                </span>
+              </span>
+            </p>
+          ) : null}
+          {reading?.notes ? <p className="mt-3 whitespace-pre-line">{reading.notes}</p> : null}
+        </Section>
+      ) : null}
+      {rows.length ? (
+        <Section title="Added Chemicals">
+          <ul className="text-[0.9375rem]" data-testid="added-chemicals">
+            {rows.map((r, i) => (
+              <li
+                key={i}
+                className="flex items-start justify-between gap-4 border-t-[0.5px] border-separator py-2.5 first:border-t-0 first:pt-0"
+              >
+                <span className="min-w-0">
+                  <span className="block text-[1.0625rem] font-medium">{r.label}</span>
+                  {r.why ? <span className="block text-text-muted">{r.why}</span> : null}
+                </span>
+                {r.supplied ? (
+                  <span className="shrink-0 text-text-muted">Supplied by you</span>
+                ) : r.price ? (
+                  <span className="shrink-0 font-medium tabular-nums">{r.price}</span>
+                ) : null}
+              </li>
+            ))}
+          </ul>
+          {total ? (
+            <>
+              <p className="mt-1 flex justify-between border-t-[0.5px] border-separator pt-3 font-semibold">
+                <span>Chemicals</span>
+                <span className="tabular-nums">{total}</span>
+              </p>
+              <p className="mt-1 text-[0.9375rem] text-text-muted">
+                Billed on your {month ? `${month} ` : "monthly "}invoice.
+              </p>
+            </>
+          ) : null}
+        </Section>
+      ) : null}
+    </>
+  );
+}
 
 function Card({ title, children }: { title: string; children: ReactNode }) {
   return (
@@ -62,8 +187,6 @@ export function VisitReportView({
   const day = (iso: string | null | undefined) =>
     iso ? dateFormat("en-US", { dateStyle: "long", timeZone: tz }).format(new Date(iso)) : "";
   const when = s.completed_at ?? s.job.completed_at ?? s.job.started_at ?? sentAt;
-  const reading = s.chemicals?.[0];
-  const water = reading ? waterTestRows(reading) : [];
   const done = s.components.filter((c) => c.status === "inspected");
   const photos = s.media.filter((m) => m.kind === "photo" && urls.has(m.storage_path));
   const techs = [s.job.tech_name, s.job.second_tech_name].filter(Boolean).join(" and ");
@@ -127,40 +250,7 @@ export function VisitReportView({
         </dl>
       </section>
 
-      {water.length ? (
-        <Card title="Water Test">
-          <table className="w-full text-left text-[0.9375rem]">
-            <thead className="text-text-muted">
-              <tr>
-                <th className="py-1 font-medium">Reading</th>
-                <th className="py-1 font-medium">Result</th>
-                <th className="py-1 font-medium">Aim for</th>
-                <th className="py-1 font-medium">
-                  <span className="sr-only">How it measured</span>
-                </th>
-              </tr>
-            </thead>
-            <tbody>
-              {water.map((w) => (
-                <tr key={w.key} className="border-t-[0.5px] border-separator">
-                  <td className="py-2">{w.label}</td>
-                  <td className="py-2 font-semibold">{w.value}</td>
-                  <td className="py-2 text-text-muted">{w.range}</td>
-                  <td className="py-2">
-                    <span
-                      className="rounded-full px-2.5 py-0.5 text-[0.8125rem] font-semibold"
-                      style={{ color: TONE[w.status], backgroundColor: `${TONE[w.status]}1F` }}
-                    >
-                      {w.statusLabel}
-                    </span>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-          {reading?.notes ? <p className="mt-3 whitespace-pre-line">{reading.notes}</p> : null}
-        </Card>
-      ) : null}
+      <VisitChemistry snapshot={s} Section={Card} />
 
       {/* Only what was done (owner, 2026-10-20: "do not list/include items that were not
           completed"). */}

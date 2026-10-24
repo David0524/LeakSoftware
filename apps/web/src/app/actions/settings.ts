@@ -14,6 +14,8 @@ import {
   type TestFieldSchema,
   SAVED_REPORT_SECTIONS,
   visitReportMode,
+  chargeChemicalsSettings,
+  chargesChemicals,
   savedReportFrom,
   savedReportSections,
   INSPECTION_SECTIONS,
@@ -353,6 +355,34 @@ export async function saveVisitReportMode(_: FormState, form: FormData): Promise
   const settings = {
     ...((company?.settings ?? {}) as Record<string, unknown>),
     visit_reports: visitReportMode({ visit_reports: text(form, "visit_reports") }),
+  };
+  const { error } = await supabase.from("company").update({ settings }).eq("id", office.company.id);
+  if (error) return failed(error);
+  revalidatePath("/", "layout");
+  return { message: "Saved." };
+}
+
+/**
+ * Settings › Price Book › Charge for Chemicals (owner, 2026-10-24): off by default; on, the
+ * month's added chemicals go on each customer's monthly invoice, from the month it's turned on.
+ */
+export async function saveChargeChemicals(_: FormState, form: FormData): Promise<FormState> {
+  const office = await requireManager();
+  const supabase = await createClient();
+  const { data: company } = await supabase
+    .from("company")
+    .select("settings, timezone")
+    .eq("id", office.company.id)
+    .single();
+  const before = (company?.settings ?? {}) as Record<string, unknown>;
+  const on = checked(form, "charge_chemicals");
+  const today = new Intl.DateTimeFormat("en-CA", {
+    timeZone: (company?.timezone as string) ?? office.company.timezone,
+  }).format(new Date());
+  const settings = {
+    ...before,
+    // Already on: it keeps the month it started.
+    ...(on && chargesChemicals(before) ? {} : chargeChemicalsSettings(on, today)),
   };
   const { error } = await supabase.from("company").update({ settings }).eq("id", office.company.id);
   if (error) return failed(error);

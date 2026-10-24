@@ -1,6 +1,8 @@
 import "server-only";
 import { cache } from "react";
 import type {
+  ChemicalAddition,
+  ChemicalItem,
   ChemicalReading,
   CompanyAccess,
   ChecklistItemResult,
@@ -1260,6 +1262,75 @@ export async function getChemicalReadings(office: Office, propertyId: string, li
       .order("recorded_at", { ascending: false })
       .limit(limit),
   ) as ChemicalReading[];
+}
+
+/**
+ * A visit's chemicals (owner, 2026-10-24): its own readings (the row whose id is the visit's),
+ * what was added, the chemicals techs can pick, and which additions are on a sent invoice.
+ */
+export async function getVisitChemicals(office: Office, jobId: string) {
+  const supabase = await db();
+  const [reading, additions, items] = await Promise.all([
+    supabase
+      .from("chemical_reading")
+      .select("*")
+      .eq("company_id", office.company.id)
+      .eq("job_id", jobId)
+      .is("deleted_at", null)
+      .order("recorded_at", { ascending: false })
+      .limit(1),
+    supabase
+      .from("chemical_addition")
+      .select("*, invoice:invoice!chemical_addition_billed_invoice_id_company_id_fkey(status)")
+      .eq("company_id", office.company.id)
+      .eq("job_id", jobId)
+      .is("deleted_at", null)
+      .order("sort_order")
+      .order("added_at"),
+    supabase
+      .from("price_book_item")
+      .select(
+        "id, name, unit, price_cents, taxable, category, chemical, sort_order, active, deleted_at",
+      )
+      .eq("company_id", office.company.id)
+      .is("deleted_at", null),
+  ]);
+  const rows = (must(additions) ?? []) as (ChemicalAddition & {
+    invoice: { status: string } | null;
+  })[];
+  return {
+    reading: ((must(reading) ?? []) as ChemicalReading[])[0] ?? null,
+    additions: rows.map((row) => {
+      const a: ChemicalAddition & { invoice?: unknown } = { ...row };
+      delete a.invoice;
+      return {
+        ...a,
+        quantity: Number(a.quantity),
+        suggested_quantity: a.suggested_quantity === null ? null : Number(a.suggested_quantity),
+      };
+    }),
+    items: (must(items) ?? []) as ChemicalItem[],
+    locked: rows
+      .filter((a) => a.invoice && a.invoice.status !== "draft" && a.invoice.status !== "void")
+      .map((a) => a.id),
+  };
+}
+
+/** A pool's added chemicals, for its log's monthly use. */
+export async function getPoolAdditions(office: Office, propertyId: string) {
+  const supabase = await db();
+  const since = new Date(Date.now() - 100 * 86_400_000).toISOString();
+  const rows = must(
+    await supabase
+      .from("chemical_addition")
+      .select("*")
+      .eq("company_id", office.company.id)
+      .eq("property_id", propertyId)
+      .is("deleted_at", null)
+      .gte("added_at", since)
+      .order("added_at", { ascending: false }),
+  ) as ChemicalAddition[];
+  return rows.map((a) => ({ ...a, quantity: Number(a.quantity) }));
 }
 
 /** The pool the Chemical screen was opened for, with its customer's name. */

@@ -1,9 +1,12 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 import { notFound } from "next/navigation";
 import { Suspense } from "react";
 import {
   cardFeeChoice,
   formatCents,
+  formatQuantity,
+  monthName,
   latestReceiptPayment,
   lineTotal,
   paymentMethodLabel,
@@ -71,6 +74,8 @@ interface TokenInvoice {
     description: string;
     quantity: number;
     unit_price_cents: number;
+    /** A chemical line's unit, "gal" (owner, 2026-10-24). */
+    unit?: string | null;
   }[];
   payments: {
     id: string;
@@ -110,6 +115,9 @@ async function InvoicePage({ params, searchParams }: PageProps<"/i/[token]">) {
   });
   const i = data as TokenInvoice | null;
   if (!i) notFound();
+  // A monthly invoice sent with the month's service report links it (owner, 2026-10-24).
+  const { data: monthReport } = await db.rpc("month_report_link", { link_token: token });
+  const report = monthReport as { token: string; month: string; visits: number } | null;
   // The shop passes the card fee on: card or bank, chosen before paying (owner, 2026-10-19).
   const feeBps = paymentsConfigured() && i.can_pay ? await cardFeeFor("invoice", i.invoice_id) : 0;
 
@@ -209,6 +217,44 @@ async function InvoicePage({ params, searchParams }: PageProps<"/i/[token]">) {
         ) : null}
       </dl>
 
+      {report && !print ? (
+        <Link
+          href={`/r/${report.token}`}
+          className="mt-4 flex min-h-14 items-center gap-3 rounded-xl bg-surface px-4 py-3 hover:bg-text/[0.03] sm:bg-bg"
+          data-testid="month-report-link"
+        >
+          <span
+            aria-hidden="true"
+            className="grid size-10 shrink-0 place-items-center rounded-full bg-link/10 text-link"
+          >
+            <svg
+              viewBox="0 0 24 24"
+              className="size-5"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2.2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            >
+              <path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z" />
+              <path d="M14 3v5h5M9 13h6M9 17h6" />
+            </svg>
+          </span>
+          <span className="min-w-0 flex-1">
+            <span className="block font-semibold">
+              {monthName(report.month, tz)} Service Report
+            </span>
+            <span className="block text-[0.9375rem] text-text-muted">
+              {report.visits} {report.visits === 1 ? "visit" : "visits"}: water tests, chemicals
+              added, photos
+            </span>
+          </span>
+          <span aria-hidden="true" className="shrink-0 text-xl leading-none text-text-muted/70">
+            ›
+          </span>
+        </Link>
+      ) : null}
+
       <section aria-labelledby="items" className="mt-6">
         <h2
           id="items"
@@ -226,9 +272,11 @@ async function InvoicePage({ params, searchParams }: PageProps<"/i/[token]">) {
                   <p className="font-medium">{l.description}</p>
                   <p className="text-[0.9375rem] text-text-muted">
                     {[
-                      Number(l.quantity) !== 1
-                        ? `${Number(l.quantity)} × ${formatCents(l.unit_price_cents)}`
-                        : null,
+                      l.unit
+                        ? `${formatQuantity(Number(l.quantity), l.unit)} × ${formatCents(l.unit_price_cents)}`
+                        : Number(l.quantity) !== 1
+                          ? `${Number(l.quantity)} × ${formatCents(l.unit_price_cents)}`
+                          : null,
                     ]
                       .filter(Boolean)
                       .join(" · ")}

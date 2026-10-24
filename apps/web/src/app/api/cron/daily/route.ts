@@ -2,7 +2,7 @@ import { adminClient } from "@/server/admin";
 import { syncAllSubscriptionPrices } from "@/server/billing";
 import { runFollowups } from "@/server/followups";
 import { siteOrigin } from "@/lib/origin";
-import { sendVisitReport } from "@/server/visit-reports";
+import { sendMonthReport, sendVisitReport } from "@/server/visit-reports";
 
 export const maxDuration = 300;
 
@@ -41,6 +41,17 @@ export async function GET(request: Request) {
       // Tried again tomorrow while the visit is within two days.
     }
   }
+  // Monthly shops: last month's report for customers with no invoice that month goes on its
+  // own (owner, 2026-10-24); after the drafts above, so a customer with one waits for it.
+  const months = await admin.rpc("month_reports_due", { at: when.toISOString() });
+  let monthReports = 0;
+  for (const r of (months.data ?? []) as { customer_id: string; month: string }[]) {
+    try {
+      if (await sendMonthReport(admin, r.customer_id, r.month, origin)) monthReports++;
+    } catch {
+      // Tried again tomorrow: it stays due until it's sent.
+    }
+  }
   // Usage events older than 180 days (Admin portal Usage, owner 2026-10-22).
   const usage = await admin.rpc("prune_usage");
   // The weekly summary has its own hourly run, /api/cron/weekly (7 AM Monday, shop time).
@@ -51,6 +62,7 @@ export async function GET(request: Request) {
     maintenanceVisits: error ? error.message : visits,
     monthlyInvoices: billed.error ? billed.error.message : billed.data,
     visitReports: due.error ? due.error.message : visitReports,
+    monthReports: months.error ? months.error.message : monthReports,
     usagePruned: usage.error ? usage.error.message : usage.data,
   });
 }
