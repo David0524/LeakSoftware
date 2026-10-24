@@ -22,7 +22,7 @@ import {
   type LatLng,
 } from "@leakbook/core";
 import { pinImageSize } from "../src/components/map-pins";
-import { drawMapImage } from "../src/server/map-draw";
+import { drawMapImage, safeMapNote } from "../src/server/map-draw";
 import { compositePins, pinPlacements, pngSize } from "../src/server/map-composite";
 import { solidPng } from "./fixtures/png";
 import { suggestAddresses, type RoutingProvider } from "../src/server/routing";
@@ -397,6 +397,35 @@ describe("drawing a day-map image", () => {
         }),
     };
   }
+
+  it("never sends back a signed address or token in its note (x-map-note)", async () => {
+    const { keys } = throwaway();
+    let signed = "";
+    const drawn = await drawMapImage({
+      pins,
+      size: { w: 360, h: 240 },
+      theme: "light",
+      apple: keys,
+      mapboxToken: "pk.secret",
+      take: async () => true,
+      fetchImpl: (async (url: string) => {
+        if (url.includes("apple-mapkit")) {
+          signed = url;
+          // An error that echoes the address it was given, as fetch's own errors can.
+          throw new TypeError(`Failed to parse URL from ${url}`);
+        }
+        return png();
+      }) as unknown as typeof fetch,
+    });
+    expect(drawn).toMatchObject({ ok: true, by: "mapbox" });
+    const note = (drawn as { note?: string }).note ?? "";
+    expect(note).toContain("apple unreachable");
+    expect(note).not.toContain("signature");
+    expect(note).not.toContain(signed.slice(0, 40));
+    expect(safeMapNote("apple 400: bad ?signature=abc&z=3 token=xyz eyJhbGc.eyJzdWIi.sig")).toBe(
+      "apple 400: bad ?signature=[hidden]&z=3 token=[hidden] [token]",
+    );
+  });
 
   it("uses Apple when it can", async () => {
     const h = harness({ token: "pk" });

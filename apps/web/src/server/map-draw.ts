@@ -23,6 +23,19 @@ export type Drawn =
     }
   | { ok: false; status: 429 | 502; message: string; note?: string };
 
+/**
+ * A note safe to send back as a response header: no addresses (a signed Apple Snapshot address
+ * is a working credential for that image), no signatures or tokens, at most 200 characters.
+ * Error text from fetch or from a service's reply can echo the address it was given.
+ */
+export function safeMapNote(note: string): string {
+  return note
+    .replace(/https?:\/\/\S+/gi, "[address]")
+    .replace(/\b(signature|token|access_token|key)=[^&\s]*/gi, "$1=[hidden]")
+    .replace(/\beyJ[\w-]+\.[\w-]+(\.[\w-]+)?/g, "[token]")
+    .slice(0, 200);
+}
+
 export async function drawMapImage(input: {
   pins: Omit<MapPin, "id">[];
   size: { w: number; h: number };
@@ -108,6 +121,7 @@ export async function drawMapImage(input: {
     if (res?.ok) return { ok: true, res, by: "apple", complete: route.complete };
     console.error(`Map image: Apple ${res?.status ?? "unreachable"}`);
   }
+  note = safeMapNote(note);
   if (!mapboxToken) return { ok: false, status: 502, message: "The map couldn’t be drawn." };
   // Mapbox's monthly free tier, shared by every shop: never billed.
   if (!(await take("static_image")))
