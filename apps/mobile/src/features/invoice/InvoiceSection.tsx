@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Share, StyleSheet, Text, View } from "react-native";
+import { StyleSheet, Text, View } from "react-native";
 import {
   INVOICE_STATUS_LABELS,
   SEND_RECEIPT,
@@ -41,6 +41,7 @@ import { LinkRow } from "../quote/QuoteTab";
 import { useUnsavedChanges } from "../../ui/ModalSheet";
 import { useLine } from "../../data/texting";
 import { RecordPayment, SendReceiptSheet } from "./Receipt";
+import { shareLink } from "../../lib/shareLink";
 
 const INVOICEABLE = ["in_progress", "report_sent", "quote_sent", "quote_accepted", "invoiced"];
 
@@ -393,7 +394,7 @@ function DraftParts({ invoice, customer }: { invoice: JobInvoice; customer?: Cus
         channel === "email" ? email : (customer?.phone ?? null),
       );
       if (channel === "link") {
-        await Share.share({ message: r.message });
+        await shareLink(r.message);
         setSendMessage({
           tone: "success",
           text: "Invoice sent. Share the link with the customer.",

@@ -1,9 +1,10 @@
 import { useSyncExternalStore } from "react";
-import { AppState, Share } from "react-native";
+import { AppState } from "react-native";
 import { call, tryAgainLater } from "../data/reports";
 import { API_URL } from "./config";
 import { addRequest, parseRequests, type ReportRequest } from "./reportRequests";
 import { getServices } from "./services";
+import { shareLink } from "./shareLink";
 
 // Report requests made offline (owner, 2026-10-20: one-handed use, item 6), queued the way
 // automatic visit reports are (lib/visitReports.ts): kept on the phone, and after each sync the
@@ -88,7 +89,7 @@ export async function flushReportRequests(): Promise<void> {
             channel: req.kind === "email" ? "email" : "sms_device",
             to: req.to,
           });
-          if (req.kind === "text") await Share.share({ message: r.message }).catch(() => undefined);
+          if (req.kind === "text") await shareLink(r.message).catch(() => undefined);
         }
         sent = true;
         done(req);

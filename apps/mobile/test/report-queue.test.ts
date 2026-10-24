@@ -6,9 +6,12 @@ import type { ReportRequest } from "../src/lib/reportRequests";
 
 const rn = vi.hoisted(() => ({
   AppState: { currentState: "active" as string },
+  Platform: { OS: "android" },
   Share: { share: vi.fn(async () => ({ action: "sharedAction" })) },
 }));
 vi.mock("react-native", () => rn);
+// Android's titled share sheet is native; without it the text goes to React Native's Share.
+vi.mock("../modules/link-share", () => ({ LinkShareNative: null }));
 vi.mock("../src/lib/config", () => ({ API_URL: "https://sundeck.test" }));
 vi.mock("../src/data/hooks", () => ({ useJobRows: () => [] }));
 

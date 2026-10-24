@@ -1,6 +1,6 @@
 import { router } from "expo-router";
 import { useEffect, useMemo, useState } from "react";
-import { Linking, Platform, Pressable, Share, StyleSheet, Text, View } from "react-native";
+import { Linking, Platform, Pressable, StyleSheet, Text, View } from "react-native";
 import {
   QUOTE_STATUS_LABELS,
   discountAllowed,
@@ -41,6 +41,7 @@ import { Select } from "../../ui/Select";
 import { color, face, MAX_TEXT_SCALE, minTap, shape, space, tabular } from "../../ui/theme";
 import { WebIcon } from "../../ui/WebIcon";
 import { useUnsavedChanges } from "../../ui/ModalSheet";
+import { shareLink } from "../../lib/shareLink";
 
 const PAYMENT_LABELS: Record<string, string> = {
   pending: "processing",
@@ -249,7 +250,7 @@ function QuoteBuilder({ job, quote }: { job: Job; quote: JobQuote }) {
     setSending(true);
     try {
       const r = await sendQuoteFromPhone(quote, company.name);
-      await Share.share({ message: r.message });
+      await shareLink(r.message);
     } catch (e) {
       setError(e instanceof Error ? e.message : String(e));
     } finally {
@@ -641,7 +642,7 @@ export function LinkRow({ url, message }: { url: string; message: string }) {
       <Pressable
         accessibilityRole="button"
         accessibilityLabel="Share Link"
-        onPress={() => void Share.share({ message })}
+        onPress={() => void shareLink(message)}
         android_ripple={{ color: color.ripple }}
         style={({ pressed }) => [
           styles.shareButton,

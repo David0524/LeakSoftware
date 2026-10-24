@@ -2,7 +2,7 @@ import { router } from "expo-router";
 import { File, Paths } from "expo-file-system";
 import { useEffect, useMemo, useRef, useState, type ReactNode, type RefObject } from "react";
 import * as WebBrowser from "expo-web-browser";
-import { Pressable, Share, StyleSheet, Text, View } from "react-native";
+import { Pressable, StyleSheet, Text, View } from "react-native";
 import { SvgXml } from "react-native-svg";
 import {
   SIGNATURE_PURPOSE_LABELS,
@@ -47,6 +47,7 @@ import { StepList } from "../../ui/Progress";
 import { WebIcon } from "../../ui/WebIcon";
 import { SaveAsSavedReportSheet, UseSavedReportSheet } from "./SavedReportPicker";
 import { FinishPhotoNotice, useNeedsFinishPhoto } from "../media/FinishPhoto";
+import { shareLink } from "../../lib/shareLink";
 
 type Template = "homeowner" | "partner";
 
@@ -339,7 +340,7 @@ export function ReportTab({
           setStep,
         );
         if (kind === "text") {
-          await Share.share({ message: r.message });
+          await shareLink(r.message);
           setSendStatus({ tone: "success", text: "Report sent." });
         } else setSendStatus({ tone: "success", text: `Sent to ${email}.` });
       }

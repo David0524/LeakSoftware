@@ -1,6 +1,6 @@
 import * as WebBrowser from "expo-web-browser";
 import { useEffect, useMemo, useState } from "react";
-import { Share, StyleSheet, View } from "react-native";
+import { StyleSheet, View } from "react-native";
 import { dateFormat, visitReportMode, type Customer, type Job } from "@leakbook/core";
 import { call, reportsOnline, useJobReports } from "../../data/reports";
 import { useLine } from "../../data/texting";
@@ -11,6 +11,7 @@ import { useCompany } from "../../state/session";
 import { Button, Card, Field, Notice, T } from "../../ui/components";
 import { haptics } from "../../ui/haptics";
 import { space } from "../../ui/theme";
+import { shareLink } from "../../lib/shareLink";
 
 // A maintenance visit's report (owner, 2026-10-20: "build a report with the tested chemicals,
 // checklist, cleanings, photos, etc. Then have an option to send the report to customers"),
@@ -79,7 +80,7 @@ export function VisitReport({
       await getServices().sync.syncNow();
       haptics.success();
       if (!sent.delivered) {
-        await Share.share({ message: sent.message });
+        await shareLink(sent.message);
         setResult({ tone: "success", text: "Visit report ready. Text the customer the link." });
       } else
         setResult({

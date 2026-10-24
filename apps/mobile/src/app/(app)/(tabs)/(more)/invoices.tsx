@@ -14,16 +14,7 @@ import {
   receiptSummary,
 } from "@leakbook/core";
 import { useMemo, useState } from "react";
-import {
-  Alert,
-  Animated,
-  Pressable,
-  RefreshControl,
-  Share,
-  StyleSheet,
-  Text,
-  View,
-} from "react-native";
+import { Alert, Animated, Pressable, RefreshControl, StyleSheet, Text, View } from "react-native";
 import { useRows, useSyncRefresh } from "../../../../data/hooks";
 import {
   invoicesCsv,
@@ -56,6 +47,7 @@ import {
 import { useMenu } from "../../../../ui/Select";
 import { WebIcon } from "../../../../ui/WebIcon";
 import { color, face, MAX_TEXT_SCALE, minTap, space, tabular, type } from "../../../../ui/theme";
+import { shareLink } from "../../../../lib/shareLink";
 
 /**
  * Invoices (spec 5.10): what's owed, then the invoices, newest first. Filter pills with counts,
@@ -183,8 +175,7 @@ export default function Invoices() {
     const name = `Invoice #${i.number ?? ""}`;
     const run = (id: InvoiceActionId) => {
       if (id === "open") router.push(`/jobs/${i.job_id}?section=wrapup`);
-      if (id === "share" && link)
-        void Share.share({ message: invoiceShareText(company.name, link) });
+      if (id === "share" && link) void shareLink(invoiceShareText(company.name, link));
       if (id === "record") setPaying(i);
       if (id === "receipt") {
         const p = latestReceiptPayment(
