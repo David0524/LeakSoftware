@@ -14,6 +14,7 @@ const TEMPLATES = {
   homeowner: "Homeowner report",
   partner: "Pool company report",
   maintenance: "Visit report",
+  maintenance_month: "Monthly service report",
 } as const;
 
 const FILTERS = [
