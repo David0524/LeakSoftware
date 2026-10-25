@@ -102,7 +102,7 @@ export function SignInForm({ next }: { next: string }) {
 
   if (withLink) {
     return (
-      <form action={linkAction} className="space-y-4">
+      <form data-no-discard action={linkAction} className="space-y-4">
         <input type="hidden" name="next" value={next} />
         <FieldGroup labelWidth="6rem">
           <GroupedField
@@ -124,7 +124,7 @@ export function SignInForm({ next }: { next: string }) {
     );
   }
   return (
-    <form action={passwordAction} className="space-y-4">
+    <form data-no-discard action={passwordAction} className="space-y-4">
       <input type="hidden" name="next" value={next} />
       <FieldGroup labelWidth="6rem">
         <GroupedField
@@ -160,7 +160,7 @@ export function SignInForm({ next }: { next: string }) {
 export function ForgotPasswordForm() {
   const [state, action, pending] = useActionState(orOffline(requestPasswordReset), {});
   return (
-    <form action={action} className="space-y-4">
+    <form data-no-discard action={action} className="space-y-4">
       <FieldGroup labelWidth="6rem">
         <GroupedField
           label="Email"
@@ -196,7 +196,7 @@ export function NewPasswordForm() {
       </div>
     );
   return (
-    <form action={action} className="space-y-4">
+    <form data-no-discard action={action} className="space-y-4">
       <FieldGroup labelWidth="9rem">
         <PasswordField
           label="New password"
@@ -253,7 +253,7 @@ export function TrialForm({
   }
   if (state.message) return <Banner tone="success">{state.message}</Banner>;
   return (
-    <form action={action} onBlur={keep} className="space-y-4" noValidate>
+    <form data-no-discard action={action} onBlur={keep} className="space-y-4" noValidate>
       <TimezoneInput />
       <FieldGroup labelWidth="8.25rem">
         <GroupedField
@@ -330,7 +330,7 @@ export function SetupForm({
 }) {
   const [state, action, pending] = useActionState(orOffline(createCompany), {});
   return (
-    <form action={action} className="space-y-4">
+    <form data-no-discard action={action} className="space-y-4">
       <TimezoneInput />
       <FieldGroup labelWidth="8.25rem">
         <GroupedField
@@ -369,7 +369,7 @@ export function InviteForm({
 
   if (signedInAs) {
     return (
-      <form action={action} className="space-y-4">
+      <form data-no-discard action={action} className="space-y-4">
         <input type="hidden" name="token" value={token} />
         <p>
           Signed in as <strong>{signedInAs}</strong>.
@@ -392,7 +392,7 @@ export function InviteForm({
   }
 
   return (
-    <form action={action} className="space-y-4">
+    <form data-no-discard action={action} className="space-y-4">
       <input type="hidden" name="token" value={token} />
       <input type="hidden" name="mode" value={mode} />
       <input type="hidden" name="email" value={email} />

@@ -7,12 +7,13 @@ import {
   useRef,
   useState,
   type PointerEvent,
+  type RefObject,
   type ReactNode,
 } from "react";
 import { createPortal } from "react-dom";
 import { DISCARD_PROMPT, fieldsOf, signature } from "@/lib/dirty";
 import { backQuietly, onBack, pushEntry } from "@/lib/history-entry";
-import { cx } from "./ui";
+import { buttonClass, cx } from "./ui";
 
 /**
  * A sheet, as on iOS (sheets.md): it slides up from the bottom on phones with a grabber, and
@@ -229,15 +230,15 @@ interface ConfirmOptions {
   cancelLabel?: string;
   destructive?: boolean;
   /**
-   * A centered iOS alert (Cancel and the action side by side, the action bold as the
-   * default) instead of an action sheet: for a question about what happens next, such as
-   * sending the visit report (owner, 2026-10-20).
+   * A question about what happens next, such as sending the visit report (owner, 2026-10-20).
+   * The website shows every confirmation the same way (DialogFrame); kept for callers and for
+   * the apps' wording, where it is a centered alert rather than an action sheet.
    */
   alert?: boolean;
 }
 
 /**
- * An iOS action sheet for confirming an action (in place of the browser's confirm box). Use:
+ * A dialog for confirming an action (in place of the browser's confirm box). Use:
  *   const [confirm, confirmSheet] = useConfirm();
  *   if (await confirm({ title: "Delete this test?", confirmLabel: "Delete Test", destructive: true })) ...
  *   ... render {confirmSheet} somewhere in the component.
@@ -254,160 +255,120 @@ export function useConfirm(): [(o: ConfirmOptions) => Promise<boolean>, ReactNod
     pending?.resolve(ok);
     setPending(null);
   };
-  const sheet = pending ? (
-    pending.alert ? (
-      <Alert {...pending} onDone={finish} />
-    ) : (
-      <ActionSheet {...pending} onDone={finish} />
-    )
-  ) : null;
-  return [confirm, sheet];
+  return [confirm, pending ? <ConfirmDialog {...pending} onDone={finish} /> : null];
 }
 
-function ActionSheet({
-  title,
-  message,
-  confirmLabel,
-  cancelLabel = "Cancel",
-  destructive,
-  onDone,
-}: ConfirmOptions & { onDone: (ok: boolean) => void }) {
-  const titleId = useId();
-  const confirmRef = useRef<HTMLButtonElement>(null);
-  useEffect(() => {
-    const before = document.activeElement as HTMLElement | null;
-    confirmRef.current?.focus();
-    const onKey = (e: KeyboardEvent) => {
-      if (e.key === "Escape") onDone(false);
-    };
-    document.addEventListener("keydown", onKey);
-    return () => {
-      document.removeEventListener("keydown", onKey);
-      before?.focus?.();
-    };
-  }, [onDone]);
-  if (typeof document === "undefined") return null;
-  return createPortal(
-    <div className="fixed inset-0 z-50 flex items-end justify-center p-2 pb-[max(0.5rem,env(safe-area-inset-bottom))] sm:items-center">
-      <div
-        aria-hidden="true"
-        className="absolute inset-0 bg-black/40"
-        onClick={() => onDone(false)}
-      />
-      <div
-        role="alertdialog"
-        aria-modal="true"
-        aria-labelledby={titleId}
-        className="relative w-full max-w-md space-y-2 motion-safe:animate-[sheet-up_0.25s_cubic-bezier(0.32,0.72,0,1)]"
-      >
-        <div className="glass-sheet overflow-hidden rounded-[0.875rem] text-center">
-          <div className="px-4 py-3">
-            <p id={titleId} className="text-[0.8125rem] font-semibold text-text-muted">
-              {title}
-            </p>
-            {message ? <p className="mt-1 text-[0.8125rem] text-text-muted">{message}</p> : null}
-          </div>
-          <button
-            ref={confirmRef}
-            type="button"
-            onClick={() => onDone(true)}
-            className={cx(
-              "block min-h-14 w-full border-t-[0.5px] border-separator text-[1.25rem]",
-              destructive ? "text-status-fail" : "text-link",
-            )}
-          >
-            {confirmLabel}
-          </button>
-        </div>
-        <button
-          type="button"
-          onClick={() => onDone(false)}
-          className="glass-sheet block min-h-14 w-full rounded-[0.875rem] text-[1.25rem] font-semibold text-link"
-        >
-          {cancelLabel}
-        </button>
-      </div>
-    </div>,
-    document.body,
-  );
-}
+// The website's own dialog (owner, 2026-10-25: "I don't like how the popup on web mimics
+// Apple"; option A of the sketch): a white card with the title and message on the left and
+// pill buttons at the bottom right, centered on wider screens. On phones it rises from the
+// bottom with full-width buttons, the action on top. The apps keep their system alerts.
+// Gray for the way back, filled red for a destructive action, filled blue otherwise.
+const PLAIN = "bg-fill text-text hover:brightness-95 active:brightness-90";
+const FILLED_RED = "bg-status-fail text-on-status hover:brightness-110 active:brightness-95";
+const TINTED_RED = "bg-status-fail/12 text-status-fail hover:bg-status-fail/18";
 
-function Alert({
+function DialogFrame({
   title,
   message,
-  confirmLabel,
-  cancelLabel = "Cancel",
-  destructive,
-  onDone,
-}: ConfirmOptions & { onDone: (ok: boolean) => void }) {
+  onDismiss,
+  initialFocus,
+  testId,
+  children,
+}: {
+  title: string;
+  message?: string;
+  onDismiss: () => void;
+  initialFocus: RefObject<HTMLButtonElement | null>;
+  testId?: string;
+  children: ReactNode;
+}) {
   const titleId = useId();
   const messageId = useId();
-  const confirmRef = useRef<HTMLButtonElement>(null);
-  const cancelRef = useRef<HTMLButtonElement>(null);
   useEffect(() => {
     const before = document.activeElement as HTMLElement | null;
-    // A destructive action is never the default: the way back is (HIG alerts).
-    (destructive ? cancelRef : confirmRef).current?.focus();
+    initialFocus.current?.focus();
     const onKey = (e: KeyboardEvent) => {
-      if (e.key === "Escape") onDone(false);
+      if (e.key === "Escape") onDismiss();
     };
     document.addEventListener("keydown", onKey);
     return () => {
       document.removeEventListener("keydown", onKey);
       before?.focus?.();
     };
-  }, [onDone, destructive]);
+  }, [onDismiss, initialFocus]);
   if (typeof document === "undefined") return null;
   return createPortal(
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-6">
+    <div className="fixed inset-0 z-50 flex items-end justify-center p-2 pb-[max(0.5rem,env(safe-area-inset-bottom))] sm:items-center sm:p-6">
       <div
         aria-hidden="true"
-        className="absolute inset-0 bg-black/40 motion-safe:animate-[fade-in_0.2s_ease-out]"
+        className="absolute inset-0 bg-header/45 motion-safe:animate-[fade-in_0.2s_ease-out]"
+        onClick={onDismiss}
       />
       <div
         role="alertdialog"
         aria-modal="true"
         aria-labelledby={titleId}
         aria-describedby={message ? messageId : undefined}
-        className="glass-sheet relative w-full max-w-[17.5rem] overflow-hidden rounded-[0.875rem] text-center motion-safe:animate-[fade-in_0.2s_ease-out]"
+        data-testid={testId}
+        className="relative w-full max-w-[26.25rem] rounded-[1.25rem] bg-surface p-6 shadow-2xl motion-safe:animate-[sheet-up_0.25s_cubic-bezier(0.32,0.72,0,1)] sm:motion-safe:animate-[fade-in_0.2s_ease-out]"
       >
-        <div className="px-4 pt-5 pb-4">
-          <p id={titleId} className="text-[1.0625rem] font-semibold">
-            {title}
+        <h2 id={titleId} className="font-display text-[1.625rem] leading-tight">
+          {title}
+        </h2>
+        {message ? (
+          <p id={messageId} className="mt-2 text-text-muted">
+            {message}
           </p>
-          {message ? (
-            <p id={messageId} className="mt-1 text-[0.8125rem]">
-              {message}
-            </p>
-          ) : null}
-        </div>
-        <div className="grid grid-cols-2 border-t-[0.5px] border-separator">
-          <button
-            ref={cancelRef}
-            type="button"
-            onClick={() => onDone(false)}
-            className={cx(
-              "min-h-11 border-r-[0.5px] border-separator px-2 text-[1.0625rem] text-link",
-              destructive && "font-semibold",
-            )}
-          >
-            {cancelLabel}
-          </button>
-          <button
-            ref={confirmRef}
-            type="button"
-            onClick={() => onDone(true)}
-            className={cx(
-              "min-h-11 px-2 text-[1.0625rem]",
-              destructive ? "text-status-fail" : "font-semibold text-link",
-            )}
-          >
-            {confirmLabel}
-          </button>
+        ) : null}
+        <div className="mt-6 flex flex-col-reverse gap-2.5 sm:flex-row sm:flex-wrap sm:justify-end">
+          {children}
         </div>
       </div>
     </div>,
     document.body,
+  );
+}
+
+function ConfirmDialog({
+  title,
+  message,
+  confirmLabel,
+  cancelLabel = "Cancel",
+  destructive,
+  onDone,
+}: ConfirmOptions & { onDone: (ok: boolean) => void }) {
+  const confirmRef = useRef<HTMLButtonElement>(null);
+  const cancelRef = useRef<HTMLButtonElement>(null);
+  const dismiss = useCallback(() => onDone(false), [onDone]);
+  return (
+    <DialogFrame
+      title={title}
+      message={message}
+      onDismiss={dismiss}
+      // A destructive action is never the default: the way back is.
+      initialFocus={destructive ? cancelRef : confirmRef}
+    >
+      <button
+        ref={cancelRef}
+        type="button"
+        onClick={dismiss}
+        className={buttonClass("quiet", cx("w-full sm:w-auto", PLAIN))}
+      >
+        {cancelLabel}
+      </button>
+      <button
+        ref={confirmRef}
+        type="button"
+        onClick={() => onDone(true)}
+        className={
+          destructive
+            ? buttonClass("quiet", cx("w-full sm:w-auto", FILLED_RED))
+            : buttonClass("primary", "w-full sm:w-auto")
+        }
+      >
+        {confirmLabel}
+      </button>
+    </DialogFrame>
   );
 }
 
@@ -420,8 +381,8 @@ export interface ChoiceOptions<K extends string> {
 }
 
 /**
- * An iOS action sheet with several choices and Cancel (action-sheets.md): resolves with the
- * chosen key, or null for Cancel, Escape, or a tap outside. Use:
+ * A dialog with several choices and Cancel: resolves with the chosen key, or null for Cancel,
+ * Escape, or a tap outside. Use:
  *   const [choose, chooseSheet] = useChoice<"plan" | "visit">();
  *   const pick = await choose({ title, choices: [...] });
  *   ... render {chooseSheet} somewhere in the component.
@@ -453,66 +414,39 @@ function ChoiceSheet<K extends string>({
   choices,
   onDone,
 }: ChoiceOptions<K> & { onDone: (k: K | null) => void }) {
-  const titleId = useId();
   const first = useRef<HTMLButtonElement>(null);
-  useEffect(() => {
-    const before = document.activeElement as HTMLElement | null;
-    first.current?.focus();
-    const onKey = (e: KeyboardEvent) => {
-      if (e.key === "Escape") onDone(null);
-    };
-    document.addEventListener("keydown", onKey);
-    return () => {
-      document.removeEventListener("keydown", onKey);
-      before?.focus?.();
-    };
-  }, [onDone]);
-  if (typeof document === "undefined") return null;
-  return createPortal(
-    <div className="fixed inset-0 z-50 flex items-end justify-center p-2 pb-[max(0.5rem,env(safe-area-inset-bottom))] sm:items-center">
-      <div
-        aria-hidden="true"
-        className="absolute inset-0 bg-black/40"
-        onClick={() => onDone(null)}
-      />
-      <div
-        role="alertdialog"
-        aria-modal="true"
-        aria-labelledby={titleId}
-        data-testid="choice-sheet"
-        className="relative w-full max-w-md space-y-2 motion-safe:animate-[sheet-up_0.25s_cubic-bezier(0.32,0.72,0,1)]"
+  const dismiss = useCallback(() => onDone(null), [onDone]);
+  return (
+    <DialogFrame
+      title={title}
+      message={message}
+      onDismiss={dismiss}
+      initialFocus={first}
+      testId="choice-sheet"
+    >
+      <button
+        type="button"
+        onClick={dismiss}
+        className={buttonClass("quiet", cx("w-full sm:order-last sm:w-auto", PLAIN))}
       >
-        <div className="glass-sheet overflow-hidden rounded-[0.875rem] text-center">
-          <div className="px-4 py-3">
-            <p id={titleId} className="text-[0.8125rem] font-semibold text-text-muted">
-              {title}
-            </p>
-            {message ? <p className="mt-1 text-[0.8125rem] text-text-muted">{message}</p> : null}
-          </div>
-          {choices.map((c, i) => (
-            <button
-              key={c.key}
-              ref={i === 0 ? first : undefined}
-              type="button"
-              onClick={() => onDone(c.key)}
-              className={cx(
-                "block min-h-14 w-full border-t-[0.5px] border-separator text-[1.25rem]",
-                c.destructive ? "text-status-fail" : "text-link",
-              )}
-            >
-              {c.label}
-            </button>
-          ))}
-        </div>
-        <button
-          type="button"
-          onClick={() => onDone(null)}
-          className="glass-sheet block min-h-14 w-full rounded-[0.875rem] text-[1.25rem] font-semibold text-link"
-        >
-          Cancel
-        </button>
+        Cancel
+      </button>
+      <div className="flex w-full flex-col gap-2.5">
+        {choices.map((c, i) => (
+          <button
+            key={c.key}
+            ref={i === 0 ? first : undefined}
+            type="button"
+            onClick={() => onDone(c.key)}
+            className={buttonClass(
+              c.destructive ? "quiet" : "secondary",
+              cx("w-full", c.destructive && TINTED_RED),
+            )}
+          >
+            {c.label}
+          </button>
+        ))}
       </div>
-    </div>,
-    document.body,
+    </DialogFrame>
   );
 }

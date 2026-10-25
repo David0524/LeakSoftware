@@ -2,6 +2,10 @@
 
 Newest first. Each entry: date, decision, reason.
 
+## 2026-10-25 (owner: "I don't like how the popup on web mimics Apple"; picked option A for every pop-up)
+- **The website's pop-ups are its own style, not Apple's** (changes the 2026-10-16 "website feels like iOS" rule for pop-ups only): every confirmation and choice (Discard changes?, Delete, Send, Move visits) is a white card with the title and message on the left and pill buttons at the bottom right; the way back is a gray pill, a destructive action filled red, any other action filled blue, and choices are tinted pills above Cancel. Centered on wider screens; on phones it rises from the bottom with full-width buttons, the action on top. One component (`DialogFrame` in `apps/web/src/components/sheet.tsx`). The iPhone and Android apps keep their system alerts and action sheets; sheets, menus and the rest of the website stay as they are.
+- **Sign-in, sign-up and password forms never ask "Discard changes?"** (`data-no-discard`): they aren't edits, and tapping Forgot Password asked.
+
 ## 2026-10-24 (owner: added chemicals, charging for them, monthly visit reports; "Go with your recommendations")
 Design: `docs/design/2026-10-24-chemicals-added.md` (approved with every recommendation). On all four platforms.
 - **A visit's Chemicals is one row per reading**: Reading, Aim For, Suggested (from the calculator, numbered in the order to add), and Added. Tapping a suggestion's circle adds it as suggested; its text opens the Added Chemical sheet (another chemical, the amount with − and +, Customer Supplied, a note, Remove). **Mark All Added** adds every open suggestion. **Also Added** lists chemicals added on their own, with **Add Chemical** (a sheet: the shop's chemicals with search, then the amount). Water balance, the products the suggestions use, and Notes follow.
