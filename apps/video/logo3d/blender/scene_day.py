@@ -586,9 +586,10 @@ sn.links.new(sspec.outputs["Result"], sb.inputs["Specular IOR Level"])
 # horizon, twinkling on the clip's period (drawn, since a real sun this high glints below the
 # pool's edge, out of sight).
 # Points fixed in the view direction from the pool (about 0.14 degrees apart, a few pixels), only
-# one cell in six lit, each a sub-pixel point. Each flashes on its own phase, nine times per loop,
-# brief and bright (a sine to the 8th power): a smooth twinkle that loops, never a new random
-# field each frame.
+# one cell in seven lit, each a sub-pixel point, and only in a soft-edged glitter path on the
+# sun's side (owner: too many, spread evenly, "way too fast and frequent"). Each flashes on its
+# own phase three times per loop, fading slowly in and out (a sine to the 4th power, lit about a
+# quarter of the time): a slow, sparse twinkle that loops, never a new random field each frame.
 gview = sn.nodes.new("ShaderNodeVectorMath")
 gview.operation = "NORMALIZE"
 sn.links.new(sgeo.outputs["Position"], gview.inputs[0])
@@ -605,11 +606,11 @@ sn.links.new(gv.outputs["Distance"], gpt.inputs["Value"])
 grnd = sn.nodes.new("ShaderNodeSeparateColor")  # per point: which are lit, and their phase
 sn.links.new(gv.outputs["Color"], grnd.inputs[0])
 glit = sn.nodes.new("ShaderNodeMapRange")
-glit.inputs["From Min"].default_value = 0.83
-glit.inputs["From Max"].default_value = 0.85
+glit.inputs["From Min"].default_value = 0.855
+glit.inputs["From Max"].default_value = 0.87
 sn.links.new(grnd.outputs[0], glit.inputs["Value"])
 gclock = sn.nodes.new("ShaderNodeValue")
-gclock.outputs[0].driver_add("default_value").driver.expression = f"{T}*2*pi*9"
+gclock.outputs[0].driver_add("default_value").driver.expression = f"{T}*2*pi*3"
 gph = sn.nodes.new("ShaderNodeMath")
 gph.operation = "MULTIPLY_ADD"
 gph.inputs[1].default_value = 2 * math.pi
@@ -624,7 +625,7 @@ gpos.inputs[1].default_value = 0.0
 sn.links.new(gsin.outputs[0], gpos.inputs[0])
 gflash = sn.nodes.new("ShaderNodeMath")
 gflash.operation = "POWER"
-gflash.inputs[1].default_value = 8.0
+gflash.inputs[1].default_value = 4.0
 sn.links.new(gpos.outputs[0], gflash.inputs[0])
 gdir = sn.nodes.new("ShaderNodeVectorMath")
 gdir.operation = "NORMALIZE"
@@ -633,10 +634,13 @@ gsun = sn.nodes.new("ShaderNodeVectorMath")
 gsun.operation = "DOT_PRODUCT"
 gsun.inputs[1].default_value = (math.sin(SUN_AZ), math.cos(SUN_AZ), 0.0)
 sn.links.new(gdir.outputs[0], gsun.inputs[0])
-gside = sn.nodes.new("ShaderNodeMapRange")  # more toward the sun's side
-gside.inputs["From Min"].default_value = 0.2
-gside.inputs["From Max"].default_value = 1.0
-gside.inputs["To Min"].default_value = 0.25
+# The glitter path: a band of the sea centred 20 degrees left of straight out (toward the sun,
+# which stands 55 degrees left, out of frame), fading to nothing 12 degrees either side.
+gsun.inputs[1].default_value = (math.sin(math.radians(-20)), math.cos(math.radians(-20)), 0.0)
+gside = sn.nodes.new("ShaderNodeMapRange")
+gside.interpolation_type = "SMOOTHSTEP"
+gside.inputs["From Min"].default_value = math.cos(math.radians(12))
+gside.inputs["From Max"].default_value = math.cos(math.radians(3))
 sn.links.new(gsun.outputs["Value"], gside.inputs["Value"])
 gs = sn.nodes.new("ShaderNodeMath")
 gs.operation = "MULTIPLY"
