@@ -794,14 +794,16 @@ test("Reports search, filter by type and sort as Jobs does", async ({ page }) =>
   ]);
   const names = page.getByRole("main").getByRole("listitem").locator(".font-semibold");
   if (await names.count()) {
-    // Search for the first report's customer: every row left is theirs, still sorted.
+    // Search for the first report's customer: every row left has the name in it (a search
+    // matches part of a name), still sorted.
     const name = (await names.first().innerText()).trim();
     await page.getByRole("searchbox", { name: "Search reports" }).fill(name);
     await page.getByRole("searchbox", { name: "Search reports" }).press("Enter");
     await expect(page).toHaveURL(/q=/);
     await expect(page).toHaveURL(/sort=customer/);
-    await expect(names.first()).toHaveText(name);
-    for (const n of await names.allInnerTexts()) expect(n.trim()).toBe(name);
+    await expect(names.first()).toContainText(name);
+    for (const n of await names.allInnerTexts())
+      expect(n.toLowerCase()).toContain(name.toLowerCase());
   }
   await page.getByLabel("Type").selectOption({ index: 1 });
   await expect(page).toHaveURL(/type=/);
