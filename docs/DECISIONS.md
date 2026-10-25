@@ -2,6 +2,9 @@
 
 Newest first. Each entry: date, decision, reason.
 
+## 2026-10-25 (owner: "Go on the render"; then "a second render ... exactly the same just at twilight so we get those orange/blue vibes")
+- **3D clip full render started** (day, c37d3fb scene, 1080p/96 samples), and **a twilight version** of the same clip: `scene_day.py --time twilight` (sun low off-frame left, orange horizon, deep blue overhead, orange-lit clouds, gold glitter, warm/cool edge lights), rendered by `logo-3d.yml` with time "twilight" into artifact `logo-3d-twilight`. Neither goes live until the owner picks and approves a finished clip.
+
 ## 2026-10-25 (owner: chemicals card keyboard and lag; Require a Photo; price book)
 - **Chemicals card typing**: readings save one second after typing stops, at once when a field is left, and when the screen is left; nothing is written per keystroke. Number pads get a Done (iPhone: the app's Previous/Next/Done bar; Android: Next and Done keys; web: Enter is Done), and scrolling puts the keyboard away.
 - **Require a Photo** (Settings › Report Templates › Visit reports; off by default; `company.settings.require_report_photo`): a visit's report can't be sent until the visit has a photo ("Add a photo to send this report", with Add Photo). Automatic sends wait and go once a photo is added; the monthly report with the invoice is never held up. Enforced in `send_visit_report` and `visit_reports_due` (`20261022003200_report_photo.sql`). Separate from Team › "Take a pool photo first", which covers Complete Job and Wrap-Up reports.
