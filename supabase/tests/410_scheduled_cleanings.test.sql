@@ -156,8 +156,9 @@ select results_eq($$ select l.description, l.unit_price_cents from invoice_line_
   'a line for the plan''s month and one for the filter cleaning');
 
 -- A visit priced only by its cleaning is still billed.
-select is((select count(*)::int from app.unbilled_visits((select ca from ids))), 0,
-  'nothing left to bill');
+-- That month only: in a month's last week, next week's visit falls in the next month.
+select is((select count(*)::int from app.unbilled_visits((select ca from ids), (select today from ids))), 0,
+  'nothing left to bill for the month');
 update job set fee_cents = 0, billed_invoice_id = null where service_plan_id = (select id from plan)
   and plan_date = (select today from ids) and deleted_at is null;
 delete from invoice_line_item where invoice_id in (select id from invoice
