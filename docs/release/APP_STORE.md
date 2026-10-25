@@ -364,6 +364,7 @@ view.
 | 5 | `05-quote.png` | The repair quote, lines added from the findings (`lv-quote`) | Quote the Repair From the Findings | Prices come from your own price book. |
 | 6 | `06-messages.png` | Texting Rebecca from the shop's number (`10-messages`) | Text Customers From the Shop Number | One business line for the whole team. |
 | 7 | `07-pool-visit.png` | A pool service visit: chemical, regular cleanings, checklist (`lv-cleanings`) | Pool Service Visits, Too | Readings, cleanings and a checklist. |
+| 8 | `08-route-map.png` | Schedule › Day with the route map, a real iPhone screenshot from the owner (2026-10-25; `--phone`, `schedule-day.png`). Upload it second, after Today | Every Route on a Map | Optimize puts the stops in the shortest order. |
 
 Captions say what the app does, plainly: no buying, subscribing, trials or prices anywhere in
 them (guideline 3.1.3, section 7). Title Case for headlines, sentence case for the line under.

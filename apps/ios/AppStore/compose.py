@@ -71,6 +71,15 @@ SHOTS = [
         "sources": [("store", "10-messages.png")],
     },
     {
+        # A real iPhone screenshot from the owner (2026-10-25): the live map can't be drawn off
+        # screen. Shared through chat it lost its status bar, so it gets the store shots' bar.
+        "name": "08-route-map",
+        "title": "Every Route on a Map",
+        "subtitle": "Optimize puts the stops in the shortest order.",
+        "sources": [("phone", "schedule-day.png")],
+        "pad_top": True,
+    },
+    {
         "name": "07-pool-visit",
         "title": "Pool Service Visits, Too",
         "subtitle": "Readings, cleanings and a checklist.",
@@ -141,14 +150,23 @@ def has_status_bar(image: Image.Image) -> bool:
     return ImageStat.Stat(top).extrema[0][0] < 100
 
 
-def prepare(path: Path, bar: Image.Image | None) -> Image.Image:
+def prepare(path: Path, bar: Image.Image | None, pad_top: bool = False) -> Image.Image:
     image = flat(path)
+    padded_bar = False
+    if pad_top:
+        # A screenshot cut just below the status bar: put the bar back above it (62 pt on a
+        # 6.9" iPhone). Its own content would read as a status bar to has_status_bar.
+        band = round(image.width / 440 * 62)
+        padded = Image.new("RGB", (image.width, image.height + band), image.getpixel((2, 2)))
+        padded.paste(image, (0, band))
+        image = padded
+        padded_bar = bar is not None
     if image.width == WIDTH:
         image = trim_gap(image)
     tall = round(image.width * HEIGHT / WIDTH)
     screen = Image.new("RGB", (image.width, tall), image.getpixel((2, min(image.height, tall) - 2)))
     screen.paste(image.crop((0, 0, image.width, min(image.height, tall))), (0, 0))
-    if bar is not None and not has_status_bar(screen):
+    if bar is not None and (padded_bar or not has_status_bar(screen)):
         glyphs = bar.resize((screen.width, round(bar.height * screen.width / bar.width)), Image.LANCZOS)
         screen.paste(glyphs, (0, 0), glyphs)
     return screen.resize((SCREEN_W, SCREEN_H), Image.LANCZOS)
@@ -181,10 +199,11 @@ def main() -> None:
     parser.add_argument("--store", type=Path)
     parser.add_argument("--film", type=Path)
     parser.add_argument("--ci", type=Path)
+    parser.add_argument("--phone", type=Path, help="real iPhone screenshots (schedule-day.png)")
     parser.add_argument("--out", type=Path, default=ROOT / "video-delivery/app-store-screenshots/final")
     parser.add_argument("--only", help="build only the shots whose name contains this")
     args = parser.parse_args()
-    folders = {"store": args.store, "film": args.film, "ci": args.ci}
+    folders = {"store": args.store, "film": args.film, "ci": args.ci, "phone": args.phone}
     args.out.mkdir(parents=True, exist_ok=True)
     scratch = tempfile.TemporaryDirectory()
     screens = Path(scratch.name)
@@ -200,7 +219,7 @@ def main() -> None:
             sys.exit(f"{shot['name']}: none of {shot['sources']} found")
         print(f"{shot['name']} <- {source}")
         screen = screens / f"{shot['name']}.png"
-        prepare(source, bar).save(screen)
+        prepare(source, bar, shot.get("pad_top", False)).save(screen)
         manifest.append(
             {
                 "title": shot["title"],
