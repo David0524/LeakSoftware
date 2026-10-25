@@ -129,8 +129,11 @@
             .scrollPosition($position)
             .onScrollGeometryChange(for: Edges.self) { geo in
                 // Offsets start at minus the leading inset, so "at start" is the offset at or left of zero.
+                // "More" needs a chip hidden by over 4 pt, past the row's 16 pt end margin: with only the
+                // margin out of view, Schedule's row faded a chip that fits (CI screenshots, 2026-10-25).
                 Edges(
-                    more: geo.contentSize.width - (geo.contentOffset.x + geo.containerSize.width) > 4,
+                    more: geo.contentSize.width - (geo.contentOffset.x + geo.containerSize.width)
+                        > CGFloat(Spacing.pageMargin) + 4,
                     atStart: geo.contentOffset.x <= 0)
             } action: { _, new in
                 edges = new

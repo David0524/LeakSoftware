@@ -26,8 +26,11 @@ export function PillRow({
   useEffect(() => {
     const el = ref.current;
     if (!el) return;
+    // Only a pill hidden by over 4 px counts, past the row's 16 px end padding: with just the
+    // padding out of view, a row whose pills fit would fade its last one.
+    const hidden = () => el.scrollWidth - el.clientWidth - el.scrollLeft;
     const check = () => {
-      const more = el.scrollWidth - el.clientWidth - el.scrollLeft > 4;
+      const more = hidden() > 20;
       el.toggleAttribute("data-more", more);
     };
     const watch = new ResizeObserver(check);
@@ -40,7 +43,7 @@ export function PillRow({
       seen = sessionStorage.getItem(NUDGED) === "1";
     } catch {}
     // Only a row that scrolls, at its start, and only once it's on screen.
-    const nudge = !still && !seen && el.scrollWidth > el.clientWidth + 4 && el.scrollLeft === 0;
+    const nudge = !still && !seen && hidden() > 20 && el.scrollLeft === 0;
     if (nudge) {
       try {
         sessionStorage.setItem(NUDGED, "1");

@@ -737,8 +737,10 @@ export function FilterPills<V extends string>({
   const offset = useRef(0);
   // Chips past the trailing edge (owner, 2026-10-25: "The names being scrollable here isn't
   // really intuitive since they fit perfectly"): the end fades out, as on the website's PillRow.
-  const overflows = width > 0 && content > width + 4;
-  const more = overflows && content - width - x > 4;
+  // Only a chip hidden by over 4 pt counts, past the row's end padding: with just the padding out
+  // of view a row whose chips fit faded its last one (seen on the iPhone, 2026-10-25).
+  const overflows = width > 0 && content > width + gutter + 4;
+  const more = overflows && content - width - x > gutter + 4;
 
   // The first overflowing row in an app run slides a little way and back (owner, 2026-10-25).
   useEffect(() => {
