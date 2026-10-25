@@ -59,12 +59,12 @@ on light blue); App Review fixes (`/in-app/*` pages without the menu, setup word
    - v2 fixes are in (2-second face-on hold, smooth logo, soft streak, lighter palms, glints no
      longer re-randomise). Owner then said the sea sparkles are too many, too fast and too
      frequent: commit c37d3fb starts glints in a band under the sun, about a third as many,
-     each flashing 2–3 times per loop. **Not yet verified.**
-   - Before any full render: run a full-loop temporal diff (every frame at low resolution plus
-     frame 361 for the seam), render frame 1 and a mid-turn frame at 1080p/96 samples with a
-     sea crop at 100%, make a low-res motion preview, and show the owner. Render only on the
-     owner's go; nothing goes live until the owner approves the finished clip; a sound version
-     comes after.
+     each flashing 3 times per loop (band centred 20° left; the sun itself is off-frame left).
+   - **c37d3fb is verified** (2026-10-25): full-loop temporal diff matches v2 with no added
+     motion, the seam is exact (0.023 mean), and frames 1 and 120 at 1080p/96 samples look
+     right. The owner has the v3 preview; **waiting on the owner's go for the full render.**
+     For any later scene change, repeat those checks and show a preview first. Nothing goes
+     live until the owner approves the finished clip; a sound version comes after.
    - Licensed music is never committed (public repo).
 2. **Owner tasks** (no action until they say): Stripe real test payment; Supabase Pro; Android
    on Google Play after the D-U-N-S number (`docs/play-store/README.md`); the rest of
