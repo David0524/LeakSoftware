@@ -236,7 +236,9 @@
                 minSegmentWidth: 112
             )
             .padding(.horizontal, 16)
-            SyncBarRow().padding(.horizontal, 16)
+            // Only while something waits to send, as on Today: an empty row doubled the space
+            // between Jobs | Reports and the filters (owner, 2026-10-25: "too much white space").
+            if syncBarMessage(sync.barStatus) != nil { SyncBarRow().padding(.horizontal, 16) }
             if mode == .jobs {
                 FilterPills(selection: $filter, options: JobFilter.allCases, label: \.title)
                 jobsList.padding(.horizontal, 16)
