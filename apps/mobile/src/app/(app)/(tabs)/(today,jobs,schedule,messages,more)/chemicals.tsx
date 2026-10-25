@@ -1,7 +1,13 @@
 import { useLocalSearchParams } from "expo-router";
 import { useState } from "react";
 import { Pressable, StyleSheet, Text, View } from "react-native";
-import { formatAddress, formatSchedule, readingSummary, type Property } from "@leakbook/core";
+import {
+  formatAddress,
+  formatSchedule,
+  monthlyUsage,
+  readingSummary,
+  type Property,
+} from "@leakbook/core";
 import { useTabBarTop } from "../../../../features/messages/Composer";
 import {
   Doses,
@@ -10,7 +16,7 @@ import {
   SubmitReadings,
   useChemCalculator,
 } from "../../../../features/chemicals/Calculator";
-import { useChemicalLog } from "../../../../data/chemicals";
+import { useChemicalLog, usePoolAdditions } from "../../../../data/chemicals";
 import { useRow } from "../../../../data/hooks";
 import { useTeam } from "../../../../data/schedule";
 import { getServices } from "../../../../lib/services";
@@ -23,10 +29,10 @@ import { color, face, MAX_TEXT_SCALE, minTap, space, tabular, type } from "../..
 
 // The pool chemical calculator's own screen (spec 5.11; owner, 2026-10-16), from More and a
 // customer's pool: readings fill the screen; What to Add is a glass bar floating above the tab
-// bar that opens a sheet. A visit's Checklist opens the calculator in place instead
-// (features/chemicals/Calculator.tsx, owner 2026-10-19). Opened for a pool, its gallons fill
-// in, Submit saves the readings to the pool's chemical log (synced, so it works offline), and
-// the log shows below, as on the website.
+// bar that opens a sheet. A visit's Checklist has its own Chemicals in place instead
+// (features/chemicals/VisitChemicals.tsx, owner 2026-10-24). Opened for a pool, its gallons
+// fill in, Submit saves the readings to the pool's chemical log (synced, so it works offline),
+// and the log shows below with what was added each month, as on the website.
 
 export default function Chemicals() {
   // Opened for a pool (a visit's or a customer's Chemical), its gallons fill in.
@@ -40,6 +46,8 @@ export default function Chemicals() {
     .filter((r) => pool && r.property_id === pool.id)
     .slice(0, 12);
   const team = useTeam(company.id);
+  // What the pool took each month (owner, 2026-10-24), from what techs added on visits.
+  const months = monthlyUsage(usePoolAdditions(company.id, pool?.id ?? ""), company.timezone);
   const [sheet, setSheet] = useState(false);
   const barTop = useTabBarTop();
 
@@ -79,6 +87,15 @@ export default function Chemicals() {
             </View>
           )}
         </Card>
+        {pool && months.length ? (
+          <Section title="Chemicals added" footer="Added on visits, by month.">
+            <Group>
+              {months.map((m) => (
+                <ListRow key={m.month} title={m.label} subtitle={m.line} />
+              ))}
+            </Group>
+          </Section>
+        ) : null}
         {pool ? (
           <Section title="Chemical log" footer="One entry for each Submit, newest first.">
             <Group>

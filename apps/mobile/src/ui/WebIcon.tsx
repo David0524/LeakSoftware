@@ -78,6 +78,7 @@ const SHAPES = {
   share: { line: "M12 3v12M8 7l4-4 4 4M5 12v7a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-7" },
   updown: { line: "M8 9l4-4 4 4M8 15l4 4 4-4" },
   plus: { line: "M12 5v14M5 12h14" },
+  minus: { line: "M5 12h14" },
   compose: { line: "M12 20h9M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z" },
   back: { line: "M15 4l-8 8 8 8" },
   forward: { line: "M9 4l8 8-8 8" },

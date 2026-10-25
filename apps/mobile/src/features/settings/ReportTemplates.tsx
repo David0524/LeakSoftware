@@ -2,13 +2,18 @@ import { useState } from "react";
 import { StyleSheet, View } from "react-native";
 import {
   SAVED_REPORT_SECTIONS,
-  VISIT_REPORT_MODES,
+  VISIT_REPORT_TEXT,
+  VISIT_REPORT_TIMINGS,
   offersLeak,
   offersPool,
   savedReportSections,
   visitReportMode,
+  visitReportModeFor,
+  visitReportTiming,
   type VisitReportMode,
+  type VisitReportTiming,
 } from "@leakbook/core";
+import Svg, { Path, Rect } from "react-native-svg";
 import type { JsonValue } from "@leakbook/sync";
 import { useRows } from "../../data/hooks";
 import {
@@ -36,7 +41,7 @@ import {
 import { confirmDestructive } from "../../ui/confirm";
 import { savedReportPreview } from "../report/SavedReportPicker";
 import { haptics } from "../../ui/haptics";
-import { space } from "../../ui/theme";
+import { color, space } from "../../ui/theme";
 import { useRowMenu } from "../../ui/RowMenu";
 import { EditSheet, FormActions, ManagersOnly, SettingsList, useEditSheet } from "./SettingsList";
 import { formChanged } from "../../lib/discard";
@@ -214,37 +219,121 @@ function TemplateForm({ template, onDone }: { template: Template; onDone: (m: st
 }
 
 /**
- * Visit reports for pool service visits (owner, 2026-10-20: "Include manual send and auto send.
- * Owner/admin can turn that off"): Automatic, By Hand or Off, in company.settings.visit_reports.
+ * Visit reports for pool service visits (owner, 2026-10-20 and 2026-10-24): Each Visit (with
+ * Send Automatically), Monthly with the invoice, or Off, saved as one
+ * company.settings.visit_reports value, as the website's VisitReportSetting.
  */
 function VisitReportsSetting() {
   const company = useCompany();
   const mode = visitReportMode(company.settings);
+  const timing = visitReportTiming(mode);
+  // Switching to Monthly or Off and back keeps Send Automatically as it was.
+  const [automatic, setAutomatic] = useState(mode === "auto");
+  const save = (next: VisitReportMode) => {
+    getServices().sync.write("company", company.id, company.id, {
+      settings: {
+        ...(company.settings as unknown as Record<string, JsonValue>),
+        visit_reports: next,
+      },
+    });
+    haptics.selection();
+  };
   return (
     <Section
       title="Visit reports"
       footer="A maintenance visit’s report: the water test, the checklist and cleanings, and photos, at a link for the customer."
     >
       <View style={styles.part}>
+        <T variant="bodyMedium">{VISIT_REPORT_TEXT.title}</T>
         <Segmented
-          label="Send visit reports"
-          value={mode}
-          onChange={(v: VisitReportMode) => {
-            getServices().sync.write("company", company.id, company.id, {
-              settings: {
-                ...(company.settings as unknown as Record<string, JsonValue>),
-                visit_reports: v,
-              },
-            });
-            haptics.selection();
-          }}
-          options={VISIT_REPORT_MODES.map((m) => ({ value: m.value, label: m.label }))}
+          label={VISIT_REPORT_TEXT.title}
+          value={timing}
+          onChange={(v: VisitReportTiming) => save(visitReportModeFor(v, automatic))}
+          options={VISIT_REPORT_TIMINGS.map((t) => ({ value: t.value, label: t.label }))}
         />
-        <T variant="secondary" muted>
-          {VISIT_REPORT_MODES.find((m) => m.value === mode)?.hint}
-        </T>
+        {timing === "each" ? (
+          <View>
+            <Toggle
+              label={VISIT_REPORT_TEXT.automatic}
+              value={mode === "auto"}
+              onChange={(on) => {
+                setAutomatic(on);
+                save(on ? "auto" : "manual");
+              }}
+            />
+            <T variant="secondary" muted>
+              {mode === "auto" ? VISIT_REPORT_TEXT.automaticOn : VISIT_REPORT_TEXT.automaticOff}
+            </T>
+          </View>
+        ) : timing === "monthly" ? (
+          <View style={{ gap: space["2"] }}>
+            <Group style={{ backgroundColor: color.well }} separatorInset={52}>
+              <MonthlyRow
+                icon="doc"
+                title={VISIT_REPORT_TEXT.monthlyWhat}
+                detail={VISIT_REPORT_TEXT.monthlyWhatDetail}
+              />
+              <MonthlyRow
+                icon="card"
+                title={VISIT_REPORT_TEXT.monthlyWhen}
+                detail={VISIT_REPORT_TEXT.monthlyWhenDetail}
+              />
+            </Group>
+            <T variant="secondary" muted>
+              {VISIT_REPORT_TEXT.monthlyFooter}
+            </T>
+          </View>
+        ) : (
+          <T variant="secondary" muted>
+            {VISIT_REPORT_TEXT.off}
+          </T>
+        )}
       </View>
     </Section>
+  );
+}
+
+/** One line of what Monthly does: a drawn icon, then what and when. */
+function MonthlyRow({
+  icon,
+  title,
+  detail,
+}: {
+  icon: "doc" | "card";
+  title: string;
+  detail: string;
+}) {
+  return (
+    <View style={styles.monthlyRow} accessible>
+      <Svg
+        width={24}
+        height={24}
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke={color.link}
+        strokeWidth={2}
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      >
+        {icon === "doc" ? (
+          <>
+            <Path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z" />
+            <Path d="M14 3v5h5M9 13h6M9 17h6" />
+          </>
+        ) : (
+          <>
+            <Rect x={3} y={5} width={18} height={14} rx={2} />
+            <Path d="M3 10h18" />
+          </>
+        )}
+      </Svg>
+      <View style={{ flex: 1, gap: 2 }}>
+        <T variant="bodyMedium">{title}</T>
+        <T variant="secondary" muted>
+          {detail}
+        </T>
+      </View>
+    </View>
   );
 }
 
@@ -312,4 +401,14 @@ function SavedReportForm({
   );
 }
 
-const styles = StyleSheet.create({ form: { gap: space["4"] }, part: { gap: space["2"] } });
+const styles = StyleSheet.create({
+  form: { gap: space["4"] },
+  part: { gap: space["2"] },
+  monthlyRow: {
+    flexDirection: "row",
+    alignItems: "flex-start",
+    gap: space["3"],
+    paddingHorizontal: space["4"],
+    paddingVertical: space["3"],
+  },
+});

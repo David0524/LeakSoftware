@@ -569,7 +569,9 @@ function ReportRow({
         : "Homeowner report"
       : report.template_key === "maintenance"
         ? "Visit report"
-        : "Partner report";
+        : report.template_key === "maintenance_month"
+          ? "Monthly service report"
+          : "Partner report";
   return (
     <GroupedRow
       first={first}

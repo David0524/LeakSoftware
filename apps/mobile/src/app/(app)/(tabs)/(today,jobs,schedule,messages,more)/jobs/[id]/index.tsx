@@ -109,7 +109,7 @@ import {
 } from "../../../../../../ui/theme";
 import { ChecklistTab } from "../../../../../../features/inspection/ChecklistTab";
 import { DiagramPanel } from "../../../../../../features/inspection/DiagramPanel";
-import { ChemicalInline } from "../../../../../../features/chemicals/Calculator";
+import { VisitChemicals } from "../../../../../../features/chemicals/VisitChemicals";
 import { VisitCleanings } from "../../../../../../features/maintenance/Cleanings";
 import { VisitReport } from "../../../../../../features/maintenance/VisitReport";
 import { queueAutoVisitReport } from "../../../../../../lib/visitReports";
@@ -496,9 +496,20 @@ export default function JobDetail() {
             ) : null}
             {shown === "checklist" ? (
               <View style={styles.part}>
-                {/* Chemical first, at the top of the checklist (owner, 2026-10-19), as the website. */}
+                {/* Chemicals first, at the top of the checklist (owner, 2026-10-19 and 2026-10-24),
+                    as the website: readings, what to add, and what was added. */}
                 {maintenance && property ? (
-                  <ChemicalInline pool={property} jobId={job.id} name={customer?.name ?? null} />
+                  <VisitChemicals
+                    pool={property}
+                    jobId={job.id}
+                    customerName={customer?.name ?? null}
+                    visitDay={
+                      (job as { plan_date?: string | null }).plan_date ??
+                      job.scheduled_start ??
+                      job.completed_at ??
+                      null
+                    }
+                  />
                 ) : null}
                 {/* Its filter and salt cell cleanings (owner, 2026-10-19), as the website. */}
                 {maintenance ? <VisitCleanings job={job} /> : null}

@@ -1,13 +1,5 @@
-import { useEffect, useState } from "react";
-import {
-  Animated,
-  Pressable,
-  StyleSheet,
-  Text,
-  TextInput,
-  View,
-  type TextInputProps,
-} from "react-native";
+import { useState } from "react";
+import { StyleSheet, Text, TextInput, View, type TextInputProps } from "react-native";
 import {
   ACID_PRODUCTS,
   CHLORINE_PRODUCTS,
@@ -15,8 +7,6 @@ import {
   READING_LIMITS,
   calculateChemistry,
   doseSummary,
-  formatSchedule,
-  readingSummary,
   targets,
   type AcidProduct,
   type ChemistryResult,
@@ -25,7 +15,6 @@ import {
   type ReadingKey,
   type Readings,
 } from "@leakbook/core";
-import { useChemicalLog } from "../../data/chemicals";
 import { getServices } from "../../lib/services";
 import { useCompany } from "../../state/session";
 import { Button, Notice, T } from "../../ui/components";
@@ -42,14 +31,13 @@ import {
   tint,
   type,
 } from "../../ui/theme";
-import { WebIcon } from "../../ui/WebIcon";
 import { formChanged } from "../../lib/discard";
 import { useUnsavedChanges } from "../../ui/ModalSheet";
 
 // The pool chemical calculator (spec 5.11; owner, 2026-10-16): the pool's size and today's
 // readings in, what to add out, in order. The math is packages/core/src/chemistry.ts. Used by
-// the Chemical screen (More, Customer › Pool) and, opened in place, by a visit's Checklist
-// (owner, 2026-10-19), as the website's ChemCalculator. The levels a tech aims for stay on
+// the Chemical screen (More, Customer › Pool); a visit's Checklist has its own Chemicals
+// (VisitChemicals.tsx, owner 2026-10-24), saved as you go. The levels a tech aims for stay on
 // this phone.
 
 const num = (v: string) => {
@@ -336,87 +324,6 @@ export function SubmitReadings({ calc, whose }: { calc: ChemCalculatorState; who
   );
 }
 
-/**
- * Chemical on a visit's Checklist, opened in place (owner, 2026-10-19: "There is no way back to
- * the job from the chemical page. I think it should be a dropdown rather than its own page"),
- * as the website's ChemicalDropdown. Closed, one line: the pool's last readings, or a prompt.
- * Open: Gallons, the readings, What to Add right under them, then Submit to the pool's log.
- */
-export function ChemicalInline({
-  pool,
-  jobId,
-  name,
-}: {
-  pool: Property;
-  jobId: string;
-  /** The customer's name, for "Saves these readings to Riley’s chemical log." */
-  name: string | null;
-}) {
-  const company = useCompany();
-  const [open, setOpen] = useState(false);
-  const [turn] = useState(() => new Animated.Value(0));
-  useEffect(() => {
-    Animated.timing(turn, { toValue: open ? 1 : 0, duration: 200, useNativeDriver: true }).start();
-  }, [open, turn]);
-  const latest = useChemicalLog(company.id).find((r) => r.property_id === pool.id);
-  const last = latest
-    ? `Last: ${readingSummary(latest)} · ${formatSchedule(latest.recorded_at, new Date(), company.timezone)}`
-    : null;
-  return (
-    <View style={[styles.inline, { backgroundColor: color.surface }]}>
-      <Pressable
-        accessibilityRole="button"
-        accessibilityState={{ expanded: open }}
-        accessibilityLabel={`Chemical, ${last ?? "Add today’s readings"}`}
-        onPress={() => setOpen(!open)}
-        android_ripple={{ color: color.ripple }}
-        style={styles.inlineHead}
-      >
-        <View style={{ flex: 1 }}>
-          <Text
-            style={[type.body, face.semiBold, { color: color.text }]}
-            maxFontSizeMultiplier={MAX_TEXT_SCALE}
-          >
-            Chemical
-          </Text>
-          <Text
-            numberOfLines={1}
-            style={[type.secondary, tabular, { color: color.textMuted }]}
-            maxFontSizeMultiplier={MAX_TEXT_SCALE}
-          >
-            {last ?? "Add today’s readings"}
-          </Text>
-        </View>
-        <Animated.View
-          style={{
-            transform: [
-              { rotate: turn.interpolate({ inputRange: [0, 1], outputRange: ["0deg", "180deg"] }) },
-            ],
-          }}
-        >
-          <WebIcon name="chevronDown" size={20} color={color.textMuted} strokeWidth={2.2} />
-        </Animated.View>
-      </Pressable>
-      {open ? <InlineBody pool={pool} jobId={jobId} name={name} /> : null}
-    </View>
-  );
-}
-
-function InlineBody({ pool, jobId, name }: { pool: Property; jobId: string; name: string | null }) {
-  const calc = useChemCalculator(pool, jobId);
-  return (
-    <View style={[styles.inlineBody, { borderTopColor: color.separator }]}>
-      <GallonsInput calc={calc} />
-      <ReadingsFields calc={calc} />
-      <View style={[styles.doses, { borderTopColor: color.separator }]}>
-        <T variant="cardTitle">What to Add</T>
-        {calc.ready ? <Doses result={calc.result} /> : <T muted>Add the gallons and a reading.</T>}
-      </View>
-      <SubmitReadings calc={calc} whose={`${name ?? "this pool"}’s`} />
-    </View>
-  );
-}
-
 /** The readings as pills, the steps in order, and the saturation index. */
 export function Doses({ result }: { result: ChemistryResult }) {
   return (
@@ -530,23 +437,6 @@ const styles = StyleSheet.create({
     width: 80,
     textAlign: "right",
   },
-  inline: { borderRadius: shape.grouped, overflow: "hidden" },
-  inlineHead: {
-    minHeight: 56,
-    flexDirection: "row",
-    alignItems: "center",
-    gap: space["3"],
-    paddingHorizontal: space["4"],
-    paddingVertical: space["2"],
-  },
-  inlineBody: {
-    gap: space["4"],
-    borderTopWidth: StyleSheet.hairlineWidth,
-    paddingHorizontal: space["4"],
-    paddingTop: space["4"],
-    paddingBottom: space["5"],
-  },
-  doses: { gap: space["3"], borderTopWidth: StyleSheet.hairlineWidth, paddingTop: space["4"] },
   pills: { flexDirection: "row", flexWrap: "wrap", gap: space["2"] },
   pill: { borderRadius: 999, borderWidth: 1, paddingHorizontal: 12, paddingVertical: 4 },
   step: {

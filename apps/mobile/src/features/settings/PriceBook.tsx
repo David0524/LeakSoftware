@@ -1,6 +1,18 @@
-import { useState } from "react";
+import { Fragment, useState } from "react";
 import { Text } from "react-native";
-import { companyServices, formatCents, parseDollars, type ComponentType } from "@leakbook/core";
+import {
+  CHARGE_CHEMICALS_TEXT,
+  chargeChemicalsSettings,
+  chargesChemicals,
+  companyServices,
+  formatCents,
+  localDate,
+  offersPool,
+  parseDollars,
+  type ComponentType,
+} from "@leakbook/core";
+import type { JsonValue } from "@leakbook/sync";
+import { getServices } from "../../lib/services";
 import { confirmDestructive } from "../../ui/confirm";
 import { removeConfig, saveConfig, toInt, useConfig } from "../../data/config";
 import { useCompany } from "../../state/session";
@@ -65,39 +77,51 @@ function PriceBookPage() {
         onAdd={() => sheet.open("new")}
         notice={sheet.notice}
       >
+        {/* Charge for Chemicals (owner, 2026-10-24) sits with the prices it uses, just above the
+            Chemicals group, as on the website. Only owners and admins reach this page. */}
+        {offersPool(company.settings) && !groups.has("Chemicals") ? <ChargeChemicals /> : null}
         {items.length === 0 ? <Empty>No items yet.</Empty> : null}
         {sections.map(([category, rows]) => (
-          <Section key={category} title={titled ? category || "Other items" : ""}>
-            <Group>
-              {rows.map((item) => (
-                <ListRow
-                  key={item.id}
-                  title={item.name}
-                  subtitle={item.active ? undefined : "Hidden"}
-                  onPress={() => sheet.open(item)}
-                  editMenu={{ menu, title: item.name }}
-                  // Swipe to remove; the row's sheet keeps its visible Remove button.
-                  deleteLabel="Remove Item"
-                  onDelete={() =>
-                    confirmDestructive({
-                      title: "Remove this item from the price book?",
-                      confirm: "Remove Item",
-                      onConfirm: () => removeConfig("price_book_item", company.id, item.id),
-                    })
-                  }
-                  detail={
-                    <Text
-                      style={[type.body, tabular, { color: color.textMuted }]}
-                      maxFontSizeMultiplier={MAX_TEXT_SCALE}
-                    >
-                      <Text style={{ color: color.text }}>{formatCents(item.price_cents)}</Text> /{" "}
-                      {item.unit}
-                    </Text>
-                  }
-                />
-              ))}
-            </Group>
-          </Section>
+          <Fragment key={category}>
+            {category === "Chemicals" && offersPool(company.settings) ? <ChargeChemicals /> : null}
+            <Section
+              title={
+                titled && !(category === "Chemicals" && offersPool(company.settings))
+                  ? category || "Other items"
+                  : ""
+              }
+            >
+              <Group>
+                {rows.map((item) => (
+                  <ListRow
+                    key={item.id}
+                    title={item.name}
+                    subtitle={item.active ? undefined : "Hidden"}
+                    onPress={() => sheet.open(item)}
+                    editMenu={{ menu, title: item.name }}
+                    // Swipe to remove; the row's sheet keeps its visible Remove button.
+                    deleteLabel="Remove Item"
+                    onDelete={() =>
+                      confirmDestructive({
+                        title: "Remove this item from the price book?",
+                        confirm: "Remove Item",
+                        onConfirm: () => removeConfig("price_book_item", company.id, item.id),
+                      })
+                    }
+                    detail={
+                      <Text
+                        style={[type.body, tabular, { color: color.textMuted }]}
+                        maxFontSizeMultiplier={MAX_TEXT_SCALE}
+                      >
+                        <Text style={{ color: color.text }}>{formatCents(item.price_cents)}</Text> /{" "}
+                        {item.unit}
+                      </Text>
+                    }
+                  />
+                ))}
+              </Group>
+            </Section>
+          </Fragment>
         ))}
       </SettingsList>
       {menu.element}
@@ -113,6 +137,39 @@ function PriceBookPage() {
         />
       </EditSheet>
     </>
+  );
+}
+
+/**
+ * Settings › Price Book › Charge for Chemicals: a switch that saves when flipped, through sync,
+ * with what on and off mean under it (website components/charge-chemicals.tsx). Turning it on
+ * records the month it starts, so earlier months are never billed.
+ */
+function ChargeChemicals() {
+  const company = useCompany();
+  const on = chargesChemicals(company.settings);
+  return (
+    <Section title="Chemicals" footer={on ? CHARGE_CHEMICALS_TEXT.on : CHARGE_CHEMICALS_TEXT.off}>
+      <Group>
+        <Toggle
+          inList
+          label={CHARGE_CHEMICALS_TEXT.label}
+          value={on}
+          onChange={(next) => {
+            // Already on: it keeps the month it started.
+            if (next === on) return;
+            const today = localDate(new Date(), company.timezone);
+            getServices().sync.write("company", company.id, company.id, {
+              settings: {
+                ...(company.settings as unknown as Record<string, JsonValue>),
+                ...(chargeChemicalsSettings(next, today) as Record<string, JsonValue>),
+              },
+            });
+            haptics.selection();
+          }}
+        />
+      </Group>
+    </Section>
   );
 }
 
