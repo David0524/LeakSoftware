@@ -633,7 +633,7 @@ gside.inputs["To Min"].default_value = 0.25
 sn.links.new(gsun.outputs["Value"], gside.inputs["Value"])
 gs = sn.nodes.new("ShaderNodeMath")
 gs.operation = "MULTIPLY"
-gs.inputs[1].default_value = float(A.get("glitter", 2500.0))
+gs.inputs[1].default_value = float(A.get("glitter", 1000.0))
 prev = gpt.outputs["Result"]
 for f_ in (glit.outputs["Result"], gflash.outputs[0], gside.outputs["Result"], sfar.outputs["Result"]):
     gm = sn.nodes.new("ShaderNodeMath")
@@ -750,7 +750,7 @@ bkn.links.new(bka.outputs[0], bkb.inputs["Height"])
 bkn.links.new(bkb.outputs["Normal"], bkb_.inputs["Normal"])
 
 
-def frond_mesh(name, length, seed, leaflets=46):
+def frond_mesh(name, length, seed, leaflets=90):
     """A palm frond along +X: a drooping rachis with folded, tapering leaflets on both sides,
     each a separate strip (so each takes its own shade), angled forward and hanging lower toward
     the tip, with the odd one missing."""
@@ -766,18 +766,21 @@ def frond_mesh(name, length, seed, leaflets=46):
         p = spine(t)
         q = spine(min(t + 0.02, 1.0))
         along = (q - p).normalized()
-        span = (0.95 * math.sin(math.pi * min(t * 1.15, 1.0)) ** 0.7 + 0.15) * 0.75 * rnd.uniform(0.85, 1.1)
+        span = (0.95 * math.sin(math.pi * min(t * 1.15, 1.0)) ** 0.7 + 0.15) * 0.75 * rnd.uniform(0.7, 1.15)
         for side in (-1, 1):
             if rnd.random() < 0.05:
                 continue
+            # Each leaflet hangs its own way (droop and sweep vary), so the edge of a frond breaks
+            # up as a real one does instead of reading as a comb.
             out_ = Vector((0.3 * along.x, side * 1.0, 0.0)).normalized()
-            d = (out_ + Vector((0, 0, -0.35 - 0.3 * t + rnd.uniform(-0.1, 0.1))) + along * 0.4).normalized()
+            d = (out_ + Vector((0, 0, -0.35 - 0.3 * t + rnd.uniform(-0.3, 0.3)))
+                 + along * (0.4 + rnd.uniform(-0.25, 0.25))).normalized()
             across = d.cross(Vector((0, 0, 1)))
             across = across.normalized() if across.length > 1e-6 else along
             up = across.cross(d).normalized()
             if up.z < 0:
                 up = -up
-            w0 = 0.04 + 0.022 * (1 - t)
+            w0 = 0.028 + 0.016 * (1 - t)  # narrow and close-set, so a frond reads feathery
             base = len(verts)
             us = (0.0, 0.2, 0.45, 0.7, 0.9, 1.0)
             for u in us:
@@ -885,9 +888,9 @@ palm("Palm right", (11.8, 5.4, -DEPTH), 7.7, (-4.2, 0.9), 22)
 cam_data = bpy.data.cameras.new("Camera")
 cam_data.lens = 42
 cam_data.dof.use_dof = True
-# f/2: the clouds and fronds still soft, the sea's far glints small points rather than discs of
-# bokeh (owner: "specks or snow" at f/1.2).
-cam_data.dof.aperture_fstop = float(A.get("fstop", 2.0))
+# f/2.4: the clouds and fronds still soft, the sea's far glints small points rather than discs
+# of bokeh (owner: "specks or snow" at f/1.2).
+cam_data.dof.aperture_fstop = float(A.get("fstop", 2.4))
 cam = bpy.data.objects.new("Camera", cam_data)
 scene.collection.objects.link(cam)
 scene.camera = cam
