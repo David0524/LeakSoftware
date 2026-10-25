@@ -30,10 +30,14 @@
         private var large: Bool { typeSize.isAccessibilitySize }
 
         /// Side by side at the default sizes; stacked at accessibility sizes.
-        private func rowLayout(spacing: CGFloat = 12) -> AnyLayout {
-            large
+        private func rowLayout<Content: View>(spacing: CGFloat = 12, @ViewBuilder _ content: () -> Content)
+            -> some View
+        {
+            let layout =
+                large
                 ? AnyLayout(VStackLayout(alignment: .leading, spacing: 4))
                 : AnyLayout(HStackLayout(spacing: spacing))
+            return layout { content() }
         }
 
         /// `open` starts it open (screenshots).

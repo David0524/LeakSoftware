@@ -609,7 +609,10 @@ sb.inputs["Emission Color"].default_value = (1.0, 0.93, 0.8, 1)
 sn.links.new(gs.outputs[0], sb.inputs["Emission Strength"])
 sb.inputs["Roughness"].default_value = 0.02
 stc = sn.nodes.new("ShaderNodeTexCoord")
-vec, wv = loop_vector(sn, stc.outputs["Object"], 0.4)
+# The loop's circle is in object space, before the plane's huge Scale: divide by it, or the
+# swell is redrawn almost from scratch every frame and the sea flickers (owner: "The ocean is
+# spazzing"). This way the swell drifts about 2.5 noise cells over the whole loop.
+vec, wv = loop_vector(sn, stc.outputs["Object"], 0.4 / (40000 / 30))
 swave = sn.nodes.new("ShaderNodeTexNoise")
 swave.noise_dimensions = "4D"
 swave.inputs["Scale"].default_value = 40000 / 30  # object space is the scaled plane: ~30 m swells
