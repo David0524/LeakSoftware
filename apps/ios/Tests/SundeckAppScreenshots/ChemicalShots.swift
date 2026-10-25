@@ -83,7 +83,8 @@
             }
             try await snapshot("48-visit-chemicals", height: 3000, card())
             try await snapshot("48-visit-chemicals-dark", dark: true, height: 3000, card())
-            try await snapshot("48-visit-chemicals-large-text", largeText: true, height: 5200, card())
+            // Accessibility sizes stack each row: no columns, nothing truncated or hyphenated.
+            try await snapshot("48-visit-chemicals-large-text", largeText: true, height: 8000, card())
             // On the visit's Checklist, where it lives.
             let visit = try #require(target.jobId)
             try await snapshot(
@@ -98,6 +99,12 @@
             let chlorine = try #require(added.first { $0.readingKey == .fc })
             try await snapshot(
                 "48-added-chemical-sheet", height: 1400,
+                AddedChemicalSheet(
+                    target: .edit(chlorine), items: items, charges: true, onSave: { _ in }, onRemove: { _ in }
+                )
+                .app(env))
+            try await snapshot(
+                "48-added-chemical-sheet-large-text", largeText: true, height: 2400,
                 AddedChemicalSheet(
                     target: .edit(chlorine), items: items, charges: true, onSave: { _ in }, onRemove: { _ in }
                 )

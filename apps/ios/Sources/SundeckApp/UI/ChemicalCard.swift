@@ -23,6 +23,18 @@
         @State private var picking = false
         @State private var saveError: String?
         @Environment(\.accessibilityReduceMotion) private var reduceMotion
+        @Environment(\.dynamicTypeSize) private var typeSize
+
+        /// Accessibility text sizes: rows stack (name, then each field full width with its own
+        /// label) instead of squeezing into columns, so nothing truncates or breaks mid-word.
+        private var large: Bool { typeSize.isAccessibilitySize }
+
+        /// Side by side at the default sizes; stacked at accessibility sizes.
+        private func rowLayout(spacing: CGFloat = 12) -> AnyLayout {
+            large
+                ? AnyLayout(VStackLayout(alignment: .leading, spacing: 4))
+                : AnyLayout(HStackLayout(spacing: spacing))
+        }
 
         /// `open` starts it open (screenshots).
         init(target: ChemicalTarget, open: Bool = false) {
@@ -55,7 +67,7 @@
                                 .textRole(.secondary)
                                 .monospacedDigit()
                                 .foregroundStyle(Color.textMuted)
-                                .lineLimit(1)
+                                .lineLimit(large ? nil : 1)
                         }
                         .frame(maxWidth: .infinity, alignment: .leading)
                         Image(systemName: "chevron.down")
@@ -137,9 +149,9 @@
             let unadded = openSuggestions(rows.rows)
             let recommended = form.recommended
             return VStack(alignment: .leading, spacing: 0) {
-                HStack(spacing: 12) {
+                rowLayout {
                     Text("Gallons").textRole(.bodyMedium).foregroundStyle(Color.text)
-                    Spacer(minLength: 0)
+                    if !large { Spacer(minLength: 0) }
                     HStack(spacing: 6) {
                         TextField(
                             "", text: Binding(get: { form.gallons }, set: { form.gallons = gallonsWithCommas($0) }),
@@ -152,16 +164,20 @@
                         Text("gal").textRole(.secondary).foregroundStyle(Color.textMuted).accessibilityHidden(true)
                     }
                     .fieldBox()
-                    .frame(width: 150)
+                    .frame(width: large ? nil : 150)
+                    .frame(maxWidth: large ? .infinity : nil)
                 }
                 .padding(.bottom, 12)
                 Hairline()
-                HStack(spacing: 8) {
-                    Spacer(minLength: 0)
-                    columnLabel("Reading")
-                    columnLabel("Aim For")
+                // Stacked rows label each field instead (accessibility sizes).
+                if !large {
+                    HStack(spacing: 8) {
+                        Spacer(minLength: 0)
+                        columnLabel("Reading")
+                        columnLabel("Aim For")
+                    }
+                    .padding(.top, 12)
                 }
-                .padding(.top, 12)
                 ForEach(Array(rows.rows.enumerated()), id: \.element.key) { index, row in
                     if index > 0 { Hairline() }
                     readingRow(
@@ -183,9 +199,9 @@
                     .padding(.top, 24)
                 if let lsi = result.lsi {
                     Hairline().padding(.top, 20)
-                    HStack {
+                    rowLayout(spacing: 8) {
                         Text("Water balance").textRole(.body).foregroundStyle(Color.text)
-                        Spacer(minLength: 0)
+                        if !large { Spacer(minLength: 0) }
                         (Text(verbatim: "\(lsi > 0 ? "+" : "")\(String(format: "%.1f", lsi))").bold()
                             .foregroundStyle(Color.text)
                             + Text(verbatim: " · \(result.lsiLabel ?? "")").foregroundStyle(Color.textMuted))
@@ -212,9 +228,9 @@
                 .padding(.top, 16)
                 if charges {
                     Hairline().padding(.top, 20)
-                    HStack {
+                    rowLayout(spacing: 8) {
                         Text("Chemicals today").textRole(.bodyEmphasis).foregroundStyle(Color.text)
-                        Spacer(minLength: 0)
+                        if !large { Spacer(minLength: 0) }
                         Text(verbatim: formatCents(additionsCents(added)))
                             .textRole(.bodyEmphasis)
                             .monospacedDigit()
@@ -234,6 +250,15 @@
             }
         }
 
+        /// A line's price: beside it at the default sizes, on its own line when stacked.
+        private func price(_ cents: Cents) -> some View {
+            Text(verbatim: formatCents(cents))
+                .textRole(.body)
+                .monospacedDigit()
+                .foregroundStyle(Color.textMuted)
+                .fixedSize()
+        }
+
         private func columnLabel(_ text: String) -> some View {
             Text(text)
                 .font(.role(.footnote).weight(.semibold))
@@ -249,7 +274,18 @@
                 .monospacedDigit()
                 .accessibilityLabel(label)
                 .fieldBox()
-                .frame(width: 76)
+                .frame(width: large ? nil : 76)
+                .frame(maxWidth: large ? .infinity : nil)
+        }
+
+        /// A field with its own label above it, full width (stacked rows).
+        private func labeledCell(_ title: String, _ label: String, _ text: Binding<String>, placeholder: String = "")
+            -> some View
+        {
+            VStack(alignment: .leading, spacing: 4) {
+                Text(title).textRole(.footnote).foregroundStyle(Color.textMuted).accessibilityHidden(true)
+                cell(label, text, placeholder: placeholder)
+            }
         }
 
         private func readingRow(
@@ -265,41 +301,57 @@
                 case .high?: ("High", Color.warning)
                 }
             return VStack(alignment: .leading, spacing: 10) {
-                HStack(spacing: 8) {
-                    VStack(alignment: .leading, spacing: 0) {
-                        Text(key.label).textRole(.bodyMedium).foregroundStyle(Color.text)
-                        Text(word)
-                            .font(.role(.secondary).weight(status == nil ? .regular : .semibold))
-                            .foregroundStyle(tone)
+                let reading = Binding(get: { form.readings[key] ?? "" }, set: { form.readings[key] = $0 })
+                let goal = Binding(get: { form.goals[key] ?? "" }, set: { form.goals[key] = $0 })
+                let aimLabel = "\(key.label): aim for (recommended \(levelText(recommended[key].target)))"
+                let aimPlaceholder = levelText(recommended[key].target)
+                if large {
+                    // Accessibility sizes: the name and status, then each field full width.
+                    VStack(alignment: .leading, spacing: 8) {
+                        (Text(key.label).foregroundStyle(Color.text)
+                            + Text(verbatim: " · ").foregroundStyle(Color.textMuted)
+                            + Text(word).fontWeight(status == nil ? .regular : .semibold).foregroundStyle(tone))
+                            .textRole(.bodyMedium)
+                            .accessibilityElement(children: .combine)
+                        labeledCell("Reading", "\(key.label) reading", reading)
+                        labeledCell("Aim For", aimLabel, goal, placeholder: aimPlaceholder)
                     }
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                    .accessibilityElement(children: .combine)
-                    cell(
-                        "\(key.label) reading",
-                        Binding(get: { form.readings[key] ?? "" }, set: { form.readings[key] = $0 }))
-                    cell(
-                        "\(key.label): aim for (recommended \(levelText(recommended[key].target)))",
-                        Binding(get: { form.goals[key] ?? "" }, set: { form.goals[key] = $0 }),
-                        placeholder: levelText(recommended[key].target))
+                } else {
+                    HStack(spacing: 8) {
+                        VStack(alignment: .leading, spacing: 0) {
+                            Text(key.label).textRole(.bodyMedium).foregroundStyle(Color.text)
+                            Text(word)
+                                .font(.role(.secondary).weight(status == nil ? .regular : .semibold))
+                                .foregroundStyle(tone)
+                        }
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .accessibilityElement(children: .combine)
+                        cell("\(key.label) reading", reading)
+                        cell(aimLabel, goal, placeholder: aimPlaceholder)
+                    }
                 }
                 if row.step != nil || !row.added.isEmpty {
                     VStack(alignment: .leading, spacing: 0) {
                         if let step = row.step {
-                            HStack(spacing: 8) {
-                                if let order = row.order {
-                                    Text(verbatim: "\(order)")
-                                        .font(.system(size: 12, weight: .bold))
-                                        .foregroundStyle(Color.onPrimary)
-                                        .frame(width: 20, height: 20)
-                                        .background(Circle().fill(Color.brandPrimary))
-                                        .accessibilityLabel("Step \(order)")
+                            // Accessibility sizes: "Suggested" above the amount, full width.
+                            rowLayout(spacing: 8) {
+                                HStack(spacing: 8) {
+                                    if let order = row.order {
+                                        Text(verbatim: "\(order)")
+                                            .font(.system(size: 12, weight: .bold))
+                                            .foregroundStyle(Color.onPrimary)
+                                            .frame(width: 20, height: 20)
+                                            .background(Circle().fill(Color.brandPrimary))
+                                            .accessibilityLabel("Step \(order)")
+                                    }
+                                    Text("Suggested").textRole(.secondary).foregroundStyle(Color.textMuted)
+                                        .fixedSize()
                                 }
-                                Text("Suggested").textRole(.secondary).foregroundStyle(Color.textMuted)
-                                Spacer(minLength: 8)
+                                if !large { Spacer(minLength: 8) }
                                 Text(suggestionText(step))
                                     .font(.role(.secondary).weight(.medium))
                                     .foregroundStyle(Color.text)
-                                    .multilineTextAlignment(.trailing)
+                                    .multilineTextAlignment(large ? .leading : .trailing)
                             }
                             .accessibilityElement(children: .combine)
                             if key == .ph, step.note != nil {
@@ -346,14 +398,10 @@
                                 .font(.role(.footnote).weight(.semibold))
                                 .foregroundStyle(Color.pass)
                             Text(additionLabel(a)).textRole(.bodyEmphasis).foregroundStyle(Color.text)
+                            if large && charges && !a.customerSupplied { price(lineTotal(a)) }
                         }
                         .frame(maxWidth: .infinity, alignment: .leading)
-                        if charges && !a.customerSupplied {
-                            Text(verbatim: formatCents(lineTotal(a)))
-                                .textRole(.body)
-                                .monospacedDigit()
-                                .foregroundStyle(Color.textMuted)
-                        }
+                        if !large && charges && !a.customerSupplied { price(lineTotal(a)) }
                         Chevron()
                     }
                     .frame(minHeight: 48)
@@ -381,14 +429,10 @@
                         VStack(alignment: .leading, spacing: 0) {
                             Text("Not added yet").textRole(.footnote).foregroundStyle(Color.textMuted)
                             Text(additionLabel(s)).textRole(.body).foregroundStyle(Color.textMuted)
+                            if large && charges { price(lineTotal(s)) }
                         }
                         .frame(maxWidth: .infinity, alignment: .leading)
-                        if charges {
-                            Text(verbatim: formatCents(lineTotal(s)))
-                                .textRole(.body)
-                                .monospacedDigit()
-                                .foregroundStyle(Color.textMuted)
-                        }
+                        if !large && charges { price(lineTotal(s)) }
                         Chevron()
                     }
                     .frame(minHeight: 48)
@@ -416,14 +460,10 @@
                                     if !detail.isEmpty {
                                         Text(detail).textRole(.secondary).foregroundStyle(Color.textMuted)
                                     }
+                                    if large && charges && !a.customerSupplied { price(lineTotal(a)) }
                                 }
                                 .frame(maxWidth: .infinity, alignment: .leading)
-                                if charges && !a.customerSupplied {
-                                    Text(verbatim: formatCents(lineTotal(a)))
-                                        .textRole(.body)
-                                        .monospacedDigit()
-                                        .foregroundStyle(Color.textMuted)
-                                }
+                                if !large && charges && !a.customerSupplied { price(lineTotal(a)) }
                                 Chevron()
                             }
                             .padding(.horizontal, 16)
@@ -548,9 +588,15 @@
     struct ChemicalAmountRow: View {
         @Binding var text: String
         var unit: String
+        @Environment(\.dynamicTypeSize) private var typeSize
 
         var body: some View {
-            HStack(spacing: 12) {
+            let large = typeSize.isAccessibilitySize
+            // Accessibility sizes: the field full width, the stepper under it.
+            let layout =
+                large
+                ? AnyLayout(VStackLayout(alignment: .leading, spacing: 8)) : AnyLayout(HStackLayout(spacing: 12))
+            layout {
                 HStack(spacing: 6) {
                     TextField("", text: $text)
                         .keyboardType(.decimalPad)
@@ -560,8 +606,9 @@
                     Text(unit).textRole(.secondary).foregroundStyle(Color.textMuted).accessibilityHidden(true)
                 }
                 .fieldBox()
-                .frame(width: 130)
-                Spacer(minLength: 0)
+                .frame(width: large ? nil : 130)
+                .frame(maxWidth: large ? .infinity : nil)
+                if !large { Spacer(minLength: 0) }
                 Stepper(
                     "Amount",
                     onIncrement: { step(1) },
@@ -715,17 +762,23 @@
     /// An added chemical's note: one line, at most 200 characters (the server's limit).
     struct ChemicalNoteRow: View {
         @Binding var note: String
+        @Environment(\.dynamicTypeSize) private var typeSize
 
         var body: some View {
-            HStack(spacing: 12) {
+            let large = typeSize.isAccessibilitySize
+            let layout =
+                large
+                ? AnyLayout(VStackLayout(alignment: .leading, spacing: 4)) : AnyLayout(HStackLayout(spacing: 12))
+            layout {
                 Text("Note").textRole(.body).foregroundStyle(Color.text)
                 TextField("", text: $note, prompt: Text("Optional").foregroundStyle(Color.placeholder))
-                    .multilineTextAlignment(.trailing)
+                    .multilineTextAlignment(large ? .leading : .trailing)
                     .foregroundStyle(Color.textMuted)
                     .accessibilityLabel("Note")
                     .onChange(of: note) { _, now in if now.count > 200 { note = String(now.prefix(200)) } }
             }
             .padding(.horizontal, CGFloat(Spacing.rowHorizontal))
+            .padding(.vertical, large ? 8 : 0)
             .frame(minHeight: minTarget)
         }
     }
