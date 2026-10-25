@@ -1,70 +1,79 @@
-# Session handoff (2026-10-13)
+# Session handoff (2026-10-25)
 
-Branch `claude/cool-keller-efjc00`. Read `CLAUDE.md`, `docs/BUILD_PLAN.md`, and `docs/DECISIONS.md` first.
+For a new Claude Code session picking up from the long launch-prep session (2026-10-11 to
+2026-10-25). Read `CLAUDE.md` first, then `docs/DECISIONS.md` (newest first), then this file.
+`docs/OWNER_TODO.md` lists what only the owner can do.
+
+## How work ships (as practiced; CLAUDE.md has the rules)
+
+- Work on the session branch, then fast-forward the default branch `claude/cool-keller-efjc00`
+  to it once the website's CI jobs are green; that deploys sundeckpro.com (Vercel).
+- Migrations: name after the latest prefix on the default branch (latest:
+  `20261022003200_report_photo.sql`, deployed), check
+  `supabase_migrations.schema_migrations` on the dev project, then deploy from a clean worktree
+  of the pushed commit: `git worktree add <tmp> <sha> && cd <tmp> && NODE_USE_ENV_PROXY=1 node
+  scripts/deploy-db.mjs`, before merging.
+- CI status without `gh`: the repo is public, so
+  `https://api.github.com/repos/David0524/LeakSoftware/actions/runs?head_sha=<sha>` works with
+  plain curl. Artifacts and dispatch go through the GitHub MCP tools.
+- iPhone: start `testflight.yml` on the pushed branch together with CI. Look at CI's
+  `iphone-screenshots` artifact before telling the owner a build is ready.
+- Run helpers (subagents) on Sonnet for routine work (screenshots, checks, small changes) and
+  keep Opus for hard problems; keep few running at once (owner is cost-aware, 2026-10-25).
 
 ## Where things stand
 
-| Milestone | State |
-|---|---|
-| M0–M6 | Done; owner accepted M5 and M6 without hands-on testing. |
-| M7 Reports | Done and deployed to the dev project. Email and AI wait for the owner's keys (`docs/testing/M7-checklist.md`). |
-| Website light/dark switch | Done (Auto / Light / Dark). |
-| M8 Quotes and deposits | Done. CI run 28 green, including e2e at phone width with signed simulated Stripe webhooks (bank and card deposits, replay). Migration `20261012001300_quotes.sql` is deployed to the dev project. Real Stripe test mode waits for the owner's keys (`docs/testing/M8-checklist.md`). No formal M8 report was given to the owner yet. |
-| M8.5 Field parity | **Built; CI green.** Waiting on the dev deploy and the owner's acceptance. See below. |
-| M9 Invoicing | **Built** on `claude/cool-keller-efjc00` (migration `20261012001500_invoices.sql`, not deployed). Device and Stripe test-mode steps: `docs/testing/M9-checklist.md`. |
+### App Store (launch target Nov 1; release is manual)
+- Build **1.0.0 (1057)** (commit f98f49b) is in TestFlight, "Ready to Submit". The owner is
+  using Claude in Chrome to attach it, upload the 8 screenshots and submit; Chrome asks the
+  owner before **Add for Review** / **Submit for Review**. Listing, privacy label, review
+  contact and notes were filled in earlier.
+- Screenshots: `apps/ios/AppStore/compose.py` builds them (sources: the App Store screenshots
+  workflow artifact, launch film screens, and the owner's real `schedule-day.png` for the route
+  map, `--phone`). Upload order: Today, Route map, Findings, Leak checklist, Report, Quote,
+  Messages, Pool visit.
+- Review account: `appreview@sundeckpro.com`, owner of the review shop "Palo Verde Pool Service
+  (App Review)" (texts/emails recorded, never delivered). **The password is not in the repo**;
+  the owner has it. `scripts/review-account.mjs` can reset it (read its output carefully: its
+  first line names the role, not the password).
+- If App Review comes back, answer from `docs/release/APP_STORE.md`.
 
-## M8.5: what's done
+### Backend
+- Supabase dev project `evmxdfasurkaxbwkceti` is also production for now (free plan; Pro later,
+  owner's call).
+- Auth email goes through Resend SMTP (`account@send.sundeckpro.com`, 30/hour) and the
+  repository's templates (`supabase/templates/*.html`) are installed on the project.
+- UptimeRobot watches `https://sundeckpro.com/api/health`.
 
-Plan: `docs/BUILD_PLAN.md` § M8.5. Background: `docs/research/2026-10-13-current-report-system.md`.
+### Shipped in the last day (all four platforms unless noted)
+Chemicals added with Charge for Chemicals and monthly reports; the chemicals card's keyboard
+Done and the end of per-keystroke saving; Require a Photo for visit reports; price book with
+Chemicals first and a category picker; the website's own pop-up style (website only; apps keep
+system alerts); sign-in forms never ask "Discard changes?"; document link previews (white card
+on light blue); App Review fixes (`/in-app/*` pages without the menu, setup wording).
 
-- Migration `20261012001400_field_parity.sql` (committed, CI not yet confirmed, **not deployed**):
-  - checklist verdicts (`outcome`, `location_text`); method and reason are no longer required;
-  - `component_type.section` / `answer` / `applies_to_pool_type`, and the partner's 27-item default list;
-  - job fields: `fee_cents`, `second_tech_id`, `intake`, `location_marked`;
-  - `customer.cc_emails`, `company.report_disclaimer`;
-  - `set_next_job_number`;
-  - booking questions in `company.settings.intake_questions`;
-  - an extended `app.report_snapshot`.
-- Core:
-  - verdict types, `checklistTally`, `verdictLabel`, `CHECKLIST_SECTION_LABELS`, `splitEmails`, `IntakeQuestion`;
-  - narrative facts, the plain draft and the number check use verdicts and "repaired on site".
-- Tests: `supabase/tests/100_field_parity.test.sql`; the rule, sync and core tests are updated for the new rules.
-- Phone (last commit):
-  - sectioned checklist with a one-tap verdict and "where" (`features/inspection/ChecklistTab.tsx`, `verdict.ts`);
-  - item screen reworked;
-  - new-job form: booking questions, detection fee from the price book, second tech, other emails;
-  - job screen: fee and "location marked".
+## Open work
 
-## M8.5: what's left
+1. **3D logo clip v2** (`apps/video/logo3d/blender/scene_day.py`; render with `logo-3d.yml`,
+   workflow_dispatch only, 20 runners × 18 frames, 96 samples, about 4.5 h).
+   - v2 fixes are in (2-second face-on hold, smooth logo, soft streak, lighter palms, glints no
+     longer re-randomise). Owner then said the sea sparkles are too many, too fast and too
+     frequent: commit c37d3fb starts glints in a band under the sun, about a third as many,
+     each flashing 2–3 times per loop. **Not yet verified.**
+   - Before any full render: run a full-loop temporal diff (every frame at low resolution plus
+     frame 361 for the seam), render frame 1 and a mid-turn frame at 1080p/96 samples with a
+     sea crop at 100%, make a low-res motion preview, and show the owner. Render only on the
+     owner's go; nothing goes live until the owner approves the finished clip; a sound version
+     comes after.
+   - Licensed music is never committed (public repo).
+2. **Owner tasks** (no action until they say): Stripe real test payment; Supabase Pro; Android
+   on Google Play after the D-U-N-S number (`docs/play-store/README.md`); the rest of
+   `docs/OWNER_TODO.md`.
+3. **On hold:** the 3D clip in the apps (portrait render). The laminate card exists
+   (`apps/video/card/`); ask the owner whether anything is left on it.
 
-Built in commit `58a3d72`: the report page (tiles, every item by section, fee, both techs,
-disclaimer, "repaired on site"), company settings (disclaimer, next job number), the office job
-page (verdicts, second tech, fee, booking answers), report emails to `cc_emails` (editable on the
-office customer page and by the phone's send button), the second sample job, and its e2e.
-
-1. **Deploy:** `pnpm db:deploy -- --seed` applies `20261012001400_field_parity.sql` and `20261012001500_invoices.sql` to the dev
-   project, adds the second sample job, and gives the M4 sample its Return 3 and light
-   verdicts. It needs the Supabase access token in the session's network secrets; the session
-   that built this did not have it (HTTP 401). The website on Vercel uses the dev project, and
-   the migration only adds columns, so the code already live keeps working.
-2. Then run the e2e against the dev project and report M8.5 to the owner.
-
-## Things to know
-
-- **Design reviews:** no per-milestone reviews anymore. Use the apple-design skill while planning screens; there is one full review before the pilot (owner decision, `CLAUDE.md`).
-- **Pushing:** each push cancels the in-progress CI run (concurrency). Don't push while waiting on a result you need.
-- **Deploying:** `pnpm db:deploy` applies every pending migration in the folder. Move unfinished migrations aside if you deploy early.
-- **Repo is public:** never commit customer details or the partner's disclaimer text from his sample report.
-- **Hosting:** the website is live on Vercel at https://sundeckpro.com (the old https://leaksoftware-web.vercel.app redirects there). Production builds from `claude/cool-keller-efjc00`, so every push there goes live. Report PDFs need files that Next's tracing misses; `apps/web/next.config.ts` adds them for the PDF routes.
-- **Owner setup still pending:**
-  - `APP_BASE_URL` in Vercel (the site address, for links in emails);
-  - `ANTHROPIC_API_KEY`;
-  - Resend and a verified domain;
-  - a Stripe test account, Connect, and keys;
-  - `SUPABASE_SERVICE_ROLE_KEY`;
-  - `EXPO_PUBLIC_API_URL`.
-- **Demo sign-ins:** `owner@demo.leakbook.test` / `tech@demo.leakbook.test`, password `leakbook-demo`.
-
-## Also requested
-
-Route optimization with scheduling has its own handoff: `docs/ROUTE_OPTIMIZATION_HANDOFF.md`.
+## Files that only existed in the old session's container
+`video-delivery/` (git-excluded) held deliverables already sent to the owner: App Store
+screenshots and Chrome handoffs, the hat logo pack (built from `brand/logo/*.svg`), card PDFs,
+launch films, 3D previews. A new container won't have them; rebuild from the repo if needed and
+ask the owner for anything that can't be rebuilt.
