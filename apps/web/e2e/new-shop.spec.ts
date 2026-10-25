@@ -35,8 +35,9 @@ test("a new shop signs up and runs the whole loop, then subscribes", async ({
   await page.getByLabel("Password", { exact: true }).fill(OWNER.password);
   // One app, two packages: this shop does leak detection.
   await page.getByRole("radio", { name: "Leak Detection" }).click();
-  // Under the button, the terms line with its two links (owner, 2026-10-24).
-  const consent = page.getByTestId("terms-consent");
+  // Under the button, the terms line with its two links (owner, 2026-10-24). Recently visited
+  // pages stay mounted, hidden, so another page's copy of the line may still be in the DOM.
+  const consent = page.getByTestId("terms-consent").filter({ visible: true });
   await expect(consent).toHaveText(
     "By creating an account, you agree to the Terms and Privacy Policy.",
   );
