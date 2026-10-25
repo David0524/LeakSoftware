@@ -48,6 +48,12 @@
         }
     }
 
+    /// Once per launch, across all rows: the first FilterPills row that scrolls nudges (a stored static
+    /// can't live in the generic view).
+    @MainActor private enum FilterPillsNudge {
+        static var done = false
+    }
+
     struct FilterPills<Value: Hashable>: View {
         @Binding var selection: Value
         var options: [Value]
@@ -59,6 +65,44 @@
         /// A tech's color for an option (a dot before its name), or nil.
         var dot: (Value) -> TechColor? = { _ in nil }
         @State private var targeted: Value?
+        @State private var position = ScrollPosition(edge: .leading)
+        @State private var edges = Edges(more: false, atStart: true)
+        @Environment(\.accessibilityReduceMotion) private var reduceMotion
+
+        /// Where the row is scrolled: whether chips are past its trailing edge, and whether it's at its start.
+        private struct Edges: Equatable {
+            var more: Bool
+            var atStart: Bool
+        }
+
+        /// How far the fade reaches in from the trailing edge, and how far the nudge slides.
+        private static var fadeWidth: CGFloat { 40 }
+        private static var nudgeDistance: CGFloat { 56 }
+
+        /// Fades the last 40 pt while more chips are past the trailing edge (owner, 2026-10-25: "The names
+        /// being scrollable here isn't really intuitive since they fit perfectly. Give a nudge").
+        @ViewBuilder private var fadeMask: some View {
+            if edges.more {
+                HStack(spacing: 0) {
+                    Color.black
+                    LinearGradient(colors: [.black, .clear], startPoint: .leading, endPoint: .trailing)
+                        .frame(width: Self.fadeWidth)
+                }
+            } else {
+                Color.black
+            }
+        }
+
+        /// Slides the row a little way and back, once per launch, if it scrolls and sits at its start.
+        private func nudgeIfNeeded() {
+            guard edges.more, edges.atStart, !reduceMotion, !FilterPillsNudge.done else { return }
+            FilterPillsNudge.done = true
+            withAnimation(.easeInOut(duration: 0.35)) { position.scrollTo(x: Self.nudgeDistance) }
+            Task { @MainActor in
+                try? await Task.sleep(for: .milliseconds(500))
+                withAnimation(.spring(duration: 0.45)) { position.scrollTo(edge: .leading) }
+            }
+        }
 
         var body: some View {
             ScrollView(.horizontal, showsIndicators: false) {
@@ -82,6 +126,17 @@
                     }
                 }
             }
+            .scrollPosition($position)
+            .onScrollGeometryChange(for: Edges.self) { geo in
+                // Offsets start at minus the leading inset, so "at start" is the offset at or left of zero.
+                Edges(
+                    more: geo.contentSize.width - (geo.contentOffset.x + geo.containerSize.width) > 4,
+                    atStart: geo.contentOffset.x <= 0)
+            } action: { _, new in
+                edges = new
+            }
+            .onChange(of: edges.more, initial: true) { nudgeIfNeeded() }
+            .mask(fadeMask.animation(.easeInOut(duration: 0.2), value: edges.more))
             .contentMargins(.horizontal, CGFloat(Spacing.pageMargin), for: .scrollContent)
             .sensoryFeedback(.selection, trigger: selection)
         }

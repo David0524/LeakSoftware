@@ -39,6 +39,7 @@ import {
   type ViewStyle,
   useWindowDimensions,
 } from "react-native";
+import Svg, { Defs, LinearGradient, Rect, Stop } from "react-native-svg";
 import { Stack } from "expo-router";
 import type { NativeStackNavigationOptions } from "expo-router/native-stack";
 import { useNavigationState, useRoute, useScrollToTop } from "expo-router/react-navigation";
@@ -709,6 +710,9 @@ export function RoundButton({
   );
 }
 
+/** Once per app run: the first row of chips that scrolls nudges, the rest don't. */
+let pillsNudged = false;
+
 /**
  * Filters and choosers (spec 3.8): a sideways row of 32 pt capsules (44 pt to touch) running
  * edge to edge, the first 16 in. Selected: primary with white text.
@@ -726,28 +730,78 @@ export function FilterPills<V extends string>({
   /** For screen readers ("Status", "Whose day"). */
   label: string;
 }) {
+  const scroller = useRef<ScrollView>(null);
+  const [width, setWidth] = useState(0);
+  const [content, setContent] = useState(0);
+  const [x, setX] = useState(0);
+  const offset = useRef(0);
+  // Chips past the trailing edge (owner, 2026-10-25: "The names being scrollable here isn't
+  // really intuitive since they fit perfectly"): the end fades out, as on the website's PillRow.
+  const overflows = width > 0 && content > width + 4;
+  const more = overflows && content - width - x > 4;
+
+  // The first overflowing row in an app run slides a little way and back (owner, 2026-10-25).
+  useEffect(() => {
+    if (!overflows || pillsNudged) return;
+    let cancelled = false;
+    let back: ReturnType<typeof setTimeout> | undefined;
+    void AccessibilityInfo.isReduceMotionEnabled().then((still) => {
+      if (cancelled || still || pillsNudged || offset.current !== 0) return;
+      pillsNudged = true;
+      scroller.current?.scrollTo({ x: 56, animated: true });
+      back = setTimeout(() => scroller.current?.scrollTo({ x: 0, animated: true }), 500);
+    });
+    return () => {
+      cancelled = true;
+      clearTimeout(back);
+    };
+  }, [overflows]);
+
   return (
-    <ScrollView
-      horizontal
-      showsHorizontalScrollIndicator={false}
-      style={styles.pillScroller}
-      contentContainerStyle={styles.pillRow}
-      accessibilityLabel={label}
-    >
-      {options.map((o) => (
-        <PillButton
-          key={o.value}
-          label={o.label}
-          dot={o.dot}
-          selected={o.value === value}
-          onPress={() => {
-            if (o.value === value) return;
-            haptics.selection();
-            onChange(o.value);
-          }}
-        />
-      ))}
-    </ScrollView>
+    <View style={styles.pillScroller}>
+      <ScrollView
+        ref={scroller}
+        horizontal
+        showsHorizontalScrollIndicator={false}
+        style={styles.pillScrollView}
+        contentContainerStyle={styles.pillRow}
+        accessibilityLabel={label}
+        onLayout={(e) => setWidth(e.nativeEvent.layout.width)}
+        onContentSizeChange={(w) => setContent(w)}
+        onScroll={(e) => {
+          offset.current = e.nativeEvent.contentOffset.x;
+          setX(offset.current);
+        }}
+        scrollEventThrottle={16}
+      >
+        {options.map((o) => (
+          <PillButton
+            key={o.value}
+            label={o.label}
+            dot={o.dot}
+            selected={o.value === value}
+            onPress={() => {
+              if (o.value === value) return;
+              haptics.selection();
+              onChange(o.value);
+            }}
+          />
+        ))}
+      </ScrollView>
+      {more ? (
+        <View pointerEvents="none" style={styles.pillFade}>
+          <Svg width="100%" height="100%">
+            <Defs>
+              <LinearGradient id="pillFade" x1="0" y1="0" x2="1" y2="0">
+                <Stop offset="0" stopColor={color.bg} stopOpacity={0} />
+                <Stop offset="1" stopColor={color.bg} stopOpacity={1} />
+              </LinearGradient>
+            </Defs>
+            <Rect x="0" y="0" width="100%" height="100%" fill="url(#pillFade)" />
+          </Svg>
+        </View>
+      ) : null}
+    </View>
   );
 }
 
@@ -2050,6 +2104,8 @@ const styles = StyleSheet.create({
     overflow: "hidden",
   },
   pillScroller: { marginHorizontal: -gutter, flexGrow: 0 },
+  pillScrollView: { flexGrow: 0 },
+  pillFade: { position: "absolute", top: 0, right: 0, bottom: 0, width: 40 },
   pillRow: { paddingHorizontal: gutter, gap: space["2"] },
   // Smaller chips (owner, 2026-10-25: "shrink them"): the pill is 32 pt with 15 pt text; the
   // 44 pt tap area is the Pressable around it, so the sideways row doesn't clip it.

@@ -1,5 +1,6 @@
 "use client";
 
+import { PillRow } from "./pill-row";
 import { SamplePill } from "./sample-pill";
 import {
   DndContext,
@@ -2115,8 +2116,8 @@ function WeekMaps({
         // Optimize Week at the end of the techs' row, not in a row of its own (owner,
         // 2026-10-22: "Move optimize week down").
         <div className="mb-3 flex items-center gap-3">
-          <nav
-            aria-label="Whose routes"
+          <PillRow
+            label="Whose routes"
             className="-mx-1 flex min-w-0 flex-1 gap-2 overflow-x-auto px-1 pb-1 [scrollbar-width:thin]"
           >
             {techs.map(([id, title]) => (
@@ -2134,7 +2135,7 @@ function WeekMaps({
                 {title}
               </button>
             ))}
-          </nav>
+          </PillRow>
           {planDates ? <div className="shrink-0 pb-1">{planWeek}</div> : null}
         </div>
       ) : null}

@@ -1,4 +1,5 @@
 import { LiveRefresh } from "@/components/live-refresh";
+import { PillRow } from "@/components/pill-row";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { SegmentedLinks, SwipeHrefs } from "@/components/gestures";
@@ -445,8 +446,8 @@ export default async function SchedulePage({ searchParams }: PageProps<"/schedul
             and admins). */}
         {techs.length > 1 ? (
           <div className="mb-4 flex items-center gap-2 sm:hidden">
-            <nav
-              aria-label="Whose schedule"
+            <PillRow
+              label="Whose schedule"
               className="-ml-4 flex min-w-0 flex-1 gap-2 overflow-x-auto pb-1 pl-4"
             >
               {[
@@ -472,7 +473,7 @@ export default async function SchedulePage({ searchParams }: PageProps<"/schedul
                   {t.name}
                 </Link>
               ))}
-            </nav>
+            </PillRow>
             {reorder.length > 1 ? <ReorderTechs techs={reorder} /> : null}
           </div>
         ) : null}
