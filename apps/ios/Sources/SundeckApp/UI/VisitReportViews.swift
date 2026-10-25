@@ -30,6 +30,8 @@
                 let versions = visitReportVersions(sync.store, jobId: job.id)
                 let latest = versions.first(where: \.current)
                 let hasLine = companyLine(sync.store, companyId: company.id)?.status == "active"
+                // Require a Photo (owner, 2026-10-25): why it can't be sent yet, with Add Photo.
+                let photoBlock = visitReportPhotoBlock(sync.store, settings: company.settings, jobId: job.id)
                 VStack(alignment: .leading, spacing: 12) {
                     if heading { SectionHeading(VisitReportText.title) }
                     VStack(alignment: .leading, spacing: 12) {
@@ -45,36 +47,40 @@
                             .buttonStyle(.quiet)
                             .padding(.leading, -20)
                         }
-                        VStack(alignment: .leading, spacing: 4) {
-                            FieldLabel(VisitReportText.customerEmail)
-                            TextField("", text: Binding(get: { email }, set: { to = $0 }))
-                                .keyboardType(.emailAddress)
-                                .textInputAutocapitalization(.never)
-                                .autocorrectionDisabled()
-                                .textContentType(nil)
-                                .focused($focused)
-                                .accessibilityLabel(VisitReportText.customerEmail)
-                                .fieldBox(focused: focused)
-                        }
-                        FlowRow(spacing: 12) {
-                            Button {
-                                send(.email)
-                            } label: {
-                                BusyButtonLabel(
-                                    latest == nil ? VisitReportText.sendEmail : VisitReportText.sendAgain,
-                                    busy: busy == .email, busyTitle: "Sending…")
+                        if photoBlock != nil {
+                            ReportPhotoNotice(jobId: job.id)
+                        } else {
+                            VStack(alignment: .leading, spacing: 4) {
+                                FieldLabel(VisitReportText.customerEmail)
+                                TextField("", text: Binding(get: { email }, set: { to = $0 }))
+                                    .keyboardType(.emailAddress)
+                                    .textInputAutocapitalization(.never)
+                                    .autocorrectionDisabled()
+                                    .textContentType(nil)
+                                    .focused($focused)
+                                    .accessibilityLabel(VisitReportText.customerEmail)
+                                    .fieldBox(focused: focused)
                             }
-                            .buttonStyle(.primary)
-                            .disabled(busy != nil || email.trimmingCharacters(in: .whitespaces).isEmpty)
-                            Button {
-                                send(hasLine ? .text : .smsDevice)
-                            } label: {
-                                BusyButtonLabel(
-                                    hasLine ? VisitReportText.sendText : VisitReportText.getLink,
-                                    busy: busy == .text || busy == .smsDevice, busyTitle: "Sending…")
+                            FlowRow(spacing: 12) {
+                                Button {
+                                    send(.email)
+                                } label: {
+                                    BusyButtonLabel(
+                                        latest == nil ? VisitReportText.sendEmail : VisitReportText.sendAgain,
+                                        busy: busy == .email, busyTitle: "Sending…")
+                                }
+                                .buttonStyle(.primary)
+                                .disabled(busy != nil || email.trimmingCharacters(in: .whitespaces).isEmpty)
+                                Button {
+                                    send(hasLine ? .text : .smsDevice)
+                                } label: {
+                                    BusyButtonLabel(
+                                        hasLine ? VisitReportText.sendText : VisitReportText.getLink,
+                                        busy: busy == .text || busy == .smsDevice, busyTitle: "Sending…")
+                                }
+                                .buttonStyle(.secondary)
+                                .disabled(busy != nil)
                             }
-                            .buttonStyle(.secondary)
-                            .disabled(busy != nil)
                         }
                         if busy != nil {
                             ProgressSteps(steps: ReportProgress.steps(.email), current: step)
@@ -126,6 +132,33 @@
                     result = ((error as? WebAPI.Failure)?.description ?? String(describing: error), true)
                 }
             }
+        }
+    }
+
+    /// "Add a photo to send this report." with Add Photo (take or choose, saved to the visit), where
+    /// Send Visit Report would be while the shop's Require a Photo holds it up (owner, 2026-10-25).
+    /// Once a photo is saved the send buttons come back.
+    struct ReportPhotoNotice: View {
+        var jobId: String
+        @State private var capture: CaptureController
+
+        init(jobId: String) {
+            self.jobId = jobId
+            _capture = State(initialValue: CaptureController(target: MediaTarget(jobId: jobId)))
+        }
+
+        var body: some View {
+            VStack(alignment: .leading, spacing: 12) {
+                Notice(kind: .error, text: ReportPhotoText.blocked)
+                Button {
+                    Task { await capture.takeOrChoose(.photo) }
+                } label: {
+                    Label(ReportPhotoText.addPhoto, systemImage: "camera")
+                }
+                .buttonStyle(.primary)
+                .disabled(capture.busy != nil)
+            }
+            .captureFlow(capture)
         }
     }
 
@@ -181,6 +214,20 @@
                         case .off:
                             Text(VisitReportTimingText.off).textRole(.secondary).foregroundStyle(Color.textMuted)
                         }
+                        // Require a Photo (owner, 2026-10-25), while visit reports are on.
+                        if let hint = reportPhotoHint(mode) {
+                            Hairline()
+                            Toggle(
+                                isOn: Binding(
+                                    get: { requiresReportPhoto(company.settings) },
+                                    set: { setRequirePhoto(company, $0) })
+                            ) {
+                                Text(ReportPhotoText.label).textRole(.bodyMedium).foregroundStyle(Color.text)
+                            }
+                            .tint(Color.pass)
+                            .frame(minHeight: minTarget)
+                            Text(hint).textRole(.secondary).foregroundStyle(Color.textMuted)
+                        }
                     }
                     .card()
                     Text(VisitReportText.settingsFooter).textRole(.footnote).foregroundStyle(Color.textMuted)
@@ -205,6 +252,16 @@
             .padding(.vertical, 12)
             .frame(maxWidth: .infinity, alignment: .leading)
             .accessibilityElement(children: .combine)
+        }
+
+        private func setRequirePhoto(_ company: CompanyContext, _ on: Bool) {
+            do {
+                try VisitReportSettingsWrites.setRequirePhoto(
+                    sync, companyId: company.id, settings: company.settings, on)
+                session.reloadCompanies()
+            } catch {
+                self.error = String(describing: error)
+            }
         }
 
         private func setMode(_ company: CompanyContext, _ next: VisitReportMode) {

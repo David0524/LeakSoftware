@@ -10,6 +10,12 @@
     /// circle adds it as it is; its text opens the Added Chemical sheet. Mark All Added; Also Added
     /// with Add Chemical. Everything saves as it's typed or tapped, through the sync layer (no
     /// Submit on visits). The full Chemical screen stays for More and the customer's pool.
+    ///
+    /// Typing stays quick (owner, 2026-10-25: "a little laggy … when typing in multi digit
+    /// numbers"): what the card reads from the phone's database is read once per write or pull
+    /// (`stored`), not on every keystroke, and the readings save a second after typing stops, when
+    /// another field takes the keyboard, and when the card goes away (one-handed use, spec 4). The
+    /// number pads have no return key, so the keyboard bar has Previous, Next and Done (spec 3).
     struct ChemicalCard: View {
         var target: ChemicalTarget
         @Environment(SyncService.self) private var sync
@@ -22,6 +28,9 @@
         @State private var editing: AddedChemicalTarget?
         @State private var picking = false
         @State private var saveError: String?
+        @State private var stored = Stored()
+        /// The field with the keyboard, for the keyboard bar's Previous, Next and Done.
+        @FocusState private var focus: String?
         @Environment(\.accessibilityReduceMotion) private var reduceMotion
         @Environment(\.dynamicTypeSize) private var typeSize
 
@@ -46,20 +55,31 @@
             _open = State(initialValue: open)
         }
 
+        /// What the card shows from the phone's database. Read by `load()` when it opens and after
+        /// any write or pull, never per keystroke (the pool's last readings list the shop's whole
+        /// chemical log).
+        private struct Stored {
+            var items: [ChemicalItem] = []
+            var added: [ChemicalAddition] = []
+            var charges = false
+            var locked: Set<String> = []
+            /// The pool's last readings, "" when it has none.
+            var last = ""
+            var firstName = ""
+            var month = ""
+        }
+
+        /// The keyboard bar's order: the gallons, each reading and its Aim For, then the notes.
+        static let fieldOrder =
+            ["gallons"] + ReadingKey.allCases.flatMap { ["reading-\($0.rawValue)", "goal-\($0.rawValue)"] } + ["notes"]
+
         var body: some View {
-            let _ = sync.revision  // what was added shows after any write or pull
-            let company = session.company
-            let items = company.map { visitChemicalItems(sync.store, companyId: $0.id) } ?? []
-            let added = target.jobId.map { visitAdditions(sync.store, jobId: $0, items: items) } ?? []
-            let charges = company.map { chargesChemicals($0.settings) } ?? false
-            let locked = lockedAdditions(sync.store, added)
+            let items = stored.items
+            let added = stored.added
+            let charges = stored.charges
+            let locked = stored.locked
             let typed = readingSummary(form.readingValues)
-            let last =
-                company.map {
-                    ChemicalCardText.line(
-                        sync.store, companyId: $0.id, propertyId: target.propertyId, timeZone: $0.timeZone)
-                } ?? ChemicalCardText.empty
-            let line = chemicalCardLine(typed.isEmpty ? (last == ChemicalCardText.empty ? "" : last) : typed, added)
+            let line = chemicalCardLine(typed.isEmpty ? stored.last : typed, added)
             VStack(spacing: 0) {
                 Button {
                     withAnimation(reduceMotion ? nil : .easeInOut(duration: 0.2)) { open.toggle() }
@@ -100,8 +120,10 @@
             }
             .background(Color.surface)
             .clipShape(RoundedRectangle(cornerRadius: CGFloat(Radius.grouped), style: .continuous))
+            .keyboardBar($focus, order: Self.fieldOrder, onlyWhenFocused: true)
             .onAppear {
                 guard !started else { return }
+                load()
                 started = true
                 let pool = chemicalPool(sync.store, target)
                 let remembered = sync.kv.getJSON(KVKey.chemicalGoals, as: [String: String].self) ?? [:]
@@ -111,16 +133,21 @@
                             sync.store, jobId: $0, poolGallons: pool?.gallons, rememberedGoals: remembered)
                     } ?? ChemicalForm(gallons: pool?.gallons, goals: remembered)
                 saved = form
-                if !added.isEmpty || !readingSummary(form.readingValues).isEmpty { open = true }
+                if !stored.added.isEmpty || !readingSummary(form.readingValues).isEmpty { open = true }
             }
-            .onChange(of: form.storedGoals) { _, goals in sync.kv.setJSON(KVKey.chemicalGoals, goals) }
-            // Saved as typed: half a second after the last change.
+            // What was added shows after any write or pull.
+            .onChange(of: sync.revision) { load() }
+            .onChange(of: session.company?.id) { load() }
+            // Saved as typed: a second after the last change, when another field takes the
+            // keyboard (Next, Done), and when the card goes away, so nothing typed is lost.
             .task(id: form) {
                 guard started, form != saved else { return }
-                try? await Task.sleep(for: .milliseconds(500))
+                try? await Task.sleep(for: Autosave.delay)
                 guard !Task.isCancelled else { return }
-                save()
+                flush()
             }
+            .onChange(of: focus) { flush() }
+            .onDisappear { flush() }
             .sheet(item: $editing) { t in
                 AddedChemicalSheet(
                     target: t, items: items, charges: charges, locked: locked.contains(t.id),
@@ -148,7 +175,8 @@
             let result = form.result
             // Suggestions wait for the gallons and a reading.
             var dosed = result
-            if !form.ready { dosed.steps = [] }
+            // `form.ready`, without working the chemistry out a second time.
+            if !((chemicalNumber(form.gallons) ?? 0) > 0 && !result.statuses.isEmpty) { dosed.steps = [] }
             let rows = chemicalRows(dosed, added, items)
             let unadded = openSuggestions(rows.rows)
             let recommended = form.recommended
@@ -164,6 +192,7 @@
                         .keyboardType(.numberPad)
                         .multilineTextAlignment(.trailing)
                         .monospacedDigit()
+                        .focused($focus, equals: "gallons")
                         .accessibilityLabel("Gallons")
                         Text("gal").textRole(.secondary).foregroundStyle(Color.textMuted).accessibilityHidden(true)
                     }
@@ -227,7 +256,8 @@
                 }
                 .padding(.top, 20)
                 OutlinedField(
-                    label: "Notes", text: $form.notes, placeholder: "Anything the customer should know", multiline: true
+                    label: "Notes", text: $form.notes, placeholder: "Anything the customer should know",
+                    multiline: true, chain: $focus, chainKey: "notes"
                 )
                 .padding(.top, 16)
                 if charges {
@@ -245,12 +275,16 @@
                 }
                 Text(
                     charges
-                        ? "Saved as you go. Billed on \(customerFirstName())’s \(visitMonth()) invoice."
+                        ? "Saved as you go. Billed on \(stored.firstName)’s \(stored.month) invoice."
                         : "Saved as you go."
                 )
                 .textRole(.secondary)
                 .foregroundStyle(Color.textMuted)
                 .padding(.top, 4)
+            }
+            // Tapping beside the fields puts the keyboard away.
+            .background {
+                Color.clear.contentShape(Rectangle()).onTapGesture { focus = nil }
             }
         }
 
@@ -271,11 +305,14 @@
                 .accessibilityHidden(true)
         }
 
-        private func cell(_ label: String, _ text: Binding<String>, placeholder: String = "") -> some View {
+        private func cell(_ label: String, _ text: Binding<String>, key: String, placeholder: String = "")
+            -> some View
+        {
             TextField("", text: text, prompt: Text(placeholder).foregroundStyle(Color.placeholder))
                 .keyboardType(.decimalPad)
                 .multilineTextAlignment(.trailing)
                 .monospacedDigit()
+                .focused($focus, equals: key)
                 .accessibilityLabel(label)
                 .fieldBox()
                 .frame(width: large ? nil : 76)
@@ -283,12 +320,12 @@
         }
 
         /// A field with its own label above it, full width (stacked rows).
-        private func labeledCell(_ title: String, _ label: String, _ text: Binding<String>, placeholder: String = "")
-            -> some View
-        {
+        private func labeledCell(
+            _ title: String, _ label: String, _ text: Binding<String>, key: String, placeholder: String = ""
+        ) -> some View {
             VStack(alignment: .leading, spacing: 4) {
                 Text(title).textRole(.footnote).foregroundStyle(Color.textMuted).accessibilityHidden(true)
-                cell(label, text, placeholder: placeholder)
+                cell(label, text, key: key, placeholder: placeholder)
             }
         }
 
@@ -317,8 +354,9 @@
                             + Text(word).fontWeight(status == nil ? .regular : .semibold).foregroundStyle(tone))
                             .textRole(.bodyMedium)
                             .accessibilityElement(children: .combine)
-                        labeledCell("Reading", "\(key.label) reading", reading)
-                        labeledCell("Aim For", aimLabel, goal, placeholder: aimPlaceholder)
+                        labeledCell("Reading", "\(key.label) reading", reading, key: "reading-\(key.rawValue)")
+                        labeledCell(
+                            "Aim For", aimLabel, goal, key: "goal-\(key.rawValue)", placeholder: aimPlaceholder)
                     }
                 } else {
                     HStack(spacing: 8) {
@@ -330,8 +368,8 @@
                         }
                         .frame(maxWidth: .infinity, alignment: .leading)
                         .accessibilityElement(children: .combine)
-                        cell("\(key.label) reading", reading)
-                        cell(aimLabel, goal, placeholder: aimPlaceholder)
+                        cell("\(key.label) reading", reading, key: "reading-\(key.rawValue)")
+                        cell(aimLabel, goal, key: "goal-\(key.rawValue)", placeholder: aimPlaceholder)
                     }
                 }
                 if row.step != nil || !row.added.isEmpty {
@@ -498,20 +536,38 @@
             }
         }
 
-        // MARK: - Saving
+        // MARK: - Reading and saving
 
-        private func customerFirstName() -> String {
-            visitCustomerFirstName(sync.store, jobId: target.jobId, propertyId: target.propertyId)
-        }
-
-        /// "October": the month the visit is billed in.
-        private func visitMonth() -> String {
-            guard let company = session.company else { return "" }
+        /// Reads what the card shows from the phone's database (see `Stored`).
+        private func load() {
+            guard let company = session.company else {
+                stored = Stored()
+                return
+            }
+            var next = Stored()
+            next.items = visitChemicalItems(sync.store, companyId: company.id)
+            next.added = target.jobId.map { visitAdditions(sync.store, jobId: $0, items: next.items) } ?? []
+            next.charges = chargesChemicals(company.settings)
+            next.locked = lockedAdditions(sync.store, next.added)
+            let last = ChemicalCardText.line(
+                sync.store, companyId: company.id, propertyId: target.propertyId, timeZone: company.timeZone)
+            next.last = last == ChemicalCardText.empty ? "" : last
+            next.firstName = visitCustomerFirstName(sync.store, jobId: target.jobId, propertyId: target.propertyId)
+            // "October": the month the visit is billed in.
             let job = target.jobId.flatMap { try? sync.store.get("job", $0) }
             let day =
                 job?["plan_date"]?.string ?? job?["scheduled_start"]?.string ?? job?["completed_at"]?.string
                 ?? ((try? localDate(Date(), company.timeZone)) ?? "")
-            return monthName(day, timeZone: company.timeZone)
+            next.month = monthName(day, timeZone: company.timeZone)
+            stored = next
+        }
+
+        /// Saves what's typed, if anything changed since the last save, and remembers the levels
+        /// aimed for on this phone.
+        private func flush() {
+            guard started, form != saved else { return }
+            if form.storedGoals != saved.storedGoals { sync.kv.setJSON(KVKey.chemicalGoals, form.storedGoals) }
+            save()
         }
 
         private func save() {

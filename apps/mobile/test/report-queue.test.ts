@@ -16,6 +16,11 @@ vi.mock("../src/lib/config", () => ({ API_URL: "https://sundeck.test" }));
 vi.mock("../src/data/hooks", () => ({ useJobRows: () => [] }));
 
 const kvMap = new Map<string, string>();
+// The phone's copy of the shop's settings and the visit's media (Require a Photo).
+const local = {
+  settings: {} as unknown,
+  media: [] as { kind: string; deleted_at?: string | null }[],
+};
 const pending = new Set<string>();
 const uploading = new Set<string>();
 const sync = {
@@ -23,8 +28,15 @@ const sync = {
   hasPendingWrites: (table: string, id?: string) =>
     [...pending].some((p) => p === `${table}:${id ?? ""}` || (!id && p.startsWith(`${table}:`))),
   hasPendingUploads: (jobId: string) => uploading.has(jobId),
-  get: (table: string, id: string) =>
-    table === "report" ? { id, job_id: id === "r1" ? "j1" : "j2" } : undefined,
+  get: (table: string, id: string): Record<string, unknown> | undefined =>
+    table === "report"
+      ? { id, job_id: id === "r1" ? "j1" : "j2" }
+      : table === "job" && id.startsWith("p")
+        ? { id, company_id: "c1" }
+        : table === "company"
+          ? { id, settings: local.settings }
+          : undefined,
+  list: (table: string) => (table === "media" ? local.media : []),
   syncNow: vi.fn(async () => {}),
   subscribe: vi.fn(() => () => {}),
   accessToken: vi.fn(async (): Promise<string | null> => "token"),
@@ -68,6 +80,8 @@ beforeEach(() => {
   pending.clear();
   uploading.clear();
   replies = [];
+  local.settings = {};
+  local.media = [];
   fetchMock.mockClear();
   rn.Share.share.mockClear();
   rn.AppState.currentState = "active";
@@ -241,5 +255,32 @@ describe("photos still uploading", () => {
       expect(fetchMock).toHaveBeenCalledTimes(1);
     });
     expect(kvMap.has("visit_report:queue")).toBe(false);
+  });
+});
+
+describe("Require a Photo (owner, 2026-10-25)", () => {
+  const VKEY = "visit_report:queue";
+  const on = { visit_reports: "auto", require_report_photo: true };
+
+  it("an automatic report waits on the phone until the visit has a photo", async () => {
+    local.settings = on;
+    local.media = [{ kind: "video" }, { kind: "photo", deleted_at: "2026-10-25T12:00:00Z" }];
+    queueAutoVisitReport({ id: "p1", type: "maintenance" }, on);
+    await flushVisitReports(false);
+    expect(fetchMock).not.toHaveBeenCalled();
+    expect(JSON.parse(kvMap.get(VKEY) ?? "[]")).toEqual(["p1"]);
+    local.media = [{ kind: "photo" }];
+    await vi.waitFor(async () => {
+      await flushVisitReports(false);
+      expect(fetchMock).toHaveBeenCalledTimes(1);
+    });
+    expect(kvMap.has(VKEY)).toBe(false);
+  });
+
+  it("stays queued when the server has no photo for it yet", async () => {
+    replies = [{ status: 200, body: { skipped: "no_photo" } }];
+    queueAutoVisitReport({ id: "p2", type: "maintenance" }, { visit_reports: "auto" });
+    await vi.waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(1));
+    await vi.waitFor(() => expect(JSON.parse(kvMap.get(VKEY) ?? "[]")).toEqual(["p2"]));
   });
 });

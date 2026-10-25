@@ -56,3 +56,25 @@ describe("visitReportBar", () => {
     expect(bar({ status: "in_progress" })).toBeNull();
   });
 });
+
+describe("visitReportBar with Require a Photo", () => {
+  it("offers Add Photo on a done visit with no photo", () => {
+    expect(bar({ needsPhoto: true })).toEqual({
+      line: "Needs a photo to send",
+      action: "photo",
+      label: "Add Photo",
+    });
+    expect(bar({ needsPhoto: true, mode: "auto" })).toEqual({
+      line: "Sends once it has a photo",
+      action: "photo",
+      label: "Add Photo",
+    });
+    expect(bar({ needsPhoto: true, mode: "monthly" })?.line).toBe("Goes with the monthly invoice");
+  });
+
+  it("doesn't change a sent report, an unfinished visit, or reports turned off", () => {
+    expect(bar({ needsPhoto: true, sentAt: "2026-10-22T21:14:00Z" })?.action).toBe("view");
+    expect(bar({ needsPhoto: true, status: "in_progress", mode: "auto" })?.action).toBeNull();
+    expect(bar({ needsPhoto: true, mode: "off" })).toBeNull();
+  });
+});

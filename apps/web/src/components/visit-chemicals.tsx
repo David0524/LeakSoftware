@@ -1,13 +1,18 @@
 "use client";
 
 import {
+  memo,
+  useCallback,
   useEffect,
   useId,
+  useLayoutEffect,
+  useMemo,
   useOptimistic,
   useRef,
   useState,
   useTransition,
   type ComponentProps,
+  type KeyboardEvent,
   type ReactNode,
 } from "react";
 import {
@@ -36,6 +41,7 @@ import {
   type ChemicalItem,
   type ChemicalReading,
   type ChlorineProduct,
+  type ChemicalRow,
   type ReadingKey,
   type Readings,
 } from "@leakbook/core";
@@ -46,6 +52,7 @@ import {
   updateChemicalAction,
   type ChemicalInput,
 } from "@/app/actions/chemicals";
+import { createAutosave } from "@/lib/autosave";
 import { NO_CONNECTION, whenOffline } from "@/lib/offline";
 import { saveFailed } from "./instant";
 import { Sheet, useConfirm } from "./sheet";
@@ -86,8 +93,39 @@ function withCommas(text: string): string {
 const FIELD =
   "block min-h-11 w-full min-w-0 rounded-[10px] border border-control-border bg-surface px-3 py-2 text-right text-text tabular-nums placeholder:text-placeholder focus:outline-3 focus:outline-offset-1 focus:outline-focus";
 
+/**
+ * Number pads have no return key on phones: Done (`enterKeyHint`) and Enter put the keyboard
+ * away (owner, 2026-10-25: "There isn't a good way to minimize the number keyboard"). Leaving
+ * the field saves what's waiting.
+ */
+function doneOnEnter(e: KeyboardEvent<HTMLInputElement>) {
+  if (e.key === "Enter") {
+    e.preventDefault();
+    e.currentTarget.blur();
+  }
+}
+
 function Cell({ label, ...input }: ComponentProps<"input"> & { label: string }) {
-  return <input {...input} type="text" autoComplete="off" aria-label={label} className={FIELD} />;
+  return (
+    <input
+      {...input}
+      type="text"
+      autoComplete="off"
+      enterKeyHint="done"
+      onKeyDown={doneOnEnter}
+      aria-label={label}
+      className={FIELD}
+    />
+  );
+}
+
+/** A function that keeps one identity across renders and always calls the latest `fn`. */
+function useStable<A extends unknown[], R>(fn: (...args: A) => R): (...args: A) => R {
+  const latest = useRef(fn);
+  useLayoutEffect(() => {
+    latest.current = fn;
+  });
+  return useCallback((...args: A) => latest.current(...args), []);
 }
 
 function Check({ on }: { on: boolean }) {
@@ -185,45 +223,73 @@ export function VisitChemicals(props: VisitChemicalsProps) {
     }
   }, [r?.goals]);
 
-  // Saved as typed: half a second after the last change.
-  useEffect(() => {
-    if (!touched.current) return;
-    setSaveState("saving");
-    const t = window.setTimeout(async () => {
+  // Saved as typed (owner, 2026-10-25: typing multi-digit numbers was laggy): a second after
+  // typing stops, when a field is left (Done, Enter, another field) and when the page is left,
+  // as typed text everywhere (lib/autosave). Nothing is sent or stored while the keys are going.
+  const [saver] = useState(() =>
+    createAutosave({
+      initial: "",
+      save: async () => null,
+      onStatus: (status) => {
+        setSaveState(typeof status === "object" ? "error" : status);
+        setSaveError(typeof status === "object" ? status.error : null);
+      },
+    }),
+  );
+  useEffect(() =>
+    saver.setSave(async (json) => {
+      const form = JSON.parse(json) as SavedForm;
+      try {
+        // The levels aimed for are remembered on this device for the next visit.
+        localStorage.setItem(GOALS_KEY, JSON.stringify(form.goals));
+      } catch {
+        // Not remembered; still used for this visit.
+      }
       const done = await whenOffline(
-        saveVisitReadingAction({
-          job: jobId,
-          property: propertyId,
-          gallons: gallonsText,
-          readings: values,
-          goals,
-          chlorine,
-          acid,
-          notes,
-        }),
+        saveVisitReadingAction({ job: jobId, property: propertyId, ...form }),
         { error: NO_CONNECTION },
       );
-      setSaveError(done.error ?? null);
-      setSaveState(done.error ? "error" : "saved");
-    }, 500);
-    return () => window.clearTimeout(t);
-  }, [jobId, propertyId, gallonsText, values, goals, chlorine, acid, notes]);
+      return done.error ?? null;
+    }),
+  );
+  const formJson = JSON.stringify({
+    gallons: gallonsText,
+    readings: values,
+    goals,
+    chlorine,
+    acid,
+    notes,
+  } satisfies SavedForm);
+  useEffect(() => {
+    if (touched.current) saver.change(formJson);
+  }, [saver, formJson]);
+  // Leaving the page (or closing the tab) sends what's waiting.
+  useEffect(() => {
+    const hidden = () => {
+      if (document.visibilityState === "hidden") void saver.flush();
+    };
+    document.addEventListener("visibilitychange", hidden);
+    return () => {
+      document.removeEventListener("visibilitychange", hidden);
+      void saver.flush();
+    };
+  }, [saver]);
+  const flush = useStable(() => void saver.flush());
   const change =
     <T,>(set: (v: T) => void) =>
     (v: T) => {
       touched.current = true;
       set(v);
     };
-  const setGoal = (key: ReadingKey, v: string) => {
+  // One identity across renders, so a reading's row re-renders only when its own values change.
+  const setReading = useCallback((key: ReadingKey, v: string) => {
     touched.current = true;
-    const next = { ...goals, [key]: v };
-    setGoals(next);
-    try {
-      localStorage.setItem(GOALS_KEY, JSON.stringify(next));
-    } catch {
-      // Not remembered; still used for this visit.
-    }
-  };
+    setValues((now) => ({ ...now, [key]: v }));
+  }, []);
+  const setGoal = useCallback((key: ReadingKey, v: string) => {
+    touched.current = true;
+    setGoals((now) => ({ ...now, [key]: v }));
+  }, []);
 
   // The added chemicals, changed at once on screen and saved behind.
   const [additions, apply] = useOptimistic(props.additions, (rows, op: Op) =>
@@ -234,7 +300,7 @@ export function VisitChemicals(props: VisitChemicalsProps) {
         : rows.filter((a) => a.id !== op.id),
   );
   const [, startTransition] = useTransition();
-  const locked = new Set(props.locked);
+  const locked = useMemo(() => new Set(props.locked), [props.locked]);
   const run = (op: Op, call: () => Promise<{ error?: string | null }>) =>
     startTransition(async () => {
       apply(op);
@@ -260,57 +326,38 @@ export function VisitChemicals(props: VisitChemicalsProps) {
   const remove = (row: ChemicalAddition) =>
     run({ type: "remove", id: row.id }, () => removeChemicalAction(jobId, row.id));
 
-  const readings: Readings = Object.fromEntries(READINGS.map(({ key }) => [key, num(values[key])]));
-  const goalLevels = Object.fromEntries(
-    Object.entries(goals).map(([k, v]) => [k, num(v)]),
-  ) as Partial<Record<ReadingKey, number | null>>;
+  // Worked out once per change, not again for every row.
+  const readings: Readings = useMemo(
+    () => Object.fromEntries(READINGS.map(({ key }) => [key, num(values[key])])),
+    [values],
+  );
+  const result = useMemo(() => {
+    const goalLevels = Object.fromEntries(
+      Object.entries(goals).map(([k, v]) => [k, num(v)]),
+    ) as Partial<Record<ReadingKey, number | null>>;
+    const gallons = num(gallonsText) ?? 0;
+    return calculateChemistry({ gallons, readings, chlorine, acid, goals: goalLevels });
+  }, [gallonsText, readings, goals, chlorine, acid]);
   const gallons = num(gallonsText) ?? 0;
-  const result = calculateChemistry({ gallons, readings, chlorine, acid, goals: goalLevels });
   const ready = gallons > 0 && result.statuses.length > 0;
-  const { rows, extras } = chemicalRows(
-    ready ? result : { ...result, steps: [] },
-    additions,
-    items,
+  const { rows, extras } = useMemo(
+    () => chemicalRows(ready ? result : { ...result, steps: [] }, additions, items),
+    [ready, result, additions, items],
   );
   const open_ = openSuggestions(rows);
-  const recommended = targets(readings.cya);
+  const recommended = useMemo(() => targets(readings.cya), [readings.cya]);
   const typed = readingSummary(readings);
   const line = chemicalCardLine(typed || props.lastLine || "", additions);
   const total = additionsCents(additions);
   const [editing, setEditing] = useState<ChemicalAddition | null>(null);
   const [picking, setPicking] = useState(false);
 
-  const addedRow = (a: ChemicalAddition) => (
-    <div key={a.id} className="flex items-center gap-1">
-      <button
-        type="button"
-        aria-label={`Remove ${additionLabel(a)}`}
-        disabled={locked.has(a.id)}
-        onClick={() => remove(a)}
-        className="-ml-2 grid size-11 shrink-0 place-items-center disabled:opacity-60"
-      >
-        <Check on />
-      </button>
-      <button
-        type="button"
-        onClick={() => setEditing(a)}
-        className="flex min-h-12 min-w-0 flex-1 items-center gap-2 text-left"
-      >
-        <span className="min-w-0 flex-1">
-          <span className="block text-[0.8125rem] font-semibold text-status-pass">
-            {a.customer_supplied ? "Added · customer supplied" : "Added"}
-          </span>
-          <span className="block font-semibold">{additionLabel(a)}</span>
-        </span>
-        {charges && !a.customer_supplied ? (
-          <span className="shrink-0 text-text-muted tabular-nums">
-            {formatCents(lineTotal({ quantity: a.quantity, unit_price_cents: a.unit_price_cents }))}
-          </span>
-        ) : null}
-        <Chevron />
-      </button>
-    </div>
+  const onAdd = useStable((d: AdditionDraft) => add([d]));
+  const onEdit = useStable((a: ChemicalAddition) => setEditing(a));
+  const onEditSuggestion = useStable((d: AdditionDraft) =>
+    setEditing({ ...draftRow(d, 0), id: "" }),
   );
+  const onRemove = useStable((a: ChemicalAddition) => remove(a));
 
   return (
     <section
@@ -360,6 +407,9 @@ export function VisitChemicals(props: VisitChemicalsProps) {
                 id={`${panel}-gallons`}
                 inputMode="numeric"
                 autoComplete="off"
+                enterKeyHint="done"
+                onKeyDown={doneOnEnter}
+                onBlur={flush}
                 value={gallonsText}
                 placeholder="20,000"
                 onChange={(e) => change(setGallonsText)(withCommas(e.target.value))}
@@ -389,123 +439,31 @@ export function VisitChemicals(props: VisitChemicalsProps) {
           </div>
           <ol className="mt-1">
             {rows.map((row, i) => {
-              const status = result.statuses.find((s) => s.key === row.key);
-              const target = recommended[row.key]?.target;
-              const label = READINGS.find((x) => x.key === row.key)!.label;
+              const status = result.statuses.find((x) => x.key === row.key);
               return (
-                <li
+                <ReadingRow
                   key={row.key}
-                  className={cx(
-                    "grid gap-x-4 py-3 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.25fr)] lg:items-center",
-                    i > 0 && "border-t-[0.5px] border-separator",
-                  )}
-                  data-testid={`reading-${row.key}`}
-                >
-                  <div className="grid grid-cols-[minmax(0,1fr)_4.75rem_4.75rem] items-center gap-x-2">
-                    <div className="min-w-0">
-                      <p className="leading-tight font-medium">{label}</p>
-                      <p
-                        className={cx(
-                          "text-[0.9375rem]",
-                          !status
-                            ? "text-text-muted"
-                            : status.status === "ok"
-                              ? "font-semibold text-status-pass"
-                              : "font-semibold text-status-warning",
-                        )}
-                      >
-                        {!status
-                          ? "Not tested"
-                          : status.status === "ok"
-                            ? "In range"
-                            : status.status === "low"
-                              ? "Low"
-                              : "High"}
-                      </p>
-                    </div>
-                    <Cell
-                      label={`${READING_LABELS[row.key]} reading`}
-                      inputMode="decimal"
-                      value={values[row.key] ?? ""}
-                      onChange={(e) => change(setValues)({ ...values, [row.key]: e.target.value })}
-                    />
-                    <Cell
-                      label={`${READING_LABELS[row.key]}: aim for (recommended ${target})`}
-                      inputMode="decimal"
-                      placeholder={String(target)}
-                      value={goals[row.key] ?? ""}
-                      onChange={(e) => setGoal(row.key, e.target.value)}
-                    />
-                  </div>
-                  {row.step || row.added.length ? (
-                    <div className="well mt-2.5 px-3 pt-2 pb-1 lg:mt-0">
-                      {row.step ? (
-                        <>
-                          <div className="flex items-center gap-2 text-[0.9375rem]">
-                            {row.order ? (
-                              <span className="grid size-5 shrink-0 place-items-center rounded-full bg-primary text-[0.75rem] font-bold text-on-primary">
-                                {row.order}
-                              </span>
-                            ) : null}
-                            <span className="text-text-muted">Suggested</span>
-                            <span className="ml-auto text-right font-medium">
-                              {suggestionText(row.step)}
-                            </span>
-                          </div>
-                          {row.step.note && row.key === "ph" ? (
-                            <p className="mt-1 text-[0.9375rem] text-text-muted">
-                              Acid to water, never water to acid.
-                            </p>
-                          ) : row.step.note && !row.suggestion ? (
-                            <p className="mt-1 text-[0.9375rem] text-text-muted">{row.step.note}</p>
-                          ) : null}
-                        </>
-                      ) : null}
-                      <div className="mt-2 border-t-[0.5px] border-separator">
-                        {row.added.map(addedRow)}
-                        {row.added.length === 0 && row.suggestion ? (
-                          <div className="flex items-center gap-1">
-                            <button
-                              type="button"
-                              aria-label={`Mark added: ${additionLabel(row.suggestion)}`}
-                              onClick={() => add([row.suggestion!])}
-                              className="-ml-2 grid size-11 shrink-0 place-items-center"
-                            >
-                              <Check on={false} />
-                            </button>
-                            <button
-                              type="button"
-                              onClick={() =>
-                                setEditing({ ...draftRow(row.suggestion!, 0), id: "" })
-                              }
-                              className="flex min-h-12 min-w-0 flex-1 items-center gap-2 text-left"
-                            >
-                              <span className="min-w-0 flex-1">
-                                <span className="block text-[0.8125rem] text-text-muted">
-                                  Not added yet
-                                </span>
-                                <span className="block text-text-muted">
-                                  {additionLabel(row.suggestion)}
-                                </span>
-                              </span>
-                              {charges ? (
-                                <span className="shrink-0 text-text-muted tabular-nums">
-                                  {formatCents(
-                                    lineTotal({
-                                      quantity: row.suggestion.quantity,
-                                      unit_price_cents: row.suggestion.unit_price_cents,
-                                    }),
-                                  )}
-                                </span>
-                              ) : null}
-                              <Chevron />
-                            </button>
-                          </div>
-                        ) : null}
-                      </div>
-                    </div>
-                  ) : null}
-                </li>
+                  row={row}
+                  rowJson={JSON.stringify(row)}
+                  first={i === 0}
+                  label={READINGS.find((x) => x.key === row.key)!.label}
+                  status={status ? status.status : null}
+                  target={recommended[row.key]?.target}
+                  value={values[row.key] ?? ""}
+                  goal={goals[row.key] ?? ""}
+                  charges={charges}
+                  locked={row.added
+                    .filter((a) => locked.has(a.id))
+                    .map((a) => a.id)
+                    .join(" ")}
+                  onReading={setReading}
+                  onGoal={setGoal}
+                  onBlur={flush}
+                  onAdd={onAdd}
+                  onEdit={onEdit}
+                  onEditSuggestion={onEditSuggestion}
+                  onRemove={onRemove}
+                />
               );
             })}
           </ol>
@@ -619,6 +577,7 @@ export function VisitChemicals(props: VisitChemicalsProps) {
             id={`${panel}-notes`}
             value={notes}
             placeholder="Anything the customer should know"
+            onBlur={flush}
             onChange={(e) => change(setNotes)(e.target.value)}
             className="block min-h-20 w-full rounded-[10px] border border-control-border bg-surface px-3 py-2 text-text placeholder:text-placeholder focus:outline-3 focus:outline-offset-1 focus:outline-focus"
           />
@@ -672,6 +631,209 @@ export function VisitChemicals(props: VisitChemicalsProps) {
     </section>
   );
 }
+
+/** What a visit's readings save: the fields as typed. */
+interface SavedForm {
+  gallons: string;
+  readings: Partial<Record<ReadingKey, string>>;
+  goals: Partial<Record<ReadingKey, string>>;
+  chlorine: ChlorineProduct;
+  acid: AcidProduct;
+  notes: string;
+}
+
+interface ReadingRowProps {
+  row: ChemicalRow;
+  /** `row` as text: rows are worked out again on every change, so they're compared by content. */
+  rowJson: string;
+  first: boolean;
+  label: string;
+  status: "ok" | "low" | "high" | null;
+  target: number | undefined;
+  value: string;
+  goal: string;
+  charges: boolean;
+  /** The ids of this row's additions on a sent invoice, space-separated. */
+  locked: string;
+  onReading: (key: ReadingKey, v: string) => void;
+  onGoal: (key: ReadingKey, v: string) => void;
+  onBlur: () => void;
+  onAdd: (d: AdditionDraft) => void;
+  onEdit: (a: ChemicalAddition) => void;
+  onEditSuggestion: (d: AdditionDraft) => void;
+  onRemove: (a: ChemicalAddition) => void;
+}
+
+/**
+ * One reading: its name and status, Reading and Aim For, then Suggested and Added. Typing in one
+ * reading re-renders only the rows whose own values or suggestions changed (owner, 2026-10-25).
+ */
+const ReadingRow = memo(
+  function ReadingRow({
+    row,
+    first,
+    label,
+    status,
+    target,
+    value,
+    goal,
+    charges,
+    locked,
+    onReading,
+    onGoal,
+    onBlur,
+    onAdd,
+    onEdit,
+    onEditSuggestion,
+    onRemove,
+  }: ReadingRowProps) {
+    const lockedIds = new Set(locked.split(" "));
+    const addedRow = (a: ChemicalAddition) => (
+      <div key={a.id} className="flex items-center gap-1">
+        <button
+          type="button"
+          aria-label={`Remove ${additionLabel(a)}`}
+          disabled={lockedIds.has(a.id)}
+          onClick={() => onRemove(a)}
+          className="-ml-2 grid size-11 shrink-0 place-items-center disabled:opacity-60"
+        >
+          <Check on />
+        </button>
+        <button
+          type="button"
+          onClick={() => onEdit(a)}
+          className="flex min-h-12 min-w-0 flex-1 items-center gap-2 text-left"
+        >
+          <span className="min-w-0 flex-1">
+            <span className="block text-[0.8125rem] font-semibold text-status-pass">
+              {a.customer_supplied ? "Added · customer supplied" : "Added"}
+            </span>
+            <span className="block font-semibold">{additionLabel(a)}</span>
+          </span>
+          {charges && !a.customer_supplied ? (
+            <span className="shrink-0 text-text-muted tabular-nums">
+              {formatCents(
+                lineTotal({ quantity: a.quantity, unit_price_cents: a.unit_price_cents }),
+              )}
+            </span>
+          ) : null}
+          <Chevron />
+        </button>
+      </div>
+    );
+    return (
+      <li
+        className={cx(
+          "grid gap-x-4 py-3 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.25fr)] lg:items-center",
+          !first && "border-t-[0.5px] border-separator",
+        )}
+        data-testid={`reading-${row.key}`}
+      >
+        <div className="grid grid-cols-[minmax(0,1fr)_4.75rem_4.75rem] items-center gap-x-2">
+          <div className="min-w-0">
+            <p className="leading-tight font-medium">{label}</p>
+            <p
+              className={cx(
+                "text-[0.9375rem]",
+                !status
+                  ? "text-text-muted"
+                  : status === "ok"
+                    ? "font-semibold text-status-pass"
+                    : "font-semibold text-status-warning",
+              )}
+            >
+              {!status
+                ? "Not tested"
+                : status === "ok"
+                  ? "In range"
+                  : status === "low"
+                    ? "Low"
+                    : "High"}
+            </p>
+          </div>
+          <Cell
+            label={`${READING_LABELS[row.key]} reading`}
+            inputMode="decimal"
+            value={value}
+            onBlur={onBlur}
+            onChange={(e) => onReading(row.key, e.target.value)}
+          />
+          <Cell
+            label={`${READING_LABELS[row.key]}: aim for (recommended ${target})`}
+            inputMode="decimal"
+            placeholder={String(target)}
+            value={goal}
+            onBlur={onBlur}
+            onChange={(e) => onGoal(row.key, e.target.value)}
+          />
+        </div>
+        {row.step || row.added.length ? (
+          <div className="well mt-2.5 px-3 pt-2 pb-1 lg:mt-0">
+            {row.step ? (
+              <>
+                <div className="flex items-center gap-2 text-[0.9375rem]">
+                  {row.order ? (
+                    <span className="grid size-5 shrink-0 place-items-center rounded-full bg-primary text-[0.75rem] font-bold text-on-primary">
+                      {row.order}
+                    </span>
+                  ) : null}
+                  <span className="text-text-muted">Suggested</span>
+                  <span className="ml-auto text-right font-medium">{suggestionText(row.step)}</span>
+                </div>
+                {row.step.note && row.key === "ph" ? (
+                  <p className="mt-1 text-[0.9375rem] text-text-muted">
+                    Acid to water, never water to acid.
+                  </p>
+                ) : row.step.note && !row.suggestion ? (
+                  <p className="mt-1 text-[0.9375rem] text-text-muted">{row.step.note}</p>
+                ) : null}
+              </>
+            ) : null}
+            <div className="mt-2 border-t-[0.5px] border-separator">
+              {row.added.map(addedRow)}
+              {row.added.length === 0 && row.suggestion ? (
+                <div className="flex items-center gap-1">
+                  <button
+                    type="button"
+                    aria-label={`Mark added: ${additionLabel(row.suggestion)}`}
+                    onClick={() => onAdd(row.suggestion!)}
+                    className="-ml-2 grid size-11 shrink-0 place-items-center"
+                  >
+                    <Check on={false} />
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => onEditSuggestion(row.suggestion!)}
+                    className="flex min-h-12 min-w-0 flex-1 items-center gap-2 text-left"
+                  >
+                    <span className="min-w-0 flex-1">
+                      <span className="block text-[0.8125rem] text-text-muted">Not added yet</span>
+                      <span className="block text-text-muted">{additionLabel(row.suggestion)}</span>
+                    </span>
+                    {charges ? (
+                      <span className="shrink-0 text-text-muted tabular-nums">
+                        {formatCents(
+                          lineTotal({
+                            quantity: row.suggestion.quantity,
+                            unit_price_cents: row.suggestion.unit_price_cents,
+                          }),
+                        )}
+                      </span>
+                    ) : null}
+                    <Chevron />
+                  </button>
+                </div>
+              ) : null}
+            </div>
+          </div>
+        ) : null}
+      </li>
+    );
+  },
+  // `row` is compared by its text (`rowJson`); everything else as it is.
+  (a, b) =>
+    (Object.keys(a) as (keyof ReadingRowProps)[]).every((k) => k === "row" || a[k] === b[k]),
+);
 
 function toInput(a: ChemicalAddition): ChemicalInput {
   return {

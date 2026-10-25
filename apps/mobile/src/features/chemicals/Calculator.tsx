@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, type Ref } from "react";
 import { StyleSheet, Text, TextInput, View, type TextInputProps } from "react-native";
 import {
   ACID_PRODUCTS,
@@ -78,7 +78,12 @@ function savedGoals(): Record<string, string> {
 }
 
 /** A number box in the outlined field style. */
-export function Cell({ style, ...input }: TextInputProps) {
+export function Cell({
+  style,
+  onFocus,
+  onBlur,
+  ...input
+}: TextInputProps & { ref?: Ref<TextInput> }) {
   const [focused, setFocused] = useState(false);
   return (
     <TextInput
@@ -86,8 +91,14 @@ export function Cell({ style, ...input }: TextInputProps) {
       placeholderTextColor={color.placeholder}
       maxFontSizeMultiplier={MAX_TEXT_SCALE}
       {...input}
-      onFocus={() => setFocused(true)}
-      onBlur={() => setFocused(false)}
+      onFocus={(e) => {
+        setFocused(true);
+        onFocus?.(e);
+      }}
+      onBlur={(e) => {
+        setFocused(false);
+        onBlur?.(e);
+      }}
       style={[
         styles.cell,
         type.body,

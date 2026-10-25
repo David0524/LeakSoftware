@@ -37,7 +37,7 @@ export interface NextStepState {
   /** Wrap-Up's next step's action (core wrapUp), null when every step is done. */
   wrapUpAction?: string | null;
   /** A maintenance visit's report button (core visitReportBar): View Report or Send. */
-  visitAction?: "view" | "send" | null;
+  visitAction?: "view" | "send" | "photo" | null;
 }
 
 /**

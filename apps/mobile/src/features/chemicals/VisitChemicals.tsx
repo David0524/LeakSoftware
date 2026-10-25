@@ -1,4 +1,13 @@
-import { useEffect, useRef, useState, type ReactNode } from "react";
+import {
+  memo,
+  useCallback,
+  useEffect,
+  useLayoutEffect,
+  useMemo,
+  useRef,
+  useState,
+  type ReactNode,
+} from "react";
 import {
   Animated,
   Pressable,
@@ -34,21 +43,24 @@ import {
   type AdditionDraft,
   type ChemicalAddition,
   type ChemicalItem,
+  type ChemicalRow,
   type ChlorineProduct,
   type Property,
   type ReadingKey,
   type Readings,
 } from "@leakbook/core";
 import {
+  GOALS_KEY,
   addChemicals,
+  createVisitReadingSaver,
   removeChemical,
-  saveVisitReading,
   updateChemical,
   useChemicalItems,
   useChemicalLog,
   useLockedAdditions,
   useVisitAdditions,
   useVisitReading,
+  type VisitForm,
 } from "../../data/chemicals";
 import { getServices } from "../../lib/services";
 import { useCompany } from "../../state/session";
@@ -77,9 +89,6 @@ const READINGS: { key: ReadingKey; label: string }[] = [
   { key: "cya", label: "Stabilizer" },
   { key: "salt", label: "Salt" },
 ];
-
-/** Where this phone remembers the levels the tech aims for (as the calculator). */
-const GOALS_KEY = "chemicals:goals";
 
 const num = (v: string | undefined) => {
   const n = Number((v ?? "").replace(/,/g, ""));
@@ -126,8 +135,10 @@ export function VisitChemicals({
   const items = useChemicalItems(company.id);
   const additions = useVisitAdditions(company.id, jobId, items);
   const own = useVisitReading(jobId);
-  const latest = useChemicalLog(company.id).find(
-    (r) => r.property_id === pool.id && r.job_id !== jobId,
+  const log = useChemicalLog(company.id);
+  const latest = useMemo(
+    () => log.find((r) => r.property_id === pool.id && r.job_id !== jobId),
+    [log, pool.id, jobId],
   );
   const lastLine = latest
     ? `Last: ${readingSummary(latest)} · ${formatSchedule(latest.recorded_at, new Date(), company.timezone)}`
@@ -190,7 +201,25 @@ export function VisitChemicals({
   );
 }
 
-function Body({
+/** A function that keeps one identity across renders and always calls the latest `fn`. */
+function useStable<A extends unknown[], R>(fn: (...args: A) => R): (...args: A) => R {
+  const latest = useRef(fn);
+  useLayoutEffect(() => {
+    latest.current = fn;
+  });
+  return useCallback((...args: A) => latest.current(...args), []);
+}
+
+/** The order Next moves through the fields (Android's return key; the iPhone's keyboard bar). */
+const FIELD_ORDER = [
+  "gallons",
+  ...READINGS.flatMap(({ key }) => [`reading-${key}`, `goal-${key}`]),
+];
+
+// Typing re-renders only what changed (owner, 2026-10-25: "a little laggy … when typing in
+// multi digit numbers"): the card's header doesn't redraw the body, and each reading's row
+// redraws only when its own values or suggestion change.
+const Body = memo(function Body({
   pool,
   jobId,
   items,
@@ -237,50 +266,60 @@ function Body({
       touched.current = true;
       set(v);
     };
-  const setGoal = (key: ReadingKey, v: string) => {
+  const setReading = useCallback((key: ReadingKey, v: string) => {
     touched.current = true;
-    const next = { ...goals, [key]: v };
-    setGoalsState(next);
-    getServices().kv.set(GOALS_KEY, JSON.stringify(next));
-  };
+    setValues((now) => ({ ...now, [key]: v }));
+  }, []);
+  const setGoal = useCallback((key: ReadingKey, v: string) => {
+    touched.current = true;
+    setGoalsState((now) => ({ ...now, [key]: v }));
+  }, []);
 
-  // Saved as typed: half a second after the last change.
+  // Saved as typed: a second after typing stops, when a field is left (Next, Done, another
+  // field) and when the screen is left; nothing is written while the keys are going.
+  const visit = useStable(() => ({ companyId: company.id, jobId, pool }));
+  const [saver] = useState(() => createVisitReadingSaver({ visit, onSaved: setProblem }));
+  const form: VisitForm = useMemo(
+    () => ({ gallons: gallonsText, readings: values, goals, chlorine, acid, notes }),
+    [gallonsText, values, goals, chlorine, acid, notes],
+  );
   useEffect(() => {
-    if (!touched.current) return;
-    const t = setTimeout(() => {
-      setProblem(
-        saveVisitReading({
-          companyId: company.id,
-          jobId,
-          pool,
-          gallons: gallonsText,
-          readings: values,
-          goals,
-          chlorine,
-          acid,
-          notes,
-        }),
-      );
-    }, 500);
-    return () => clearTimeout(t);
-  }, [company.id, jobId, pool, gallonsText, values, goals, chlorine, acid, notes]);
+    if (touched.current) saver.change(form);
+  }, [saver, form]);
+  useEffect(() => () => void saver.flush(), [saver]);
+  const flush = useCallback(() => void saver.flush(), [saver]);
 
-  const readings: Readings = Object.fromEntries(READINGS.map(({ key }) => [key, num(values[key])]));
+  // Android's return key moves to the next field, and Done on the last puts the keyboard away.
+  const fields = useRef(new Map<string, TextInput | null>());
+  const fieldRef = useCallback(
+    (name: string) => (node: TextInput | null) => void fields.current.set(name, node),
+    [],
+  );
+  const focusNext = useCallback((name: string) => {
+    const next = FIELD_ORDER[FIELD_ORDER.indexOf(name) + 1];
+    if (next) fields.current.get(next)?.focus();
+  }, []);
+
+  const readings: Readings = useMemo(
+    () => Object.fromEntries(READINGS.map(({ key }) => [key, num(values[key])])),
+    [values],
+  );
   const typedLine = readingSummary(readings);
   useEffect(() => onTyped(typedLine), [onTyped, typedLine]);
-  const goalLevels = Object.fromEntries(
-    Object.entries(goals).map(([k, v]) => [k, num(v)]),
-  ) as Partial<Record<ReadingKey, number | null>>;
   const gallons = num(gallonsText) ?? 0;
-  const result = calculateChemistry({ gallons, readings, chlorine, acid, goals: goalLevels });
+  const result = useMemo(() => {
+    const goalLevels = Object.fromEntries(
+      Object.entries(goals).map(([k, v]) => [k, num(v)]),
+    ) as Partial<Record<ReadingKey, number | null>>;
+    return calculateChemistry({ gallons, readings, chlorine, acid, goals: goalLevels });
+  }, [gallons, readings, goals, chlorine, acid]);
   const ready = gallons > 0 && result.statuses.length > 0;
-  const { rows, extras } = chemicalRows(
-    ready ? result : { ...result, steps: [] },
-    additions,
-    items,
+  const { rows, extras } = useMemo(
+    () => chemicalRows(ready ? result : { ...result, steps: [] }, additions, items),
+    [ready, result, additions, items],
   );
   const unadded = openSuggestions(rows);
-  const recommended = targets(readings.cya);
+  const recommended = useMemo(() => targets(readings.cya), [readings.cya]);
   const [editing, setEditing] = useState<Editing | null>(null);
   const [picking, setPicking] = useState(false);
   const firstName = customerName?.split(" ")[0] || "the customer";
@@ -308,39 +347,12 @@ function Body({
     sort_order: additions.length,
   });
 
-  const addedRow = (a: ChemicalAddition) => {
-    const isLocked = locked.has(a.id);
-    return (
-      <View key={a.id} style={styles.addRow}>
-        <Pressable
-          accessibilityRole="button"
-          accessibilityLabel={`Remove ${additionLabel(a)}`}
-          accessibilityState={{ disabled: isLocked }}
-          disabled={isLocked}
-          onPress={() => remove(a)}
-          style={[styles.checkTap, isLocked && { opacity: 0.6 }]}
-        >
-          <Check done />
-        </Pressable>
-        <Pressable
-          accessibilityRole="button"
-          accessibilityHint={isLocked ? "On a sent invoice" : "Changes the amount or the chemical"}
-          onPress={() => setEditing({ row: a, isNew: false })}
-          style={styles.addText}
-        >
-          <View style={{ flex: 1 }}>
-            <T variant="footnote" style={[face.semiBold, { color: color.pass }]}>
-              {a.customer_supplied ? "Added · customer supplied" : "Added"}
-            </T>
-            <T variant="bodyEmphasis">{additionLabel(a)}</T>
-            {large && charges && !a.customer_supplied ? <Price cents={lineTotal(a)} /> : null}
-          </View>
-          {!large && charges && !a.customer_supplied ? <Price cents={lineTotal(a)} /> : null}
-          <Chevron />
-        </Pressable>
-      </View>
-    );
-  };
+  const onAdd = useStable((d: AdditionDraft) => add([d]));
+  const onEdit = useStable((a: ChemicalAddition) => setEditing({ row: a, isNew: false }));
+  const onEditSuggestion = useStable((d: AdditionDraft) =>
+    setEditing({ row: draftRow(d), isNew: true }),
+  );
+  const onRemove = useStable((a: ChemicalAddition) => remove(a));
 
   return (
     <View style={[styles.body, { borderTopColor: color.separator }]}>
@@ -350,8 +362,13 @@ function Body({
         </T>
         <View style={large ? undefined : { width: 150 }}>
           <Cell
+            ref={fieldRef("gallons")}
             accessibilityLabel="Gallons"
             keyboardType="number-pad"
+            returnKeyType="next"
+            submitBehavior="submit"
+            onSubmitEditing={() => focusNext("gallons")}
+            onBlur={flush}
             value={gallonsText}
             onChangeText={(v) => change(setGallonsText)(withCommas(v))}
             placeholder="20,000"
@@ -386,131 +403,34 @@ function Body({
         </View>
       )}
       {rows.map((row, i) => {
-        const status = result.statuses.find((s) => s.key === row.key);
-        const target = recommended[row.key]?.target;
-        const label = READINGS.find((x) => x.key === row.key)!.label;
-        const word = !status
-          ? "Not tested"
-          : status.status === "ok"
-            ? "In range"
-            : status.status === "low"
-              ? "Low"
-              : "High";
+        const status = result.statuses.find((x) => x.key === row.key);
         return (
-          <View
+          <ReadingRow
             key={row.key}
-            style={[
-              styles.reading,
-              i > 0 && { borderTopWidth: StyleSheet.hairlineWidth },
-              { borderTopColor: color.separator },
-            ]}
-          >
-            <View style={large ? styles.stacked : styles.readingTop}>
-              <View style={large ? styles.nameLine : { flex: 1 }} accessible>
-                <T variant="bodyMedium">{label}</T>
-                <T
-                  variant="secondary"
-                  style={[
-                    status && face.semiBold,
-                    {
-                      color: !status
-                        ? color.textMuted
-                        : status.status === "ok"
-                          ? color.pass
-                          : color.warning,
-                    },
-                  ]}
-                >
-                  {word}
-                </T>
-              </View>
-              <Labeled title="Reading" large={large}>
-                <Cell
-                  accessibilityLabel={`${READING_LABELS[row.key]} reading`}
-                  value={values[row.key] ?? ""}
-                  onChangeText={(v) => change(setValues)({ ...values, [row.key]: v })}
-                  style={large ? styles.wide : undefined}
-                />
-              </Labeled>
-              <Labeled title="Aim For" large={large}>
-                <Cell
-                  accessibilityLabel={`${READING_LABELS[row.key]}: aim for (recommended ${target})`}
-                  placeholder={String(target)}
-                  value={goals[row.key] ?? ""}
-                  onChangeText={(v) => setGoal(row.key, v)}
-                  style={large ? styles.wide : undefined}
-                />
-              </Labeled>
-            </View>
-            {row.step || row.added.length ? (
-              <View style={[styles.well, { backgroundColor: color.well }]}>
-                {row.step ? (
-                  <>
-                    <View style={large ? styles.stackedTight : styles.suggested} accessible>
-                      <View style={styles.suggested}>
-                        {row.order ? (
-                          <View style={[styles.order, { backgroundColor: color.primary }]}>
-                            <Text style={[styles.orderText, { color: color.onPrimary }]}>
-                              {row.order}
-                            </Text>
-                          </View>
-                        ) : null}
-                        <T variant="secondary" muted>
-                          Suggested
-                        </T>
-                      </View>
-                      <T
-                        variant="secondary"
-                        style={[face.medium, styles.suggestion, large && { textAlign: "left" }]}
-                      >
-                        {suggestionText(row.step)}
-                      </T>
-                    </View>
-                    {row.step.note && row.key === "ph" ? (
-                      <T variant="secondary" muted>
-                        Acid to water, never water to acid.
-                      </T>
-                    ) : row.step.note && !row.suggestion ? (
-                      <T variant="secondary" muted>
-                        {row.step.note}
-                      </T>
-                    ) : null}
-                  </>
-                ) : null}
-                <View style={[styles.wellRows, { borderTopColor: color.separator }]}>
-                  {row.added.map(addedRow)}
-                  {row.added.length === 0 && row.suggestion ? (
-                    <View style={styles.addRow}>
-                      <Pressable
-                        accessibilityRole="button"
-                        accessibilityLabel={`Mark added: ${additionLabel(row.suggestion)}`}
-                        onPress={() => add([row.suggestion!])}
-                        style={styles.checkTap}
-                      >
-                        <Check done={false} />
-                      </Pressable>
-                      <Pressable
-                        accessibilityRole="button"
-                        accessibilityHint="Change the amount before adding it"
-                        onPress={() => setEditing({ row: draftRow(row.suggestion!), isNew: true })}
-                        style={styles.addText}
-                      >
-                        <View style={{ flex: 1 }}>
-                          <T variant="footnote" muted>
-                            Not added yet
-                          </T>
-                          <T muted>{additionLabel(row.suggestion)}</T>
-                          {large && charges ? <Price cents={lineTotal(row.suggestion)} /> : null}
-                        </View>
-                        {!large && charges ? <Price cents={lineTotal(row.suggestion)} /> : null}
-                        <Chevron />
-                      </Pressable>
-                    </View>
-                  ) : null}
-                </View>
-              </View>
-            ) : null}
-          </View>
+            row={row}
+            rowJson={JSON.stringify(row)}
+            first={i === 0}
+            large={large}
+            charges={charges}
+            status={status ? status.status : null}
+            target={recommended[row.key]?.target}
+            value={values[row.key] ?? ""}
+            goal={goals[row.key] ?? ""}
+            last={i === rows.length - 1}
+            locked={row.added
+              .filter((a) => locked.has(a.id))
+              .map((a) => a.id)
+              .join(" ")}
+            onReading={setReading}
+            onGoal={setGoal}
+            onBlur={flush}
+            fieldRef={fieldRef}
+            focusNext={focusNext}
+            onAdd={onAdd}
+            onEdit={onEdit}
+            onEditSuggestion={onEditSuggestion}
+            onRemove={onRemove}
+          />
         );
       })}
       <T variant="secondary" muted>
@@ -615,6 +535,7 @@ function Body({
           placeholder="Anything the customer should know"
           placeholderTextColor={color.placeholder}
           maxFontSizeMultiplier={MAX_TEXT_SCALE}
+          onBlur={flush}
           onChangeText={change(setNotes)}
           style={[
             type.body,
@@ -671,7 +592,228 @@ function Body({
       />
     </View>
   );
+});
+
+interface ReadingRowProps {
+  row: ChemicalRow;
+  /** `row` as text: rows are worked out again on every change, so they're compared by content. */
+  rowJson: string;
+  first: boolean;
+  last: boolean;
+  large: boolean;
+  charges: boolean;
+  status: "ok" | "low" | "high" | null;
+  target: number | undefined;
+  value: string;
+  goal: string;
+  /** The ids of this row's additions on a sent invoice, space-separated. */
+  locked: string;
+  onReading: (key: ReadingKey, v: string) => void;
+  onGoal: (key: ReadingKey, v: string) => void;
+  onBlur: () => void;
+  fieldRef: (name: string) => (node: TextInput | null) => void;
+  focusNext: (name: string) => void;
+  onAdd: (d: AdditionDraft) => void;
+  onEdit: (a: ChemicalAddition) => void;
+  onEditSuggestion: (d: AdditionDraft) => void;
+  onRemove: (a: ChemicalAddition) => void;
 }
+
+/** One reading: its name and status, Reading and Aim For, then Suggested and Added. */
+const ReadingRow = memo(
+  function ReadingRow({
+    row,
+    first,
+    last,
+    large,
+    charges,
+    status,
+    target,
+    value,
+    goal,
+    locked,
+    onReading,
+    onGoal,
+    onBlur,
+    fieldRef,
+    focusNext,
+    onAdd,
+    onEdit,
+    onEditSuggestion,
+    onRemove,
+  }: ReadingRowProps) {
+    const lockedIds = new Set(locked.split(" "));
+    const label = READINGS.find((x) => x.key === row.key)!.label;
+    const word = !status
+      ? "Not tested"
+      : status === "ok"
+        ? "In range"
+        : status === "low"
+          ? "Low"
+          : "High";
+    const readingName = `reading-${row.key}`;
+    const goalName = `goal-${row.key}`;
+    const addedRow = (a: ChemicalAddition) => {
+      const isLocked = lockedIds.has(a.id);
+      return (
+        <View key={a.id} style={styles.addRow}>
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel={`Remove ${additionLabel(a)}`}
+            accessibilityState={{ disabled: isLocked }}
+            disabled={isLocked}
+            onPress={() => onRemove(a)}
+            style={[styles.checkTap, isLocked && { opacity: 0.6 }]}
+          >
+            <Check done />
+          </Pressable>
+          <Pressable
+            accessibilityRole="button"
+            accessibilityHint={
+              isLocked ? "On a sent invoice" : "Changes the amount or the chemical"
+            }
+            onPress={() => onEdit(a)}
+            style={styles.addText}
+          >
+            <View style={{ flex: 1 }}>
+              <T variant="footnote" style={[face.semiBold, { color: color.pass }]}>
+                {a.customer_supplied ? "Added · customer supplied" : "Added"}
+              </T>
+              <T variant="bodyEmphasis">{additionLabel(a)}</T>
+              {large && charges && !a.customer_supplied ? <Price cents={lineTotal(a)} /> : null}
+            </View>
+            {!large && charges && !a.customer_supplied ? <Price cents={lineTotal(a)} /> : null}
+            <Chevron />
+          </Pressable>
+        </View>
+      );
+    };
+    return (
+      <View
+        style={[
+          styles.reading,
+          !first && { borderTopWidth: StyleSheet.hairlineWidth },
+          { borderTopColor: color.separator },
+        ]}
+      >
+        <View style={large ? styles.stacked : styles.readingTop}>
+          <View style={large ? styles.nameLine : { flex: 1 }} accessible>
+            <T variant="bodyMedium">{label}</T>
+            <T
+              variant="secondary"
+              style={[
+                status && face.semiBold,
+                {
+                  color: !status ? color.textMuted : status === "ok" ? color.pass : color.warning,
+                },
+              ]}
+            >
+              {word}
+            </T>
+          </View>
+          <Labeled title="Reading" large={large}>
+            <Cell
+              ref={fieldRef(readingName)}
+              accessibilityLabel={`${READING_LABELS[row.key]} reading`}
+              value={value}
+              returnKeyType="next"
+              submitBehavior="submit"
+              onSubmitEditing={() => focusNext(readingName)}
+              onBlur={onBlur}
+              onChangeText={(v) => onReading(row.key, v)}
+              style={large ? styles.wide : undefined}
+            />
+          </Labeled>
+          <Labeled title="Aim For" large={large}>
+            <Cell
+              ref={fieldRef(goalName)}
+              accessibilityLabel={`${READING_LABELS[row.key]}: aim for (recommended ${target})`}
+              placeholder={String(target)}
+              value={goal}
+              returnKeyType={last ? "done" : "next"}
+              submitBehavior={last ? "blurAndSubmit" : "submit"}
+              onSubmitEditing={() => focusNext(goalName)}
+              onBlur={onBlur}
+              onChangeText={(v) => onGoal(row.key, v)}
+              style={large ? styles.wide : undefined}
+            />
+          </Labeled>
+        </View>
+        {row.step || row.added.length ? (
+          <View style={[styles.well, { backgroundColor: color.well }]}>
+            {row.step ? (
+              <>
+                <View style={large ? styles.stackedTight : styles.suggested} accessible>
+                  <View style={styles.suggested}>
+                    {row.order ? (
+                      <View style={[styles.order, { backgroundColor: color.primary }]}>
+                        <Text style={[styles.orderText, { color: color.onPrimary }]}>
+                          {row.order}
+                        </Text>
+                      </View>
+                    ) : null}
+                    <T variant="secondary" muted>
+                      Suggested
+                    </T>
+                  </View>
+                  <T
+                    variant="secondary"
+                    style={[face.medium, styles.suggestion, large && { textAlign: "left" }]}
+                  >
+                    {suggestionText(row.step)}
+                  </T>
+                </View>
+                {row.step.note && row.key === "ph" ? (
+                  <T variant="secondary" muted>
+                    Acid to water, never water to acid.
+                  </T>
+                ) : row.step.note && !row.suggestion ? (
+                  <T variant="secondary" muted>
+                    {row.step.note}
+                  </T>
+                ) : null}
+              </>
+            ) : null}
+            <View style={[styles.wellRows, { borderTopColor: color.separator }]}>
+              {row.added.map(addedRow)}
+              {row.added.length === 0 && row.suggestion ? (
+                <View style={styles.addRow}>
+                  <Pressable
+                    accessibilityRole="button"
+                    accessibilityLabel={`Mark added: ${additionLabel(row.suggestion)}`}
+                    onPress={() => onAdd(row.suggestion!)}
+                    style={styles.checkTap}
+                  >
+                    <Check done={false} />
+                  </Pressable>
+                  <Pressable
+                    accessibilityRole="button"
+                    accessibilityHint="Change the amount before adding it"
+                    onPress={() => onEditSuggestion(row.suggestion!)}
+                    style={styles.addText}
+                  >
+                    <View style={{ flex: 1 }}>
+                      <T variant="footnote" muted>
+                        Not added yet
+                      </T>
+                      <T muted>{additionLabel(row.suggestion)}</T>
+                      {large && charges ? <Price cents={lineTotal(row.suggestion)} /> : null}
+                    </View>
+                    {!large && charges ? <Price cents={lineTotal(row.suggestion)} /> : null}
+                    <Chevron />
+                  </Pressable>
+                </View>
+              ) : null}
+            </View>
+          </View>
+        ) : null}
+      </View>
+    );
+  },
+  // `row` is compared by its text (`rowJson`); everything else as it is.
+  (a, b) =>
+    (Object.keys(a) as (keyof ReadingRowProps)[]).every((k) => k === "row" || a[k] === b[k]),
+);
 
 /** A line's price: beside it, or on its own line when stacked (large text). */
 function Price({ cents }: { cents: number }) {

@@ -1,11 +1,12 @@
 "use client";
 
-import { useState, useTransition, type ReactNode } from "react";
+import { useEffect, useState, useTransition, type ReactNode } from "react";
 import { COMPLETE_READY_LINE, type JobStatus, type VisitReportBar } from "@leakbook/core";
 import { changeJobStatus } from "@/app/actions/inspection";
 import { orOffline } from "@/lib/offline";
 import { NEXT_STEP_LABELS, nextStepButtons, type NextStep } from "@/lib/next-step";
 import { CompleteJobButton, type SendPrompt } from "./job-work";
+import { JOB_TAB_EVENT, showPhotos } from "./job-tab";
 import { requestNextStep, useTyping } from "./next-step-events";
 import { saveFailed, useJobStatus, useSetJobStatus } from "./instant";
 import { Sheet } from "./sheet";
@@ -44,6 +45,13 @@ export function NextStepBar({ section, job }: { section: string; job: NextStepJo
   const status = useJobStatus(job.jobId, job.status);
   const [sheet, setSheet] = useState(false);
   const visit = job.visitReport ?? null;
+  // Switching part (the sheet's Add Photo goes to Photos) closes the sheet.
+  useEffect(() => {
+    if (!sheet) return;
+    const close = () => setSheet(false);
+    window.addEventListener(JOB_TAB_EVENT, close);
+    return () => window.removeEventListener(JOB_TAB_EVENT, close);
+  }, [sheet]);
   const buttons: NextStep[] = nextStepButtons({
     ...job,
     status,
@@ -115,6 +123,15 @@ export function NextStepBar({ section, job }: { section: string; job: NextStepJo
                   >
                     {visit.bar.label}
                   </a>
+                ) : visit.bar.action === "photo" ? (
+                  // Require a Photo (owner, 2026-10-25): to Photos, where Add Photo is.
+                  <button
+                    type="button"
+                    onClick={showPhotos}
+                    className={buttonClass("primary", "w-full px-3")}
+                  >
+                    {visit.bar.label ?? NEXT_STEP_LABELS[step]}
+                  </button>
                 ) : (
                   <button
                     type="button"

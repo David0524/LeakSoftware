@@ -50,6 +50,15 @@ CYA, salt):
   reading as typed, each added chemical on the tap. No Submit on a visit (question 4). The
   standalone Chemicals page (More › Chemicals, and a customer's pool) stays a calculator with
   Submit to the pool's log and no added chemicals, since those belong to a visit.
+- **Typing and the keyboard** (owner, 2026-10-25: "There isn't a good way to minimize the number
+  keyboard"; "a little laggy … when typing in multi digit numbers"). The readings save as typed
+  text does everywhere (one-handed use, item 4): one second after typing stops, when a field is
+  left and when the screen is left, never per keystroke; the levels aimed for are remembered on
+  the device with each save. Typing redraws only the reading that changed. The number pads have
+  no return key, so: iPhone apps show the keyboard bar (**Previous**, **Next**, **Done**, through
+  Gallons, each Reading and Aim For, then Notes); Android's return key is **Next** and, on the
+  last Aim For, **Done**; the website's fields show **Done** (`enterkeyhint`) and Enter puts the
+  keyboard away. Scrolling the job page, or tapping beside the fields, puts it away too.
 
 ## 2. Data model
 

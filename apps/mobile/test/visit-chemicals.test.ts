@@ -35,8 +35,10 @@ function service() {
 }
 
 const sync = service();
-vi.mock("../src/lib/services", () => ({ getServices: () => ({ sync }) }));
-const { addChemicals, removeChemical, saveVisitReading, updateChemical } =
+const kvWrites: [string, string][] = [];
+const kv = { get: () => null, set: (k: string, v: string) => void kvWrites.push([k, v]) };
+vi.mock("../src/lib/services", () => ({ getServices: () => ({ sync, kv }) }));
+const { addChemicals, createVisitReadingSaver, removeChemical, saveVisitReading, updateChemical } =
   await import("../src/data/chemicals");
 
 const company = "0190b6b0-0000-7000-8000-000000000001";
@@ -89,6 +91,66 @@ describe("a visit's Chemicals", () => {
     expect(sync.get("chemical_reading", job)?.deleted_at).toBeTruthy();
     saveVisitReading(input({ fc: "2" }));
     expect(sync.get("chemical_reading", job)).toMatchObject({ fc: 2, deleted_at: null });
+  });
+
+  it("writes nothing while the keys are going: once when typing stops or the field is left", () => {
+    // Owner, 2026-10-25: "a little laggy … when typing in multi digit numbers". Before, every
+    // Aim For keystroke wrote the remembered levels at once and any half-second pause saved the
+    // reading: these 7 keys, 600 ms apart, made 6 reading writes and 3 level writes. Now: one each.
+    vi.useFakeTimers();
+    try {
+      const visitJob = "0190b6b0-0000-7000-8000-000000000009";
+      const writes = vi.spyOn(sync, "write");
+      kvWrites.length = 0;
+      const problems: (string | null)[] = [];
+      const saver = createVisitReadingSaver({
+        visit: () => ({ companyId: company, jobId: visitJob, pool }),
+        onSaved: (p) => problems.push(p),
+      });
+      const form = (readings: Record<string, string>, goals: Record<string, string> = {}) => ({
+        gallons: "20,000",
+        readings,
+        goals,
+        chlorine: "liquid12" as const,
+        acid: "muriatic31" as const,
+        notes: "",
+      });
+      // Keys 600 ms apart: a tech reading the strip between digits.
+      const keys = [
+        form({ ch: "3" }),
+        form({ ch: "32" }),
+        form({ ch: "320" }),
+        form({ ch: "3200" }),
+        form({ ch: "3200" }, { ph: "7" }),
+        form({ ch: "3200" }, { ph: "7." }),
+        form({ ch: "3200" }, { ph: "7.6" }),
+      ];
+      for (const k of keys) {
+        saver.change(k);
+        vi.advanceTimersByTime(600);
+      }
+      expect(writes).not.toHaveBeenCalled();
+      expect(kvWrites).toHaveLength(0);
+      vi.advanceTimersByTime(400);
+      expect(writes.mock.calls.filter(([t]) => t === "chemical_reading")).toHaveLength(1);
+      expect(kvWrites).toEqual([["chemicals:goals", JSON.stringify({ ph: "7.6" })]]);
+      expect(sync.get("chemical_reading", visitJob)).toMatchObject({
+        ch: 3200,
+        goals: { ph: 7.6 },
+      });
+      expect(problems).toEqual([null]);
+
+      // Leaving the field (Next, Done) or the screen saves at once; nothing waiting, nothing sent.
+      writes.mockClear();
+      saver.change(form({ ch: "3200", fc: "3" }, { ph: "7.6" }));
+      expect(saver.flush()).toBe(true);
+      expect(sync.get("chemical_reading", visitJob)).toMatchObject({ fc: 3 });
+      expect(saver.flush()).toBe(false);
+      expect(writes.mock.calls.filter(([t]) => t === "chemical_reading")).toHaveLength(1);
+      writes.mockRestore();
+    } finally {
+      vi.useRealTimers();
+    }
   });
 
   it("adds, changes and removes chemicals, never writing a price", () => {

@@ -1,9 +1,13 @@
 import type { Metadata } from "next";
 import {
   CHARGE_CHEMICALS_TEXT,
+  CHEMICALS_CATEGORY,
+  PRICE_BOOK_TEXT,
   chargesChemicals,
   companyServices,
   offersPool,
+  priceBookCategoryChoices,
+  priceBookSections,
 } from "@leakbook/core";
 import { formatCents } from "@leakbook/core";
 import { removeConfigRow, savePriceItem } from "@/app/actions/settings";
@@ -16,6 +20,7 @@ import {
 } from "@/components/settings-forms";
 import { SettingsListPage, SheetDanger, SheetRow } from "@/components/settings-list";
 import { ChargeChemicalsSwitch } from "@/components/charge-chemicals";
+import { PriceBookChemicals, PriceCategoryField } from "@/components/price-book";
 import { Empty, Grouped } from "@/components/ui";
 import { getOffice } from "@/lib/auth";
 import { listConfig, type ComponentType, getCompany } from "@/lib/data";
@@ -36,7 +41,15 @@ interface PriceItem {
   on_repair_call?: boolean;
 }
 
-function ItemFields({ item, types }: { item?: PriceItem; types: ComponentType[] }) {
+function ItemFields({
+  item,
+  types,
+  categories,
+}: {
+  item?: PriceItem;
+  types: ComponentType[];
+  categories: string[];
+}) {
   const p = item?.id ?? "new";
   return (
     <>
@@ -56,12 +69,7 @@ function ItemFields({ item, types }: { item?: PriceItem; types: ComponentType[] 
           defaultValue={item ? (item.price_cents / 100).toFixed(2) : ""}
         />
         <SField label="Unit" name="unit" id={`unit-${p}`} defaultValue={item?.unit ?? "each"} />
-        <SField
-          label="Category"
-          name="category"
-          id={`category-${p}`}
-          defaultValue={item?.category ?? ""}
-        />
+        <PriceCategoryField idPrefix={p} category={item?.category} choices={categories} />
         <SSelect
           label="Suggest for"
           name="component_type_key"
@@ -128,15 +136,56 @@ export default async function PriceBookPage() {
     leak: "Detection fees and repairs techs pick from when building a quote.",
     both: "Detection fees, cleanings, chemicals, and repairs techs pick from when building a quote.",
   }[companyServices(company.settings)];
-  // Grouped by category, in the order the categories first appear; uncategorized items last.
-  const groups = new Map<string, PriceItem[]>();
-  for (const item of items) {
-    const key = item.category?.trim() ?? "";
-    groups.set(key, [...(groups.get(key) ?? []), item]);
-  }
+  // Grouped by category, Chemicals first and uncategorized items last (owner, 2026-10-25).
+  const pool = offersPool(company.settings);
+  const sections = priceBookSections(items);
+  const categories = priceBookCategoryChoices(items, pool);
   const charges = chargesChemicals(company.settings);
-  const sections = [...groups.entries()].sort(([a], [b]) => Number(a === "") - Number(b === ""));
-  const titled = sections.length > 1 || (sections[0] && sections[0][0] !== "");
+  const titled = sections.length > 1 || (sections[0] && sections[0].category !== "");
+  const rowsOf = (rows: PriceItem[]) =>
+    rows.map((item) => (
+      <SheetRow
+        key={item.id}
+        testId="price-item"
+        remove={{
+          table: "price_book_item",
+          id: item.id,
+          path: "/settings/price-book",
+          confirm: "Remove this item from the price book?",
+          confirmLabel: "Remove Item",
+        }}
+        title={item.name}
+        label={item.name}
+        detail={
+          [item.active ? null : "Hidden", item.on_repair_call ? "On the repair menu" : null]
+            .filter(Boolean)
+            .join(" · ") || undefined
+        }
+        value={
+          <span className="inline-block max-w-48 tabular-nums [overflow-wrap:anywhere]">
+            <span className="text-text">{formatCents(item.price_cents)}</span> / {item.unit}
+          </span>
+        }
+      >
+        <SettingsForm action={savePriceItem} submit="Save Item" primary full>
+          <input type="hidden" name="id" value={item.id} />
+          <ItemFields item={item} types={types} categories={categories} />
+        </SettingsForm>
+        <SheetDanger>
+          <SettingsForm
+            action={removeConfigRow}
+            submit="Remove Item"
+            danger
+            full
+            confirm="Remove this item from the price book?"
+          >
+            <input type="hidden" name="table" value="price_book_item" />
+            <input type="hidden" name="id" value={item.id} />
+            <input type="hidden" name="path" value="/settings/price-book" />
+          </SettingsForm>
+        </SheetDanger>
+      </SheetRow>
+    ));
 
   return (
     <SettingsListPage
@@ -146,7 +195,7 @@ export default async function PriceBookPage() {
         label: "Add Item",
         form: (
           <SettingsForm action={savePriceItem} submit="Add Item" primary full>
-            <ItemFields types={types} />
+            <ItemFields types={types} categories={categories} />
           </SettingsForm>
         ),
       }}
@@ -155,7 +204,7 @@ export default async function PriceBookPage() {
       {/* Chemicals that techs add on visits go on the monthly invoice when the shop charges for
           them (owner, 2026-10-24); the switch sits with the prices it uses. Only owners and
           admins reach this page. */}
-      {offersPool(company.settings) && !groups.has("Chemicals") ? (
+      {pool && !sections.some((s) => s.category === CHEMICALS_CATEGORY) ? (
         <Grouped
           title="Chemicals"
           footer={charges ? CHARGE_CHEMICALS_TEXT.on : CHARGE_CHEMICALS_TEXT.off}
@@ -165,72 +214,25 @@ export default async function PriceBookPage() {
           </li>
         </Grouped>
       ) : null}
-      {sections.map(([category, rows]) => (
-        <div key={category}>
-          {category === "Chemicals" && offersPool(company.settings) ? (
-            <Grouped
-              title="Chemicals"
-              className="mb-4"
-              footer={charges ? CHARGE_CHEMICALS_TEXT.on : CHARGE_CHEMICALS_TEXT.off}
-            >
-              <li>
-                <ChargeChemicalsSwitch initial={charges} />
-              </li>
-            </Grouped>
-          ) : null}
-          <Grouped
-            title={
-              titled && !(category === "Chemicals" && offersPool(company.settings))
-                ? category || "Other items"
-                : undefined
-            }
+      {sections.map(({ category, items: rows }) =>
+        category === CHEMICALS_CATEGORY ? (
+          <PriceBookChemicals
+            key={category}
+            charges={charges}
+            showSwitch={pool}
+            count={rows.length}
           >
-            {rows.map((item) => (
-              <SheetRow
-                key={item.id}
-                testId="price-item"
-                remove={{
-                  table: "price_book_item",
-                  id: item.id,
-                  path: "/settings/price-book",
-                  confirm: "Remove this item from the price book?",
-                  confirmLabel: "Remove Item",
-                }}
-                title={item.name}
-                label={item.name}
-                detail={
-                  [item.active ? null : "Hidden", item.on_repair_call ? "On the repair menu" : null]
-                    .filter(Boolean)
-                    .join(" · ") || undefined
-                }
-                value={
-                  <span className="inline-block max-w-48 tabular-nums [overflow-wrap:anywhere]">
-                    <span className="text-text">{formatCents(item.price_cents)}</span> / {item.unit}
-                  </span>
-                }
-              >
-                <SettingsForm action={savePriceItem} submit="Save Item" primary full>
-                  <input type="hidden" name="id" value={item.id} />
-                  <ItemFields item={item} types={types} />
-                </SettingsForm>
-                <SheetDanger>
-                  <SettingsForm
-                    action={removeConfigRow}
-                    submit="Remove Item"
-                    danger
-                    full
-                    confirm="Remove this item from the price book?"
-                  >
-                    <input type="hidden" name="table" value="price_book_item" />
-                    <input type="hidden" name="id" value={item.id} />
-                    <input type="hidden" name="path" value="/settings/price-book" />
-                  </SettingsForm>
-                </SheetDanger>
-              </SheetRow>
-            ))}
+            {rowsOf(rows)}
+          </PriceBookChemicals>
+        ) : (
+          <Grouped
+            key={category}
+            title={titled ? category || PRICE_BOOK_TEXT.uncategorized : undefined}
+          >
+            {rowsOf(rows)}
           </Grouped>
-        </div>
-      ))}
+        ),
+      )}
     </SettingsListPage>
   );
 }

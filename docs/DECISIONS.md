@@ -2,6 +2,11 @@
 
 Newest first. Each entry: date, decision, reason.
 
+## 2026-10-25 (owner: chemicals card keyboard and lag; Require a Photo; price book)
+- **Chemicals card typing**: readings save one second after typing stops, at once when a field is left, and when the screen is left; nothing is written per keystroke. Number pads get a Done (iPhone: the app's Previous/Next/Done bar; Android: Next and Done keys; web: Enter is Done), and scrolling puts the keyboard away.
+- **Require a Photo** (Settings › Report Templates › Visit reports; off by default; `company.settings.require_report_photo`): a visit's report can't be sent until the visit has a photo ("Add a photo to send this report", with Add Photo). Automatic sends wait and go once a photo is added; the monthly report with the invoice is never held up. Enforced in `send_visit_report` and `visit_reports_due` (`20261022003200_report_photo.sql`). Separate from Team › "Take a pool photo first", which covers Complete Job and Wrap-Up reports.
+- **Price book**: Chemicals is the first group, opening and closing, closed while Charge for Chemicals is off (the switch stays visible). A new or edited item's category is chosen from the shop's categories or Other, with a box for a new one; left blank, it is "Other".
+
 ## 2026-10-25 (owner: "I don't like how the popup on web mimics Apple"; picked option A for every pop-up)
 - **The website's pop-ups are its own style, not Apple's** (changes the 2026-10-16 "website feels like iOS" rule for pop-ups only): every confirmation and choice (Discard changes?, Delete, Send, Move visits) is a white card with the title and message on the left and pill buttons at the bottom right; the way back is a gray pill, a destructive action filled red, any other action filled blue, and choices are tinted pills above Cancel. Centered on wider screens; on phones it rises from the bottom with full-width buttons, the action on top. One component (`DialogFrame` in `apps/web/src/components/sheet.tsx`). The iPhone and Android apps keep their system alerts and action sheets; sheets, menus and the rest of the website stay as they are.
 - **Sign-in, sign-up and password forms never ask "Discard changes?"** (`data-no-discard`): they aren't edits, and tapping Forgot Password asked.

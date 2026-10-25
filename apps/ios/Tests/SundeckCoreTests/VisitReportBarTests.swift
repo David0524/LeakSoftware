@@ -14,10 +14,13 @@ import Testing
         checkRule(module, "visitReportBar") { c in
             visitReportBar(
                 jobType: try c.arg(0), status: try c.arg(1), mode: try c.arg(2), sentAt: try c.arg(3, as: String?.self),
-                now: try isoInstant(c.arg(4)), timeZone: try c.arg(5))
+                now: try isoInstant(c.arg(4)), timeZone: try c.arg(5), needsPhoto: try c.arg(6))
         }
         checkRule(module, "VISIT_REPORT_BAR_LABELS") { _ in
-            ["view": VisitReportBarAction.view.label, "send": VisitReportBarAction.send.label]
+            [
+                "view": VisitReportBarAction.view.label, "send": VisitReportBarAction.send.label,
+                "photo": VisitReportBarAction.photo.label,
+            ]
         }
     }
 }

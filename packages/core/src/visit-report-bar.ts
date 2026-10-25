@@ -8,26 +8,30 @@ import type { VisitReportMode } from "./maintenance";
 // the visit report: a status line and View Report or Send Visit Report. The same rule on the
 // website, iPhone (SundeckCore/VisitReportBar.swift) and Android.
 
-export type VisitReportBarAction = "view" | "send";
+// With Require a Photo on (owner, 2026-10-25; report-photo.ts), a done visit with no photo
+// offers Add Photo instead of Send Visit Report, which opens the visit's Photos.
+export type VisitReportBarAction = "view" | "send" | "photo";
 
 export interface VisitReportBar {
   /** "Visit report sent · 2:14 PM", "Ready to send", "Sends by itself when you finish". */
   line: string;
   /** The bar's button, if it has one besides Complete Job. */
   action: VisitReportBarAction | null;
-  /** "View Report" or "Send Visit Report". */
+  /** "View Report", "Send Visit Report", or "Add Photo". */
   label: string | null;
 }
 
 export const VISIT_REPORT_BAR_LABELS: Record<VisitReportBarAction, string> = {
   view: "View Report",
   send: "Send Visit Report",
+  photo: "Add Photo",
 };
 
 /**
  * What the bar says about the visit report; null when it says nothing (not a maintenance visit,
  * the shop turned visit reports off, a canceled visit, or a Manual shop before the visit is
- * done). `sentAt` is the newest version's send time.
+ * done). `sentAt` is the newest version's send time. `needsPhoto`: the shop requires a photo
+ * and the visit has none (core reportPhotoBlock).
  */
 export function visitReportBar(input: {
   jobType: string;
@@ -36,6 +40,7 @@ export function visitReportBar(input: {
   sentAt: string | null;
   now: Date;
   timeZone: string;
+  needsPhoto?: boolean;
 }): VisitReportBar | null {
   const { jobType, status, mode, sentAt } = input;
   if (jobType !== "maintenance" || mode === "off" || status === "canceled") return null;
@@ -49,6 +54,17 @@ export function visitReportBar(input: {
     return mode === "auto"
       ? { line: "Sends by itself when you finish", action: null, label: null }
       : null;
+  if (input.needsPhoto)
+    return {
+      line:
+        mode === "auto"
+          ? "Sends once it has a photo"
+          : mode === "monthly"
+            ? "Goes with the monthly invoice"
+            : "Needs a photo to send",
+      action: "photo",
+      label: VISIT_REPORT_BAR_LABELS.photo,
+    };
   return {
     // A done visit in an Automatic shop that hasn't gone out yet (no signal, or it failed). In a
     // Monthly shop it goes with the month's invoice; Send Visit Report still sends it now.

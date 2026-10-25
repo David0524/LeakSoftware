@@ -13,6 +13,7 @@ import {
   type ReadingKey,
 } from "@leakbook/core";
 import type { JsonValue, Row as SyncRow } from "@leakbook/sync";
+import { createAutosave, type Autosave } from "../lib/autosave";
 import { getServices } from "../lib/services";
 import { useJobRows, useRow, useRows } from "./hooks";
 
@@ -210,6 +211,40 @@ export function saveVisitReading(input: VisitReadingInput): string | null {
       sync.write("property", input.pool.id, input.pool.company_id, { approx_gallons: gallons });
   });
   return null;
+}
+
+/** Where this phone remembers the levels the tech aims for (as the calculator). */
+export const GOALS_KEY = "chemicals:goals";
+
+/** The visit's Chemicals as typed: what `saveVisitReading` saves. */
+export type VisitForm = Omit<VisitReadingInput, "companyId" | "jobId" | "pool">;
+
+/**
+ * The visit's readings save by themselves while the tech types (owner, 2026-10-25: "a little
+ * laggy … when typing in multi digit numbers"): nothing is written per keystroke. They save a
+ * second after typing stops, when a field is left and when the screen is left (`flush`), as
+ * typed text everywhere (one-handed use, item 4). Each save also remembers the levels aimed for
+ * on this phone. `visit` gives the visit at save time (the pool's gallons may have filled in).
+ */
+export function createVisitReadingSaver({
+  visit,
+  onSaved,
+  delay,
+}: {
+  visit: () => { companyId: string; jobId: string; pool: Property };
+  /** Why something typed isn't a reading yet, or null when it saved. */
+  onSaved: (problem: string | null) => void;
+  delay?: number;
+}): Autosave<VisitForm> {
+  return createAutosave<VisitForm>({
+    initial: null as unknown as VisitForm,
+    same: (a, b) => JSON.stringify(a) === JSON.stringify(b),
+    delay,
+    save: (form) => {
+      getServices().kv.set(GOALS_KEY, JSON.stringify(form.goals));
+      onSaved(saveVisitReading({ ...visit(), ...form }));
+    },
+  });
 }
 
 /** Added: one chemical, or every open suggestion at once (Mark All Added). */

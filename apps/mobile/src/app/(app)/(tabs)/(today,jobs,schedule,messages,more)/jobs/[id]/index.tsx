@@ -86,7 +86,7 @@ import {
   NextStepBar,
   type NextStepButton,
 } from "../../../../../../features/job/NextStepBar";
-import { KeyboardAvoider } from "../../../../../../ui/keyboard";
+import { FormKeyboardBar, KeyboardAvoider } from "../../../../../../ui/keyboard";
 import { SwipeNav, useNoSwipe } from "../../../../../../ui/SwipeNav";
 import { usePinnedSyncBar } from "../../../../../../ui/SyncBar";
 import { AddressLine, NotOnMapRow } from "../../../../../../ui/NotOnMap";
@@ -101,6 +101,7 @@ import {
   drawnChrome,
   face,
   gutter,
+  ios,
   minTap,
   shape,
   space,
@@ -112,6 +113,7 @@ import { DiagramPanel } from "../../../../../../features/inspection/DiagramPanel
 import { VisitChemicals } from "../../../../../../features/chemicals/VisitChemicals";
 import { VisitCleanings } from "../../../../../../features/maintenance/Cleanings";
 import { VisitReport } from "../../../../../../features/maintenance/VisitReport";
+import { useReportPhotoBlock } from "../../../../../../features/maintenance/ReportPhoto";
 import { queueAutoVisitReport } from "../../../../../../lib/visitReports";
 import { FindingsTab } from "../../../../../../features/inspection/FindingsTab";
 import { TestsTab } from "../../../../../../features/inspection/TestsTab";
@@ -179,6 +181,15 @@ export default function JobDetail() {
     insp.tests.length,
   );
   const mediaControls = useRef<MediaControls | null>(null);
+  // Require a Photo (owner, 2026-10-25): the bar's Add Photo opens Photos, then the camera once
+  // its section has drawn (its controls are set by then).
+  const photoBlock = useReportPhotoBlock(id);
+  const photoAsked = useRef(false);
+  useEffect(() => {
+    if (section !== "photos" || !photoAsked.current) return;
+    photoAsked.current = false;
+    mediaControls.current?.photo();
+  }, [section]);
   const reportControls = useRef<ReportControls | null>(null);
   const sync = usePinnedSyncBar(() => router.push("/more/sync"));
   const {
@@ -306,6 +317,7 @@ export default function JobDetail() {
         sentAt: visitLatest?.sent_at ?? null,
         now: new Date(),
         timeZone: company.timezone,
+        needsPhoto: photoBlock !== null,
       })
     : null;
 
@@ -335,7 +347,13 @@ export default function JobDetail() {
     "visit-report": () => {
       if (visitBar?.action === "view" && visitToken && API_URL)
         void WebBrowser.openBrowserAsync(`${API_URL}/r/${visitToken}`);
-      else setVisitSheet(true);
+      else if (visitBar?.action === "photo") {
+        if (shown === "photos") mediaControls.current?.photo();
+        else {
+          photoAsked.current = true;
+          setSection("photos", 1);
+        }
+      } else setVisitSheet(true);
     },
   };
   // Everything on the visit's checklist is done: Complete Job is the last thing (owner,
@@ -388,6 +406,9 @@ export default function JobDetail() {
       <Animated.ScrollView
         ref={scroll}
         {...scrollProps}
+        // Scrolling puts the keyboard away (the number pads have no return key; owner,
+        // 2026-10-25), as on the iPhone app; tapping beside a field does too.
+        keyboardDismissMode={ios ? "interactive" : "on-drag"}
         contentContainerStyle={[
           contentContainerStyle,
           // The last row scrolls clear of the Next Step bar.
@@ -583,6 +604,8 @@ export default function JobDetail() {
         </SwipeNav>
       </Animated.ScrollView>
       {sync.overlay}
+      {/* iPhone: Previous, Next and Done over the keyboard (Android uses its return key). */}
+      <FormKeyboardBar />
       {pinned ? (
         <Animated.View
           pointerEvents="box-none"

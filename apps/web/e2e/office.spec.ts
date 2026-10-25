@@ -160,7 +160,9 @@ test("owner edits the price book", async ({ page }) => {
   const add = page.getByRole("dialog", { name: "Add Item" });
   await add.getByLabel("Name").fill(name);
   await add.getByLabel("Price ($)").fill("123.45");
-  await add.getByLabel("Category").fill("Test items");
+  // The category is a choice of the shop's categories and Other, which takes a new one.
+  await add.getByLabel("Category", { exact: true }).selectOption("Other");
+  await add.getByLabel("New category", { exact: true }).fill("Test items");
   await add.getByRole("button", { name: "Add Item" }).click();
   await expect(page.getByRole("status").filter({ hasText: `Added ${name}.` })).toBeVisible();
   await expect(add).toHaveCount(0);
@@ -170,6 +172,9 @@ test("owner edits the price book", async ({ page }) => {
   // The row itself (its "⋯" More button comes after it).
   await item.getByRole("button").first().click();
   const edit = page.getByRole("dialog", { name });
+  // Its new category is now one of the choices, and the write-in field is gone.
+  await expect(edit.getByLabel("Category", { exact: true })).toHaveValue("Test items");
+  await expect(edit.getByLabel("New category", { exact: true })).toHaveCount(0);
   await edit.getByLabel("Price ($)").fill("150");
   await edit.getByRole("button", { name: "Save Item" }).click();
   await expect(page.getByRole("status").filter({ hasText: "Saved." })).toBeVisible();
@@ -186,6 +191,27 @@ test("owner edits the price book", async ({ page }) => {
     .getByRole("button", { name: "Remove Item" })
     .click();
   await expect(page.getByTestId("price-item").filter({ hasText: name })).toHaveCount(0);
+});
+
+test("the price book's Chemicals group comes first and opens and closes", async ({ page }) => {
+  await signIn(page, OWNER, "/settings/price-book");
+  const chemicals = page.getByTestId("price-chemicals");
+  test.skip((await chemicals.count()) === 0, "This shop's price book has no chemicals.");
+  const header = chemicals.getByRole("button", { name: /^Chemicals, \d+$/ });
+  const count = Number((await header.innerText()).match(/\d+/)?.[0]);
+  const open = (await header.getAttribute("aria-expanded")) === "true";
+  // Open when the shop charges for chemicals, collapsed when it doesn't (read only: the
+  // switch is shared demo data).
+  const charges = chemicals.getByRole("switch", { name: "Charge for Chemicals" });
+  if ((await charges.count()) > 0) expect(await charges.isChecked()).toBe(open);
+  const rows = chemicals.getByTestId("price-item");
+  await expect(rows).toHaveCount(open ? count : 0);
+  await header.click();
+  await expect(header).toHaveAttribute("aria-expanded", String(!open));
+  await expect(rows).toHaveCount(open ? 0 : count);
+  // First on the page: once open, the page's first item is a chemical.
+  if (open) await header.click();
+  await expect(page.getByTestId("price-item").first()).toHaveText(await rows.first().innerText());
 });
 
 test("owner invites a tech, who joins and cannot reach settings", async ({ page, browser }) => {

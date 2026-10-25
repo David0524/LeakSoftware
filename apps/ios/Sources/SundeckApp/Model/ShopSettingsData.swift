@@ -131,9 +131,55 @@ public func priceBookGroups(_ store: LocalStore, companyId: String) -> [(title: 
                 r, name: r["name"]?.string ?? "Item", detail: (r["active"]?.bool ?? true) ? nil : "Hidden",
                 value: "\(price) / \(unit)"))
     }
-    order.sort { a, b in a.isEmpty == b.isEmpty ? false : b.isEmpty }
+    // Chemicals first, items without a category last (owner, 2026-10-25; core price-book.ts).
+    let rank = { (key: String) in key == PriceBookText.chemicals ? 0 : key.isEmpty ? 2 : 1 }
+    order = order.enumerated()
+        .sorted { a, b in (rank(a.element), a.offset) < (rank(b.element), b.offset) }
+        .map(\.element)
     let titled = order.count > 1 || (order.first.map { !$0.isEmpty } ?? false)
-    return order.map { key in (titled ? (key.isEmpty ? "Other items" : key) : nil, groups[key] ?? []) }
+    return order.map { key in
+        (titled ? (key.isEmpty ? PriceBookText.uncategorized : key) : nil, groups[key] ?? [])
+    }
+}
+
+/// The price book's categories and the item form's category picker (owner, 2026-10-25; website
+/// and Android: packages/core/src/price-book.ts).
+public enum PriceBookText {
+    /// The category whose items techs add on visits as chemicals.
+    public static let chemicals = "Chemicals"
+    /// The picker's write-in choice, and the category saved when its field is left blank.
+    public static let other = "Other"
+    public static let category = "Category"
+    public static let newCategory = "New category"
+    public static let newCategoryPlaceholder = "Other"
+    /// The heading of items saved without a category.
+    public static let uncategorized = "Other items"
+}
+
+/// The category picker's choices: the shop's categories in price book order (and Chemicals for
+/// pool shops), then Other, which opens a field to write one in.
+public func priceBookCategoryChoices(_ groups: [(title: String?, items: [ConfigItem])], pool: Bool) -> [String] {
+    var names = groups.compactMap { group in
+        group.items.first.map { ($0.row["category"]?.string ?? "").trimmingCharacters(in: .whitespaces) }
+    }
+    .filter { !$0.isEmpty && $0 != PriceBookText.other }
+    if pool && !names.contains(PriceBookText.chemicals) { names.insert(PriceBookText.chemicals, at: 0) }
+    return names + [PriceBookText.other]
+}
+
+/// What the picker starts on: the item's own category when it's a choice, otherwise Other with
+/// its category written in ("" for a new item, so it saves as Other).
+public func priceBookCategoryStart(_ category: String?, choices: [String]) -> (choice: String, custom: String) {
+    let current = (category ?? "").trimmingCharacters(in: .whitespaces)
+    if !current.isEmpty && current != PriceBookText.other && choices.contains(current) { return (current, "") }
+    return (PriceBookText.other, current == PriceBookText.other ? "" : current)
+}
+
+/// The category saved: the chosen one, what was written under Other, or "Other" when blank.
+public func priceBookCategory(_ choice: String, custom: String) -> String {
+    if !choice.isEmpty && choice != PriceBookText.other { return choice.trimmingCharacters(in: .whitespaces) }
+    let written = custom.trimmingCharacters(in: .whitespaces)
+    return written.isEmpty ? PriceBookText.other : written
 }
 
 /// The checklists Settings › Checklist Components lists: pool visits, leak inspections, and pool
@@ -369,7 +415,9 @@ public struct PriceItemForm: Equatable, Sendable {
     public var name = ""
     public var price = ""
     public var unit = "each"
-    public var category = ""
+    /// The picker's choice: one of the shop's categories, or Other (`customCategory` written in).
+    public var category = PriceBookText.other
+    public var customCategory = ""
     public var description = ""
     public var order = "0"
     public var taxable = true
@@ -377,11 +425,11 @@ public struct PriceItemForm: Equatable, Sendable {
 
     public init() {}
 
-    public init(_ row: Row) {
+    public init(_ row: Row, categories: [String] = []) {
         name = row["name"]?.string ?? ""
         price = String(format: "%.2f", (row["price_cents"]?.number ?? 0) / 100)
         unit = row["unit"]?.string ?? "each"
-        category = row["category"]?.string ?? ""
+        (category, customCategory) = priceBookCategoryStart(row["category"]?.string, choices: categories)
         description = row["description"]?.string ?? ""
         order = String(Int(row["sort_order"]?.number ?? 0))
         taxable = row["taxable"]?.bool ?? true
@@ -395,6 +443,9 @@ public struct PriceItemForm: Equatable, Sendable {
         if trimmed.utf16.count > Limits.itemNameMax { return Limits.itemNameText }
         if parseDollars(price) == nil { return "Enter a price." }
         if unit.trimmingCharacters(in: .whitespaces).utf16.count > Limits.itemUnitMax { return Limits.itemUnitText }
+        if category == PriceBookText.other && customCategory.trimmingCharacters(in: .whitespaces).utf16.count > 60 {
+            return "Keep the category under 60 characters."
+        }
         return nil
     }
 
@@ -407,7 +458,8 @@ public struct PriceItemForm: Equatable, Sendable {
             "name": .string(name.trimmingCharacters(in: .whitespaces)),
             "price_cents": .number(Double(parseDollars(price) ?? 0)),
             "unit": .string(unit.trimmingCharacters(in: .whitespaces).isEmpty ? "each" : unit),
-            "category": opt(category), "description": opt(description),
+            "category": .string(priceBookCategory(category, custom: customCategory)),
+            "description": opt(description),
             "sort_order": .number(Double(Int(order) ?? 0)), "taxable": .bool(taxable), "active": .bool(active),
         ]
     }

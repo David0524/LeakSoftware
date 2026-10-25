@@ -26,6 +26,7 @@ import {
   scheduleOrderWrites,
   uploadRefusal,
   uploadRefusalMessage,
+  priceBookCategory,
 } from "@leakbook/core";
 import { OWNER_ONLY, requireManager, requireOwner } from "@/lib/auth";
 import { friendlyDbError, isWebUrl } from "@/lib/limits";
@@ -363,6 +364,28 @@ export async function saveVisitReportMode(_: FormState, form: FormData): Promise
 }
 
 /**
+ * Settings › Report Templates › Visit reports › Require a Photo (owner, 2026-10-25): off by
+ * default; on, a visit's report can't be sent until the visit has a photo (core report-photo.ts).
+ */
+export async function saveReportPhoto(_: FormState, form: FormData): Promise<FormState> {
+  const office = await requireManager();
+  const supabase = await createClient();
+  const { data: company } = await supabase
+    .from("company")
+    .select("settings")
+    .eq("id", office.company.id)
+    .single();
+  const settings = {
+    ...((company?.settings ?? {}) as Record<string, unknown>),
+    require_report_photo: checked(form, "require_report_photo"),
+  };
+  const { error } = await supabase.from("company").update({ settings }).eq("id", office.company.id);
+  if (error) return failed(error);
+  revalidatePath("/", "layout");
+  return { message: "Saved." };
+}
+
+/**
  * Settings › Price Book › Charge for Chemicals (owner, 2026-10-24): off by default; on, the
  * month's added chemicals go on each customer's monthly invoice, from the month it's turned on.
  */
@@ -529,11 +552,17 @@ export async function savePriceItem(_: FormState, form: FormData): Promise<FormS
   if (price === null || price < 0) fields.price = "Enter a price, like 185 or 185.50.";
   if (name.length > 200) fields.name = "Keep the name under 200 characters.";
   if (text(form, "unit").length > 40) fields.unit = "Keep the unit short, like each or hour.";
+  if (text(form, "category_custom").length > 60) {
+    fields.category_custom = "Keep the category under 60 characters.";
+  }
   if (Object.keys(fields).length) return { fields };
   const { error } = await upsert(supabase, "price_book_item", office.company.id, text(form, "id"), {
     name,
     description: optional(form, "description"),
-    category: optional(form, "category"),
+    // A choice of the shop's categories, or Other written in; Other when left blank.
+    category: form.has("category_choice")
+      ? priceBookCategory(text(form, "category_choice"), text(form, "category_custom"))
+      : optional(form, "category"),
     component_type_key: optional(form, "component_type_key"),
     unit: text(form, "unit") || "each",
     price_cents: price,

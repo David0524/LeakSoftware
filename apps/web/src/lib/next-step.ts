@@ -42,7 +42,7 @@ export interface NextStepState {
    * A maintenance visit's report button (core visitReportBar): View Report once sent, Send Visit
    * Report once done (owner, 2026-10-22: "the visit report is really buried").
    */
-  visitAction?: "view" | "send" | null;
+  visitAction?: "view" | "send" | "photo" | null;
 }
 
 /**

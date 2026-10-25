@@ -173,7 +173,12 @@
             session.reloadCompanies()
             if !visitReports.pending.isEmpty, session.sync.status.pending == 0 {
                 let before = visitReports.pending.count
-                await visitReports.flush(api) { [sync = session.sync] in sync.hasPendingUploads(jobId: $0) }
+                let settings = session.company?.settings
+                await visitReports.flush(
+                    api, uploading: { [sync = session.sync] in sync.hasPendingUploads(jobId: $0) },
+                    needsPhoto: { [sync = session.sync] in
+                        visitReportPhotoBlock(sync.store, settings: settings, jobId: $0) != nil
+                    })
                 if visitReports.pending.count < before { session.sync.syncSoon(2) }  // bring the sent report down
             }
             if !reportSends.pending.isEmpty, session.sync.status.pending == 0 {

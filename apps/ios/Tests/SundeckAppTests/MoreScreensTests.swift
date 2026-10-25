@@ -361,7 +361,30 @@ import Testing
         price.price = "250"
         #expect(price.error == nil)
         try ConfigWrites.savePriceItem(s.sync, companyId: "c1", id: nil, price)
-        #expect(priceBookGroups(s.sync.store, companyId: "c1")[0].items.count == 2)
+        // Left on Other with nothing written in, it's filed under Other (owner, 2026-10-25);
+        // items without a category stay last.
+        let saved = priceBookGroups(s.sync.store, companyId: "c1")
+        #expect(saved.map(\.title) == ["Other", "Other items"])
+        price.name = "Chlorine"
+        price.category = "Chemicals"
+        try ConfigWrites.savePriceItem(s.sync, companyId: "c1", id: nil, price)
+        let groups2 = priceBookGroups(s.sync.store, companyId: "c1")
+        #expect(groups2.map(\.title) == ["Chemicals", "Other", "Other items"])
+        #expect(priceBookCategoryChoices(groups2, pool: false) == ["Chemicals", "Other"])
+        #expect(PriceItemForm(groups2[0].items[0].row, categories: ["Chemicals", "Other"]).category == "Chemicals")
+    }
+
+    @Test func priceBookCategoryPicker() {
+        #expect(priceBookCategoryChoices([], pool: true) == ["Chemicals", "Other"])
+        let heaters = priceBookCategoryStart("Heaters", choices: ["Other"])
+        #expect(heaters.choice == "Other" && heaters.custom == "Heaters")
+        let blank = priceBookCategoryStart(nil, choices: ["Other"])
+        #expect(blank.choice == "Other" && blank.custom == "")
+        let repairs = priceBookCategoryStart("Repairs", choices: ["Repairs", "Other"])
+        #expect(repairs.choice == "Repairs" && repairs.custom == "")
+        #expect(priceBookCategory("Repairs", custom: "x") == "Repairs")
+        #expect(priceBookCategory("Other", custom: "  Heaters ") == "Heaters")
+        #expect(priceBookCategory("Other", custom: " ") == "Other")
     }
 }
 

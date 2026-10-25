@@ -33,6 +33,7 @@ import { setupGate } from "./cases/setup-gate";
 import { password } from "./cases/password";
 import { linkShare } from "./cases/link-share";
 import { chemicalAdditions } from "./cases/chemical-additions";
+import { reportPhoto } from "./cases/report-photo";
 
 /** One fixture file per entry: apps/ios/Tests/Fixtures/<name>.json. */
 export const modules: Record<string, ModuleCases> = {
@@ -70,4 +71,5 @@ export const modules: Record<string, ModuleCases> = {
   "setup-gate": setupGate,
   password,
   "link-share": linkShare,
+  "report-photo": reportPhoto,
 };

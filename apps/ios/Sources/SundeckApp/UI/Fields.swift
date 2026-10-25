@@ -173,28 +173,35 @@
         /// The bar over the keyboard on a form (owner, 2026-10-20): Previous and Next move
         /// through the fields in `order` (a number pad has no return key), Done puts the keyboard
         /// away. Attach once, on the form; give each field the same `focus` and its key.
-        func keyboardBar(_ focus: FocusState<String?>.Binding, order: [String]) -> some View {
-            modifier(KeyboardBar(focus: focus, order: order))
+        /// `onlyWhenFocused`: the bar shows only while one of these fields has the keyboard, for a
+        /// part of a page whose other fields aren't in `order` (the visit's Chemicals card).
+        func keyboardBar(_ focus: FocusState<String?>.Binding, order: [String], onlyWhenFocused: Bool = false)
+            -> some View
+        {
+            modifier(KeyboardBar(focus: focus, order: order, onlyWhenFocused: onlyWhenFocused))
         }
     }
 
     private struct KeyboardBar: ViewModifier {
         var focus: FocusState<String?>.Binding
         var order: [String]
+        var onlyWhenFocused = false
 
         func body(content: Content) -> some View {
             content.toolbar {
-                ToolbarItemGroup(placement: .keyboard) {
-                    Button(KeyboardBarText.previous) {
-                        focus.wrappedValue = fieldStep(order, from: focus.wrappedValue, by: -1)
+                if !onlyWhenFocused || focus.wrappedValue.map { order.contains($0) } == true {
+                    ToolbarItemGroup(placement: .keyboard) {
+                        Button(KeyboardBarText.previous) {
+                            focus.wrappedValue = fieldStep(order, from: focus.wrappedValue, by: -1)
+                        }
+                        .disabled(fieldStep(order, from: focus.wrappedValue, by: -1) == nil)
+                        Button(KeyboardBarText.next) {
+                            focus.wrappedValue = fieldStep(order, from: focus.wrappedValue, by: 1)
+                        }
+                        .disabled(fieldStep(order, from: focus.wrappedValue, by: 1) == nil)
+                        Spacer()
+                        Button(KeyboardBarText.done) { focus.wrappedValue = nil }.fontWeight(.semibold)
                     }
-                    .disabled(fieldStep(order, from: focus.wrappedValue, by: -1) == nil)
-                    Button(KeyboardBarText.next) {
-                        focus.wrappedValue = fieldStep(order, from: focus.wrappedValue, by: 1)
-                    }
-                    .disabled(fieldStep(order, from: focus.wrappedValue, by: 1) == nil)
-                    Spacer()
-                    Button(KeyboardBarText.done) { focus.wrappedValue = nil }.fontWeight(.semibold)
                 }
             }
         }

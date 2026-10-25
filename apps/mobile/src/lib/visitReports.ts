@@ -1,4 +1,4 @@
-import { visitReportMode } from "@leakbook/core";
+import { reportPhotoBlock, visitReportMode } from "@leakbook/core";
 import { call, tryAgainLater } from "../data/reports";
 import { API_URL } from "./config";
 import { getServices } from "./services";
@@ -38,6 +38,27 @@ export function queueAutoVisitReport(job: { id: string; type: string }, settings
   void flushVisitReports();
 }
 
+/** The visit's photos on this phone: not videos, not deleted (still uploading counts). */
+export function photoCount(media: { kind: string; deleted_at?: string | null }[]): number {
+  return media.filter((m) => m.kind === "photo" && !m.deleted_at).length;
+}
+
+/**
+ * Require a Photo (owner, 2026-10-25; core reportPhotoBlock), from this phone's copy of the
+ * shop's settings and the visit's photos: why its report can't be sent yet, or null.
+ */
+export function localReportPhotoBlock(jobId: string): string | null {
+  const { sync } = getServices();
+  const companyId = sync.get("job", jobId)?.company_id;
+  if (typeof companyId !== "string") return null;
+  const company = sync.get("company", companyId);
+  const media = sync.list("media", companyId, jobId) as unknown as {
+    kind: string;
+    deleted_at?: string | null;
+  }[];
+  return reportPhotoBlock(company?.settings, photoCount(media));
+}
+
 let running = false;
 
 /**
@@ -53,14 +74,24 @@ export async function flushVisitReports(pushFirst = true): Promise<void> {
     let sent = false;
     for (const jobId of readQueue()) {
       // The completed visit and its photos must be on the server first; it waits for the next
-      // sync.
-      if (sync.hasPendingWrites("job", jobId) || sync.hasPendingUploads(jobId)) continue;
+      // sync. With Require a Photo on, a visit with no photo waits here until one is added.
+      if (
+        sync.hasPendingWrites("job", jobId) ||
+        sync.hasPendingUploads(jobId) ||
+        localReportPhotoBlock(jobId)
+      )
+        continue;
       try {
-        await call<VisitSendResult>(`/api/jobs/${jobId}/visit-report`, { automatic: true });
+        const r = await call<VisitSendResult>(`/api/jobs/${jobId}/visit-report`, {
+          automatic: true,
+        });
+        // The server has no photo for it yet: it stays queued.
+        if ("skipped" in r && r.skipped === "no_photo") continue;
         sent = true;
         writeQueue(readQueue().filter((id) => id !== jobId));
       } catch (e) {
-        // No connection, signed out or a server fault: try again later. A refusal from the server is final.
+        // No connection, signed out or a server fault: try again later. A refusal from the server
+        // is final.
         if (tryAgainLater(e)) break;
         writeQueue(readQueue().filter((id) => id !== jobId));
       }

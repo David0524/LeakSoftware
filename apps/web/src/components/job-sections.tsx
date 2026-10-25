@@ -2,6 +2,7 @@
 
 import { useLayoutEffect, useRef, useSyncExternalStore, type ReactNode } from "react";
 import { SwipePages, useSegmentDrag, useTrackOverflow } from "./gestures";
+import { JOB_TAB_EVENT as TAB_EVENT, showJobTab } from "./job-tab";
 import { useStillNavBar } from "./nav-bar";
 import { NextStepBar, type NextStepJob } from "./next-step-bar";
 import { cx } from "./ui";
@@ -15,8 +16,6 @@ export interface JobSection {
   badge?: number;
   content: ReactNode;
 }
-
-const TAB_EVENT = "leakbook:job-tab";
 
 /** The part named in the URL: ?tab=checklist, or an older link's #checklist. */
 function tabInUrl() {
@@ -100,11 +99,7 @@ export function JobSections({
     if (id === active) return;
     scrolled.current.set(active, window.scrollY);
     // replaceState keeps Back for leaving the job; tell the store the part changed.
-    const url = new URL(window.location.href);
-    url.searchParams.set("tab", id);
-    url.hash = "";
-    history.replaceState(null, "", url);
-    window.dispatchEvent(new Event(TAB_EVENT));
+    showJobTab(id);
     restore.current = scrolled.current.get(id) ?? 0;
   }
 

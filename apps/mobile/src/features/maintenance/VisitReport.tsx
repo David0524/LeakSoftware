@@ -12,6 +12,7 @@ import { Button, Card, Field, Notice, T } from "../../ui/components";
 import { haptics } from "../../ui/haptics";
 import { space } from "../../ui/theme";
 import { shareLink } from "../../lib/shareLink";
+import { ReportPhotoNotice, useReportPhotoBlock } from "./ReportPhoto";
 
 // A maintenance visit's report (owner, 2026-10-20: "build a report with the tested chemicals,
 // checklist, cleanings, photos, etc. Then have an option to send the report to customers"),
@@ -48,6 +49,8 @@ export function VisitReport({
   const email = (to ?? customer?.email ?? "").trim();
   const [busy, setBusy] = useState<"email" | "text" | null>(null);
   const [result, setResult] = useState<{ tone: "success" | "error"; text: string } | null>(null);
+  // Require a Photo (owner, 2026-10-25): why it can't be sent yet, with Add Photo.
+  const photoBlock = useReportPhotoBlock(job.id);
   if (mode === "off") return null;
 
   const when = (iso: string | null) =>
@@ -115,6 +118,8 @@ export function VisitReport({
             This app isn’t connected to the Sundeck Pro server, so visit reports can’t be sent here.
             Use the office website.
           </Notice>
+        ) : photoBlock ? (
+          <ReportPhotoNotice jobId={job.id} />
         ) : (
           <>
             <Field

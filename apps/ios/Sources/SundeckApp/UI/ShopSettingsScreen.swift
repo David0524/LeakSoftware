@@ -87,6 +87,9 @@
         /// Delete from a row's swipe or menu, asked first.
         @State private var removing: ConfigItem?
         @State private var banner: ResultBanner?
+        /// The price book's Chemicals group, opened or collapsed by hand (nil: open when the shop
+        /// charges for chemicals, collapsed when it doesn't; owner, 2026-10-25).
+        @State private var chemicalsOpen: Bool?
 
         var body: some View {
             let company = session.company
@@ -112,7 +115,7 @@
                     }
                     .plainListRow()
                 }
-                if charge, let company, !groups.contains(where: { $0.title == "Chemicals" }) {
+                if charge, let company, !groups.contains(where: { $0.title == PriceBookText.chemicals }) {
                     ChargeChemicalsSection(company: company)
                 }
                 if page == .team {
@@ -127,36 +130,22 @@
                     Section { EmptyState(text: "No items yet.").plainListRow() }
                 } else {
                     ForEach(Array(groups.enumerated()), id: \.offset) { _, group in
-                        let chemicals = charge && group.title == "Chemicals"
-                        if chemicals, let company { ChargeChemicalsSection(company: company) }
-                        Section {
-                            ForEach(group.items) { item in
-                                Button {
-                                    if manager { editing = .edit(item) }
-                                } label: {
-                                    ListRow(title: item.name, detail: item.detail, value: item.value) {
-                                        if let hex = item.color {
-                                            Circle().fill(severityColor(hex)).frame(width: 20, height: 20)
-                                                .accessibilityHidden(true)
-                                        }
-                                        if manager { Chevron() }
-                                    }
-                                }
-                                .buttonStyle(.row)
-                                .disabled(!manager)
-                                .surfaceRow()
-                                .listRowInsets(EdgeInsets())
-                                // Swipe left for Delete; touch and hold for Edit and Delete… (gestures
-                                // spec section 12). Both ask first, as the item's sheet does.
-                                .swipeActions(edge: .trailing, allowsFullSwipe: false) {
-                                    if manager {
-                                        Button("Delete", systemImage: "trash") { removing = item }.tint(Color.fail)
-                                    }
-                                }
-                                .rowMenu(item.name, manager ? menu(item) : [])
+                        if page == .priceBook && group.title == PriceBookText.chemicals {
+                            // First in the price book, as a disclosure (owner, 2026-10-25).
+                            ChargeChemicalsSection(
+                                company: charge ? company : nil, count: group.items.count,
+                                open: Binding(
+                                    get: { chemicalsOpen ?? company.map { chargesChemicals($0.settings) } ?? false },
+                                    set: { chemicalsOpen = $0 })
+                            ) {
+                                ForEach(group.items) { item in itemRow(item, manager: manager) }
                             }
-                        } header: {
-                            if let title = group.title, !chemicals { SectionLabel(title) }
+                        } else {
+                            Section {
+                                ForEach(group.items) { item in itemRow(item, manager: manager) }
+                            } header: {
+                                if let title = group.title { SectionLabel(title) }
+                            }
                         }
                     }
                 }
@@ -176,7 +165,11 @@
             }
             .sheet(item: $editing) { target in
                 if page == .priceBook {
-                    PriceItemSheet(item: target.item) { notice = $0 }
+                    PriceItemSheet(
+                        item: target.item,
+                        categories: priceBookCategoryChoices(
+                            groups, pool: company.map { offersPool($0.settings) } == true)
+                    ) { notice = $0 }
                 } else if page == .components && list == .inspection, let item = target.item {
                     InspectionQuestionSheet(item: item) { notice = $0 }
                 } else {
@@ -367,6 +360,33 @@
         }
 
         /// The sheet's Remove, through the same write.
+        /// A row of the list: opens the item's sheet (managers); swipe or touch and hold to delete.
+        private func itemRow(_ item: ConfigItem, manager: Bool) -> some View {
+            Button {
+                if manager { editing = .edit(item) }
+            } label: {
+                ListRow(title: item.name, detail: item.detail, value: item.value) {
+                    if let hex = item.color {
+                        Circle().fill(severityColor(hex)).frame(width: 20, height: 20)
+                            .accessibilityHidden(true)
+                    }
+                    if manager { Chevron() }
+                }
+            }
+            .buttonStyle(.row)
+            .disabled(!manager)
+            .surfaceRow()
+            .listRowInsets(EdgeInsets())
+            // Swipe left for Delete; touch and hold for Edit and Delete… (gestures
+            // spec section 12). Both ask first, as the item's sheet does.
+            .swipeActions(edge: .trailing, allowsFullSwipe: false) {
+                if manager {
+                    Button("Delete", systemImage: "trash") { removing = item }.tint(Color.fail)
+                }
+            }
+            .rowMenu(item.name, manager ? menu(item) : [])
+        }
+
         private func remove(_ item: ConfigItem) {
             removing = nil
             do {
@@ -395,42 +415,90 @@
         }
     }
 
-    /// Settings › Price Book › Charge for Chemicals: a switch that saves when flipped, through the
-    /// sync layer, with what on and off mean under it (website components/charge-chemicals.tsx).
-    struct ChargeChemicalsSection: View {
-        var company: CompanyContext
+    /// Settings › Price Book › Chemicals: the Charge for Chemicals switch, which saves when
+    /// flipped through the sync layer, with what on and off mean under it (website
+    /// components/charge-chemicals.tsx), and the price book's chemicals. With items it's first in
+    /// the price book, its header a disclosure with the item count (owner, 2026-10-25: "move
+    /// chemicals to the top and as a dropdown, minimized if charge for chemicals is turned off"):
+    /// open when the shop charges for chemicals, collapsed when it doesn't, and either way it
+    /// opens and closes when tapped. The switch stays in view; flipping it opens or collapses the
+    /// items to match (website components/price-book.tsx).
+    struct ChargeChemicalsSection<Rows: View>: View {
+        /// Nil: no switch (a shop that doesn't do pools, or a tech).
+        var company: CompanyContext?
+        /// Nil: a plain header, for the switch alone.
+        var count: Int?
+        @Binding var open: Bool
+        @ViewBuilder var rows: Rows
         @Environment(Session.self) private var session
         @Environment(SyncService.self) private var sync
         @State private var error: String?
 
         var body: some View {
-            let on = chargesChemicals(company.settings)
+            let on = company.map { chargesChemicals($0.settings) } ?? false
             Section {
-                SwitchRow(
-                    ChargeChemicalsText.label,
-                    isOn: Binding(
-                        get: { on },
-                        set: { next in
-                            do {
-                                try ChargeChemicalsWrites.set(sync, company: company, on: next)
-                                session.reloadCompanies()
-                            } catch {
-                                self.error = String(describing: error)
-                            }
-                        })
-                )
-                .surfaceRow()
-                .listRowInsets(EdgeInsets())
+                if let company {
+                    SwitchRow(
+                        ChargeChemicalsText.label,
+                        isOn: Binding(
+                            get: { on },
+                            set: { next in
+                                do {
+                                    try ChargeChemicalsWrites.set(sync, company: company, on: next)
+                                    session.reloadCompanies()
+                                    if count != nil { withAnimation { open = next } }
+                                } catch {
+                                    self.error = String(describing: error)
+                                }
+                            })
+                    )
+                    .surfaceRow()
+                    .listRowInsets(EdgeInsets())
+                }
+                if count != nil && open { rows }
             } header: {
-                SectionLabel("Chemicals")
-            } footer: {
-                VStack(alignment: .leading, spacing: 4) {
-                    Text(on ? ChargeChemicalsText.on : ChargeChemicalsText.off)
-                        .textRole(.footnote)
+                if let count {
+                    Button {
+                        withAnimation { open.toggle() }
+                    } label: {
+                        HStack(spacing: 6) {
+                            Text("Chemicals").textRole(.sectionLabel)
+                            Text("\(count)").monospacedDigit().textRole(.sectionLabel)
+                            Spacer(minLength: 8)
+                            Image(systemName: "chevron.right")
+                                .font(.footnote.weight(.semibold))
+                                .rotationEffect(.degrees(open ? 90 : 0))
+                        }
                         .foregroundStyle(Color.textMuted)
-                    if let error { Text(error).textRole(.footnote).foregroundStyle(Color.fail) }
+                        .frame(minHeight: minTarget)
+                        .contentShape(Rectangle())
+                    }
+                    .buttonStyle(.plain)
+                    .accessibilityLabel("Chemicals, \(count)")
+                    .accessibilityValue(open ? "Expanded" : "Collapsed")
+                    .accessibilityAddTraits(.isHeader)
+                } else {
+                    SectionLabel(PriceBookText.chemicals)
+                }
+            } footer: {
+                if company != nil || error != nil {
+                    VStack(alignment: .leading, spacing: 4) {
+                        if company != nil {
+                            Text(on ? ChargeChemicalsText.on : ChargeChemicalsText.off)
+                                .textRole(.footnote)
+                                .foregroundStyle(Color.textMuted)
+                        }
+                        if let error { Text(error).textRole(.footnote).foregroundStyle(Color.fail) }
+                    }
                 }
             }
+        }
+    }
+
+    extension ChargeChemicalsSection where Rows == EmptyView {
+        /// The switch alone, for a pool shop with no chemicals in its price book yet.
+        init(company: CompanyContext) {
+            self.init(company: company, count: nil, open: .constant(false)) { EmptyView() }
         }
     }
 
@@ -723,6 +791,8 @@
     /// whether it's offered on quotes; Remove Item at the bottom.
     struct PriceItemSheet: View {
         var item: ConfigItem?
+        /// The category picker's choices: the shop's categories, then Other (owner, 2026-10-25).
+        var categories: [String]
         var done: (String) -> Void
         @Environment(Session.self) private var session
         @Environment(SyncService.self) private var sync
@@ -738,8 +808,20 @@
                     LabeledFieldRow(label: "Name", text: $form.name, labelWidth: 120)
                     LabeledFieldRow(label: "Price ($)", text: $form.price, keyboard: .decimalPad, labelWidth: 120)
                     LabeledFieldRow(label: "Unit", text: $form.unit, labelWidth: 120)
-                    LabeledFieldRow(label: "Category", text: $form.category, labelWidth: 120)
                     LabeledFieldRow(label: "Order", text: $form.order, keyboard: .numberPad, labelWidth: 120)
+                }
+                // A choice of the shop's categories, or Other to write a new one in; left blank,
+                // the item is filed under Other (owner, 2026-10-25).
+                Grouped {
+                    LabeledPickerRow(
+                        label: PriceBookText.category, selection: $form.category,
+                        options: categories.contains(form.category) ? categories : categories + [form.category],
+                        optionLabel: { $0 })
+                    if form.category == PriceBookText.other {
+                        LabeledFieldRow(
+                            label: PriceBookText.newCategory, text: $form.customCategory,
+                            placeholder: PriceBookText.newCategoryPlaceholder, labelWidth: 120)
+                    }
                 }
                 Grouped(footer: "Shown on quotes.") {
                     LabeledFieldRow(label: "Description", text: $form.description, labelWidth: 120, multiline: true)
@@ -764,7 +846,7 @@
             }
             .onAppear {
                 if let item, original == PriceItemForm() {
-                    form = PriceItemForm(item.row)
+                    form = PriceItemForm(item.row, categories: categories)
                     original = form
                 }
             }

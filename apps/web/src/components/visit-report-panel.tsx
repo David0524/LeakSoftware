@@ -2,9 +2,10 @@
 
 import { useActionState, useState } from "react";
 import { flushSync } from "react-dom";
-import { dateFormat } from "@leakbook/core";
+import { REPORT_PHOTO_TEXT, dateFormat } from "@leakbook/core";
 import { sendVisitReportAction } from "@/app/actions/reports";
 import { orOffline } from "@/lib/offline";
+import { showPhotos } from "./job-tab";
 import { CopyLink } from "./settings-forms";
 import { Button, Notice } from "./ui";
 
@@ -22,6 +23,7 @@ export function VisitReportPanel({
   emailReady,
   versions,
   timeZone,
+  photoNeeded = false,
 }: {
   jobId: string;
   /** The shop sends them by itself when a visit is completed. */
@@ -39,6 +41,8 @@ export function VisitReportPanel({
     token: string | null;
   }[];
   timeZone: string;
+  /** Require a Photo (owner, 2026-10-25): the shop requires one and the visit has none. */
+  photoNeeded?: boolean;
 }) {
   const [state, action, sending] = useActionState(orOffline(sendVisitReportAction), {});
   const [to, setTo] = useState(customerEmail ?? "");
@@ -74,38 +78,48 @@ export function VisitReportPanel({
         </a>
       ) : null}
 
-      <form action={action} className="space-y-3">
-        <input type="hidden" name="job" value={jobId} />
-        <input type="hidden" name="channel" value={channel} />
-        <label className="block space-y-1">
-          <span className="font-medium">Customer email</span>
-          <input
-            name="to"
-            type="email"
-            autoComplete="off"
-            value={to}
-            onChange={(e) => setTo(e.target.value)}
-            className="block min-h-11 w-full rounded-[10px] border border-control-border bg-surface px-3"
-          />
-        </label>
-        <div className="flex flex-wrap gap-3">
-          <Button
-            type="submit"
-            onClick={() => flushSync(() => setChannel("email"))}
-            disabled={sending || !emailReady || !to.trim()}
-          >
-            {sending ? "Sending…" : latest ? "Send Again by Email" : "Send by Email"}
-          </Button>
-          <Button
-            type="submit"
-            onClick={() => flushSync(() => setChannel(hasLine ? "text" : "sms_device"))}
-            kind="secondary"
-            disabled={sending}
-          >
-            {hasLine ? "Send by Text" : "Get Link to Text"}
+      {photoNeeded ? (
+        // Why it can't be sent yet, and the way to fix it: Photos, where Add Photo is.
+        <div className="space-y-3" data-testid="report-photo-needed">
+          <Notice tone="error">{REPORT_PHOTO_TEXT.blocked}</Notice>
+          <Button type="button" onClick={showPhotos}>
+            {REPORT_PHOTO_TEXT.addPhoto}
           </Button>
         </div>
-      </form>
+      ) : (
+        <form action={action} className="space-y-3">
+          <input type="hidden" name="job" value={jobId} />
+          <input type="hidden" name="channel" value={channel} />
+          <label className="block space-y-1">
+            <span className="font-medium">Customer email</span>
+            <input
+              name="to"
+              type="email"
+              autoComplete="off"
+              value={to}
+              onChange={(e) => setTo(e.target.value)}
+              className="block min-h-11 w-full rounded-[10px] border border-control-border bg-surface px-3"
+            />
+          </label>
+          <div className="flex flex-wrap gap-3">
+            <Button
+              type="submit"
+              onClick={() => flushSync(() => setChannel("email"))}
+              disabled={sending || !emailReady || !to.trim()}
+            >
+              {sending ? "Sending…" : latest ? "Send Again by Email" : "Send by Email"}
+            </Button>
+            <Button
+              type="submit"
+              onClick={() => flushSync(() => setChannel(hasLine ? "text" : "sms_device"))}
+              kind="secondary"
+              disabled={sending}
+            >
+              {hasLine ? "Send by Text" : "Get Link to Text"}
+            </Button>
+          </div>
+        </form>
+      )}
       {state.error ? <Notice tone="error">{state.error}</Notice> : null}
       {state.message ? <Notice tone="success">{state.message}</Notice> : null}
       {state.sms && state.link ? <CopyLink url={state.link} label="Visit report link" /> : null}

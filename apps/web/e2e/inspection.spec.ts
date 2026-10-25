@@ -49,21 +49,20 @@ test("a pool inspection: New Job, answers and gates, and its report", async ({ p
     name: "What type of filtration system is present?, To Do",
   });
   await expect(pill).toHaveText(/Choose/);
-  // A scroll under an open menu closes it, so open it again if scrolling it into view did.
-  const openMenu = (button: typeof pill) =>
+  // A scroll under an open menu closes it (scrolling the pill clear of the Start Job bar can),
+  // so open it and choose in one step, again if the menu closed in between.
+  const choose = (button: typeof pill, role: "menuitem" | "menuitemradio", name: string) =>
     expect(async () => {
-      await button.click();
-      await expect(tech.getByRole("menu")).toBeVisible({ timeout: 2_000 });
+      if (!(await tech.getByRole("menu").isVisible())) await button.click();
+      await tech.getByRole(role, { name }).click({ timeout: 2_000 });
     }).toPass();
-  await openMenu(pill);
-  await tech.getByRole("menuitemradio", { name: "Cartridge" }).click();
+  await choose(pill, "menuitemradio", "Cartridge");
   const chosen = tech.getByRole("button", {
     name: "What type of filtration system is present?, Cartridge",
   });
   await expect(chosen).toBeVisible();
   // Not Done puts it back, so the rest of this test starts from nothing answered.
-  await openMenu(chosen);
-  await tech.getByRole("menuitem", { name: "Not Done" }).click();
+  await choose(chosen, "menuitem", "Not Done");
   await expect(pill).toBeVisible();
   expect(await tech.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(390);
   await phone.close();

@@ -51,6 +51,7 @@ import {
   jobLock,
   wrapUp,
   visitReportBar,
+  reportPhotoBlock,
   jobRepairLines,
   type JobRepair,
 } from "@leakbook/core";
@@ -1167,6 +1168,10 @@ async function visitReportOf(office: Office, detail: JobDetail) {
   }));
   const latest = versions.find((v) => v.current) ?? null;
   const tz = office.company.timezone;
+  // Require a Photo (owner, 2026-10-25): Add Photo instead of Send while the visit has none.
+  const photoNeeded =
+    reportPhotoBlock(company.settings, detail.media.filter((m) => m.kind === "photo").length) !==
+    null;
   return {
     mode,
     bar: visitReportBar({
@@ -1176,6 +1181,7 @@ async function visitReportOf(office: Office, detail: JobDetail) {
       sentAt: latest?.sentAt ?? null,
       now: new Date(),
       timeZone: tz,
+      needsPhoto: photoNeeded,
     }),
     href: latest?.token ? `/r/${latest.token}` : null,
     panel: (
@@ -1188,6 +1194,7 @@ async function visitReportOf(office: Office, detail: JobDetail) {
         emailReady={emailConfigured()}
         versions={versions}
         timeZone={tz}
+        photoNeeded={photoNeeded}
       />
     ),
   };

@@ -3,9 +3,12 @@ import {
   SAVED_REPORT_SECTIONS,
   offersLeak,
   offersPool,
+  reportPhotoHint,
+  requiresReportPhoto,
   savedReportSections,
   visitReportMode,
 } from "@leakbook/core";
+import { ReportPhotoSwitch } from "@/components/report-photo-setting";
 import { VisitReportSetting } from "@/components/visit-report-setting";
 import { getCompany } from "@/lib/data";
 import { removeConfigRow, saveReportTemplate, saveSavedReport } from "@/app/actions/settings";
@@ -90,6 +93,7 @@ export default async function ReportTemplatesPage() {
   // Pool care shops have only visit reports; the leak report and saved reports are leak
   // detection's (2026-10-20).
   const leak = offersLeak(company.settings);
+  const photoHint = reportPhotoHint(visitReportMode(company.settings));
   return (
     <SettingsListPage
       title="Report Templates"
@@ -152,6 +156,12 @@ export default async function ReportTemplatesPage() {
           <li className="py-3">
             <VisitReportSetting initial={visitReportMode(company.settings)} />
           </li>
+          {/* Require a Photo (owner, 2026-10-25), while visit reports are on. */}
+          {photoHint ? (
+            <li className="py-3">
+              <ReportPhotoSwitch initial={requiresReportPhoto(company.settings)} hint={photoHint} />
+            </li>
+          ) : null}
         </Grouped>
       ) : null}
 

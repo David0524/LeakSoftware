@@ -1,0 +1,214 @@
+{
+  "requiresReportPhoto": [
+    {
+      "args": [
+        null
+      ],
+      "result": false
+    },
+    {
+      "args": [
+        {}
+      ],
+      "result": false
+    },
+    {
+      "args": [
+        {
+          "require_report_photo": true
+        }
+      ],
+      "result": true
+    },
+    {
+      "args": [
+        {
+          "require_report_photo": false
+        }
+      ],
+      "result": false
+    },
+    {
+      "args": [
+        {
+          "require_report_photo": "true"
+        }
+      ],
+      "result": false
+    },
+    {
+      "args": [
+        {
+          "require_report_photo": 1
+        }
+      ],
+      "result": false
+    },
+    {
+      "args": [
+        {
+          "require_finish_photo": true
+        }
+      ],
+      "result": false
+    }
+  ],
+  "REPORT_PHOTO_TEXT": [
+    {
+      "args": [],
+      "result": {
+        "label": "Require a Photo",
+        "each": "A visit’s report can’t be sent until the visit has at least one photo. With Send Automatically on, it goes once one is added.",
+        "monthly": "One visit’s report can’t be sent until the visit has at least one photo. The monthly report still goes with the invoice.",
+        "blocked": "Add a photo to send this report.",
+        "addPhoto": "Add Photo"
+      }
+    }
+  ],
+  "reportPhotoHint": [
+    {
+      "args": [
+        "auto"
+      ],
+      "result": "A visit’s report can’t be sent until the visit has at least one photo. With Send Automatically on, it goes once one is added."
+    },
+    {
+      "args": [
+        "manual"
+      ],
+      "result": "A visit’s report can’t be sent until the visit has at least one photo. With Send Automatically on, it goes once one is added."
+    },
+    {
+      "args": [
+        "monthly"
+      ],
+      "result": "One visit’s report can’t be sent until the visit has at least one photo. The monthly report still goes with the invoice."
+    },
+    {
+      "args": [
+        "off"
+      ],
+      "result": null
+    }
+  ],
+  "reportPhotoBlock": [
+    {
+      "args": [
+        null,
+        0
+      ],
+      "result": null
+    },
+    {
+      "args": [
+        null,
+        2
+      ],
+      "result": null
+    },
+    {
+      "args": [
+        {},
+        0
+      ],
+      "result": null
+    },
+    {
+      "args": [
+        {},
+        2
+      ],
+      "result": null
+    },
+    {
+      "args": [
+        {
+          "require_report_photo": true
+        },
+        0
+      ],
+      "result": "Add a photo to send this report."
+    },
+    {
+      "args": [
+        {
+          "require_report_photo": true
+        },
+        2
+      ],
+      "result": null
+    },
+    {
+      "args": [
+        {
+          "require_report_photo": false
+        },
+        0
+      ],
+      "result": null
+    },
+    {
+      "args": [
+        {
+          "require_report_photo": false
+        },
+        2
+      ],
+      "result": null
+    },
+    {
+      "args": [
+        {
+          "require_report_photo": "true"
+        },
+        0
+      ],
+      "result": null
+    },
+    {
+      "args": [
+        {
+          "require_report_photo": "true"
+        },
+        2
+      ],
+      "result": null
+    },
+    {
+      "args": [
+        {
+          "require_report_photo": 1
+        },
+        0
+      ],
+      "result": null
+    },
+    {
+      "args": [
+        {
+          "require_report_photo": 1
+        },
+        2
+      ],
+      "result": null
+    },
+    {
+      "args": [
+        {
+          "require_finish_photo": true
+        },
+        0
+      ],
+      "result": null
+    },
+    {
+      "args": [
+        {
+          "require_finish_photo": true
+        },
+        2
+      ],
+      "result": null
+    }
+  ]
+}

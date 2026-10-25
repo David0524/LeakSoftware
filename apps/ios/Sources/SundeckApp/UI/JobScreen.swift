@@ -272,7 +272,8 @@
             guard
                 let bar = visitReportBar(
                     jobType: job.type.rawValue, status: job.status.rawValue, mode: visitReportMode(company.settings),
-                    sentAt: latest?.sentAt, now: Date(), timeZone: company.timeZone)
+                    sentAt: latest?.sentAt, now: Date(), timeZone: company.timeZone,
+                    needsPhoto: visitReportPhotoBlock(sync.store, settings: company.settings, jobId: job.id) != nil)
             else { return nil }
             return (bar, latest?.token.map { reportURL(AppConfig.webURL, $0) })
         }
@@ -313,6 +314,10 @@
                 guard let job, let company = session.company, let visit = visitBar(job, company) else { return }
                 if visit.bar.action == .view, let url = visit.url {
                     visitPage = BrowsedPage(url: url)
+                } else if visit.bar.action == .photo {
+                    // Require a Photo (owner, 2026-10-25): to Photos, taking or choosing one.
+                    choose(.photos)
+                    Task { await capture.takeOrChoose(.photo) }
                 } else {
                     visitSheet = true
                 }

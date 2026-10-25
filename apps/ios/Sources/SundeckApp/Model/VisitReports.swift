@@ -151,15 +151,20 @@ public final class VisitReportQueue {
     private var running = false
 
     /// One run at a time; waits on no connection, no sign-in or a server fault (as the shipping
-    /// app does); any other answer is final.
-    public func flush(_ api: WebAPI, uploading: (String) -> Bool = { _ in false }) async {
+    /// app does); any other answer is final, except the server's "no_photo" (Require a Photo).
+    /// `needsPhoto`: the shop requires a photo and this phone has none for the visit
+    /// (`visitReportPhotoBlock`): it stays queued, without asking the server, until one is added.
+    public func flush(
+        _ api: WebAPI, uploading: (String) -> Bool = { _ in false }, needsPhoto: (String) -> Bool = { _ in false }
+    ) async {
         guard !running else { return }
         running = true
         defer { running = false }
         // A visit whose photos are still uploading waits, so its report has them.
-        for jobId in pending where !uploading(jobId) {
+        for jobId in pending where !uploading(jobId) && !needsPhoto(jobId) {
             do {
-                _ = try await api.post("api/jobs/\(jobId)/visit-report", ["automatic": true])
+                let reply = try await api.post("api/jobs/\(jobId)/visit-report", ["automatic": true])
+                if reply["skipped"]?.string == "no_photo" { continue }
             } catch let failure as WebAPI.Failure where failure.tryAgainLater {
                 return
             } catch {}
@@ -178,4 +183,21 @@ public enum VisitReportSettingsWrites {
         o["visit_reports"] = .string(mode.rawValue)
         try sync.write("company", id: companyId, companyId: companyId, ["settings": .object(o)])
     }
+
+    /// Require a Photo (owner, 2026-10-25): company.settings.require_report_photo.
+    public static func setRequirePhoto(_ sync: SyncService, companyId: String, settings: JSONValue?, _ on: Bool)
+        throws
+    {
+        var o: [String: JSONValue] = [:]
+        if case .object(let current)? = settings { o = current }
+        o["require_report_photo"] = .bool(on)
+        try sync.write("company", id: companyId, companyId: companyId, ["settings": .object(o)])
+    }
+}
+
+/// Why this visit's report can't be sent yet from what's on this phone (core `reportPhotoBlock`,
+/// owner 2026-10-25): the shop requires a photo and the visit has none (photos waiting to upload
+/// count). Nil when it can be sent.
+public func visitReportPhotoBlock(_ store: LocalStore, settings: JSONValue?, jobId: String) -> String? {
+    reportPhotoBlock(settings, photos: jobPhotoCount(store, jobId: jobId))
 }

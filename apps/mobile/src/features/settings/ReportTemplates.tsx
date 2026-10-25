@@ -1,11 +1,14 @@
 import { useState } from "react";
 import { StyleSheet, View } from "react-native";
 import {
+  REPORT_PHOTO_TEXT,
   SAVED_REPORT_SECTIONS,
   VISIT_REPORT_TEXT,
   VISIT_REPORT_TIMINGS,
   offersLeak,
   offersPool,
+  reportPhotoHint,
+  requiresReportPhoto,
   savedReportSections,
   visitReportMode,
   visitReportModeFor,
@@ -238,6 +241,17 @@ function VisitReportsSetting() {
     });
     haptics.selection();
   };
+  // Require a Photo (owner, 2026-10-25), while visit reports are on.
+  const photoHint = reportPhotoHint(mode);
+  const saveRequirePhoto = (on: boolean) => {
+    getServices().sync.write("company", company.id, company.id, {
+      settings: {
+        ...(company.settings as unknown as Record<string, JsonValue>),
+        require_report_photo: on,
+      },
+    });
+    haptics.selection();
+  };
   return (
     <Section
       title="Visit reports"
@@ -288,6 +302,18 @@ function VisitReportsSetting() {
             {VISIT_REPORT_TEXT.off}
           </T>
         )}
+        {photoHint ? (
+          <View testID="report-photo-setting" style={styles.photoSetting}>
+            <Toggle
+              label={REPORT_PHOTO_TEXT.label}
+              value={requiresReportPhoto(company.settings)}
+              onChange={saveRequirePhoto}
+            />
+            <T variant="secondary" muted>
+              {photoHint}
+            </T>
+          </View>
+        ) : null}
       </View>
     </Section>
   );
@@ -404,6 +430,13 @@ function SavedReportForm({
 const styles = StyleSheet.create({
   form: { gap: space["4"] },
   part: { gap: space["2"] },
+  // Require a Photo: below the timing, past a hairline, as on the iPhone app.
+  photoSetting: {
+    marginTop: space["2"],
+    paddingTop: space["2"],
+    borderTopWidth: StyleSheet.hairlineWidth,
+    borderTopColor: color.separator,
+  },
   monthlyRow: {
     flexDirection: "row",
     alignItems: "flex-start",
