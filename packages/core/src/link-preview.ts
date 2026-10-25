@@ -116,8 +116,24 @@ export function splitAddress(address: string | null | undefined): {
   return { street: parts[0]!, rest: parts.slice(1).join(", ") || null };
 }
 
+/**
+ * The longest a name or street runs in a preview's text (title, description, image alt); longer
+ * ones end in "…". Messages shows about two lines anyway, and the page's og and twitter tags
+ * repeat each one up to three times: past about 3,200 bytes of metadata, React streams the rest
+ * in separate pieces that can miss <head>, and the preview is lost (2026-10-25). The card image
+ * draws the full name.
+ */
+export const LINK_PREVIEW_MAX_PART = 80;
+
+function clip(s: string): string {
+  return s.length <= LINK_PREVIEW_MAX_PART
+    ? s
+    : `${s.slice(0, LINK_PREVIEW_MAX_PART - 1).trimEnd()}…`;
+}
+
 function neutral(row: LinkPreviewRow, updated: boolean): LinkPreview {
-  const shop = row.shop.trim() || "Sundeck Pro";
+  const name = row.shop.trim() || "Sundeck Pro";
+  const shop = clip(name);
   const headline = updated ? LINK_PREVIEW_TEXT.updated : LINK_PREVIEW_TEXT.gone;
   return {
     kind: row.kind,
@@ -126,7 +142,7 @@ function neutral(row: LinkPreviewRow, updated: boolean): LinkPreview {
     alt: `${shop}: ${headline}`,
     card: {
       tone: "neutral",
-      shop,
+      shop: name,
       logoPath: null,
       docType: null,
       headline,
@@ -150,15 +166,16 @@ export function linkPreview(row: LinkPreviewRow, now: Date = new Date()): LinkPr
   const reason = neutralReason(row);
   if (reason) return neutral(row, reason === "updated");
 
-  const shop = row.shop.trim() || "Sundeck Pro";
+  const name = row.shop.trim() || "Sundeck Pro";
+  const shop = clip(name);
   const tz = row.timezone || "America/New_York";
   const docType = linkPreviewDocType(row);
   const { street, rest } = splitAddress(row.address);
   const who = row.customer?.trim() || street;
-  const title = `${shop}: ${docType}${who ? ` for ${who}` : ""}`;
+  const title = `${shop}: ${docType}${who ? ` for ${clip(who)}` : ""}`;
   const card = (headline: string, caption: string | null, money: boolean): LinkPreviewCard => ({
     tone: "document",
-    shop,
+    shop: name,
     logoPath: row.logo_path || null,
     docType,
     headline,
@@ -216,8 +233,8 @@ export function linkPreview(row: LinkPreviewRow, now: Date = new Date()): LinkPr
   return {
     kind: "report",
     title,
-    description: join(visit, street),
-    alt: `${docType} from ${shop}${street ? `: ${street}` : ""}`,
+    description: join(visit, street && clip(street)),
+    alt: `${docType} from ${shop}${street ? `: ${clip(street)}` : ""}`,
     card: card(street ?? docType, join(visit, rest) || null, false),
   };
 }

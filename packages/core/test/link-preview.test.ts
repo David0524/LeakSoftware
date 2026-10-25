@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
+  LINK_PREVIEW_MAX_PART,
   customerLinkToken,
   linkPreview,
   linkPreviewVersion,
@@ -138,6 +139,28 @@ describe("linkPreview", () => {
       caption: "Visit on Oct 23 · Tampa, FL 33601",
       money: false,
     });
+  });
+
+  it("shortens a very long name or street in the text, and keeps it whole on the card", () => {
+    const shop = `Desert Springs ${"Pool and Spa ".repeat(10)}LLC`;
+    const customer = `Anastasia ${"Montgomery-Fitzgerald ".repeat(6)}Worthington`;
+    const street = `12345 North ${"Scottsdale ".repeat(10)}Road`;
+    const p = linkPreview({ ...report, shop, customer, address: `${street}, Tampa, FL` }, NOW);
+    const [name, rest] = p.title.split(": ");
+    expect(name).toHaveLength(LINK_PREVIEW_MAX_PART);
+    expect(name!.endsWith("…")).toBe(true);
+    expect(rest).toMatch(/^Leak Detection Report for Anastasia Montgomery-Fitzgerald .+…$/);
+    expect(p.title.length).toBeLessThanOrEqual(2 * LINK_PREVIEW_MAX_PART + 30);
+    expect(p.description.length).toBeLessThanOrEqual(LINK_PREVIEW_MAX_PART + 20);
+    expect(p.alt.length).toBeLessThanOrEqual(2 * LINK_PREVIEW_MAX_PART + 30);
+    expect(p.card).toMatchObject({ shop, headline: street });
+    // Names that fit are left alone.
+    expect(linkPreview(report, NOW).title).toBe(
+      "Blue Wave Pools: Leak Detection Report for Dana Ruiz",
+    );
+    expect(linkPreview({ ...report, live: false, shop }, NOW).title).toMatch(
+      /^Desert Springs .+…: This document is no longer available$/,
+    );
   });
 
   it("reads Postgres timestamps too", () => {

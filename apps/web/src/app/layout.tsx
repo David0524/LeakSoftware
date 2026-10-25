@@ -3,22 +3,12 @@ import { Suspense } from "react";
 import { tokens } from "@leakbook/tokens";
 import { THEME_SCRIPT } from "@/lib/theme";
 import { DiscardGuard } from "@/components/discard-guard";
+import { STARTUP_IMAGES, rootMetadata } from "@/lib/root-metadata";
 import { body, display } from "./fonts";
-import startupImage from "./splash.json";
 import "./globals.css";
 import { PhoneFormatting } from "@/components/phone-format";
 
-export const metadata: Metadata = {
-  // Link previews need absolute URLs (lib/share-preview).
-  metadataBase: new URL("https://sundeckpro.com"),
-  title: "Sundeck Pro",
-  description:
-    "Routes, checklists, quotes, and invoicing for pool service and leak detection shops.",
-  // Added to an iPhone's Home Screen, the site opens full screen like an app. Its launch images
-  // (page color and the mark, light and dark, per screen size) keep it from flashing white;
-  // regenerate them with `node brand/scripts/build_splash.mjs`.
-  appleWebApp: { capable: true, title: "Sundeck Pro", statusBarStyle: "default", startupImage },
-};
+export const metadata: Metadata = rootMetadata;
 
 // Content runs under the notch and home indicator (pages pad with the safe-area insets), and
 // the browser's bars take the page background.
@@ -40,6 +30,10 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
     >
       <head>
         <script dangerouslySetInnerHTML={{ __html: THEME_SCRIPT }} />
+        {/* The Home Screen launch images, here rather than in metadata (lib/root-metadata). */}
+        {STARTUP_IMAGES.map((s) => (
+          <link key={s.url} rel="apple-touch-startup-image" href={s.url} media={s.media} />
+        ))}
       </head>
       <body className="min-h-full flex flex-col">
         {children}

@@ -1,10 +1,15 @@
+import { spawnSync } from "node:child_process";
+import { resolve } from "node:path";
+import type { Metadata } from "next";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { isLinkPreviewFetch } from "@/lib/link-preview-bots";
+import { STARTUP_IMAGES, rootMetadata } from "@/lib/root-metadata";
 
 // The preview lookup, answered here instead of by the database.
 const rpc = vi.fn();
 vi.mock("@/server/reports", () => ({ publicClient: () => ({ rpc }) }));
 vi.mock("next/headers", () => ({ headers: async () => new Headers() }));
+vi.mock("next/server", () => ({ connection: async () => {} }));
 
 const { documentMetadata, imageSize, svgHasLiveText } = await import("@/server/link-preview");
 
@@ -120,6 +125,15 @@ describe("documentMetadata", () => {
     expect((await documentMetadata("invoice", TOKEN, "Invoice")).openGraph).toBeUndefined();
   });
 
+  it("says when the lookup fails, without the link's token", async () => {
+    const log = vi.spyOn(console, "error").mockImplementation(() => {});
+    rpc.mockResolvedValue({ data: null, error: { message: "function does not exist" } });
+    expect((await documentMetadata("report", TOKEN, "Report")).openGraph).toBeUndefined();
+    expect(log).toHaveBeenCalledWith("link_preview_for_token failed: function does not exist");
+    expect(JSON.stringify(log.mock.calls)).not.toContain(TOKEN);
+    log.mockRestore();
+  });
+
   it("never asks about a malformed token", async () => {
     expect(await documentMetadata("report", "not-a-token", "Report")).toEqual({
       title: "Report",
@@ -127,4 +141,81 @@ describe("documentMetadata", () => {
     });
     expect(rpc).not.toHaveBeenCalled();
   });
+});
+
+/**
+ * Every preview tag is in <head> when Messages fetches a link (CI, 2026-10-25: og:title missing
+ * from /r's <head>). React sends a row of metadata tags whole only up to about 3,200 bytes and
+ * streams the rest separately; on a dynamic page those can arrive after <head> is sent. Runs the
+ * page's metadata, merged over the root layout's, through Next's own code and React Flight
+ * (test/flight-metadata.mjs) and checks nothing is left out of the row.
+ */
+describe("preview tags stay in <head>", () => {
+  const LONG = "Desert Springs Pool and Spa Leak Detection and Repair Specialists "
+    .repeat(3)
+    .trim();
+  const flight = (layout: Metadata, page: Metadata) => {
+    const run = spawnSync(
+      process.execPath,
+      ["--conditions=react-server", resolve(__dirname, "flight-metadata.mjs")],
+      { input: JSON.stringify({ layout, page }), encoding: "utf8" },
+    );
+    expect(run.stderr).toBe("");
+    return JSON.parse(run.stdout) as { tags: string[]; inRow: number; deferred: string[] };
+  };
+  const row = {
+    live: true,
+    shop: LONG,
+    logo_path: "c1/logo-1.png",
+    timezone: "America/Phoenix",
+    customer: LONG,
+    address: `${LONG}, Scottsdale, AZ 85251`,
+  };
+  const rows = {
+    quote: {
+      ...row,
+      kind: "quote",
+      status: "sent",
+      total_cents: 1234500,
+      valid_until: "2027-11-15",
+    },
+    invoice: {
+      ...row,
+      kind: "invoice",
+      status: "partially_paid",
+      total_cents: 1234500,
+      balance_cents: 1000000,
+      due_date: "2027-11-15",
+      sent_at: "2026-10-25T00:01:00+00:00",
+    },
+    report: {
+      ...row,
+      kind: "report",
+      status: "sent",
+      template_key: "partner",
+      job_type: "leak_detection",
+      sent_at: "2026-10-25T00:01:00+00:00",
+      visit_at: "2026-10-25T00:01:00+00:00",
+    },
+  } as const;
+
+  for (const kind of ["quote", "invoice", "report"] as const)
+    it(`on a ${kind} link, even with very long names`, async () => {
+      rpc.mockResolvedValue({ data: rows[kind], error: null });
+      const page = await documentMetadata(kind, TOKEN, "Document");
+      const { tags, inRow, deferred } = flight(rootMetadata, page);
+      expect(tags).toEqual(expect.arrayContaining(["og:title", "og:image", "twitter:card"]));
+      expect(deferred).toEqual([]);
+      expect(inRow).toBe(tags.length);
+    }, 20_000);
+
+  it("would catch the launch images back in metadata", async () => {
+    rpc.mockResolvedValue({ data: rows.report, error: null });
+    const page = await documentMetadata("report", TOKEN, "Document");
+    const layout = {
+      ...rootMetadata,
+      appleWebApp: { capable: true, title: "Sundeck Pro", startupImage: STARTUP_IMAGES },
+    };
+    expect(flight(layout, page).deferred).toContain("og:title");
+  }, 20_000);
 });

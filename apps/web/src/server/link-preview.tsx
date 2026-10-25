@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { headers } from "next/headers";
 import { ImageResponse } from "next/og";
+import { connection } from "next/server";
 import { cache } from "react";
 import {
   linkPreview,
@@ -26,8 +27,17 @@ const TOKEN = /^[0-9a-f]{32}$/;
 /** The link's preview fields, once per request (metadata and page share it). */
 export const loadLinkPreview = cache(async (token: string): Promise<LinkPreviewRow | null> => {
   if (!TOKEN.test(token)) return null;
+  // Only for a real request: Next also prerenders the page, and there the lookup's fetch is cut
+  // off and its answer thrown away. This skips it, so the error below is always a real one.
+  await connection();
   const { data, error } = await publicClient().rpc("link_preview_for_token", { link_token: token });
-  return error ? null : ((data as LinkPreviewRow | null) ?? null);
+  if (error) {
+    // The page still opens with its plain title, so say why the preview is missing. Never the
+    // token: it opens the document.
+    console.error(`link_preview_for_token failed: ${error.message}`);
+    return null;
+  }
+  return (data as LinkPreviewRow | null) ?? null;
 });
 
 /** Where a link's card image lives; `v` changes whenever the card would. */
