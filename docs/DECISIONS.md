@@ -2,6 +2,10 @@
 
 Newest first. Each entry: date, decision, reason.
 
+## 2026-10-25 (owner: twilight clip "We will probably go with that for the site", then "I don't want it on the site but give me the longer looped versions at 1080p and with sound"; picked 60 seconds, "Sea and soft music")
+- **The site's link preview keeps its current clip**; the twilight and day clips are not put on the site.
+- **60-second 1080p versions with sound**, day and twilight: five loops of the 12-second clip over a soundtrack made in code (`apps/video/logo3d/sound.py`): the sea in long swells, water over the infinity edge, a light breeze, and a warm pad that changes chord with each turn (D, Bm, G, A, D) and swells with a soft chime as the mark comes face-on; -16 LUFS. Delivered to the owner, not committed (videos stay out of the repository).
+
 ## 2026-10-25 (owner: "make the reports tab filterable, searchable, sortable like the jobs tab"; tech chips "shrink them", Spotify's chip size; chose all chips)
 - **Jobs › Reports** has Jobs' controls on all four platforms: All, Sent, Drafts; a search ("Customer name or job number": the customer's name or the job number) that filters the reports; the Type menu (the job's type); and Sort: Newest (default), Oldest, Customer, Job Number. Newest and Oldest go by when the report was sent, a draft by when it last changed (core `sortReports`). The website pages 50 at a time with Show More.
 - **Rows of chips say when they scroll** (owner: the tech names "being scrollable here isn't really intuitive since they fit perfectly. Give a nudge"; every filter chip row, all four platforms): while chips are past the trailing edge it fades out, and the first row that scrolls slides 56 pt and back once per launch (website: per session), never with Reduce Motion.
