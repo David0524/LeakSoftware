@@ -107,6 +107,13 @@ for _m in bpy.data.materials:
         for _l in list(_b.inputs["Normal"].links):
             _m.node_tree.links.remove(_l)
         set_input(_b, ["Subsurface Weight", "Subsurface"], 0.0)
+# scene.py also bakes a grain into the wave layers' shape (a noise displacement); smooth it out
+# here (volume kept), so the bands' faces and edges are clean.
+for _o in M["wave_layers"]:
+    _sm = _o.modifiers.new("Clean", "LAPLACIANSMOOTH")
+    _sm.lambda_factor = 1.0
+    _sm.iterations = 25
+    _sm.use_volume_preserve = True
 
 
 def loop_vector(nt, coords, radius):
