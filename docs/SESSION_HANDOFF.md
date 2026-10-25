@@ -6,6 +6,8 @@ For a new Claude Code session picking up from the long launch-prep session (2026
 
 ## How work ships (as practiced; CLAUDE.md has the rules)
 
+- Give the owner times in Eastern time (ET), not UTC (owner, 2026-10-25).
+
 - Work on the session branch, then fast-forward the default branch `claude/cool-keller-efjc00`
   to it once the website's CI jobs are green; that deploys sundeckpro.com (Vercel).
 - Migrations: name after the latest prefix on the default branch (latest:
