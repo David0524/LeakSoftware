@@ -28,7 +28,7 @@ export function JobsTabs({ current }: { current: "jobs" | "reports" }) {
           href={o.href}
           data-segment
           aria-current={o.key === current ? "page" : undefined}
-          className={segmentClass(o.key === current, "min-w-28")}
+          className={segmentClass(o.key === current, "min-w-22")}
         >
           {o.label}
         </Link>

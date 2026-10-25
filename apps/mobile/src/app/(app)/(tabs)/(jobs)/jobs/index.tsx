@@ -309,7 +309,7 @@ export default function Jobs() {
         <>
           <Segmented
             fill={false}
-            minSegmentWidth={112}
+            minSegmentWidth={88}
             accessibilityLabel="Jobs or reports"
             options={[
               { value: "jobs", label: "Jobs" },

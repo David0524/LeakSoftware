@@ -161,7 +161,7 @@
         private var segmented: some View {
             VStack(alignment: .leading, spacing: 12) {
                 SectionHeading("Segmented")
-                Segmented(selection: $segment, options: ["Jobs", "Reports"], label: { $0 }, minSegmentWidth: 112)
+                Segmented(selection: $segment, options: ["Jobs", "Reports"], label: { $0 }, minSegmentWidth: 88)
                 Segmented(
                     selection: $day, options: ["Day", "Week", "Month"], label: { $0 }, segmentPadding: 12)
                 Segmented(

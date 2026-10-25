@@ -233,7 +233,7 @@
         @ViewBuilder private func jobsAndReports(_ company: CompanyContext?) -> some View {
             Segmented(
                 selection: $mode, options: JobsMode.allCases, label: \.title, title: "Jobs and Reports",
-                minSegmentWidth: 112
+                minSegmentWidth: 88
             )
             .padding(.horizontal, 16)
             // Only while something waits to send, as on Today: an empty row doubled the space

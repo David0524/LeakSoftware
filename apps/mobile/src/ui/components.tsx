@@ -2097,8 +2097,9 @@ const styles = StyleSheet.create({
     userSelect: "none",
   },
   thumb: { position: "absolute", borderRadius: shape.segmentTrack - 2 },
+  // 32 pt segments in a 36 pt track (owner, 2026-10-25: "smaller"), as tall as iOS's own.
   segment: {
-    minHeight: 40,
+    minHeight: 32,
     borderRadius: shape.segmentTrack - 2,
     alignItems: "center",
     justifyContent: "center",

@@ -83,7 +83,8 @@ export function segmentClass(active: boolean, extra?: string) {
   // As with buttons, a caller's own padding replaces the default (icon segments use px-0).
   const pad = /(^|\s)px-/.test(extra ?? "") ? "" : "px-4";
   return cx(
-    `min-h-10 content-center rounded-full ${pad} text-center text-[0.9375rem] font-medium whitespace-nowrap transition-colors`,
+    // 32 pt segments in a 36 pt track (owner, 2026-10-25: "smaller"), as tall as iOS's own.
+    `min-h-8 content-center rounded-full ${pad} text-center text-[0.9375rem] font-medium whitespace-nowrap transition-colors`,
     active
       ? "bg-thumb font-semibold text-text shadow-[0_3px_8px_rgb(0_0_0/0.12),0_3px_1px_rgb(0_0_0/0.04)]"
       : "text-text hover:bg-text/[0.05]",
