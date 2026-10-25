@@ -2487,6 +2487,21 @@ function WeekCell({
 // Jobs waiting for a time, with suggestions
 // ---------------------------------------------------------------------------
 
+const PHONE_WIDTH = "(max-width: 639.98px)";
+
+/** A phone-width screen (Tailwind's below `sm`); false on the server and before hydration. */
+function usePhoneWidth() {
+  return useSyncExternalStore(
+    (change) => {
+      const m = matchMedia(PHONE_WIDTH);
+      m.addEventListener("change", change);
+      return () => m.removeEventListener("change", change);
+    },
+    () => matchMedia(PHONE_WIDTH).matches,
+    () => false,
+  );
+}
+
 function Tray({
   jobs,
   onMove,
@@ -2508,6 +2523,11 @@ function Tray({
   const isOver = fromDay && (overBox || (!!over && jobs.some((j) => j.id === String(over.id))));
   const [all, setAll] = useState(false);
   const [open, setOpen] = useState(true);
+  const [listOpen, setListOpen] = useState(false);
+  const closeList = useCallback(() => setListOpen(false), []);
+  // Phones: one row that opens the jobs in a sheet (owner, 2026-10-25: Needs a Time "feels
+  // very big"; picked option A). A stop dragged from a day can still be let go on the row.
+  const phone = usePhoneWidth();
   const listId = useId();
   return (
     <section
@@ -2515,76 +2535,230 @@ function Tray({
       aria-label="Needs a Time"
       data-testid="tray"
       data-drop-over={isOver ? "" : undefined}
-      className={cx("card p-4", side ? "lg:p-3" : "mb-6", isOver && "bg-link/5 ring-2 ring-link")}
+      className={cx(
+        "card sm:p-4",
+        side ? "lg:p-3" : "mb-6",
+        isOver && "bg-link/5 ring-2 ring-link",
+      )}
     >
-      <SideSectionTitle
-        id={listId}
-        title="Needs a Time"
-        count={jobs.length}
-        open={open}
-        onToggle={() => setOpen((o) => !o)}
-        action={
-          jobs.length > 3 ? (
-            <button
-              type="button"
-              aria-expanded={all}
-              onClick={() => setAll((a) => !a)}
-              className={cx(
-                "-mr-2 min-h-11 shrink-0 px-3 text-[0.9375rem] font-semibold text-link max-md:hidden",
-                side && "lg:hidden",
-              )}
-            >
-              {all ? "Show Less" : `Show All ${jobs.length}`}
-            </button>
-          ) : null
-        }
-      />
-      <div id={listId} hidden={!open}>
+      <button
+        type="button"
+        aria-haspopup="dialog"
+        data-testid="tray-row"
+        onClick={() => setListOpen(true)}
+        className="flex min-h-11 w-full items-center gap-3 rounded-[inherit] px-4 py-2.5 text-left hover:bg-text/[0.03] focus-visible:outline-3 focus-visible:outline-focus active:bg-text/[0.06] sm:hidden"
+      >
+        <span className="min-w-0 flex-1 truncate">Needs a Time</span>
+        {jobs.length ? (
+          <span className="rounded-full bg-primary px-2.5 py-0.5 text-[0.9375rem] font-bold text-white tabular-nums">
+            {jobs.length}
+          </span>
+        ) : (
+          <span className="text-text-muted tabular-nums">0</span>
+        )}
+        <span aria-hidden="true" className="text-xl leading-none text-text-muted/70">
+          ›
+        </span>
+      </button>
+      <Sheet
+        open={listOpen && phone}
+        onClose={closeList}
+        title={`Needs a Time${jobs.length ? ` (${jobs.length})` : ""}`}
+        doneOnly
+      >
         {jobs.length === 0 ? (
-          <p className="mt-1 text-[0.9375rem] text-text-muted">
+          <p className="text-[0.9375rem] text-text-muted">
             Every job has a time. Drag a job here to take it off the schedule.
           </p>
         ) : (
-          <SortableContext id={TRAY} items={jobs.map((j) => j.id)} strategy={rectSortingStrategy}>
-            {/* One row that scrolls sideways (the next card peeks in), so a long list doesn't
+          <ul className="divide-y-[0.5px] divide-separator" data-testid="tray-sheet-list">
+            {jobs.map((j) => (
+              <li key={j.id}>
+                <TrayRow job={j} onMove={onMove} onSuggestion={onSuggestion} />
+              </li>
+            ))}
+          </ul>
+        )}
+      </Sheet>
+      <div className="max-sm:hidden">
+        <SideSectionTitle
+          id={listId}
+          title="Needs a Time"
+          count={jobs.length}
+          open={open}
+          onToggle={() => setOpen((o) => !o)}
+          action={
+            jobs.length > 3 ? (
+              <button
+                type="button"
+                aria-expanded={all}
+                onClick={() => setAll((a) => !a)}
+                className={cx(
+                  "-mr-2 min-h-11 shrink-0 px-3 text-[0.9375rem] font-semibold text-link max-md:hidden",
+                  side && "lg:hidden",
+                )}
+              >
+                {all ? "Show Less" : `Show All ${jobs.length}`}
+              </button>
+            ) : null
+          }
+        />
+        <div id={listId} hidden={!open}>
+          {phone ? null : jobs.length === 0 ? (
+            <p className="mt-1 text-[0.9375rem] text-text-muted">
+              Every job has a time. Drag a job here to take it off the schedule.
+            </p>
+          ) : (
+            <SortableContext id={TRAY} items={jobs.map((j) => j.id)} strategy={rectSortingStrategy}>
+              {/* One row that scrolls sideways (the next card peeks in), so a long list doesn't
               push the routes down; wider screens can open it all as a grid (owner,
               2026-10-18: "super cluttered on desktop"). */}
-            <ul
-              data-flip-list={TRAY}
-              className={cx(
-                "relative -mx-4 mt-3 flex snap-x snap-mandatory scroll-px-4 items-start gap-3 overflow-x-auto px-4 pb-1",
-                all &&
-                  "md:mx-0 md:grid md:grid-cols-[repeat(2,minmax(0,1fr))] md:overflow-visible md:px-0 md:pb-0 xl:grid-cols-[repeat(3,minmax(0,1fr))]",
-                side &&
-                  "lg:mx-0 lg:mt-2 lg:block lg:space-y-1.5 lg:overflow-visible lg:px-0 lg:pb-0",
-              )}
-            >
-              {jobs.map((j) => (
-                <li
-                  key={j.id}
-                  data-flip={j.id}
-                  // In the sideways row: whole cards and the edge of the next one (12 px,
-                  // less than its 14 px inset, so no text is cut): one on phones, two on
-                  // tablets, three wider. Opened as a grid (Show All) or listed down in the sidebar,
-                  // they take the column's width.
-                  className={cx(
-                    "shrink-0 snap-start",
-                    "w-[calc(100%-0.5rem)]",
-                    all
-                      ? "md:w-auto"
-                      : side
-                        ? "md:w-[calc((100%-1.25rem)/2)] lg:w-auto"
-                        : "md:w-[calc((100%-1.25rem)/2)] xl:w-[calc((100%-2rem)/3)]",
-                  )}
-                >
-                  <TrayCard job={j} onMove={onMove} onSuggestion={onSuggestion} />
-                </li>
-              ))}
-            </ul>
-          </SortableContext>
-        )}
+              <ul
+                data-flip-list={TRAY}
+                className={cx(
+                  "relative -mx-4 mt-3 flex snap-x snap-mandatory scroll-px-4 items-start gap-3 overflow-x-auto px-4 pb-1",
+                  all &&
+                    "md:mx-0 md:grid md:grid-cols-[repeat(2,minmax(0,1fr))] md:overflow-visible md:px-0 md:pb-0 xl:grid-cols-[repeat(3,minmax(0,1fr))]",
+                  side &&
+                    "lg:mx-0 lg:mt-2 lg:block lg:space-y-1.5 lg:overflow-visible lg:px-0 lg:pb-0",
+                )}
+              >
+                {jobs.map((j) => (
+                  <li
+                    key={j.id}
+                    data-flip={j.id}
+                    // In the sideways row: whole cards and the edge of the next one (12 px,
+                    // less than its 14 px inset, so no text is cut): one on phones, two on
+                    // tablets, three wider. Opened as a grid (Show All) or listed down in the sidebar,
+                    // they take the column's width.
+                    className={cx(
+                      "shrink-0 snap-start",
+                      "w-[calc(100%-0.5rem)]",
+                      all
+                        ? "md:w-auto"
+                        : side
+                          ? "md:w-[calc((100%-1.25rem)/2)] lg:w-auto"
+                          : "md:w-[calc((100%-1.25rem)/2)] xl:w-[calc((100%-2rem)/3)]",
+                    )}
+                  >
+                    <TrayCard job={j} onMove={onMove} onSuggestion={onSuggestion} />
+                  </li>
+                ))}
+              </ul>
+            </SortableContext>
+          )}
+        </div>
       </div>
     </section>
+  );
+}
+
+/**
+ * A waiting job in the phones' Needs a Time sheet: the schedule card's two lines (the name
+ * opens the job) and "…" for Suggest Times and Move…. Not draggable: the sheet covers the day.
+ */
+function TrayRow({
+  job: j,
+  onMove,
+  onSuggestion,
+}: {
+  job: BoardStop;
+  onMove: (s: BoardStop) => void;
+  onSuggestion: (job: string, s: Suggestion) => void;
+}) {
+  const [actionsOpen, setActions] = useState(false);
+  const closeActions = useCallback(() => setActions(false), []);
+  const second = [j.note, j.address ? streetOf(j.address) : null].filter(Boolean).join(" · ");
+  return (
+    <div data-testid="tray-sheet-job" className="flex min-h-16 items-center gap-2 py-2">
+      <div className="min-w-0 flex-1">
+        <Link
+          href={`/jobs/${j.id}`}
+          className="inline-flex max-w-full items-baseline gap-0.5 text-[1.0625rem] font-semibold text-link hover:underline"
+        >
+          <span className="min-w-0 truncate">{j.customer}</span>
+          <span aria-hidden="true" className="shrink-0">
+            ›
+          </span>
+        </Link>
+        {second ? (
+          <p className="flex min-w-0 items-center gap-1.5 text-[0.9375rem] text-text-muted">
+            <span className="min-w-0 truncate">{second}</span>
+            {j.notOnMap || (j.address && !j.location) ? <NotOnMapTag /> : null}
+          </p>
+        ) : null}
+      </div>
+      <TrayActionsButton job={j} onOpen={() => setActions(true)} />
+      <TrayActions
+        job={j}
+        open={actionsOpen}
+        onClose={closeActions}
+        onMove={onMove}
+        onSuggestion={onSuggestion}
+      />
+    </div>
+  );
+}
+
+/** Needs a Time's "…": Suggest Times and Move…. */
+function TrayActionsButton({ job: j, onOpen }: { job: BoardStop; onOpen: () => void }) {
+  return (
+    <button
+      type="button"
+      aria-label={`Actions for ${j.customer}`}
+      title="Suggest Times or Move"
+      aria-haspopup="dialog"
+      onClick={onOpen}
+      className="relative grid size-11 shrink-0 place-items-center rounded-full text-link hover:bg-link/10"
+    >
+      <svg viewBox="0 0 24 24" className="size-6" fill="currentColor" aria-hidden="true">
+        <circle cx="6" cy="12" r="1.8" />
+        <circle cx="12" cy="12" r="1.8" />
+        <circle cx="18" cy="12" r="1.8" />
+      </svg>
+    </button>
+  );
+}
+
+/** The sheet behind a waiting job's "…": its suggested times, then Move…. */
+function TrayActions({
+  job: j,
+  open,
+  onClose,
+  onMove,
+  onSuggestion,
+}: {
+  job: BoardStop;
+  open: boolean;
+  onClose: () => void;
+  onMove: (s: BoardStop) => void;
+  onSuggestion: (job: string, s: Suggestion) => void;
+}) {
+  return (
+    <Sheet open={open} onClose={onClose} title={j.customer}>
+      <p className="mb-2 text-[0.9375rem] text-text-muted">
+        {[j.number ? `#${j.number}` : null, j.address, j.note].filter(Boolean).join(" · ")}
+      </p>
+      <Suggestions
+        target={{ job: j.id }}
+        onPick={(s) => {
+          onClose();
+          onSuggestion(j.id, s);
+        }}
+        sheetTitle="Suggested Times"
+      >
+        <button
+          type="button"
+          className={buttonClass("quiet", "px-2")}
+          onClick={() => {
+            onClose();
+            onMove(j);
+          }}
+        >
+          Move…
+        </button>
+      </Suggestions>
+    </Sheet>
   );
 }
 
@@ -2626,47 +2800,15 @@ function TrayCard({
         attributes={attributes}
         menu={menu}
         tray
-        trailing={
-          <button
-            type="button"
-            aria-label={`Actions for ${j.customer}`}
-            title="Suggest Times or Move"
-            aria-haspopup="dialog"
-            onClick={() => setActions(true)}
-            className="relative grid size-11 shrink-0 place-items-center rounded-full text-link hover:bg-link/10"
-          >
-            <svg viewBox="0 0 24 24" className="size-6" fill="currentColor" aria-hidden="true">
-              <circle cx="6" cy="12" r="1.8" />
-              <circle cx="12" cy="12" r="1.8" />
-              <circle cx="18" cy="12" r="1.8" />
-            </svg>
-          </button>
-        }
+        trailing={<TrayActionsButton job={j} onOpen={() => setActions(true)} />}
       />
-      <Sheet open={sheetOpen} onClose={closeActions} title={j.customer}>
-        <p className="mb-2 text-[0.9375rem] text-text-muted">
-          {[j.number ? `#${j.number}` : null, j.address, j.note].filter(Boolean).join(" · ")}
-        </p>
-        <Suggestions
-          target={{ job: j.id }}
-          onPick={(s) => {
-            setActions(false);
-            onSuggestion(j.id, s);
-          }}
-          sheetTitle="Suggested Times"
-        >
-          <button
-            type="button"
-            className={buttonClass("quiet", "px-2")}
-            onClick={() => {
-              setActions(false);
-              onMove(j);
-            }}
-          >
-            Move…
-          </button>
-        </Suggestions>
-      </Sheet>
+      <TrayActions
+        job={j}
+        open={sheetOpen}
+        onClose={closeActions}
+        onMove={onMove}
+        onSuggestion={onSuggestion}
+      />
     </article>
   );
 }

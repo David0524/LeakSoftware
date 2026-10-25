@@ -2,6 +2,9 @@
 
 Newest first. Each entry: date, decision, reason.
 
+## 2026-10-25 (owner: Needs a Time "feels very big on the app"; picked option A of three sketches)
+- **Needs a Time on phones is one row** (mobile website, iPhone, Android; computers and tablets keep the sidebar and the sideways cards): "Needs a Time" with the count as a blue pill and "›", like Customers to Add. Tapping it opens a sheet, "Needs a Time (N)" with Done, listing the waiting jobs (name opens the job; "…" has Suggest Times and Move…). A stop dragged from a day can still be let go on the row to take it off the schedule; a waiting job is placed with Move… or Suggest Times (no dragging from the sheet). The count pill is blue, not orange as sketched: orange is kept for the brand accent.
+
 ## 2026-10-25 (owner: "Go on the render"; then "a second render ... exactly the same just at twilight so we get those orange/blue vibes")
 - **3D clip full render started** (day, c37d3fb scene, 1080p/96 samples), and **a twilight version** of the same clip: `scene_day.py --time twilight` (sun low off-frame left, orange horizon, deep blue overhead, orange-lit clouds, gold glitter, warm/cool edge lights), rendered by `logo-3d.yml` with time "twilight" into artifact `logo-3d-twilight`. Neither goes live until the owner picks and approves a finished clip.
 

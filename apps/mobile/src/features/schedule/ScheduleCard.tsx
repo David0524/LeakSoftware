@@ -1,4 +1,3 @@
-import type { ReactNode } from "react";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 import { GestureDetector, type PanGesture } from "react-native-gesture-handler";
 import { JOB_STATUS_LABELS, NOT_ON_MAP, type JobStatus } from "@leakbook/core";
@@ -33,18 +32,16 @@ export function streetOf(address: string): string {
 }
 
 /** What the card reads as to TalkBack and VoiceOver, exceptions included. */
-export function cardLabel(s: Stop, n: number | null, tray = false): string {
+export function cardLabel(s: Stop, n: number | null): string {
   const twoTechs = s.lock?.kind === "two_techs" ? s.lock.label : null;
   return [
     n != null ? `Stop ${n}` : null,
-    tray ? null : (s.time ?? "no time"),
+    s.time ?? "no time",
     s.customer,
-    tray ? s.note : s.tag,
+    s.tag,
     twoTechs,
     s.address ? streetOf(s.address) : null,
-    s.status !== "scheduled" && s.status !== "unscheduled" && !tray
-      ? JOB_STATUS_LABELS[s.status]
-      : null,
+    s.status !== "scheduled" && s.status !== "unscheduled" ? JOB_STATUS_LABELS[s.status] : null,
     s.lock && !twoTechs ? s.lock.label : null,
     s.notOnMap || (s.address && !s.location) ? NOT_ON_MAP.title : null,
     s.cleanings?.[0] ? `${s.cleanings[0].name} due` : null,
@@ -98,8 +95,6 @@ export function ScheduleCardFace({
   stop: s,
   n,
   tech,
-  tray = false,
-  trailing,
   onOpen,
   onHold,
   onMore,
@@ -110,10 +105,6 @@ export function ScheduleCardFace({
   n: number | null;
   /** The tech's color: a 4 pt stripe on the leading edge (null: nobody yet, no stripe). */
   tech: string | null;
-  /** Needs a Time: no time line; the note ("No tech yet · booked…") on the second line. */
-  tray?: boolean;
-  /** More buttons before the grip (Needs a Time's Actions). */
-  trailing?: ReactNode;
   /** Opens the job, from the customer's name (absent on the carried copy). */
   onOpen?: () => void;
   /** The card's touch-and-hold menu, from the name too (the body has it already). */
@@ -125,15 +116,12 @@ export function ScheduleCardFace({
 }) {
   const twoTechs = s.lock?.kind === "two_techs" ? s.lock.label : null;
   const street = s.address ? streetOf(s.address) : null;
-  const second = [tray ? s.note : twoTechs ? `${s.tag} · ${twoTechs}` : s.tag, street]
-    .filter(Boolean)
-    .join(" · ");
-  const time = tray ? s.time : (s.time ?? "No time");
+  const second = [twoTechs ? `${s.tag} · ${twoTechs}` : s.tag, street].filter(Boolean).join(" · ");
+  const time = s.time ?? "No time";
   const cleaning = s.cleanings?.[0];
-  const status = s.status !== "scheduled" && s.status !== "unscheduled" && !tray;
+  const status = s.status !== "scheduled" && s.status !== "unscheduled";
   return (
-    // Needs a Time's cards sit on its card as wells, so the next one's edge reads as a card.
-    <View style={[styles.face, { backgroundColor: tray ? color.well : color.surface }]}>
+    <View style={[styles.face, { backgroundColor: color.surface }]}>
       {tech !== null ? <TechStripe tech={tech} /> : null}
       {n != null ? <Badge n={n} status={s.status} done={s.done} /> : null}
       <View style={[styles.text, s.done && { opacity: 0.7 }]}>
@@ -189,7 +177,6 @@ export function ScheduleCardFace({
           ) : null}
         </View>
       )}
-      {trailing}
       {onMore ? <MoreButton customer={s.customer} onPress={onMore} /> : null}
       {s.movable && gripGesture ? (
         <GestureDetector gesture={gripGesture}>

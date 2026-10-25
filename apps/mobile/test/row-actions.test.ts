@@ -79,7 +79,7 @@ describe("Jobs", () => {
   });
 });
 
-describe("Schedule cards and Needs a Time", () => {
+describe("Schedule cards", () => {
   const stop = { status: "scheduled", lock: "none" as const, scheduled: true, hasAddress: true };
 
   it("swipes left for Move…, right for Lock…, holds for the rest", () => {
@@ -112,17 +112,6 @@ describe("Schedule cards and Needs a Time", () => {
       "unschedule",
     );
     expect(ids(stopRowActions({ ...stop, scheduled: false })).menu).not.toContain("unschedule");
-  });
-
-  it("gives Needs a Time's cards Suggest Times, as their … menu", () => {
-    expect(ids(stopRowActions({ ...stop, scheduled: false, tray: true })).menu).toEqual([
-      "open",
-      "suggest",
-      "move",
-      "lockDay",
-      "lockTime",
-      "directions",
-    ]);
   });
 
   it("a canceled job only opens and gets directions", () => {

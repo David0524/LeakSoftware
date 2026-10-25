@@ -1,174 +1,210 @@
+import { useState } from "react";
+import { Pressable, StyleSheet, Text, View } from "react-native";
 import { router } from "expo-router";
-import { Pressable, ScrollView, StyleSheet, View, useWindowDimensions } from "react-native";
 import Svg, { Circle } from "react-native-svg";
-import { Card, T } from "../../ui/components";
-import type { RowGestures } from "../../ui/RowMenu";
+import { Chevron, Group, T } from "../../ui/components";
+import { ModalSheet } from "../../ui/ModalSheet";
+import { NotOnMapTag } from "../../ui/NotOnMap";
 import { useMenu } from "../../ui/Select";
-import { color, gutter, space } from "../../ui/theme";
-import { GhostCard, type Stop } from "./RouteCard";
-import { cardLabel, ScheduleCardFace } from "./ScheduleCard";
-import { dropTint, useDragHover, useDragSource, useDropZones } from "./ScheduleDrag";
-
-/**
- * How much of the next card shows at the row's end, so it reads as a row that scrolls: its
- * edge only, less than its 14 pt inset, so no text is ever cut.
- */
-const PEEK = 12;
+import { color, face, MAX_TEXT_SCALE, minTap, shape, space, tabular, type } from "../../ui/theme";
+import type { Stop } from "./RouteCard";
+import { streetOf } from "./ScheduleCard";
+import { dropTint, useDragHover, useDropZones } from "./ScheduleDrag";
 
 /** Needs a Time's drop zone id. */
 export const TRAY = "tray";
 
 /**
- * Needs a Time (spec 5.6, managers): jobs without a time or a tech, in one row that scrolls
- * sideways. Each card's "…" offers Suggest Times and Move…; drag one by its grip onto a tech's
- * day, and drop an unstarted stop from a day here to take it off the schedule (the menu's Take
- * Off Schedule); the box lights up while one is over it. Touch and hold on a card shows its
- * menu (gestures spec section 12), the same one as "…"; only the name opens the job. The cards
- * aren't swiped: the row scrolls sideways.
+ * Needs a Time (spec 5.6, managers): jobs without a time or a tech, as one row (owner,
+ * 2026-10-25: "feels very big"; picked option A): its name, the count and "›". A tap opens the
+ * jobs in a sheet, each with "…" for Suggest Times and Move…. The row is still where a stop
+ * dragged from a day is let go to take it off the schedule (the menu's Take Off Schedule); it
+ * rings blue while one is over it. A waiting job can't be dragged onto a route: Move… does it.
  */
 export function NeedsATime({
   jobs,
   onSuggest,
   onMove,
-  gesturesFor,
 }: {
   jobs: Stop[];
   onSuggest: (s: Stop) => void;
   onMove: (s: Stop) => void;
-  /** A card's touch-and-hold menu and accessibility actions. */
-  gesturesFor?: (s: Stop) => RowGestures;
 }) {
-  const { width } = useWindowDimensions();
+  const [open, setOpen] = useState(false);
   const menu = useMenu();
   const { zoneRef } = useDropZones();
   const hover = useDragHover();
-  // Whole cards and the edge of the next one (PEEK), never a card cut through its text: one on
-  // a phone, more side by side on a tablet (each at least 280 pt).
-  const view = width - gutter * 2;
-  const across = Math.max(1, Math.floor((view - space["4"] - PEEK) / (280 + space["3"])));
-  const cardWidth = (view - space["4"] - PEEK - space["3"] * across) / across;
   const tinted = dropTint(hover, TRAY);
+  // Suggest Times and Move… open sheets of their own, so this one closes first.
+  const act = (run: (s: Stop) => void, s: Stop) => {
+    setOpen(false);
+    run(s);
+  };
   return (
     <View ref={zoneRef({ kind: "tray", id: TRAY })} collapsable={false}>
-      <Card padding={space["4"]} style={tinted ? { backgroundColor: tinted } : undefined}>
-        <T variant="cardTitle" style={{ marginBottom: jobs.length ? space["3"] : 0 }}>
-          Needs a Time{jobs.length ? ` (${jobs.length})` : ""}
-        </T>
+      <Pressable
+        accessibilityRole="button"
+        accessibilityLabel={`Needs a Time, ${jobs.length}`}
+        accessibilityHint="Shows the jobs waiting for a time"
+        onPress={() => setOpen(true)}
+        style={({ pressed }) => [
+          styles.row,
+          { backgroundColor: tinted ?? color.surface },
+          { borderColor: tinted ? (hover.refused ? color.warning : color.link) : "transparent" },
+          pressed && { opacity: 0.7 },
+        ]}
+      >
+        <View style={styles.label}>
+          <T numberOfLines={1}>Needs a Time</T>
+        </View>
+        {jobs.length ? (
+          <View style={[styles.count, { backgroundColor: color.primary }]}>
+            <Text
+              style={[type.secondary, face.bold, tabular, { color: color.onPrimary }]}
+              maxFontSizeMultiplier={MAX_TEXT_SCALE}
+            >
+              {jobs.length}
+            </Text>
+          </View>
+        ) : (
+          <T muted style={tabular}>
+            0
+          </T>
+        )}
+        <Chevron />
+      </Pressable>
+      <ModalSheet
+        visible={open}
+        onClose={() => setOpen(false)}
+        title={`Needs a Time${jobs.length ? ` (${jobs.length})` : ""}`}
+        cancel="Done"
+      >
         {jobs.length === 0 ? (
           <T variant="secondary" muted>
-            Every job has a time.
+            Every job has a time. Drag a job here to take it off the schedule.
           </T>
         ) : (
-          <ScrollView
-            horizontal
-            showsHorizontalScrollIndicator={false}
-            snapToInterval={cardWidth + space["3"]}
-            decelerationRate="fast"
-            style={{ marginHorizontal: -space["4"] }}
-            contentContainerStyle={{ paddingHorizontal: space["4"], gap: space["3"] }}
-          >
-            {jobs.map((j) => {
-              const g = gesturesFor?.(j);
-              return (
-                <TrayCard
-                  key={j.id}
-                  stop={j}
-                  width={cardWidth}
-                  gestures={g}
-                  onActions={
-                    g?.onLongPress ??
-                    (() =>
-                      menu.open({
-                        title: j.customer,
-                        items: [
-                          { label: "Suggest Times", onPress: () => onSuggest(j) },
-                          { label: "Move…", onPress: () => onMove(j) },
-                        ],
-                      }))
-                  }
-                />
-              );
-            })}
-          </ScrollView>
+          <Group>
+            {jobs.map((j) => (
+              <WaitingJob
+                key={j.id}
+                stop={j}
+                onOpen={() => {
+                  setOpen(false);
+                  router.push(`/jobs/${j.id}`);
+                }}
+                onActions={() =>
+                  menu.open({
+                    title: j.customer,
+                    items: [
+                      { label: "Suggest Times", onPress: () => act(onSuggest, j) },
+                      { label: "Move…", onPress: () => act(onMove, j) },
+                    ],
+                  })
+                }
+              />
+            ))}
+          </Group>
         )}
+        {/* Inside the sheet, so the menu shows over it. */}
         {menu.element}
-      </Card>
+      </ModalSheet>
     </View>
   );
 }
 
-function TrayCard({
+/**
+ * A waiting job in the sheet: the customer's name opens it, then the note ("No tech yet ·
+ * booked…") and the street; "…" for Suggest Times and Move….
+ */
+function WaitingJob({
   stop: j,
-  width,
+  onOpen,
   onActions,
-  gestures,
 }: {
   stop: Stop;
-  width: number;
+  onOpen: () => void;
   onActions: () => void;
-  gestures?: RowGestures;
 }) {
-  const hover = useDragHover();
-  const item = j.movable ? ({ id: j.id, status: j.status, from: { kind: "tray" } } as const) : null;
-  const { gesture, ref } = useDragSource(item, () => <GhostCard stop={j} />, undefined, "grip");
-  const open = () => router.push(`/jobs/${j.id}`);
+  const second = [j.note, j.address ? streetOf(j.address) : null].filter(Boolean).join(" · ");
   return (
-    <View
-      ref={ref}
-      collapsable={false}
-      style={[
-        styles.card,
-        { width },
-        // Carried: its place is an empty gap.
-        hover.id === j.id && { opacity: 0 },
-      ]}
-    >
-      {/* The schedule card (ScheduleCard.tsx), with the note on its second line; "…" keeps
-            Suggest Times and Move…. */}
+    <View style={styles.job}>
+      <View style={styles.text}>
+        <Pressable
+          accessibilityRole="link"
+          accessibilityLabel={`Open ${j.customer}`}
+          onPress={onOpen}
+          hitSlop={{ top: 8, bottom: 8, left: 6, right: 8 }}
+          style={({ pressed }) => [styles.name, pressed && { opacity: 0.5 }]}
+        >
+          <Text
+            numberOfLines={1}
+            style={[type.bodyEmphasis, { color: color.link }]}
+            maxFontSizeMultiplier={MAX_TEXT_SCALE}
+          >
+            {`${j.customer} ›`}
+          </Text>
+        </Pressable>
+        {second ? (
+          <View style={styles.line}>
+            <View style={styles.lineText}>
+              <T variant="secondary" muted numberOfLines={1}>
+                {second}
+              </T>
+            </View>
+            {j.notOnMap || (j.address && !j.location) ? <NotOnMapTag size={17} /> : null}
+          </View>
+        ) : null}
+      </View>
       <Pressable
-        accessibilityRole="link"
-        accessibilityLabel={cardLabel(j, null, true)}
-        accessibilityHint="Opens the job"
-        accessibilityActions={[
-          { name: "activate", label: "Open Job" },
-          ...(gestures?.accessibilityActions ?? []),
-        ]}
-        onAccessibilityAction={(e) =>
-          e.nativeEvent.actionName === "activate" ? open() : gestures?.onAccessibilityAction(e)
-        }
-        onLongPress={onActions}
-        style={{ flex: 1 }}
+        accessibilityRole="button"
+        accessibilityLabel={`Actions for ${j.customer}`}
+        onPress={onActions}
+        style={({ pressed }) => [styles.more, pressed && { backgroundColor: color.iconTint }]}
       >
-        <ScheduleCardFace
-          stop={j}
-          n={null}
-          tech={null}
-          tray
-          onOpen={open}
-          onHold={onActions}
-          gripGesture={item ? gesture : undefined}
-          trailing={
-            <Pressable
-              accessibilityRole="button"
-              accessibilityLabel={`Actions for ${j.customer}`}
-              onPress={onActions}
-              style={({ pressed }) => [styles.more, pressed && { backgroundColor: color.iconTint }]}
-            >
-              <Svg width={24} height={24} viewBox="0 0 24 24" fill={color.link}>
-                <Circle cx={6} cy={12} r={1.8} />
-                <Circle cx={12} cy={12} r={1.8} />
-                <Circle cx={18} cy={12} r={1.8} />
-              </Svg>
-            </Pressable>
-          }
-        />
+        <Svg width={24} height={24} viewBox="0 0 24 24" fill={color.link}>
+          <Circle cx={6} cy={12} r={1.8} />
+          <Circle cx={12} cy={12} r={1.8} />
+          <Circle cx={18} cy={12} r={1.8} />
+        </Svg>
       </Pressable>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  card: { borderRadius: 16, overflow: "hidden" },
+  // A card-shaped row; the border is always there (clear) so the ring doesn't shift it.
+  row: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: space["3"],
+    minHeight: minTap,
+    paddingHorizontal: space["4"],
+    paddingVertical: 10,
+    borderRadius: shape.card,
+    borderWidth: 2,
+  },
+  label: { flex: 1, minWidth: 0 },
+  count: {
+    minWidth: 28,
+    alignItems: "center",
+    paddingHorizontal: 10,
+    paddingVertical: 2,
+    borderRadius: 999,
+  },
+  job: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: space["2"],
+    minHeight: 64,
+    paddingLeft: space["4"],
+    paddingRight: space["1"],
+    paddingVertical: 8,
+  },
+  text: { flex: 1, minWidth: 0 },
+  name: { alignSelf: "flex-start", maxWidth: "100%" },
+  line: { flexDirection: "row", alignItems: "center", gap: 6 },
+  lineText: { flexShrink: 1, minWidth: 0 },
   more: {
     width: 44,
     height: 44,
