@@ -76,14 +76,37 @@ scene.render.resolution_percentage = 100
 # the daylight is set bright enough for it instead.
 scene.view_settings.exposure = float(A.get("exposure", -0.4))
 
-# The turn: x - sin(x) has zero speed face-on (x = 0) and twice the average round the back, so
-# the mark settles face-on (under 0.2 degrees of turn within half a second either side) and sweeps
-# the rest. It also rises and settles a few centimetres, at rest face-on.
+# The turn, with x = one loop: x - 4/3 sin x + 1/6 sin 2x. Its speed, 2/3 (1 - cos x)^2, is never
+# negative and rises from zero as x^4, so the mark holds face-on for about two seconds (under
+# 0.1 degree of turn within a second either side of x = 0, under 0.6 within 1.5 s), then turns
+# smoothly, 2.7 times the average speed round the back (owner: hold face-on about 2 s, turn faster
+# to make up for it). Every term is a smooth sine, so there is no jerk into or out of the hold.
+# The mark also rises and settles a few centimetres, again flat at the hold.
 for path, idx in (("location", 2), ("rotation_euler", 2), ("rotation_euler", 1)):
     pin.driver_remove(path, idx)
 pin.rotation_euler = (math.radians(90), 0, 0)
-pin.driver_add("rotation_euler", 2).driver.expression = f"{X} - sin({X})"
-pin.driver_add("location", 2).driver.expression = f"{PIN_Z} + 0.04*(1-cos(2*{X}))/2"
+EASE = f"((1-cos({X}))/2)*((1-cos({X}))/2)"  # 0 face-on, flat there as x^4, 1 round the back
+pin.driver_add("rotation_euler", 2).driver.expression = f"{X} - 4/3*sin({X}) + sin(2*{X})/6"
+pin.driver_add("location", 2).driver.expression = f"{PIN_Z} + 0.04*{EASE}"
+
+# The dot and the waves, smooth and clean (owner, at 1080p: grainy, "sandpaper"): scene.py grains
+# them like fired clay and resin, a bump from noise and, on the dot, a glow that varies with it;
+# in daylight at 1080p that reads as speckle. Here the bumps go, the dot glows evenly at the
+# middle of its old range, and the waves lose their subsurface (noisy seen through the glass).
+# scene.py and the night clip keep theirs.
+_dot = bpy.data.materials["Dot"]
+_db = _dot.node_tree.nodes["Principled BSDF"]
+for _inp in ("Normal", "Emission Strength"):
+    for _l in list(_db.inputs[_inp].links):
+        _dot.node_tree.links.remove(_l)
+_db.inputs["Emission Strength"].default_value = float(A.get("dotglow", 2.1))
+_db.inputs["Roughness"].default_value = 0.6
+for _m in bpy.data.materials:
+    if _m.name.startswith("Waves"):
+        _b = _m.node_tree.nodes["Principled BSDF"]
+        for _l in list(_b.inputs["Normal"].links):
+            _m.node_tree.links.remove(_l)
+        set_input(_b, ["Subsurface Weight", "Subsurface"], 0.0)
 
 
 def loop_vector(nt, coords, radius):
@@ -410,8 +433,10 @@ halo_.inputs["From Min"].default_value = 0.78
 
 # Two soft strips that light only the mark (light linking, as in scene.py): its rounded edge
 # carries a bright line against the water, so clear glass never melts into a bright day.
-for name, power, loc, sz in (("Edge left", 260, (-5.0, -3.5, 4.2), (0.35, 6.0)),
-                             ("Edge right", 200, (5.2, 2.0, 3.4), (0.35, 6.0))):
+# Wide and soft enough that, crossing the face as the mark turns, they read as a gentle glint,
+# not a white bar over the dot (owner).
+for name, power, loc, sz in (("Edge left", 150, (-5.0, -3.5, 4.2), (1.2, 5.0)),
+                             ("Edge right", 90, (5.2, 2.0, 3.4), (1.2, 5.0))):
     l = bpy.data.lights.new(name, "AREA")
     l.shape = "RECTANGLE"
     l.size, l.size_y = sz
@@ -553,24 +578,47 @@ sn.links.new(sspec.outputs["Result"], sb.inputs["Specular IOR Level"])
 # Sun glitter: tiny points of sunlight on the swell, densest toward the sun's side and the
 # horizon, twinkling on the clip's period (drawn, since a real sun this high glints below the
 # pool's edge, out of sight).
-gv = sn.nodes.new("ShaderNodeTexVoronoi")
-gv.voronoi_dimensions = "4D"
-gv.inputs["Scale"].default_value = 420.0  # in view direction: points about 0.14 degrees apart
+# Points fixed in the view direction from the pool (about 0.14 degrees apart, a few pixels), only
+# one cell in six lit, each a sub-pixel point. Each flashes on its own phase, nine times per loop,
+# brief and bright (a sine to the 8th power): a smooth twinkle that loops, never a new random
+# field each frame.
 gview = sn.nodes.new("ShaderNodeVectorMath")
 gview.operation = "NORMALIZE"
 sn.links.new(sgeo.outputs["Position"], gview.inputs[0])
+gv = sn.nodes.new("ShaderNodeTexVoronoi")
+gv.voronoi_dimensions = "3D"
+gv.inputs["Scale"].default_value = 420.0
 sn.links.new(gview.outputs[0], gv.inputs["Vector"])
-wtw = sn.nodes.new("ShaderNodeMath")
-wtw.operation = "MULTIPLY"
-wtw.inputs[1].default_value = 6.0
-sn.links.new(wv, wtw.inputs[0])
-sn.links.new(wtw.outputs[0], gv.inputs["W"])
 gpt = sn.nodes.new("ShaderNodeMapRange")
 gpt.inputs["From Min"].default_value = 0.0
-gpt.inputs["From Max"].default_value = 0.12
+gpt.inputs["From Max"].default_value = 0.07
 gpt.inputs["To Min"].default_value = 1.0
 gpt.inputs["To Max"].default_value = 0.0
 sn.links.new(gv.outputs["Distance"], gpt.inputs["Value"])
+grnd = sn.nodes.new("ShaderNodeSeparateColor")  # per point: which are lit, and their phase
+sn.links.new(gv.outputs["Color"], grnd.inputs[0])
+glit = sn.nodes.new("ShaderNodeMapRange")
+glit.inputs["From Min"].default_value = 0.83
+glit.inputs["From Max"].default_value = 0.85
+sn.links.new(grnd.outputs[0], glit.inputs["Value"])
+gclock = sn.nodes.new("ShaderNodeValue")
+gclock.outputs[0].driver_add("default_value").driver.expression = f"{T}*2*pi*9"
+gph = sn.nodes.new("ShaderNodeMath")
+gph.operation = "MULTIPLY_ADD"
+gph.inputs[1].default_value = 2 * math.pi
+sn.links.new(grnd.outputs[1], gph.inputs[0])
+sn.links.new(gclock.outputs[0], gph.inputs[2])
+gsin = sn.nodes.new("ShaderNodeMath")
+gsin.operation = "SINE"
+sn.links.new(gph.outputs[0], gsin.inputs[0])
+gpos = sn.nodes.new("ShaderNodeMath")
+gpos.operation = "MAXIMUM"
+gpos.inputs[1].default_value = 0.0
+sn.links.new(gsin.outputs[0], gpos.inputs[0])
+gflash = sn.nodes.new("ShaderNodeMath")
+gflash.operation = "POWER"
+gflash.inputs[1].default_value = 8.0
+sn.links.new(gpos.outputs[0], gflash.inputs[0])
 gdir = sn.nodes.new("ShaderNodeVectorMath")
 gdir.operation = "NORMALIZE"
 sn.links.new(sxy.outputs[0], gdir.inputs[0])
@@ -578,33 +626,22 @@ gsun = sn.nodes.new("ShaderNodeVectorMath")
 gsun.operation = "DOT_PRODUCT"
 gsun.inputs[1].default_value = (math.sin(SUN_AZ), math.cos(SUN_AZ), 0.0)
 sn.links.new(gdir.outputs[0], gsun.inputs[0])
-gside = sn.nodes.new("ShaderNodeMapRange")
+gside = sn.nodes.new("ShaderNodeMapRange")  # more toward the sun's side
 gside.inputs["From Min"].default_value = 0.2
-gside.inputs["To Min"].default_value = 0.15
 gside.inputs["From Max"].default_value = 1.0
+gside.inputs["To Min"].default_value = 0.25
 sn.links.new(gsun.outputs["Value"], gside.inputs["Value"])
-grnd = sn.nodes.new("ShaderNodeSeparateColor")  # each glint its own brightness
-sn.links.new(gv.outputs["Color"], grnd.inputs[0])
-gpow = sn.nodes.new("ShaderNodeMath")
-gpow.operation = "POWER"
-gpow.inputs[1].default_value = 3.0
-sn.links.new(grnd.outputs[0], gpow.inputs[0])
-gpr = sn.nodes.new("ShaderNodeMath")
-gpr.operation = "MULTIPLY"
-sn.links.new(gpt.outputs["Result"], gpr.inputs[0])
-sn.links.new(gpow.outputs[0], gpr.inputs[1])
-gm = sn.nodes.new("ShaderNodeMath")
-gm.operation = "MULTIPLY"
-sn.links.new(gpr.outputs[0], gm.inputs[0])
-sn.links.new(gside.outputs["Result"], gm.inputs[1])
-gm2 = sn.nodes.new("ShaderNodeMath")
-gm2.operation = "MULTIPLY"
-sn.links.new(gm.outputs[0], gm2.inputs[0])
-sn.links.new(sfar.outputs["Result"], gm2.inputs[1])
 gs = sn.nodes.new("ShaderNodeMath")
 gs.operation = "MULTIPLY"
-gs.inputs[1].default_value = float(A.get("glitter", 700.0))
-sn.links.new(gm2.outputs[0], gs.inputs[0])
+gs.inputs[1].default_value = float(A.get("glitter", 2500.0))
+prev = gpt.outputs["Result"]
+for f_ in (glit.outputs["Result"], gflash.outputs[0], gside.outputs["Result"], sfar.outputs["Result"]):
+    gm = sn.nodes.new("ShaderNodeMath")
+    gm.operation = "MULTIPLY"
+    sn.links.new(prev, gm.inputs[0])
+    sn.links.new(f_, gm.inputs[1])
+    prev = gm.outputs[0]
+sn.links.new(prev, gs.inputs[0])
 sb.inputs["Emission Color"].default_value = (1.0, 0.93, 0.8, 1)
 sn.links.new(gs.outputs[0], sb.inputs["Emission Strength"])
 sb.inputs["Roughness"].default_value = 0.02
@@ -640,8 +677,8 @@ lb.inputs["Roughness"].default_value = 0.38
 set_input(lb, ["Subsurface Weight", "Subsurface"], 0.0)
 lgeo = ln.nodes.new("ShaderNodeNewGeometry")
 lramp = ln.nodes.new("ShaderNodeValToRGB")
-lramp.color_ramp.elements[0].color = (0.06, 0.17, 0.03, 1)
-lramp.color_ramp.elements[1].color = (0.14, 0.3, 0.05, 1)
+lramp.color_ramp.elements[0].color = (0.1, 0.24, 0.045, 1)
+lramp.color_ramp.elements[1].color = (0.2, 0.38, 0.08, 1)
 ln.links.new(lgeo.outputs["Random Per Island"], lramp.inputs["Fac"])
 luv = ln.nodes.new("ShaderNodeTexCoord")
 lsep = ln.nodes.new("ShaderNodeSeparateXYZ")
@@ -661,12 +698,12 @@ lglow = ln.nodes.new("ShaderNodeMix")  # what the sun shows through: a warmer, l
 lglow.data_type = "RGBA"
 lglow.blend_type = "MULTIPLY"
 lglow.inputs["Factor"].default_value = 1.0
-lglow.inputs[7].default_value = (3.2, 3.0, 1.6, 1)
+lglow.inputs[7].default_value = (3.6, 3.3, 1.8, 1)
 ln.links.new(ldry.outputs[2], lglow.inputs[6])
 transl = ln.nodes.new("ShaderNodeBsdfTranslucent")
 ln.links.new(lglow.outputs[2], transl.inputs["Color"])
 lmix = ln.nodes.new("ShaderNodeMixShader")
-lmix.inputs["Fac"].default_value = 0.6
+lmix.inputs["Fac"].default_value = 0.7
 ln.links.new(lb.outputs[0], lmix.inputs[1])
 ln.links.new(transl.outputs[0], lmix.inputs[2])
 ln.links.new(lmix.outputs[0], ln.nodes["Material Output"].inputs["Surface"])
@@ -848,8 +885,9 @@ palm("Palm right", (11.8, 5.4, -DEPTH), 7.7, (-4.2, 0.9), 22)
 cam_data = bpy.data.cameras.new("Camera")
 cam_data.lens = 42
 cam_data.dof.use_dof = True
-# The night clip's f/1.2, so the fronds and the clouds go soft.
-cam_data.dof.aperture_fstop = float(A.get("fstop", 1.2))
+# f/2: the clouds and fronds still soft, the sea's far glints small points rather than discs of
+# bokeh (owner: "specks or snow" at f/1.2).
+cam_data.dof.aperture_fstop = float(A.get("fstop", 2.0))
 cam = bpy.data.objects.new("Camera", cam_data)
 scene.collection.objects.link(cam)
 scene.camera = cam
@@ -863,10 +901,11 @@ track.track_axis = "TRACK_NEGATIVE_Z"
 track.up_axis = "UP_Y"
 cam_data.dof.focus_object = target
 R, H = 7.6, 2.0
-drift = f"radians(6)*sin({X})*sin({X})*sin({X})"  # still face-on, out to 6 degrees round the back
+# Still at the hold (it rises from zero as x^5), out to about 5.5 degrees either side.
+drift = f"radians(10.5)*sin({X})*{EASE}"
 cam.driver_add("location", 0).driver.expression = f"{R}*sin({drift})"
 cam.driver_add("location", 1).driver.expression = f"-{R}*cos({drift})"
-cam.driver_add("location", 2).driver.expression = f"{H} + 0.12*sin({X})*sin({X})"
+cam.driver_add("location", 2).driver.expression = f"{H} + 0.12*{EASE}"
 for ob in (cam, pin):
     for fc in ob.animation_data.drivers:
         if not fc.driver.is_simple_expression:
@@ -888,6 +927,7 @@ if hasattr(rfo, "light_linking"):
     rfo.light_linking.receiver_collection = pin_parts
 rfo.visible_camera = False
 rfo.visible_transmission = False
+rfo.visible_glossy = False  # its rectangle reflected as a hard-edged step across the dot
 
 # ---------------------------------------------------------------------------------------------
 # Render
