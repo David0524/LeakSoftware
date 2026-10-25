@@ -2,7 +2,8 @@
     import SundeckCore
     import SwiftUI
 
-    // Filter and chooser pills (spec 3.8): 44 tall capsules, body medium, 8 apart, in a row that
+    // Filter and chooser pills (spec 3.8): 32 tall capsules (owner, 2026-10-25: "shrink them") in a
+    // 44 tall tap target, 15 medium text, 14 padding, 8 apart, in a row that
     // scrolls sideways edge to edge with the first pill 16 in. Unselected `fill` with `text`;
     // selected `primary` with `onPrimary` (decision 9).
     //
@@ -19,20 +20,28 @@
         var dot: TechColor? = nil
         var action: () -> Void
 
+        /// The visible capsule's height.
+        private static let capsuleHeight: CGFloat = 32
+
         var body: some View {
             Button(action: action) {
                 HStack(spacing: 8) {
                     if let dot { TechDot(color: dot) }
                     Text(title)
                 }
-                .textRole(.bodyMedium)
+                .textRole(.secondary)
+                .fontWeight(.medium)
                 .lineLimit(1)
                 .foregroundStyle(selected ? Color.onPrimary : Color.text)
-                .padding(.horizontal, 16)
-                .frame(minHeight: minTarget)
+                .padding(.horizontal, 14)
+                .padding(.vertical, 4)
+                // At least 32 tall; larger text grows it.
+                .frame(minHeight: Self.capsuleHeight)
                 .background(Capsule().fill(selected ? Color.brandPrimary : targeted ? Color.tinted : Color.fill))
                 .overlay { if targeted { Capsule().strokeBorder(Color.link, lineWidth: 2) } }
-                .contentShape(Capsule())
+                // The capsule is 32 tall inside the 44 tall tap target (owner, 2026-10-25).
+                .frame(minHeight: minTarget)
+                .contentShape(Rectangle())
             }
             .buttonStyle(.plain)
             .accessibilityAddTraits(selected ? [.isSelected] : [])

@@ -94,7 +94,9 @@ export function segmentClass(active: boolean, extra?: string) {
 /** A choice in a sideways row of pills (filters, whose day): tinted blue when chosen. */
 export function pillClass(active: boolean, extra?: string) {
   return cx(
-    "inline-flex min-h-11 shrink-0 items-center rounded-full px-4 font-medium whitespace-nowrap transition-colors",
+    // A 32 pt pill with 15 pt text (owner, 2026-10-25: Spotify's chip size) in a 44 pt tap
+    // area: the clear 6 pt borders above and below are part of the target, the fill isn't.
+    "inline-flex h-11 shrink-0 items-center rounded-full border-y-[6px] border-transparent bg-clip-padding px-3.5 text-[0.9375rem] font-medium whitespace-nowrap transition-colors",
     active ? "bg-link text-white" : "bg-fill text-text hover:bg-text/[0.1]",
     extra,
   );

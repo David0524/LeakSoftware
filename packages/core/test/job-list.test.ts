@@ -2,6 +2,9 @@ import { describe, expect, it } from "vitest";
 import {
   ALL_JOB_TYPES,
   JOB_SORTS,
+  REPORT_SORTS,
+  reportSort,
+  sortReports,
   formatSchedule,
   jobTypeFilter,
   jobsEmpty,
@@ -139,5 +142,37 @@ describe("job type filter (owner, 2026-10-22)", () => {
   it("says when a type has no jobs", () => {
     expect(jobsEmpty("all")).toBe("No jobs here. Add one with New Job, or on the phone.");
     expect(jobsEmpty("inspection")).toBe("No pool inspection jobs here.");
+  });
+});
+
+describe("sortReports", () => {
+  const r = (number: number, customer: string, sent_at: string | null, updated_at: string) => ({
+    number,
+    customer,
+    sent_at,
+    updated_at,
+  });
+  const list = [
+    r(1, "Zoe", "2026-10-02T00:00:00Z", "2026-10-02T00:00:00Z"),
+    r(3, "adam", null, "2026-10-05T00:00:00Z"),
+    r(2, "Mia", "2026-10-04T00:00:00Z", "2026-10-06T00:00:00Z"),
+  ];
+  it("sorts newest by when it was sent, a draft by when it last changed", () => {
+    expect(sortReports(list, "newest").map((x) => x.number)).toEqual([3, 2, 1]);
+    expect(sortReports(list, "oldest").map((x) => x.number)).toEqual([1, 2, 3]);
+  });
+  it("sorts by customer and job number", () => {
+    expect(sortReports(list, "customer").map((x) => x.customer)).toEqual(["adam", "Mia", "Zoe"]);
+    expect(sortReports(list, "number").map((x) => x.number)).toEqual([3, 2, 1]);
+  });
+  it("opens on Newest, and has no Scheduled Date", () => {
+    expect(reportSort("scheduled")).toBe("newest");
+    expect(reportSort(undefined)).toBe("newest");
+    expect(REPORT_SORTS.map((s) => s.label)).toEqual([
+      "Newest",
+      "Oldest",
+      "Customer",
+      "Job Number",
+    ]);
   });
 });

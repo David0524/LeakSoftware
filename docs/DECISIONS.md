@@ -2,6 +2,10 @@
 
 Newest first. Each entry: date, decision, reason.
 
+## 2026-10-25 (owner: "make the reports tab filterable, searchable, sortable like the jobs tab"; tech chips "shrink them", Spotify's chip size; chose all chips)
+- **Jobs › Reports** has Jobs' controls on all four platforms: All, Sent, Drafts; a search ("Customer name or job number": the customer's name or the job number) that filters the reports; the Type menu (the job's type); and Sort: Newest (default), Oldest, Customer, Job Number. Newest and Oldest go by when the report was sent, a draft by when it last changed (core `sortReports`). The website pages 50 at a time with Show More.
+- **Every filter chip is smaller** (status filters, whose schedule, whose day; website and both apps): a 32 pt pill with 15 pt medium text, inside a 44 pt tap target.
+
 ## 2026-10-25 (owner: Needs a Time "feels very big on the app"; picked option A of three sketches)
 - **Needs a Time on phones is one row** (mobile website, iPhone, Android; computers and tablets keep the sidebar and the sideways cards): "Needs a Time" with the count as a blue pill and "›", like Customers to Add. Tapping it opens a sheet, "Needs a Time (N)" with Done, listing the waiting jobs (name opens the job; "…" has Suggest Times and Move…). A stop dragged from a day can still be let go on the row to take it off the schedule; a waiting job is placed with Move… or Suggest Times (no dragging from the sheet). The count pill is blue, not orange as sketched: orange is kept for the brand accent.
 

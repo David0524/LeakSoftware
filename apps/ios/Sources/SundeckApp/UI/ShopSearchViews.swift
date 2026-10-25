@@ -15,6 +15,8 @@
         var focused: FocusState<Bool>.Binding
         /// Searching: Cancel shows.
         var active: Bool
+        /// Reports searches its own list (owner, 2026-10-25): "Customer name or job number".
+        var placeholder = SearchText.placeholder
         var onCancel: () -> Void
 
         var body: some View {
@@ -26,7 +28,7 @@
                         .accessibilityHidden(true)
                     TextField(
                         SearchText.search, text: $text,
-                        prompt: Text(SearchText.placeholder).foregroundStyle(Color.placeholder)
+                        prompt: Text(placeholder).foregroundStyle(Color.placeholder)
                     )
                     .textRole(.body)
                     .foregroundStyle(Color.text)

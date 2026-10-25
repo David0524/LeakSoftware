@@ -5,6 +5,7 @@ import {
   JOB_SORTS,
   JOB_TYPE_FILTER_TITLE,
   JOB_TYPE_LABELS,
+  REPORT_SORTS,
   canMakeJobs,
   companyServices,
   formatAddress,
@@ -17,9 +18,12 @@ import {
   jobTypeFilters,
   matchesJobType,
   propertyLocation,
+  reportSort,
+  reportsEmpty,
   sortJobs,
   toE164,
   type JobStatus,
+  type JobTypeFilter,
 } from "@leakbook/core";
 import { useRows } from "../../../../../data/hooks";
 import { useJobViews, type JobView } from "../../../../../data/jobs";
@@ -30,6 +34,11 @@ import {
   useCompleteJobBlocker,
 } from "../../../../../features/job/CompleteJob";
 import { useJobMove } from "../../../../../features/job/JobSchedule";
+import {
+  REPORT_SEARCH_PLACEHOLDER,
+  listReports,
+  reportsNoMatch,
+} from "../../../../../lib/reportList";
 import { bannerText } from "../../../../../lib/resultBanner";
 import {
   jobCompletable,
@@ -96,6 +105,8 @@ const FILTERS: { value: string; label: string; statuses: JobStatus[] | null }[] 
 let lastSort: string = "scheduled";
 /** The Type picked (owner, 2026-10-22), kept the same way. */
 let lastType: string = "all";
+/** Reports' Sort (owner, 2026-10-25), kept the same way; Type is shared with Jobs. */
+let lastReportSort: string = "newest";
 
 const REPORT_FILTERS = [
   { value: "all", label: "All" },
@@ -150,6 +161,15 @@ export default function Jobs() {
     lastType = v;
     setTypeKey(v);
   };
+  const [reportSortKey, setReportSortKey] = useState(() => reportSort(lastReportSort));
+  const setReportSort = (v: string) => {
+    lastReportSort = v;
+    setReportSortKey(reportSort(v));
+  };
+  const reportSortLabel = REPORT_SORTS.find((x) => x.key === reportSortKey)?.label ?? "Newest";
+  // Reports' own search (owner, 2026-10-25): the customer's name or the job number.
+  const reportSearch = useShopSearchState();
+  const reportQuery = reportSearch.query;
   const menu = useMenu();
   const [refreshing, setRefreshing] = useState(false);
   const now = new Date();
@@ -246,12 +266,11 @@ export default function Jobs() {
 
   const reportRows = useMemo(() => {
     const byId = new Map(jobs.map((j) => [j.id, j]));
-    return reports
-      .filter((r) => r.status !== "superseded")
-      .filter((r) => reportFilter === "all" || r.status === reportFilter)
-      .map((r) => ({ report: r, job: byId.get(r.job_id) }))
-      .sort((a, b) => (b.report.sent_at ?? "~").localeCompare(a.report.sent_at ?? "~"));
-  }, [reports, jobs, reportFilter]);
+    return listReports(
+      reports.map((r) => ({ ...r, job: byId.get(r.job_id) })),
+      { status: reportFilter, type: jobType, search: reportQuery, sort: reportSortKey },
+    ).map((r) => ({ report: r as ReportRecord, job: r.job }));
+  }, [reports, jobs, reportFilter, jobType, reportQuery, reportSortKey]);
 
   const team = services.sync.team();
   const techName = (id: string | null | undefined) => {
@@ -279,7 +298,11 @@ export default function Jobs() {
   const top = (
     <View style={styles.top}>
       {header}
-      {view === "jobs" ? <ShopSearchField search={shop} /> : null}
+      {view === "jobs" ? (
+        <ShopSearchField search={shop} />
+      ) : (
+        <ShopSearchField search={reportSearch} placeholder={REPORT_SEARCH_PLACEHOLDER} />
+      )}
       {searching ? (
         <ShopSearchResults search={shop} />
       ) : (
@@ -301,47 +324,38 @@ export default function Jobs() {
               <FilterPills label="Status" options={FILTERS} value={filter} onChange={setFilter} />
               {/* Type and Sort, as the website's; the search across the shop above replaces the
                   old jobs-only search. */}
-              <View style={styles.searchRow}>
-                <MenuButton
-                  title={JOB_TYPE_FILTER_TITLE}
-                  value={jobTypeFilterLabel(jobType)}
-                  icon="filter"
-                  onPress={() =>
-                    menu.open({
-                      title: JOB_TYPE_FILTER_TITLE,
-                      items: types.map((x) => ({
-                        label: x.label,
-                        checked: x.key === jobType,
-                        onPress: () => setType(x.key),
-                      })),
-                    })
-                  }
-                />
-                <MenuButton
-                  title="Sort"
-                  value={sortLabel}
-                  icon="updown"
-                  onPress={() =>
-                    menu.open({
-                      title: "Sort",
-                      items: JOB_SORTS.map((x) => ({
-                        label: x.label,
-                        checked: x.key === sort,
-                        onPress: () => setSort(x.key),
-                      })),
-                    })
-                  }
-                />
-              </View>
+              <TypeAndSort
+                menu={menu}
+                types={types}
+                jobType={jobType}
+                onType={setType}
+                sorts={JOB_SORTS}
+                sort={sort}
+                sortLabel={sortLabel}
+                onSort={setSort}
+              />
               {menu.element}
             </>
           ) : (
-            <FilterPills
-              label="Reports"
-              options={REPORT_FILTERS}
-              value={reportFilter}
-              onChange={setReportFilter}
-            />
+            <>
+              <FilterPills
+                label="Reports"
+                options={REPORT_FILTERS}
+                value={reportFilter}
+                onChange={setReportFilter}
+              />
+              <TypeAndSort
+                menu={menu}
+                types={types}
+                jobType={jobType}
+                onType={setType}
+                sorts={REPORT_SORTS}
+                sort={reportSortKey}
+                sortLabel={reportSortLabel}
+                onSort={setReportSort}
+              />
+              {menu.element}
+            </>
           )}
         </>
       )}
@@ -352,11 +366,14 @@ export default function Jobs() {
     <Empty>{jobsEmpty(jobType)}</Empty>
   ) : (
     <Empty>
-      {reportFilter === "sent"
-        ? "No reports sent yet."
-        : reportFilter === "draft"
-          ? "No drafts."
-          : "No reports yet. A job’s report is drafted from its Wrap-Up."}
+      {reportSearch.query.trim()
+        ? reportsNoMatch(reportSearch.query)
+        : (reportsEmpty(jobType) ??
+          (reportFilter === "sent"
+            ? "No reports sent yet."
+            : reportFilter === "draft"
+              ? "No drafts."
+              : "No reports yet. A job’s report is drafted from its Wrap-Up."))}
     </Empty>
   );
 
@@ -422,6 +439,62 @@ export default function Jobs() {
       {rowMenu.element}
       {mover.element}
       {banner.element}
+    </View>
+  );
+}
+
+/** The Type and Sort menu buttons, on Jobs and Reports alike. */
+function TypeAndSort({
+  menu,
+  types,
+  jobType,
+  onType,
+  sorts,
+  sort,
+  sortLabel,
+  onSort,
+}: {
+  menu: ReturnType<typeof useMenu>;
+  types: { key: string; label: string }[];
+  jobType: string;
+  onType: (v: string) => void;
+  sorts: { key: string; label: string }[];
+  sort: string;
+  sortLabel: string;
+  onSort: (v: string) => void;
+}) {
+  return (
+    <View style={styles.searchRow}>
+      <MenuButton
+        title={JOB_TYPE_FILTER_TITLE}
+        value={jobTypeFilterLabel(jobType as JobTypeFilter)}
+        icon="filter"
+        onPress={() =>
+          menu.open({
+            title: JOB_TYPE_FILTER_TITLE,
+            items: types.map((x) => ({
+              label: x.label,
+              checked: x.key === jobType,
+              onPress: () => onType(x.key),
+            })),
+          })
+        }
+      />
+      <MenuButton
+        title="Sort"
+        value={sortLabel}
+        icon="updown"
+        onPress={() =>
+          menu.open({
+            title: "Sort",
+            items: sorts.map((x) => ({
+              label: x.label,
+              checked: x.key === sort,
+              onPress: () => onSort(x.key),
+            })),
+          })
+        }
+      />
     </View>
   );
 }

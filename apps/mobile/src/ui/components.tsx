@@ -710,8 +710,8 @@ export function RoundButton({
 }
 
 /**
- * Filters and choosers (spec 3.8): a sideways row of 44 pt capsules running edge to edge,
- * the first 16 in. Selected: primary with white text.
+ * Filters and choosers (spec 3.8): a sideways row of 32 pt capsules (44 pt to touch) running
+ * edge to edge, the first 16 in. Selected: primary with white text.
  */
 export function FilterPills<V extends string>({
   options,
@@ -767,24 +767,26 @@ function PillButton({
       accessibilityRole="button"
       accessibilityState={{ selected }}
       onPress={onPress}
-      android_ripple={{ color: color.ripple }}
-      style={({ pressed }) => [
-        styles.pill,
-        dot !== undefined && styles.pillDot,
-        { backgroundColor: selected ? color.primary : color.fill },
-        pressed && !selected && { opacity: 0.7 },
-      ]}
+      style={({ pressed }) => [styles.pillTap, pressed && !selected && { opacity: 0.7 }]}
     >
-      {dot !== undefined ? (
-        <TechDot tech={dot} ring={selected ? color.onPrimary : undefined} />
-      ) : null}
-      <Text
-        style={[type.bodyMedium, { color: selected ? color.onPrimary : color.text }]}
-        maxFontSizeMultiplier={MAX_TEXT_SCALE}
-        numberOfLines={1}
+      <View
+        style={[
+          styles.pill,
+          dot !== undefined && styles.pillDot,
+          { backgroundColor: selected ? color.primary : color.fill },
+        ]}
       >
-        {label}
-      </Text>
+        {dot !== undefined ? (
+          <TechDot tech={dot} ring={selected ? color.onPrimary : undefined} />
+        ) : null}
+        <Text
+          style={[type.secondary, face.medium, { color: selected ? color.onPrimary : color.text }]}
+          maxFontSizeMultiplier={MAX_TEXT_SCALE}
+          numberOfLines={1}
+        >
+          {label}
+        </Text>
+      </View>
     </Pressable>
   );
 }
@@ -2049,9 +2051,14 @@ const styles = StyleSheet.create({
   },
   pillScroller: { marginHorizontal: -gutter, flexGrow: 0 },
   pillRow: { paddingHorizontal: gutter, gap: space["2"] },
+  // Smaller chips (owner, 2026-10-25: "shrink them"): the pill is 32 pt with 15 pt text; the
+  // 44 pt tap area is the Pressable around it, so the sideways row doesn't clip it.
+  pillTap: { minHeight: minTap, justifyContent: "center" },
   pill: {
-    minHeight: minTap,
-    paddingHorizontal: space["4"],
+    // At least 32 pt; larger text grows it.
+    minHeight: 32,
+    paddingVertical: 4,
+    paddingHorizontal: 14,
     borderRadius: shape.pill,
     justifyContent: "center",
     overflow: "hidden",

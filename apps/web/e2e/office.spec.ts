@@ -780,6 +780,34 @@ test("Jobs has a Reports tab listing the reports", async ({ page }) => {
   await expect(page.getByRole("heading", { level: 1, name: "Jobs" })).toBeVisible();
 });
 
+// Owner, 2026-10-25: "make the reports tab filterable, searchable, sortable like the jobs tab".
+test("Reports search, filter by type and sort as Jobs does", async ({ page }) => {
+  await signIn(page, OWNER, "/jobs/reports");
+  await page.getByLabel("Sort").selectOption("customer");
+  await expect(page).toHaveURL(/sort=customer/);
+  await expect(page.getByLabel("Sort")).toHaveValue("customer");
+  await expect(page.getByLabel("Sort").locator("option")).toHaveText([
+    "Newest",
+    "Oldest",
+    "Customer",
+    "Job Number",
+  ]);
+  const names = page.getByRole("main").getByRole("listitem").locator(".font-semibold");
+  if (await names.count()) {
+    // Search for the first report's customer: every row left is theirs, still sorted.
+    const name = (await names.first().innerText()).trim();
+    await page.getByRole("searchbox", { name: "Search reports" }).fill(name);
+    await page.getByRole("searchbox", { name: "Search reports" }).press("Enter");
+    await expect(page).toHaveURL(/q=/);
+    await expect(page).toHaveURL(/sort=customer/);
+    await expect(names.first()).toHaveText(name);
+    for (const n of await names.allInnerTexts()) expect(n.trim()).toBe(name);
+  }
+  await page.getByLabel("Type").selectOption({ index: 1 });
+  await expect(page).toHaveURL(/type=/);
+  await expect(page.getByLabel("Sort")).toHaveValue("customer");
+});
+
 // Owner, 2026-10-18: "allow you to sort customers by a variety of filters".
 test("customers sort and filter", async ({ page }) => {
   await signIn(page, OWNER, "/customers");
