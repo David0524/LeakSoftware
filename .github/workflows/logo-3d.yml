@@ -10,7 +10,8 @@ name: 3D logo clip
 #                            apps/web/public/og/)
 #   sundeck-pro.jpg          the face-on hold (frame 1), 1200 x 630, the og:image poster
 #   sundeck-pro-1080p.mp4    the 1920 x 1080 master, kept by the owner
-# Runs on a push that changes the scene or this file, or by hand (with samples).
+# Runs by hand only (Actions › 3D logo clip › Run workflow): a push-triggered render started a
+# second full copy when work merged into the default branch, holding up the real one.
 # The night clip's scene.py is kept but no longer rendered here.
 
 on:
@@ -19,10 +20,6 @@ on:
       samples:
         description: Cycles samples (96 fits the 20 runners at 1080p; see the note on the job)
         default: "96"
-  push:
-    paths:
-      - apps/video/logo3d/blender/**
-      - .github/workflows/logo-3d.yml
 
 concurrency:
   group: logo-3d-${{ github.ref }}
