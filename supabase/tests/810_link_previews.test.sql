@@ -103,7 +103,9 @@ select is(link_preview_for_token((select token from link where k = 'quote')) ->>
 
 -- Past its good-through day, a quote reads expired, like its page.
 set local app.quote_server = 'on';
-update quote set valid_until = current_date - 1 where id = (select quote_a from ids);
+-- Yesterday in the shop's own time zone (New York), not UTC's: from 8 PM to midnight the two differ.
+update quote set valid_until = (now() at time zone 'America/New_York')::date - 1
+where id = (select quote_a from ids);
 select is(link_preview_for_token((select token from link where k = 'quote')) ->> 'status', 'expired',
   'an out-of-date quote is expired');
 
