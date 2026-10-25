@@ -1,5 +1,13 @@
-import { useEffect, useRef, useState } from "react";
-import { Animated, Pressable, StyleSheet, Text, TextInput, View } from "react-native";
+import { useEffect, useRef, useState, type ReactNode } from "react";
+import {
+  Animated,
+  Pressable,
+  StyleSheet,
+  Text,
+  TextInput,
+  View,
+  useWindowDimensions,
+} from "react-native";
 import {
   ACID_PRODUCTS,
   CHLORINE_PRODUCTS,
@@ -79,6 +87,15 @@ const num = (v: string | undefined) => {
 };
 const str = (v: number | null | undefined) => (v === null || v === undefined ? "" : String(v));
 
+/**
+ * Large text (the phone's font size at 135% or more, as FieldRow stacks): rows stack (the name,
+ * then each field full width with its own label) instead of squeezing into columns, so nothing
+ * truncates or breaks mid-word.
+ */
+function useLargeText(): boolean {
+  return useWindowDimensions().fontScale >= 1.35;
+}
+
 function rememberedGoals(): Partial<Record<ReadingKey, string>> {
   try {
     const saved = JSON.parse(getServices().kv.get(GOALS_KEY) ?? "{}");
@@ -105,6 +122,7 @@ export function VisitChemicals({
   visitDay: string | null;
 }) {
   const company = useCompany();
+  const large = useLargeText();
   const items = useChemicalItems(company.id);
   const additions = useVisitAdditions(company.id, jobId, items);
   const own = useVisitReading(jobId);
@@ -140,7 +158,7 @@ export function VisitChemicals({
             Chemicals
           </Text>
           <Text
-            numberOfLines={1}
+            numberOfLines={large ? undefined : 1}
             style={[type.secondary, tabular, { color: color.textMuted }]}
             maxFontSizeMultiplier={MAX_TEXT_SCALE}
           >
@@ -190,6 +208,7 @@ function Body({
   onTyped: (line: string) => void;
 }) {
   const company = useCompany();
+  const large = useLargeText();
   const charges = chargesChemicals(company.settings);
   const locked = useLockedAdditions(company.id, additions);
   // The form starts from the visit's own row, once; after that the phone's typing leads.
@@ -314,12 +333,9 @@ function Body({
               {a.customer_supplied ? "Added · customer supplied" : "Added"}
             </T>
             <T variant="bodyEmphasis">{additionLabel(a)}</T>
+            {large && charges && !a.customer_supplied ? <Price cents={lineTotal(a)} /> : null}
           </View>
-          {charges && !a.customer_supplied ? (
-            <T muted style={tabular}>
-              {formatCents(lineTotal(a))}
-            </T>
-          ) : null}
+          {!large && charges && !a.customer_supplied ? <Price cents={lineTotal(a)} /> : null}
           <Chevron />
         </Pressable>
       </View>
@@ -328,18 +344,18 @@ function Body({
 
   return (
     <View style={[styles.body, { borderTopColor: color.separator }]}>
-      <View style={styles.gallons}>
-        <T variant="bodyMedium" style={{ flex: 1 }}>
+      <View style={large ? styles.stacked : styles.gallons}>
+        <T variant="bodyMedium" style={large ? undefined : { flex: 1 }}>
           Gallons
         </T>
-        <View style={{ width: 150 }}>
+        <View style={large ? undefined : { width: 150 }}>
           <Cell
             accessibilityLabel="Gallons"
             keyboardType="number-pad"
             value={gallonsText}
             onChangeText={(v) => change(setGallonsText)(withCommas(v))}
             placeholder="20,000"
-            style={{ width: "100%", paddingRight: 48 }}
+            style={{ width: "100%", paddingRight: large ? 96 : 48 }}
           />
           <Text
             style={[type.secondary, styles.unit, { color: color.textMuted }]}
@@ -349,15 +365,26 @@ function Body({
           </Text>
         </View>
       </View>
-      <View style={[styles.columns, { borderTopColor: color.separator }]}>
-        <View style={{ flex: 1 }} />
-        <Text style={[styles.colLabel, { color: color.textMuted }]} importantForAccessibility="no">
-          Reading
-        </Text>
-        <Text style={[styles.colLabel, { color: color.textMuted }]} importantForAccessibility="no">
-          Aim For
-        </Text>
-      </View>
+      {/* Stacked rows (large text) label each field instead. */}
+      {large ? (
+        <View style={[styles.dividerTop, { borderTopColor: color.separator }]} />
+      ) : (
+        <View style={[styles.columns, { borderTopColor: color.separator }]}>
+          <View style={{ flex: 1 }} />
+          <Text
+            style={[styles.colLabel, { color: color.textMuted }]}
+            importantForAccessibility="no"
+          >
+            Reading
+          </Text>
+          <Text
+            style={[styles.colLabel, { color: color.textMuted }]}
+            importantForAccessibility="no"
+          >
+            Aim For
+          </Text>
+        </View>
+      )}
       {rows.map((row, i) => {
         const status = result.statuses.find((s) => s.key === row.key);
         const target = recommended[row.key]?.target;
@@ -378,8 +405,8 @@ function Body({
               { borderTopColor: color.separator },
             ]}
           >
-            <View style={styles.readingTop}>
-              <View style={{ flex: 1 }} accessible>
+            <View style={large ? styles.stacked : styles.readingTop}>
+              <View style={large ? styles.nameLine : { flex: 1 }} accessible>
                 <T variant="bodyMedium">{label}</T>
                 <T
                   variant="secondary"
@@ -397,34 +424,45 @@ function Body({
                   {word}
                 </T>
               </View>
-              <Cell
-                accessibilityLabel={`${READING_LABELS[row.key]} reading`}
-                value={values[row.key] ?? ""}
-                onChangeText={(v) => change(setValues)({ ...values, [row.key]: v })}
-              />
-              <Cell
-                accessibilityLabel={`${READING_LABELS[row.key]}: aim for (recommended ${target})`}
-                placeholder={String(target)}
-                value={goals[row.key] ?? ""}
-                onChangeText={(v) => setGoal(row.key, v)}
-              />
+              <Labeled title="Reading" large={large}>
+                <Cell
+                  accessibilityLabel={`${READING_LABELS[row.key]} reading`}
+                  value={values[row.key] ?? ""}
+                  onChangeText={(v) => change(setValues)({ ...values, [row.key]: v })}
+                  style={large ? styles.wide : undefined}
+                />
+              </Labeled>
+              <Labeled title="Aim For" large={large}>
+                <Cell
+                  accessibilityLabel={`${READING_LABELS[row.key]}: aim for (recommended ${target})`}
+                  placeholder={String(target)}
+                  value={goals[row.key] ?? ""}
+                  onChangeText={(v) => setGoal(row.key, v)}
+                  style={large ? styles.wide : undefined}
+                />
+              </Labeled>
             </View>
             {row.step || row.added.length ? (
               <View style={[styles.well, { backgroundColor: color.well }]}>
                 {row.step ? (
                   <>
-                    <View style={styles.suggested} accessible>
-                      {row.order ? (
-                        <View style={[styles.order, { backgroundColor: color.primary }]}>
-                          <Text style={[styles.orderText, { color: color.onPrimary }]}>
-                            {row.order}
-                          </Text>
-                        </View>
-                      ) : null}
-                      <T variant="secondary" muted>
-                        Suggested
-                      </T>
-                      <T variant="secondary" style={[face.medium, styles.suggestion]}>
+                    <View style={large ? styles.stackedTight : styles.suggested} accessible>
+                      <View style={styles.suggested}>
+                        {row.order ? (
+                          <View style={[styles.order, { backgroundColor: color.primary }]}>
+                            <Text style={[styles.orderText, { color: color.onPrimary }]}>
+                              {row.order}
+                            </Text>
+                          </View>
+                        ) : null}
+                        <T variant="secondary" muted>
+                          Suggested
+                        </T>
+                      </View>
+                      <T
+                        variant="secondary"
+                        style={[face.medium, styles.suggestion, large && { textAlign: "left" }]}
+                      >
                         {suggestionText(row.step)}
                       </T>
                     </View>
@@ -462,12 +500,9 @@ function Body({
                             Not added yet
                           </T>
                           <T muted>{additionLabel(row.suggestion)}</T>
+                          {large && charges ? <Price cents={lineTotal(row.suggestion)} /> : null}
                         </View>
-                        {charges ? (
-                          <T muted style={tabular}>
-                            {formatCents(lineTotal(row.suggestion))}
-                          </T>
-                        ) : null}
+                        {!large && charges ? <Price cents={lineTotal(row.suggestion)} /> : null}
                         <Chevron />
                       </Pressable>
                     </View>
@@ -510,12 +545,9 @@ function Body({
                         .join(" · ")}
                     </T>
                   ) : null}
+                  {large && charges && !a.customer_supplied ? <Price cents={lineTotal(a)} /> : null}
                 </View>
-                {charges && !a.customer_supplied ? (
-                  <T muted style={tabular}>
-                    {formatCents(lineTotal(a))}
-                  </T>
-                ) : null}
+                {!large && charges && !a.customer_supplied ? <Price cents={lineTotal(a)} /> : null}
                 <Chevron />
               </Pressable>
             )),
@@ -536,8 +568,11 @@ function Body({
       </Section>
 
       {result.lsi !== null ? (
-        <View style={[styles.total, { borderTopColor: color.separator }]} accessible>
-          <T style={{ flex: 1 }}>Water balance</T>
+        <View
+          style={[styles.total, large && styles.totalStacked, { borderTopColor: color.separator }]}
+          accessible
+        >
+          <T style={large ? undefined : { flex: 1 }}>Water balance</T>
           <T muted>
             <Text style={[face.semiBold, tabular, { color: color.text }]}>
               {result.lsi > 0 ? "+" : ""}
@@ -590,8 +625,11 @@ function Body({
       </View>
 
       {charges ? (
-        <View style={[styles.total, { borderTopColor: color.separator }]} accessible>
-          <T variant="bodyEmphasis" style={{ flex: 1 }}>
+        <View
+          style={[styles.total, large && styles.totalStacked, { borderTopColor: color.separator }]}
+          accessible
+        >
+          <T variant="bodyEmphasis" style={large ? undefined : { flex: 1 }}>
             Chemicals today
           </T>
           <T variant="bodyEmphasis" style={tabular}>
@@ -635,6 +673,36 @@ function Body({
   );
 }
 
+/** A line's price: beside it, or on its own line when stacked (large text). */
+function Price({ cents }: { cents: number }) {
+  return (
+    <T muted style={tabular}>
+      {formatCents(cents)}
+    </T>
+  );
+}
+
+/** A field, with its own label above it when stacked (large text); the column header otherwise. */
+function Labeled({
+  title,
+  large,
+  children,
+}: {
+  title: string;
+  large: boolean;
+  children: ReactNode;
+}) {
+  if (!large) return <>{children}</>;
+  return (
+    <View style={{ gap: 4 }}>
+      <T variant="footnote" muted>
+        {title}
+      </T>
+      {children}
+    </View>
+  );
+}
+
 /** The amount: a number field beside − and +, stepping by the unit (steppers beside a field). */
 function Amount({
   value,
@@ -647,20 +715,21 @@ function Amount({
   onChange: (v: string) => void;
   disabled?: boolean;
 }) {
+  const large = useLargeText();
   const n = num(value) ?? 0;
   const step = (d: 1 | -1) => {
     haptics.selection();
     onChange(String(stepQuantity(n, unit, d)));
   };
   return (
-    <View style={[styles.listRow, { minHeight: 56 }]}>
-      <View style={{ width: 130 }}>
+    <View style={[large ? styles.stackedRow : styles.listRow, { minHeight: 56 }]}>
+      <View style={large ? undefined : { width: 130 }}>
         <Cell
           accessibilityLabel="Amount"
           value={value}
           editable={!disabled}
           onChangeText={onChange}
-          style={{ width: "100%", paddingRight: 48 }}
+          style={{ width: "100%", paddingRight: large ? 96 : 48 }}
         />
         <Text
           style={[type.secondary, styles.unit, { color: color.textMuted }]}
@@ -669,8 +738,15 @@ function Amount({
           {unit}
         </Text>
       </View>
-      <View style={{ flex: 1 }} />
-      <View style={[styles.stepper, { backgroundColor: color.fill }, disabled && { opacity: 0.5 }]}>
+      {large ? null : <View style={{ flex: 1 }} />}
+      <View
+        style={[
+          styles.stepper,
+          large && { alignSelf: "flex-end" },
+          { backgroundColor: color.fill },
+          disabled && { opacity: 0.5 },
+        ]}
+      >
         <Pressable
           accessibilityRole="button"
           accessibilityLabel="Less"
@@ -705,8 +781,9 @@ function NoteRow({
   onChange: (v: string) => void;
   disabled?: boolean;
 }) {
+  const large = useLargeText();
   return (
-    <View style={styles.listRow}>
+    <View style={large ? styles.stackedRow : styles.listRow}>
       <T>Note</T>
       <TextInput
         accessibilityLabel="Note"
@@ -717,7 +794,12 @@ function NoteRow({
         placeholderTextColor={color.placeholder}
         maxFontSizeMultiplier={MAX_TEXT_SCALE}
         onChangeText={onChange}
-        style={[type.body, styles.noteInput, { color: color.textMuted }]}
+        style={[
+          type.body,
+          styles.noteInput,
+          large && { textAlign: "left", alignSelf: "stretch" },
+          { color: color.textMuted },
+        ]}
       />
     </View>
   );
@@ -1040,6 +1122,19 @@ const styles = StyleSheet.create({
     paddingBottom: space["5"],
   },
   gallons: { flexDirection: "row", alignItems: "center", gap: space["3"], minHeight: minTap },
+  // Large text: each part on its own line, fields full width.
+  stacked: { gap: space["2"] },
+  stackedTight: { gap: 4 },
+  stackedRow: { gap: space["2"], paddingHorizontal: space["4"], paddingVertical: 10 },
+  nameLine: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    alignItems: "baseline",
+    columnGap: space["2"],
+  },
+  wide: { width: "100%" },
+  dividerTop: { borderTopWidth: StyleSheet.hairlineWidth },
+  totalStacked: { flexDirection: "column", alignItems: "flex-start", gap: 2 },
   unit: {
     position: "absolute",
     right: 12,
