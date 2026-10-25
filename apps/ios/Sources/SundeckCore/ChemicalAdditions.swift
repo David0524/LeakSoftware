@@ -119,6 +119,19 @@ public struct AdditionDraft: Codable, Equatable, Sendable, PricedLine {
     /// The price the phone shows until the server's stored price arrives.
     public var unitPriceCents: Cents
 
+    public init(
+        priceBookItemId: String?, name: String, unit: String, readingKey: ReadingKey?, suggestedQuantity: Double?,
+        quantity: Double, unitPriceCents: Cents
+    ) {
+        self.priceBookItemId = priceBookItemId
+        self.name = name
+        self.unit = unit
+        self.readingKey = readingKey
+        self.suggestedQuantity = suggestedQuantity
+        self.quantity = quantity
+        self.unitPriceCents = unitPriceCents
+    }
+
     enum CodingKeys: String, CodingKey {
         case name, unit, quantity
         case priceBookItemId = "price_book_item_id"
@@ -309,12 +322,25 @@ public struct ChemicalRow: Codable, Equatable, Sendable {
     public var order: Int?
     public var suggestion: AdditionDraft?
     public var added: [ChemicalAddition]
+
+    public init(key: ReadingKey, step: DoseStep?, order: Int?, suggestion: AdditionDraft?, added: [ChemicalAddition]) {
+        self.key = key
+        self.step = step
+        self.order = order
+        self.suggestion = suggestion
+        self.added = added
+    }
 }
 
 /// `chemicalRows`' result: one row per reading, then what was added on its own.
 public struct ChemicalRows: Codable, Equatable, Sendable {
     public var rows: [ChemicalRow]
     public var extras: [ChemicalAddition]
+
+    public init(rows: [ChemicalRow], extras: [ChemicalAddition]) {
+        self.rows = rows
+        self.extras = extras
+    }
 }
 
 private func liveSorted(_ additions: [ChemicalAddition]) -> [ChemicalAddition] {
@@ -370,6 +396,17 @@ public struct ChemicalTotal: Codable, Equatable, Sendable, PricedLine {
     public var unitPriceCents: Cents
     public var totalCents: Cents
     public var customerSupplied: Bool
+
+    public init(
+        name: String, unit: String, quantity: Double, unitPriceCents: Cents, totalCents: Cents, customerSupplied: Bool
+    ) {
+        self.name = name
+        self.unit = unit
+        self.quantity = quantity
+        self.unitPriceCents = unitPriceCents
+        self.totalCents = totalCents
+        self.customerSupplied = customerSupplied
+    }
 
     enum CodingKeys: String, CodingKey {
         case name, unit, quantity
@@ -429,6 +466,12 @@ public struct MonthlyUsage: Codable, Equatable, Sendable {
     public var label: String
     /// "2¾ gal Liquid chlorine, 12 tabs Chlorine tabs"
     public var line: String
+
+    public init(month: String, label: String, line: String) {
+        self.month = month
+        self.label = label
+        self.line = line
+    }
 }
 
 /// The pool's chemicals by month, newest month first (`monthlyUsage`).
@@ -468,6 +511,19 @@ public struct ReportAddition: Codable, Equatable, Sendable, PricedLine {
     public var customerSupplied: Bool
     public var unitPriceCents: Cents
 
+    public init(
+        name: String, unit: String, quantity: Double, readingKey: ReadingKey?, note: String? = nil,
+        customerSupplied: Bool = false, unitPriceCents: Cents
+    ) {
+        self.name = name
+        self.unit = unit
+        self.quantity = quantity
+        self.readingKey = readingKey
+        self.note = note
+        self.customerSupplied = customerSupplied
+        self.unitPriceCents = unitPriceCents
+    }
+
     enum CodingKeys: String, CodingKey {
         case name, unit, quantity, note
         case readingKey = "reading_key"
@@ -483,6 +539,13 @@ public struct ReportAddedRow: Codable, Equatable, Sendable {
     /// "$4.00" when the shop charged; nil otherwise or when the customer supplied it.
     public var price: String?
     public var supplied: Bool
+
+    public init(label: String, why: String?, price: String?, supplied: Bool) {
+        self.label = label
+        self.why = why
+        self.price = price
+        self.supplied = supplied
+    }
 
     /// Encodes nulls as JavaScript writes them.
     public func encode(to encoder: any Encoder) throws {
