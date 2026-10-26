@@ -317,7 +317,7 @@ export async function sendPaymentReceipt(
     // A double tap is one text.
     return sendOnce(
       db,
-      { jobId: d.job_id, channel: "sms", recipient: to, template: "receipt" },
+      { jobId: d.job_id, channel: "sms", recipient: to, template: "receipt", ref: payment.id },
       async () => {
         try {
           await sendCompanyText(
@@ -343,7 +343,7 @@ export async function sendPaymentReceipt(
   const sentTo = [to, ...cc].join(", ");
   return sendOnce(
     db,
-    { jobId: d.job_id, channel: "email", recipient: sentTo, template: "receipt" },
+    { jobId: d.job_id, channel: "email", recipient: sentTo, template: "receipt", ref: payment.id },
     async () => {
       const refusal = await emailRefusal(db, companyId, 1 + cc.length);
       if (refusal) throw new Refusal(refusal);

@@ -70,6 +70,13 @@ describe("sendOnce", () => {
     send = vi.fn(async () => "sent");
   });
 
+  it("sends a second payment's receipt to the same address a moment later", async () => {
+    const { db } = logWith([{ at: Date.now() - 5_000, status: "sent" }]);
+    const receipt = { ...KEY, template: "receipt", ref: "payment-2" };
+    expect(await sendOnce(db, receipt, send, () => "again")).toBe("sent");
+    expect(send).toHaveBeenCalledTimes(1);
+  });
+
   it("sends when nothing went out a moment ago", async () => {
     const { db } = logWith([]);
     expect(await sendOnce(db, KEY, send, () => "again")).toBe("sent");

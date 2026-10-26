@@ -23,9 +23,16 @@ export interface SendKey {
   recipient: string;
   /** message.template. */
   template: string;
+  /**
+   * What the send is about when one job sends several of the same template (a receipt per
+   * payment). The log has no column for it, so only a send running now is shared; the log isn't
+   * checked, or a second payment's receipt would pass for the first's.
+   */
+  ref?: string;
 }
 
-const keyOf = (k: SendKey) => [k.jobId, k.channel, k.recipient.toLowerCase(), k.template].join("|");
+const keyOf = (k: SendKey) =>
+  [k.jobId, k.channel, k.recipient.toLowerCase(), k.template, k.ref ?? ""].join("|");
 
 /** Sends running now on this server, so two requests at once share one send. */
 const running = new Map<string, Promise<unknown>>();
@@ -65,7 +72,7 @@ export async function sendOnce<T>(
   const inFlight = running.get(id) as Promise<T> | undefined;
   if (inFlight) return inFlight;
   const run = (async () => {
-    if (await sentRecently(db, key)) return again();
+    if (!key.ref && (await sentRecently(db, key))) return again();
     return send();
   })();
   running.set(id, run);
