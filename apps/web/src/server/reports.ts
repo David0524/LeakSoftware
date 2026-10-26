@@ -122,9 +122,8 @@ export async function reportPdf(
       .upload(path, pdf, { contentType: "application/pdf", upsert: false });
     return pdf;
   }
-  const path = reportPdfPath(ids.companyId, ids.jobId, ids.reportId);
-  const stored = await publicClient().storage.from("documents").download(path);
-  if (stored.data) return Buffer.from(await stored.data.arrayBuffer());
+  // Without the service key nothing can be kept, and a copy kept at the old path is the large,
+  // pre-shrink rendering: draw it fresh each time instead.
   return renderPdf(url);
 }
 
