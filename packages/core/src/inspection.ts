@@ -621,7 +621,7 @@ export interface DiagramLayout {
   spa?: { x: number; y: number; size?: SpaSize; shape?: SpaShape; r?: number };
   /** Lines, circles, and freehand strokes drawn on the diagram (Draw), 0..1 of it. */
   drawing?: DrawnShape[];
-  /** Trees, rocks, a waterfall, and so on, placed around the pool (Landmarks). */
+  /** Trees, rocks, a waterfall, a skimmer, and so on, placed around the pool (Landmarks). */
   landmarks?: Landmark[];
 }
 
@@ -631,7 +631,18 @@ export type DrawnShape =
   | { type: "circle"; cx: number; cy: number; rx: number; ry: number }
   | { type: "pen"; points: [number, number][] };
 
-export type LandmarkKind = "tree" | "rock" | "waterfall" | "steps" | "equipment" | "house";
+export type LandmarkKind =
+  | "tree"
+  | "rock"
+  | "waterfall"
+  | "steps"
+  | "equipment"
+  | "house"
+  | "skimmer"
+  | "mainDrain"
+  | "light"
+  | "poolReturn"
+  | "suctionLine";
 
 export interface Landmark {
   kind: LandmarkKind;
@@ -645,15 +656,16 @@ export interface Landmark {
    */
   flip?: boolean;
   /**
-   * Quarter turns clockwise, 1 to 3 (a tap on the selected steps; owner, 2026-10-21: "Step
-   * landmark should rotate all 4 directions on tap. No mirror necessary").
+   * Quarter turns clockwise, 1 to 3 (a tap on the selected steps, waterfall, skimmer, return, or
+   * suction line; owner, 2026-10-21: "Step landmark should rotate all 4 directions on tap. No
+   * mirror necessary").
    */
   turn?: 1 | 2 | 3;
 }
 
 /**
- * A tap on the selected landmark: the steps and the waterfall turn a quarter clockwise (up,
- * right, down, left); the others mirror.
+ * A tap on the selected landmark: the steps, the waterfall, the skimmer, the return, and the
+ * suction line turn a quarter clockwise (up, right, down, left); the others mirror.
  */
 export function tapLandmark(l: Landmark): Landmark {
   const { flip: _flip, turn: _turn, ...rest } = l;
@@ -668,11 +680,21 @@ export function tapLandmark(l: Landmark): Landmark {
 
 /**
  * What a tap on the selected landmark does: "turn" (the steps and the waterfall; owner,
- * 2026-10-21: "Waterfall 4 way rotate, no mirror") or "mirror".
+ * 2026-10-21: "Waterfall 4 way rotate, no mirror"; and the skimmer, return, and suction line,
+ * which face the water or a wall; owner, 2026-10-26) or "mirror". The main drain and the light
+ * look the same both ways across, so a tap's mirror is all they need.
  */
 export function landmarkTaps(kind: LandmarkKind): "turn" | "mirror" {
-  return kind === "steps" || kind === "waterfall" ? "turn" : "mirror";
+  return TURNING_LANDMARKS.includes(kind) ? "turn" : "mirror";
 }
+
+const TURNING_LANDMARKS: readonly LandmarkKind[] = [
+  "steps",
+  "waterfall",
+  "skimmer",
+  "poolReturn",
+  "suctionLine",
+];
 
 /**
  * A landmark's quarter turns clockwise, 0 to 3. Saved flipped before turning: the steps (turned
@@ -795,6 +817,98 @@ export const LANDMARKS: {
       { d: "M4.5 10.5 H19.5 V22 H4.5 Z", tone: "wall" },
       { d: "M1.5 11.5 L12 2.5 L22.5 11.5 Z", tone: "roof" },
       { d: "M10 22 V15.5 H14 V22 Z", tone: "door" },
+    ],
+  },
+  {
+    // Pool fittings (owner, 2026-10-26: "In landmarks, add skimmer, main drain, light, returns,
+    // suction line"). The skimmer, return, and suction line are drawn facing up and turn a
+    // quarter on a tap (landmarkTaps); the main drain and the light are round.
+    key: "skimmer",
+    label: "Skimmer",
+    parts: [
+      { d: "M1.5 2.5 H22.5 V11 H1.5 Z", tone: "water" },
+      { d: "M4.5 5.5 H9.5 M13.5 7.5 H19.5", tone: "foam" },
+      { d: "M1.5 11 H22.5 V22.5 H1.5 Z", tone: "concrete" },
+      { d: "M4.5 11 H19.5 V15 H4.5 Z", tone: "stoneDark" },
+      { d: "M7.5 15 H16.5 V21 H7.5 Z", tone: "stone" },
+      { d: "M10.5 17 H13.5 V19 H10.5 Z", tone: "stoneDark" },
+    ],
+  },
+  {
+    key: "mainDrain",
+    label: "Main Drain",
+    parts: [
+      {
+        d: "M12 1.5 C17.8 1.5 22.5 6.2 22.5 12 C22.5 17.8 17.8 22.5 12 22.5 C6.2 22.5 1.5 17.8 1.5 12 C1.5 6.2 6.2 1.5 12 1.5 Z",
+        tone: "metal",
+      },
+      {
+        d: "M12 4 C16.42 4 20 7.58 20 12 C20 16.42 16.42 20 12 20 C7.58 20 4 16.42 4 12 C4 7.58 7.58 4 12 4 Z",
+        tone: "concrete",
+      },
+      { d: "M7.5 6.2 H16.5 V8.6 H7.5 Z", tone: "stoneDark" },
+      { d: "M5.5 10.8 H18.5 V13.2 H5.5 Z", tone: "stoneDark" },
+      { d: "M7.5 15.4 H16.5 V17.8 H7.5 Z", tone: "stoneDark" },
+    ],
+  },
+  {
+    key: "light",
+    label: "Light",
+    parts: [
+      {
+        d: "M12 1.5 C17.8 1.5 22.5 6.2 22.5 12 C22.5 17.8 17.8 22.5 12 22.5 C6.2 22.5 1.5 17.8 1.5 12 C1.5 6.2 6.2 1.5 12 1.5 Z",
+        tone: "metal",
+      },
+      {
+        d: "M12 4 C16.42 4 20 7.58 20 12 C20 16.42 16.42 20 12 20 C7.58 20 4 16.42 4 12 C4 7.58 7.58 4 12 4 Z",
+        tone: "stoneDark",
+      },
+      {
+        d: "M12 6.2 C15.2 6.2 17.8 8.8 17.8 12 C17.8 15.2 15.2 17.8 12 17.8 C8.8 17.8 6.2 15.2 6.2 12 C6.2 8.8 8.8 6.2 12 6.2 Z",
+        tone: "wall",
+      },
+      { d: "M8.8 11 Q9.2 8.9 11.3 8.3", tone: "foam" },
+    ],
+  },
+  {
+    key: "poolReturn",
+    label: "Return",
+    parts: [
+      { d: "M9.5 15 L3.5 3.5 Q12 1 20.5 3.5 L14.5 15 Z", tone: "water" },
+      { d: "M12 13 V5 M9.8 12 L7.2 6 M14.2 12 L16.8 6", tone: "foam" },
+      { d: "M1.5 19 H22.5 V22.5 H1.5 Z", tone: "concrete" },
+      {
+        d: "M12 11.7 C14.65 11.7 16.8 13.85 16.8 16.5 C16.8 19.15 14.65 21.3 12 21.3 C9.35 21.3 7.2 19.15 7.2 16.5 C7.2 13.85 9.35 11.7 12 11.7 Z",
+        tone: "metal",
+      },
+      {
+        d: "M12 13.3 C13.77 13.3 15.2 14.73 15.2 16.5 C15.2 18.27 13.77 19.7 12 19.7 C10.23 19.7 8.8 18.27 8.8 16.5 C8.8 14.73 10.23 13.3 12 13.3 Z",
+        tone: "concrete",
+      },
+      {
+        d: "M12 14.9 C12.88 14.9 13.6 15.62 13.6 16.5 C13.6 17.38 12.88 18.1 12 18.1 C11.12 18.1 10.4 17.38 10.4 16.5 C10.4 15.62 11.12 14.9 12 14.9 Z",
+        tone: "stoneDark",
+      },
+    ],
+  },
+  {
+    key: "suctionLine",
+    label: "Suction Line",
+    parts: [
+      { d: "M8.4 11 H15.6 V22.5 H8.4 Z", tone: "metal" },
+      { d: "M6.8 15.8 H17.2 V19 H6.8 Z", tone: "stone" },
+      {
+        d: "M12 1.5 C15.59 1.5 18.5 4.41 18.5 8 C18.5 11.59 15.59 14.5 12 14.5 C8.41 14.5 5.5 11.59 5.5 8 C5.5 4.41 8.41 1.5 12 1.5 Z",
+        tone: "metal",
+      },
+      {
+        d: "M12 3.2 C14.65 3.2 16.8 5.35 16.8 8 C16.8 10.65 14.65 12.8 12 12.8 C9.35 12.8 7.2 10.65 7.2 8 C7.2 5.35 9.35 3.2 12 3.2 Z",
+        tone: "concrete",
+      },
+      {
+        d: "M12 5 C13.66 5 15 6.34 15 8 C15 9.66 13.66 11 12 11 C10.34 11 9 9.66 9 8 C9 6.34 10.34 5 12 5 Z",
+        tone: "stoneDark",
+      },
     ],
   },
 ];

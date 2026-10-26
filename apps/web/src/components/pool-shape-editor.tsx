@@ -249,7 +249,8 @@ export function PoolShapeEditor({
       setSpa({ ...spaNow, shape: spaNow.shape === "square" ? "round" : "square" });
     else if (now.what === "landmark" && !now.moved && now.index !== undefined) {
       // A tap selects a landmark; a tap on the selected one mirrors it (owner, 2026-10-19), or
-      // turns the steps and the waterfall a quarter (owner, 2026-10-21; core tapLandmark).
+      // turns the steps, waterfall, skimmer, return, and suction line a quarter (owner, 2026-10-21 and
+      // 2026-10-26; core tapLandmark).
       if (now.index === selected)
         setLandmarks(landmarks.map((l, i) => (i === now.index ? tapLandmark(l) : l)));
       else setSelected(now.index);
@@ -444,7 +445,7 @@ export function PoolShapeEditor({
           <p className="text-[0.9375rem] text-text-muted" aria-live="polite">
             {placing
               ? `Tap the drawing to put the ${LANDMARKS.find((l) => l.key === placing)!.label.toLowerCase()} there.`
-              : "Pick one, then tap the drawing. Tap a landmark to select it: tap again to turn it (steps and waterfall) or flip it, pinch or drag its corner to resize, or tap its X to delete it."}
+              : "Pick one, then tap the drawing. Tap a landmark to select it: tap again to turn or flip it, pinch or drag its corner to resize, or tap its X to delete it."}
           </p>
         </div>
       ) : null}

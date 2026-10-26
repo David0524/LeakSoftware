@@ -612,7 +612,7 @@ test("on a phone: a tech starts a job, fills the checklist, and records a test a
   const where = tech.getByLabel(`Where: ${itemName}`);
   await where.fill("Under the deck by the steps");
   await where.blur();
-  await expect(tech.getByText(/0 not leaking · 0 attention · 1 leaking/)).toBeVisible();
+  await expect(tech.getByText(/^1 leaking · \d+ to do$/).first()).toBeVisible();
   await tech.reload();
   await expect(tech.getByLabel(`Where: ${itemName}`)).toHaveValue("Under the deck by the steps");
   expect(await wide()).toBeLessThanOrEqual(390);

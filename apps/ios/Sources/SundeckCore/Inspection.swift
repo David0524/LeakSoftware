@@ -823,7 +823,7 @@ public struct DiagramLayout: Codable, Equatable, Sendable {
     public var spa: Spa?
     /// Lines, circles, and freehand strokes drawn on the diagram (Draw), 0..1 of it.
     public var drawing: [DrawnShape]?
-    /// Trees, rocks, a waterfall, and so on, placed around the pool (Landmarks).
+    /// Trees, rocks, a waterfall, a skimmer, and so on, placed around the pool (Landmarks).
     public var landmarks: [Landmark]?
 
     public init(
@@ -900,7 +900,7 @@ public enum DrawnShape: Codable, Equatable, Sendable {
 
 /// A landmark's kind (`LandmarkKind`), in the Landmarks row's order.
 public enum LandmarkKind: String, Codable, CaseIterable, Sendable {
-    case tree, rock, waterfall, steps, equipment, house
+    case tree, rock, waterfall, steps, equipment, house, skimmer, mainDrain, light, poolReturn, suctionLine
 
     public var label: String { landmarkDrawings.first { $0.key == self }!.label }
     /// Its filled parts in a 24 x 24 box (absolute M, L, H, V, Q, C, Z only).
@@ -986,6 +986,79 @@ public let landmarkDrawings: [(key: LandmarkKind, label: String, parts: [Landmar
             LandmarkPart("M10 22 V15.5 H14 V22 Z", .door),
         ]
     ),
+    (
+        .skimmer, "Skimmer",
+        [
+            LandmarkPart("M1.5 2.5 H22.5 V11 H1.5 Z", .water),
+            LandmarkPart("M4.5 5.5 H9.5 M13.5 7.5 H19.5", .foam),
+            LandmarkPart("M1.5 11 H22.5 V22.5 H1.5 Z", .concrete),
+            LandmarkPart("M4.5 11 H19.5 V15 H4.5 Z", .stoneDark),
+            LandmarkPart("M7.5 15 H16.5 V21 H7.5 Z", .stone),
+            LandmarkPart("M10.5 17 H13.5 V19 H10.5 Z", .stoneDark),
+        ]
+    ),
+    (
+        .mainDrain, "Main Drain",
+        [
+            LandmarkPart(
+                "M12 1.5 C17.8 1.5 22.5 6.2 22.5 12 C22.5 17.8 17.8 22.5 12 22.5 C6.2 22.5 1.5 17.8 1.5 12 "
+                    + "C1.5 6.2 6.2 1.5 12 1.5 Z", .metal),
+            LandmarkPart(
+                "M12 4 C16.42 4 20 7.58 20 12 C20 16.42 16.42 20 12 20 C7.58 20 4 16.42 4 12 "
+                    + "C4 7.58 7.58 4 12 4 Z", .concrete),
+            LandmarkPart("M7.5 6.2 H16.5 V8.6 H7.5 Z", .stoneDark),
+            LandmarkPart("M5.5 10.8 H18.5 V13.2 H5.5 Z", .stoneDark),
+            LandmarkPart("M7.5 15.4 H16.5 V17.8 H7.5 Z", .stoneDark),
+        ]
+    ),
+    (
+        .light, "Light",
+        [
+            LandmarkPart(
+                "M12 1.5 C17.8 1.5 22.5 6.2 22.5 12 C22.5 17.8 17.8 22.5 12 22.5 C6.2 22.5 1.5 17.8 1.5 12 "
+                    + "C1.5 6.2 6.2 1.5 12 1.5 Z", .metal),
+            LandmarkPart(
+                "M12 4 C16.42 4 20 7.58 20 12 C20 16.42 16.42 20 12 20 C7.58 20 4 16.42 4 12 "
+                    + "C4 7.58 7.58 4 12 4 Z", .stoneDark),
+            LandmarkPart(
+                "M12 6.2 C15.2 6.2 17.8 8.8 17.8 12 C17.8 15.2 15.2 17.8 12 17.8 C8.8 17.8 6.2 15.2 6.2 12 "
+                    + "C6.2 8.8 8.8 6.2 12 6.2 Z", .wall),
+            LandmarkPart("M8.8 11 Q9.2 8.9 11.3 8.3", .foam),
+        ]
+    ),
+    (
+        .poolReturn, "Return",
+        [
+            LandmarkPart("M9.5 15 L3.5 3.5 Q12 1 20.5 3.5 L14.5 15 Z", .water),
+            LandmarkPart("M12 13 V5 M9.8 12 L7.2 6 M14.2 12 L16.8 6", .foam),
+            LandmarkPart("M1.5 19 H22.5 V22.5 H1.5 Z", .concrete),
+            LandmarkPart(
+                "M12 11.7 C14.65 11.7 16.8 13.85 16.8 16.5 C16.8 19.15 14.65 21.3 12 21.3 "
+                    + "C9.35 21.3 7.2 19.15 7.2 16.5 C7.2 13.85 9.35 11.7 12 11.7 Z", .metal),
+            LandmarkPart(
+                "M12 13.3 C13.77 13.3 15.2 14.73 15.2 16.5 C15.2 18.27 13.77 19.7 12 19.7 "
+                    + "C10.23 19.7 8.8 18.27 8.8 16.5 C8.8 14.73 10.23 13.3 12 13.3 Z", .concrete),
+            LandmarkPart(
+                "M12 14.9 C12.88 14.9 13.6 15.62 13.6 16.5 C13.6 17.38 12.88 18.1 12 18.1 "
+                    + "C11.12 18.1 10.4 17.38 10.4 16.5 C10.4 15.62 11.12 14.9 12 14.9 Z", .stoneDark),
+        ]
+    ),
+    (
+        .suctionLine, "Suction Line",
+        [
+            LandmarkPart("M8.4 11 H15.6 V22.5 H8.4 Z", .metal),
+            LandmarkPart("M6.8 15.8 H17.2 V19 H6.8 Z", .stone),
+            LandmarkPart(
+                "M12 1.5 C15.59 1.5 18.5 4.41 18.5 8 C18.5 11.59 15.59 14.5 12 14.5 C8.41 14.5 5.5 11.59 5.5 8 "
+                    + "C5.5 4.41 8.41 1.5 12 1.5 Z", .metal),
+            LandmarkPart(
+                "M12 3.2 C14.65 3.2 16.8 5.35 16.8 8 C16.8 10.65 14.65 12.8 12 12.8 C9.35 12.8 7.2 10.65 7.2 8 "
+                    + "C7.2 5.35 9.35 3.2 12 3.2 Z", .concrete),
+            LandmarkPart(
+                "M12 5 C13.66 5 15 6.34 15 8 C15 9.66 13.66 11 12 11 C10.34 11 9 9.66 9 8 "
+                    + "C9 6.34 10.34 5 12 5 Z", .stoneDark),
+        ]
+    ),
 ]
 
 /// A landmark placed around the pool, its center 0..1 of the diagram, its size in diagram
@@ -996,7 +1069,8 @@ public struct Landmark: Codable, Equatable, Sendable {
     public var y: Double
     public var s: Double?
     public var flip: Bool?
-    /// Quarter turns clockwise, 1 to 3 (the steps and the waterfall; owner, 2026-10-21).
+    /// Quarter turns clockwise, 1 to 3 (the steps, waterfall, skimmer, return and suction line; owner,
+    /// 2026-10-21 and 2026-10-26).
     public var turn: Int?
 
     public init(
@@ -1011,10 +1085,13 @@ public struct Landmark: Codable, Equatable, Sendable {
     }
 }
 
-/// What a tap on the selected landmark does: "turn" (the steps and the waterfall) or "mirror".
-/// Port of `landmarkTaps`.
+/// What a tap on the selected landmark does: "turn" (the steps, waterfall, skimmer, return and
+/// suction line; owner, 2026-10-26) or "mirror". Port of `landmarkTaps`.
 public func landmarkTaps(_ kind: LandmarkKind) -> String {
-    kind == .steps || kind == .waterfall ? "turn" : "mirror"
+    switch kind {
+    case .steps, .waterfall, .skimmer, .poolReturn, .suctionLine: "turn"
+    default: "mirror"
+    }
 }
 
 /// A landmark's quarter turns clockwise, 0 to 3; saved flipped before turning, the steps count
@@ -1025,8 +1102,8 @@ public func landmarkTurn(kind: LandmarkKind, flip: Bool?, turn: Int?) -> Int {
     return flip == true && kind == .steps ? 2 : 0
 }
 
-/// A tap on the selected landmark: the steps and the waterfall turn a quarter clockwise, the
-/// others mirror. Port of `tapLandmark`.
+/// A tap on the selected landmark: the steps, waterfall, skimmer, return and suction line turn a
+/// quarter clockwise, the others mirror. Port of `tapLandmark`.
 public func tapLandmark(_ l: Landmark) -> Landmark {
     var out = Landmark(kind: l.kind, x: l.x, y: l.y, s: l.s)
     if landmarkTaps(l.kind) == "turn" {

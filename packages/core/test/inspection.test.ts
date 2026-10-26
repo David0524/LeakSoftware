@@ -489,6 +489,25 @@ describe("pool diagram: draw, landmarks, the spa's size, clear", async () => {
       },
     ]);
     expect(layout.landmarks).toEqual([{ kind: "tree", x: 0.05, y: 0.9 }]);
+    // The pool fittings (owner, 2026-10-26) are read, turned ones keep their turn, and the
+    // round ones keep a mirror.
+    expect(
+      core.parseDiagramLayout({
+        landmarks: [
+          { kind: "skimmer", x: 0.5, y: 0.1, turn: 2 },
+          { kind: "mainDrain", x: 0.5, y: 0.5, flip: true, turn: 1 },
+          { kind: "light", x: 0.2, y: 0.5 },
+          { kind: "poolReturn", x: 0.1, y: 0.5, turn: 3 },
+          { kind: "suctionLine", x: 0.9, y: 0.5, flip: true },
+        ],
+      }).landmarks,
+    ).toEqual([
+      { kind: "skimmer", x: 0.5, y: 0.1, turn: 2 },
+      { kind: "mainDrain", x: 0.5, y: 0.5, flip: true },
+      { kind: "light", x: 0.2, y: 0.5 },
+      { kind: "poolReturn", x: 0.1, y: 0.5, turn: 3 },
+      { kind: "suctionLine", x: 0.9, y: 0.5 },
+    ]);
     expect(layout.spa).toEqual({ x: 0.8, y: 0.2, r: 20, shape: "square" });
     expect(core.parseDiagramLayout({ spa: { x: 0.5, y: 0.5, r: 99 } }).spa).toEqual({
       x: 0.5,
@@ -534,6 +553,11 @@ describe("pool diagram: draw, landmarks, the spa's size, clear", async () => {
       "Steps",
       "Equipment",
       "House",
+      "Skimmer",
+      "Main Drain",
+      "Light",
+      "Return",
+      "Suction Line",
     ]);
   });
 
@@ -744,6 +768,16 @@ describe("the steps turn on tap (owner, 2026-10-21)", () => {
     // The waterfall turns too; saved mirrored, it's the same drawing, so it starts unturned.
     expect(landmarkTurn(tapLandmark({ kind: "waterfall", x: 0.5, y: 0.5 }))).toBe(1);
     expect(landmarkTurn({ kind: "waterfall", flip: true })).toBe(0);
+    // The skimmer, return, and suction line turn (owner, 2026-10-26); the main drain and the
+    // light are round, so they mirror.
+    for (const kind of ["skimmer", "poolReturn", "suctionLine"] as const) {
+      const once = tapLandmark({ kind, x: 0.5, y: 0.5 });
+      expect([landmarkTurn(once), once.flip]).toEqual([1, undefined]);
+    }
+    for (const kind of ["mainDrain", "light"] as const) {
+      const once = tapLandmark({ kind, x: 0.5, y: 0.5 });
+      expect([landmarkTurn(once), once.flip]).toEqual([0, true]);
+    }
     // A tree still mirrors.
     const tree = tapLandmark({ kind: "tree", x: 0.5, y: 0.5 });
     expect(tree.flip).toBe(true);

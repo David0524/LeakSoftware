@@ -26,7 +26,7 @@ export function landmarkTransform(l: {
   size: number;
   flip: boolean;
   mirror?: "x" | "y";
-  /** Quarter turns clockwise about its center (the steps and the waterfall). */
+  /** Quarter turns clockwise about its center (the steps, waterfall, skimmer, return, and suction line). */
   turn?: number;
 }) {
   const k = l.size / 24;

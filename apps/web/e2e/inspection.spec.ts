@@ -30,7 +30,8 @@ test("a pool inspection: New Job, answers and gates, and its report", async ({ p
   await expect(page.getByText("Spa, Deck Jets")).toBeVisible();
   // The job page shows one tab at a time on every screen (owner, 2026-10-22).
   await jobSection(page, "Checklist");
-  await expect(page.getByText(/^0 of \d+ answered$/)).toBeVisible();
+  // The whole checklist's line, then each section's.
+  await expect(page.getByText(/^0 of \d+ answered$/).first()).toBeVisible();
 
   // On a phone each question is one line (owner, 2026-10-22): Yes and No as icons, and a
   // question whose answers have no clear icons as one pill that opens a menu.
@@ -67,7 +68,8 @@ test("a pool inspection: New Job, answers and gates, and its report", async ({ p
   expect(await tech.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(390);
   await phone.close();
   await page.reload();
-  await expect(page.getByText(/^0 of \d+ answered$/)).toBeVisible();
+  // The whole checklist's line, then each section's.
+  await expect(page.getByText(/^0 of \d+ answered$/).first()).toBeVisible();
 
   // Equipment opens first; a flagged answer counts as needing attention.
   const leaking = page.getByRole("radiogroup", { name: "Does the system show visible leaking?" });

@@ -155,7 +155,7 @@ test("a new shop signs up and runs the whole loop, then subscribes", async ({
   const where = page.getByLabel("Where: Skimmer");
   await where.fill("Throat seam");
   await where.blur();
-  await expect(page.getByText(/ · 1 leaking · /)).toBeVisible();
+  await expect(page.getByText(/^1 leaking · \d+ to do$/).first()).toBeVisible();
   await page.reload();
   await expect(page.getByLabel("Where: Skimmer")).toHaveValue("Throat seam");
   await finishChecklist(page);

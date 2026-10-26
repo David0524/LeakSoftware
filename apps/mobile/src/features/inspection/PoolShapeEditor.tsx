@@ -519,7 +519,7 @@ export function PoolShapeEditor({ property, onDone }: { property: Property; onDo
           <T variant="secondary" muted>
             {placing
               ? `Tap the drawing to put the ${LANDMARKS.find((l) => l.key === placing)!.label.toLowerCase()} there.`
-              : "Pick one, then tap the drawing. Tap a landmark to select it: tap again to turn it (steps and waterfall) or flip it, pinch or drag its corner to resize, or tap its X to delete it."}
+              : "Pick one, then tap the drawing. Tap a landmark to select it: tap again to turn or flip it, pinch or drag its corner to resize, or tap its X to delete it."}
           </T>
         </View>
       ) : null}
