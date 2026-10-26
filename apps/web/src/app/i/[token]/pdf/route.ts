@@ -6,7 +6,7 @@ import { publicClient } from "@/server/reports";
 
 export const maxDuration = 60;
 
-const LAYOUT = "2026-10-22b";
+const LAYOUT = "2026-10-26";
 
 /**
  * The invoice (or receipt, once paid) as a PDF, printed from the same page. Each version of

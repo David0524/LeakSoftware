@@ -25,7 +25,7 @@ import { ccList, emailRefusal } from "./usage";
 import { Fault, Refusal, dbFailure } from "./failures";
 import { sendOnce, sentRecently } from "./send-once";
 import { writeNarrative } from "./narrative";
-import { renderPdf, reportPdfPath } from "./pdf";
+import { PDF_LAYOUT, renderPdf, reportPdfPath } from "./pdf";
 
 // Report actions shared by the office website (cookie session) and the phone API (bearer
 // token). `db` always acts as the signed-in member; the database functions check access.
@@ -107,17 +107,25 @@ export async function reportPdf(
   // The sample's report follows the shop's logo and name (owner, 2026-10-22), so it's drawn
   // fresh each time instead of kept.
   if (ids.sample) return renderPdf(`${origin}/r/${token}?print=1`);
-  const path = reportPdfPath(ids.companyId, ids.jobId, ids.reportId);
-  const stored = await publicClient().storage.from("documents").download(path);
-  if (stored.data) return Buffer.from(await stored.data.arrayBuffer());
-  const pdf = await renderPdf(`${origin}/r/${token}?print=1`);
   const server = adminClient();
+  const url = `${origin}/r/${token}?print=1`;
   if (server) {
+    // The kept copy is a rendering of the sent report's snapshot, not the report itself, so a
+    // better rendering may replace it. Copies made before photos were shrunk for print (up to
+    // 4 MB) lived at the old path; this one is a new name, so they're drawn again once.
+    const path = reportPdfPath(ids.companyId, ids.jobId, ids.reportId, PDF_LAYOUT);
+    const stored = await server.storage.from("documents").download(path);
+    if (stored.data) return Buffer.from(await stored.data.arrayBuffer());
+    const pdf = await renderPdf(url);
     await server.storage
       .from("documents")
       .upload(path, pdf, { contentType: "application/pdf", upsert: false });
+    return pdf;
   }
-  return pdf;
+  const path = reportPdfPath(ids.companyId, ids.jobId, ids.reportId);
+  const stored = await publicClient().storage.from("documents").download(path);
+  if (stored.data) return Buffer.from(await stored.data.arrayBuffer());
+  return renderPdf(url);
 }
 
 function escapeHtml(s: string) {
