@@ -102,36 +102,50 @@
             error = nil
             step = 0
             fraction = nil
+            // A download task, not a byte-by-byte read: reading a photo-heavy PDF one byte at a
+            // time (several MB) took long enough to look stuck (owner, 2026-10-26: Abby Navarro's
+            // PDF). Step 1 starts when the server's answer arrives (it makes the PDF first); the
+            // bar follows the task's progress.
+            let watcher = DownloadWatcher()
+            let progress = Task { @MainActor in
+                while !Task.isCancelled {
+                    if let task = watcher.task {
+                        if task.response != nil, step == 0 { step = 1 }
+                        let p = task.progress
+                        if p.totalUnitCount > 0 { fraction = min(1, p.fractionCompleted) }
+                    }
+                    try? await Task.sleep(for: .milliseconds(150))
+                }
+            }
+            defer { progress.cancel() }
             do {
-                // The server makes the PDF before the first byte arrives: step 1 starts then.
-                let (bytes, response) = try await URLSession.shared.bytes(from: url)
+                let (download, response) = try await URLSession.shared.download(from: url, delegate: watcher)
                 let status = (response as? HTTPURLResponse)?.statusCode ?? 0
                 guard (200..<300).contains(status) else {
                     error = "The PDF couldn’t be made. Try again."
                     return
                 }
                 step = 1
-                let expected = response.expectedContentLength
-                var data = Data()
-                if expected > 0 { data.reserveCapacity(Int(expected)) }
-                var chunk = Data()
-                chunk.reserveCapacity(65_536)
-                for try await byte in bytes {
-                    chunk.append(byte)
-                    if chunk.count == 65_536 {
-                        data.append(chunk)
-                        chunk.removeAll(keepingCapacity: true)
-                        if expected > 0 { fraction = min(1, Double(data.count) / Double(expected)) }
-                    }
-                }
-                data.append(chunk)
                 fraction = 1
                 let target = FileManager.default.temporaryDirectory.appendingPathComponent("Report.pdf")
-                try data.write(to: target, options: .atomic)
+                try? FileManager.default.removeItem(at: target)
+                try FileManager.default.moveItem(at: download, to: target)
                 withAnimation(Motion.smooth) { file = target }
             } catch {
                 self.error = WebAPI.Failure.noConnection
             }
+        }
+    }
+
+    /// Hands the PDF sheet the download task, so it can show when the answer starts and how much
+    /// has arrived.
+    private final class DownloadWatcher: NSObject, URLSessionTaskDelegate, @unchecked Sendable {
+        private let lock = NSLock()
+        private var created: URLSessionTask?
+        var task: URLSessionTask? { lock.withLock { created } }
+
+        func urlSession(_ session: URLSession, didCreateTask task: URLSessionTask) {
+            lock.withLock { created = task }
         }
     }
 
