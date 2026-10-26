@@ -98,7 +98,7 @@ export default async function ReportsPage({ searchParams }: PageProps<"/jobs/rep
       <JobsTabs current="reports" />
       <PillRow
         label="Filter reports"
-        className="-mx-4 mb-5 flex gap-2 overflow-x-auto px-4 whitespace-nowrap sm:mx-0 sm:px-0"
+        className="-mx-4 -mt-1.5 mb-3.5 flex gap-2 overflow-x-auto px-4 whitespace-nowrap sm:mx-0 sm:px-0"
       >
         {FILTERS.map((f) => (
           <Link

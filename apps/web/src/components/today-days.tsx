@@ -118,7 +118,10 @@ export function TodayDays({
           // the names on the right side the selector").
           <PillRow
             label="Whose day"
-            className={cx("-mx-4 mb-5 flex gap-2 overflow-x-auto px-4", team && "lg:hidden")}
+            className={cx(
+              "-mx-4 -mt-1.5 mb-3.5 flex gap-2 overflow-x-auto px-4",
+              team && "lg:hidden",
+            )}
           >
             {days.map((d, i) => (
               <a

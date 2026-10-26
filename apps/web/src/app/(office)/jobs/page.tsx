@@ -134,7 +134,7 @@ export default async function JobsPage({ searchParams }: PageProps<"/jobs">) {
         <JobsTabs current="jobs" />
         <PillRow
           label="Filter jobs by status"
-          className="-mx-4 mb-5 flex gap-2 overflow-x-auto px-4 whitespace-nowrap sm:mx-0 sm:flex-wrap sm:px-0"
+          className="-mx-4 -mt-1.5 mb-3.5 flex gap-2 overflow-x-auto px-4 whitespace-nowrap sm:mx-0 sm:flex-wrap sm:px-0"
         >
           {FILTERS.map((f) => (
             <Link

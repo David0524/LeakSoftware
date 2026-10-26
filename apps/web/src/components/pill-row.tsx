@@ -11,7 +11,9 @@ const NUDGED = "pill-row-nudged";
  * 2026-10-25: "The names being scrollable here isn't really intuitive since they fit perfectly.
  * Give a nudge"): while more pills are past its end, the end fades out; and the first time a
  * row that scrolls shows in a session, it slides a little way and back. No slide with Reduce
- * Motion.
+ * Motion. Its pills show 32 px inside 44 px tap areas; a row on its own pulls up 6 px above
+ * and below (-mt-1.5, and its bottom margin 6 px short), so the page's spacing reads from the
+ * pills (owner, 2026-10-26: "Clean up the white space around the name tiles").
  */
 export function PillRow({
   label,

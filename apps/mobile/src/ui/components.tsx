@@ -2105,7 +2105,10 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     overflow: "hidden",
   },
-  pillScroller: { marginHorizontal: -gutter, flexGrow: 0 },
+  // The row takes the 32 pt its pills show; their 44 pt touch areas reach 6 pt past it, so the
+  // page's spacing reads from the pills (owner, 2026-10-26: "Clean up the white space around the
+  // name tiles").
+  pillScroller: { marginHorizontal: -gutter, marginVertical: -6, flexGrow: 0 },
   pillScrollView: { flexGrow: 0 },
   pillFade: { position: "absolute", top: 0, right: 0, bottom: 0, width: 40 },
   pillRow: { paddingHorizontal: gutter, gap: space["2"] },

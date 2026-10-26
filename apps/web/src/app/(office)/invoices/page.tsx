@@ -123,7 +123,7 @@ export default async function InvoicesPage({ searchParams }: PageProps<"/invoice
         <>
           <PillRow
             label="Filter invoices"
-            className="-mx-4 mb-4 flex gap-2 overflow-x-auto px-4 whitespace-nowrap sm:mx-0 sm:flex-wrap sm:px-0"
+            className="-mx-4 -mt-1.5 mb-2.5 flex gap-2 overflow-x-auto px-4 whitespace-nowrap sm:mx-0 sm:flex-wrap sm:px-0"
           >
             {INVOICE_FILTERS.map((f) => (
               <Link

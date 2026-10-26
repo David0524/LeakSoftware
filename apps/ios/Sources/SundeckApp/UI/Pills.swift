@@ -142,6 +142,10 @@
             .mask(fadeMask.animation(.easeInOut(duration: 0.2), value: edges.more))
             .contentMargins(.horizontal, CGFloat(Spacing.pageMargin), for: .scrollContent)
             .sensoryFeedback(.selection, trigger: selection)
+            // The row takes the 32 pt its pills show; their 44 pt tap areas reach 6 pt past it, so
+            // the page's spacing reads from the pills (owner, 2026-10-26: "Clean up the white space
+            // around the name tiles").
+            .padding(.vertical, -6)
         }
     }
 #endif

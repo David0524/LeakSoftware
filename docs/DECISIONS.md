@@ -2,6 +2,9 @@
 
 Newest first. Each entry: date, decision, reason.
 
+## 2026-10-26 (owner: "Clean up the white space around the name tiles")
+- **A row of chips takes the 32 pt its chips show**, not their 44 pt tap areas (which still reach 6 pt past it), so the page's usual spacing sits around the chips themselves: Today, Jobs, Reports and Invoices on all four platforms (on Schedule the row shares its line with the 44 pt Reorder Techs button).
+
 ## 2026-10-25 (owner: twilight clip "We will probably go with that for the site", then "I don't want it on the site but give me the longer looped versions at 1080p and with sound"; picked 60 seconds, "Sea and soft music")
 - **The site's link preview keeps its current clip**; the twilight and day clips are not put on the site.
 - **60-second 1080p versions with sound**, day and twilight: five loops of the 12-second clip over a soundtrack made in code (`apps/video/logo3d/sound.py`): the sea in long swells, water over the infinity edge, a light breeze, and a warm pad that changes chord with each turn (D, Bm, G, A, D) and swells with a soft chime as the mark comes face-on; -16 LUFS. Delivered to the owner, not committed (videos stay out of the repository).
