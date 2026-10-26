@@ -100,7 +100,7 @@ test("homeowner report: draft, edit, email, and the customer's link", async ({ p
   await expectPdf(page, token);
 });
 
-// M8.5 "Done when": the job entered the partner's way (two techs, 27 items, a leak repaired
+// M8.5 "Done when": the job entered the partner's way (two techs, 28 items with Tile and grout, a leak repaired
 // on site) gives a report with the counts, every item's verdict, the fee, and the disclaimer,
 // as a web page and a PDF.
 test("field parity report: counts, verdicts, fee, and disclaimer", async ({ page }) => {
@@ -140,14 +140,14 @@ test("field parity report: counts, verdicts, fee, and disclaimer", async ({ page
     await page.goto(url);
     const tiles = page.locator(".report-tally");
     const tile = (label: string) => tiles.getByText(label, { exact: true }).locator("..");
-    await expect(tile("Items Pass")).toContainText("23");
+    await expect(tile("Items Pass")).toContainText("24");
     await expect(tile("Needs Attention")).toContainText("1");
     await expect(tile("Leaking")).toContainText("1");
     for (const section of ["Visual Leak Inspection", "Plumbing Static Test", "Bond Beam"]) {
       await expect(page.getByRole("heading", { name: section })).toBeVisible();
     }
     const items = page.locator(".report-checklist").getByRole("listitem");
-    await expect(items).toHaveCount(27);
+    await expect(items).toHaveCount(28);
     const row = (label: string) => items.filter({ hasText: label });
     await expect(row("Skimmer seam")).toContainText("Leaking");
     await expect(row("Skimmer seam")).toContainText("Seam at the skimmer throat");

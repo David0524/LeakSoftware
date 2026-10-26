@@ -28,7 +28,7 @@ struct FieldWorkIntegrationTests {
         }
     }
 
-    @Test func theM85SampleTwoTechs27ItemsALeakRepairedOnSite() async throws {
+    @Test func theM85SampleTwoTechs28ItemsALeakRepairedOnSite() async throws {
         let co = try await Self.fixture.get()
         let a = try Phone("fieldA", co.tech)
         let b = try Phone("fieldB", co.owner)
@@ -45,7 +45,7 @@ struct FieldWorkIntegrationTests {
             a.sync, companyId: co.id, jobId: job, types: config.componentTypes, property: property.row,
             jobType: .detection)
         var inspection = JobInspection(a.sync.store, jobId: job)
-        #expect(inspection.components.count == 27)
+        #expect(inspection.components.count == 28)
 
         // One tap per item: Skimmer seam leaking (with where), the equipment area needs
         // attention, the vinyl questions answered, everything else not leaking.
@@ -93,11 +93,11 @@ struct FieldWorkIntegrationTests {
 
         try await expectSameEverywhere(a, b, job: job)
         let office = JobInspection(b.sync.store, jobId: job)
-        #expect(office.components.count == 27)
+        #expect(office.components.count == 28)
         let tally = office.results.reduce(into: [String: Int]()) { counts, r in
             counts[currentVerdict(status: r.status, outcome: r.outcome).map { "\($0)" } ?? "pending", default: 0] += 1
         }
-        #expect(tally == ["ok": 24, "leaking": 1, "attention": 1, "na": 1])
+        #expect(tally == ["ok": 25, "leaking": 1, "attention": 1, "na": 1])
         #expect(office.resultByComponent[seam.id]?.locationText == "Seam at the skimmer throat")
         #expect(office.findings.map(\.status) == [.repaired])
         #expect(office.findings.first?.pinY == 0.0732)
