@@ -171,7 +171,7 @@
                 let result = try await TextingServer(sync: sync, api: app.api).call(conversationId: c.id)
                 callResult = (callResultText(calling: result.calling, demo: result.demo), false)
             } catch {
-                callResult = (String(describing: error), true)
+                callResult = (userMessage(error), true)
             }
         }
 
@@ -342,7 +342,7 @@
             } catch {
                 let message = String(describing: error)
                 // The bucket's own limits, or a read-only shop (security review M2), in plain words.
-                self.error = UploadRefusal(status: nil, message: message)?.message(.texts) ?? message
+                self.error = UploadRefusal(status: nil, message: message)?.message(.texts) ?? friendlyError(message)
             }
             sending = false
         }

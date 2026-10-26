@@ -305,7 +305,7 @@ public final class ReportFlow {
                         && typed != typed.trimmingCharacters(in: .whitespacesAndNewlines)
                 } : [:]
         } catch {
-            saveError = String(describing: error)
+            saveError = userMessage(error)
         }
     }
 
@@ -320,7 +320,7 @@ public final class ReportFlow {
         do {
             try sync.write("customer", id: id, companyId: companyId, ["cc_emails": .array(next.map(JSONValue.string))])
         } catch {
-            saveError = String(describing: error)
+            saveError = userMessage(error)
         }
     }
 
@@ -329,7 +329,7 @@ public final class ReportFlow {
         do {
             try sync.write("signature", id: id, companyId: companyId, ["deleted_at": nowISO()])
         } catch {
-            saveError = String(describing: error)
+            saveError = userMessage(error)
         }
     }
 
@@ -379,6 +379,8 @@ public final class ReportFlow {
     /// Writes the draft, finishes it, or sends a version (`reportId`, else the draft).
     public func run(_ action: Action, reportId: String? = nil, server base: ReportServer) async {
         var server = base
+        // A second tap while one runs does nothing (owner, 2026-10-26: "taps submit twice").
+        guard busy == nil else { return }
         server.onStep = { [weak self] step in self?.step = step }
         busy = action
         error = nil
@@ -447,7 +449,7 @@ public final class ReportFlow {
                 message = ReportSendText.willSendAfterUploads
             }
         } catch {
-            let text = (error as? WebAPI.Failure)?.description ?? String(describing: error)
+            let text = (error as? WebAPI.Failure)?.description ?? userMessage(error)
             self.error = Failure(at: action == .draft ? .draft : action == .finish ? .finish : .send, text: text)
         }
     }

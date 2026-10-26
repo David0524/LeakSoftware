@@ -73,7 +73,7 @@
             do {
                 try app.removals.remove(.finding, [RemovalRow("finding", id)], sync: sync, companyId: companyId)
             } catch {
-                saveError = String(describing: error)
+                saveError = userMessage(error)
             }
         }
     }

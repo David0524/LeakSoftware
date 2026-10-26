@@ -7,6 +7,7 @@ import { siteOrigin } from "@/lib/origin";
 import { createClient } from "@/lib/supabase/server";
 import { deleteSample, sendSampleToSelf } from "@/server/sample";
 
+import { friendlyError } from "@leakbook/core";
 export interface SampleState {
   message?: string;
   error?: string;
@@ -30,7 +31,7 @@ export async function sendSampleAction(_: SampleState, form: FormData): Promise<
       ? { message: sent.message }
       : { message: `${sent.message} Here’s the report instead.`, link: sent.link };
   } catch (e) {
-    return { error: e instanceof Error ? e.message : String(e) };
+    return { error: friendlyError(e) };
   }
 }
 
@@ -40,7 +41,7 @@ export async function deleteSampleAction(_: SampleState, form: FormData): Promis
   try {
     await deleteSample(await createClient(), String(form.get("job") ?? ""));
   } catch (e) {
-    return { error: e instanceof Error ? e.message : String(e) };
+    return { error: friendlyError(e) };
   }
   revalidatePath("/", "layout");
   redirect("/today");

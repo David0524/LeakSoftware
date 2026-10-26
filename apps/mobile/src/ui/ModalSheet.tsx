@@ -4,6 +4,7 @@ import {
   useContext,
   useEffect,
   useId,
+  useRef,
   useState,
   type ReactNode,
 } from "react";
@@ -18,7 +19,7 @@ import {
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useDiscardChanges } from "./discard";
-import { KeyboardAvoider } from "./keyboard";
+import { KeyboardAvoider, useKeepFieldVisible } from "./keyboard";
 import { confirmDiscard } from "./sheet";
 import { color, face, ios, minTap, shape, space, type } from "./theme";
 
@@ -40,6 +41,16 @@ export function useUnsavedChanges(dirty: boolean): (go: () => void) => void {
     return () => report(id, false);
   }, [report, id, dirty]);
   return useDiscardChanges(dirty && !report);
+}
+
+/**
+ * Marks the sheet it is placed in as having unsaved changes while `dirty` (for a sheet whose
+ * form is built from parts that don't ask by themselves): closing it any way asks "Discard
+ * changes?" first. Renders nothing.
+ */
+export function UnsavedWhen({ dirty }: { dirty: boolean }) {
+  useUnsavedChanges(dirty);
+  return null;
 }
 
 /**
@@ -89,6 +100,9 @@ export function ModalSheet({
   const close = dirty ? () => confirmDiscard(onClose) : onClose;
   const insets = useSafeAreaInsets();
   const { height } = useWindowDimensions();
+  // The form scrolls the field being typed in above the keyboard.
+  const sheetScroll = useRef<ScrollView>(null);
+  const fieldView = useKeepFieldVisible(sheetScroll);
   const bar = (
     <View style={styles.bar}>
       <Pressable
@@ -136,7 +150,11 @@ export function ModalSheet({
   );
   const body = (
     <ScrollView
+      ref={sheetScroll}
       keyboardShouldPersistTaps="handled"
+      onScroll={fieldView.onScroll}
+      scrollEventThrottle={32}
+      onLayout={fieldView.onLayout}
       contentContainerStyle={[styles.content, { paddingBottom: space["6"] + insets.bottom }]}
     >
       <SheetDirty.Provider value={report}>{children}</SheetDirty.Provider>
@@ -197,6 +215,9 @@ const styles = StyleSheet.create({
   flex: { flex: 1 },
   dock: { flex: 1, justifyContent: "flex-end" },
   panel: {
+    // Shrinks to what the keyboard leaves, so the title bar (Cancel, Save) never rides off the
+    // top of the screen while a tall form is being typed in; the form scrolls inside it.
+    flexShrink: 1,
     borderTopLeftRadius: shape.sheet,
     borderTopRightRadius: shape.sheet,
     overflow: "hidden",

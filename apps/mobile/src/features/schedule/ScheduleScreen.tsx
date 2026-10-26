@@ -45,6 +45,7 @@ import {
   type SuggestedTime,
   REORDER_TECHS,
   scheduleOrder,
+  friendlyError,
 } from "@leakbook/core";
 import { saveTechOrder } from "../../lib/techOrder";
 import { stopLockTag, useJobViews, type JobView } from "../../data/jobs";
@@ -522,7 +523,7 @@ export function ScheduleScreen() {
       } else haptics.success();
       return true;
     } catch (e) {
-      fail(e instanceof Error ? e.message : String(e));
+      fail(friendlyError(e));
       return false;
     }
   }
@@ -583,7 +584,7 @@ export function ScheduleScreen() {
     } catch (e) {
       banner.show({
         tone: "error",
-        message: e instanceof Error ? e.message : String(e),
+        message: friendlyError(e),
         detail: OPTIMIZE_PUT_BACK,
       });
       return;
@@ -609,7 +610,7 @@ export function ScheduleScreen() {
       saveJobChanges(company.id, rows);
       banner.show({ tone: "info", message: PLAN_WEEK_UNDONE });
     } catch (e) {
-      fail(e instanceof Error ? e.message : String(e));
+      fail(friendlyError(e));
     }
   }
 
@@ -632,7 +633,7 @@ export function ScheduleScreen() {
       if (r.updates.length) saveJobChanges(company.id, r.updates);
       return r;
     } catch (e) {
-      return { ...r, error: e instanceof Error ? e.message : String(e), undo: [] };
+      return { ...r, error: friendlyError(e), undo: [] };
     }
   }
 
@@ -642,7 +643,7 @@ export function ScheduleScreen() {
       haptics.light();
       return null;
     } catch (e) {
-      return e instanceof Error ? e.message : String(e);
+      return friendlyError(e);
     }
   }
 
@@ -739,7 +740,7 @@ export function ScheduleScreen() {
         message: `${s.customer}: ${JOB_LOCK_LABELS[next].tag ?? "Not locked"}`,
       });
     } catch (e) {
-      fail(e instanceof Error ? e.message : String(e));
+      fail(friendlyError(e));
     }
   }
 
@@ -986,7 +987,7 @@ export function ScheduleScreen() {
                       banner.show({ tone: "success", message: REORDER_TECHS.saved });
                       return null;
                     } catch (e) {
-                      return e instanceof Error ? e.message : String(e);
+                      return friendlyError(e);
                     }
                   }}
                 />

@@ -22,7 +22,8 @@ import { supabaseAnonKey, supabaseUrl } from "@/lib/supabase/config";
 import { adminClient } from "./admin";
 import { EmailNotConfigured, emailConfigured, fromAddress, sendEmail } from "./email";
 import { ccList, emailRefusal } from "./usage";
-import { Refusal, dbFailure } from "./failures";
+import { Fault, Refusal, dbFailure } from "./failures";
+import { sendOnce, sentRecently } from "./send-once";
 import { writeNarrative } from "./narrative";
 import { renderPdf, reportPdfPath } from "./pdf";
 
@@ -330,71 +331,95 @@ export async function sendReport(
   const what = reportTitle(snapshot.job.type).toLowerCase();
 
   if (opts.channel === "sms_device") {
-    await db.rpc("log_message", {
-      target_job: report.job_id,
-      via: "sms_device",
-      sent_to: to ?? snapshot.customer?.phone ?? "phone",
-      template_key: `report_${report.template_key}`,
-      delivery: "sent",
-    });
+    const phone = to ?? snapshot.customer?.phone ?? "phone";
+    const template = `report_${report.template_key}`;
+    // One line in the log for a double tap, as for the email.
+    if (
+      !(await sentRecently(db, {
+        jobId: report.job_id,
+        channel: "sms_device",
+        recipient: phone,
+        template,
+      }))
+    )
+      await db.rpc("log_message", {
+        target_job: report.job_id,
+        via: "sms_device",
+        sent_to: phone,
+        template_key: template,
+        delivery: "sent",
+      });
     return { token, link, message, emailed: false };
   }
 
   // The customer's other addresses get the report too, once each.
   const cc = opts.self ? [] : ccList(snapshot.customer?.cc_emails, to!);
-  const refusal = await emailRefusal(db, report.company_id as string, 1 + cc.length);
-  if (refusal) throw new Refusal(refusal);
-  let pdf: Buffer | null = null;
-  try {
-    pdf = await reportPdf(opts.origin, token, {
-      companyId: report.company_id,
-      jobId: report.job_id,
-      reportId,
-      sample: snapshot.job.sample === true,
-    });
-  } catch {
-    // The link still works; the PDF can be downloaded from the report page.
-  }
-  const attach = pdf && pdf.length < 5 * 1024 * 1024;
-  const name = opts.self ? opts.self.name : snapshot.customer?.name;
-  const greeting = name ? `Hi ${name},` : "Hello,";
   const sentTo = [to!, ...cc].join(", ");
-  // Sent to yourself: the sample, as your customers get it.
-  const lead = opts.self
-    ? `Here’s your sample ${what}, the way your customers get it.`
-    : `Your ${what} for ${snapshot.property.address} is ready.`;
-  try {
-    const sent = await sendEmail({
-      companyId: report.company_id as string,
-      from: fromAddress(shop),
-      to: to!,
-      cc,
-      replyTo: snapshot.company.email,
-      subject: opts.self ? `Sample: your ${what} from ${shop}` : `Your ${what} from ${shop}`,
-      text: `${greeting}\n\n${lead.replace(/\.$/, ":")}\n${link}\n\n${shop}${snapshot.company.phone ? `\n${snapshot.company.phone}` : ""}`,
-      html: `<p>${escapeHtml(greeting)}</p><p>${escapeHtml(lead)}</p><p><a href="${link}">View your report</a></p><p>${escapeHtml(shop)}${snapshot.company.phone ? `<br>${escapeHtml(snapshot.company.phone)}` : ""}</p>`,
-      attachments: attach ? [{ filename: `${shop} ${what}.pdf`, content: pdf! }] : [],
-    });
-    await db.rpc("log_message", {
-      target_job: report.job_id,
-      via: "email",
-      sent_to: sentTo,
-      template_key: `report_${report.template_key}`,
-      delivery: "sent",
-      provider: sent.id,
-    });
-  } catch (e) {
-    await db.rpc("log_message", {
-      target_job: report.job_id,
-      via: "email",
-      sent_to: sentTo,
-      template_key: `report_${report.template_key}`,
-      delivery: "failed",
-      failure: e instanceof Error ? e.message : String(e),
-    });
-    throw new Error(
-      `The report is sent and its link works, but the email failed: ${e instanceof Error ? e.message : e}. Text the link instead.`,
-    );
-  }
-  return { token, link, message, emailed: true };
+  // Twice in a row (a double tap, a slow answer asked again) is one email.
+  return sendOnce(
+    db,
+    {
+      jobId: report.job_id as string,
+      channel: "email",
+      recipient: sentTo,
+      template: `report_${report.template_key}`,
+    },
+    async () => {
+      const refusal = await emailRefusal(db, report.company_id as string, 1 + cc.length);
+      if (refusal) throw new Refusal(refusal);
+      let pdf: Buffer | null = null;
+      try {
+        pdf = await reportPdf(opts.origin, token, {
+          companyId: report.company_id,
+          jobId: report.job_id,
+          reportId,
+          sample: snapshot.job.sample === true,
+        });
+      } catch {
+        // The link still works; the PDF can be downloaded from the report page.
+      }
+      const attach = pdf && pdf.length < 5 * 1024 * 1024;
+      const name = opts.self ? opts.self.name : snapshot.customer?.name;
+      const greeting = name ? `Hi ${name},` : "Hello,";
+      // Sent to yourself: the sample, as your customers get it.
+      const lead = opts.self
+        ? `Here’s your sample ${what}, the way your customers get it.`
+        : `Your ${what} for ${snapshot.property.address} is ready.`;
+      try {
+        const sent = await sendEmail({
+          companyId: report.company_id as string,
+          from: fromAddress(shop),
+          to: to!,
+          cc,
+          replyTo: snapshot.company.email,
+          subject: opts.self ? `Sample: your ${what} from ${shop}` : `Your ${what} from ${shop}`,
+          text: `${greeting}\n\n${lead.replace(/\.$/, ":")}\n${link}\n\n${shop}${snapshot.company.phone ? `\n${snapshot.company.phone}` : ""}`,
+          html: `<p>${escapeHtml(greeting)}</p><p>${escapeHtml(lead)}</p><p><a href="${link}">View your report</a></p><p>${escapeHtml(shop)}${snapshot.company.phone ? `<br>${escapeHtml(snapshot.company.phone)}` : ""}</p>`,
+          attachments: attach ? [{ filename: `${shop} ${what}.pdf`, content: pdf! }] : [],
+        });
+        await db.rpc("log_message", {
+          target_job: report.job_id,
+          via: "email",
+          sent_to: sentTo,
+          template_key: `report_${report.template_key}`,
+          delivery: "sent",
+          provider: sent.id,
+        });
+      } catch (e) {
+        await db.rpc("log_message", {
+          target_job: report.job_id,
+          via: "email",
+          sent_to: sentTo,
+          template_key: `report_${report.template_key}`,
+          delivery: "failed",
+          failure: e instanceof Error ? e.message : String(e),
+        });
+        throw new Fault(
+          "The report is sent and its link works, but the email didn’t go through. Text the link instead.",
+        );
+      }
+      return { token, link, message, emailed: true };
+    },
+    () => ({ token, link, message, emailed: true }),
+  );
 }

@@ -1,5 +1,5 @@
 import { router, useLocalSearchParams } from "expo-router";
-import { formatPhone } from "@leakbook/core";
+import { formatPhone, friendlyError } from "@leakbook/core";
 import { useState } from "react";
 import { Alert } from "react-native";
 import { useRow } from "../../../../../data/hooks";
@@ -56,7 +56,7 @@ export default function NewMessage() {
       leave(() => router.replace(`/messages/${sent.conversationId}`));
       return true;
     } catch (e) {
-      Alert.alert("Not Sent", e instanceof Error ? e.message : String(e));
+      Alert.alert("Not Sent", friendlyError(e));
       return false;
     }
   }

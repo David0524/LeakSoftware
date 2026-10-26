@@ -408,7 +408,7 @@
                     kind: .success, title: "\(row.customer) completed.", undoable: true,
                     undoHint: "Reopens the visit")
             } catch {
-                banner = ResultBanner(kind: .error, title: String(describing: error))
+                banner = ResultBanner(kind: .error, title: userMessage(error))
             }
         }
 
@@ -421,7 +421,7 @@
             do {
                 try sync.write("job", id: jobId, companyId: company.id, jobStatusValues(.inProgress, job: job.job))
             } catch {
-                banner = ResultBanner(kind: .error, title: String(describing: error))
+                banner = ResultBanner(kind: .error, title: userMessage(error))
             }
         }
 

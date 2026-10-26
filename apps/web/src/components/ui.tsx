@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { Fragment, useId, type ComponentProps, type CSSProperties, type ReactNode } from "react";
-import { JOB_STATUS_LABELS, type JobStatus } from "@leakbook/core";
+import { JOB_STATUS_LABELS, friendlyError, type JobStatus } from "@leakbook/core";
 import { NavBar } from "./nav-bar";
 
 // Small, server-safe building blocks styled with the brand tokens (packages/tokens).
@@ -95,7 +95,7 @@ export function segmentClass(active: boolean, extra?: string) {
 export function pillClass(active: boolean, extra?: string) {
   return cx(
     "inline-flex min-h-11 shrink-0 items-center rounded-full px-4 font-medium whitespace-nowrap transition-colors",
-    active ? "bg-link text-white" : "bg-fill text-text hover:bg-text/[0.1]",
+    active ? "bg-link text-on-status" : "bg-fill text-text hover:bg-text/[0.1]",
     extra,
   );
 }
@@ -521,7 +521,7 @@ export function ChipToggle({ label, ...input }: ComponentProps<"input"> & { labe
   return (
     <label className="relative inline-flex cursor-pointer">
       <input {...input} type="checkbox" className="peer sr-only" />
-      <span className="inline-flex min-h-11 items-center rounded-full bg-fill px-4 font-medium transition-colors peer-checked:bg-link peer-checked:text-white peer-focus-visible:outline-3 peer-focus-visible:outline-offset-2 peer-focus-visible:outline-focus hover:bg-text/[0.1] peer-checked:hover:bg-link">
+      <span className="inline-flex min-h-11 items-center rounded-full bg-fill px-4 font-medium transition-colors peer-checked:bg-link peer-checked:text-on-status peer-focus-visible:outline-3 peer-focus-visible:outline-offset-2 peer-focus-visible:outline-focus hover:bg-text/[0.1] peer-checked:hover:bg-link">
         {label}
       </span>
     </label>
@@ -541,6 +541,8 @@ export function Notice({
     error: "bg-status-fail/10 before:bg-status-fail",
     success: "bg-status-pass/10 before:bg-status-pass",
   }[tone];
+  const shown =
+    tone === "error" && typeof children === "string" ? friendlyError(children) : children;
   return (
     <div
       role={tone === "error" ? "alert" : "status"}
@@ -549,7 +551,7 @@ export function Notice({
         style,
       )}
     >
-      {children}
+      {shown}
     </div>
   );
 }

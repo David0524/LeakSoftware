@@ -141,7 +141,7 @@
         // MARK: - Writes
 
         private func run(_ body: () throws -> Void) {
-            do { try body() } catch { saveError = String(describing: error) }
+            do { try body() } catch { saveError = userMessage(error) }
         }
 
         private func setUp(_ types: [ComponentType]) {
@@ -170,7 +170,7 @@
                 _ = try InspectionWrites.markRemaining(
                     sync, companyId: company.id, jobId: job.id, items: items, userId: session.user?.id)
             } catch {
-                saveError = String(describing: error)
+                saveError = userMessage(error)
             }
         }
 

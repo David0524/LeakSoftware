@@ -141,7 +141,7 @@ export function GettingStartedDock({ steps }: { steps: Step[] }) {
                     aria-hidden="true"
                     className={
                       s.done
-                        ? "inline-flex size-5 shrink-0 items-center justify-center rounded-full bg-status-pass text-[0.6875rem] text-white"
+                        ? "inline-flex size-5 shrink-0 items-center justify-center rounded-full bg-status-pass text-[0.6875rem] text-on-status"
                         : "size-5 shrink-0 rounded-full border-2 border-control-border"
                     }
                   >

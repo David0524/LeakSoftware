@@ -2,6 +2,7 @@
     import Network
     import Sentry
     import Supabase
+    import SundeckCore
     import SundeckStorage
     import SundeckSync
     import SundeckTokens
@@ -27,6 +28,10 @@
                 switch app {
                 case .success(let environment):
                     RootView()
+                        // Dragging a form, a sheet or a list puts the keyboard away on every
+                        // screen, so a field or its Save button is never stuck behind it (owner,
+                        // 2026-10-26); a screen that sets its own mode keeps it.
+                        .scrollDismissesKeyboard(.interactively)
                         .environment(environment.session)
                         .environment(environment.session.sync)
                         .environment(environment)
@@ -35,7 +40,7 @@
                 case .failure(let error):
                     ContentUnavailableView(
                         "Sundeck Pro Couldn’t Start", systemImage: "exclamationmark.triangle",
-                        description: Text("This phone’s storage couldn’t be opened. \(error.localizedDescription)")
+                        description: Text("This phone’s storage couldn’t be opened. \(userMessage(error))")
                     )
                     .preferredColorScheme(.light)
                 }

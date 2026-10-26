@@ -1,8 +1,8 @@
 import { useMemo } from "react";
-import { formatPhone } from "@leakbook/core";
+import { formatPhone, uuidv7 } from "@leakbook/core";
 import { getServices } from "../lib/services";
 import { useRows } from "./hooks";
-import { call } from "./reports";
+import { ReportServerError, call } from "./reports";
 
 // Company texting and calls on the phone (owner, 2026-10-16). Conversations, texts, and calls
 // sync down like any other rows, so the inbox reads offline; sending and calling go through
@@ -101,6 +101,13 @@ export function setUnread(companyId: string, conversationId: string, unread: boo
   getServices().sync.write("conversation", conversationId, companyId, { unread });
 }
 
+/**
+ * The id one message goes out under, kept while the same message is tried again after the
+ * connection dropped, so a send the server did get is never sent twice (owner, 2026-10-26:
+ * "taps submit twice"). A new message, or any answer from the server, starts over.
+ */
+const attempts = new Map<string, string>();
+
 /** Text from the company number. The text syncs back down with its delivery status. */
 export async function sendCompanyText(input: {
   conversationId?: string;
@@ -113,6 +120,16 @@ export async function sendCompanyText(input: {
   jobId?: string;
 }) {
   const { sync } = getServices();
+  const key = [
+    input.conversationId,
+    input.customerId,
+    input.phone,
+    input.body,
+    input.picture?.uri,
+    input.jobId,
+  ].join("|");
+  const requestId = attempts.get(key) ?? uuidv7();
+  attempts.set(key, requestId);
   const pictures = input.picture
     ? [
         {
@@ -125,15 +142,24 @@ export async function sendCompanyText(input: {
         },
       ]
     : [];
-  const sent = await call<{ id: string; conversationId: string }>("/api/texts", {
-    conversationId: input.conversationId,
-    customerId: input.customerId,
-    phone: input.phone,
-    companyId: input.companyId,
-    body: input.body,
-    pictures,
-    jobId: input.jobId ?? null,
-  });
+  let sent: { id: string; conversationId: string };
+  try {
+    sent = await call<{ id: string; conversationId: string }>("/api/texts", {
+      conversationId: input.conversationId,
+      customerId: input.customerId,
+      phone: input.phone,
+      companyId: input.companyId,
+      body: input.body,
+      pictures,
+      jobId: input.jobId ?? null,
+      requestId,
+    });
+  } catch (e) {
+    // Only a request that never reached the server is tried again under the same id.
+    if (!(e instanceof ReportServerError) || e.status !== null) attempts.delete(key);
+    throw e;
+  }
+  attempts.delete(key);
   await sync.syncNow();
   return sent;
 }

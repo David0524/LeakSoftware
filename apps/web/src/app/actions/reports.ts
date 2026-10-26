@@ -10,6 +10,7 @@ import { sendVisitReport } from "@/server/visit-reports";
 import type { FormState } from "./auth";
 import { sectionsOf } from "./report-form";
 
+import { friendlyError } from "@leakbook/core";
 const text = (f: FormData, k: string) => String(f.get(k) ?? "").trim();
 
 export interface ReportFormState extends FormState {
@@ -30,7 +31,7 @@ export async function writeDraft(_: ReportFormState, form: FormData): Promise<Re
         : "Draft written. Read it over and edit anything before sending.",
     };
   } catch (e) {
-    return { error: e instanceof Error ? e.message : String(e) };
+    return { error: friendlyError(e) };
   }
 }
 
@@ -44,7 +45,7 @@ export async function saveText(_: ReportFormState, form: FormData): Promise<Repo
     if (text(form, "auto") !== "1") revalidatePath(`/jobs/${text(form, "job")}`);
     return { message: "Saved." };
   } catch (e) {
-    return { error: e instanceof Error ? e.message : String(e) };
+    return { error: friendlyError(e) };
   }
 }
 
@@ -75,7 +76,7 @@ export async function sendReportAction(
     };
   } catch (e) {
     revalidatePath(`/jobs/${text(form, "job")}`);
-    return { error: e instanceof Error ? e.message : String(e) };
+    return { error: friendlyError(e) };
   }
 }
 
@@ -112,6 +113,6 @@ export async function sendVisitReportAction(
             : "Visit report ready. Text the customer the link.",
     };
   } catch (e) {
-    return { error: e instanceof Error ? e.message : String(e) };
+    return { error: friendlyError(e) };
   }
 }

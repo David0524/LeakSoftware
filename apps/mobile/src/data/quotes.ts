@@ -7,6 +7,7 @@ import {
   type PriceBookItem,
   type Quote,
   type QuoteLine,
+  friendlyError,
 } from "@leakbook/core";
 import type { JsonValue } from "@leakbook/sync";
 import { API_URL } from "../lib/config";
@@ -174,7 +175,7 @@ export async function sendQuoteFromPhone(quote: JobQuote, shopName: string) {
     error?: string;
   };
   if (!res.ok || !data.link)
-    throw new ReportServerError(data.error ?? `The server said ${res.status}.`);
+    throw new ReportServerError(friendlyError(data.error ?? `The server said ${res.status}.`));
   await sync.syncNow();
   return { link: data.link, message: data.message ?? quoteShareText(shopName, data.link) };
 }

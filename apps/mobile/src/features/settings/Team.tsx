@@ -12,6 +12,7 @@ import {
   teamOrder,
   type Role,
   type TechColor,
+  friendlyError,
 } from "@leakbook/core";
 import { useTeam, type TeamMember } from "../../data/schedule";
 import {
@@ -161,7 +162,7 @@ function TeamPage() {
                 void getServices()
                   .supabase.rpc("revoke_invite", { invite_id: i.id })
                   .then(({ error }) => {
-                    if (error) Alert.alert("Couldn’t revoke", error.message);
+                    if (error) Alert.alert("Couldn’t revoke", friendlyError(error.message));
                     else setRound((n) => n + 1);
                   }),
             }),
@@ -378,7 +379,7 @@ function InviteForm({ owner, onDone }: { owner: boolean; onDone: (message: strin
         invite_email: address,
         invite_role: role,
       });
-      if (rpcError) return setError(rpcError.message);
+      if (rpcError) return setError(friendlyError(rpcError.message));
       onDone(`Invite created for ${address}. Tap it under Open invites to share the link.`);
     } catch {
       setError("You’re offline. Invites need a connection.");

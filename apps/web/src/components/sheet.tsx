@@ -145,7 +145,12 @@ export function Sheet({
 
   if (!open || typeof document === "undefined") return null;
   return createPortal(
-    <div className="fixed inset-0 z-50 flex items-end justify-center sm:items-center">
+    // Above the phone's keyboard when it is up (--kb-inset, components/keyboard-inset.tsx), so the
+    // sheet's last field and its Save are never under the keys.
+    <div
+      className="fixed inset-0 z-50 flex items-end justify-center sm:items-center"
+      style={{ paddingBottom: "var(--kb-inset, 0px)" }}
+    >
       <div
         aria-hidden="true"
         className="absolute inset-0 bg-black/40 motion-safe:animate-[fade-in_0.2s_ease-out]"
@@ -159,7 +164,7 @@ export function Sheet({
         tabIndex={-1}
         style={drag ? { transform: `translateY(${drag}px)` } : undefined}
         className={cx(
-          "relative flex max-h-[92dvh] w-full flex-col overflow-hidden rounded-t-[1.25rem] bg-bg pb-[env(safe-area-inset-bottom)] shadow-2xl outline-none",
+          "relative flex max-h-[min(92dvh,var(--vv-height,100dvh))] w-full flex-col overflow-hidden rounded-t-[1.25rem] bg-bg pb-[env(safe-area-inset-bottom)] shadow-2xl outline-none",
           "motion-safe:animate-[sheet-up_0.28s_cubic-bezier(0.32,0.72,0,1)] sm:rounded-[1.25rem] sm:pb-0",
           wide ? "sm:max-w-4xl" : "sm:max-w-lg",
         )}

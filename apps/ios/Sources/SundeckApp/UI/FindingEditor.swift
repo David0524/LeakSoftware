@@ -29,6 +29,7 @@
         @State private var confirmDiscard = false
         @State private var saveError: String?
         @State private var saves = 0
+        @State private var closing = false
         /// A new finding saved by Add Photo: the sheet edits it from then on.
         @State private var savedId: String?
         /// The field with the keyboard, for the keyboard bar's Previous and Next.
@@ -156,7 +157,7 @@
                 saves += 1
                 return MediaTarget(jobId: jobId, findingId: id)
             } catch {
-                saveError = String(describing: error)
+                saveError = userMessage(error)
                 return nil
             }
         }
@@ -220,7 +221,7 @@
 
         private func write(_ body: (String) throws -> Void) {
             guard let company = session.company else { return }
-            do { try body(company.id) } catch { saveError = String(describing: error) }
+            do { try body(company.id) } catch { saveError = userMessage(error) }
         }
 
         private func load() {
@@ -241,16 +242,18 @@
         }
 
         private func save() {
-            guard var current = form, let company = session.company else { return }
+            // The sheet takes a moment to close: a second tap there would add a second one.
+            guard var current = form, let company = session.company, !closing else { return }
             do {
                 let id = try current.save(sync, companyId: company.id, jobId: jobId, existing: existing)
                 form = current
                 if id != nil {
+                    closing = true
                     saves += 1
                     dismiss()
                 }
             } catch {
-                saveError = String(describing: error)
+                saveError = userMessage(error)
             }
         }
 
@@ -263,7 +266,7 @@
                     .finding, [RemovalRow("finding", existing.id)], sync: sync, companyId: company.id)
                 dismiss()
             } catch {
-                saveError = String(describing: error)
+                saveError = userMessage(error)
             }
         }
     }

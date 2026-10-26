@@ -279,7 +279,7 @@
                 try TeamWrites.setActive(sync, companyId: company.id, membershipId: m.id, on)
                 banner = ResultBanner(kind: .success, title: on ? "\(m.name) is on." : "\(m.name) is turned off.")
             } catch {
-                banner = ResultBanner(kind: .error, title: String(describing: error))
+                banner = ResultBanner(kind: .error, title: userMessage(error))
             }
         }
 
@@ -320,7 +320,7 @@
                                         sync, companyId: company.id, settings: company.settings, setting, on: on)
                                     session.reloadCompanies()
                                 } catch {
-                                    notice = String(describing: error)
+                                    notice = userMessage(error)
                                 }
                             })
                     )
@@ -393,7 +393,7 @@
                 try ConfigWrites.remove(sync, page: page, id: item.id)
                 banner = ResultBanner(kind: .success, title: "Removed \(item.name).")
             } catch {
-                banner = ResultBanner(kind: .error, title: String(describing: error))
+                banner = ResultBanner(kind: .error, title: userMessage(error))
             }
         }
 
@@ -448,7 +448,7 @@
                                     session.reloadCompanies()
                                     if count != nil { withAnimation { open = next } }
                                 } catch {
-                                    self.error = String(describing: error)
+                                    self.error = userMessage(error)
                                 }
                             })
                     )
@@ -586,7 +586,7 @@
                 done(said)
                 dismiss()
             } catch {
-                self.error = String(describing: error)
+                self.error = userMessage(error)
             }
         }
 
@@ -597,7 +597,7 @@
                 done("Removed.")
                 dismiss()
             } catch {
-                self.error = String(describing: error)
+                self.error = userMessage(error)
             }
         }
     }
@@ -735,7 +735,7 @@
                 try TeamWrites.setActive(sync, companyId: company.id, membershipId: member.id, on)
                 active = on
             } catch {
-                self.error = String(describing: error)
+                self.error = userMessage(error)
             }
         }
 
@@ -764,7 +764,7 @@
                 done("Saved.")
                 dismiss()
             } catch {
-                self.error = String(describing: error)
+                self.error = userMessage(error)
             }
         }
     }
@@ -865,7 +865,7 @@
                 done("Saved.")
                 dismiss()
             } catch {
-                self.error = String(describing: error)
+                self.error = userMessage(error)
             }
         }
 
@@ -876,7 +876,7 @@
                 done("Removed.")
                 dismiss()
             } catch {
-                self.error = String(describing: error)
+                self.error = userMessage(error)
             }
         }
     }
@@ -958,7 +958,7 @@
                 done("Saved.")
                 dismiss()
             } catch {
-                self.error = String(describing: error)
+                self.error = userMessage(error)
             }
         }
 
@@ -969,7 +969,7 @@
                 done("Removed.")
                 dismiss()
             } catch {
-                self.error = String(describing: error)
+                self.error = userMessage(error)
             }
         }
     }
@@ -1042,7 +1042,7 @@
                 done("Saved.")
                 dismiss()
             } catch {
-                self.error = String(describing: error)
+                self.error = userMessage(error)
             }
         }
 
@@ -1052,7 +1052,7 @@
                 done("Removed.")
                 dismiss()
             } catch {
-                self.error = String(describing: error)
+                self.error = userMessage(error)
             }
         }
     }

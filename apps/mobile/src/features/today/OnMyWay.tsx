@@ -1,6 +1,6 @@
 import { useEffect, useRef } from "react";
 import { AccessibilityInfo, Linking, Share } from "react-native";
-import { localMinutes, onMyWayText, type OnMyWayVia } from "@leakbook/core";
+import { localMinutes, onMyWayText, type OnMyWayVia, friendlyError } from "@leakbook/core";
 import { sendCompanyText } from "../../data/texting";
 import { chooseAction } from "../../ui/confirm";
 import { startLiveStop, takeStopAction } from "../../lib/liveStop";
@@ -129,7 +129,7 @@ export function OnMyWayTrigger({
         record();
         say(`Texted from the company number: ${text}`);
       } catch (e) {
-        say(e instanceof Error ? e.message : "Not sent.");
+        say(friendlyError(e, "Not sent."));
       } finally {
         sending.current = false;
       }

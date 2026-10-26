@@ -29,6 +29,7 @@ import {
   localDate,
   markCompleteValues,
   jobHasChecklist,
+  friendlyError,
 } from "@leakbook/core";
 import { getOffice } from "@/lib/auth";
 import { requireCompletable } from "@/server/reports";
@@ -37,6 +38,7 @@ import { siteOrigin } from "@/lib/origin";
 import { createClient } from "@/lib/supabase/server";
 import type { FormState } from "./auth";
 
+import { friendlyDbError } from "@/lib/limits";
 // Working a job from the website (M9.5): the same rows and rules as the phone app, written
 // straight to the server as the signed-in member (row security and column grants apply).
 
@@ -76,13 +78,13 @@ export async function changeJobStatus(_: FormState, form: FormData): Promise<For
     try {
       await requireCompletable(db, jobId);
     } catch (e) {
-      return { error: e instanceof Error ? e.message : String(e) };
+      return { error: friendlyError(e) };
     }
   }
   const values: Record<string, string> = { status: to };
   if (to === "in_progress" && !job.started_at) values.started_at = new Date().toISOString();
   const { error } = await db.from("job").update(values).eq("id", jobId);
-  if (error) return { error: error.message };
+  if (error) return { error: friendlyDbError(error.message) };
   // A completed visit sends its report by itself in shops that chose Automatic (owner,
   // 2026-10-20), after the reply; the database checks the shop's choice and sends only once.
   if (to === "done" && job.type === "maintenance") {
@@ -131,7 +133,7 @@ export async function markStop(_: FormState, form: FormData): Promise<FormState>
     .from("job")
     .update(complete ? markCompleteValues(job, day) : { stop_done_on: null })
     .eq("id", jobId);
-  if (error) return { error: error.message };
+  if (error) return { error: friendlyDbError(error.message) };
   revalidatePath("/today");
   revalidatePath("/schedule");
   return done(jobId, complete ? "Marked complete." : "Marked not complete.");
@@ -176,7 +178,7 @@ export async function saveJobDetails(_: FormState, form: FormData): Promise<Form
       .update({ approx_gallons: gallons })
       .eq("id", property)
       .eq("company_id", office.company.id);
-    if (poolError) return { error: poolError.message };
+    if (poolError) return { error: friendlyDbError(poolError.message) };
   }
   const { error } = await db
     .from("job")
@@ -190,7 +192,7 @@ export async function saveJobDetails(_: FormState, form: FormData): Promise<Form
     })
     .eq("id", jobId)
     .eq("company_id", office.company.id);
-  if (error) return { error: error.message };
+  if (error) return { error: friendlyDbError(error.message) };
   revalidatePath("/customers", "layout");
   return done(jobId);
 }
@@ -237,7 +239,7 @@ export async function setUpChecklist(_: FormState, form: FormData): Promise<Form
   ).map((p) => ({ ...p, id: uuidv7(), company_id: office.company.id, job_id: jobId }));
   if (planned.length === 0) return { error: "No checklist items are set up in Settings." };
   const { error } = await db.from("job_component").insert(planned);
-  if (error) return { error: error.message };
+  if (error) return { error: friendlyDbError(error.message) };
   const { error: rowError } = await db.from("checklist_item_result").insert(
     planned.map((p) => ({
       id: uuidv7(),
@@ -247,7 +249,7 @@ export async function setUpChecklist(_: FormState, form: FormData): Promise<Form
       status: "pending",
     })),
   );
-  if (rowError) return { error: rowError.message };
+  if (rowError) return { error: friendlyDbError(rowError.message) };
   return done(jobId, "Checklist ready.");
 }
 
@@ -270,7 +272,7 @@ export async function setVerdict(_: FormState, form: FormData): Promise<FormStat
         job_id: jobId,
         job_component_id: text(form, "component"),
       });
-  if (error) return { error: error.message };
+  if (error) return { error: friendlyDbError(error.message) };
   return done(jobId);
 }
 
@@ -321,7 +323,7 @@ export async function setAnswer(_: FormState, form: FormData): Promise<FormState
         job_id: jobId,
         job_component_id: text(form, "component"),
       });
-  if (error) return { error: error.message };
+  if (error) return { error: friendlyDbError(error.message) };
   return done(jobId);
 }
 
@@ -332,7 +334,7 @@ export async function saveItemNotes(_: FormState, form: FormData): Promise<FormS
     .from("checklist_item_result")
     .update({ notes: text(form, "notes") || null })
     .eq("id", text(form, "result"));
-  if (error) return { error: error.message };
+  if (error) return { error: friendlyDbError(error.message) };
   return done(text(form, "job"));
 }
 
@@ -352,7 +354,7 @@ export async function markRest(_: FormState, form: FormData): Promise<FormState>
     .eq("status", "pending")
     .in("job_component_id", ids)
     .is("deleted_at", null);
-  if (error) return { error: error.message };
+  if (error) return { error: friendlyDbError(error.message) };
   return done(jobId);
 }
 
@@ -363,7 +365,7 @@ export async function saveWhere(_: FormState, form: FormData): Promise<FormState
     .from("checklist_item_result")
     .update({ location_text: text(form, "where") || null })
     .eq("id", text(form, "result"));
-  if (error) return { error: error.message };
+  if (error) return { error: friendlyDbError(error.message) };
   return done(text(form, "job"));
 }
 
@@ -382,7 +384,7 @@ export async function addComponent(_: FormState, form: FormData): Promise<FormSt
     .insert({ ...planned, id: uuidv7(), company_id: office.company.id, job_id: jobId })
     .select("id")
     .single();
-  if (error) return { error: error.message };
+  if (error) return { error: friendlyDbError(error.message) };
   const { error: rowError } = await db.from("checklist_item_result").insert({
     id: uuidv7(),
     company_id: office.company.id,
@@ -390,7 +392,7 @@ export async function addComponent(_: FormState, form: FormData): Promise<FormSt
     job_component_id: comp.id,
     status: "pending",
   });
-  if (rowError) return { error: rowError.message };
+  if (rowError) return { error: friendlyDbError(rowError.message) };
   return done(jobId, `Added ${planned.label}.`);
 }
 
@@ -404,12 +406,12 @@ export async function removeComponent(_: FormState, form: FormData): Promise<For
     .update({ deleted_at: now })
     .eq("job_component_id", id)
     .is("deleted_at", null);
-  if (error) return { error: error.message };
+  if (error) return { error: friendlyDbError(error.message) };
   const { error: compError } = await db
     .from("job_component")
     .update({ deleted_at: now })
     .eq("id", id);
-  if (compError) return { error: compError.message };
+  if (compError) return { error: friendlyDbError(compError.message) };
   return done(text(form, "job"), "Removed.");
 }
 
@@ -421,9 +423,9 @@ export async function restoreComponent(_: FormState, form: FormData): Promise<Fo
     .from("checklist_item_result")
     .update(RESTORE_ROW)
     .eq("job_component_id", id);
-  if (rowError) return { error: rowError.message };
+  if (rowError) return { error: friendlyDbError(rowError.message) };
   const { error } = await db.from("job_component").update(RESTORE_ROW).eq("id", id);
-  if (error) return { error: error.message };
+  if (error) return { error: friendlyDbError(error.message) };
   return done(text(form, "job"), "Restored.");
 }
 
@@ -473,7 +475,7 @@ export async function saveTest(_: FormState, form: FormData): Promise<FormState>
         test_type_id: testType.id,
         performed_at: new Date().toISOString(),
       });
-  if (error) return { error: error.message };
+  if (error) return { error: friendlyDbError(error.message) };
   return done(jobId, testId ? "Test saved." : "Test added.");
 }
 
@@ -483,7 +485,7 @@ export async function deleteTest(_: FormState, form: FormData): Promise<FormStat
     .from("test_result")
     .update({ deleted_at: new Date().toISOString() })
     .eq("id", text(form, "test"));
-  if (error) return { error: error.message };
+  if (error) return { error: friendlyDbError(error.message) };
   return done(text(form, "job"), "Test deleted.");
 }
 
@@ -491,7 +493,7 @@ export async function deleteTest(_: FormState, form: FormData): Promise<FormStat
 export async function restoreTest(_: FormState, form: FormData): Promise<FormState> {
   const { db } = await ctx();
   const { error } = await db.from("test_result").update(RESTORE_ROW).eq("id", text(form, "test"));
-  if (error) return { error: error.message };
+  if (error) return { error: friendlyDbError(error.message) };
   return done(text(form, "job"), "Restored.");
 }
 
@@ -533,7 +535,7 @@ export async function saveFinding(_: FormState, form: FormData): Promise<FormSta
     : await db
         .from("finding")
         .insert({ ...record, id: uuidv7(), company_id: office.company.id, job_id: jobId });
-  if (error) return { error: error.message };
+  if (error) return { error: friendlyDbError(error.message) };
   return done(jobId, findingId ? "Finding saved." : "Finding added.");
 }
 
@@ -543,7 +545,7 @@ export async function deleteFinding(_: FormState, form: FormData): Promise<FormS
     .from("finding")
     .update({ deleted_at: new Date().toISOString() })
     .eq("id", text(form, "finding"));
-  if (error) return { error: error.message };
+  if (error) return { error: friendlyDbError(error.message) };
   return done(text(form, "job"), "Finding deleted.");
 }
 
@@ -551,7 +553,7 @@ export async function deleteFinding(_: FormState, form: FormData): Promise<FormS
 export async function restoreFinding(_: FormState, form: FormData): Promise<FormState> {
   const { db } = await ctx();
   const { error } = await db.from("finding").update(RESTORE_ROW).eq("id", text(form, "finding"));
-  if (error) return { error: error.message };
+  if (error) return { error: friendlyDbError(error.message) };
   return done(text(form, "job"), "Restored.");
 }
 
@@ -565,7 +567,7 @@ export async function setPoolSpa(_: FormState, form: FormData): Promise<FormStat
     .from("property")
     .update({ has_spa: form.get("spa") === "true" })
     .eq("id", String(form.get("property") ?? ""));
-  if (error) return { error: error.message };
+  if (error) return { error: friendlyDbError(error.message) };
   revalidatePath(`/jobs/${String(form.get("job") ?? "")}`);
   return {};
 }
@@ -581,7 +583,7 @@ export async function setPoolShape(_: FormState, form: FormData): Promise<FormSt
     .from("property")
     .update({ diagram_shape: shape || null })
     .eq("id", String(form.get("property") ?? ""));
-  if (error) return { error: error.message };
+  if (error) return { error: friendlyDbError(error.message) };
   revalidatePath(`/jobs/${String(form.get("job") ?? "")}`);
   return {};
 }

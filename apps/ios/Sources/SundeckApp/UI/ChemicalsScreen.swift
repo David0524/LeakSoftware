@@ -145,7 +145,7 @@
             } catch let error as ChemicalSubmitError {
                 submitResult = (error.message, true)
             } catch {
-                submitResult = (String(describing: error), true)
+                submitResult = (userMessage(error), true)
             }
         }
 
@@ -157,7 +157,7 @@
                 try app.removals.remove(
                     .readings, [RemovalRow("chemical_reading", entry.id)], sync: sync, companyId: companyId)
             } catch {
-                submitResult = (String(describing: error), true)
+                submitResult = (userMessage(error), true)
             }
         }
 

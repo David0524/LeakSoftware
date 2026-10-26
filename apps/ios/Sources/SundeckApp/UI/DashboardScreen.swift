@@ -116,7 +116,7 @@
                 if data == nil {
                     failed =
                         isNetworkFailure(String(describing: error))
-                        ? DashboardText.offline : "The dashboard couldn’t load. \(String(describing: error))"
+                        ? DashboardText.offline : "The dashboard couldn’t load. \(userMessage(error))"
                 }
             }
         }

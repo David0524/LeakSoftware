@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Alert, Linking, View } from "react-native";
-import { REPORT_PHOTO_TEXT, reportPhotoBlock } from "@leakbook/core";
+import { REPORT_PHOTO_TEXT, reportPhotoBlock, friendlyError } from "@leakbook/core";
 import { forgetCapture, rememberCapture, saveCapture, useJobMedia } from "../../data/media";
 import { MediaError, askLocationOnce, captureWithCamera, currentPosition } from "../../lib/media";
 import { photoCount } from "../../lib/visitReports";
@@ -44,7 +44,7 @@ export function ReportPhotoNotice({ jobId }: { jobId: string }) {
       const file = await captureWithCamera("photo");
       if (file) await saveCapture(company.id, { jobId }, file, position);
     } catch (e) {
-      const message = e instanceof Error ? e.message : String(e);
+      const message = friendlyError(e);
       if (e instanceof MediaError && e.needsSettings) {
         Alert.alert("Couldn’t take the photo", message, [
           { text: "Cancel", style: "cancel" },

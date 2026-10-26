@@ -493,7 +493,7 @@ private func signature(_ id: String, _ name: String, purpose: String = "inspecti
         #expect(f.message == nil)
         StubServer.set(s.host, "/api/jobs/j1/reports", 500, [:])
         await f.run(.draft, server: s.server)
-        #expect(f.error?.text == "The server said 500.")
+        #expect(f.error?.text == FriendlyText.serverTrouble)
     }
 
     @Test func sendingWithEditsNotOnTheServerYetSaysSo() async throws {

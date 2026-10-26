@@ -207,33 +207,37 @@ export function MassEmailForm({
         </p>
       </section>
 
-      <section aria-labelledby="mass-email-message">
-        <SectionTitle>
-          <span id="mass-email-message">Message</span>
-        </SectionTitle>
-        <FieldGroup labelWidth="6.5rem">
-          <GroupedField
-            label="Subject"
-            name="subject"
-            value={subject}
-            maxLength={MASS_EMAIL_LIMITS.subject}
-            onChange={(e) => setSubject(e.target.value)}
-            error={result.fields?.subject}
-            autoComplete="off"
-          />
-          <GroupedTextArea
-            label="Message"
-            name="body"
-            value={body}
-            rows={8}
-            maxLength={MASS_EMAIL_LIMITS.body}
-            onChange={(e) => setBody(e.target.value)}
-            error={result.fields?.body}
-            placeholder="Hi {first name},"
-          />
-        </FieldGroup>
-        <p className={FOOTER}>{MASS_EMAIL_MESSAGE_NOTE}</p>
-      </section>
+      {/* A form, so leaving with a message typed asks "Discard changes?" (DiscardGuard), and a
+          message that was sent (fields cleared) asks nothing. Enter sends nothing. */}
+      <form onSubmit={(e) => e.preventDefault()} noValidate>
+        <section aria-labelledby="mass-email-message">
+          <SectionTitle>
+            <span id="mass-email-message">Message</span>
+          </SectionTitle>
+          <FieldGroup labelWidth="6.5rem">
+            <GroupedField
+              label="Subject"
+              name="subject"
+              value={subject}
+              maxLength={MASS_EMAIL_LIMITS.subject}
+              onChange={(e) => setSubject(e.target.value)}
+              error={result.fields?.subject}
+              autoComplete="off"
+            />
+            <GroupedTextArea
+              label="Message"
+              name="body"
+              value={body}
+              rows={8}
+              maxLength={MASS_EMAIL_LIMITS.body}
+              onChange={(e) => setBody(e.target.value)}
+              error={result.fields?.body}
+              placeholder="Hi {first name},"
+            />
+          </FieldGroup>
+          <p className={FOOTER}>{MASS_EMAIL_MESSAGE_NOTE}</p>
+        </section>
+      </form>
 
       <div className="space-y-3">
         {result.error ? <Notice tone="error">{result.error}</Notice> : null}

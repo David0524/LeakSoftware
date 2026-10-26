@@ -365,7 +365,7 @@
                 saved(message)
                 dismiss()
             } catch {
-                problem = String(describing: error)
+                problem = userMessage(error)
             }
         }
     }

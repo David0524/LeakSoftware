@@ -1,4 +1,4 @@
-import { formatPhone, toE164 } from "@leakbook/core";
+import { formatPhone, toE164, friendlyError } from "@leakbook/core";
 import { useEffect, useState } from "react";
 import { Alert } from "react-native";
 import { useSession } from "../../../../../state/session";
@@ -38,7 +38,7 @@ export default function MyPhone() {
       setSavedPhone(formatPhone(e164));
       Alert.alert("Saved", "Calls you place from Messages ring this number first.");
     } catch (e) {
-      Alert.alert("Couldn’t save", e instanceof Error ? e.message : String(e));
+      Alert.alert("Couldn’t save", friendlyError(e));
     } finally {
       setSaving(false);
     }

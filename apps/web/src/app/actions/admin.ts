@@ -7,6 +7,7 @@ import { ACTIVE_COMPANY_COOKIE } from "@/lib/auth";
 import { sendPasswordReset } from "@/server/password-reset";
 import { logStaffAction, requireStaff } from "@/server/staff";
 
+import { friendlyDbError } from "@/lib/limits";
 // The Admin portal's actions (owner, 2026-10-22). Each checks staff and two-step, writes the
 // staff log, and asks for a reason where it changes a shop or a person.
 
@@ -49,7 +50,7 @@ export async function startSupport(_: AdminState, form: FormData): Promise<Admin
     minutes,
     how: access,
   });
-  if (error) return { error: error.message };
+  if (error) return { error: friendlyDbError(error.message) };
   await logStaffAction(staff, "support_start", {
     companyId,
     companyName: name,
@@ -77,7 +78,7 @@ export async function extendTrial(_: AdminState, form: FormData): Promise<AdminS
     target_company: companyId,
     days,
   });
-  if (error) return { error: error.message };
+  if (error) return { error: friendlyDbError(error.message) };
   await logStaffAction(staff, "trial_extend", {
     companyId,
     companyName: await shopName(db, companyId),
@@ -97,7 +98,7 @@ export async function setDemo(_: AdminState, form: FormData): Promise<AdminState
   if (reason.length < 3)
     return { error: demo ? "Say why this shop is free." : "Say why the demo is ending." };
   const { error } = await db.rpc("admin_set_demo", { target_company: companyId, demo });
-  if (error) return { error: error.message };
+  if (error) return { error: friendlyDbError(error.message) };
   await logStaffAction(staff, demo ? "demo_on" : "demo_off", {
     companyId,
     companyName: await shopName(db, companyId),
@@ -118,7 +119,7 @@ export async function addShopNote(_: AdminState, form: FormData): Promise<AdminS
   const { error } = await db
     .from("shop_note")
     .insert({ company_ref: companyId, staff_email: staff.email, note });
-  if (error) return { error: error.message };
+  if (error) return { error: friendlyDbError(error.message) };
   await logStaffAction(staff, "note", {
     companyId,
     companyName: await shopName(db, companyId),
@@ -141,13 +142,13 @@ export async function turnOffTwoStep(_: AdminState, form: FormData): Promise<Adm
   const { data: user, error: findError } = await db.auth.admin.getUserById(userId);
   if (findError || !user.user) return { error: "No such person." };
   const { data: factors, error: listError } = await db.auth.admin.mfa.listFactors({ userId });
-  if (listError) return { error: listError.message };
+  if (listError) return { error: friendlyDbError(listError.message) };
   for (const f of factors.factors) {
     const { error } = await db.auth.admin.mfa.deleteFactor({ id: f.id, userId });
-    if (error) return { error: error.message };
+    if (error) return { error: friendlyDbError(error.message) };
   }
   const { error } = await db.rpc("set_two_step", { target_user: userId, enabled: false });
-  if (error) return { error: error.message };
+  if (error) return { error: friendlyDbError(error.message) };
   await logStaffAction(staff, "two_step_off", {
     targetUser: userId,
     targetEmail: user.user.email ?? null,

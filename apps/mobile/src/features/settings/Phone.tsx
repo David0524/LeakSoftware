@@ -1,7 +1,14 @@
 import { router } from "expo-router";
 import { useCallback, useEffect, useState } from "react";
 import { StyleSheet, Text, View } from "react-native";
-import { ON_MY_WAY_LABELS, formatPhone, onMyWayVia, toE164, type OnMyWayVia } from "@leakbook/core";
+import {
+  ON_MY_WAY_LABELS,
+  formatPhone,
+  friendlyError,
+  onMyWayVia,
+  toE164,
+  type OnMyWayVia,
+} from "@leakbook/core";
 import type { JsonValue } from "@leakbook/sync";
 import { API_URL } from "../../lib/config";
 import { getServices } from "../../lib/services";
@@ -76,7 +83,7 @@ async function phoneApi<T>(method: "GET" | "POST", body?: object): Promise<T & R
       },
     );
     const data = (await res.json().catch(() => ({}))) as T & Result;
-    if (!res.ok && !data.error) data.error = `The server said ${res.status}.`;
+    if (!res.ok) data.error = friendlyError(data.error ?? `The server said ${res.status}.`);
     return data;
   } catch {
     return { error: "You’re offline. Phone settings need a connection." } as T & Result;

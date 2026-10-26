@@ -95,11 +95,11 @@ function Swatch({
         <View
           style={[
             styles.dot,
-            { width: size, height: size, borderRadius: size / 2 },
+            { width: size, height: size, borderRadius: size / 2, borderColor: color.controlBorder },
             value ? { backgroundColor: value } : { backgroundColor: color.surface },
           ]}
         >
-          {value ? null : <View style={styles.none} />}
+          {value ? null : <View style={[styles.none, { backgroundColor: color.textMuted }]} />}
         </View>
       </View>
     </Pressable>
@@ -244,7 +244,6 @@ const styles = StyleSheet.create({
   },
   dot: {
     borderWidth: StyleSheet.hairlineWidth,
-    borderColor: color.controlBorder,
     overflow: "hidden",
     alignItems: "center",
     justifyContent: "center",
@@ -252,7 +251,6 @@ const styles = StyleSheet.create({
   none: {
     width: 1.5,
     height: "140%",
-    backgroundColor: color.textMuted,
     transform: [{ rotate: "45deg" }],
   },
   preview: { flexDirection: "row", alignItems: "center", gap: space["2"] },

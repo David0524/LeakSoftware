@@ -170,7 +170,7 @@ public final class NotificationPrefsForm {
             error = nil
         } catch {
             prefs = before
-            self.error = String(describing: error)
+            self.error = userMessage(error)
         }
     }
 

@@ -459,7 +459,7 @@
                 do {
                     try sync.write("property", id: pool.id, companyId: company.id, ["approx_gallons": value])
                 } catch {
-                    saveError = String(describing: error)
+                    saveError = userMessage(error)
                 }
             }
         }
@@ -475,7 +475,7 @@
             do {
                 try sync.write("job", id: job.id, companyId: company.id, values)
             } catch {
-                saveError = String(describing: error)
+                saveError = userMessage(error)
             }
         }
 
@@ -603,7 +603,7 @@
                 saved()
                 dismiss()
             } catch {
-                self.error = String(describing: error)
+                self.error = userMessage(error)
             }
         }
     }

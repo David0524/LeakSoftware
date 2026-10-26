@@ -1,5 +1,6 @@
 import "server-only";
 import { createHmac, randomUUID, timingSafeEqual } from "node:crypto";
+import { friendlyError } from "@leakbook/core";
 
 // Twilio over its REST API (no SDK): texts, numbers, calls, and webhook signatures. One Sundeck Pro
 // account pays for every shop (owner, 2026-10-16). Without TWILIO_ACCOUNT_SID nothing leaves
@@ -28,7 +29,9 @@ async function api<T>(path: string, form?: URLSearchParams, method = form ? "POS
     body: form,
   });
   const body = (await res.json().catch(() => ({}))) as T & { message?: string; code?: number };
-  if (!res.ok) throw new TwilioError(body.message ?? `Twilio said ${res.status}`);
+  // The provider's own words are for the logs; people read the plain version.
+  if (!res.ok)
+    throw new TwilioError(friendlyError(body.message ?? `The server said ${res.status}.`));
   return body;
 }
 

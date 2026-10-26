@@ -7,6 +7,7 @@ import { ModalSheet, useUnsavedChanges } from "../../ui/ModalSheet";
 import { space } from "../../ui/theme";
 import { formChanged } from "../../lib/discard";
 
+import { friendlyError } from "@leakbook/core";
 // The website's messages (apps/web/src/server/feature-requests.ts).
 const EMPTY = "Tell us what you’d like Sundeck Pro to do.";
 const OFFLINE = "No connection. Try again when you have signal.";
@@ -66,7 +67,7 @@ function RequestForm({ onDone }: { onDone: () => void }) {
       });
       setThanks(r.message);
     } catch (e) {
-      setError(e instanceof Error ? e.message : OFFLINE);
+      setError(friendlyError(e, OFFLINE));
     } finally {
       setPending(false);
     }

@@ -582,7 +582,7 @@ public final class NewJobForm {
             if error is URLError || isNetworkFailure(message) {
                 throw NewJobFormError.offline
             }
-            throw NewJobFormError.server(message)
+            throw NewJobFormError.server(friendlyError(message))
         }
         guard let customer = reply["customer"]?.string ?? checked.customerId else {
             throw NewJobFormError.server("The plan started, but the customer couldn’t be opened. Pull to refresh.")

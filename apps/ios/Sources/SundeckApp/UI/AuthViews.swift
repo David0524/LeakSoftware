@@ -320,13 +320,14 @@
                 error = "Enter your email and password."
                 return
             }
+            guard !busy else { return }
             busy = true
             defer { busy = false }
             do {
                 try await session.signIn(email: email, password: password)
                 error = nil
             } catch {
-                self.error = String(describing: error)
+                self.error = userMessage(error)
             }
         }
     }
@@ -431,6 +432,7 @@
                 error = problem
                 return
             }
+            guard !busy else { return }
             busy = true
             defer { busy = false }
             do {
@@ -439,7 +441,7 @@
                 confirmEmail = !signedIn
                 error = nil
             } catch {
-                self.error = String(describing: error)
+                self.error = userMessage(error)
             }
         }
     }
@@ -578,13 +580,14 @@
         }
 
         private func verify() async {
+            guard !busy else { return }
             busy = true
             defer { busy = false }
             do {
                 try await session.verifyCode(code)
                 error = nil
             } catch {
-                self.error = String(describing: error)
+                self.error = userMessage(error)
             }
         }
     }
@@ -665,6 +668,7 @@
                 error = "Enter the invite code from your email."
                 return
             }
+            guard !joining else { return }
             joining = true
             defer { joining = false }
             do {
@@ -672,7 +676,7 @@
                 error = nil
                 await sync.syncNow()
             } catch let failure as PostgrestError {
-                error = failure.message
+                error = friendlyError(failure.message)
             } catch {
                 self.error = "No connection. Try again when you're online."
             }
@@ -764,13 +768,14 @@
         }
 
         private func signIn() async {
+            guard !busy else { return }
             busy = true
             defer { busy = false }
             do {
                 try await session.signInAgain(password: password)
                 dismiss()
             } catch {
-                self.error = String(describing: error)
+                self.error = userMessage(error)
             }
         }
     }

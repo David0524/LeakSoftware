@@ -16,7 +16,7 @@
                     Circle().fill(Color.pass)
                     Image(systemName: "checkmark")
                         .font(.system(size: size * 0.45, weight: .bold))
-                        .foregroundStyle(.white)
+                        .foregroundStyle(Color.onStatus)
                 } else {
                     Circle().stroke(Color.fill, lineWidth: 4).padding(2)
                     Circle()

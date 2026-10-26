@@ -8,6 +8,7 @@ import { createClient } from "@/lib/supabase/server";
 import { portalUrl, subscribeCheckout, type SubscribeStart } from "@/server/billing";
 import type { FormState, SubscribeState } from "./auth";
 
+import { friendlyError } from "@leakbook/core";
 /**
  * Owners: subscribe to Sundeck Pro through Stripe Checkout, embedded on the billing page when
  * the publishable key is set (its client secret comes back), else on Stripe's page.
@@ -23,7 +24,7 @@ export async function subscribe(): Promise<SubscribeState> {
       await siteOrigin(),
     );
   } catch (e) {
-    return { error: e instanceof Error ? e.message : String(e) };
+    return { error: friendlyError(e) };
   }
   if (start.kind === "embedded") return { clientSecret: start.clientSecret };
   redirect(start.url);
@@ -44,7 +45,7 @@ export async function manageBilling(): Promise<FormState> {
   try {
     url = await portalUrl(data.stripe_customer_id as string, await siteOrigin());
   } catch (e) {
-    return { error: e instanceof Error ? e.message : String(e) };
+    return { error: friendlyError(e) };
   }
   redirect(url);
 }

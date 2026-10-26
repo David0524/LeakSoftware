@@ -4,7 +4,8 @@ import { toE164, type ReportSnapshot } from "@leakbook/core";
 import { emailConfigured, fromAddress, sendEmail } from "./email";
 import { activeLine, sendCompanyText } from "./texting";
 import { LIMIT_MESSAGE, ccList, emailRefusal, takeAllowance } from "./usage";
-import { Refusal, dbFailure } from "./failures";
+import { Fault, Refusal, dbFailure } from "./failures";
+import { sendOnce, sentRecently } from "./send-once";
 
 // Maintenance visit reports (owner, 2026-10-20: "build a report with the tested chemicals,
 // checklist, cleanings, photos, etc. Then have an option to send the report to customers.
@@ -86,34 +87,45 @@ export async function sendVisitReport(
     if (!/^\S+@\S+\.\S+$/.test(email)) throw new Refusal("Enter the customer’s email.");
     if (!emailConfigured()) throw new Refusal("Email isn’t set up on this server. Text the link.");
     const cc = ccList(snapshot.customer?.cc_emails, email);
-    // The daily catch-up (no person) checks only the shop's email allowance.
-    const refusal = opts.userId
-      ? await emailRefusal(db, companyId, 1 + cc.length)
-      : (await takeAllowance(companyId, "email", 1 + cc.length))
-        ? null
-        : LIMIT_MESSAGE;
-    if (refusal) throw new Refusal(refusal);
-    const greeting = snapshot.customer?.name ? `Hi ${snapshot.customer.name},` : "Hello,";
-    const where = snapshot.property.address;
-    try {
-      const mail = await sendEmail({
-        companyId,
-        from: fromAddress(shop),
-        to: email,
-        cc,
-        replyTo: snapshot.company.email,
-        subject: `Your maintenance visit report from ${shop}`,
-        text: `${greeting}\n\nHere’s what we did at ${where} today: the water test, the checklist, and photos.\n${link}\n\n${shop}${snapshot.company.phone ? `\n${snapshot.company.phone}` : ""}`,
-        html: `<p>${esc(greeting)}</p><p>Here’s what we did at ${esc(where)} today: the water test, the checklist, and photos.</p><p><a href="${link}">View your visit report</a></p><p>${esc(shop)}${snapshot.company.phone ? `<br>${esc(snapshot.company.phone)}` : ""}</p>`,
-      });
-      await log("email", [email, ...cc].join(", "), "sent", { provider: mail.id });
-    } catch (e) {
-      await log("email", email, "failed", { failure: e instanceof Error ? e.message : String(e) });
-      throw new Error(
-        `The visit report is ready and its link works, but the email failed: ${e instanceof Error ? e.message : e}. Text the link instead.`,
-      );
-    }
-    return { token: sent.token, link, message, delivered: "email" };
+    const sentTo = [email, ...cc].join(", ");
+    // Twice in a row (a double tap, a slow answer asked again) is one email.
+    return sendOnce(
+      db,
+      { jobId, channel: "email", recipient: sentTo, template: "visit_report" },
+      async () => {
+        // The daily catch-up (no person) checks only the shop's email allowance.
+        const refusal = opts.userId
+          ? await emailRefusal(db, companyId, 1 + cc.length)
+          : (await takeAllowance(companyId, "email", 1 + cc.length))
+            ? null
+            : LIMIT_MESSAGE;
+        if (refusal) throw new Refusal(refusal);
+        const greeting = snapshot.customer?.name ? `Hi ${snapshot.customer.name},` : "Hello,";
+        const where = snapshot.property.address;
+        try {
+          const mail = await sendEmail({
+            companyId,
+            from: fromAddress(shop),
+            to: email,
+            cc,
+            replyTo: snapshot.company.email,
+            subject: `Your maintenance visit report from ${shop}`,
+            text: `${greeting}\n\nHere’s what we did at ${where} today: the water test, the checklist, and photos.\n${link}\n\n${shop}${snapshot.company.phone ? `\n${snapshot.company.phone}` : ""}`,
+            html: `<p>${esc(greeting)}</p><p>Here’s what we did at ${esc(where)} today: the water test, the checklist, and photos.</p><p><a href="${link}">View your visit report</a></p><p>${esc(shop)}${snapshot.company.phone ? `<br>${esc(snapshot.company.phone)}` : ""}</p>`,
+          });
+          await log("email", sentTo, "sent", { provider: mail.id });
+        } catch (e) {
+          await log("email", email, "failed", {
+            failure: e instanceof Error ? e.message : String(e),
+          });
+          throw new Fault(
+            "The visit report is ready and its link works, but the email didn’t go through. Text the link instead.",
+          );
+        }
+        return { token: sent.token!, link, message, delivered: "email" as const };
+      },
+      () => ({ token: sent.token!, link, message, delivered: "email" as const }),
+    );
   }
 
   if (channel === "text" && opts.userId) {
@@ -132,7 +144,17 @@ export async function sendVisitReport(
   }
 
   if (channel === "sms_device") {
-    await log("sms_device", snapshot.customer?.phone ?? "phone", "sent");
+    const phone = snapshot.customer?.phone ?? "phone";
+    // One line in the log for a double tap.
+    if (
+      !(await sentRecently(db, {
+        jobId,
+        channel: "sms_device",
+        recipient: phone,
+        template: "visit_report",
+      }))
+    )
+      await log("sms_device", phone, "sent");
   }
   return { token: sent.token, link, message, delivered: null };
 }

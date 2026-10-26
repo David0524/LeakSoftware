@@ -17,6 +17,7 @@ import { color, MAX_TEXT_SCALE, minTap, shape, space, type } from "../../ui/them
 import { WebIcon } from "../../ui/WebIcon";
 import { useUnsavedChanges } from "../../ui/ModalSheet";
 
+import { friendlyError } from "@leakbook/core";
 /** Where the floating tab bar's top is, from the bottom of the screen. */
 export function useTabBarTop(): number {
   const insets = useSafeAreaInsets();
@@ -71,7 +72,7 @@ export function Composer({
       const file = await chooseTextPicture();
       if (file) setPicture({ uri: file.uri, type: file.mime });
     } catch (e) {
-      Alert.alert("Couldn’t add the photo", e instanceof Error ? e.message : String(e));
+      Alert.alert("Couldn’t add the photo", friendlyError(e));
     }
   }
 

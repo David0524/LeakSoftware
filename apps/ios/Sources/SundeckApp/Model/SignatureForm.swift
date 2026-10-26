@@ -364,7 +364,7 @@ public enum ReviewFinish {
                 let place = await location()
                 try form.save(sync, companyId: companyId, jobId: jobId, at: place)
             } catch {
-                form.error = String(describing: error)
+                form.error = userMessage(error)
                 return .stay
             }
         }
@@ -374,7 +374,7 @@ public enum ReviewFinish {
             return .back
         } catch {
             guard customerAway else { return .back }
-            form.error = String(describing: error)
+            form.error = userMessage(error)
             return .stay
         }
     }

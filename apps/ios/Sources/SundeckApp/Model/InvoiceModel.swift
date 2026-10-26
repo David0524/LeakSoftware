@@ -340,12 +340,14 @@ public final class InvoiceFlow {
             fieldError = problem
             return false
         } catch {
-            self.error = String(describing: error)
+            self.error = userMessage(error)
             return false
         }
     }
 
     private func run(_ action: Action, _ work: () async throws -> Void) async {
+        // A second tap while one runs does nothing (owner, 2026-10-26: "taps submit twice").
+        guard busy == nil else { return }
         busy = action
         error = nil
         message = nil
@@ -353,7 +355,7 @@ public final class InvoiceFlow {
         do {
             try await work()
         } catch {
-            self.error = (error as? WebAPI.Failure)?.description ?? String(describing: error)
+            self.error = (error as? WebAPI.Failure)?.description ?? userMessage(error)
         }
     }
 
@@ -476,6 +478,7 @@ public final class ReceiptForm {
             error = problem
             return nil
         }
+        guard !busy else { return nil }
         busy = true
         error = nil
         defer { busy = false }
@@ -485,7 +488,7 @@ public final class ReceiptForm {
         } catch let failure as WebAPI.Failure {
             error = failure.offline ? ReceiptText.offline : failure.description
         } catch {
-            self.error = String(describing: error)
+            self.error = userMessage(error)
         }
         return nil
     }

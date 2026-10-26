@@ -124,7 +124,7 @@ public final class ReportSendQueue {
                 return
             } catch {
                 var all = failures
-                all[request.jobId] = (error as? WebAPI.Failure)?.description ?? String(describing: error)
+                all[request.jobId] = (error as? WebAPI.Failure)?.description ?? userMessage(error)
                 kv.setJSON(Self.failuresKey, all)
             }
             // Only this exact request: a newer one queued meanwhile still goes.

@@ -118,6 +118,7 @@
         private var email: String { to ?? job.customer?["email"]?.string ?? "" }
 
         private func send(_ channel: VisitReportChannel) {
+            guard busy == nil else { return }
             focused = false
             busy = channel
             step = 0
@@ -133,7 +134,7 @@
                     share = sent.share
                     sentReports += 1
                 } catch {
-                    result = ((error as? WebAPI.Failure)?.description ?? String(describing: error), true)
+                    result = ((error as? WebAPI.Failure)?.description ?? userMessage(error), true)
                 }
             }
         }
@@ -267,7 +268,7 @@
                     sync, companyId: company.id, settings: company.settings, on)
                 session.reloadCompanies()
             } catch {
-                self.error = String(describing: error)
+                self.error = userMessage(error)
             }
         }
 
@@ -276,7 +277,7 @@
                 try VisitReportSettingsWrites.setMode(sync, companyId: company.id, settings: company.settings, next)
                 session.reloadCompanies()
             } catch {
-                self.error = String(describing: error)
+                self.error = userMessage(error)
             }
         }
     }

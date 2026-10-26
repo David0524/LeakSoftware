@@ -193,6 +193,11 @@ public struct TextingServer {
         self.api = api
     }
 
+    /// The id one message goes out under, kept while the same message is tried again after the
+    /// connection dropped, so a send the server did get is never sent twice (owner, 2026-10-26:
+    /// "taps submit twice"). A new message, or any answer from the server, starts over.
+    private static var attempts: [String: String] = [:]
+
     /// Texts from the company number. The text syncs back down with its delivery status.
     /// `pictures` are storage paths already uploaded.
     /// `companyId` and `phone` text a number that isn't a customer yet.
@@ -211,7 +216,20 @@ public struct TextingServer {
             payload["companyId"] = .string(companyId)
             payload["phone"] = .string(phone)
         }
-        let reply = try await api.post("api/texts", .object(payload))
+        let key = [conversationId, customerId, phone, body, String(pictures.count), jobId]
+            .map { $0 ?? "" }.joined(separator: "|")
+        let requestId = Self.attempts[key] ?? uuidv7()
+        Self.attempts[key] = requestId
+        payload["requestId"] = .string(requestId)
+        let reply: JSONValue
+        do {
+            reply = try await api.post("api/texts", .object(payload))
+        } catch {
+            // Only a request that never reached the server is tried again under the same id.
+            if (error as? WebAPI.Failure)?.offline != true { Self.attempts[key] = nil }
+            throw error
+        }
+        Self.attempts[key] = nil
         await sync.syncNow()
         return (reply["id"]?.string ?? "", reply["conversationId"]?.string ?? conversationId ?? "")
     }

@@ -31,6 +31,7 @@
         @State private var confirmDiscard = false
         @State private var saveError: String?
         @State private var saves = 0
+        @State private var closing = false
         /// The field with the keyboard, for the keyboard bar's Previous and Next.
         @FocusState private var focus: String?
 
@@ -162,7 +163,7 @@
                 saves += 1
                 return MediaTarget(jobId: jobId, testResultId: id)
             } catch {
-                saveError = String(describing: error)
+                saveError = userMessage(error)
                 return nil
             }
         }
@@ -222,16 +223,18 @@
         }
 
         private func save() {
-            guard var current = form, let company = session.company else { return }
+            // The sheet takes a moment to close: a second tap there would add a second one.
+            guard var current = form, let company = session.company, !closing else { return }
             do {
                 let id = try current.save(sync, companyId: company.id, jobId: jobId, existing: existing)
                 form = current
                 if id != nil {
+                    closing = true
                     saves += 1
                     dismiss()
                 }
             } catch {
-                saveError = String(describing: error)
+                saveError = userMessage(error)
             }
         }
 
@@ -244,7 +247,7 @@
                     .test, [RemovalRow("test_result", existing.id)], sync: sync, companyId: company.id)
                 dismiss()
             } catch {
-                saveError = String(describing: error)
+                saveError = userMessage(error)
             }
         }
     }

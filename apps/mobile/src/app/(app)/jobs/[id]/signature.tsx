@@ -15,6 +15,7 @@ import {
   type Property,
   type SignaturePurpose,
   type SignatureStroke,
+  friendlyError,
 } from "@leakbook/core";
 import { useRow } from "../../../../data/hooks";
 import { currentPosition, storeSignatureSvg } from "../../../../lib/media";
@@ -129,7 +130,7 @@ export default function SignatureScreen() {
       haptics.success();
       leave(() => router.back());
     } catch (e) {
-      setError(e instanceof Error ? e.message : String(e));
+      setError(friendlyError(e));
       setSaving(false);
     }
   }

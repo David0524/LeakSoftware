@@ -1,3 +1,4 @@
+import { friendlyError } from "@leakbook/core";
 import { isUuid } from "./uuid";
 
 // Checks the website's forms share for edge inputs (break testing, 2026-10-20). Pure, so
@@ -49,14 +50,13 @@ export function isWebUrl(value: string): boolean {
 }
 
 /**
- * Database messages people shouldn't see as-is: a malformed id (a link with a typo) reads as
- * not found, an out-of-range number as too large. Anything else is passed through.
+ * What to show for a database message: a malformed id (a link with a typo) reads as not found,
+ * and everything raw (a duplicate key, a failed constraint, row security, a JWT) is put in plain
+ * words by `friendlyError` (packages/core). Our own sentences pass through.
  */
 export function friendlyDbError(message: string, notFound = "That wasn’t found."): string {
   if (/invalid input syntax for type uuid/i.test(message)) return notFound;
-  if (/out of range for type|numeric field overflow/i.test(message))
-    return "That number is too large.";
-  return message;
+  return friendlyError(message);
 }
 
 /** The pages under /jobs/ that aren't a job id. */

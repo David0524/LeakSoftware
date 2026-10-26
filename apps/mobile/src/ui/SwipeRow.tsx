@@ -158,7 +158,11 @@ function DeleteAction({
         onPress={onPress}
         style={styles.actionHit}
       >
-        <Text style={styles.actionText} numberOfLines={1} maxFontSizeMultiplier={1.6}>
+        <Text
+          style={[styles.actionText, { color: color.onStatus }]}
+          numberOfLines={1}
+          maxFontSizeMultiplier={1.6}
+        >
           {label}
         </Text>
       </Pressable>
@@ -167,11 +171,10 @@ function DeleteAction({
 }
 
 const styles = StyleSheet.create({
-  action: { backgroundColor: color.fail, justifyContent: "center" },
+  action: { justifyContent: "center" },
   // The label stays at the row's trailing edge while the red area grows.
   actionHit: { flex: 1, alignItems: "flex-end", justifyContent: "center", paddingRight: 20 },
-  actionText: { ...face.semiBold, fontSize: 17, color: color.onStatus },
-  leading: { backgroundColor: color.link },
+  actionText: { ...face.semiBold, fontSize: 17 },
   // The label stays at the row's leading edge while the blue area grows.
   leadingHit: { flex: 1, alignItems: "flex-start", justifyContent: "center", paddingLeft: 20 },
   actionRow: { flexDirection: "row" },
@@ -266,14 +269,18 @@ function LeadingAction({
     width: Math.max(ACTION_WIDTH, translation.value),
   }));
   return (
-    <Animated.View style={[styles.action, styles.leading, grow]}>
+    <Animated.View style={[styles.action, { backgroundColor: color.link }, grow]}>
       <Pressable
         accessibilityElementsHidden
         importantForAccessibility="no-hide-descendants"
         onPress={onPress}
         style={styles.leadingHit}
       >
-        <Text style={styles.actionText} numberOfLines={1} maxFontSizeMultiplier={1.6}>
+        <Text
+          style={[styles.actionText, { color: color.onStatus }]}
+          numberOfLines={1}
+          maxFontSizeMultiplier={1.6}
+        >
           {label}
         </Text>
       </Pressable>
@@ -325,7 +332,11 @@ export function SwipeActions({
         pressed && { opacity: 0.8 },
       ]}
     >
-      <Text style={styles.actionText} numberOfLines={1} maxFontSizeMultiplier={1.6}>
+      <Text
+        style={[styles.actionText, { color: color.onStatus }]}
+        numberOfLines={1}
+        maxFontSizeMultiplier={1.6}
+      >
         {a.label}
       </Text>
     </Pressable>

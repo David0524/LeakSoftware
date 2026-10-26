@@ -86,6 +86,8 @@
             dirty: Bool = false, detents: Set<PresentationDetent> = [.large]
         ) -> some View {
             presentationDetents(detents)
+                // A sheet's form puts the keyboard away when dragged (the app's root sets it too).
+                .scrollDismissesKeyboard(.interactively)
                 .presentationDragIndicator(.visible)
                 .modifier(SheetSurface(partial: detents != [.large]))
                 .interactiveDismissDisabled(dirty)

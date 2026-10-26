@@ -1,6 +1,11 @@
 import { useState } from "react";
 import { Alert, Linking, View } from "react-native";
-import { FINISH_PHOTO_MESSAGE, requiresFinishPhoto, type Media } from "@leakbook/core";
+import {
+  FINISH_PHOTO_MESSAGE,
+  requiresFinishPhoto,
+  type Media,
+  friendlyError,
+} from "@leakbook/core";
 import { forgetCapture, rememberCapture, saveCapture, useJobMedia } from "../../data/media";
 import { MediaError, askLocationOnce, captureWithCamera, currentPosition } from "../../lib/media";
 import { useCompany } from "../../state/session";
@@ -48,7 +53,7 @@ export function FinishPhotoNotice({ jobId }: { jobId: string }) {
       const file = await captureWithCamera("photo");
       if (file) await saveCapture(company.id, { jobId }, file, position);
     } catch (e) {
-      const message = e instanceof Error ? e.message : String(e);
+      const message = friendlyError(e);
       if (e instanceof MediaError && e.needsSettings) {
         Alert.alert("Couldn’t take the photo", message, [
           { text: "Cancel", style: "cancel" },

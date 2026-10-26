@@ -89,7 +89,11 @@ import {
   NextStepBar,
   type NextStepButton,
 } from "../../../../../../features/job/NextStepBar";
-import { FormKeyboardBar, KeyboardAvoider } from "../../../../../../ui/keyboard";
+import {
+  FormKeyboardBar,
+  KeyboardAvoider,
+  useKeepFieldVisible,
+} from "../../../../../../ui/keyboard";
 import { SwipeNav, useNoSwipe } from "../../../../../../ui/SwipeNav";
 import { usePinnedSyncBar } from "../../../../../../ui/SyncBar";
 import { AddressLine, NotOnMapRow } from "../../../../../../ui/NotOnMap";
@@ -207,6 +211,8 @@ export default function JobDetail() {
   });
   const routeKey = useRoute().key;
   const barY = barState(routeKey).y;
+  // The field being typed in is scrolled above the keyboard.
+  const fieldView = useKeepFieldVisible(scroll, drawnChrome ? insets.top + BAR_HEIGHT : 0);
   const reduceMotion = useReduceMotion();
   // Each section keeps its scroll position (gestures spec section 4): where the page was when
   // the tech left it, put back when they come back to it.
@@ -418,6 +424,10 @@ export default function JobDetail() {
       <Animated.ScrollView
         ref={scroll}
         {...scrollProps}
+        onScroll={(e) => {
+          fieldView.onScroll(e);
+          if (typeof scrollProps.onScroll === "function") scrollProps.onScroll(e);
+        }}
         // Scrolling puts the keyboard away (the number pads have no return key; owner,
         // 2026-10-25), as on the iPhone app; tapping beside a field does too.
         keyboardDismissMode={ios ? "interactive" : "on-drag"}
@@ -436,7 +446,10 @@ export default function JobDetail() {
         scrollEnabled={!fits}
         alwaysBounceVertical={false}
         overScrollMode={fits ? "never" : "auto"}
-        onLayout={(e) => setViewHeight(e.nativeEvent.layout.height)}
+        onLayout={(e) => {
+          fieldView.onLayout(e);
+          setViewHeight(e.nativeEvent.layout.height);
+        }}
         onContentSizeChange={(_w, h) => {
           setContentHeight(h);
           if (restoreTo.current != null && restoreTo.current > 0) {

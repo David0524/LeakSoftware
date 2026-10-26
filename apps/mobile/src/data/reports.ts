@@ -5,6 +5,7 @@ import { noteError } from "../lib/usage-errors";
 import { getServices } from "../lib/services";
 import { useJobRows } from "./hooks";
 
+import { friendlyError } from "@leakbook/core";
 export interface ReportRecord {
   id: string;
   job_id: string;
@@ -116,7 +117,10 @@ export async function call<T>(path: string, body: unknown): Promise<T> {
   const data = (await res.json().catch(() => ({}))) as T & { error?: string };
   if (!res.ok) {
     noteError(data.error ?? `The server said ${res.status}.`);
-    throw new ReportServerError(data.error ?? `The server said ${res.status}.`, res.status);
+    throw new ReportServerError(
+      friendlyError(data.error ?? `The server said ${res.status}.`),
+      res.status,
+    );
   }
   return data;
 }

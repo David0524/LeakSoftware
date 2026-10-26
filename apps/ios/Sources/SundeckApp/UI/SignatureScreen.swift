@@ -151,7 +151,7 @@
                     saved += 1
                     dismiss()
                 } catch {
-                    form?.error = String(describing: error)
+                    form?.error = userMessage(error)
                     saving = false
                 }
             }

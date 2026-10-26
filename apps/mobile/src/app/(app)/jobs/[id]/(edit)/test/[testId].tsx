@@ -1,5 +1,5 @@
 import { router, Stack, useLocalSearchParams } from "expo-router";
-import { createRef, useMemo, useState, type RefObject } from "react";
+import { createRef, useMemo, useRef, useState, type RefObject } from "react";
 import { StyleSheet, TextInput, View } from "react-native";
 import {
   calculate,
@@ -44,6 +44,9 @@ export default function TestScreen() {
   const insp = useJobInspection(company.id, jobId);
   // Add Photo on a new test saves it first; the sheet then edits that test.
   const [savedId, setSavedId] = useState<string | null>(null);
+  // The id of a test this screen just made, kept synchronously: a second tap before the screen
+  // has drawn saves it again instead of adding a second one.
+  const madeId = useRef<string | null>(null);
   const testId = params.testId === "new" ? savedId : params.testId;
   const existing = testId ? insp.tests.find((t) => t.id === testId) : undefined;
   const [typeId, setTypeId] = useState<string | null>(
@@ -140,7 +143,7 @@ export default function TestScreen() {
       outcome: result || computed.suggested || null,
       notes: notes.trim() || null,
     };
-    let id = existing?.id ?? savedId;
+    let id = existing?.id ?? savedId ?? madeId.current;
     if (id) {
       services.sync.write("test_result", id, company.id, record);
     } else {
@@ -150,6 +153,7 @@ export default function TestScreen() {
         test_type_id: type.id,
         performed_at: new Date().toISOString(),
       });
+      madeId.current = id;
     }
     haptics.success();
     if (stay) {

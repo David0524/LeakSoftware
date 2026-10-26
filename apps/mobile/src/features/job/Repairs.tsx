@@ -19,7 +19,7 @@ import { removalFor } from "../../lib/removal";
 import { announceRemoved } from "../../lib/removedBanner";
 import { Button, Field, Group, ListRow, RoundButton, Section, T } from "../../ui/components";
 import { haptics } from "../../ui/haptics";
-import { ModalSheet } from "../../ui/ModalSheet";
+import { ModalSheet, UnsavedWhen } from "../../ui/ModalSheet";
 import { Select, useMenu } from "../../ui/Select";
 import { WebIcon } from "../../ui/WebIcon";
 import { color, space, tabular } from "../../ui/theme";
@@ -138,6 +138,7 @@ function AddRepairSheet({
       done={{ label: "Add", onPress: save }}
     >
       <View style={styles.sheet}>
+        <UnsavedWhen dirty={JSON.stringify(draft) !== JSON.stringify(EMPTY_REPAIR_DRAFT)} />
         <RepairFields
           draft={draft}
           onChange={setDraft}

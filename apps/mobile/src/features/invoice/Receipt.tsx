@@ -22,6 +22,7 @@ import {
   toE164,
   type ManualPaymentMethod,
   type ReceiptChannel,
+  friendlyError,
 } from "@leakbook/core";
 import { ReportServerError, call } from "../../data/reports";
 import { getServices } from "../../lib/services";
@@ -114,7 +115,7 @@ export function RecordPayment({
       setErrors({
         amount: /network|fetch|connection/i.test(text)
           ? "No connection. Try again when you have signal."
-          : text,
+          : friendlyError(text),
       });
     } finally {
       setBusy(false);
@@ -221,9 +222,7 @@ export function SendReceiptSheet({
       setError(
         e instanceof ReportServerError && e.status === null && /connection/i.test(e.message)
           ? RECEIPT_OFFLINE
-          : e instanceof Error
-            ? e.message
-            : String(e),
+          : friendlyError(e),
       );
     } finally {
       setBusy(false);

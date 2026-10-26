@@ -113,15 +113,22 @@ export function SettingsForm({
   });
   // In a sheet, a save that worked closes it. Called from the action itself (not an effect),
   // so it still happens when the save removes the row the sheet belongs to.
+  // A save runs once at a time (owner, 2026-10-26: "taps submit twice"): the button is disabled
+  // while it runs, and this answers the second tap or Enter that lands before it draws.
+  const inFlight = useRef(false);
   const [state, formAction, pending] = useActionState(async (prev: FormState, data: FormData) => {
-    const next = await orOffline(action)(prev, data);
-    if (next.message && !next.error) {
-      done.current?.(next.message);
-      // Cleared only after a save that worked: one that failed keeps what was typed (a
-      // form's action prop cleared it either way, so a missing date emptied New Job).
-      if (form.current) requestFormReset(form.current);
+    try {
+      const next = await orOffline(action)(prev, data);
+      if (next.message && !next.error) {
+        done.current?.(next.message);
+        // Cleared only after a save that worked: one that failed keeps what was typed (a
+        // form's action prop cleared it either way, so a missing date emptied New Job).
+        if (form.current) requestFormReset(form.current);
+      }
+      return next;
+    } finally {
+      inFlight.current = false;
     }
-    return next;
   }, {});
   const [ask, confirmSheet] = useConfirm();
   const form = useRef<HTMLFormElement>(null);
@@ -166,6 +173,8 @@ export function SettingsForm({
       ref={form}
       onSubmit={(e) => {
         e.preventDefault();
+        if (inFlight.current) return;
+        inFlight.current = true;
         const data = new FormData(e.currentTarget, (e.nativeEvent as SubmitEvent).submitter);
         startTransition(() => formAction(data));
       }}

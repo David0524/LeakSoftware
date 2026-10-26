@@ -30,6 +30,7 @@ import {
 } from "@/lib/password-reset-email";
 import { SUPPORT_EMAIL } from "@/lib/site";
 
+import { friendlyDbError } from "@/lib/limits";
 export interface FormState {
   error?: string;
   /** Field-level messages keyed by input name. */
@@ -79,7 +80,7 @@ export async function signIn(_: FormState, form: FormData): Promise<FormState> {
       };
     }
     if (error.code === "email_not_confirmed") return resendConfirmation(email, values);
-    return { error: error.message, values };
+    return { error: friendlyDbError(error.message), values };
   }
   const next = safeNext(text(form, "next"));
   // Two-step sign-in: the code next, then on to where they were going.
@@ -134,7 +135,7 @@ export async function sendSignInLink(_: FormState, form: FormData): Promise<Form
   });
   // Same answer whether or not the account exists.
   if (error && error.status !== 400 && error.code !== "otp_disabled") {
-    return { error: error.message, values: { email } };
+    return { error: friendlyDbError(error.message), values: { email } };
   }
   return { message: `If ${email} has an account, a sign-in link is on its way.` };
 }
@@ -214,7 +215,7 @@ export async function startTrial(_: FormState, form: FormData): Promise<FormStat
     company_heard_from: heard.heard_from,
     company_heard_from_other: heard.heard_from_other,
   });
-  if (companyError) return { error: companyError.message, values: kept };
+  if (companyError) return { error: friendlyDbError(companyError.message), values: kept };
   await supabase.from("profile").update({ phone }).eq("id", account.userId);
   await requireCard(String(companyId));
   redirect("/welcome");
@@ -240,7 +241,7 @@ export async function createCompany(_: FormState, form: FormData): Promise<FormS
     company_heard_from: heard.heard_from,
     company_heard_from_other: heard.heard_from_other,
   });
-  if (error) return { error: error.message, values: kept };
+  if (error) return { error: friendlyDbError(error.message), values: kept };
   await requireCard(String(companyId));
   redirect("/welcome");
 }
@@ -286,7 +287,7 @@ export async function acceptInvite(_: FormState, form: FormData): Promise<FormSt
   }
 
   const { data: companyId, error } = await supabase.rpc("accept_invite", { invite_token: token });
-  if (error) return { error: error.message };
+  if (error) return { error: friendlyDbError(error.message) };
   // One more person on the team: the Sundeck Pro price may move up a tier.
   after(() => syncSubscriptionPrice(String(companyId)).catch(logPriceSyncError));
   (await cookies()).set(ACTIVE_COMPANY_COOKIE, String(companyId), {

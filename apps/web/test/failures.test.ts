@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { EmailNotConfigured } from "../src/server/email";
-import { Refusal, dbFailure, failureStatus } from "../src/server/failures";
+import { Fault, Refusal, dbFailure, failureMessage, failureStatus } from "../src/server/failures";
 import { TextingError } from "../src/server/texting";
 
 // The phones keep a queued send on 401/408/429/5xx and drop it on any other 4xx
@@ -63,6 +63,39 @@ describe("POST /api/reports/[id]/send", () => {
     sendReport.mockRejectedValue(dbFailure({ message: "TypeError: fetch failed", code: "" }));
     const res = await send();
     expect(res.status).toBe(500);
-    expect(await res.json()).toEqual({ error: "TypeError: fetch failed" });
+    // In plain words: the technical text is logged on the server, never sent to the phone.
+    expect(await res.json()).toEqual({ error: "No connection. Check your signal and try again." });
+  });
+
+  it("answers a code error in one plain line", async () => {
+    sendReport.mockRejectedValue(
+      new TypeError("Cannot read properties of undefined (reading 'x')"),
+    );
+    const res = await send();
+    expect(res.status).toBe(500);
+    expect(await res.json()).toEqual({
+      error: "Something went wrong on our end. Try again in a moment.",
+    });
+  });
+});
+
+describe("failureMessage", () => {
+  it("keeps the app's own messages", () => {
+    expect(failureMessage(new Refusal("Enter the customer’s email."))).toBe(
+      "Enter the customer’s email.",
+    );
+    expect(failureMessage(new Fault("The email didn’t go through. Text the link instead."))).toBe(
+      "The email didn’t go through. Text the link instead.",
+    );
+  });
+
+  it("never shows a database or provider message", () => {
+    expect(failureMessage(new Error('duplicate key value violates unique constraint "x"'))).toBe(
+      "That already exists.",
+    );
+    expect(failureMessage({ message: "JWT expired" })).toBe(
+      "Your sign-in expired. Sign in again to continue.",
+    );
+    expect(failureMessage("boom")).toBe("Something went wrong. Try again.");
   });
 });

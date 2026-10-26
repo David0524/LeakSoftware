@@ -1,3 +1,4 @@
+import { SERVER_TROUBLE_MESSAGE, friendlyError, knownFriendlyError } from "@leakbook/core";
 import { friendlyDbError } from "@/lib/limits";
 import { EmailNotConfigured } from "./email";
 import { TextingError } from "./texting";
@@ -29,4 +30,34 @@ export function failureStatus(e: unknown): 400 | 500 {
   return e instanceof Refusal || e instanceof EmailNotConfigured || e instanceof TextingError
     ? 400
     : 500;
+}
+
+/**
+ * A problem on our side or a provider's (the phone tries again later, status 500) whose message
+ * was written for people to read ("The email didn’t go through. Text the link instead.").
+ */
+export class Fault extends Error {}
+
+/**
+ * What a phone is told about an error thrown while handling its request: our own messages (a
+ * refusal, a fault we worded, texting and email setup) in plain words, and for anything else
+ * (a database, provider or code error) one plain line, with the technical text logged here.
+ */
+export function failureMessage(e: unknown): string {
+  if (
+    e instanceof Refusal ||
+    e instanceof Fault ||
+    e instanceof EmailNotConfigured ||
+    e instanceof TextingError
+  )
+    return friendlyError(e.message);
+  const raw =
+    e instanceof Error
+      ? e.message
+      : e && typeof e === "object" && "message" in e
+        ? String((e as { message: unknown }).message)
+        : String(e);
+  console.error("[server fault]", raw);
+  // Text no rule knew is a code or provider message: never shown as it is.
+  return knownFriendlyError(raw) ?? SERVER_TROUBLE_MESSAGE;
 }

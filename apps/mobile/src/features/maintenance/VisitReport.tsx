@@ -1,7 +1,13 @@
 import * as WebBrowser from "expo-web-browser";
 import { useEffect, useMemo, useState } from "react";
 import { StyleSheet, View } from "react-native";
-import { dateFormat, visitReportMode, type Customer, type Job } from "@leakbook/core";
+import {
+  dateFormat,
+  visitReportMode,
+  type Customer,
+  type Job,
+  friendlyError,
+} from "@leakbook/core";
 import { call, reportsOnline, useJobReports } from "../../data/reports";
 import { useLine } from "../../data/texting";
 import { API_URL } from "../../lib/config";
@@ -91,7 +97,7 @@ export function VisitReport({
           text: sent.delivered === "email" ? "Visit report emailed." : "Visit report texted.",
         });
     } catch (e) {
-      setResult({ tone: "error", text: e instanceof Error ? e.message : String(e) });
+      setResult({ tone: "error", text: friendlyError(e) });
     } finally {
       setBusy(null);
     }

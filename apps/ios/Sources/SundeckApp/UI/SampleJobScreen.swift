@@ -161,6 +161,7 @@
         }
 
         private func send() async {
+            guard !sending else { return }
             sending = true
             error = nil
             defer { sending = false }
@@ -174,11 +175,12 @@
                     if let link = r["link"]?.string, let url = URL(string: link) { browsing = BrowsedPage(url: url) }
                 }
             } catch {
-                self.error = "\(error)"
+                self.error = userMessage(error)
             }
         }
 
         private func delete() async {
+            guard !deleting else { return }
             deleting = true
             defer { deleting = false }
             do {
@@ -186,7 +188,7 @@
                 await sync.syncNow()
                 openTab(.today)
             } catch {
-                self.error = "\(error)"
+                self.error = userMessage(error)
             }
         }
     }

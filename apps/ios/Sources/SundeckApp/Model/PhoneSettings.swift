@@ -125,7 +125,7 @@ public final class PhoneSettingsModel {
             apply(try await api.get("api/phone", query: ["company_id": companyId]))
             loaded = true
         } catch {
-            result = (String(describing: error), true)
+            result = (userMessage(error), true)
         }
     }
 
@@ -210,6 +210,7 @@ public final class PhoneSettingsModel {
     private func run(
         _ what: String, _ body: [String: JSONValue], reload: Bool = true, then: ((JSONValue) -> Void)? = nil
     ) async {
+        guard busy == nil else { return }
         busy = what
         defer { busy = nil }
         var payload = body
@@ -224,7 +225,7 @@ public final class PhoneSettingsModel {
             fieldErrors = failure.fields
             result = (failure.description, true)
         } catch {
-            result = (String(describing: error), true)
+            result = (userMessage(error), true)
         }
     }
 }

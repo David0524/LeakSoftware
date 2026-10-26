@@ -7,6 +7,7 @@ import { parsePlanRepeat } from "@/lib/plan-repeat";
 import { createClient } from "@/lib/supabase/server";
 import type { FormState } from "./auth";
 
+import { friendlyDbError } from "@/lib/limits";
 // Maintenance plans (owner request, 2026-10-13). Saving, pausing, or ending a plan makes or
 // replaces its upcoming visits in the database (app.plan_visits), so these only write the
 // plan. Owners only; row security checks again.
@@ -108,7 +109,7 @@ export async function savePlan(_: FormState, form: FormData): Promise<FormState>
         property_id: property,
         ...row,
       });
-  if (error) return { error: error.message };
+  if (error) return { error: friendlyDbError(error.message) };
 
   // Saving a cleaning puts it on its visit (app.place_cleanings), so the plan goes first.
   const { data: existing, error: readError } = await db
@@ -117,7 +118,7 @@ export async function savePlan(_: FormState, form: FormData): Promise<FormState>
     .eq("service_plan_id", planId)
     .eq("company_id", company)
     .is("deleted_at", null);
-  if (readError) return { error: readError.message };
+  if (readError) return { error: friendlyDbError(readError.message) };
   for (const c of cleanings) {
     const had = existing?.find((e) => e.component_type_id === c.type);
     const values = {
@@ -143,7 +144,7 @@ export async function savePlan(_: FormState, form: FormData): Promise<FormState>
             .eq("id", had.id)
             .eq("company_id", company)
         : { error: null };
-    if (cleaningError) return { error: cleaningError.message };
+    if (cleaningError) return { error: friendlyDbError(cleaningError.message) };
   }
   refresh(customer);
   return {
@@ -167,7 +168,7 @@ export async function setPlanPaused(_: FormState, form: FormData): Promise<FormS
     .update({ paused })
     .eq("id", plan)
     .eq("company_id", office.company.id);
-  if (error) return { error: error.message };
+  if (error) return { error: friendlyDbError(error.message) };
   refresh(customer);
   return { message: paused ? "Paused. Upcoming visits are off the schedule." : "Resumed." };
 }
@@ -185,7 +186,7 @@ export async function endPlan(_: FormState, form: FormData): Promise<FormState> 
     .update({ deleted_at: new Date().toISOString() })
     .eq("id", plan)
     .eq("company_id", office.company.id);
-  if (error) return { error: error.message };
+  if (error) return { error: friendlyDbError(error.message) };
   refresh(customer);
   return { message: "Plan ended." };
 }
@@ -227,7 +228,7 @@ export async function saveCleaningDefaults(_: FormState, form: FormData): Promis
       },
     })
     .eq("id", company);
-  if (error) return { error: error.message };
+  if (error) return { error: friendlyDbError(error.message) };
   if (form.get("apply_existing") === "on") {
     const { data: types, error: typeError } = await db
       .from("component_type")
@@ -235,7 +236,7 @@ export async function saveCleaningDefaults(_: FormState, form: FormData): Promis
       .eq("company_id", company)
       .in("key", keys)
       .is("deleted_at", null);
-    if (typeError) return { error: typeError.message };
+    if (typeError) return { error: friendlyDbError(typeError.message) };
     for (const t of types ?? []) {
       const { error: planError } = await db
         .from("plan_cleaning")
@@ -243,7 +244,7 @@ export async function saveCleaningDefaults(_: FormState, form: FormData): Promis
         .eq("company_id", company)
         .eq("component_type_id", t.id)
         .is("deleted_at", null);
-      if (planError) return { error: planError.message };
+      if (planError) return { error: friendlyDbError(planError.message) };
     }
     revalidatePath("/customers", "layout");
   }

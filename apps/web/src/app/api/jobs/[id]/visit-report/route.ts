@@ -1,6 +1,6 @@
 import { siteOrigin } from "@/lib/origin";
 import { bearerSession, jsonError } from "@/server/bearer";
-import { failureStatus } from "@/server/failures";
+import { failureMessage, failureStatus } from "@/server/failures";
 import { sendVisitReport, type VisitChannel } from "@/server/visit-reports";
 
 export const maxDuration = 60;
@@ -37,6 +37,6 @@ export async function POST(request: Request, ctx: RouteContext<"/api/jobs/[id]/v
       }),
     );
   } catch (e) {
-    return jsonError(e instanceof Error ? e.message : String(e), failureStatus(e));
+    return jsonError(failureMessage(e), failureStatus(e));
   }
 }

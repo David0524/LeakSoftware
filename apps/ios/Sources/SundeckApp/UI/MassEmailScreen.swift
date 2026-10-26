@@ -34,6 +34,8 @@
             }
             .navigationTitle(MassEmailText.title)
             .navigationBarTitleDisplayMode(.large)
+            // A message typed and not sent: Back asks "Discard changes?" (owner, 2026-10-20: everywhere).
+            .discardOnBack(dirty: textChanged(form.subject, from: "") || textChanged(form.body, from: ""))
             .task {
                 guard !preview, form.setup == nil else { return }
                 await form.load(app.api, companyId: companyId)

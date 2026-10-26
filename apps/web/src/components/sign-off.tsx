@@ -9,6 +9,7 @@ import {
   signatureStatement,
   type SignaturePurpose,
   type SignatureStroke,
+  friendlyError,
 } from "@leakbook/core";
 import { finishSignOff } from "@/app/actions/sign-off";
 import { SignaturePad, uploadSignature } from "./media-work";
@@ -77,7 +78,7 @@ export function SignOff({
       if (!done.ok) throw new Error(done.error);
       router.replace(`/jobs/${jobId}?tab=wrap-up`);
     } catch (e) {
-      setError(isNoConnection(e) ? NO_CONNECTION : e instanceof Error ? e.message : String(e));
+      setError(isNoConnection(e) ? NO_CONNECTION : friendlyError(e));
       setBusy(null);
     }
   }

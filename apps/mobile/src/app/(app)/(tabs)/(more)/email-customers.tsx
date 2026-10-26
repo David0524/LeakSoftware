@@ -36,6 +36,7 @@ import {
   Section,
   T,
 } from "../../../../ui/components";
+import { useDiscardChanges } from "../../../../ui/discard";
 import { color, space } from "../../../../ui/theme";
 
 /**
@@ -58,6 +59,8 @@ export default function EmailCustomers() {
   const [error, setError] = useState<string | null>(null);
   const [message, setMessage] = useState<string | null>(null);
   const [sending, setSending] = useState(false);
+  // A message typed and not sent: leaving asks "Discard changes?" (owner, 2026-10-20: everywhere).
+  useDiscardChanges(subject.trim() !== "" || body.trim() !== "");
   const audience = { show, city: city || null, days: days ? Number(days) : null };
   const { count, counting, error: countError } = useMassEmailCount(company.id, audience);
 

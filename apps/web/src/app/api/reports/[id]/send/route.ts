@@ -1,5 +1,5 @@
 import { clientFromRequest, jsonError } from "@/server/bearer";
-import { failureStatus } from "@/server/failures";
+import { failureMessage, failureStatus } from "@/server/failures";
 import { siteOrigin } from "@/lib/origin";
 import { sendReport } from "@/server/reports";
 
@@ -19,6 +19,6 @@ export async function POST(request: Request, ctx: RouteContext<"/api/reports/[id
     });
     return Response.json(result);
   } catch (e) {
-    return jsonError(e instanceof Error ? e.message : String(e), failureStatus(e));
+    return jsonError(failureMessage(e), failureStatus(e));
   }
 }

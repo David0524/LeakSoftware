@@ -139,7 +139,7 @@ public final class MassEmailForm {
 
     private func failureText(_ e: Error) -> String {
         if let f = e as? WebAPI.Failure, f.offline { return MassEmailText.offline }
-        return String(describing: e)
+        return userMessage(e)
     }
 
     public func load(_ api: WebAPI, companyId: String) async {

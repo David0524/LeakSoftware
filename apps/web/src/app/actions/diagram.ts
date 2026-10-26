@@ -5,6 +5,7 @@ import { isDiagramShape, parseDiagramLayout, parseMarkup } from "@leakbook/core"
 import { getOffice } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 
+import { friendlyDbError } from "@/lib/limits";
 type Result = { ok: true } | { ok: false; error: string };
 
 /**
@@ -32,7 +33,7 @@ export async function savePoolDiagram(input: {
     })
     .eq("id", input.propertyId)
     .eq("company_id", office.company.id);
-  if (error) return { ok: false, error: error.message };
+  if (error) return { ok: false, error: friendlyDbError(error.message) };
   revalidatePath(`/jobs/${input.jobId}`);
   return { ok: true };
 }
@@ -51,7 +52,7 @@ export async function saveDiagramMarkup(input: {
     .update({ diagram_markup: markup.shapes.length ? markup : null })
     .eq("id", input.jobId)
     .eq("company_id", office.company.id);
-  if (error) return { ok: false, error: error.message };
+  if (error) return { ok: false, error: friendlyDbError(error.message) };
   revalidatePath(`/jobs/${input.jobId}`);
   return { ok: true };
 }

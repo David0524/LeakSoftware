@@ -208,7 +208,7 @@
                 try form.saveChanges(sync, userId: session.user?.id)
                 withAnimation { savedText = true }
             } catch {
-                saveError = String(describing: error)
+                saveError = userMessage(error)
             }
         }
 
@@ -227,7 +227,7 @@
                 saved += 1
                 dismiss()
             } catch {
-                saveError = String(describing: error)
+                saveError = userMessage(error)
             }
         }
 
@@ -240,7 +240,7 @@
                     form.component, result: form.result, sync: sync, companyId: form.companyId)
                 dismiss()
             } catch {
-                saveError = String(describing: error)
+                saveError = userMessage(error)
             }
         }
 
@@ -250,7 +250,7 @@
             do {
                 try app.removals.remove(kind, [RemovalRow(table, id)], sync: sync, companyId: company.id)
             } catch {
-                saveError = String(describing: error)
+                saveError = userMessage(error)
             }
         }
 

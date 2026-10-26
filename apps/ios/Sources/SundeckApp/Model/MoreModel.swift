@@ -133,7 +133,7 @@ public final class FeatureRequestForm {
             let reply = try await api.post("api/feature-requests", .object(body))
             sent = reply["message"]?.string ?? Self.thanks
         } catch {
-            self.error = String(describing: error)
+            self.error = userMessage(error)
         }
     }
 }

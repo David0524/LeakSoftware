@@ -10,7 +10,7 @@ const mark = require("../../../../brand/logo/png/mark-512.png");
 /** Android sign-in screens: the reverse logo on a navy band. */
 export function BrandHeader() {
   return (
-    <SafeAreaView edges={["top"]} style={styles.header}>
+    <SafeAreaView edges={["top"]} style={{ backgroundColor: color.header }}>
       {/* White status bar text on the navy band, while this screen is showing. */}
       <StatusBar style="light" />
       <View style={styles.inner}>
@@ -52,7 +52,6 @@ export function AuthTitle({ title }: { title?: string }) {
 }
 
 const styles = StyleSheet.create({
-  header: { backgroundColor: color.header },
   inner: { paddingHorizontal: space["5"], paddingVertical: space["6"] },
   logo: { width: 214, height: 62 },
   hero: {

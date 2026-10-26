@@ -243,7 +243,7 @@
                     withAnimation { captionSaved = true }
                 }
             } catch {
-                saveError = String(describing: error)
+                saveError = userMessage(error)
             }
         }
 
@@ -257,7 +257,7 @@
                     companyId: media.companyId)
                 dismiss()
             } catch {
-                saveError = String(describing: error)
+                saveError = userMessage(error)
             }
         }
     }

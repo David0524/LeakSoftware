@@ -1,5 +1,6 @@
 import { API_URL } from "../lib/config";
 
+import { friendlyError } from "@leakbook/core";
 // Forgot Password? (owner, 2026-10-22): the account's email, posted signed out to the website,
 // which emails a link to choose a new password there. Port of the website's ForgotPasswordForm
 // (apps/web/src/components/auth-forms.tsx), with its words; the iPhone app's PasswordResetForm.
@@ -35,7 +36,7 @@ export async function requestPasswordReset(
     return { error: "No connection. Try again when you have signal." };
   }
   const data = (await res.json().catch(() => ({}))) as { message?: string; error?: string };
-  if (!res.ok) return { error: data.error ?? `The server said ${res.status}.` };
+  if (!res.ok) return { error: friendlyError(data.error ?? `The server said ${res.status}.`) };
   return {
     message: data.message ?? `If ${address} has a Sundeck Pro account, a reset link is on its way.`,
   };

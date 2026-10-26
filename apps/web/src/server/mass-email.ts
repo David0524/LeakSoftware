@@ -16,6 +16,7 @@ import {
   shopMailingAddress,
   type MassEmailAudience,
   type MassEmailCount,
+  friendlyError,
 } from "@leakbook/core";
 import { emailConfigured, fromAddress, sendEmail, sendEmailBatch, type Email } from "./email";
 import { dailyLimit, READ_ONLY_MESSAGE, shopWritable, takeAllowance } from "./usage";
@@ -98,6 +99,10 @@ export async function massEmailSetup(
     history,
   };
 }
+
+/** The same email sent again within this long is a double send. */
+const REPEAT_WINDOW_MS = 10 * 60_000;
+export const MASS_EMAIL_JUST_SENT = "That email was just sent.";
 
 /** Earlier mass emails, newest first. */
 export async function massEmailHistory(
@@ -188,7 +193,7 @@ export async function sendMassEmailTest(
       ...content,
     });
   } catch (e) {
-    return { ok: false, error: e instanceof Error ? e.message : String(e), status: 502 };
+    return { ok: false, error: friendlyError(e), status: 502 };
   }
   return { ok: true, message: massEmailTestSent(me.email) };
 }
@@ -197,7 +202,7 @@ export async function sendMassEmailTest(
  * Sends a mass email to everyone the filter picks. `expected` is the count the person
  * confirmed in the alert; a list that moved since then sends nothing.
  */
-export async function sendMassEmail(
+async function sendMassEmailNow(
   db: SupabaseClient,
   companyId: string,
   input: { subject: string; body: string; audience: MassEmailAudience; expected: number },
@@ -212,6 +217,18 @@ export async function sendMassEmail(
     return { ok: false, error: MASS_EMAIL_LIST_CHANGED, status: 409 };
   const r = await ready(db, companyId);
   if (!("shop" in r)) return r;
+  // The same email, to the same shop's customers, a moment ago: a double tap or a request sent
+  // again after a slow answer. One send goes to everyone; a second would email them all again.
+  const { data: repeat } = await db
+    .from("email_campaign")
+    .select("id")
+    .eq("company_id", companyId)
+    .eq("subject", input.subject.trim())
+    .eq("body", input.body.trim())
+    .in("status", ["sending", "sent"])
+    .gte("created_at", new Date(Date.now() - REPEAT_WINDOW_MS).toISOString())
+    .limit(1);
+  if (repeat?.length) return { ok: false, error: MASS_EMAIL_JUST_SENT, status: 409 };
   const { data: setup } = await db.rpc("email_campaign_setup", { target_company: companyId });
   const left = Math.max(
     0,
@@ -275,4 +292,24 @@ export async function sendMassEmail(
   const failed = Number(t.failed ?? results.length - sent);
   if (sent === 0) return { ok: false, error: massEmailSentText(0, failed), status: 502 };
   return { ok: true, message: massEmailSentText(sent, failed), sent, failed };
+}
+
+/** Sends running now on this server, by shop and words: a second request at once is refused. */
+const sending = new Set<string>();
+
+/** Sends a mass email once: the same email twice at once, or twice in a row, goes out once. */
+export async function sendMassEmail(
+  db: SupabaseClient,
+  companyId: string,
+  input: { subject: string; body: string; audience: MassEmailAudience; expected: number },
+  origin: string,
+): Promise<MassEmailResult> {
+  const key = [companyId, input.subject.trim(), input.body.trim()].join("|");
+  if (sending.has(key)) return { ok: false, error: MASS_EMAIL_JUST_SENT, status: 409 };
+  sending.add(key);
+  try {
+    return await sendMassEmailNow(db, companyId, input, origin);
+  } finally {
+    sending.delete(key);
+  }
 }

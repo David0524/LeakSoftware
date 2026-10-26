@@ -327,7 +327,7 @@
                 try save(draft.markup, showsCaption ? caption : nil)
                 dismiss()
             } catch {
-                saveError = String(describing: error)
+                saveError = userMessage(error)
             }
         }
     }

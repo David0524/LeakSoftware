@@ -101,11 +101,12 @@ public struct WebAPI: Sendable {
             var fields: [String: String] = [:]
             if case .object(let f)? = reply["fields"] { for (k, v) in f { fields[k] = v.string } }
             // An error people saw: counted in the Admin portal's Usage (not usage's own sends).
-            let message = reply["error"]?.string ?? fields.values.sorted().first ?? "The server said \(status)."
+            let raw = reply["error"]?.string ?? fields.values.sorted().first ?? "The server said \(status)."
             if request.url?.path.hasSuffix("/api/usage") == false {
-                await MainActor.run { UsageRecorder.shared.error(message) }
+                await MainActor.run { UsageRecorder.shared.error(raw) }
             }
-            throw Failure(description: message, fields: fields, status: status)
+            // What the person sees is in plain words; the server's own text stays in Usage.
+            throw Failure(description: friendlyError(raw), fields: fields, status: status)
         }
         return reply
     }

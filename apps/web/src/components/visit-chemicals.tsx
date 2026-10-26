@@ -144,7 +144,7 @@ function Check({ on }: { on: boolean }) {
   return on ? (
     <span
       aria-hidden="true"
-      className="grid size-[1.625rem] shrink-0 place-items-center rounded-full bg-status-pass text-white"
+      className="grid size-[1.625rem] shrink-0 place-items-center rounded-full bg-status-pass text-on-status"
     >
       <svg
         viewBox="0 0 24 24"
@@ -558,7 +558,7 @@ export function VisitChemicals(props: VisitChemicalsProps) {
               >
                 <span
                   aria-hidden="true"
-                  className="grid size-[1.625rem] shrink-0 place-items-center rounded-full bg-link text-white"
+                  className="grid size-[1.625rem] shrink-0 place-items-center rounded-full bg-link text-on-status"
                 >
                   <svg
                     viewBox="0 0 24 24"

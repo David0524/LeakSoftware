@@ -103,7 +103,7 @@ public final class Session {
         do {
             access = try await fetchAccess(id)
         } catch {
-            return isConnectionError(String(describing: error)) ? .offline : .failed
+            return isConnectionError(userMessage(error)) ? .offline : .failed
         }
         let needed = mustFinishSetup(access, role: company.role)
         let others = setupNeeded.filter { $0 != id }

@@ -1,5 +1,10 @@
 import { useEffect, useRef, useState } from "react";
-import { MASS_EMAIL_OFFLINE, type MassEmailAudience, type MassEmailCount } from "@leakbook/core";
+import {
+  MASS_EMAIL_OFFLINE,
+  type MassEmailAudience,
+  type MassEmailCount,
+  friendlyError,
+} from "@leakbook/core";
 import { API_URL } from "../lib/config";
 import { getServices } from "../lib/services";
 import { ReportServerError, call } from "./reports";
@@ -31,7 +36,7 @@ const NO_CONNECTION = "No connection. Try again when you have signal.";
 /** The server's message, with "no connection" said as sending needs one. */
 export function massEmailError(e: unknown): string {
   const message = e instanceof Error ? e.message : String(e);
-  return message === NO_CONNECTION ? MASS_EMAIL_OFFLINE : message;
+  return message === NO_CONNECTION ? MASS_EMAIL_OFFLINE : friendlyError(message);
 }
 
 async function get<T>(path: string): Promise<T> {
@@ -46,7 +51,10 @@ async function get<T>(path: string): Promise<T> {
   }
   const data = (await res.json().catch(() => ({}))) as T & { error?: string };
   if (!res.ok)
-    throw new ReportServerError(data.error ?? `The server said ${res.status}.`, res.status);
+    throw new ReportServerError(
+      friendlyError(data.error ?? `The server said ${res.status}.`),
+      res.status,
+    );
   return data;
 }
 

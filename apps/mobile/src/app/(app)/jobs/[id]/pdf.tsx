@@ -10,6 +10,7 @@ import { Button, Card, HeaderButton, Notice, Screen, T } from "../../../../ui/co
 import { ProgressBar, StepList } from "../../../../ui/Progress";
 import { space } from "../../../../ui/theme";
 
+import { friendlyError } from "@leakbook/core";
 // A sent report's PDF, opened in the app (owner, 2026-10-20: the browser sat on a white page
 // while the server made it). The wait shows its steps and a download bar; the file is kept on
 // the phone, so opening a version again is instant (sent reports never change). Then it opens
@@ -87,7 +88,7 @@ export default function ReportPdfScreen() {
           if (Platform.OS === "web") {
             // The browser preview: fetch it, then hand the browser a local copy.
             const res = await fetch(url, { signal: abort.signal });
-            if (!res.ok) throw new Error(`The server said ${res.status}.`);
+            if (!res.ok) throw new Error(friendlyError(`The server said ${res.status}.`));
             setPhase({ at: "downloading", progress: null, bytes: 0 });
             const blob = await res.blob();
             return ready(URL.createObjectURL(blob));

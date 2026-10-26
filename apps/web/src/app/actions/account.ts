@@ -1,6 +1,7 @@
 "use server";
 
 import { redirect } from "next/navigation";
+import { friendlyError } from "@leakbook/core";
 import { getOffice } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import { deleteAccount } from "@/server/account";
@@ -20,7 +21,7 @@ export async function deleteMyAccount(_: FormState, form: FormData): Promise<For
   try {
     result = await deleteAccount(db);
   } catch (e) {
-    return { error: e instanceof Error ? e.message : String(e) };
+    return { error: friendlyError(e) };
   }
   if (result.status === "requested") return { message: result.message };
   await db.auth.signOut();

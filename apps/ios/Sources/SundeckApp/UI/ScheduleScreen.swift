@@ -613,7 +613,7 @@
                 saved += 1
                 return nil
             } catch {
-                return String(describing: error)
+                return userMessage(error)
             }
         }
 
@@ -925,7 +925,7 @@
 
         private func fail(_ error: any Error) {
             undo = nil
-            banner = ResultBanner(kind: .error, title: String(describing: error))
+            banner = ResultBanner(kind: .error, title: userMessage(error))
             failed += 1
         }
 
@@ -2913,7 +2913,7 @@
                         case nil:
                             SuggestionList(suggestions: [], onUse: { _ in }, placeholders: 3)
                         case .failure(let error):
-                            Text(String(describing: error)).textRole(.secondary).foregroundStyle(Color.fail)
+                            Text(userMessage(error)).textRole(.secondary).foregroundStyle(Color.fail)
                         case .success(let result):
                             if let note = result.note {
                                 Text(note).textRole(.secondary).foregroundStyle(Color.textMuted)

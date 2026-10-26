@@ -93,7 +93,7 @@ export function SchedulingForm({
                 />
                 <span
                   aria-hidden="true"
-                  className="grid size-11 place-items-center rounded-full bg-fill text-[0.9375rem] font-medium transition-colors peer-checked:bg-link peer-checked:text-white peer-focus-visible:outline-3 peer-focus-visible:outline-offset-2 peer-focus-visible:outline-focus"
+                  className="grid size-11 place-items-center rounded-full bg-fill text-[0.9375rem] font-medium transition-colors peer-checked:bg-link peer-checked:text-on-status peer-focus-visible:outline-3 peer-focus-visible:outline-offset-2 peer-focus-visible:outline-focus"
                 >
                   {d}
                 </span>

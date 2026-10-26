@@ -16,6 +16,7 @@ import {
 } from "@/server/import";
 import { isStaff } from "@/server/leads";
 
+import { friendlyError } from "@leakbook/core";
 // Import Customers (owner, 2026-10-16). Owners import into their own shop; Sundeck Pro staff
 // (SUNDECK_STAFF_EMAILS, after two-step sign-in) import for a shop from /admin/import.
 
@@ -46,7 +47,7 @@ export async function checkImport(
       summary: await checkImportFor(t, clean, cleanMapping(mapping, width(mapping))),
     };
   } catch (e) {
-    return { error: e instanceof Error ? e.message : String(e) };
+    return { error: friendlyError(e) };
   }
 }
 

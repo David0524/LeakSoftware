@@ -139,7 +139,7 @@
             } catch let ask as MoveNeedsConfirm {
                 asking = (ask, item, tech, day)
             } catch {
-                result = (String(describing: error), true)
+                result = (userMessage(error), true)
             }
         }
 
@@ -152,7 +152,7 @@
                 result = (said, false)
                 saves += 1
             } catch {
-                result = (String(describing: error), true)
+                result = (userMessage(error), true)
             }
         }
 
@@ -308,7 +308,7 @@
                 asking = (ask, item, tech, day)
                 return
             } catch {
-                done(ResultBanner(kind: .error, title: String(describing: error)))
+                done(ResultBanner(kind: .error, title: userMessage(error)))
             }
             dismiss()
         }
@@ -321,7 +321,7 @@
                     m, changeSchedule: changeSchedule, board: board, sync: sync, companyId: company.id)
                 done(ResultBanner(kind: .success, title: said))
             } catch {
-                done(ResultBanner(kind: .error, title: String(describing: error)))
+                done(ResultBanner(kind: .error, title: userMessage(error)))
             }
             dismiss()
         }

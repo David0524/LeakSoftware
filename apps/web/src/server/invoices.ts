@@ -14,7 +14,8 @@ import {
 import { adminClient } from "./admin";
 import { EmailNotConfigured, emailConfigured, fromAddress, sendEmail } from "./email";
 import { ccList, emailRefusal } from "./usage";
-import { Refusal, dbFailure } from "./failures";
+import { Fault, Refusal, dbFailure } from "./failures";
+import { sendOnce, sentRecently } from "./send-once";
 import { TextingError, activeLine, sendCompanyText } from "./texting";
 
 // Invoices (M9): sending and receipts, shared by the office (cookie session), the phone
@@ -110,63 +111,85 @@ export async function sendInvoice(
   };
 
   if (opts.channel === "sms_device") {
-    await db.rpc("log_message", {
-      target_job: d.job_id,
-      via: "sms_device",
-      sent_to: to ?? d.customer?.phone ?? "phone",
-      template_key: "invoice",
-      delivery: "sent",
-    });
+    const phone = to ?? d.customer?.phone ?? "phone";
+    // One line in the log for a double tap.
+    if (
+      !(await sentRecently(db, {
+        jobId: d.job_id,
+        channel: "sms_device",
+        recipient: phone,
+        template: "invoice",
+      }))
+    )
+      await db.rpc("log_message", {
+        target_job: d.job_id,
+        via: "sms_device",
+        sent_to: phone,
+        template_key: "invoice",
+        delivery: "sent",
+      });
     return result;
   }
   if (opts.channel === "link") return result;
 
   const cc = ccFor(d, to!);
-  const { data: inv } = await db.from("invoice").select("company_id").eq("id", invoiceId).single();
-  const refusal = await emailRefusal(db, inv?.company_id as string, 1 + cc.length);
-  if (refusal) throw new Refusal(refusal);
   const sentTo = [to!, ...cc].join(", ");
-  const greeting = d.customer?.name ? `Hi ${d.customer.name},` : "Hello,";
-  const what = `Invoice${d.number ? ` #${d.number}` : ""} for ${formatCents(d.total_cents)}`;
-  const due =
-    d.balance_cents > 0 ? `Amount due: ${formatCents(d.balance_cents)}.` : "Nothing is due.";
-  try {
-    const email = await sendEmail({
-      companyId: inv?.company_id as string,
-      from: fromAddress(shop),
-      to: to!,
-      cc,
-      replyTo: d.company.email,
-      subject: reportLink
-        ? `Your invoice and service report from ${shop}`
-        : `Your invoice from ${shop}`,
-      text: reportLink
-        ? `${greeting}\n\n${what}${d.property ? ` (${d.property})` : ""}. ${due}\nView and pay it here:\n${link}\n\nThe month’s service report, with each water test, the chemicals we added, and photos:\n${reportLink}\n\n${shop}${d.company.phone ? `\n${d.company.phone}` : ""}`
-        : `${greeting}\n\n${what}${d.property ? ` (${d.property})` : ""}. ${due}\nView and pay it here:\n${link}\n\n${shop}${d.company.phone ? `\n${d.company.phone}` : ""}`,
-      html: `<p>${escapeHtml(greeting)}</p><p>${escapeHtml(what)}${d.property ? ` (${escapeHtml(d.property)})` : ""}. ${escapeHtml(due)}</p>${reportLink ? "<p>Your service report for the month has each water test, the chemicals we added, and photos.</p>" : ""}<p><a href="${link}">View and pay your invoice</a></p>${reportLink ? `<p><a href="${reportLink}">View your service report</a></p>` : ""}<p>${escapeHtml(shop)}${d.company.phone ? `<br>${escapeHtml(d.company.phone)}` : ""}</p>`,
-    });
-    await db.rpc("log_message", {
-      target_job: d.job_id,
-      via: "email",
-      sent_to: sentTo,
-      template_key: "invoice",
-      delivery: "sent",
-      provider: email.id,
-    });
-  } catch (e) {
-    await db.rpc("log_message", {
-      target_job: d.job_id,
-      via: "email",
-      sent_to: sentTo,
-      template_key: "invoice",
-      delivery: "failed",
-      failure: e instanceof Error ? e.message : String(e),
-    });
-    throw new Error(
-      `The invoice is sent and its link works, but the email failed: ${e instanceof Error ? e.message : e}. Text the link instead.`,
-    );
-  }
-  return { ...result, emailed: true };
+  // Twice in a row (a double tap, a slow answer asked again) is one email.
+  return sendOnce(
+    db,
+    { jobId: d.job_id, channel: "email", recipient: sentTo, template: "invoice" },
+    async () => {
+      const { data: inv } = await db
+        .from("invoice")
+        .select("company_id")
+        .eq("id", invoiceId)
+        .single();
+      const refusal = await emailRefusal(db, inv?.company_id as string, 1 + cc.length);
+      if (refusal) throw new Refusal(refusal);
+      const greeting = d.customer?.name ? `Hi ${d.customer.name},` : "Hello,";
+      const what = `Invoice${d.number ? ` #${d.number}` : ""} for ${formatCents(d.total_cents)}`;
+      const due =
+        d.balance_cents > 0 ? `Amount due: ${formatCents(d.balance_cents)}.` : "Nothing is due.";
+      try {
+        const email = await sendEmail({
+          companyId: inv?.company_id as string,
+          from: fromAddress(shop),
+          to: to!,
+          cc,
+          replyTo: d.company.email,
+          subject: reportLink
+            ? `Your invoice and service report from ${shop}`
+            : `Your invoice from ${shop}`,
+          text: reportLink
+            ? `${greeting}\n\n${what}${d.property ? ` (${d.property})` : ""}. ${due}\nView and pay it here:\n${link}\n\nThe month’s service report, with each water test, the chemicals we added, and photos:\n${reportLink}\n\n${shop}${d.company.phone ? `\n${d.company.phone}` : ""}`
+            : `${greeting}\n\n${what}${d.property ? ` (${d.property})` : ""}. ${due}\nView and pay it here:\n${link}\n\n${shop}${d.company.phone ? `\n${d.company.phone}` : ""}`,
+          html: `<p>${escapeHtml(greeting)}</p><p>${escapeHtml(what)}${d.property ? ` (${escapeHtml(d.property)})` : ""}. ${escapeHtml(due)}</p>${reportLink ? "<p>Your service report for the month has each water test, the chemicals we added, and photos.</p>" : ""}<p><a href="${link}">View and pay your invoice</a></p>${reportLink ? `<p><a href="${reportLink}">View your service report</a></p>` : ""}<p>${escapeHtml(shop)}${d.company.phone ? `<br>${escapeHtml(d.company.phone)}` : ""}</p>`,
+        });
+        await db.rpc("log_message", {
+          target_job: d.job_id,
+          via: "email",
+          sent_to: sentTo,
+          template_key: "invoice",
+          delivery: "sent",
+          provider: email.id,
+        });
+      } catch (e) {
+        await db.rpc("log_message", {
+          target_job: d.job_id,
+          via: "email",
+          sent_to: sentTo,
+          template_key: "invoice",
+          delivery: "failed",
+          failure: e instanceof Error ? e.message : String(e),
+        });
+        throw new Fault(
+          "The invoice is sent and its link works, but the email didn’t go through. Text the link instead.",
+        );
+      }
+      return { ...result, emailed: true };
+    },
+    () => ({ ...result, emailed: true }),
+  );
 }
 
 /**
@@ -291,55 +314,70 @@ export async function sendPaymentReceipt(
     if (line?.status !== "active")
       throw new Refusal("Texting isn’t set up. Send the receipt by email instead.");
     const body = receiptTextMessage(shop, payment, d, link);
-    try {
-      await sendCompanyText(
-        db,
-        userId,
-        { companyId, phone: to, body, jobId: d.job_id },
-        opts.origin,
-      );
-    } catch (e) {
-      const failure = e instanceof Error ? e.message : String(e);
-      await log("sms", to, "failed", { failure });
-      if (e instanceof TextingError) throw new Refusal(e.message);
-      throw e;
-    }
-    await log("sms", to, "sent");
-    return { channel, to, link, paymentId: payment.id };
+    // A double tap is one text.
+    return sendOnce(
+      db,
+      { jobId: d.job_id, channel: "sms", recipient: to, template: "receipt" },
+      async () => {
+        try {
+          await sendCompanyText(
+            db,
+            userId,
+            { companyId, phone: to, body, jobId: d.job_id },
+            opts.origin,
+          );
+        } catch (e) {
+          const failure = e instanceof Error ? e.message : String(e);
+          await log("sms", to, "failed", { failure });
+          if (e instanceof TextingError) throw new Refusal(e.message);
+          throw e;
+        }
+        await log("sms", to, "sent");
+        return { channel, to, link, paymentId: payment.id };
+      },
+      () => ({ channel, to, link, paymentId: payment.id }),
+    );
   }
 
   const cc = ccFor(d, to);
-  const refusal = await emailRefusal(db, companyId, 1 + cc.length);
-  if (refusal) throw new Refusal(refusal);
-  const paidOn = payment.paid_at
-    ? dateFormat("en-US", { dateStyle: "long", timeZone }).format(new Date(payment.paid_at))
-    : null;
-  const lines = receiptRows(d, payment, paidOn);
-  const greeting = d.customer?.name ? `Hi ${d.customer.name},` : "Hello,";
   const sentTo = [to, ...cc].join(", ");
-  try {
-    const email = await sendEmail({
-      companyId,
-      from: fromAddress(shop),
-      to,
-      cc,
-      replyTo: d.company.email,
-      subject: `Receipt from ${shop}`,
-      text: `${greeting}\n\nThank you for your payment.\n\n${lines.map((l) => `${l.label}: ${l.value}`).join("\n")}\n\nYour receipt:\n${link}\n\n${shop}${d.company.phone ? `\n${d.company.phone}` : ""}`,
-      html: `<p>${escapeHtml(greeting)}</p><p>Thank you for your payment.</p><table cellpadding="4" style="border-collapse:collapse">${lines
-        .map(
-          (l) =>
-            `<tr><td style="color:#555">${escapeHtml(l.label)}</td><td style="text-align:right;font-weight:600">${escapeHtml(l.value)}</td></tr>`,
-        )
-        .join(
-          "",
-        )}</table><p><a href="${link}">View your receipt</a></p><p>${escapeHtml(shop)}${d.company.phone ? `<br>${escapeHtml(d.company.phone)}` : ""}</p>`,
-    });
-    await log("email", sentTo, "sent", { provider: email.id });
-  } catch (e) {
-    const failure = e instanceof Error ? e.message : String(e);
-    await log("email", sentTo, "failed", { failure });
-    throw new Error(`The receipt email failed: ${failure}. Try again, or text it instead.`);
-  }
-  return { channel, to, link, paymentId: payment.id };
+  return sendOnce(
+    db,
+    { jobId: d.job_id, channel: "email", recipient: sentTo, template: "receipt" },
+    async () => {
+      const refusal = await emailRefusal(db, companyId, 1 + cc.length);
+      if (refusal) throw new Refusal(refusal);
+      const paidOn = payment.paid_at
+        ? dateFormat("en-US", { dateStyle: "long", timeZone }).format(new Date(payment.paid_at))
+        : null;
+      const lines = receiptRows(d, payment, paidOn);
+      const greeting = d.customer?.name ? `Hi ${d.customer.name},` : "Hello,";
+      try {
+        const email = await sendEmail({
+          companyId,
+          from: fromAddress(shop),
+          to,
+          cc,
+          replyTo: d.company.email,
+          subject: `Receipt from ${shop}`,
+          text: `${greeting}\n\nThank you for your payment.\n\n${lines.map((l) => `${l.label}: ${l.value}`).join("\n")}\n\nYour receipt:\n${link}\n\n${shop}${d.company.phone ? `\n${d.company.phone}` : ""}`,
+          html: `<p>${escapeHtml(greeting)}</p><p>Thank you for your payment.</p><table cellpadding="4" style="border-collapse:collapse">${lines
+            .map(
+              (l) =>
+                `<tr><td style="color:#555">${escapeHtml(l.label)}</td><td style="text-align:right;font-weight:600">${escapeHtml(l.value)}</td></tr>`,
+            )
+            .join(
+              "",
+            )}</table><p><a href="${link}">View your receipt</a></p><p>${escapeHtml(shop)}${d.company.phone ? `<br>${escapeHtml(d.company.phone)}` : ""}</p>`,
+        });
+        await log("email", sentTo, "sent", { provider: email.id });
+      } catch (e) {
+        const failure = e instanceof Error ? e.message : String(e);
+        await log("email", sentTo, "failed", { failure });
+        throw new Fault("The receipt email didn’t go through. Try again, or text it instead.");
+      }
+      return { channel, to, link, paymentId: payment.id };
+    },
+    () => ({ channel, to, link, paymentId: payment.id }),
+  );
 }

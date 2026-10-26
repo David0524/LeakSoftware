@@ -49,6 +49,7 @@
         @Environment(AppEnvironment.self) private var app
         @State private var saveProblem: String?
         @State private var saved = 0
+        @State private var created = false
         @State private var suggestions: (list: [Suggestion], note: String?)?
         @State private var starting = false
         @State private var planProblem: String?
@@ -490,6 +491,7 @@
         /// Start Plan: the server starts it, then a sync brings the customer, pool, plan and visits
         /// here before the customer's page opens.
         private func startPlan() {
+            guard !starting else { return }
             planProblem = nil
             starting = true
             Task {
@@ -504,20 +506,23 @@
                 } catch NewJobFormError.invalid {
                     // The fields show what to fix.
                 } catch {
-                    planProblem = String(describing: error)
+                    planProblem = userMessage(error)
                 }
             }
         }
 
         private func save() {
+            // Each save makes a customer, pool and job of their own: one per screen.
+            guard !created else { return }
             do {
                 let id = try form.save()
+                created = true
                 saved += 1
                 onCreated(id)
             } catch NewJobFormError.invalid {
                 // The fields show what to fix.
             } catch {
-                saveProblem = String(describing: error)
+                saveProblem = userMessage(error)
             }
         }
 
@@ -539,7 +544,7 @@
                     drive: DriveTimes())
                 suggestions = (found.suggestions, found.note)
             } catch {
-                suggestions = ([], String(describing: error))
+                suggestions = ([], userMessage(error))
             }
         }
 

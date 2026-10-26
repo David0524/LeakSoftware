@@ -7,6 +7,7 @@ import {
   parseDollars,
   receiptSentMessage,
   type ReceiptChannel,
+  friendlyError,
 } from "@leakbook/core";
 import { getOffice } from "@/lib/auth";
 import { discountTooLarge, friendlyDbError, lineDescriptionError } from "@/lib/limits";
@@ -44,7 +45,7 @@ export async function createInvoiceAction(_: FormState, form: FormData): Promise
   try {
     await createInvoice(await createClient(), text(form, "job"));
   } catch (e) {
-    return { error: e instanceof Error ? e.message : String(e) };
+    return { error: friendlyError(e) };
   }
   return done(form, "Invoice drafted. Check it, then send it.");
 }
@@ -83,7 +84,7 @@ export async function removeInvoiceLine(_: FormState, form: FormData): Promise<F
     .update({ deleted_at: new Date().toISOString() })
     .eq("id", text(form, "line"))
     .eq("company_id", office.company.id);
-  if (error) return { error: error.message };
+  if (error) return { error: friendlyDbError(error.message) };
   return done(form, "Line removed.");
 }
 
@@ -149,7 +150,7 @@ export async function sendInvoiceAction(
     };
   } catch (e) {
     if (e instanceof EmailNotConfigured) return { error: e.message };
-    return { error: e instanceof Error ? e.message : String(e) };
+    return { error: friendlyError(e) };
   }
 }
 
@@ -205,7 +206,7 @@ export async function sendReceiptAction(_: FormState, form: FormData): Promise<F
     });
   } catch (e) {
     if (e instanceof EmailNotConfigured) return { fields: { to: e.message } };
-    return { fields: { to: e instanceof Error ? e.message : String(e) } };
+    return { fields: { to: friendlyError(e) } };
   }
   refresh(form);
   return { message: receiptSentMessage(channel, text(form, "to")) };
@@ -218,7 +219,7 @@ export async function voidInvoiceAction(_: FormState, form: FormData): Promise<F
   ).rpc("void_invoice", {
     target_invoice: text(form, "invoice"),
   });
-  if (error) return { error: error.message };
+  if (error) return { error: friendlyDbError(error.message) };
   return done(form, "Invoice voided.");
 }
 
@@ -230,7 +231,7 @@ export async function billMaintenanceMonth(_: FormState, form: FormData): Promis
   const { data, error } = await (
     await createClient()
   ).rpc("create_monthly_invoices", { target_company: office.company.id, month });
-  if (error) return { error: error.message };
+  if (error) return { error: friendlyDbError(error.message) };
   revalidatePath("/invoices");
   const n = Number(data ?? 0);
   return {

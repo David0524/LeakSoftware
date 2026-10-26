@@ -79,7 +79,7 @@ async function saveTotals(
       deposit_cents: t.deposit_cents,
     })
     .eq("id", quoteId);
-  if (error) return { ok: false, error: error.message };
+  if (error) return { ok: false, error: friendlyDbError(error.message) };
   revalidatePath(`/jobs/${jobId}`);
   return { ok: true };
 }
@@ -92,7 +92,7 @@ export async function startQuote(jobId: string): Promise<Result> {
     job_id: jobId,
     discount_cents: 0,
   });
-  if (error) return { ok: false, error: error.message };
+  if (error) return { ok: false, error: friendlyDbError(error.message) };
   revalidatePath(`/jobs/${jobId}`);
   return { ok: true };
 }
@@ -194,7 +194,7 @@ export async function removeQuoteLine(input: { quoteId: string; lineId: string }
     .update({ deleted_at: new Date().toISOString() })
     .eq("id", input.lineId)
     .eq("quote_id", input.quoteId);
-  if (error) return { ok: false, error: error.message };
+  if (error) return { ok: false, error: friendlyDbError(error.message) };
   return saveTotals(db, settings, input.quoteId, quote.job_id, quote.discount_cents);
 }
 

@@ -584,7 +584,7 @@
                 startError = nil
                 started += 1
             } catch {
-                startError = String(describing: error)
+                startError = userMessage(error)
             }
         }
 

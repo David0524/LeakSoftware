@@ -604,7 +604,7 @@
                     sync, companyId: company.id, jobId: jobId, propertyId: target.propertyId, form: form)
                 if problem == nil { saved = form }
             } catch {
-                saveError = String(describing: error)
+                saveError = userMessage(error)
             }
         }
 
@@ -619,7 +619,7 @@
                     customerSupplied: supplied, note: note, firstSort: added.count)
                 if all { addedAll += 1 } else { addedOne += 1 }
             } catch {
-                saveError = String(describing: error)
+                saveError = userMessage(error)
             }
         }
 
@@ -628,7 +628,7 @@
             switch t {
             case .edit:
                 do { try VisitChemicalWrites.update(sync, companyId: company.id, a) } catch {
-                    saveError = String(describing: error)
+                    saveError = userMessage(error)
                 }
             case .suggestion:
                 let draft = AdditionDraft(
@@ -654,7 +654,7 @@
                 } else {
                     try VisitChemicalWrites.remove(sync, id: a.id)
                 }
-            } catch { saveError = String(describing: error) }
+            } catch { saveError = userMessage(error) }
         }
     }
 

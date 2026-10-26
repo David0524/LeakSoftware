@@ -1,4 +1,5 @@
 import { NOTIFICATION_KINDS, WEEKLY_SUMMARY_PREF } from "@leakbook/core";
+import { failureMessage } from "@/server/failures";
 import { bearerSession, jsonError } from "@/server/bearer";
 
 /** The choices a person can change: each push kind, and the weekly summary email. */
@@ -44,6 +45,6 @@ export async function PUT(request: Request) {
     .from("profile")
     .update({ notification_prefs: prefs })
     .eq("id", session.userId);
-  if (error) return jsonError(error.message, 500);
+  if (error) return jsonError(failureMessage(error), 500);
   return Response.json({ prefs });
 }

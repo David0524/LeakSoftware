@@ -66,6 +66,7 @@ export * from "./receipt";
 export * from "./usage";
 export * from "./setup-gate";
 export * from "./signed-out";
+export * from "./friendly-error";
 export * from "./password";
 export * from "./link-preview";
 export * from "./chemical-additions";

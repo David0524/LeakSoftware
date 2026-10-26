@@ -2,6 +2,7 @@ import { API_URL } from "../lib/config";
 import { getServices } from "../lib/services";
 import { ReportServerError, call } from "./reports";
 
+import { friendlyError } from "@leakbook/core";
 // The sample job (owner, 2026-10-22; docs/design/2026-10-22-first-win.md), through the
 // website's /api/jobs/<id>/sample, as the iPhone app and the website do it.
 
@@ -35,7 +36,10 @@ export async function deleteSample(jobId: string): Promise<void> {
   }
   if (!res.ok) {
     const data = (await res.json().catch(() => ({}))) as { error?: string };
-    throw new ReportServerError(data.error ?? `The server said ${res.status}.`, res.status);
+    throw new ReportServerError(
+      friendlyError(data.error ?? `The server said ${res.status}.`),
+      res.status,
+    );
   }
   await sync.syncNow();
 }

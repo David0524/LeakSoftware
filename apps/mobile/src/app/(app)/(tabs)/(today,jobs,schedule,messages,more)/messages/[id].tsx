@@ -1,5 +1,5 @@
 import { router, useLocalSearchParams } from "expo-router";
-import { formatPhone } from "@leakbook/core";
+import { formatPhone, friendlyError } from "@leakbook/core";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Alert, Animated, Text, View } from "react-native";
 import {
@@ -120,7 +120,7 @@ export default function Conversation() {
                   .catch((e: unknown) =>
                     setCallNote({
                       tone: "error",
-                      text: e instanceof Error ? e.message : String(e),
+                      text: friendlyError(e),
                     }),
                   )
               }
@@ -155,7 +155,7 @@ export default function Conversation() {
       }
       return true;
     } catch (e) {
-      Alert.alert("Not Sent", e instanceof Error ? e.message : String(e));
+      Alert.alert("Not Sent", friendlyError(e));
       return false;
     }
   }

@@ -18,6 +18,7 @@ import {
   formatSchedule,
   parseMarkup,
   type Media,
+  friendlyError,
 } from "@leakbook/core";
 import { useJobInspection } from "../../data/inspection";
 import {
@@ -145,7 +146,7 @@ export function MediaSection({
       setStatus({ text: added, tone: "pass" });
       return true;
     } catch (e) {
-      setStatus({ text: e instanceof Error ? e.message : String(e), tone: "fail" });
+      setStatus({ text: friendlyError(e), tone: "fail" });
       return false;
     }
   }
@@ -214,7 +215,7 @@ export function MediaSection({
       }
     } catch (e) {
       const title = kind === "photo" ? "Couldn’t take the photo" : "Couldn’t record the video";
-      const message = e instanceof Error ? e.message : String(e);
+      const message = friendlyError(e);
       if (e instanceof MediaError && e.needsSettings) {
         Alert.alert(title, message, [
           { text: "Cancel", style: "cancel" },

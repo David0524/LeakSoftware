@@ -379,8 +379,8 @@
                 }
             } catch {
                 withAnimation(ReorderMotion.animation(reduceMotion: reduceMotion)) { pendingOrder = nil }
-                moveNote = (String(describing: error), true)
-                AccessibilityNotification.Announcement(String(describing: error)).post()
+                moveNote = (userMessage(error), true)
+                AccessibilityNotification.Announcement(userMessage(error)).post()
             }
         }
 
@@ -391,7 +391,7 @@
                 try undo.undo(sync, companyId: company.id)
                 withAnimation(Motion.smooth) { moved = nil }
             } catch {
-                moveNote = (String(describing: error), true)
+                moveNote = (userMessage(error), true)
             }
         }
 
@@ -976,7 +976,7 @@
                     marked += 1
                 }
             } catch {
-                blocked = String(describing: error)
+                blocked = userMessage(error)
             }
         }
     }

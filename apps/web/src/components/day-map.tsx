@@ -252,7 +252,7 @@ function EnlargeSheet({
                     aria-hidden="true"
                     className={cx(
                       "grid size-7 shrink-0 place-items-center rounded-full font-display text-[0.9375rem] font-bold",
-                      on ? "bg-link text-white" : "bg-fill",
+                      on ? "bg-link text-on-status" : "bg-fill",
                     )}
                   >
                     {i + 1}

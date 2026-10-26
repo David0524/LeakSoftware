@@ -332,7 +332,7 @@
         }
 
         private func bill() async {
-            guard let company = session.company else { return }
+            guard let company = session.company, !busy else { return }
             busy = true
             defer { busy = false }
             do {
@@ -343,7 +343,7 @@
                 await sync.syncNow()
                 await done()
             } catch let failure as PostgrestError {
-                result = (failure.message, true)
+                result = (friendlyError(failure.message), true)
             } catch {
                 result = ("No connection. Try again when you're online.", true)
             }

@@ -3,6 +3,7 @@ import {
   planMovedBanner,
   visitMovedBanner,
   type JobChange,
+  friendlyError,
 } from "@leakbook/core";
 import type { JsonValue } from "@leakbook/sync";
 import { useRows } from "../../data/hooks";
@@ -55,8 +56,7 @@ export function usePlanMove({
   // The action sheet: the system's on iPhone, the drawn one on Android (ui/Select), whose
   // Cancel is PLAN_MOVE_CHOICES.cancel.
   const menu = useMenu();
-  const fail = (e: unknown) =>
-    show({ tone: "error", message: e instanceof Error ? e.message : String(e) });
+  const fail = (e: unknown) => show({ tone: "error", message: friendlyError(e) });
 
   /** Save the move with the visit marked `plan_moved`, and offer Undo. */
   function justThis(

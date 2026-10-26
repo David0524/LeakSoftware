@@ -153,7 +153,7 @@ export async function saveCustomer(_: FormState, form: FormData): Promise<FormSt
     })
     .eq("id", id)
     .eq("company_id", office.company.id);
-  if (error) return { error: error.message };
+  if (error) return { error: friendlyDbError(error.message) };
   revalidatePath(`/customers/${id}`);
   revalidatePath("/customers");
   return { message: "Saved." };
@@ -207,7 +207,7 @@ export async function savePool(_: FormState, form: FormData): Promise<FormState>
         : {}),
     })
     .eq("id", id);
-  if (error) return { error: error.message };
+  if (error) return { error: friendlyDbError(error.message) };
   if (moved) await locateProperty(office, id);
   revalidatePath(`/customers/${before.customer_id}`);
   revalidatePath("/jobs", "layout");
@@ -232,7 +232,7 @@ export async function saveAccessNotes(_: FormState, form: FormData): Promise<For
     .eq("company_id", office.company.id)
     .select("customer_id")
     .maybeSingle();
-  if (error) return { error: error.message };
+  if (error) return { error: friendlyDbError(error.message) };
   if (!data) return { error: "This pool is gone. Refresh the page." };
   revalidatePath(`/customers/${data.customer_id}`);
   revalidatePath("/jobs", "layout");
@@ -249,7 +249,7 @@ export async function deleteCustomer(_: FormState, form: FormData): Promise<Form
   ).rpc("delete_customer", {
     target_customer: text(form, "customer"),
   });
-  if (error) return { error: error.message };
+  if (error) return { error: friendlyDbError(error.message) };
   // No revalidation here: it would re-render this customer's page, now "not found", under
   // the button. The caller (DeleteCustomerForm) goes to the list and refreshes it.
   return { message: "deleted" };
@@ -397,7 +397,7 @@ export async function createJobAction(_: FormState, form: FormData): Promise<For
         notes: text(form, "notes") || null,
       },
     });
-    if (planError) return { error: planError.message };
+    if (planError) return { error: friendlyDbError(planError.message) };
     const made = started as { customer: string; property: string };
     await locateProperty(office, made.property);
     await saveShape(made.property);

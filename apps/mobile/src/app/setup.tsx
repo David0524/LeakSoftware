@@ -7,6 +7,7 @@ import { useFirstDownloadOpen } from "../state/firstDownload";
 import { useSession, useSyncStatus } from "../state/session";
 import { color, ios } from "../ui/theme";
 
+import { friendlyError } from "@leakbook/core";
 /**
  * Shown after sign-in until this phone has a company: first download, or join by invite. New
  * shops start on the website, where the owner sets up the shop and its trial (owner,
@@ -34,7 +35,7 @@ export default function Setup() {
       return setError(
         /network|fetch/i.test(rpcError.message)
           ? "No connection. Try again when you're online."
-          : rpcError.message,
+          : friendlyError(rpcError.message),
       );
     }
     await services.sync.syncNow();

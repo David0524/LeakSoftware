@@ -1,5 +1,5 @@
 import { bearerSession, jsonError } from "@/server/bearer";
-import { failureStatus } from "@/server/failures";
+import { failureMessage, failureStatus } from "@/server/failures";
 import { siteOrigin } from "@/lib/origin";
 import { deleteSample, sendSampleToSelf } from "@/server/sample";
 
@@ -23,7 +23,7 @@ export async function POST(request: Request, ctx: RouteContext<"/api/jobs/[id]/s
       ),
     );
   } catch (e) {
-    return jsonError(e instanceof Error ? e.message : String(e), failureStatus(e));
+    return jsonError(failureMessage(e), failureStatus(e));
   }
 }
 
@@ -36,6 +36,6 @@ export async function DELETE(request: Request, ctx: RouteContext<"/api/jobs/[id]
     await deleteSample(session.db, id);
     return Response.json({ deleted: true });
   } catch (e) {
-    return jsonError(e instanceof Error ? e.message : String(e), failureStatus(e));
+    return jsonError(failureMessage(e), failureStatus(e));
   }
 }

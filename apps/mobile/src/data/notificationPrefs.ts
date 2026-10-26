@@ -4,6 +4,7 @@ import {
   WEEKLY_SUMMARY_PREF,
   notificationOn,
   type NotificationKind,
+  friendlyError,
 } from "@leakbook/core";
 import { API_URL } from "../lib/config";
 import { getServices } from "../lib/services";
@@ -83,7 +84,7 @@ export function useNotificationPrefs() {
           headers: { authorization: `Bearer ${token}`, "content-type": "application/json" },
           body: JSON.stringify({ prefs: next }),
         });
-        if (!res.ok) throw new Error(`The server said ${res.status}.`);
+        if (!res.ok) throw new Error(friendlyError(`The server said ${res.status}.`));
       } catch {
         remember(before);
         setError("Couldn’t save. Try again when you have signal.");

@@ -112,7 +112,7 @@
                     try? restoreJobRepair(sync, job: row, id: line.id, feeCents: priceBefore)
                 }
             } catch {
-                saveError = String(describing: error)
+                saveError = userMessage(error)
             }
         }
     }
@@ -198,7 +198,7 @@
                 try addJobRepair(sync, job: job.job, repair)
                 dismiss()
             } catch {
-                saveError = String(describing: error)
+                saveError = userMessage(error)
             }
         }
     }

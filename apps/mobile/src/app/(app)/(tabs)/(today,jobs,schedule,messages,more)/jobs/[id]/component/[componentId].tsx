@@ -99,6 +99,7 @@ export default function ComponentScreen() {
           <Button
             title="Previous Item"
             kind="secondary"
+            repeatable
             wide
             disabled={!before}
             style={styles.step}
@@ -107,6 +108,7 @@ export default function ComponentScreen() {
           <Button
             title="Next Item"
             kind="secondary"
+            repeatable
             wide
             disabled={!after}
             style={styles.step}

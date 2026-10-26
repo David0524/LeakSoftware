@@ -14,6 +14,7 @@ import {
   type Customer,
   type FinalSection,
   type Job,
+  friendlyError,
 } from "@leakbook/core";
 import type { JsonValue } from "@leakbook/sync";
 import { useRows, useSyncStatus } from "../../data/hooks";
@@ -346,7 +347,7 @@ export function ReportTab({
         } else setSendStatus({ tone: "success", text: `Sent to ${email}.` });
       }
     } catch (e) {
-      const text = e instanceof Error ? e.message : String(e);
+      const text = friendlyError(e);
       // Photos still uploading: it waits on the phone and goes once they're up.
       if (kind !== "draft" && reportId && e instanceof UploadsPendingError)
         queueForLater(kind, reportId, "uploads");

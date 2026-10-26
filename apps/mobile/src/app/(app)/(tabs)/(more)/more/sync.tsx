@@ -6,6 +6,7 @@ import { Button, Group, ListRow, Notice, Screen, Section, T } from "../../../../
 import { syncSummary } from "../../../../../ui/SyncBar";
 import { space } from "../../../../../ui/theme";
 
+import { friendlyError } from "@leakbook/core";
 /**
  * Sync (spec 6.6, apps only): what this phone has sent and still holds, and changes the
  * office couldn't save, each with a way to let it go.
@@ -48,9 +49,7 @@ export default function Sync() {
             sync.retryUploads();
             void sync
               .syncNow()
-              .catch((e: unknown) =>
-                Alert.alert("Couldn’t sync", e instanceof Error ? e.message : String(e)),
-              );
+              .catch((e: unknown) => Alert.alert("Couldn’t sync", friendlyError(e)));
           }}
           disabled={status.phase === "syncing"}
         />

@@ -82,7 +82,14 @@ import { editRowMenu, type RowMenu } from "./editMenu";
 import type { RowGestures } from "./RowMenu";
 import { useNoSwipe } from "./SwipeNav";
 import { TechDot } from "./TechDot";
-import { FormKeyboardBar, KEYBOARD_BAR_HEIGHT, KeyboardAvoider, useKeyboardOpen } from "./keyboard";
+import {
+  FormKeyboardBar,
+  KEYBOARD_BAR_HEIGHT,
+  KeyboardAvoider,
+  noteFieldFocus,
+  useKeepFieldVisible,
+  useKeyboardOpen,
+} from "./keyboard";
 import { chooseAction } from "./confirm";
 import { phoneEdit } from "../lib/phoneTyping";
 
@@ -346,6 +353,7 @@ export function Screen({
 }) {
   const { header, ref, scrollProps, contentContainerStyle } = useScreenChrome(chrome);
   const headerHeight = useHeaderHeightSafe();
+  const insets = useSafeAreaInsets();
   // Once the large title has gone under the bar, the page keeps room to stay scrolled past it,
   // so folding something away (Schedule's map) never snaps the page to the top and flips the
   // title back to large (owner, 2026-10-20).
@@ -365,24 +373,31 @@ export function Screen({
     if (scrollRef) scrollRef.current = ref.current;
   });
   const chromeScroll = scrollProps.onScroll;
+  // The field being typed in is kept above the keyboard.
+  const fieldView = useKeepFieldVisible(
+    ref,
+    scroll && drawnChrome && chrome.title ? insets.top + BAR_HEIGHT : 0,
+  );
   const body = scroll ? (
     <Animated.ScrollView
       ref={ref}
       {...scrollProps}
+      onScroll={(e: NativeSyntheticEvent<NativeScrollEvent>) => {
+        fieldView.onScroll(e);
+        if (typeof chromeScroll === "function") chromeScroll(e);
+        onScrollMetrics?.({
+          y: e.nativeEvent.contentOffset.y,
+          contentHeight: e.nativeEvent.contentSize.height,
+          viewHeight: e.nativeEvent.layoutMeasurement.height,
+        });
+      }}
       {...(onScrollMetrics
         ? {
-            onScroll: (e: NativeSyntheticEvent<NativeScrollEvent>) => {
-              if (typeof chromeScroll === "function") chromeScroll(e);
-              onScrollMetrics({
-                y: e.nativeEvent.contentOffset.y,
-                contentHeight: e.nativeEvent.contentSize.height,
-                viewHeight: e.nativeEvent.layoutMeasurement.height,
-              });
-            },
             onContentSizeChange: (_w: number, h: number) => onScrollMetrics({ contentHeight: h }),
           }
         : null)}
       onLayout={(e: { nativeEvent: { layout: LayoutRectangle } }) => {
+        fieldView.onLayout(e);
         setViewHeight(e.nativeEvent.layout.height);
         onScrollMetrics?.({ viewHeight: e.nativeEvent.layout.height });
       }}
@@ -595,6 +610,41 @@ function buttonColors(kind: ButtonKind, pressed: boolean) {
   }
 }
 
+/** How long after a tap another is ignored, when the tap's work isn't something to wait for. */
+const TAP_LOCK_MS = 600;
+
+/**
+ * A press handler that runs once at a time: while the work an async `onPress` returns is running,
+ * and for a moment after any tap, another tap is ignored. This is the Android twin of the
+ * website's disabled-while-pending buttons and the iPhone's `OnceAtATime`; it covers the double
+ * tap that lands before a screen has drawn its own "busy" state.
+ */
+export function useTapOnce(onPress: () => unknown, repeatable = false) {
+  const locked = useRef(false);
+  const latest = useRef(onPress);
+  useEffect(() => {
+    latest.current = onPress;
+  });
+  return useCallback(() => {
+    if (locked.current) return;
+    if (repeatable) return void latest.current();
+    locked.current = true;
+    const release = () => {
+      locked.current = false;
+    };
+    let result: unknown;
+    try {
+      result = latest.current();
+    } catch (e) {
+      release();
+      throw e;
+    }
+    if (result && typeof (result as Promise<unknown>).then === "function")
+      (result as Promise<unknown>).then(release, release);
+    else setTimeout(release, TAP_LOCK_MS);
+  }, [repeatable]);
+}
+
 /**
  * A capsule button (spec 3.7), at least 44 tall, sized to its label at the left unless
  * `wide`. Title Case, saying what happens.
@@ -610,9 +660,15 @@ export function Button({
   icon,
   style,
   accessibilityLabel,
+  repeatable = false,
 }: {
   title: string;
-  onPress: () => void;
+  /**
+   * What the tap does. A button that sends, saves, creates, pays or books runs once at a time
+   * (owner, 2026-10-26: "taps submit twice"): while an async `onPress` runs, and for a moment
+   * after any tap, another tap does nothing.
+   */
+  onPress: () => unknown;
   kind?: ButtonKind;
   loading?: boolean;
   disabled?: boolean;
@@ -624,7 +680,10 @@ export function Button({
   style?: StyleProp<ViewStyle>;
   /** When the label alone doesn't say what it acts on ("Remove Skimmer 2"). */
   accessibilityLabel?: string;
+  /** A button meant to be tapped quickly in a row (Previous Item, Next Item). */
+  repeatable?: boolean;
 }) {
+  const press = useTapOnce(onPress, repeatable);
   // Today's card buttons are 50 pt capsules that fill their share of the row and press in
   // (0.96 and 85%; no scale with Reduce Motion), as docs/design/2026-10-20-today-card.md.
   const card = kind === "onWater" || kind === "onWaterTinted";
@@ -634,7 +693,7 @@ export function Button({
       accessibilityRole="button"
       accessibilityLabel={accessibilityLabel}
       accessibilityState={{ disabled: disabled || loading, busy: loading }}
-      onPress={onPress}
+      onPress={press}
       disabled={disabled || loading}
       android_ripple={card ? undefined : { color: color.ripple }}
       style={({ pressed }) => {
@@ -826,6 +885,7 @@ export function Field({
         {...phone}
         onFocus={(e) => {
           setFocused(true);
+          noteFieldFocus();
           input.onFocus?.(e);
         }}
         onBlur={(e) => {

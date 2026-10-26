@@ -1,4 +1,5 @@
 import type { ReactNode } from "react";
+import { friendlyError } from "@leakbook/core";
 import { Notice, cx } from "./ui";
 
 // Building blocks for the customer's quote, invoice, and report pages. On screen they follow
@@ -26,12 +27,15 @@ export function Banner({
   children: ReactNode;
 }) {
   if (print) return <Notice tone={tone}>{children}</Notice>;
+  // An error given as text is read in plain words (owner, 2026-10-26).
+  const shown =
+    tone === "error" && typeof children === "string" ? friendlyError(children) : children;
   return (
     <div
       role={tone === "error" ? "alert" : "status"}
       className={cx("rounded-2xl px-4 py-3", TINT[tone])}
     >
-      {children}
+      {shown}
     </div>
   );
 }

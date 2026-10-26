@@ -1,6 +1,6 @@
 import { siteOrigin } from "@/lib/origin";
 import { clientFromRequest, jsonError } from "@/server/bearer";
-import { failureStatus } from "@/server/failures";
+import { failureMessage, failureStatus } from "@/server/failures";
 import { sendInvoice } from "@/server/invoices";
 
 /** POST {channel: "email" | "sms_device", to}: send this invoice. Used by the phone. */
@@ -18,6 +18,6 @@ export async function POST(request: Request, ctx: RouteContext<"/api/invoices/[i
       }),
     );
   } catch (e) {
-    return jsonError(e instanceof Error ? e.message : String(e), failureStatus(e));
+    return jsonError(failureMessage(e), failureStatus(e));
   }
 }

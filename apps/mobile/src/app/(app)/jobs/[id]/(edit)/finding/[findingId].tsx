@@ -53,6 +53,9 @@ export default function FindingScreen() {
   const property = useRow<Property>("property", job?.property_id);
   // Add Photo on a new finding saves it first; the sheet then edits that finding.
   const [savedId, setSavedId] = useState<string | null>(null);
+  // The id of a finding this screen just made, kept synchronously: a second tap before the screen
+  // has drawn saves it again instead of adding a second one.
+  const madeId = useRef<string | null>(null);
   const findingId = params.findingId === "new" ? savedId : params.findingId;
   const existing = findingId ? insp.findings.find((f) => f.id === findingId) : undefined;
   const whereRef = useRef<TextInput>(null);
@@ -124,9 +127,12 @@ export default function FindingScreen() {
       status,
       notes: notes.trim() || null,
     };
-    let id = existing?.id ?? savedId;
+    let id = existing?.id ?? savedId ?? madeId.current;
     if (id) services.sync.write("finding", id, company.id, values);
-    else id = services.sync.insert("finding", company.id, { ...values, job_id: jobId });
+    else {
+      id = services.sync.insert("finding", company.id, { ...values, job_id: jobId });
+      madeId.current = id;
+    }
     haptics.success();
     if (stay) {
       setSavedId(id);

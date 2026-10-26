@@ -197,7 +197,7 @@
         }
 
         func message(_ error: Error) -> String {
-            (error as? MediaError)?.description ?? error.localizedDescription
+            (error as? MediaError)?.description ?? userMessage(error)
         }
     }
 

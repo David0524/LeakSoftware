@@ -6,7 +6,7 @@ import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { getOffice, requireOwner } from "@/lib/auth";
-import { SIGNER_NAME_MAX } from "@/lib/limits";
+import { SIGNER_NAME_MAX, friendlyDbError } from "@/lib/limits";
 import { siteOrigin } from "@/lib/origin";
 import { createClient } from "@/lib/supabase/server";
 import { publicClient } from "@/server/reports";
@@ -21,6 +21,7 @@ import {
 import { getCompany } from "@/lib/data";
 import type { FormState, PayState } from "./auth";
 
+import { friendlyError } from "@leakbook/core";
 const text = (f: FormData, k: string) => String(f.get(k) ?? "").trim();
 
 // ---------------------------------------------------------------------------
@@ -40,7 +41,7 @@ export async function acceptQuote(_: FormState, form: FormData): Promise<FormSta
     from_ip: ip,
     user_agent: h.get("user-agent"),
   });
-  if (error) return { error: error.message };
+  if (error) return { error: friendlyDbError(error.message) };
   // The team hears about it (owner, 2026-10-19: notifications), once.
   const admin = adminClient();
   if (admin && (data as { already?: boolean } | null)?.already === false) {
@@ -94,7 +95,7 @@ export async function sendQuoteAction(_: SendQuoteState, form: FormData): Promis
   ).rpc("send_quote", {
     target_quote: text(form, "quote"),
   });
-  if (error) return { error: error.message };
+  if (error) return { error: friendlyDbError(error.message) };
   revalidatePath(`/jobs/${text(form, "job")}`);
   return {
     message: "Quote sent. Copy the link for the customer.",
@@ -121,7 +122,7 @@ export async function setUpPayments(): Promise<FormState> {
       await siteOrigin(),
     );
   } catch (e) {
-    return { error: e instanceof Error ? e.message : String(e) };
+    return { error: friendlyError(e) };
   }
   redirect(url);
 }

@@ -12,6 +12,7 @@ import {
   isManagerRole,
   latestReceiptPayment,
   receiptSummary,
+  friendlyError,
 } from "@leakbook/core";
 import { useMemo, useState } from "react";
 import { Alert, Animated, Pressable, RefreshControl, StyleSheet, Text, View } from "react-native";
@@ -128,7 +129,7 @@ export default function Invoices() {
             );
       await shareCsv(kind, csv);
     } catch (e) {
-      Alert.alert("Couldn’t Export", e instanceof Error ? e.message : String(e));
+      Alert.alert("Couldn’t Export", friendlyError(e));
     }
   }
 
@@ -195,9 +196,7 @@ export default function Invoices() {
           onConfirm: () =>
             void voidInvoice(i.id)
               .then(() => banner.show({ tone: "success", message: `${name} voided` }))
-              .catch((e: unknown) =>
-                banner.show({ tone: "error", message: e instanceof Error ? e.message : String(e) }),
-              ),
+              .catch((e: unknown) => banner.show({ tone: "error", message: friendlyError(e) })),
         });
     };
     return rowGestures(actions, run, () =>

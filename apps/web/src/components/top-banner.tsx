@@ -166,7 +166,7 @@ function BannerView({ banner: b, leaving }: { banner: Banner; leaving: boolean }
       <span
         aria-hidden="true"
         className={cx(
-          "grid size-8 shrink-0 place-items-center rounded-full text-white",
+          "grid size-8 shrink-0 place-items-center rounded-full text-on-status",
           tone === "success"
             ? "bg-status-pass"
             : tone === "warning"

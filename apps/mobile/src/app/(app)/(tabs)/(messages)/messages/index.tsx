@@ -1,5 +1,5 @@
 import { router } from "expo-router";
-import { formatPhone, isManagerRole } from "@leakbook/core";
+import { formatPhone, isManagerRole, friendlyError } from "@leakbook/core";
 import { useEffect, useState } from "react";
 import { Platform, Pressable, RefreshControl, StyleSheet, Text, View } from "react-native";
 import { callFromCompany, setUnread, useConversations, useLine } from "../../../../../data/texting";
@@ -124,7 +124,7 @@ export default function Messages() {
                 .catch((e: unknown) =>
                   banner.show({
                     tone: "error",
-                    message: e instanceof Error ? e.message : String(e),
+                    message: friendlyError(e),
                   }),
                 );
             const run = (id: ConversationActionId) => {

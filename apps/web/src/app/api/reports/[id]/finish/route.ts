@@ -1,6 +1,6 @@
 import { UNSIGNED_CUSTOMER_AWAY } from "@leakbook/core";
 import { clientFromRequest, jsonError } from "@/server/bearer";
-import { failureStatus } from "@/server/failures";
+import { failureMessage, failureStatus } from "@/server/failures";
 import { finishReport } from "@/server/reports";
 
 /**
@@ -16,6 +16,6 @@ export async function POST(request: Request, ctx: RouteContext<"/api/reports/[id
     const token = await finishReport(db, id, body.customerAway ? UNSIGNED_CUSTOMER_AWAY : null);
     return Response.json({ token });
   } catch (e) {
-    return jsonError(e instanceof Error ? e.message : String(e), failureStatus(e));
+    return jsonError(failureMessage(e), failureStatus(e));
   }
 }

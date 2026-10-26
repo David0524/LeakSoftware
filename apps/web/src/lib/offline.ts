@@ -1,3 +1,4 @@
+import { friendlyError } from "@leakbook/core";
 import { usageError } from "./usage-client";
 
 // A server action that can't reach the server (no signal) rejects with a TypeError ("Failed to
@@ -27,8 +28,12 @@ export function orOffline<S extends { error?: string | null }, P>(
       if (!isNoConnection(e)) throw e;
       next = { ...state, message: undefined, error: NO_CONNECTION };
     }
-    // A save that didn't work: counted in the Admin portal's Usage (owner, 2026-10-22).
-    if (next?.error) usageError(next.error);
+    // A save that didn't work: counted in the Admin portal's Usage (owner, 2026-10-22), with the
+    // server's own words; the person reads them in plain ones (owner, 2026-10-26).
+    if (next?.error) {
+      usageError(next.error);
+      next = { ...next, error: friendlyError(next.error) };
+    }
     return next;
   };
 }

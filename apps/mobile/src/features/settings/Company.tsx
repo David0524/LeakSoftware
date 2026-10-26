@@ -9,6 +9,7 @@ import {
   uploadRefusal,
   uploadRefusalMessage,
   type Job,
+  friendlyError,
 } from "@leakbook/core";
 import type { JsonValue } from "@leakbook/sync";
 import { useRows } from "../../data/hooks";
@@ -288,7 +289,8 @@ function CompanyPage() {
           .upload(path, logo.body, { contentType: logo.type, upsert: false });
         // The bucket's own limits, or a read-only shop (security review M2), in plain words.
         const refusal = error ? uploadRefusal(null, error.message) : null;
-        if (error) failure = refusal ? uploadRefusalMessage(refusal, "logo") : error.message;
+        if (error)
+          failure = refusal ? uploadRefusalMessage(refusal, "logo") : friendlyError(error.message);
         else {
           shownLogo.current = path;
           write({ logo_path: path });
@@ -308,8 +310,9 @@ function CompanyPage() {
           next_number: n,
         });
         if (error) {
-          failure = error.message;
-          setErrors((x) => ({ ...x, number: error.message }));
+          const text = friendlyError(error.message);
+          failure = text;
+          setErrors((x) => ({ ...x, number: text }));
         } else setNext(null);
       } catch {
         failure = OFFLINE;

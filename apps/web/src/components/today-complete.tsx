@@ -5,6 +5,7 @@ import { useOptimistic, useTransition } from "react";
 import { markStop } from "@/app/actions/inspection";
 import { buzz } from "@/lib/haptics";
 import { orOffline } from "@/lib/offline";
+import { useTapGuard } from "@/lib/tap-guard";
 import type { SendPrompt } from "./job-work";
 import { saveFailed, useSetJobStatus } from "./instant";
 import { useConfirm } from "./sheet";
@@ -53,6 +54,7 @@ export function TodayComplete({
 }) {
   const router = useRouter();
   const [, start] = useTransition();
+  const tapOnce = useTapGuard();
   // Done shows at once, the way the phones do (owner, 2026-10-22): the button turns into its
   // undo and the banner says so. A save that fails puts it back and says why, with the job.
   const [shown, show] = useOptimistic(done);
@@ -85,11 +87,14 @@ export function TodayComplete({
       <button
         type="button"
         aria-label={`${shown ? after : "Mark Complete"} for ${customer}`}
-        onClick={async () => {
-          if (!shown && prompt && !(await confirm({ ...prompt, alert: true }))) return;
-          if (!shown) onCompleting?.();
-          run(!shown);
-        }}
+        onClick={() =>
+          // A double tap would complete the stop and, with the second tap, reopen it.
+          tapOnce(async () => {
+            if (!shown && prompt && !(await confirm({ ...prompt, alert: true }))) return;
+            if (!shown) onCompleting?.();
+            run(!shown);
+          })
+        }
         className={
           buttonClassName ??
           cx(

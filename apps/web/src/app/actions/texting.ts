@@ -1,7 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { uploadRefusal, uploadRefusalMessage, uuidv7 } from "@leakbook/core";
+import { friendlyError, uploadRefusal, uploadRefusalMessage, uuidv7 } from "@leakbook/core";
 import { getOffice, requireManager } from "@/lib/auth";
 import { siteOrigin } from "@/lib/origin";
 import { createClient } from "@/lib/supabase/server";
@@ -18,6 +18,7 @@ import { TextingError, sendCompanyText, startCall } from "@/server/texting";
 import { TwilioError, type AvailableNumber } from "@/server/twilio";
 import type { FormState } from "./auth";
 
+import { friendlyDbError } from "@/lib/limits";
 // Company texting and calls from the website (owner, 2026-10-16). Sending goes through the
 // server (Twilio); the line's settings are owner-only, and RLS checks that again.
 
@@ -27,7 +28,7 @@ const PICTURE_TYPES = ["image/jpeg", "image/png", "image/gif", "image/webp", "im
 const MAX_PICTURE_BYTES = 5 * 1024 * 1024;
 
 function message(e: unknown): string {
-  if (e instanceof TextingError || e instanceof TwilioError) return e.message;
+  if (e instanceof TextingError || e instanceof TwilioError) return friendlyError(e.message);
   throw e;
 }
 
@@ -123,7 +124,9 @@ export async function sendMessage(_: SendState, form: FormData): Promise<SendSta
     if (error) {
       // The bucket's own limits, or a read-only shop (security review M2), in plain words.
       const refusal = uploadRefusal(null, error.message);
-      return { error: refusal ? uploadRefusalMessage(refusal, "texts") : error.message };
+      return {
+        error: refusal ? uploadRefusalMessage(refusal, "texts") : friendlyDbError(error.message),
+      };
     }
     pictures.push({ path, type: file.type });
   }
@@ -140,6 +143,8 @@ export async function sendMessage(_: SendState, form: FormData): Promise<SendSta
         body: text(form, "body"),
         pictures,
         jobId: text(form, "job_id") || null,
+        // Sending the same message twice (a double tap, a retry) sends it once.
+        requestId: text(form, "request_id") || undefined,
       },
       await siteOrigin(),
     );
@@ -183,7 +188,7 @@ export async function markRead(conversationId: string) {
 export async function setUnread(conversationId: string, unread: boolean) {
   const supabase = await createClient();
   const { error } = await supabase.from("conversation").update({ unread }).eq("id", conversationId);
-  if (error) return { error: error.message };
+  if (error) return { error: friendlyDbError(error.message) };
   revalidatePath("/messages", "layout");
   return {};
 }

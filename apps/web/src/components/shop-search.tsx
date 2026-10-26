@@ -545,7 +545,7 @@ function SearchPanel({ userId, onClose }: { userId: string; onClose: () => void 
 
   return createPortal(
     <div
-      className="fixed inset-0 z-50 flex items-start justify-center bg-black/30 px-4 pt-[12vh]"
+      className="fixed inset-0 z-50 flex items-start justify-center bg-black/30 px-4 pt-[12vh] pb-[var(--kb-inset,0px)]"
       onPointerDown={(e) => {
         if (e.target === e.currentTarget) onClose();
       }}
@@ -554,7 +554,7 @@ function SearchPanel({ userId, onClose }: { userId: string; onClose: () => void 
         role="dialog"
         aria-modal="true"
         aria-label="Search"
-        className="glass-sheet flex max-h-[70vh] w-full max-w-xl flex-col overflow-hidden rounded-2xl shadow-2xl ring-1 ring-black/10"
+        className="glass-sheet flex max-h-[min(70vh,calc(var(--vv-height,100dvh)-12vh-1rem))] w-full max-w-xl flex-col overflow-hidden rounded-2xl shadow-2xl ring-1 ring-black/10"
       >
         <div className="flex items-center gap-2 border-b-[0.5px] border-separator p-3">
           <SearchInput

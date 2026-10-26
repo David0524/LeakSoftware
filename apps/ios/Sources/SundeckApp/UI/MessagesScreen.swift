@@ -141,7 +141,7 @@
                 let result = try await TextingServer(sync: sync, api: app.api).call(conversationId: c.id)
                 banner = ResultBanner(kind: .success, title: callResultText(calling: result.calling, demo: result.demo))
             } catch {
-                banner = ResultBanner(kind: .error, title: String(describing: error))
+                banner = ResultBanner(kind: .error, title: userMessage(error))
             }
         }
 

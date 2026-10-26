@@ -31,6 +31,7 @@ import {
   techStart,
 } from "@/server/route-days";
 
+import { friendlyDbError } from "@/lib/limits";
 // Plan Week (owner, 2026-10-20, docs/plans/route-maps.md): a week's movable jobs on days and
 // techs for the least driving, each day then ordered as Optimize orders it, with one Undo.
 
@@ -260,7 +261,7 @@ export async function planWeek(input: {
     if (error) {
       // Put back what changed so far, so a failure leaves the week as it was.
       await restore(db, office.company.id, changed);
-      return { error: error.message };
+      return { error: friendlyDbError(error.message) };
     }
     if (was) changed.push({ id, ...was });
   }

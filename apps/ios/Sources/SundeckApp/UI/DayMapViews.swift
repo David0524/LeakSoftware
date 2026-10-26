@@ -479,7 +479,7 @@
                             Text("\(s.number)")
                                 .font(.system(size: 15, weight: .bold, design: .rounded))
                                 .monospacedDigit()
-                                .foregroundStyle(on ? Color.white : Color.text)
+                                .foregroundStyle(on ? Color.onStatus : Color.text)
                                 .frame(width: 30, height: 30)
                                 .background(Circle().fill(on ? Color.link : Color.fill))
                                 .accessibilityHidden(true)

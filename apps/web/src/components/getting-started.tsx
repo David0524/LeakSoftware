@@ -115,7 +115,7 @@ export async function GettingStarted() {
                   aria-hidden="true"
                   className={
                     s.done
-                      ? "inline-flex size-6 shrink-0 items-center justify-center rounded-full bg-status-pass text-[0.8125rem] text-white"
+                      ? "inline-flex size-6 shrink-0 items-center justify-center rounded-full bg-status-pass text-[0.8125rem] text-on-status"
                       : "size-6 shrink-0 rounded-full border-2 border-control-border"
                   }
                 >

@@ -426,7 +426,7 @@ export async function updateMember(_: FormState, form: FormData): Promise<FormSt
     .eq("id", text(form, "id"));
   if (error)
     return {
-      error: error.message.includes("at least one")
+      error: friendlyDbError(error.message).includes("at least one")
         ? "The shop needs at least one active owner."
         : error.message.includes("Only the shop owner")
           ? OWNER_ONLY

@@ -8,7 +8,13 @@ import Animated, {
   withTiming,
 } from "react-native-reanimated";
 import { scheduleOnRN } from "react-native-worklets";
-import { formatTime, type Company, type DriveFn, type TodayMove } from "@leakbook/core";
+import {
+  formatTime,
+  type Company,
+  type DriveFn,
+  type TodayMove,
+  friendlyError,
+} from "@leakbook/core";
 import type { JobView } from "../../data/jobs";
 import { planContext } from "../../data/schedule";
 import { getServices } from "../../lib/services";
@@ -95,7 +101,7 @@ export function useTodayReorder(input: {
       setErrorFor(null);
       return { before: change.undo, message: change.message ?? "Moved." };
     } catch (e) {
-      setErrorFor({ tech: techId, text: e instanceof Error ? e.message : String(e) });
+      setErrorFor({ tech: techId, text: friendlyError(e) });
       return null;
     }
   }
@@ -123,7 +129,7 @@ export function useTodayReorder(input: {
         try {
           writeJobs(getServices().sync, company.id, done.before);
         } catch (e) {
-          setErrorFor({ tech: techId, text: e instanceof Error ? e.message : String(e) });
+          setErrorFor({ tech: techId, text: friendlyError(e) });
         }
       });
     },

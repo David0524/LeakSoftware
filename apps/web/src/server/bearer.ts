@@ -1,5 +1,6 @@
 import "server-only";
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
+import { friendlyError } from "@leakbook/core";
 import { supabaseAnonKey, supabaseUrl } from "@/lib/supabase/config";
 
 /**
@@ -31,5 +32,6 @@ export async function bearerSession(
 }
 
 export function jsonError(message: string, status: number) {
-  return Response.json({ error: message }, { status });
+  // Plain words only: a database or provider message is replaced (the phones show this text).
+  return Response.json({ error: friendlyError(message) }, { status });
 }

@@ -13,6 +13,7 @@ import {
   suggestItems,
   type Job,
   type PriceBookItem,
+  friendlyError,
 } from "@leakbook/core";
 import { useRow, useRows } from "../../data/hooks";
 import { useInspectionConfig, useJobInspection } from "../../data/inspection";
@@ -250,7 +251,7 @@ function QuoteBuilder({ job, quote }: { job: Job; quote: JobQuote }) {
       const r = await sendQuoteFromPhone(quote, company.name);
       await shareLink(r.message);
     } catch (e) {
-      setError(e instanceof Error ? e.message : String(e));
+      setError(friendlyError(e));
     } finally {
       setSending(false);
     }

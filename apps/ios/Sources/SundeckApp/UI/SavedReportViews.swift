@@ -77,7 +77,7 @@
                         try flow.saveAsSavedReport(name: name)
                         dismiss()
                     } catch {
-                        self.error = (error as? WebAPI.Failure)?.description ?? String(describing: error)
+                        self.error = (error as? WebAPI.Failure)?.description ?? userMessage(error)
                     }
                 }
                 .buttonStyle(.primary(fullWidth: true, size: .field))
@@ -133,7 +133,7 @@
                 Button(SavedReportText.delete, role: .destructive) {
                     guard let saved = deleting else { return }
                     do { try SavedReportWrites.delete(sync, id: saved.id) } catch {
-                        self.error = String(describing: error)
+                        self.error = userMessage(error)
                     }
                     deleting = nil
                 }
@@ -225,7 +225,7 @@
                 }
                 dismiss()
             } catch {
-                self.error = String(describing: error)
+                self.error = userMessage(error)
             }
         }
 
@@ -235,7 +235,7 @@
                 try SavedReportWrites.delete(sync, id: saved.id)
                 dismiss()
             } catch {
-                self.error = String(describing: error)
+                self.error = userMessage(error)
             }
         }
     }

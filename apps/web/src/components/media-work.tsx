@@ -36,6 +36,7 @@ import {
   type MediaKind,
   type SignaturePurpose,
   type SignatureStroke,
+  friendlyError,
 } from "@leakbook/core";
 import { tokens } from "@leakbook/tokens";
 import {
@@ -244,7 +245,7 @@ export function MediaCapture({
     try {
       setMessage({ text: await work() });
     } catch (e) {
-      setMessage({ text: e instanceof Error ? e.message : String(e), error: true });
+      setMessage({ text: friendlyError(e), error: true });
     } finally {
       setBusy(null);
     }
@@ -1124,7 +1125,7 @@ export function SignatureForm({
       setOpen(false);
       setSaved(true);
     } catch (e) {
-      setError(e instanceof Error ? e.message : String(e));
+      setError(friendlyError(e));
     } finally {
       setSaving(false);
     }

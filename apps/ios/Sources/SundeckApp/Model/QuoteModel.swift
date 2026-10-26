@@ -316,7 +316,7 @@ public final class QuoteFlow {
             try work()
             error = nil
         } catch {
-            self.error = String(describing: error)
+            self.error = userMessage(error)
         }
     }
 
@@ -437,7 +437,7 @@ public final class QuoteFlow {
 
     /// Send Quote: locks the prices on the server; the link and its text come back.
     public func send(_ quoteId: String, shopName: String, server: MoneyServer) async {
-        guard let quote = draft(quoteId) else { return }
+        guard let quote = draft(quoteId), !sending else { return }
         guard !quote.lines.isEmpty else {
             error = "Add a line before sending."
             return
@@ -449,7 +449,7 @@ public final class QuoteFlow {
             sent = try await server.sendQuote(quoteId, shopName: shopName)
             sentQuoteId = quoteId
         } catch {
-            self.error = (error as? WebAPI.Failure)?.description ?? String(describing: error)
+            self.error = (error as? WebAPI.Failure)?.description ?? userMessage(error)
         }
     }
 }

@@ -56,6 +56,7 @@ import {
 import { geocodeAddress, routingConfigured } from "@/server/routing";
 import type { FormState } from "./auth";
 
+import { friendlyDbError } from "@/lib/limits";
 // Planning routes from the schedule (routing, owner request 2026-10-13). Optimize orders
 // one tech's day; moving a job puts it on a tech's day at a place in the order; suggestions
 // fit a job into routes already planned. Times customers were promised never move.
@@ -761,7 +762,7 @@ export async function setPoolLocation(
       location_source: "gps",
     })
     .eq("id", propertyId);
-  if (error) return { error: error.message };
+  if (error) return { error: friendlyDbError(error.message) };
   revalidatePath("/jobs", "layout");
   refresh();
   return { message: "Pool location saved." };
@@ -781,7 +782,7 @@ export async function setShopLocation(lat: number, lng: number): Promise<RouteRe
       geocoded_address: formatAddress((data ?? {}) as Parameters<typeof formatAddress>[0]),
     })
     .eq("id", office.company.id);
-  if (error) return { error: error.message };
+  if (error) return { error: friendlyDbError(error.message) };
   revalidatePath("/settings/scheduling");
   refresh();
   return { message: "Shop location saved." };
@@ -803,7 +804,7 @@ export async function locateShop(): Promise<RouteResult> {
     .from("company")
     .update({ latitude: found.lat, longitude: found.lng, geocoded_address: address })
     .eq("id", office.company.id);
-  if (error) return { error: error.message };
+  if (error) return { error: friendlyDbError(error.message) };
   revalidatePath("/settings/scheduling");
   refresh();
   return { message: "Shop location found." };
@@ -898,7 +899,7 @@ export async function saveScheduling(_: FormState, form: FormData): Promise<Form
     },
   };
   const { error } = await db.from("company").update({ settings }).eq("id", office.company.id);
-  if (error) return { error: error.message };
+  if (error) return { error: friendlyDbError(error.message) };
   revalidatePath("/settings/scheduling");
   refresh();
   return { message: "Saved." };

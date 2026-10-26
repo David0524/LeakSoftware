@@ -17,6 +17,7 @@ import { createClient } from "@/lib/supabase/server";
 import { driveTimes } from "@/server/routing";
 import { routeContext, startPoints } from "@/server/route-days";
 
+import { friendlyDbError } from "@/lib/limits";
 // Routes (owner, 2026-10-20, docs/plans/route-maps.md part 3): which weekday each pool customer
 // is serviced on, and by whom. Saving a plan's day or tech re-makes its coming visits
 // (app.service_plan_changed). Owners and admins.
@@ -131,7 +132,7 @@ export async function setServiceDay(input: {
     .update(row)
     .eq("id", p.id)
     .eq("company_id", office.company.id);
-  if (error) return { error: error.message };
+  if (error) return { error: friendlyDbError(error.message) };
   refresh();
   return {
     message: "Moved. Its coming visits moved too.",
@@ -162,7 +163,7 @@ export async function undoServiceDays(rows: PlanUndo[]): Promise<RouteDayResult>
       })
       .eq("id", r.id)
       .eq("company_id", office.company.id);
-    if (error) return { error: error.message };
+    if (error) return { error: friendlyDbError(error.message) };
   }
   refresh();
   return { message: "Put back as it was." };

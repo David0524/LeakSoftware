@@ -26,6 +26,7 @@ import {
   type ComponentType,
   type Job,
   type JobComponent,
+  friendlyError,
 } from "@leakbook/core";
 import { saveChecklistResult, saveInspectionAnswer, useJobInspection } from "../../data/inspection";
 import { saveCapture } from "../../data/media";
@@ -299,7 +300,7 @@ function InspectionItem({
       const file = await captureWithCamera("photo");
       if (file) await saveCapture(job.company_id, target, file, position);
     } catch (e) {
-      const message = e instanceof Error ? e.message : String(e);
+      const message = friendlyError(e);
       if (e instanceof MediaError && e.needsSettings) {
         Alert.alert("Couldn’t take the photo", message, [
           { text: "Cancel", style: "cancel" },

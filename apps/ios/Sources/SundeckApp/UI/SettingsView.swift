@@ -88,8 +88,8 @@
 
         private func footer(_ status: SyncStatus) -> String? {
             if status.phase == .offline { return "This phone is offline. Changes are saved here and sync later." }
-            if let error = status.error { return "Last error: \(error)" }
-            if let error = status.lastUploadError { return "Last upload error: \(error)" }
+            if let error = status.error { return "Last error: \(friendlyError(error))" }
+            if let error = status.lastUploadError { return "Last upload error: \(friendlyError(error))" }
             return nil
         }
 

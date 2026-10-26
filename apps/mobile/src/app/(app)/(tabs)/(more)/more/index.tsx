@@ -7,6 +7,7 @@ import {
   START_FROM_COPY,
   isManagerRole,
   offersPool,
+  friendlyError,
 } from "@leakbook/core";
 import { useState, useSyncExternalStore } from "react";
 import { ActivityIndicator, Alert, Linking, Pressable, StyleSheet, View } from "react-native";
@@ -283,9 +284,7 @@ function DeleteAccount({ onDeleted }: { onDeleted: () => Promise<void> }) {
         if (r.status === "deleted") return onDeleted();
         Alert.alert("Request sent", r.message ?? "We’ll email you when it’s done.");
       })
-      .catch((e: unknown) =>
-        Alert.alert("Couldn’t delete", e instanceof Error ? e.message : String(e)),
-      )
+      .catch((e: unknown) => Alert.alert("Couldn’t delete", friendlyError(e)))
       .finally(() => setDeleting(false));
   }
   return (

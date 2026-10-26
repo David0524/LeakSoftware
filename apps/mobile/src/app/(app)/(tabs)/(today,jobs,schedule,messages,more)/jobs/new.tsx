@@ -1,5 +1,5 @@
 import { router } from "expo-router";
-import { useMemo, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import { StyleSheet, View } from "react-native";
 import {
   POOL_TYPE_LABELS,
@@ -41,6 +41,7 @@ import {
   usualVisit,
   type JobType,
   type PlanRepeat as Repeat,
+  friendlyError,
 } from "@leakbook/core";
 import { useRows, useSyncStatus } from "../../../../../data/hooks";
 import { AddressSuggestions } from "../../../../../features/address/AddressSuggestions";
@@ -132,6 +133,7 @@ function NewJobForm() {
   });
   const [planErrors, setPlanErrors] = useState<PlanErrors>({});
   const [starting, setStarting] = useState(false);
+  const created = useRef(false);
   const [planError, setPlanError] = useState<string | null>(null);
   const setPlan = (k: keyof typeof planForm) => (v: string) =>
     setPlanForm((f) => ({ ...f, [k]: v }));
@@ -374,7 +376,7 @@ function NewJobForm() {
       setPlanError(
         isNetworkError(message)
           ? "You’re offline. Starting a plan needs a connection; try again once you’re back online."
-          : message,
+          : friendlyError(message),
       );
     } finally {
       setStarting(false);
@@ -429,6 +431,9 @@ function NewJobForm() {
             : { kind: "later" },
     });
     const { sync } = services;
+    // Each tap would add another customer, pool and job (ids are made per write): once the
+    // checks pass, this screen creates its job once (owner, 2026-10-26: "taps submit twice").
+    if (created.current) return;
     // Customer, property, job, and its checklist are saved together or not at all.
     let newPool: string | null = null;
     const jobId = sync.batch(() => {
@@ -490,6 +495,7 @@ function NewJobForm() {
       }
       return job;
     });
+    created.current = true;
     // A new pool is found on the map from its address once it's up.
     if (newPool) void locateAfterSync(company.id, { property_id: newPool });
     haptics.success();

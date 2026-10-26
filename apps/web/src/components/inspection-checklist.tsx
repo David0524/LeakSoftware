@@ -16,6 +16,7 @@ import {
   type ChecklistSection,
   type ChoiceOption,
   type InspectionValue,
+  friendlyError,
 } from "@leakbook/core";
 import {
   removeComponent,
@@ -194,7 +195,7 @@ const SELECTED: Record<NonNullable<ChoiceOption["flag"]> | "plain", string> = {
   attention: "bg-status-warning text-on-status",
   leaking: "bg-status-fail text-on-status",
   na: "bg-status-excluded text-on-status",
-  plain: "bg-link text-white",
+  plain: "bg-link text-on-status",
 };
 const PILL =
   "inline-flex min-h-11 items-center rounded-full px-4 text-[0.9375rem] font-semibold transition-colors";
@@ -360,7 +361,7 @@ function InspectionItem({
           {row.photos ? (
             <span
               aria-hidden="true"
-              className="absolute -top-0.5 -right-0.5 grid min-w-5 place-items-center rounded-full bg-link px-1 text-[0.75rem] font-semibold text-white"
+              className="absolute -top-0.5 -right-0.5 grid min-w-5 place-items-center rounded-full bg-link px-1 text-[0.75rem] font-semibold text-on-status"
             >
               {row.photos}
             </span>
@@ -380,7 +381,7 @@ function InspectionItem({
                 try {
                   await uploadItemPhotos(jobId, row.id, files);
                 } catch (err) {
-                  setPhotoError(err instanceof Error ? err.message : String(err));
+                  setPhotoError(friendlyError(err));
                 }
               });
             }}

@@ -19,7 +19,7 @@ import { createClient } from "@/lib/supabase/server";
 import { adminClient } from "@/server/admin";
 import { transcribeMedia } from "@/server/transcribe";
 import { transcriptionDeps } from "@/server/transcription";
-import { SIGNER_NAME_MAX } from "@/lib/limits";
+import { SIGNER_NAME_MAX, friendlyDbError } from "@/lib/limits";
 
 // Photos, videos, voice notes, and signatures from the browser (M9.5). The browser uploads
 // the file straight to storage with a one-time upload URL made here as the signed-in member
@@ -132,7 +132,7 @@ export async function finishUpload(m: UploadedMedia): Promise<Result<null>> {
     longitude: m.longitude,
     caption: m.caption.trim() || null,
   });
-  if (error) return { ok: false, error: error.message };
+  if (error) return { ok: false, error: friendlyDbError(error.message) };
   if (m.kind === "audio") after(() => transcribe(m.id));
   revalidatePath(`/jobs/${m.jobId}`);
   return { ok: true, value: null };
@@ -161,7 +161,7 @@ export async function saveMarkup(input: {
     .eq("id", input.mediaId)
     .eq("company_id", office.company.id)
     .eq("kind", "photo");
-  if (error) return { ok: false, error: error.message };
+  if (error) return { ok: false, error: friendlyDbError(error.message) };
   revalidatePath(`/jobs/${input.jobId}`);
   return { ok: true, value: null };
 }
@@ -177,7 +177,7 @@ export async function deleteMedia(input: {
     .update({ deleted_at: new Date().toISOString() })
     .eq("id", input.mediaId)
     .eq("company_id", office.company.id);
-  if (error) return { ok: false, error: error.message };
+  if (error) return { ok: false, error: friendlyDbError(error.message) };
   revalidatePath(`/jobs/${input.jobId}`);
   return { ok: true, value: null };
 }
@@ -193,7 +193,7 @@ export async function restoreMedia(input: {
     .update(RESTORE_ROW)
     .eq("id", input.mediaId)
     .eq("company_id", office.company.id);
-  if (error) return { ok: false, error: error.message };
+  if (error) return { ok: false, error: friendlyDbError(error.message) };
   revalidatePath(`/jobs/${input.jobId}`);
   return { ok: true, value: null };
 }
@@ -230,7 +230,7 @@ export async function finishSignature(input: {
     longitude: input.longitude,
     device_id: "web",
   });
-  if (error) return { ok: false, error: error.message };
+  if (error) return { ok: false, error: friendlyDbError(error.message) };
   revalidatePath(`/jobs/${input.jobId}`);
   return { ok: true, value: null };
 }
@@ -243,7 +243,7 @@ export async function removeSignature(input: { id: string; jobId: string }): Pro
     .update({ deleted_at: new Date().toISOString() })
     .eq("id", input.id)
     .eq("company_id", office.company.id);
-  if (error) return { ok: false, error: error.message };
+  if (error) return { ok: false, error: friendlyDbError(error.message) };
   revalidatePath(`/jobs/${input.jobId}`);
   return { ok: true, value: null };
 }

@@ -20,6 +20,7 @@ import {
   suggestionDates,
   type JobLock,
   type SuggestedTime,
+  friendlyError,
 } from "@leakbook/core";
 import { useJobViews, type JobView } from "../../data/jobs";
 import {
@@ -118,7 +119,7 @@ export function useJobMove(onResult: (r: MoveResult) => void) {
       haptics.success();
       onResult({ message: change.message });
     } catch (e) {
-      onResult({ error: e instanceof Error ? e.message : String(e) });
+      onResult({ error: friendlyError(e) });
     }
   }
 
@@ -368,7 +369,7 @@ export function JobSchedule({ jobId }: { jobId: string }) {
               saveJobLock(company.id, job.id, next);
               haptics.success();
             } catch (e) {
-              setResult({ error: e instanceof Error ? e.message : String(e) });
+              setResult({ error: friendlyError(e) });
             }
           }}
         />

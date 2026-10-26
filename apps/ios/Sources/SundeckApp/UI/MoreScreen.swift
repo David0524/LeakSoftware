@@ -336,6 +336,7 @@
                 result = ("Type DELETE to confirm.", true)
                 return
             }
+            guard !deleting else { return }
             deleting = true
             defer { deleting = false }
             do {
@@ -346,7 +347,7 @@
                     result = (reply["message"]?.string ?? "We’ll email you when it’s done.", false)
                 }
             } catch {
-                result = (String(describing: error), true)
+                result = (userMessage(error), true)
             }
         }
     }
@@ -399,7 +400,7 @@
                 load()
                 result = ("Saved.", false)
             } catch {
-                result = (String(describing: error), true)
+                result = (userMessage(error), true)
             }
         }
     }
@@ -448,7 +449,7 @@
                 result = ("Enter a US mobile number.", true)
                 return
             }
-            guard let id = session.user?.id else { return }
+            guard let id = session.user?.id, !saving else { return }
             saving = true
             defer { saving = false }
             do {

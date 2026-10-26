@@ -145,7 +145,7 @@ function TermsConsent() {
     <T variant="secondary" muted style={styles.consent}>
       {c.before}
       <Text
-        style={styles.link}
+        style={[styles.link, { color: color.link }]}
         accessibilityRole="link"
         onPress={() => open(`/in-app${c.termsPath}`)}
       >
@@ -153,7 +153,7 @@ function TermsConsent() {
       </Text>
       {c.between}
       <Text
-        style={styles.link}
+        style={[styles.link, { color: color.link }]}
         accessibilityRole="link"
         onPress={() => open(`/in-app${c.privacyPath}`)}
       >
@@ -166,5 +166,5 @@ function TermsConsent() {
 
 const styles = StyleSheet.create({
   consent: { textAlign: "center" },
-  link: { color: color.link, textDecorationLine: "underline" },
+  link: { textDecorationLine: "underline" },
 });

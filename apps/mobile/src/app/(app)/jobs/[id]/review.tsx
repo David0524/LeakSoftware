@@ -19,6 +19,7 @@ import {
   type Property,
   type SignaturePurpose,
   type SignatureStroke,
+  friendlyError,
 } from "@leakbook/core";
 import { useRow } from "../../../../data/hooks";
 import {
@@ -175,7 +176,7 @@ export default function ReviewScreen() {
       leave(() => router.back());
     } catch (e) {
       if (customerAway) {
-        setError(e instanceof Error ? e.message : String(e));
+        setError(friendlyError(e));
         setBusy(null);
         return;
       }

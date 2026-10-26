@@ -10,6 +10,7 @@ import {
   type FinalSection,
   type Job,
   type ReportSnapshot,
+  friendlyError,
 } from "@leakbook/core";
 import { tokens } from "@leakbook/tokens";
 import { useJobRows } from "../../data/hooks";
@@ -86,7 +87,7 @@ export function SampleJob({ job, customer }: { job: Job; customer: string }) {
       );
       if (!r.emailed) void WebBrowser.openBrowserAsync(r.link);
     } catch (e) {
-      setError(e instanceof Error ? e.message : String(e));
+      setError(friendlyError(e));
     } finally {
       setSending(false);
     }
@@ -102,7 +103,7 @@ export function SampleJob({ job, customer }: { job: Job; customer: string }) {
         void deleteSample(job.id)
           .then(() => router.navigate("/"))
           .catch((e: unknown) => {
-            setError(e instanceof Error ? e.message : String(e));
+            setError(friendlyError(e));
             setDeleting(false);
           });
       },
@@ -176,7 +177,7 @@ export function SampleJob({ job, customer }: { job: Job; customer: string }) {
             {logoPath && logoUrl ? (
               <Image
                 source={{ uri: logoUrl }}
-                style={styles.logo}
+                style={[styles.logo, { backgroundColor: color.surface }]}
                 resizeMode="contain"
                 accessibilityLabel={`${shop?.name ?? company.name} logo`}
               />
@@ -214,7 +215,6 @@ const styles = StyleSheet.create({
     width: 160,
     height: 56,
     borderRadius: radius.sm,
-    backgroundColor: color.surface,
     marginBottom: space["2"],
   },
   reportBody: { padding: space["5"], gap: space["4"] },

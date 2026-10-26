@@ -6,6 +6,7 @@ import { getOffice } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import type { FormState } from "./auth";
 
+import { friendlyDbError } from "@/lib/limits";
 /**
  * More › Notifications: this person's kinds, on or off (owner, 2026-10-19), and the weekly
  * summary email when the page showed it (owners and admins); otherwise that choice is kept.
@@ -29,7 +30,7 @@ export async function saveNotificationPrefs(_: FormState, form: FormData): Promi
     .from("profile")
     .update({ notification_prefs: prefs })
     .eq("id", office.user.id);
-  if (error) return { error: error.message };
+  if (error) return { error: friendlyDbError(error.message) };
   revalidatePath("/more", "layout");
   return { message: "Saved." };
 }

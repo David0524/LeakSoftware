@@ -32,7 +32,7 @@
                     } label: {
                         Text(title)
                             .font(.role(.bodyEmphasis))
-                            .foregroundStyle(Color.onHeader)
+                            .foregroundStyle(Color.onStatus)
                             .frame(width: max(width, -offset))
                             .frame(maxHeight: .infinity)
                             .background(Color.fail)
@@ -188,7 +188,7 @@
                             Image(systemName: a.systemImage).font(.system(size: 18, weight: .semibold))
                             Text(a.title).font(.role(.footnote).weight(.semibold))
                         }
-                        .foregroundStyle(Color.onHeader)
+                        .foregroundStyle(Color.onStatus)
                         .frame(width: max(width, shown / CGFloat(list.count)))
                         .frame(maxHeight: .infinity)
                         .background(a.tint)

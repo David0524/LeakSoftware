@@ -17,6 +17,7 @@ import {
   splitEmails,
   type PoolType,
   type Property,
+  friendlyError,
 } from "@leakbook/core";
 import type { JsonValue } from "@leakbook/sync";
 import { useState } from "react";
@@ -121,7 +122,7 @@ export default function CustomerPage() {
             target_customer: customer!.id,
           });
           if (error) {
-            Alert.alert("Couldn’t Delete", error.message);
+            Alert.alert("Couldn’t Delete", friendlyError(error.message));
             return;
           }
           await sync.syncNow();

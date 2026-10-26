@@ -68,7 +68,7 @@ public struct AuthMessage: Error, Equatable, CustomStringConvertible {
         {
             return AuthMessage("No connection. Connect to the internet to sign in.")
         }
-        return AuthMessage(message)
+        return AuthMessage(friendlyError(message))
     }
 }
 
@@ -119,7 +119,7 @@ public struct SupabaseAuthBackend: AuthBackend {
             reply = try await WebAPI(baseURL: AppConfig.webURL) { nil }.postSignedOut(
                 "api/auth/sign-up", .object(body))
         } catch {
-            throw AuthMessage.friendly(String(describing: error))
+            throw AuthMessage.friendly(userMessage(error))
         }
         if reply["confirmEmail"]?.bool != false { return false }
         // No confirmation on this server: sign straight in.
@@ -182,6 +182,6 @@ public struct SupabaseAuthBackend: AuthBackend {
     private func message(_ error: Error) -> String {
         if let error = error as? Supabase.AuthError { return error.message }
         if let error = error as? URLError { return "network \(error.code.rawValue)" }
-        return String(describing: error)
+        return userMessage(error)
     }
 }

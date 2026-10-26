@@ -383,6 +383,7 @@
 
         /// The server checks every job is paid or canceled, then removes the customer and pools.
         private func delete(_ c: CustomerDetail) async {
+            guard !deleting else { return }
             deleting = true
             defer { deleting = false }
             do {
@@ -390,7 +391,7 @@
                 await sync.syncNow()
                 dismiss()
             } catch let failure as PostgrestError {
-                deleteError = failure.message
+                deleteError = friendlyError(failure.message)
             } catch {
                 deleteError = "No connection. Try again when you're online."
             }
@@ -470,7 +471,7 @@
                 saved()
                 dismiss()
             } catch {
-                self.error = String(describing: error)
+                self.error = userMessage(error)
             }
         }
     }
@@ -580,7 +581,7 @@
                 saved()
                 dismiss()
             } catch {
-                self.error = String(describing: error)
+                self.error = userMessage(error)
             }
         }
     }

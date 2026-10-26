@@ -169,7 +169,7 @@
         }
 
         private func send() {
-            guard let customerId = job.customerId else { return }
+            guard let customerId = job.customerId, !sending else { return }
             sending = true
             error = nil
             let body = text
@@ -181,7 +181,7 @@
                     AccessibilityNotification.Announcement("Texted \(job.customerName)").post()
                     dismiss()
                 } catch {
-                    self.error = String(describing: error)
+                    self.error = userMessage(error)
                     sending = false
                 }
             }

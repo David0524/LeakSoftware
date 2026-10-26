@@ -788,7 +788,12 @@ const ReadingRow = memo(
                   </View>
                   <T
                     variant="secondary"
-                    style={[face.medium, styles.suggestion, large && { textAlign: "left" }]}
+                    style={[
+                      face.medium,
+                      styles.suggestion,
+                      { color: color.text },
+                      large && { textAlign: "left" },
+                    ]}
                   >
                     {suggestionText(row.step)}
                   </T>
@@ -1331,7 +1336,7 @@ const styles = StyleSheet.create({
   readingTop: { flexDirection: "row", alignItems: "center", gap: space["2"] },
   well: { borderRadius: shape.block, paddingHorizontal: space["3"], paddingTop: space["2"] },
   suggested: { flexDirection: "row", alignItems: "center", gap: space["2"] },
-  suggestion: { flex: 1, textAlign: "right", color: color.text },
+  suggestion: { flex: 1, textAlign: "right" },
   order: {
     width: 20,
     height: 20,

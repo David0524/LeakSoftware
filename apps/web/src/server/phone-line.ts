@@ -7,6 +7,7 @@ import { TextingError, activeLine, type PhoneLine } from "./texting";
 import { TwilioError, buyNumber, searchNumbers, twilioConfigured } from "./twilio";
 import { READ_ONLY_MESSAGE, shopWritable } from "./usage";
 
+import { friendlyDbError } from "@/lib/limits";
 // The company number (Settings › Phone and Texting), shared by the website's settings page and
 // the apps (/api/phone, owner 2026-10-20: "From the app, do not link to the website"). The
 // caller has checked the person is an owner or admin of `companyId`; `user` acts as them, and
@@ -143,7 +144,7 @@ export async function saveLineSettings(
     })
     .eq("company_id", companyId)
     .neq("status", "released");
-  if (error) return { error: error.message };
+  if (error) return { error: friendlyDbError(error.message) };
   return { message: "Saved." };
 }
 
@@ -169,7 +170,7 @@ export async function saveOwnPhone(
   if (!isUsNumber(phone))
     return { error: "Enter a US mobile number.", fields: { phone: "Enter a US mobile number." } };
   const { error } = await user.from("profile").update({ phone }).eq("id", userId);
-  if (error) return { error: error.message };
+  if (error) return { error: friendlyDbError(error.message) };
   return { message: "Saved." };
 }
 

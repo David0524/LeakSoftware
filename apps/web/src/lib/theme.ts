@@ -13,9 +13,12 @@ export type Theme = "light" | "dark";
 export const THEME_STORAGE_KEY = "lb-theme";
 export const THEME_EVENT = "lb-theme-change";
 
-/** The (public) pages, which are always light. */
+/**
+ * The (public) pages and the pages for the shop's customers (a quote, invoice or report link,
+ * the sign-off, unsubscribe and weekly-summary pages), which are always light.
+ */
 export const LIGHT_ONLY_PATHS =
-  /^\/(?:privacy|terms|security|status|sign-in|sign-up|setup|invite|forgot-password|reset-password)?(?:\/|$)/;
+  /^\/(?:privacy|terms|security|status|sign-in|sign-up|setup|invite|forgot-password|reset-password|q|i|r|stop|unsubscribe|weekly-summary|sign-off|in-app)?(?:\/|$)/;
 
 export const THEME_SCRIPT = `(function(){try{
 var d=document.documentElement;

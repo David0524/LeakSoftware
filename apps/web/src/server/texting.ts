@@ -8,7 +8,10 @@ import {
   isUsNumber,
   toE164,
   isManagerRole,
+  friendlyError,
 } from "@leakbook/core";
+import { friendlyDbError } from "@/lib/limits";
+import { isUuid } from "@/lib/uuid";
 import { adminClient } from "./admin";
 import { notifyText } from "./notify-events";
 import { REVIEW_CALLS_MESSAGE, isReviewShop } from "./review-shop";
@@ -103,7 +106,7 @@ async function conversationFor(db: Db, companyId: string, phone: string) {
       .maybeSingle();
     if (again) return again as { id: string; customer_id: string | null; opted_out: boolean };
   }
-  if (error) throw new TextingError(error.message);
+  if (error) throw new TextingError(friendlyDbError(error.message));
   return made as { id: string; customer_id: string | null; opted_out: boolean };
 }
 
@@ -127,7 +130,15 @@ export interface SendInput {
   body: string;
   pictures?: Picture[];
   jobId?: string | null;
+  /**
+   * An id the sender made for this one message (a UUID, kept while the same message is tried
+   * again): a text sent twice with it is sent once, and the second answer is the first's.
+   */
+  requestId?: string;
 }
+
+/** A text from the same person to the same conversation this many seconds ago is a double tap. */
+const REPEAT_SECONDS = 10;
 
 /** Send a text from the company number, as the signed-in person. */
 export async function sendCompanyText(user: Db, userId: string, input: SendInput, origin: string) {
@@ -206,11 +217,44 @@ export async function sendCompanyText(user: Db, userId: string, input: SendInput
     : await conversationFor(db, companyId, phone);
   if (conv.opted_out)
     throw new TextingError("This customer replied STOP. They can text START to get texts again.");
+  // A message sent twice (a double tap, a slow answer asked again) goes out once.
+  const requestId = input.requestId && isUuid(input.requestId) ? input.requestId : undefined;
+  const sentBefore = async () => {
+    if (requestId) {
+      const { data } = await db
+        .from("text_message")
+        .select("id, conversation_id")
+        .eq("id", requestId)
+        .eq("company_id", companyId)
+        .maybeSingle();
+      return data
+        ? { id: data.id as string, conversationId: data.conversation_id as string }
+        : null;
+    }
+    // Older apps send no id: the same words from the same person a moment ago.
+    if (!body || pictures.length) return null;
+    const { data } = await db
+      .from("text_message")
+      .select("id, conversation_id")
+      .eq("conversation_id", conv.id)
+      .eq("direction", "out")
+      .eq("sent_by", userId)
+      .eq("body", body)
+      .gte("created_at", new Date(Date.now() - REPEAT_SECONDS * 1000).toISOString())
+      .limit(1);
+    const first = data?.[0];
+    return first
+      ? { id: first.id as string, conversationId: first.conversation_id as string }
+      : null;
+  };
+  const before = await sentBefore();
+  if (before) return { ...before, demo: !twilioConfigured() };
   if (!(await takeAllowance(companyId, "text", 1, db))) throw new TextingError(LIMIT_MESSAGE);
 
   const { data: row, error } = await db
     .from("text_message")
     .insert({
+      ...(requestId ? { id: requestId } : {}),
       company_id: companyId,
       conversation_id: conv.id,
       direction: "out",
@@ -222,7 +266,12 @@ export async function sendCompanyText(user: Db, userId: string, input: SendInput
     })
     .select("id")
     .single();
-  if (error) throw new TextingError(error.message);
+  if (error?.code === "23505" && requestId) {
+    // The same message arrived twice at once: the other request is sending it.
+    const again = await sentBefore();
+    if (again) return { ...again, demo: !twilioConfigured() };
+  }
+  if (error) throw new TextingError(friendlyDbError(error.message));
 
   // Twilio fetches pictures from links that work for a few days.
   const mediaUrls: string[] = [];
@@ -261,7 +310,8 @@ export async function sendCompanyText(user: Db, userId: string, input: SendInput
     conversationPreview({ kind: "text", body, pictures: pictures.length }),
     false,
   );
-  if (errorText) throw new TextingError(`Not sent: ${errorText}`);
+  // The carrier's own words are in the message's error column; people read the plain version.
+  if (errorText) throw new TextingError(friendlyError(`Not sent: ${errorText}`));
   return { id: row.id as string, conversationId: conv.id, demo: !twilioConfigured() };
 }
 
@@ -313,7 +363,7 @@ export async function receiveText(params: Record<string, string>): Promise<Respo
     status: "received",
     provider_sid: params.MessageSid ?? null,
   });
-  if (error && error.code !== "23505") throw new TextingError(error.message);
+  if (error && error.code !== "23505") throw new TextingError(friendlyDbError(error.message));
   // A new text (not Twilio's retry of one already filed) reaches the team's phones.
   if (!error && !conv.opted_out)
     await notifyText(db, {
@@ -425,7 +475,7 @@ export async function incomingCall(params: Record<string, string>, origin: strin
     status: "ringing",
     provider_sid: params.CallSid ?? null,
   });
-  if (error && error.code !== "23505") throw new TextingError(error.message);
+  if (error && error.code !== "23505") throw new TextingError(friendlyDbError(error.message));
   const company = await companyInfo(db, line.company_id);
   const phones = await ringPhones(db, line);
   if (!phones.length || !inBusinessHours(new Date(), company.timezone, company.settings)) {

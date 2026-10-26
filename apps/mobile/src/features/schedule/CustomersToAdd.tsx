@@ -15,6 +15,7 @@ import {
   workDay,
   type Company,
   type DaySuggestion,
+  friendlyError,
 } from "@leakbook/core";
 import { planContext, type TeamMember } from "../../data/schedule";
 import { savePlanDays, useRoutePlans } from "../../data/serviceRoutes";
@@ -112,7 +113,7 @@ export function useCustomersToAdd({
       savePlanDays(company.id, list);
       return null;
     } catch (e) {
-      return e instanceof Error ? e.message : String(e);
+      return friendlyError(e);
     }
   }
 

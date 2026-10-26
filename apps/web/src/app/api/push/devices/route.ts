@@ -1,4 +1,5 @@
 import { adminClient } from "@/server/admin";
+import { failureMessage } from "@/server/failures";
 import { bearerSession, jsonError } from "@/server/bearer";
 
 /** The services a phone registers with: Apple's for the iPhone app, Expo's for Android. */
@@ -29,7 +30,7 @@ export async function POST(request: Request) {
       { ...device, user_id: session.userId, last_seen_at: new Date().toISOString() },
       { onConflict: "service,token" },
     );
-  if (error) return jsonError(error.message, 500);
+  if (error) return jsonError(failureMessage(error), 500);
   return Response.json({ ok: true });
 }
 

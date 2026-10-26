@@ -396,7 +396,7 @@
                 let response = try await client.rpc(function, params: arguments).execute()
                 return (try? JSONDecoder().decode(JSONValue.self, from: response.data)) ?? .null
             } catch let error as PostgrestError {
-                throw WebAPI.Failure(description: error.message)
+                throw WebAPI.Failure(description: friendlyError(error.message))
             }
         }
     }

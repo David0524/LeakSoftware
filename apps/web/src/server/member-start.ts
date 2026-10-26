@@ -3,6 +3,7 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import { homeLookupAddress, uuidv7, type LatLng, type MemberStart } from "@leakbook/core";
 import { geocodeAddress, routingConfigured } from "./routing";
 
+import { friendlyDbError } from "@/lib/limits";
 // Where each person's day starts: the shop, or their home (owner, 2026-10-21;
 // docs/design/2026-10-21-start-from-home.md). member_start rows are read as the signed-in
 // person, so RLS gives a tech only their own and owners and admins everyone's.
@@ -131,7 +132,7 @@ export async function saveMemberStartWith(
     : await db
         .from("member_start")
         .insert({ id: uuidv7(), company_id: who.companyId, user_id: userId, ...values });
-  if (error) return { error: error.message };
+  if (error) return { error: friendlyDbError(error.message) };
 
   if (address) await locateHomeWith(db, who.companyId, userId);
   if (input.startFrom !== "home") return { saved: { found: null } };

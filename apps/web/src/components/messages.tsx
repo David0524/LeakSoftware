@@ -42,11 +42,22 @@ export function Composer({
   const phoneId = useId();
   const photosId = useId();
   const [chosen, setChosen] = useState(0);
+  // One id for one message, kept while the same words are tried again after a lost connection,
+  // so a send the server did get is never sent twice (a new message gets a new id).
+  const attempt = useRef<{ key: string; id: string } | null>(null);
   // Sent: clear the form, and open a new conversation. Done in the action, not an effect.
   const [state, action, pending] = useActionState(async (prev: SendState, data: FormData) => {
     // Shrunk first, like the apps (owner, 2026-10-24): a 48 MP photo goes as about 1 MB.
     await shrinkTextPictures(data);
+    const key = ["conversation_id", "customer_id", "phone", "body"]
+      .map((k) => String(data.get(k) ?? ""))
+      .concat(String(data.getAll("pictures").length))
+      .join("|");
+    if (attempt.current?.key !== key) attempt.current = { key, id: crypto.randomUUID() };
+    data.set("request_id", attempt.current.id);
     const next = await orOffline(sendMessage)(prev, data);
+    // Only a request that never reached the server is tried again under the same id.
+    if (next.error !== NO_CONNECTION) attempt.current = null;
     if (next.sentAt) {
       form.current?.reset();
       setChosen(0);
@@ -114,7 +125,8 @@ export function Composer({
             // Enter sends, as in Messages; Shift-Enter starts a new line.
             if (e.key === "Enter" && !e.shiftKey && !e.nativeEvent.isComposing) {
               e.preventDefault();
-              form.current?.requestSubmit();
+              // A second Enter while the first is sending sends nothing more.
+              if (!pending) form.current?.requestSubmit();
             }
           }}
           className="block min-h-11 min-w-0 flex-1 resize-y rounded-[1.375rem] border border-control-border bg-surface px-4 py-2.5 text-text placeholder:text-placeholder focus:outline-3 focus:outline-focus"

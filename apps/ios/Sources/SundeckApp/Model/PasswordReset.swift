@@ -44,7 +44,7 @@ public final class PasswordResetForm {
             let reply = try await api.postSignedOut("api/auth/password-reset", ["email": .string(address)])
             sent = reply["message"]?.string ?? "If \(address) has a Sundeck Pro account, a reset link is on its way."
         } catch {
-            self.error = String(describing: error)
+            self.error = userMessage(error)
         }
     }
 }

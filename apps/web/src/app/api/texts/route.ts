@@ -1,4 +1,5 @@
 import { bearerSession, jsonError } from "@/server/bearer";
+import { failureMessage } from "@/server/failures";
 import { siteOrigin } from "@/lib/origin";
 import { TextingError, sendCompanyText, type Picture } from "@/server/texting";
 
@@ -18,6 +19,7 @@ export async function POST(request: Request) {
     body?: string;
     pictures?: Picture[];
     jobId?: string | null;
+    requestId?: string;
   } | null;
   if (!input) return jsonError("Send JSON.", 400);
   try {
@@ -29,7 +31,6 @@ export async function POST(request: Request) {
     );
     return Response.json(sent);
   } catch (e) {
-    if (e instanceof TextingError) return jsonError(e.message, 400);
-    throw e;
+    return jsonError(failureMessage(e), e instanceof TextingError ? 400 : 500);
   }
 }

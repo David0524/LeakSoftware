@@ -446,7 +446,7 @@
                 blocked = nil
                 if to == .done { completed += 1 } else { changes += 1 }
             } catch {
-                saveError = String(describing: error)
+                saveError = userMessage(error)
             }
         }
 

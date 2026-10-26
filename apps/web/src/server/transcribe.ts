@@ -1,4 +1,4 @@
-// Voice-note transcription (BUILD_PLAN M5). The phone records offline and uploads the
+import { friendlyError } from "@leakbook/core"; // Voice-note transcription (BUILD_PLAN M5). The phone records offline and uploads the
 // audio; once uploaded it asks this server to transcribe. The transcript is written to the
 // media row by the server and reaches every device through normal sync.
 
@@ -68,7 +68,7 @@ export async function transcribeMedia(
     await deps.saveTranscript(mediaId, { transcript_status: "failed" });
     return {
       status: 502,
-      body: { error: `Transcription failed: ${e instanceof Error ? e.message : String(e)}` },
+      body: { error: `Transcription failed: ${friendlyError(e)}` },
     };
   }
 }

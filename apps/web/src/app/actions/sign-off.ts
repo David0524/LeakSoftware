@@ -4,7 +4,7 @@ import { adminClient } from "@/server/admin";
 import { notifyReportSigned } from "@/server/notify-events";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
-import { UNSIGNED_CUSTOMER_AWAY } from "@leakbook/core";
+import { UNSIGNED_CUSTOMER_AWAY, friendlyError } from "@leakbook/core";
 import { getOffice } from "@/lib/auth";
 import { isUuid } from "@/lib/uuid";
 import { createClient } from "@/lib/supabase/server";
@@ -40,7 +40,7 @@ export async function finishSignOff(input: {
   try {
     await finishReport(db, input.reportId, input.customerAway ? UNSIGNED_CUSTOMER_AWAY : null);
   } catch (e) {
-    return { ok: false, error: e instanceof Error ? e.message : String(e) };
+    return { ok: false, error: friendlyError(e) };
   }
   // Signed (not finished without the customer): the team hears about it.
   const admin = adminClient();
@@ -61,7 +61,7 @@ export async function reviewWithCustomer(
   try {
     if (final.length) await saveReportText(await createClient(), reportId, final);
   } catch (e) {
-    return { error: e instanceof Error ? e.message : String(e) };
+    return { error: friendlyError(e) };
   }
   redirect(`/sign-off/${reportId}`);
 }

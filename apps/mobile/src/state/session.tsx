@@ -10,6 +10,7 @@ import {
 import { AppState } from "react-native";
 import type { Session, User } from "@supabase/supabase-js";
 import {
+  friendlyError,
   heardFromOther,
   parseHeardFrom,
   PASSWORD_HINT,
@@ -313,5 +314,5 @@ function friendlyAuthError(message: string): string {
     return `Choose a stronger password: ${PASSWORD_HINT[0]!.toLowerCase()}${PASSWORD_HINT.slice(1)}`;
   }
   if (/network|fetch/i.test(message)) return "No connection. Connect to the internet to sign in.";
-  return message;
+  return friendlyError(message);
 }

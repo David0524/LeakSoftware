@@ -18,6 +18,7 @@ import {
   lineTotal,
   type Customer,
   type Job,
+  friendlyError,
 } from "@leakbook/core";
 import {
   createJobInvoice,
@@ -78,7 +79,7 @@ export function InvoiceSection({ job, customer }: { job: Job; customer: Customer
       await createJobInvoice(job.id);
       setMessage({ tone: "success", text: "Invoice drafted. Check it, then send it." });
     } catch (e) {
-      setMessage({ tone: "error", text: e instanceof Error ? e.message : String(e) });
+      setMessage({ tone: "error", text: friendlyError(e) });
     } finally {
       setBusy(false);
     }
@@ -401,7 +402,7 @@ function DraftParts({ invoice, customer }: { invoice: JobInvoice; customer?: Cus
         });
       } else setSendMessage({ tone: "success", text: `Sent to ${email}.` });
     } catch (e) {
-      setSendMessage({ tone: "error", text: e instanceof Error ? e.message : String(e) });
+      setSendMessage({ tone: "error", text: friendlyError(e) });
     } finally {
       setBusy(null);
     }
@@ -559,7 +560,7 @@ function VoidButton({
               setBusy(true);
               setError(null);
               voidInvoice(invoiceId)
-                .catch((e: unknown) => setError(e instanceof Error ? e.message : String(e)))
+                .catch((e: unknown) => setError(friendlyError(e)))
                 .finally(() => setBusy(false));
             },
           })

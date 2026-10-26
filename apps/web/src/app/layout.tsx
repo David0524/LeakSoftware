@@ -6,6 +6,7 @@ import { DiscardGuard } from "@/components/discard-guard";
 import { STARTUP_IMAGES, rootMetadata } from "@/lib/root-metadata";
 import { body, display } from "./fonts";
 import "./globals.css";
+import { KeyboardInset } from "@/components/keyboard-inset";
 import { PhoneFormatting } from "@/components/phone-format";
 
 export const metadata: Metadata = rootMetadata;
@@ -42,6 +43,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
           <DiscardGuard />
         </Suspense>
         <PhoneFormatting />
+        <KeyboardInset />
       </body>
     </html>
   );

@@ -256,6 +256,7 @@
                 result = SaveBarResult(text: problem, error: true)
                 return
             }
+            guard !saving else { return }
             saving = true
             defer { saving = false }
             var failure: String?
@@ -284,7 +285,7 @@
                 }
                 session.reloadCompanies()
             } catch {
-                failure = String(describing: error)
+                failure = userMessage(error)
             }
             if failure == nil, let pendingLogo { failure = await uploadLogo(pendingLogo) }
             if failure == nil, numberChanged { failure = await saveNextNumber() }
@@ -313,7 +314,7 @@
                 return nil
             } catch {
                 let message = String(describing: error)
-                return isNetworkFailure(message) ? WebAPI.Failure.noConnection : message
+                return isNetworkFailure(message) ? WebAPI.Failure.noConnection : friendlyError(message)
             }
         }
 
@@ -380,7 +381,7 @@
                 let message = String(describing: error)
                 // The bucket's own limits, or a read-only shop (security review M2), in plain words.
                 if let refusal = UploadRefusal(status: nil, message: message) { return refusal.message(.logo) }
-                return isNetworkFailure(message) ? WebAPI.Failure.noConnection : message
+                return isNetworkFailure(message) ? WebAPI.Failure.noConnection : friendlyError(message)
             }
         }
     }
@@ -439,7 +440,7 @@
                                 } label: {
                                     Text(SchedulingForm.dayLetters[d])
                                         .font(.role(.secondary).weight(.medium))
-                                        .foregroundStyle(on ? Color.onHeader : Color.text)
+                                        .foregroundStyle(on ? Color.onStatus : Color.text)
                                         .frame(width: minTarget, height: minTarget)
                                         .background(Circle().fill(on ? Color.link : Color.fill))
                                 }
@@ -517,7 +518,7 @@
                 savedForm = form
                 result = ("Saved.", false)
             } catch {
-                result = (String(describing: error), true)
+                result = (userMessage(error), true)
             }
         }
 
@@ -532,7 +533,7 @@
                 await sync.syncNow()
             } catch {
                 if let failure = error as? WebAPI.Failure { MapLookups.answered(sync.kv, status: failure.status) }
-                locateResult = (String(describing: error), true)
+                locateResult = (userMessage(error), true)
             }
         }
     }
@@ -650,7 +651,7 @@
                 done("Saved.")
                 dismiss()
             } catch {
-                self.error = String(describing: error)
+                self.error = userMessage(error)
             }
         }
     }

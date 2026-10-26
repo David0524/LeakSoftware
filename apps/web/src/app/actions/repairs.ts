@@ -16,6 +16,7 @@ import { isUuid } from "@/lib/uuid";
 import { createClient } from "@/lib/supabase/server";
 import type { FormState } from "./auth";
 
+import { friendlyDbError } from "@/lib/limits";
 // A repair job's repairs, from the job page (owner, 2026-10-22: "add additional repair";
 // packages/core/src/repairs.ts). The same rows and rules as the phones, written as the signed-in
 // member (row security applies). The server keeps the job's price at their sum
@@ -147,7 +148,7 @@ export async function restoreRepairAction(jobId: string, repairId: string): Prom
     .update(RESTORE_ROW)
     .eq("id", repairId)
     .eq("company_id", office.company.id);
-  if (error) return { error: error.message };
+  if (error) return { error: friendlyDbError(error.message) };
   revalidatePath(`/jobs/${jobId}`);
   return { message: "Restored." };
 }

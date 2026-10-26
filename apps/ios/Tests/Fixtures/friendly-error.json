@@ -1,0 +1,286 @@
+{
+  "friendlyError": [
+    {
+      "args": [
+        "duplicate key value violates unique constraint \"job_pkey\""
+      ],
+      "result": "That already exists."
+    },
+    {
+      "args": [
+        "JWT expired"
+      ],
+      "result": "Your sign-in expired. Sign in again to continue."
+    },
+    {
+      "args": [
+        "TypeError: Failed to fetch"
+      ],
+      "result": "No connection. Check your signal and try again."
+    },
+    {
+      "args": [
+        "Load failed"
+      ],
+      "result": "No connection. Check your signal and try again."
+    },
+    {
+      "args": [
+        "Network request failed"
+      ],
+      "result": "No connection. Check your signal and try again."
+    },
+    {
+      "args": [
+        "The operation couldn’t be completed. (NSURLErrorDomain error -1009.)"
+      ],
+      "result": "No connection. Check your signal and try again."
+    },
+    {
+      "args": [
+        "URLError(_nsError: Error Domain=NSURLErrorDomain Code=-1001 \"The request timed out.\")"
+      ],
+      "result": "No connection. Check your signal and try again."
+    },
+    {
+      "args": [
+        "Error Domain=NSCocoaErrorDomain Code=4 \"The file doesn’t exist.\""
+      ],
+      "result": "Something went wrong. Try again."
+    },
+    {
+      "args": [
+        "The server said 500."
+      ],
+      "result": "Something went wrong on our end. Try again in a moment."
+    },
+    {
+      "args": [
+        "The server said 502."
+      ],
+      "result": "Something went wrong on our end. Try again in a moment."
+    },
+    {
+      "args": [
+        "The server said 401."
+      ],
+      "result": "Your sign-in expired. Sign in again to continue."
+    },
+    {
+      "args": [
+        "The server said 403."
+      ],
+      "result": "You don’t have permission to do that."
+    },
+    {
+      "args": [
+        "The server said 404."
+      ],
+      "result": "That wasn’t found. Refresh and try again."
+    },
+    {
+      "args": [
+        "The server said 413."
+      ],
+      "result": "That file is too large."
+    },
+    {
+      "args": [
+        "The server said 429."
+      ],
+      "result": "Too many tries. Wait a minute and try again."
+    },
+    {
+      "args": [
+        "new row for relation \"job\" violates row-level security policy for table \"job\""
+      ],
+      "result": "You don’t have permission to do that."
+    },
+    {
+      "args": [
+        "new row for relation \"job\" violates check constraint \"job_status_check\""
+      ],
+      "result": "That isn’t allowed. Check what you entered and try again."
+    },
+    {
+      "args": [
+        "null value in column \"name\" of relation \"customer\" violates not-null constraint"
+      ],
+      "result": "A required field is blank."
+    },
+    {
+      "args": [
+        "insert or update on table \"job\" violates foreign key constraint \"job_customer_fk\""
+      ],
+      "result": "That’s in use somewhere else, or it’s gone. Refresh and try again."
+    },
+    {
+      "args": [
+        "value too long for type character varying(20)"
+      ],
+      "result": "That’s too long."
+    },
+    {
+      "args": [
+        "value \"99999999999\" is out of range for type integer"
+      ],
+      "result": "That number is too large."
+    },
+    {
+      "args": [
+        "invalid input syntax for type uuid: \"abc\""
+      ],
+      "result": "That wasn’t found. Refresh and try again."
+    },
+    {
+      "args": [
+        "invalid input syntax for type integer: \"x\""
+      ],
+      "result": "That isn’t a valid value. Check it and try again."
+    },
+    {
+      "args": [
+        "JSON object requested, multiple (or no) rows returned"
+      ],
+      "result": "That wasn’t found. Refresh and try again."
+    },
+    {
+      "args": [
+        "PGRST116"
+      ],
+      "result": "That wasn’t found. Refresh and try again."
+    },
+    {
+      "args": [
+        "deadlock detected"
+      ],
+      "result": "That took too long. Try again."
+    },
+    {
+      "args": [
+        "Stripe said: No such customer: 'cus_123'; Request req_AbCdEf123456"
+      ],
+      "result": "Payments are having trouble right now. Try again in a moment."
+    },
+    {
+      "args": [
+        "Not sent: Unable to create record: Attempt to send to unsubscribed recipient"
+      ],
+      "result": "This customer has opted out of texts."
+    },
+    {
+      "args": [
+        "Not sent: The 'To' number +1555 is not a valid phone number (21211)"
+      ],
+      "result": "That isn’t a number we can text. Check it and try again."
+    },
+    {
+      "args": [
+        "Not sent: something odd"
+      ],
+      "result": "The text couldn’t be sent. Try again."
+    },
+    {
+      "args": [
+        "Unexpected token '<', \"<!DOCTYPE \"... is not valid JSON"
+      ],
+      "result": "Something went wrong on our end. Try again in a moment."
+    },
+    {
+      "args": [
+        "relation \"job_x\" does not exist"
+      ],
+      "result": "Something went wrong on our end. Try again in a moment."
+    },
+    {
+      "args": [
+        "SQLite error 19: UNIQUE constraint failed: job.id"
+      ],
+      "result": "That already exists."
+    },
+    {
+      "args": [
+        "SQLite error 5: database is locked"
+      ],
+      "result": "Couldn’t save on this phone. Try again."
+    },
+    {
+      "args": [
+        "database or disk is full"
+      ],
+      "result": "Phone storage is full. Free up some space; nothing already saved is lost."
+    },
+    {
+      "args": [
+        "keyNotFound(CodingKeys(stringValue: \"id\", intValue: nil), Swift.DecodingError.Context())"
+      ],
+      "result": "Something went wrong. Try again."
+    },
+    {
+      "args": [
+        "SyncFailure(description: \"x y\")"
+      ],
+      "result": "Something went wrong. Try again."
+    },
+    {
+      "args": [
+        "invalidDate"
+      ],
+      "result": "Something went wrong. Try again."
+    },
+    {
+      "args": [
+        "line one\nline two"
+      ],
+      "result": "Something went wrong. Try again."
+    },
+    {
+      "args": [
+        "Enter the customer’s email."
+      ],
+      "result": "Enter the customer’s email."
+    },
+    {
+      "args": [
+        "Enter an amount up to the balance due"
+      ],
+      "result": "Enter an amount up to the balance due"
+    },
+    {
+      "args": [
+        "The photos haven’t finished uploading yet. Try again in a moment."
+      ],
+      "result": "The photos haven’t finished uploading yet. Try again in a moment."
+    },
+    {
+      "args": [
+        "No connection. Try again when you have signal."
+      ],
+      "result": "No connection. Try again when you have signal."
+    },
+    {
+      "args": [
+        "This customer replied STOP. They can text START to get texts again."
+      ],
+      "result": "This customer replied STOP. They can text START to get texts again."
+    },
+    {
+      "args": [
+        "Error: Pick a date."
+      ],
+      "result": "Pick a date."
+    },
+    {
+      "args": [
+        "   "
+      ],
+      "result": "Something went wrong. Try again."
+    },
+    {
+      "args": [
+        ""
+      ],
+      "result": "Something went wrong. Try again."
+    }
+  ]
+}

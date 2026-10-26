@@ -14,6 +14,7 @@ import { getOffice } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import type { FormState } from "./auth";
 
+import { friendlyDbError } from "@/lib/limits";
 const text = (f: FormData, k: string) => String(f.get(k) ?? "").trim();
 
 /**
@@ -53,7 +54,7 @@ export async function submitReadings(_: FormState, form: FormData): Promise<Form
     chlorine_product: chlorine in CHLORINE_PRODUCTS ? chlorine : null,
     acid_product: acid in ACID_PRODUCTS ? acid : null,
   });
-  if (error) return { error: error.message };
+  if (error) return { error: friendlyDbError(error.message) };
   // A pool's gallons fill in from the first submit that has them.
   if (gallons !== null)
     await supabase
@@ -77,7 +78,7 @@ export async function removeReading(_: FormState, form: FormData): Promise<FormS
     .from("chemical_reading")
     .update({ deleted_at: new Date().toISOString() })
     .eq("id", text(form, "reading"));
-  if (error) return { error: error.message };
+  if (error) return { error: friendlyDbError(error.message) };
   revalidatePath("/chemicals");
   revalidatePath("/customers", "layout");
   return { message: "Removed." };
@@ -92,7 +93,7 @@ export async function restoreReading(_: FormState, form: FormData): Promise<Form
     .from("chemical_reading")
     .update(RESTORE_ROW)
     .eq("id", text(form, "reading"));
-  if (error) return { error: error.message };
+  if (error) return { error: friendlyDbError(error.message) };
   revalidatePath("/chemicals");
   revalidatePath("/customers", "layout");
   return { message: "Restored." };
@@ -176,7 +177,7 @@ export async function saveVisitReadingAction(input: VisitReadingInput): Promise<
       .update({ ...fields, ...readings, deleted_at: null })
       .eq("id", input.job));
   }
-  if (error) return { error: error.message };
+  if (error) return { error: friendlyDbError(error.message) };
   if (gallons !== null)
     await supabase
       .from("property")
@@ -241,7 +242,7 @@ export async function addChemicalsAction(
       sort_order: c.sort_order ?? i,
     })),
   );
-  if (error) return { error: error.message };
+  if (error) return { error: friendlyDbError(error.message) };
   revalidatePath(`/jobs/${job}`);
   return { message: chemicals.length === 1 ? "Added." : `${chemicals.length} added.` };
 }
@@ -271,7 +272,7 @@ export async function updateChemicalAction(
       note: c.note?.trim() || null,
     })
     .eq("id", c.id);
-  if (error) return { error: error.message };
+  if (error) return { error: friendlyDbError(error.message) };
   revalidatePath(`/jobs/${job}`);
   return { message: "Saved." };
 }
@@ -285,7 +286,7 @@ export async function removeChemicalAction(job: string, id: string): Promise<For
     .from("chemical_addition")
     .update({ deleted_at: new Date().toISOString() })
     .eq("id", id);
-  if (error) return { error: error.message };
+  if (error) return { error: friendlyDbError(error.message) };
   revalidatePath(`/jobs/${job}`);
   return { message: "Removed." };
 }
@@ -299,7 +300,7 @@ export async function restoreChemicalAction(job: string, id: string): Promise<Fo
     .from("chemical_addition")
     .update(RESTORE_ROW)
     .eq("id", id);
-  if (error) return { error: error.message };
+  if (error) return { error: friendlyDbError(error.message) };
   revalidatePath(`/jobs/${job}`);
   return { message: "Restored." };
 }

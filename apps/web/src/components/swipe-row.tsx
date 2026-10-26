@@ -251,4 +251,4 @@ export function SwipeRow({
 
 /** A swipe action's button look: a full-height colored block with its label. */
 export const SWIPE_ACTION =
-  "flex h-full min-w-[4.5rem] flex-col items-center justify-center gap-1 px-3 text-[0.8125rem] font-semibold text-white";
+  "flex h-full min-w-[4.5rem] flex-col items-center justify-center gap-1 px-3 text-[0.8125rem] font-semibold text-on-status";
