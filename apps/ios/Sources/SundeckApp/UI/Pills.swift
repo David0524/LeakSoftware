@@ -2,7 +2,8 @@
     import SundeckCore
     import SwiftUI
 
-    // Filter and chooser pills (spec 3.8): 44 tall capsules, body medium, 8 apart, in a row that
+    // Filter and chooser pills (spec 3.8): 32 tall capsules (owner, 2026-10-25: "shrink them") in a
+    // 44 tall tap target, 15 medium text, 14 padding, 8 apart, in a row that
     // scrolls sideways edge to edge with the first pill 16 in. Unselected `fill` with `text`;
     // selected `primary` with `onPrimary` (decision 9).
     //
@@ -19,6 +20,9 @@
         var dot: TechColor? = nil
         var action: () -> Void
 
+        /// The visible capsule's height.
+        private static let capsuleHeight: CGFloat = 32
+
         var body: some View {
             Button(action: action) {
                 HStack(spacing: 8) {
@@ -27,18 +31,29 @@
                         // A name is never cut short: the row scrolls instead.
                         .fixedSize(horizontal: true, vertical: false)
                 }
-                .textRole(.bodyMedium)
+                .textRole(.secondary)
+                .fontWeight(.medium)
                 .lineLimit(1)
                 .foregroundStyle(selected ? Color.onPrimary : Color.text)
-                .padding(.horizontal, 16)
-                .frame(minHeight: minTarget)
+                .padding(.horizontal, 14)
+                .padding(.vertical, 4)
+                // At least 32 tall; larger text grows it.
+                .frame(minHeight: Self.capsuleHeight)
                 .background(Capsule().fill(selected ? Color.brandPrimary : targeted ? Color.tinted : Color.fill))
                 .overlay { if targeted { Capsule().strokeBorder(Color.link, lineWidth: 2) } }
-                .contentShape(Capsule())
+                // The capsule is 32 tall inside the 44 tall tap target (owner, 2026-10-25).
+                .frame(minHeight: minTarget)
+                .contentShape(Rectangle())
             }
             .buttonStyle(.plain)
             .accessibilityAddTraits(selected ? [.isSelected] : [])
         }
+    }
+
+    /// Once per launch, across all rows: the first FilterPills row that scrolls nudges (a stored static
+    /// can't live in the generic view).
+    @MainActor private enum FilterPillsNudge {
+        static var done = false
     }
 
     struct FilterPills<Value: Hashable>: View {
@@ -55,6 +70,44 @@
         /// off beside it.
         var trailing: AnyView?
         @State private var targeted: Value?
+        @State private var position = ScrollPosition(edge: .leading)
+        @State private var edges = Edges(more: false, atStart: true)
+        @Environment(\.accessibilityReduceMotion) private var reduceMotion
+
+        /// Where the row is scrolled: whether chips are past its trailing edge, and whether it's at its start.
+        private struct Edges: Equatable {
+            var more: Bool
+            var atStart: Bool
+        }
+
+        /// How far the fade reaches in from the trailing edge, and how far the nudge slides.
+        private static var fadeWidth: CGFloat { 40 }
+        private static var nudgeDistance: CGFloat { 56 }
+
+        /// Fades the last 40 pt while more chips are past the trailing edge (owner, 2026-10-25: "The names
+        /// being scrollable here isn't really intuitive since they fit perfectly. Give a nudge").
+        @ViewBuilder private var fadeMask: some View {
+            if edges.more {
+                HStack(spacing: 0) {
+                    Color.black
+                    LinearGradient(colors: [.black, .clear], startPoint: .leading, endPoint: .trailing)
+                        .frame(width: Self.fadeWidth)
+                }
+            } else {
+                Color.black
+            }
+        }
+
+        /// Slides the row a little way and back, once per launch, if it scrolls and sits at its start.
+        private func nudgeIfNeeded() {
+            guard edges.more, edges.atStart, !reduceMotion, !FilterPillsNudge.done else { return }
+            FilterPillsNudge.done = true
+            withAnimation(.easeInOut(duration: 0.35)) { position.scrollTo(x: Self.nudgeDistance) }
+            Task { @MainActor in
+                try? await Task.sleep(for: .milliseconds(500))
+                withAnimation(.spring(duration: 0.45)) { position.scrollTo(edge: .leading) }
+            }
+        }
 
         var body: some View {
             ScrollView(.horizontal, showsIndicators: false) {
@@ -79,8 +132,26 @@
                     if let trailing { trailing }
                 }
             }
+            .scrollPosition($position)
+            .onScrollGeometryChange(for: Edges.self) { geo in
+                // Offsets start at minus the leading inset, so "at start" is the offset at or left of zero.
+                // "More" needs a chip hidden by over 4 pt, past the row's 16 pt end margin: with only the
+                // margin out of view, Schedule's row faded a chip that fits (CI screenshots, 2026-10-25).
+                Edges(
+                    more: geo.contentSize.width - (geo.contentOffset.x + geo.containerSize.width)
+                        > CGFloat(Spacing.pageMargin) + 4,
+                    atStart: geo.contentOffset.x <= 0)
+            } action: { _, new in
+                edges = new
+            }
+            .onChange(of: edges.more, initial: true) { nudgeIfNeeded() }
+            .mask(fadeMask.animation(.easeInOut(duration: 0.2), value: edges.more))
             .contentMargins(.horizontal, CGFloat(Spacing.pageMargin), for: .scrollContent)
             .sensoryFeedback(.selection, trigger: selection)
+            // The row takes the 32 pt its pills show; their 44 pt tap areas reach 6 pt past it, so
+            // the page's spacing reads from the pills (owner, 2026-10-26: "Clean up the white space
+            // around the name tiles").
+            .padding(.vertical, -6)
         }
     }
 #endif

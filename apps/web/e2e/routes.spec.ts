@@ -473,6 +473,43 @@ test("on a phone, a stop drags by its grip to another place in the day", async (
   await context.close();
 });
 
+test("on a phone, Needs a Time is one row that opens its jobs in a sheet", async ({ browser }) => {
+  // Owner, 2026-10-25: Needs a Time "feels very big"; picked one row with a count and a sheet.
+  test.setTimeout(120_000);
+  const owner = await signedInClient(OWNER.email, OWNER.password);
+  const { data: who } = await owner.auth.getUser();
+  const { data: membership } = await owner
+    .from("membership")
+    .select("company_id")
+    .eq("user_id", who.user!.id)
+    .limit(1)
+    .single();
+  const company = membership!.company_id as string;
+  await makeJob(owner, company, "tempe", {});
+
+  const context = await browser.newContext({
+    viewport: { width: 390, height: 844 },
+    hasTouch: true,
+    isMobile: true,
+  });
+  const page = await context.newPage();
+  await signIn(page, OWNER, "/jobs");
+  await page.goto(`/schedule?view=day&date=${quietDay()}`);
+  const tray = page.getByTestId("tray");
+  const row = tray.getByTestId("tray-row");
+  await expect(row).toBeVisible();
+  // One row: no cards in the page, and no taller than a list row.
+  await expect(tray.getByTestId("tray-job")).toHaveCount(0);
+  expect((await tray.boundingBox())!.height).toBeLessThan(60);
+  await row.tap();
+  const sheet = page.getByRole("dialog", { name: /^Needs a Time/ });
+  const job = sheet.getByTestId("tray-sheet-job").filter({ hasText: name("tempe") });
+  await expect(job).toHaveCount(1);
+  await job.getByRole("button", { name: `Actions for ${name("tempe")}` }).tap();
+  await expect(page.getByRole("button", { name: "Move…" })).toBeVisible();
+  await context.close();
+});
+
 test("a stop's tile drags from anywhere on it: a mouse past 6 px, a finger after a hold", async ({
   browser,
 }) => {

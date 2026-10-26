@@ -75,7 +75,14 @@ export function useShopSearchState(): ShopSearchState {
 }
 
 /** The iOS search field: filled, rounded, the magnifier inside, a clear button once typed in. */
-export function ShopSearchField({ search }: { search: ShopSearchState }) {
+export function ShopSearchField({
+  search,
+  placeholder = SEARCH_PLACEHOLDER,
+}: {
+  search: ShopSearchState;
+  /** Jobs › Reports words it "Customer name or job number" (owner, 2026-10-25). */
+  placeholder?: string;
+}) {
   const { query, setQuery, setFocused, searching, cancel, input } = search;
   return (
     <View style={styles.fieldRow} accessibilityRole="search">
@@ -86,7 +93,7 @@ export function ShopSearchField({ search }: { search: ShopSearchState }) {
           value={query}
           onChangeText={setQuery}
           onFocus={() => setFocused(true)}
-          placeholder={SEARCH_PLACEHOLDER}
+          placeholder={placeholder}
           placeholderTextColor={color.placeholder}
           accessibilityLabel={SEARCH_WORDS.search}
           returnKeyType="search"

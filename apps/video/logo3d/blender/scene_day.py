@@ -31,6 +31,13 @@ one period, so the last frame runs into the first with no dissolve.
       --still F[,F]    render single frames to DIR/still-F.png
       --format F       PNG (default) or JPEG
       --blend PATH     also save the scene as a .blend
+      --time T         day (default) or twilight
+
+Twilight (owner, 2026-10-25: "exactly the same just at twilight so we get those orange/blue
+vibes that existed in the first 3D model"): the same scene and move with the sun low on the
+horizon off-frame left, the sky orange along the sea and deep blue overhead, clouds lit
+orange from below, a darker sea with the glitter path gold, and the mark's edge lights warm on
+the left and cool on the right, as the night clip's orange and blue glows were.
 """
 
 import math
@@ -61,6 +68,13 @@ pin_parts = M["pin_parts"]
 drop = M["drop"]
 set_input = M["set_input"]
 PIN_Z = M["PIN_Z"]
+TWILIGHT = str(A.get("time", "day")).lower() == "twilight"
+
+
+def look(day, twilight):
+    """The day value, or the twilight one with --time twilight."""
+    return twilight if TWILIGHT else day
+
 
 FPS = 30
 SECONDS = 12
@@ -234,11 +248,11 @@ def caustic_albedo(nt, color, coords, strength):
 # ---------------------------------------------------------------------------------------------
 # Sky: a clear tropical day with cumulus banks over the sea
 # ---------------------------------------------------------------------------------------------
-SUN_EL = math.radians(36)
+SUN_EL = math.radians(look(36, 4))
 # Front-left: its glow just reaches the frame's top-left corner, it draws a bright line down
 # the glass's left edge, and the sea glitters on that side.
 SUN_AZ = math.radians(-55)
-world = bpy.data.worlds.new("Day")
+world = bpy.data.worlds.new(look("Day", "Twilight"))
 scene.world = world
 world.use_nodes = True
 wt = world.node_tree
@@ -252,9 +266,12 @@ sep = wt.nodes.new("ShaderNodeSeparateXYZ")
 wt.links.new(tc.outputs["Generated"], sep.inputs[0])
 ramp = wt.nodes.new("ShaderNodeValToRGB")
 el = ramp.color_ramp.elements
-el[0].position, el[0].color = 0.0, (0.2, 0.52, 0.96, 1)
-el[1].position, el[1].color = 1.0, (0.012, 0.07, 0.38, 1)
-for pos, col in ((0.04, (0.07, 0.3, 0.88, 1)), (0.2, (0.03, 0.16, 0.7, 1))):
+el[0].position, el[0].color = 0.0, look((0.2, 0.52, 0.96, 1), (1.0, 0.36, 0.07, 1))
+el[1].position, el[1].color = 1.0, look((0.012, 0.07, 0.38, 1), (0.004, 0.012, 0.11, 1))
+# Twilight: orange along the sea, through a pale gold band into dusk blue, deep blue overhead.
+for pos, col in look(((0.04, (0.07, 0.3, 0.88, 1)), (0.2, (0.03, 0.16, 0.7, 1))),
+                     ((0.035, (0.95, 0.56, 0.24, 1)), (0.09, (0.3, 0.36, 0.62, 1)),
+                      (0.22, (0.04, 0.09, 0.38, 1)))):
     e = el.new(pos)
     e.color = col
 ramp.color_ramp.interpolation = "B_SPLINE"
@@ -274,7 +291,7 @@ wt.links.new(halo_.outputs["Result"], hp.inputs[0])
 glow_ = wt.nodes.new("ShaderNodeMix")
 glow_.data_type = "RGBA"
 glow_.blend_type = "ADD"
-glow_.inputs[7].default_value = (1.5, 1.25, 0.9, 1)
+glow_.inputs[7].default_value = look((1.5, 1.25, 0.9, 1), (2.2, 0.75, 0.18, 1))
 wt.links.new(hp.outputs[0], glow_.inputs["Factor"])
 wt.links.new(ramp.outputs["Color"], glow_.inputs[6])
 SKY = glow_.outputs[2]
@@ -316,8 +333,9 @@ wt.links.new(fade.outputs["Result"], cm.inputs[1])
 grey = wt.nodes.new("ShaderNodeMapRange")
 grey.inputs["From Min"].default_value = 0.55
 grey.inputs["From Max"].default_value = 0.8
-grey.inputs["To Min"].default_value = float(A.get("cloud", 2.4))
-grey.inputs["To Max"].default_value = float(A.get("cloud", 2.4)) * 0.62
+CLOUD = float(A.get("cloud", look(2.4, 1.2)))
+grey.inputs["To Min"].default_value = CLOUD
+grey.inputs["To Max"].default_value = CLOUD * 0.62
 wt.links.new(cn.outputs["Fac"], grey.inputs["Value"])
 ccol = wt.nodes.new("ShaderNodeCombineXYZ")
 wt.links.new(grey.outputs["Result"], ccol.inputs["X"])
@@ -327,6 +345,13 @@ gb.operation = "MULTIPLY"
 gb.inputs[1].default_value = 1.04
 wt.links.new(grey.outputs["Result"], gb.inputs[0])
 wt.links.new(gb.outputs[0], ccol.inputs["Z"])
+CCOL = ccol.outputs[0]
+if TWILIGHT:  # lit from below by the low sun: orange-pink
+    ctint = wt.nodes.new("ShaderNodeVectorMath")
+    ctint.operation = "MULTIPLY"
+    ctint.inputs[1].default_value = (1.0, 0.55, 0.42)
+    wt.links.new(CCOL, ctint.inputs[0])
+    CCOL = ctint.outputs[0]
 cloud = wt.nodes.new("ShaderNodeMix")
 cloud.data_type = "RGBA"
 cloud.blend_type = "MIX"
@@ -336,7 +361,7 @@ cm2.inputs[1].default_value = 0.92
 wt.links.new(cm.outputs[0], cm2.inputs[0])
 wt.links.new(cm2.outputs[0], cloud.inputs["Factor"])
 wt.links.new(SKY, cloud.inputs[6])
-wt.links.new(ccol.outputs[0], cloud.inputs[7])
+wt.links.new(CCOL, cloud.inputs[7])
 # Cumulus banks low over the sea: heaps whose height varies round the horizon (noise on the
 # compass direction), with puffy edges (fine 3D noise), grey-blue at the base and sunlit at the
 # top. Only a few azimuths carry them, so the sky stays mostly clear.
@@ -416,9 +441,10 @@ wt.links.new(HH, hmax.inputs[0])
 wt.links.new(sep.outputs["Z"], hgt_.inputs[0])
 wt.links.new(hmax.outputs[0], hgt_.inputs[1])
 shade = wt.nodes.new("ShaderNodeValToRGB")
-shade.color_ramp.elements[0].color = (0.42, 0.66, 0.95, 1)  # the base, close to the horizon sky
+# the base, close to the horizon sky (twilight: dusky violet under orange-lit tops)
+shade.color_ramp.elements[0].color = look((0.42, 0.66, 0.95, 1), (0.3, 0.22, 0.34, 1))
 shade.color_ramp.elements[1].position = 0.7
-shade.color_ramp.elements[1].color = (2.5, 2.4, 2.25, 1)
+shade.color_ramp.elements[1].color = look((2.5, 2.4, 2.25, 1), (2.0, 0.9, 0.45, 1))
 wt.links.new(hgt_.outputs[0], shade.inputs["Fac"])
 bank = wt.nodes.new("ShaderNodeMix")
 bank.data_type = "RGBA"
@@ -426,29 +452,31 @@ wt.links.new(cm3.outputs[0], bank.inputs["Factor"])
 wt.links.new(cloud.outputs[2], bank.inputs[6])
 wt.links.new(shade.outputs["Color"], bank.inputs[7])
 wt.links.new(bank.outputs[2], bg.inputs["Color"])
-bg.inputs["Strength"].default_value = float(A.get("sky", 1.32))
+bg.inputs["Strength"].default_value = float(A.get("sky", look(1.32, 1.1)))
 
 sun = bpy.data.lights.new("Sun", "SUN")
-sun.energy = float(A.get("sunpower", 6.5))
+sun.energy = float(A.get("sunpower", look(6.5, 3.0)))
 sun.angle = math.radians(0.8)
-sun.color = (1.0, 0.91, 0.78)  # warm
+sun.color = look((1.0, 0.91, 0.78), (1.0, 0.5, 0.2))  # warm; twilight orange
 so = bpy.data.objects.new("Sun", sun)
 scene.collection.objects.link(so)
 # A sun lamp shines down its -Z: point it from the sun's place in the sky toward the scene.
 so.rotation_euler = (-to_sun).to_track_quat("-Z", "Y").to_euler()
-halo_.inputs["From Min"].default_value = 0.78
+halo_.inputs["From Min"].default_value = look(0.78, 0.5)  # twilight: a wide glow off the low sun
 
 # Two soft strips that light only the mark (light linking, as in scene.py): its rounded edge
 # carries a bright line against the water, so clear glass never melts into a bright day.
 # Wide and soft enough that, crossing the face as the mark turns, they read as a gentle glint,
 # not a white bar over the dot (owner).
-for name, power, loc, sz in (("Edge left", 150, (-5.0, -3.5, 4.2), (1.2, 5.0)),
-                             ("Edge right", 90, (5.2, 2.0, 3.4), (1.2, 5.0))):
+# Twilight: warm on the sun's side, cool on the other, the night clip's orange and blue.
+for name, power, loc, sz, col in (
+        ("Edge left", 150, (-5.0, -3.5, 4.2), (1.2, 5.0), look((1.0, 0.98, 0.95), (1.0, 0.62, 0.32))),
+        ("Edge right", 90, (5.2, 2.0, 3.4), (1.2, 5.0), look((1.0, 0.98, 0.95), (0.4, 0.62, 1.0)))):
     l = bpy.data.lights.new(name, "AREA")
     l.shape = "RECTANGLE"
     l.size, l.size_y = sz
     l.energy = power
-    l.color = (1.0, 0.98, 0.95)
+    l.color = col
     o = bpy.data.objects.new(name, l)
     o.location = loc
     o.rotation_euler = (Vector((0, 0, PIN_Z)) - Vector(loc)).to_track_quat("-Z", "Y").to_euler()
@@ -570,8 +598,8 @@ sfar.inputs["From Min"].default_value = 150.0
 sfar.inputs["From Max"].default_value = 2500.0
 sn.links.new(sdist.outputs["Value"], sfar.inputs["Value"])
 scol = sn.nodes.new("ShaderNodeValToRGB")
-scol.color_ramp.elements[0].color = (0.002, 0.05, 0.2, 1)  # sapphire
-scol.color_ramp.elements[1].color = (0.0, 0.55, 0.45, 1)  # turquoise
+scol.color_ramp.elements[0].color = look((0.002, 0.05, 0.2, 1), (0.001, 0.02, 0.09, 1))  # sapphire
+scol.color_ramp.elements[1].color = look((0.0, 0.55, 0.45, 1), (0.0, 0.18, 0.22, 1))  # turquoise
 sn.links.new(sfar.outputs["Result"], scol.inputs["Fac"])
 sn.links.new(scol.outputs["Color"], sb.inputs["Base Color"])
 # Far out, where a real sea reflects mostly sky, let its colour win instead.
@@ -653,7 +681,7 @@ for f_ in (glit.outputs["Result"], gflash.outputs[0], gside.outputs["Result"], s
     sn.links.new(f_, gm.inputs[1])
     prev = gm.outputs[0]
 sn.links.new(prev, gs.inputs[0])
-sb.inputs["Emission Color"].default_value = (1.0, 0.93, 0.8, 1)
+sb.inputs["Emission Color"].default_value = look((1.0, 0.93, 0.8, 1), (1.0, 0.6, 0.25, 1))
 sn.links.new(gs.outputs[0], sb.inputs["Emission Strength"])
 sb.inputs["Roughness"].default_value = 0.02
 stc = sn.nodes.new("ShaderNodeTexCoord")
@@ -709,7 +737,7 @@ lglow = ln.nodes.new("ShaderNodeMix")  # what the sun shows through: a warmer, l
 lglow.data_type = "RGBA"
 lglow.blend_type = "MULTIPLY"
 lglow.inputs["Factor"].default_value = 1.0
-lglow.inputs[7].default_value = (3.6, 3.3, 1.8, 1)
+lglow.inputs[7].default_value = look((3.6, 3.3, 1.8, 1), (3.6, 1.8, 0.7, 1))
 ln.links.new(ldry.outputs[2], lglow.inputs[6])
 transl = ln.nodes.new("ShaderNodeBsdfTranslucent")
 ln.links.new(lglow.outputs[2], transl.inputs["Color"])

@@ -83,7 +83,8 @@ export function segmentClass(active: boolean, extra?: string) {
   // As with buttons, a caller's own padding replaces the default (icon segments use px-0).
   const pad = /(^|\s)px-/.test(extra ?? "") ? "" : "px-4";
   return cx(
-    `min-h-10 content-center rounded-full ${pad} text-center text-[0.9375rem] font-medium whitespace-nowrap transition-colors`,
+    // 32 pt segments in a 36 pt track (owner, 2026-10-25: "smaller"), as tall as iOS's own.
+    `min-h-8 content-center rounded-full ${pad} text-center text-[0.9375rem] font-medium whitespace-nowrap transition-colors`,
     active
       ? "bg-thumb font-semibold text-text shadow-[0_3px_8px_rgb(0_0_0/0.12),0_3px_1px_rgb(0_0_0/0.04)]"
       : "text-text hover:bg-text/[0.05]",
@@ -94,7 +95,9 @@ export function segmentClass(active: boolean, extra?: string) {
 /** A choice in a sideways row of pills (filters, whose day): tinted blue when chosen. */
 export function pillClass(active: boolean, extra?: string) {
   return cx(
-    "inline-flex min-h-11 shrink-0 items-center rounded-full px-4 font-medium whitespace-nowrap transition-colors",
+    // A 32 pt pill with 15 pt text (owner, 2026-10-25: Spotify's chip size) in a 44 pt tap
+    // area: the clear 6 pt borders above and below are part of the target, the fill isn't.
+    "inline-flex h-11 shrink-0 items-center rounded-full border-y-[6px] border-transparent bg-clip-padding px-3.5 text-[0.9375rem] font-medium whitespace-nowrap transition-colors",
     active ? "bg-link text-on-status" : "bg-fill text-text hover:bg-text/[0.1]",
     extra,
   );

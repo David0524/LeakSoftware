@@ -494,15 +494,10 @@ class SourceBox {
  * The gesture and the ref callback for a stop's card. `item` null: it can't be dragged (a
  * canceled job). `ghost` draws the card under the finger.
  *
- * `"grip"` (Needs a Time cards): the gesture goes on the grip only and picks the card up once
- * the finger has rested on it briefly (SCHEDULE_DRAG.gripDwellMs, within slopPt; owner,
- * 2026-10-22: "make it slightly less sensitive"), so a flick or a scroll that starts on the grip
- * is the page's; the card's body scrolls the page, and its touch and hold is the card's menu
- * (its own Pressable), never a drag. The ref goes on the whole card.
- *
  * `"tile"` (stop tiles on a day, Day and Week; owner, 2026-10-22: "Press-and-hold-then-drag on
- * any tile, keeping the grip as a backup"): `gesture` goes on the grip and picks it up after the
- * brief rest, as `"grip"`; `holdGesture` goes on the whole tile and lifts it after a 0.4 s
+ * any tile, keeping the grip as a backup"): `gesture` goes on the grip and picks it up once the finger
+ * has rested on it briefly (SCHEDULE_DRAG.gripDwellMs, within slopPt; owner, 2026-10-22: "make it
+ * slightly less sensitive"), so a flick or a scroll that starts there is the page's; `holdGesture` goes on the whole tile and lifts it after a 0.4 s
  * touch and hold (STOP_HOLD_MS, within the same slop), with the same haptic, then drags it the
  * same way. A quick tap stays a tap and a swipe up or down scrolls the page (moving before the hold ends lets the page have it). Held
  * and let go without moving, it settles back: the tile's menu is on its "⋯" button. A touch
@@ -515,7 +510,7 @@ export function useDragSource(
   item: DragItem | null,
   ghost: () => ReactNode,
   onHold?: () => void,
-  mode: "grip" | "hold" | "tile" = "hold",
+  mode: "hold" | "tile" = "hold",
 ): { gesture: PanGesture; holdGesture: PanGesture; ref: (node: View | null) => void } {
   const api = useContext(Api);
   const [box] = useState(() => new SourceBox());

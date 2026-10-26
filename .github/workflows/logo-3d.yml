@@ -13,6 +13,9 @@ name: 3D logo clip
 # Runs by hand only (Actions › 3D logo clip › Run workflow): a push-triggered render started a
 # second full copy when work merged into the default branch, holding up the real one.
 # The night clip's scene.py is kept but no longer rendered here.
+# Time "twilight" renders the same clip at dusk (scene_day.py --time twilight) into artifact
+# `logo-3d-twilight`, files named sundeck-pro-twilight*; a day and a twilight run don't cancel
+# each other (a second run of the same time does).
 
 on:
   workflow_dispatch:
@@ -20,9 +23,14 @@ on:
       samples:
         description: Cycles samples (96 fits the 20 runners at 1080p; see the note on the job)
         default: "96"
+      time:
+        description: Time of day
+        type: choice
+        options: [day, twilight]
+        default: day
 
 concurrency:
-  group: logo-3d-${{ github.ref }}
+  group: logo-3d-${{ github.ref }}${{ inputs.time == 'twilight' && '-twilight' || '' }}
   cancel-in-progress: true
 
 env:
@@ -58,11 +66,12 @@ jobs:
           a=$(( ${{ matrix.chunk }} * 18 + 1 )); b=$(( a + 17 ))
           ./blender/blender -b -P apps/video/logo3d/blender/scene_day.py -- --out frames \
             --frames "$a-$b" --samples "${{ inputs.samples || '96' }}" --res 1920x1080 \
+            --time "${{ inputs.time || 'day' }}" \
             | grep -E "^Saved|Error|Traceback|Cycles device" || true
           test "$(ls frames | wc -l)" -eq 18
       - uses: actions/upload-artifact@v4
         with:
-          name: frames-${{ matrix.chunk }}
+          name: frames-${{ inputs.time || 'day' }}-${{ matrix.chunk }}
           path: frames
           retention-days: 3
 
@@ -73,27 +82,29 @@ jobs:
     steps:
       - uses: actions/download-artifact@v4
         with:
-          pattern: frames-*
+          pattern: frames-${{ inputs.time || 'day' }}-*
           path: frames
           merge-multiple: true
       - run: sudo apt-get update -q && sudo apt-get install -yq ffmpeg
       - name: Encode
+        env:
+          N: sundeck-pro${{ inputs.time == 'twilight' && '-twilight' || '' }}
         run: |
           test "$(ls frames | wc -l)" -eq 360
           mkdir out
           # Every element moves on the 360-frame period, so frames 1-360 loop as they are.
           ffmpeg -v error -y -framerate 30 -i frames/f%04d.png \
             -c:v libx264 -profile:v high -level 4.2 -pix_fmt yuv420p -preset slower -crf 16 \
-            -movflags +faststart -an out/sundeck-pro-1080p.mp4
+            -movflags +faststart -an "out/$N-1080p.mp4"
           # 1080p frames scaled to 720p (supersampled), capped for Messages.
           ffmpeg -v error -y -framerate 30 -i frames/f%04d.png -vf "scale=1280:720:flags=lanczos" \
             -c:v libx264 -profile:v high -level 4.0 -pix_fmt yuv420p -preset slower -crf 21 \
-            -maxrate 3M -bufsize 6M -movflags +faststart -an out/sundeck-pro.mp4
+            -maxrate 3M -bufsize 6M -movflags +faststart -an "out/$N.mp4"
           # The poster: the face-on hold (frame 1), 1200 x 630.
           ffmpeg -v error -y -i frames/f0001.png -vf "scale=1200:675:flags=lanczos,crop=1200:630:0:22" \
-            -q:v 2 out/sundeck-pro.jpg
+            -q:v 2 "out/$N.jpg"
           ls -la out
       - uses: actions/upload-artifact@v4
         with:
-          name: logo-3d
+          name: logo-3d${{ inputs.time == 'twilight' && '-twilight' || '' }}
           path: out

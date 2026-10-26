@@ -117,11 +117,11 @@ export function jobRowActions(job: {
 }
 
 // ---------------------------------------------------------------------------
-// Schedule cards and Needs a Time
+// Schedule cards
 // ---------------------------------------------------------------------------
 
 export type StopActionId =
-  "open" | "move" | "lock" | "lockDay" | "lockTime" | "unschedule" | "directions" | "suggest";
+  "open" | "move" | "lock" | "lockDay" | "lockTime" | "unschedule" | "directions";
 
 /** The lock after Lock Day or Lock Time is toggled (the job page's Lock picker, one part). */
 export function toggleLock(lock: JobLock, part: "day" | "time"): JobLock {
@@ -133,9 +133,8 @@ export function toggleLock(lock: JobLock, part: "day" | "time"): JobLock {
 }
 
 /**
- * Schedule cards and Needs a Time: swipe left Move…, right Lock…; hold for Open, Move…, Lock
- * Day, Lock Time, Take Off Schedule and Directions (Needs a Time's cards keep Suggest Times,
- * as their "…" menu has it).
+ * Schedule cards: swipe left Move…, right Lock…; hold for Open, Move…, Lock
+ * Day, Lock Time, Take Off Schedule and Directions.
  */
 export function stopRowActions(stop: {
   status: string;
@@ -143,8 +142,6 @@ export function stopRowActions(stop: {
   /** On a tech's day now (not waiting in Needs a Time). */
   scheduled: boolean;
   hasAddress: boolean;
-  /** Needs a Time's card. */
-  tray?: boolean;
 }): RowActions<StopActionId> {
   const movable = canMoveJob(stop.status);
   const day = stop.lock === "day" || stop.lock === "both";
@@ -155,7 +152,6 @@ export function stopRowActions(stop: {
     [move],
     [
       OPEN,
-      stop.tray && movable && { id: "suggest", label: "Suggest Times" },
       move,
       movable && { id: "lockDay", label: day ? "Unlock Day" : "Lock Day" },
       movable && { id: "lockTime", label: time ? "Unlock Time" : "Lock Time" },

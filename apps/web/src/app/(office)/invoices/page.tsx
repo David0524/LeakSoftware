@@ -1,4 +1,5 @@
 import { offersPool } from "@leakbook/core";
+import { PillRow } from "@/components/pill-row";
 import type { Metadata } from "next";
 import Link from "next/link";
 import {
@@ -120,9 +121,9 @@ export default async function InvoicesPage({ searchParams }: PageProps<"/invoice
       ) : null}
       {all.length ? (
         <>
-          <nav
-            aria-label="Filter invoices"
-            className="-mx-4 mb-4 flex gap-2 overflow-x-auto px-4 whitespace-nowrap sm:mx-0 sm:flex-wrap sm:px-0"
+          <PillRow
+            label="Filter invoices"
+            className="-mx-4 -mt-1.5 mb-2.5 flex gap-2 overflow-x-auto px-4 whitespace-nowrap sm:mx-0 sm:flex-wrap sm:px-0"
           >
             {INVOICE_FILTERS.map((f) => (
               <Link
@@ -134,7 +135,7 @@ export default async function InvoicesPage({ searchParams }: PageProps<"/invoice
                 {f.label} <span className="tabular-nums opacity-70">{count(f.key)}</span>
               </Link>
             ))}
-          </nav>
+          </PillRow>
           <div className="mb-5 flex flex-wrap items-center gap-3">
             <form action="/invoices" role="search" className="flex min-w-0 flex-1 gap-2">
               {filter !== "all" ? <input type="hidden" name="filter" value={filter} /> : null}

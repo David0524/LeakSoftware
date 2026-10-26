@@ -86,6 +86,11 @@
         /// The Type menu (owner, 2026-10-22: "Add a filter on the jobs and activity pages for job
         /// type"): with the status filter and Sort.
         @State private var type = JobTypeFilter.all
+        /// Reports' own Sort, Type and search (owner, 2026-10-25: "make the reports tab filterable,
+        /// searchable, sortable like the jobs tab"); Newest first.
+        @State private var reportSortChoice = ReportSort.newest
+        @State private var reportType = JobTypeFilter.all
+        @State private var reportQuery = ""
         @State private var rows: [JobListRow] = []
         @State private var reports: [ReportListRow] = []
         // Search (ShopSearchViews.swift).
@@ -115,6 +120,16 @@
                     if mode == .jobs {
                         ShopSearchField(text: $query, focused: $searchFocused, active: searching) { cancelSearch() }
                             .padding(.horizontal, 16)
+                    } else {
+                        // Reports: the field filters the list in place.
+                        ShopSearchField(
+                            text: $reportQuery, focused: $searchFocused,
+                            active: searchFocused || !reportQuery.isEmpty, placeholder: reportSearchPlaceholder
+                        ) {
+                            reportQuery = ""
+                            searchFocused = false
+                        }
+                        .padding(.horizontal, 16)
                     }
                     if searching {
                         ShopSearchResults(
@@ -156,8 +171,8 @@
             } message: { row in
                 Text(CompleteSendPrompt.message(customer: row.customer == "Customer" ? nil : row.customer))
             }
-            // Type, Sort and the "+" on the bar's right while on Jobs.
-            .rootTitle(mode.title, trailingButtons: mode == .jobs ? 3 : 0)
+            // Type, Sort and the "+" on the bar's right while on Jobs; Type and Sort on Reports.
+            .rootTitle(mode.title, trailingButtons: mode == .jobs ? 3 : 2)
             .toolbar {
                 if mode == .jobs {
                     ToolbarItem(placement: .topBarTrailing) {
@@ -177,10 +192,27 @@
                         .accessibilityLabel("Sort, \(sort.label)")
                     }
                     NewJobToolbar(back: "Jobs")
+                } else {
+                    ToolbarItem(placement: .topBarTrailing) {
+                        JobTypeMenu(selection: $reportType, services: companyServices(company?.settings))
+                    }
+                    // Reports' sorts: Jobs' without Scheduled Date.
+                    ToolbarItem(placement: .topBarTrailing) {
+                        Menu {
+                            Picker("Sort", selection: $reportSortChoice) {
+                                ForEach(ReportSort.allCases, id: \.self) { Text($0.label).tag($0) }
+                            }
+                        } label: {
+                            Image(systemName: "arrow.up.arrow.down")
+                                .frame(width: minTarget, height: minTarget)
+                        }
+                        .accessibilityLabel("Sort, \(reportSortChoice.label)")
+                    }
                 }
             }
             .task(
                 id: "\(sync.revision)|\(company?.id ?? "")|\(filter)|\(reportFilter)|\(mode)|\(sort)|\(type.key)"
+                    + "|\(reportSortChoice)|\(reportType.key)|\(reportQuery)"
             ) {
                 reload()
             }
@@ -188,9 +220,10 @@
                 await runSearch()
             }
             .onChange(of: searchFocused) { _, focused in
-                if focused { searchActive = true }
+                if focused && mode == .jobs { searchActive = true }
             }
             .onChange(of: query) { _, _ in searchGroup = nil }
+            .onChange(of: mode) { _, _ in searchFocused = false }
             .onChange(of: searching, initial: true) { _, now in
                 if now { recent = RecentSearches(kv: sync.kv).load() }
             }
@@ -200,10 +233,12 @@
         @ViewBuilder private func jobsAndReports(_ company: CompanyContext?) -> some View {
             Segmented(
                 selection: $mode, options: JobsMode.allCases, label: \.title, title: "Jobs and Reports",
-                minSegmentWidth: 112
+                minSegmentWidth: 88
             )
             .padding(.horizontal, 16)
-            SyncBarRow().padding(.horizontal, 16)
+            // Only while something waits to send, as on Today: an empty row doubled the space
+            // between Jobs | Reports and the filters (owner, 2026-10-25: "too much white space").
+            if syncBarMessage(sync.barStatus) != nil { SyncBarRow().padding(.horizontal, 16) }
             if mode == .jobs {
                 FilterPills(selection: $filter, options: JobFilter.allCases, label: \.title)
                 jobsList.padding(.horizontal, 16)
@@ -287,7 +322,7 @@
 
         @ViewBuilder private var reportsList: some View {
             if reports.isEmpty {
-                EmptyState(text: reportFilter.empty)
+                EmptyState(text: reportsEmptyText)
             } else {
                 GroupedRows(reports) { r in
                     Button {
@@ -300,6 +335,12 @@
                     .rowMenu("\(r.customer) · \(r.job)", reportActions(r))
                 }
             }
+        }
+
+        /// What an empty Reports list says: a search first, then a type, then the status.
+        private var reportsEmptyText: String {
+            if !reportQuery.trimmingCharacters(in: .whitespaces).isEmpty { return reportsNoMatch(reportQuery) }
+            return reportsEmpty(reportType) ?? reportFilter.empty
         }
 
         // MARK: - Row actions (gestures spec section 12)
@@ -480,7 +521,9 @@
                     type: jobTypeFilter(type.key, companyServices(company.settings)))
             } else {
                 reports = reportList(
-                    sync.store, companyId: company.id, filter: reportFilter, timeZone: company.timeZone)
+                    sync.store, companyId: company.id, filter: reportFilter, timeZone: company.timeZone,
+                    search: reportQuery, sort: reportSortChoice,
+                    type: jobTypeFilter(reportType.key, companyServices(company.settings)))
             }
         }
     }

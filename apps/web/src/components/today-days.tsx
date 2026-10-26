@@ -1,5 +1,6 @@
 "use client";
 
+import { PillRow } from "./pill-row";
 import { useMemo, useState, type ReactNode } from "react";
 import { TechDot } from "./tech-dot";
 import { TeamToday, type TeamRow } from "./team-today";
@@ -115,9 +116,12 @@ export function TodayDays({
         {days.length > 1 ? (
           // Computers with the Team list pick the day there instead (owner, 2026-10-22: "make
           // the names on the right side the selector").
-          <nav
-            aria-label="Whose day"
-            className={cx("-mx-4 mb-5 flex gap-2 overflow-x-auto px-4", team && "lg:hidden")}
+          <PillRow
+            label="Whose day"
+            className={cx(
+              "-mx-4 -mt-1.5 mb-3.5 flex gap-2 overflow-x-auto px-4",
+              team && "lg:hidden",
+            )}
           >
             {days.map((d, i) => (
               <a
@@ -135,7 +139,7 @@ export function TodayDays({
                 {d.label}
               </a>
             ))}
-          </nav>
+          </PillRow>
         ) : null}
         {/* No page-wide swipe between techs' days: Whose Day is the way (owner, 2026-10-21:
             "too many gestures"). */}

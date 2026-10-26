@@ -8,7 +8,7 @@
     // a white capsule thumb that slides to the chosen segment. For 2 to 5 related views or
     // states; over five, use a `SelectField`.
     //
-    //     Segmented(selection: $mode, options: [.jobs, .reports], label: \.title, minSegmentWidth: 112)
+    //     Segmented(selection: $mode, options: [.jobs, .reports], label: \.title, minSegmentWidth: 88)
     //     Segmented(selection: $appearance, options: Appearance.allCases, label: \.label, minSegmentWidth: 80)
 
     struct Segmented<Value: Hashable>: View {
@@ -54,13 +54,15 @@
                             // Long labels in a full row (Every 2 Weeks) shrink a little, never cut.
                             .minimumScaleFactor(0.8)
                             .padding(.horizontal, segmentPadding)
-                            .frame(minWidth: minSegmentWidth, maxWidth: fillsWidth ? .infinity : nil, minHeight: 40)
+                            .frame(minWidth: minSegmentWidth, maxWidth: fillsWidth ? .infinity : nil, minHeight: 32)
                             .background {
                                 if chosen {
                                     SegmentThumb(held: held).matchedGeometryEffect(id: "thumb", in: thumb)
                                 }
                             }
-                            .contentShape(Capsule())
+                            // 32 tall in a 36 track (owner, 2026-10-25: "smaller"); the tap
+                            // area reaches 44.
+                            .contentShape(Rectangle().inset(by: -4))
                     }
                     .buttonStyle(.plain)
                     .segmentFrame(index) { frames[index] = $0 }
@@ -240,7 +242,9 @@
                             .overlay(alignment: .topTrailing) {
                                 if let text = badgeText(count) { CountBadge(text: text, tone: .warning).offset(y: -6) }
                             }
-                            .contentShape(Capsule())
+                            // 32 tall in a 36 track (owner, 2026-10-25: "smaller"); the tap
+                            // area reaches 44.
+                            .contentShape(Rectangle().inset(by: -4))
                     }
                     .buttonStyle(.plain)
                     .accessibilityLabel(

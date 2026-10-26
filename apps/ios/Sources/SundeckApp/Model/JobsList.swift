@@ -239,12 +239,26 @@ public struct ReportListRow: Identifiable, Equatable, Sendable {
     public var link: URL? = nil
 }
 
-/// Every job's current report, newest first (superseded versions left out).
+/// Reports' search placeholder (owner, 2026-10-25: "make the reports tab filterable, searchable,
+/// sortable like the jobs tab").
+public let reportSearchPlaceholder = "Customer name or job number"
+
+/// The Reports list with nothing to show for a search: No reports match “Grace”.
+public func reportsNoMatch(_ query: String) -> String {
+    "No reports match “\(query.trimmingCharacters(in: .whitespaces))”."
+}
+
+/// Every job's current report (superseded versions left out), for a status, type, search and sort
+/// (owner, 2026-10-25), Newest first by default. The search matches the customer's name (ignoring
+/// case and accents) or the job number ("1038", "#1038").
 public func reportList(
-    _ store: LocalStore, companyId: String, filter: ReportFilter, timeZone: String, webURL: URL? = AppConfig.webURL
+    _ store: LocalStore, companyId: String, filter: ReportFilter, timeZone: String, webURL: URL? = AppConfig.webURL,
+    search: String = "", sort: ReportSort = .newest, type: JobTypeFilter = .all
 )
     -> [ReportListRow]
 {
+    let q = search.trimmingCharacters(in: .whitespaces)
+    let number = q.wholeMatch(of: /#?(\d+)/).flatMap { Int($0.1) }
     let views = Dictionary(
         ((try? jobViews(store, companyId: companyId)) ?? []).map { ($0.id, $0) }, uniquingKeysWith: { a, _ in a })
     // The insurance report is gone (owner, 2026-10-20: "Remove the insurance stuff").
@@ -255,7 +269,14 @@ public func reportList(
     let reports = ((try? store.list("report", companyId: companyId)) ?? []).filter { r in
         let status = r["status"]?.string ?? "draft"
         guard r["deleted_at"]?.string == nil, status != "superseded" else { return false }
-        return filter == .all || status == filter.rawValue
+        guard filter == .all || status == filter.rawValue else { return false }
+        let view = r["job_id"]?.string.flatMap { views[$0] }
+        // The Type menu: the report's job's type (core `matchesJobType`).
+        if case .type = type, !matchesJobType(view?.type.rawValue, type) { return false }
+        guard !q.isEmpty else { return true }
+        if let number, view?.number == number { return true }
+        return (view?.customerName ?? "Customer").range(
+            of: q, options: [.caseInsensitive, .diacriticInsensitive]) != nil
     }
     // Each report's customer link that still works (as the Wrap-Up's View version reads it).
     var tokens: [String: String] = [:]
@@ -265,9 +286,15 @@ public func reportList(
         else { continue }
         tokens[id] = token
     }
+    // Core `sortReports`: sent time, or for a draft when it last changed.
+    let ordered = sortReports(reports, sort: sort) { r in
+        let view = r["job_id"]?.string.flatMap { views[$0] }
+        return ReportSortItem(
+            number: view?.number, customer: view?.customerName, sentAt: r["sent_at"]?.string,
+            updatedAt: r["updated_at"]?.string)
+    }
     return
-        reports
-        .sorted { ($0["updated_at"]?.string ?? "") > ($1["updated_at"]?.string ?? "") }
+        ordered
         .map { r in
             let jobId = r["job_id"]?.string ?? ""
             let view = views[jobId]

@@ -26,7 +26,7 @@ import {
   useDropZones,
   useSlide,
 } from "./ScheduleDrag";
-import { DriveHome, ScheduleCardFace, StopTileFace, TILE_INSET, tileLabel } from "./ScheduleCard";
+import { DriveHome, StopTileFace, TILE_INSET, tileLabel } from "./ScheduleCard";
 
 // Schedule › Day: one card per person's route (spec 5.6; the website's route-board.tsx
 // DayColumn and StopCard): the summary, Optimize and the maps button, then the stops with
@@ -399,15 +399,6 @@ function Slide({
     <Reanimated.View style={[styles.stopWrap, style, carried && { opacity: 0 }]}>
       {children}
     </Reanimated.View>
-  );
-}
-
-/** A Needs a Time card as it's carried. */
-export function GhostCard({ stop: s }: { stop: Stop }) {
-  return (
-    <View style={styles.clip}>
-      <ScheduleCardFace stop={s} n={null} tech={null} tray />
-    </View>
   );
 }
 

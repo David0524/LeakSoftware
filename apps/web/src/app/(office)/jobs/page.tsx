@@ -1,4 +1,5 @@
 import { SamplePill } from "@/components/sample-pill";
+import { PillRow } from "@/components/pill-row";
 import type { Metadata } from "next";
 import Link from "next/link";
 import {
@@ -131,9 +132,9 @@ export default async function JobsPage({ searchParams }: PageProps<"/jobs">) {
           list's place while in use. Wider screens search jobs here. Sort stays on both. */}
       <PhoneSearch userId={office.user.id}>
         <JobsTabs current="jobs" />
-        <nav
-          aria-label="Filter jobs by status"
-          className="-mx-4 mb-5 flex gap-2 overflow-x-auto px-4 whitespace-nowrap sm:mx-0 sm:flex-wrap sm:px-0"
+        <PillRow
+          label="Filter jobs by status"
+          className="-mx-4 -mt-1.5 mb-3.5 flex gap-2 overflow-x-auto px-4 whitespace-nowrap sm:mx-0 sm:flex-wrap sm:px-0"
         >
           {FILTERS.map((f) => (
             <Link
@@ -145,7 +146,7 @@ export default async function JobsPage({ searchParams }: PageProps<"/jobs">) {
               {f.label}
             </Link>
           ))}
-        </nav>
+        </PillRow>
 
         <div className="mb-5 flex flex-wrap items-center gap-3">
           <form action="/jobs" className="flex min-w-0 flex-1 gap-2 max-md:hidden" role="search">

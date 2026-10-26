@@ -142,6 +142,52 @@ export function sortJobs<T extends JobSortItem>(jobs: T[], sort: unknown): T[] {
 }
 
 // ---------------------------------------------------------------------------
+// Sorting Jobs › Reports (owner, 2026-10-25: "make the reports tab filterable, searchable,
+// sortable like the jobs tab")
+// ---------------------------------------------------------------------------
+
+export type ReportSort = Exclude<JobSort, "scheduled">;
+
+/** Reports' sort menu: Jobs' without Scheduled Date. Newest first, as the page opens. */
+export const REPORT_SORTS = JOB_SORTS.filter(
+  (s): s is { key: ReportSort; label: string } => s.key !== "scheduled",
+);
+
+/** A sort key from a page's address or a saved choice; Newest when it isn't one. */
+export function reportSort(key: unknown): ReportSort {
+  return REPORT_SORTS.find((s) => s.key === key)?.key ?? "newest";
+}
+
+export interface ReportSortItem {
+  /** The job's number. */
+  number?: number | null;
+  /** The customer's name. */
+  customer?: string | null;
+  sent_at?: string | null;
+  updated_at?: string | null;
+}
+
+/**
+ * Reports in a sort's order, as Jobs sorts: Newest and Oldest by when the report was sent (a
+ * draft, when it was last changed); Customer A to Z; Job Number highest first. Ties go to the
+ * highest job number, then keep the list's order.
+ */
+export function sortReports<T extends ReportSortItem>(reports: T[], sort: unknown): T[] {
+  const keyed = reports.map((report) => ({
+    report,
+    number: report.number,
+    customer: report.customer,
+    created_at: report.sent_at ?? report.updated_at,
+  }));
+  return sortJobs(keyed, reportSort(sort)).map((k) => k.report);
+}
+
+/** The Reports list's empty message for a type ("No repair reports here."). */
+export function reportsEmpty(filter: JobTypeFilter): string | null {
+  return filter === "all" ? null : `No ${JOB_TYPE_LABELS[filter].toLowerCase()} reports here.`;
+}
+
+// ---------------------------------------------------------------------------
 // Filtering by job type (owner, 2026-10-22: "Add a filter on the jobs and activity pages for
 // job type")
 // ---------------------------------------------------------------------------

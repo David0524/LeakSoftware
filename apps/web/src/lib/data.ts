@@ -34,9 +34,11 @@ import {
   inspectionProgress,
   jobSort,
   sortJobs,
+  sortReports,
   type CleaningKind,
   type JobSort,
   type JobTypeFilter,
+  type ReportSort,
   techColor,
   type TechColor,
   usualVisit,
@@ -216,6 +218,31 @@ export const OPEN_STATUSES: JobStatus[] = [
 ];
 
 /**
+ * A search as filters on job: customers by name, their pools, or a job number ("1038",
+ * "#1038"). Empty when nothing can match.
+ */
+async function jobSearchTerms(office: Office, search: string): Promise<string[]> {
+  const supabase = await db();
+  const number = /^#?\d+$/.test(search) ? Number(search.replace("#", "")) : null;
+  const { data: people } = await supabase
+    .from("customer")
+    .select("id")
+    .eq("company_id", office.company.id)
+    .is("deleted_at", null)
+    .ilike("name", `%${search.replace(/[%_,()]/g, " ")}%`)
+    .limit(200);
+  const ids = (people ?? []).map((c) => c.id as string);
+  const { data: pools } = ids.length
+    ? await supabase.from("property").select("id").in("customer_id", ids)
+    : { data: [] };
+  return [
+    ids.length ? `bill_to_customer_id.in.(${ids.join(",")})` : null,
+    pools?.length ? `property_id.in.(${pools.map((p) => p.id).join(",")})` : null,
+    number ? `number.eq.${number}` : null,
+  ].filter((t): t is string => !!t);
+}
+
+/**
  * A page of jobs (M11: the full list was a megabyte on a phone). `search` matches the job
  * number or the customer's name. Returns one row past `limit` so the page knows there's more.
  */
@@ -228,29 +255,9 @@ export async function listJobs(
   preloadTeam(office);
   const limit = Math.min(opts.limit ?? 50, 500);
   const sort = jobSort(opts.sort);
-  // The search, as filters on job (customers by name, their pools, or a job number).
-  let terms: string[] | null = null;
   const search = opts.search?.trim();
-  if (search) {
-    const number = /^#?\d+$/.test(search) ? Number(search.replace("#", "")) : null;
-    const { data: people } = await supabase
-      .from("customer")
-      .select("id")
-      .eq("company_id", office.company.id)
-      .is("deleted_at", null)
-      .ilike("name", `%${search.replace(/[%_,()]/g, " ")}%`)
-      .limit(200);
-    const ids = (people ?? []).map((c) => c.id as string);
-    const { data: pools } = ids.length
-      ? await supabase.from("property").select("id").in("customer_id", ids)
-      : { data: [] };
-    terms = [
-      ids.length ? `bill_to_customer_id.in.(${ids.join(",")})` : null,
-      pools?.length ? `property_id.in.(${pools.map((p) => p.id).join(",")})` : null,
-      number ? `number.eq.${number}` : null,
-    ].filter((t): t is string => !!t);
-    if (terms.length === 0) return [];
-  }
+  const terms = search ? await jobSearchTerms(office, search) : null;
+  if (terms?.length === 0) return [];
   const filtered = <Q>(q: Q): Q => {
     // Typed loosely: the same filters on two selects.
     let r = (q as unknown as JobQuery).eq("company_id", office.company.id).is("deleted_at", null);
@@ -1220,21 +1227,54 @@ export interface ReportListRow {
 export async function listReports(
   office: Office,
   status: "all" | "sent" | "draft",
-  limit = 200,
+  opts: { limit?: number; search?: string; sort?: ReportSort; type?: JobTypeFilter } = {},
 ): Promise<ReportListRow[]> {
   const supabase = await db();
+  const limit = Math.min(opts.limit ?? 50, 500);
+  // The search, as Jobs searches (owner, 2026-10-25: Reports "filterable, searchable,
+  // sortable like the jobs tab"): the matching jobs' reports.
+  const search = opts.search?.trim();
+  let jobIds: string[] | null = null;
+  if (search) {
+    const terms = await jobSearchTerms(office, search);
+    if (!terms.length) return [];
+    const { data: jobs } = await supabase
+      .from("job")
+      .select("id")
+      .eq("company_id", office.company.id)
+      .is("deleted_at", null)
+      .or(terms.join(","))
+      .limit(300);
+    jobIds = (jobs ?? []).map((j) => j.id as string);
+    if (!jobIds.length) return [];
+  }
+  const typed = opts.type && opts.type !== "all";
   let q = supabase
     .from("report")
     .select(
-      "id, job_id, template_key, version, status, sent_at, updated_at, job:job!report_job_id_company_id_fkey(number, type, bill_to:customer!job_bill_to_customer_id_company_id_fkey(name, email), property:property!job_property_id_company_id_fkey(address_line1))",
+      `id, job_id, template_key, version, status, sent_at, updated_at, job:job!report_job_id_company_id_fkey${typed ? "!inner" : ""}(number, type, bill_to:customer!job_bill_to_customer_id_company_id_fkey(name, email), property:property!job_property_id_company_id_fkey(address_line1))`,
     )
     .eq("company_id", office.company.id)
     .is("deleted_at", null)
     .neq("status", "superseded")
     .order("updated_at", { ascending: false })
-    .limit(limit);
+    // Sorted here (core sortReports, as the apps sort), from the newest 2000.
+    .limit(2000);
   if (status !== "all") q = q.eq("status", status);
-  const reports = must(await q) as unknown as ReportListRow[];
+  if (typed) q = q.eq("job.type", opts.type!);
+  if (jobIds) q = q.in("job_id", jobIds);
+  const reports = sortReports(
+    (must(await q) as unknown as ReportListRow[]).map((r) => ({
+      r,
+      number: r.job?.number,
+      customer: r.job?.bill_to?.name,
+      sent_at: r.sent_at,
+      updated_at: r.updated_at,
+    })),
+    opts.sort,
+  )
+    .slice(0, limit + 1)
+    .map((k) => k.r);
   // Sent reports' customer links, for the list's Copy Customer Link.
   const sent = reports.filter((r) => r.status === "sent").map((r) => r.id);
   const links = sent.length

@@ -345,6 +345,66 @@ public func sortJobs<T>(_ jobs: [T], sort: JobSort, item: (T) -> JobSortItem) ->
     }.map { jobs[$0] }
 }
 
+// MARK: - Sorting Jobs › Reports (owner, 2026-10-25: "make the reports tab filterable, searchable, sortable like the jobs tab")
+
+/// Reports' sort (`ReportSort`, `REPORT_SORTS`): Jobs' without Scheduled Date. Newest first, as the
+/// page opens.
+public enum ReportSort: String, CaseIterable, Codable, Sendable {
+    case newest, oldest, customer, number
+
+    public var label: String { jobSort.label }
+
+    /// The Jobs sort it runs as.
+    var jobSort: JobSort {
+        switch self {
+        case .newest: .newest
+        case .oldest: .oldest
+        case .customer: .customer
+        case .number: .number
+        }
+    }
+}
+
+/// A sort key from a saved choice; Newest when it isn't one (`reportSort`).
+public func reportSort(_ key: String?) -> ReportSort { key.flatMap(ReportSort.init(rawValue:)) ?? .newest }
+
+/// What the sort reads from a report (`ReportSortItem`).
+public struct ReportSortItem: Equatable, Sendable {
+    /// The job's number.
+    public var number: Int?
+    /// The customer's name.
+    public var customer: String?
+    public var sentAt: String?
+    public var updatedAt: String?
+
+    public init(number: Int?, customer: String?, sentAt: String?, updatedAt: String?) {
+        self.number = number
+        self.customer = customer
+        self.sentAt = sentAt
+        self.updatedAt = updatedAt
+    }
+}
+
+/// Reports in a sort's order, as Jobs sorts (`sortReports`): Newest and Oldest by when the report was
+/// sent (a draft, when it was last changed); Customer A to Z; Job Number highest first. Ties go to
+/// the highest job number, then keep the list's order.
+public func sortReports<T>(_ reports: [T], sort: ReportSort, item: (T) -> ReportSortItem) -> [T] {
+    sortJobs(reports, sort: sort.jobSort) { report in
+        let r = item(report)
+        return JobSortItem(
+            number: r.number, scheduledStart: nil, createdAt: r.sentAt ?? r.updatedAt, customer: r.customer)
+    }
+}
+
+/// The Reports list with nothing to show for a type: "No repair reports here." (`reportsEmpty`);
+/// nil for All Types.
+public func reportsEmpty(_ filter: JobTypeFilter) -> String? {
+    switch filter {
+    case .all: nil
+    case .type(let t): "No \(t.label.lowercased()) reports here."
+    }
+}
+
 // MARK: - Filtering by job type (owner, 2026-10-22: "Add a filter on the jobs and activity pages for job type")
 
 /// All Types, or one job type (`JobTypeFilter`).

@@ -744,7 +744,7 @@ export function ScheduleScreen() {
     }
   }
 
-  function stopGestures(s: Stop, tray = false) {
+  function stopGestures(s: Stop) {
     const j = byId.get(s.id);
     const lock = j ? jobLock(j) : "none";
     const actions = stopRowActions({
@@ -752,16 +752,14 @@ export function ScheduleScreen() {
       lock,
       scheduled: Boolean(j?.scheduled_start && j.status !== "unscheduled"),
       hasAddress: Boolean(s.address),
-      tray,
     });
-    // A stop on a day: the kind of visit is the title's first line, since it's off the tile
-    // (docs/design/2026-10-21-schedule-tile.md). Needs a Time's cards still show it.
+    // The kind of visit is the title's first line, since it's off the tile
+    // (docs/design/2026-10-21-schedule-tile.md).
     const name = menuTitle(s.customer, s.number ? `#${s.number}` : null);
-    const title = tray ? name : `${s.visit}\n${name}`;
+    const title = `${s.visit}\n${name}`;
     const run = (id: StopActionId) => {
       if (id === "open") router.push(`/jobs/${s.id}`);
       if (id === "move") openMove(s);
-      if (id === "suggest") suggest(s);
       if (id === "directions") openDirections({ address: s.address, location: s.location }, choice);
       if (id === "lockDay") setLock(s, toggleLock(lock, "day"));
       if (id === "lockTime") setLock(s, toggleLock(lock, "time"));
@@ -1057,12 +1055,7 @@ export function ScheduleScreen() {
           ) : null}
 
           {tray && view !== "month" ? (
-            <NeedsATime
-              jobs={trayStops}
-              onSuggest={suggest}
-              onMove={openMove}
-              gesturesFor={(s) => stopGestures(s, true)}
-            />
+            <NeedsATime jobs={trayStops} onSuggest={suggest} onMove={openMove} />
           ) : null}
 
           {/* Plans without a day, on phones a tray above the board as Needs a Time is. */}
