@@ -91,6 +91,17 @@ public enum InspectionWrites {
         return try sync.batch { try insertComponent(sync, companyId: companyId, jobId: jobId, next) }
     }
 
+    /// Add Item (owner, 2026-10-26): an item typed in for this job only, on the shop's hidden
+    /// stand-in type, with its pending result. Nothing is added for a blank name.
+    @discardableResult
+    public static func addCustomItem(
+        _ sync: SyncService, companyId: String, jobId: String, type: ComponentType, existing: [JobComponent],
+        name: String
+    ) throws -> String? {
+        guard let planned = nextCustomItem(type, existing, name) else { return nil }
+        return try sync.batch { try insertComponent(sync, companyId: companyId, jobId: jobId, planned) }
+    }
+
     /// Saves an item's answer: updates its result, or creates one if it has none.
     public static func saveChecklistResult(
         _ sync: SyncService, companyId: String, jobId: String, componentId: String, existing: ChecklistItemResult?,

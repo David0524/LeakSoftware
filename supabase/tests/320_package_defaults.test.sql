@@ -11,7 +11,7 @@ grant select on pool_shop to authenticated;
 select is((select settings ->> 'services' from company where id = (select id from pool_shop)), 'pool',
   'pool: the shop is set to pool care');
 select is((select count(*) from component_type where company_id = (select id from pool_shop)
-            and job_type = 'maintenance'), 10::bigint, 'pool: the visit checklist (3 on a schedule)');
+            and job_type = 'maintenance' and key not like 'custom\_%'), 10::bigint, 'pool: the visit checklist (3 on a schedule)');
 select is((select count(*) from component_type where company_id = (select id from pool_shop)
             and job_type = 'detection'), 0::bigint, 'pool: no inspection checklist');
 select is((select count(*) from test_type where company_id = (select id from pool_shop)), 0::bigint,
@@ -33,7 +33,7 @@ update company set settings = settings || '{"services": "both"}' where id = (sel
 select lives_ok(format($$ select add_package_defaults(%L, 'both') $$, (select id from pool_shop)),
   'both: owners add a package''s setup');
 select is((select count(*) from component_type where company_id = (select id from pool_shop)
-            and job_type = 'detection'), 27::bigint, 'both: the inspection checklist arrives');
+            and job_type = 'detection' and key not like 'custom\_%'), 28::bigint, 'both: the inspection checklist arrives');
 select is((select count(*) from test_type where company_id = (select id from pool_shop)), 4::bigint,
   'both: and the leak tests');
 select is((select count(*) from price_book_item where company_id = (select id from pool_shop)), 36::bigint,

@@ -2,11 +2,22 @@ import { router } from "expo-router";
 import { useEffect, useState } from "react";
 import { Animated, Pressable, StyleSheet, Text, TextInput, View } from "react-native";
 import {
+  ADD_ITEM_FIELD,
+  ADD_ITEM_HINT,
+  ADD_ITEM_LABEL,
+  ADD_ITEM_PLACEHOLDER,
+  ADD_ITEM_SAVE,
+  ADD_ITEM_TITLE,
   CHECKLIST_SECTION_LABELS,
+  CUSTOM_ITEM_MAX,
   INSPECTION_SECTIONS,
   checklistSectionSummary,
   componentApplies,
+  customItemName,
+  customItemType,
+  isCustomItemType,
   markRemainingLabel,
+  takesCustomItems,
   verdictIcon,
   type ChecklistSection,
   type ComponentType,
@@ -16,6 +27,7 @@ import {
 } from "@leakbook/core";
 import {
   addComponent,
+  addCustomItem,
   checklistJobType,
   createChecklist,
   saveChecklistResult,
@@ -25,7 +37,8 @@ import {
 } from "../../data/inspection";
 import { useJobMedia } from "../../data/media";
 import { useSession } from "../../state/session";
-import { Button, T } from "../../ui/components";
+import { Button, Field, T } from "../../ui/components";
+import { ModalSheet, useUnsavedChanges } from "../../ui/ModalSheet";
 import { haptic, haptics } from "../../ui/haptics";
 import { Select } from "../../ui/Select";
 import { useNoSwipe } from "../../ui/SwipeNav";
@@ -49,6 +62,7 @@ const SECTIONS = (Object.keys(CHECKLIST_SECTION_LABELS) as ChecklistSection[]).f
 );
 
 const ADD_ANOTHER = "another:";
+const TYPE_NEW = "type-new";
 
 /**
  * The checklist's items in the order it shows them: by section, then the item type's order,
@@ -82,6 +96,7 @@ export function ChecklistTab({ job, property }: { job: Job; property?: Property 
   const insp = useJobInspection(job.company_id, job.id);
   const media = useJobMedia(job.company_id, job.id);
   const [adding, setAdding] = useState<string | null>(null);
+  const [typing, setTyping] = useState(false);
   // Edit, as in an iOS list: every item gets Remove (owner, 2026-10-19).
   const [editing, setEditing] = useState(false);
   // Which checklist this job takes: a visit's, a pool inspection's, or the leak one.
@@ -145,7 +160,7 @@ export function ChecklistTab({ job, property }: { job: Job; property?: Property 
     ...new Map(
       insp.components
         .map(typeOf)
-        .filter((t): t is ComponentType => Boolean(t?.allows_multiple))
+        .filter((t): t is ComponentType => Boolean(t?.allows_multiple) && !isCustomItemType(t))
         .map((t) => [t.id, t]),
     ).values(),
   ];
@@ -153,6 +168,15 @@ export function ChecklistTab({ job, property }: { job: Job; property?: Property 
     ...repeatable.map((t) => ({ value: `${ADD_ANOTHER}${t.id}`, label: `Another ${t.name}` })),
     ...addable.map((t) => ({ value: t.id, label: t.name })),
   ];
+
+  // Add Item: a name typed in for this job only (owner, 2026-10-26), on a leak detection or
+  // visit checklist, when the shop has the hidden stand-in type.
+  const customType = takesCustomItems(job.type)
+    ? customItemType(
+        [...config.componentTypeById.values()],
+        kind === "maintenance" ? "maintenance" : "detection",
+      )
+    : undefined;
 
   function add() {
     if (!adding) return;
@@ -209,24 +233,80 @@ export function ChecklistTab({ job, property }: { job: Job; property?: Property 
           />
         );
       })}
-      {addOptions.length ? (
+      {addOptions.length || customType ? (
         <View style={styles.addRow}>
+          {/* "Type a New Item…" is the last choice: it opens the name sheet at once. */}
           <Select
             label="Add an item"
-            options={addOptions}
+            options={
+              customType
+                ? [...addOptions, { value: TYPE_NEW, label: `${ADD_ITEM_LABEL}…` }]
+                : addOptions
+            }
             value={adding}
-            onChange={setAdding}
+            onChange={(v) => {
+              if (v === TYPE_NEW) setTyping(true);
+              else setAdding(v);
+            }}
             style={{ flex: 1 }}
           />
-          <Button
-            title="Add"
-            kind="secondary"
-            disabled={!adding}
-            onPress={add}
-            style={{ alignSelf: "flex-end" }}
-          />
+          {addOptions.length ? (
+            <Button
+              title="Add"
+              kind="secondary"
+              disabled={!adding}
+              onPress={add}
+              style={{ alignSelf: "flex-end" }}
+            />
+          ) : null}
         </View>
       ) : null}
+      {customType ? (
+        <>
+          <ModalSheet visible={typing} onClose={() => setTyping(false)} title={ADD_ITEM_TITLE}>
+            {typing ? (
+              <AddItemForm
+                onAdd={(name) => {
+                  addCustomItem(
+                    services.sync,
+                    job.company_id,
+                    job.id,
+                    customType,
+                    insp.components,
+                    name,
+                  );
+                  setTyping(false);
+                  haptics.success();
+                }}
+              />
+            ) : null}
+          </ModalSheet>
+        </>
+      ) : null}
+    </View>
+  );
+}
+
+/** The New Item sheet's form: one name, for this job only. */
+function AddItemForm({ onAdd }: { onAdd: (name: string) => void }) {
+  const [name, setName] = useState("");
+  const typed = customItemName(name);
+  useUnsavedChanges(name.trim() !== "");
+  return (
+    <View style={{ gap: space["4"] }}>
+      <Field
+        label={ADD_ITEM_FIELD}
+        hint={ADD_ITEM_HINT}
+        value={name}
+        onChangeText={setName}
+        placeholder={ADD_ITEM_PLACEHOLDER}
+        maxLength={CUSTOM_ITEM_MAX}
+        autoFocus
+        autoCapitalize="sentences"
+        returnKeyType="done"
+        onSubmitEditing={() => typed && onAdd(typed)}
+      />
+      <Button title={ADD_ITEM_SAVE} wide disabled={!typed} onPress={() => typed && onAdd(typed)} />
     </View>
   );
 }

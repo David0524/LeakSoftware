@@ -60,6 +60,8 @@ import {
   reportPhotoBlock,
   jobRepairLines,
   type JobRepair,
+  customItemType,
+  takesCustomItems,
 } from "@leakbook/core";
 import { CustomerLinks } from "@/components/customer-links";
 import { DiagramPanel } from "@/components/diagram-work";
@@ -639,6 +641,7 @@ function Checklist({ detail }: { detail: JobDetail }) {
         label: c.label,
         type: {
           id: type.id,
+          key: type.key,
           name: type.name,
           answer: type.answer,
           allows_multiple: type.allows_multiple,
@@ -677,7 +680,17 @@ function Checklist({ detail }: { detail: JobDetail }) {
     )
     .sort((a, b) => a.sort_order - b.sort_order)
     .map((t) => ({ id: t.id, name: t.name }));
-  return <ChecklistEditor jobId={detail.job.id} rows={rows} addable={addable} />;
+  const jobType = checklistJobType(detail.job.type);
+  // Add Item: a name typed in for this job (owner, 2026-10-26), on a leak or visit checklist.
+  const canTypeIn =
+    takesCustomItems(detail.job.type) &&
+    !!customItemType(
+      [...detail.componentTypes.values()],
+      jobType === "maintenance" ? "maintenance" : "detection",
+    );
+  return (
+    <ChecklistEditor jobId={detail.job.id} rows={rows} addable={addable} canTypeIn={canTypeIn} />
+  );
 }
 
 /** Which checklist a job takes: its own for visits and inspections, the leak one otherwise. */

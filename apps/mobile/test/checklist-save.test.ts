@@ -18,7 +18,7 @@ vi.mock("../src/lib/config", () => ({ API_URL: "https://sundeck.test" }));
 vi.mock("../src/data/hooks", () => ({ useRows: () => [], useJobRows: () => [] }));
 
 const { SyncService } = await import("../src/lib/sync-service");
-const { saveChecklistResult } = await import("../src/data/inspection");
+const { saveChecklistResult, addCustomItem } = await import("../src/data/inspection");
 
 const company = "0190b6b0-0000-7000-8000-000000000001";
 const job = "0190b6b0-0000-7000-8000-000000000002";
@@ -96,6 +96,55 @@ describe("Where saved after the answer changed", () => {
     });
     saveWhere(sync, company, job, item, "under the deck, left");
     expect(sync.get("checklist_item_result", r!.id)).toMatchObject({ location_text: null });
+    sync.stop();
+  });
+});
+
+describe("Add Item (a name typed in for one job)", () => {
+  const stand = {
+    id: "0190b6b0-0000-7000-8000-0000000000a1",
+    company_id: company,
+    key: "custom_leak",
+    name: "Added on the job",
+    allows_multiple: true,
+    default_count: 0,
+    applies_to: "both",
+    methods: ["Visual"],
+    sort_order: 9000,
+    active: false,
+  } as never;
+  type Comp = { id: string; label: string; instance_number: number; component_type_id: string };
+  it("writes a component with the typed name and a pending checklist row", () => {
+    const sync = service();
+    const id = addCustomItem(sync, company, job, stand, [], "  Cracked   deck drain ");
+    const comps = sync.list("job_component", company, job) as unknown as Comp[];
+    expect(comps).toHaveLength(1);
+    expect(comps[0]).toMatchObject({
+      id,
+      label: "Cracked deck drain",
+      instance_number: 1,
+      component_type_id: (stand as { id: string }).id,
+    });
+    const results = sync.list("checklist_item_result", company, job) as unknown as {
+      job_component_id: string;
+      status: string;
+    }[];
+    expect(results).toEqual([expect.objectContaining({ job_component_id: id, status: "pending" })]);
+    sync.stop();
+  });
+  it("numbers the next one after the last and ignores a blank name", () => {
+    const sync = service();
+    addCustomItem(sync, company, job, stand, [], "Dead frog");
+    const existing = sync.list("job_component", company, job) as never;
+    expect(addCustomItem(sync, company, job, stand, existing, "   ")).toBeNull();
+    addCustomItem(sync, company, job, stand, existing, "Loose ladder");
+    const comps = (sync.list("job_component", company, job) as unknown as Comp[]).sort(
+      (a, b) => a.instance_number - b.instance_number,
+    );
+    expect(comps.map((c) => [c.instance_number, c.label])).toEqual([
+      [1, "Dead frog"],
+      [2, "Loose ladder"],
+    ]);
     sync.stop();
   });
 });

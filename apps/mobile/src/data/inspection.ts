@@ -7,6 +7,7 @@ import {
   inspectionProgress,
   jobHasChecklist,
   nextInstance,
+  nextCustomItem,
   planComponents,
   type InspectionValue,
   type ChecklistItemResult,
@@ -127,6 +128,23 @@ export function addComponent(
   existing: JobComponent[],
 ): string {
   return sync.batch(() => insertComponent(sync, companyId, jobId, nextInstance(type, existing)));
+}
+
+/**
+ * Add Item (owner, 2026-10-26): an item typed in for this job only, on the shop's hidden
+ * stand-in type. Nothing is added for a blank name. Returns the new item's id.
+ */
+export function addCustomItem(
+  sync: SyncService,
+  companyId: string,
+  jobId: string,
+  type: ComponentType,
+  existing: JobComponent[],
+  name: string,
+): string | null {
+  const planned = nextCustomItem(type, existing, name);
+  if (!planned) return null;
+  return sync.batch(() => insertComponent(sync, companyId, jobId, planned));
 }
 
 export function saveChecklistResult(

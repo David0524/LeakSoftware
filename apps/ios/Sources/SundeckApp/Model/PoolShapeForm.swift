@@ -59,12 +59,10 @@ public struct PoolShapeForm: Equatable, Sendable {
     public static let tilesLabel = "Pool shape"
     public static let mirrorLabel = "Mirror (flip left to right)"
     public static let spaLabel = "Has a spa"
-    public static let spaHint =
-        "Tap the spa to make it round or square. Drag it to move it; pinch or drag its corner to resize."
-    public static let noSpaHint = "Turn on Has a spa to put a spa on the drawing."
+    /// Only the one action nothing shows: tapping the spa turns it (owner, 2026-10-26: the rest of
+    /// the instructions, and the line about turning on Has a spa, are gone).
+    public static let spaHint = "Tap the spa to make it round or square."
     public static let drawHint = "Drag on the drawing. Draw on a shape, or Clear and start from nothing."
-    public static let landmarksHint =
-        "Pick one, then tap the drawing. Tap a landmark to select it: tap again to turn or flip it, pinch or drag its corner to resize, or tap its X to delete it."
     public static let undo = "Undo"
     public static let clearTitle = "Clear the pool diagram?"
     public static let clearMessage = "The shape, spa, drawing, and landmarks are removed. Pins and markup stay."

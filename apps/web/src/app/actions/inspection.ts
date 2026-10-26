@@ -7,6 +7,10 @@ import {
   isDiagramShape,
   calculate,
   nextInstance,
+  nextCustomItem,
+  customItemName,
+  customItemType,
+  takesCustomItems,
   normalizeTestData,
   parseDollars,
   planComponents,
@@ -18,6 +22,7 @@ import {
   inspectionAnswerValues,
   type InspectionValue,
   type ComponentType,
+  type JobType,
   type FindingStatus,
   type JobComponent,
   type JobStatus,
@@ -379,6 +384,45 @@ export async function addComponent(_: FormState, form: FormData): Promise<FormSt
   ]);
   if (!type) return { fields: { type: "Pick an item." } };
   const planned = nextInstance(type as ComponentType, (existing ?? []) as JobComponent[]);
+  const { data: comp, error } = await db
+    .from("job_component")
+    .insert({ ...planned, id: uuidv7(), company_id: office.company.id, job_id: jobId })
+    .select("id")
+    .single();
+  if (error) return { error: friendlyDbError(error.message) };
+  const { error: rowError } = await db.from("checklist_item_result").insert({
+    id: uuidv7(),
+    company_id: office.company.id,
+    job_id: jobId,
+    job_component_id: comp.id,
+    status: "pending",
+  });
+  if (rowError) return { error: friendlyDbError(rowError.message) };
+  return done(jobId, `Added ${planned.label}.`);
+}
+
+/**
+ * Add Item at the bottom of a leak detection or visit checklist (owner, 2026-10-26): an item
+ * typed in for this job only, on the shop's hidden stand-in type (see core inspection.ts).
+ */
+export async function addCustomItem(_: FormState, form: FormData): Promise<FormState> {
+  const { office, db } = await ctx();
+  const jobId = text(form, "job");
+  const name = customItemName(text(form, "name"));
+  if (!name) return { fields: { name: "Type the item’s name." } };
+  const { data: job } = await db.from("job").select("type").eq("id", jobId).single();
+  if (!job) return { error: "Job not found." };
+  const jobType = (job as { type: string }).type === "maintenance" ? "maintenance" : "detection";
+  if (!takesCustomItems((job as { type: JobType }).type))
+    return { error: "This checklist can’t take another item." };
+  const [{ data: types }, { data: existing }] = await Promise.all([
+    db.from("component_type").select("*").is("deleted_at", null),
+    db.from("job_component").select("*").eq("job_id", jobId).is("deleted_at", null),
+  ]);
+  const type = customItemType((types ?? []) as ComponentType[], jobType);
+  if (!type) return { error: "Typed-in items aren’t set up for this shop yet." };
+  const planned = nextCustomItem(type, (existing ?? []) as JobComponent[], name);
+  if (!planned) return { fields: { name: "Type the item’s name." } };
   const { data: comp, error } = await db
     .from("job_component")
     .insert({ ...planned, id: uuidv7(), company_id: office.company.id, job_id: jobId })

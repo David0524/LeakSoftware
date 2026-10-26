@@ -176,12 +176,12 @@ create temp table signup on commit drop as select create_company('Founder Leak C
 select is((select role from membership where company_id = (select id from signup) and user_id = auth.uid()),
   'owner', 'signup: creator becomes owner');
 select is((select count(*) from component_type where company_id = (select id from signup)
-            and job_type = 'detection'), 27::bigint,
+            and job_type = 'detection' and key not like 'custom\_%'), 28::bigint,
   'signup: default checklist components copied');
 select is((select count(*) from component_type where company_id = (select id from signup)
-            and job_type = 'maintenance'), 10::bigint,
+            and job_type = 'maintenance' and key not like 'custom\_%'), 10::bigint,
   'signup: the maintenance checklist too');
-select is((select count(*) from component_type where company_id = (select id from signup) and section = 'bond_beam'), 5::bigint,
+select is((select count(*) from component_type where company_id = (select id from signup) and section = 'bond_beam'), 6::bigint,
   'signup: checklist items come in sections');
 select is((select count(*) from component_type where company_id = (select id from signup)
             and job_type = 'inspection'), 133::bigint,

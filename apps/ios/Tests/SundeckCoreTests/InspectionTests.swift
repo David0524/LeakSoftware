@@ -10,6 +10,7 @@ import Testing
     @Test func everyRuleIsChecked() {
         let checked: Set<String> = [
             "CHECKLIST_SECTION_LABELS", "DIAGRAM_SHAPES", "componentApplies", "planComponents", "nextInstance",
+            "customItemName", "nextCustomItem",
             "checklistTally", "calculate", "previewTest", "validateTestData", "normalizeTestData", "validateFinding",
             "poolDiagram",
             "validateNewJob", "formatAddress", "newJobRecords", "localDate", "groupJobs", "formatSchedule",
@@ -49,6 +50,8 @@ import Testing
             try planComponents(c.arg(0), c.arg(1), c.arg(2, as: JobType?.self) ?? .detection)
         }
         checkRule(module, "nextInstance") { c in nextInstance(try c.arg(0), try c.arg(1)) }
+        checkRule(module, "customItemName") { c in customItemName(try c.arg(0)) }
+        checkRule(module, "nextCustomItem") { c in nextCustomItem(try c.arg(0), try c.arg(1), try c.arg(2)) }
         checkRule(module, "removeItemConfirm") { c in removeItemConfirm(try c.arg(0), fromPlan: try c.arg(1)) }
         checkRule(module, "checklistTally") { c in checklistTally(try c.arg(0), try c.arg(1)) }
     }

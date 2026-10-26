@@ -52,7 +52,7 @@
                 }
                 VStack(alignment: .leading, spacing: 8) {
                     PoolShapeCanvas(form: $form, panel: panel, tool: tool, placing: $placing, selected: $selected)
-                    FieldHint(text: form.hasSpa ? PoolShapeForm.spaHint : PoolShapeForm.noSpaHint)
+                    if form.hasSpa { FieldHint(text: PoolShapeForm.spaHint) }
                 }
                 if let error { Notice(kind: .error, text: error) }
                 Button(PoolShapeForm.save) { save() }.buttonStyle(.primary(fullWidth: true, size: .field))
@@ -153,9 +153,12 @@
                         .accessibilityAddTraits(on ? .isSelected : [])
                     }
                 }
-                Text(placing.map(PoolShapeForm.placingHint) ?? PoolShapeForm.landmarksHint)
-                    .textRole(.secondary)
-                    .foregroundStyle(Color.textMuted)
+                // Only while placing one; nothing under the picker otherwise (owner, 2026-10-26).
+                if let placing {
+                    Text(PoolShapeForm.placingHint(placing))
+                        .textRole(.secondary)
+                        .foregroundStyle(Color.textMuted)
+                }
             }
         }
 

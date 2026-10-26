@@ -516,11 +516,12 @@ export function PoolShapeEditor({ property, onDone }: { property: Property; onDo
               );
             })}
           </View>
-          <T variant="secondary" muted>
-            {placing
-              ? `Tap the drawing to put the ${LANDMARKS.find((l) => l.key === placing)!.label.toLowerCase()} there.`
-              : "Pick one, then tap the drawing. Tap a landmark to select it: tap again to turn or flip it, pinch or drag its corner to resize, or tap its X to delete it."}
-          </T>
+          {/* Only while placing one; nothing under the picker otherwise (owner, 2026-10-26). */}
+          {placing ? (
+            <T variant="secondary" muted>
+              {`Tap the drawing to put the ${LANDMARKS.find((l) => l.key === placing)!.label.toLowerCase()} there.`}
+            </T>
+          ) : null}
         </View>
       ) : null}
 
@@ -662,11 +663,12 @@ export function PoolShapeEditor({ property, onDone }: { property: Property; onDo
             </Svg>
           ) : null}
         </View>
-        <T variant="secondary" muted>
-          {hasSpa
-            ? "Tap the spa to make it round or square. Drag it to move it; pinch or drag its corner to resize."
-            : "Turn on Has a spa to put a spa on the drawing."}
-        </T>
+        {/* Only the one action nothing shows: tapping the spa turns it (owner, 2026-10-26). */}
+        {hasSpa ? (
+          <T variant="secondary" muted>
+            Tap the spa to make it round or square.
+          </T>
+        ) : null}
       </View>
 
       <Button title="Save Pool Shape" wide onPress={save} />

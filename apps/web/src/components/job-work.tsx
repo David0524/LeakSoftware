@@ -2,7 +2,15 @@
 
 import { useCallback, useOptimistic, useState, useTransition, type ReactNode } from "react";
 import {
+  ADD_ITEM_FIELD,
+  ADD_ITEM_HINT,
+  ADD_ITEM_LABEL,
+  ADD_ITEM_PLACEHOLDER,
+  ADD_ITEM_SAVE,
+  ADD_ITEM_TITLE,
   CHECKLIST_SECTION_LABELS,
+  CUSTOM_ITEM_MAX,
+  isCustomItemType,
   FINDING_STATUS_LABELS,
   INSPECTION_SECTIONS,
   jobActionLabel,
@@ -46,6 +54,7 @@ import {
   saveTest,
   saveWhere,
   setUpChecklist,
+  addCustomItem,
   setPoolShape,
   setPoolSpa,
   setVerdict,
@@ -405,7 +414,15 @@ export interface ChecklistRow {
   label: string;
   type: Pick<
     ComponentType,
-    "id" | "name" | "answer" | "allows_multiple" | "section" | "group_label" | "options" | "notice"
+    | "id"
+    | "key"
+    | "name"
+    | "answer"
+    | "allows_multiple"
+    | "section"
+    | "group_label"
+    | "options"
+    | "notice"
   >;
   /** Put on this visit by the plan's scheduled cleaning. */
   fromPlan?: boolean;
@@ -437,14 +454,18 @@ export function ChecklistEditor({
   jobId,
   rows,
   addable,
+  canTypeIn = false,
 }: {
   jobId: string;
   rows: ChecklistRow[];
   /** Item types the pool could have that aren't on the checklist yet. */
   addable: { id: string; name: string }[];
+  /** Add Item: a leak detection or visit checklist, in a shop with the stand-in type. */
+  canTypeIn?: boolean;
 }) {
   const { pending, error, run } = useRun();
   const [adding, setAdding] = useState("");
+  const [typing, setTyping] = useState(false);
   // Edit, as in an iOS list: every item gets Remove (owner, 2026-10-19).
   const [editing, setEditing] = useState(false);
   // A pool inspection's eight sections have their own rows (inspection-checklist.tsx).
@@ -455,7 +476,11 @@ export function ChecklistEditor({
     .filter((s) => s.items.length > 0);
   // Types that can repeat ("+ Add Another Return"), once each.
   const repeatable = [
-    ...new Map(rows.filter((r) => r.type.allows_multiple).map((r) => [r.type.id, r.type])).values(),
+    ...new Map(
+      rows
+        .filter((r) => r.type.allows_multiple && !isCustomItemType(r.type))
+        .map((r) => [r.type.id, r.type]),
+    ).values(),
   ];
   return (
     <div className="space-y-3">
@@ -504,6 +529,39 @@ export function ChecklistEditor({
             Add
           </Button>
         </div>
+      ) : null}
+      {canTypeIn ? (
+        <>
+          {/* A quiet link under the select: two ways to add (owner, 2026-10-26). */}
+          <button
+            type="button"
+            onClick={() => setTyping(true)}
+            className="-mt-1 min-h-11 text-[1.0625rem] text-link"
+          >
+            {ADD_ITEM_LABEL}
+          </button>
+          <Sheet open={typing} onClose={() => setTyping(false)} title={ADD_ITEM_TITLE}>
+            <SettingsForm
+              action={addCustomItem}
+              submit={ADD_ITEM_SAVE}
+              onSaved={() => setTyping(false)}
+              primary
+              pinned
+            >
+              <input type="hidden" name="job" value={jobId} />
+              <SField
+                label={ADD_ITEM_FIELD}
+                name="name"
+                placeholder={ADD_ITEM_PLACEHOLDER}
+                maxLength={CUSTOM_ITEM_MAX}
+                autoComplete="off"
+                autoFocus
+                required
+                hint={ADD_ITEM_HINT}
+              />
+            </SettingsForm>
+          </Sheet>
+        </>
       ) : null}
       <ErrorText error={error} />
     </div>

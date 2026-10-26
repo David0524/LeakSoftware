@@ -8,7 +8,7 @@ import {
   priceBookCategoryChoices,
   priceBookSections,
 } from "@leakbook/core";
-import { formatCents } from "@leakbook/core";
+import { formatCents, isCustomItemType } from "@leakbook/core";
 import { removeConfigRow, savePriceItem } from "@/app/actions/settings";
 import {
   SField,
@@ -78,7 +78,9 @@ function ItemFields({
           defaultValue={item?.component_type_key ?? ""}
           options={[
             { value: "", label: "Any finding" },
-            ...types.map((t) => ({ value: t.key, label: t.name })),
+            ...types
+              .filter((t) => !isCustomItemType(t))
+              .map((t) => ({ value: t.key, label: t.name })),
           ]}
         />
         <SField

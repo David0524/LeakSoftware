@@ -442,10 +442,11 @@ export function PoolShapeEditor({
               </button>
             ))}
           </div>
-          <p className="text-[0.9375rem] text-text-muted" aria-live="polite">
+          {/* Only while placing one; nothing under the picker otherwise (owner, 2026-10-26). */}
+          <p className="text-[0.9375rem] text-text-muted empty:hidden" aria-live="polite">
             {placing
               ? `Tap the drawing to put the ${LANDMARKS.find((l) => l.key === placing)!.label.toLowerCase()} there.`
-              : "Pick one, then tap the drawing. Tap a landmark to select it: tap again to turn or flip it, pinch or drag its corner to resize, or tap its X to delete it."}
+              : ""}
           </p>
         </div>
       ) : null}
@@ -574,10 +575,10 @@ export function PoolShapeEditor({
             />
           ) : null}
         </svg>
-        <p id="drawing-hint" className="text-[0.9375rem] text-text-muted">
-          {hasSpa
-            ? "Tap the spa to make it round or square. Drag it to move it; pinch or drag its corner to resize."
-            : "Turn on Has a spa to put a spa on the drawing."}
+        {/* Only the one action nothing shows: tapping the spa turns it (owner, 2026-10-26: the
+            rest of the instructions are gone). */}
+        <p id="drawing-hint" className="text-[0.9375rem] text-text-muted empty:hidden">
+          {hasSpa ? "Tap the spa to make it round or square." : ""}
         </p>
       </div>
 

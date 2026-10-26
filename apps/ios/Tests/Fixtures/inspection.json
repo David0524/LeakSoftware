@@ -12114,6 +12114,169 @@
       }
     }
   ],
+  "customItemName": [
+    {
+      "args": [
+        "Cracked deck drain"
+      ],
+      "result": "Cracked deck drain"
+    },
+    {
+      "args": [
+        "  Cracked   deck\n drain "
+      ],
+      "result": "Cracked deck drain"
+    },
+    {
+      "args": [
+        "   "
+      ],
+      "result": null
+    },
+    {
+      "args": [
+        ""
+      ],
+      "result": null
+    },
+    {
+      "args": [
+        "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+      ],
+      "result": "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+    }
+  ],
+  "nextCustomItem": [
+    {
+      "args": [
+        {
+          "id": "custom_leak",
+          "company_id": "c",
+          "key": "custom_leak",
+          "name": "Custom_leak",
+          "allows_multiple": true,
+          "default_count": 0,
+          "applies_to": "pool",
+          "methods": [
+            "Visual"
+          ],
+          "sort_order": 9000,
+          "active": true
+        },
+        [],
+        "Cracked deck drain"
+      ],
+      "result": {
+        "component_type_id": "custom_leak",
+        "instance_number": 1,
+        "label": "Cracked deck drain",
+        "sort_order": 900001
+      }
+    },
+    {
+      "args": [
+        {
+          "id": "custom_leak",
+          "company_id": "c",
+          "key": "custom_leak",
+          "name": "Custom_leak",
+          "allows_multiple": true,
+          "default_count": 0,
+          "applies_to": "pool",
+          "methods": [
+            "Visual"
+          ],
+          "sort_order": 9000,
+          "active": true
+        },
+        [
+          {
+            "id": "c1",
+            "company_id": "c",
+            "job_id": "j",
+            "component_type_id": "custom_leak",
+            "instance_number": 1,
+            "label": "c1",
+            "sort_order": 0
+          },
+          {
+            "id": "c3",
+            "company_id": "c",
+            "job_id": "j",
+            "component_type_id": "custom_leak",
+            "instance_number": 3,
+            "label": "c3",
+            "sort_order": 0
+          }
+        ],
+        "Dead frog in skimmer"
+      ],
+      "result": {
+        "component_type_id": "custom_leak",
+        "instance_number": 4,
+        "label": "Dead frog in skimmer",
+        "sort_order": 900004
+      }
+    },
+    {
+      "args": [
+        {
+          "id": "custom_leak",
+          "company_id": "c",
+          "key": "custom_leak",
+          "name": "Custom_leak",
+          "allows_multiple": true,
+          "default_count": 0,
+          "applies_to": "pool",
+          "methods": [
+            "Visual"
+          ],
+          "sort_order": 9000,
+          "active": true
+        },
+        [
+          {
+            "id": "c9",
+            "company_id": "c",
+            "job_id": "j",
+            "component_type_id": "custom_leak",
+            "instance_number": 9,
+            "label": "c9",
+            "sort_order": 0,
+            "deleted_at": "2026-10-01T00:00:00Z"
+          }
+        ],
+        "  Loose ladder  "
+      ],
+      "result": {
+        "component_type_id": "custom_leak",
+        "instance_number": 1,
+        "label": "Loose ladder",
+        "sort_order": 900001
+      }
+    },
+    {
+      "args": [
+        {
+          "id": "custom_leak",
+          "company_id": "c",
+          "key": "custom_leak",
+          "name": "Custom_leak",
+          "allows_multiple": true,
+          "default_count": 0,
+          "applies_to": "pool",
+          "methods": [
+            "Visual"
+          ],
+          "sort_order": 9000,
+          "active": true
+        },
+        [],
+        "   "
+      ],
+      "result": null
+    }
+  ],
   "instanceLabel": [
     {
       "args": [

@@ -13,6 +13,8 @@
         @Environment(SyncService.self) private var sync
         @Environment(AppEnvironment.self) private var app
         @State private var adding = ""
+        /// Add Item's sheet (owner, 2026-10-26): a name typed in for this job only.
+        @State private var typing = false
         @State private var saveError: String?
         /// Bumped when an item is marked done, for its tap (core `HapticMoment.checklistItemDone`).
         @State private var doneTicks = 0
@@ -93,7 +95,14 @@
                                     markRest: { markRest(section.items) })
                             }
                         }
-                        if !model.addOptions.isEmpty { addItem(model, inspection).padding(.top, 16) }
+                        if !model.addOptions.isEmpty || model.customType != nil {
+                            addItem(model, inspection).padding(.top, 16)
+                                .sheet(isPresented: $typing) {
+                                    if let custom = model.customType {
+                                        AddItemSheet { name in addTyped(custom, name, inspection) }
+                                    }
+                                }
+                        }
                     }
                 }
                 .captureFlow(capture)
@@ -119,21 +128,34 @@
         /// A select of what can be added beside a secondary Add, disabled until something is chosen.
         private func addItem(_ model: ChecklistModel, _ inspection: JobInspection) -> some View {
             let options = model.addOptions
+            // "Type a New Item…" is the last choice: it opens the name sheet at once.
+            let typeNew = "type-new"
+            let ids = options.map(\.id) + (model.customType != nil ? [typeNew] : [])
             return VStack(alignment: .leading, spacing: 4) {
                 FieldLabel("Add an item")
                 HStack(spacing: 12) {
                     SelectField(
-                        label: nil, selection: $adding, options: [""] + options.map(\.id),
-                        optionLabel: { id in options.first { $0.id == id }?.label ?? "Choose…" }
+                        label: nil, selection: $adding, options: [""] + ids,
+                        optionLabel: { id in
+                            id == typeNew ? "\(addItemLabel)…" : options.first { $0.id == id }?.label ?? "Choose…"
+                        }
                     )
-                    .accessibilityLabel("Add an item")
-                    Button("Add") {
-                        guard let option = options.first(where: { $0.id == adding }) else { return }
-                        addAnother(option.type, inspection)
-                        adding = ""
+                    .onChange(of: adding) { _, now in
+                        if now == typeNew {
+                            adding = ""
+                            typing = true
+                        }
                     }
-                    .buttonStyle(.secondary)
-                    .disabled(adding.isEmpty)
+                    .accessibilityLabel("Add an item")
+                    if !options.isEmpty {
+                        Button("Add") {
+                            guard let option = options.first(where: { $0.id == adding }) else { return }
+                            addAnother(option.type, inspection)
+                            adding = ""
+                        }
+                        .buttonStyle(.secondary)
+                        .disabled(adding.isEmpty)
+                    }
                 }
             }
         }
@@ -179,6 +201,14 @@
             run {
                 try InspectionWrites.addComponent(
                     sync, companyId: company.id, jobId: job.id, type: type, existing: inspection.components)
+            }
+        }
+
+        private func addTyped(_ type: ComponentType, _ name: String, _ inspection: JobInspection) {
+            guard let company = session.company else { return }
+            run {
+                try InspectionWrites.addCustomItem(
+                    sync, companyId: company.id, jobId: job.id, type: type, existing: inspection.components, name: name)
             }
         }
 
@@ -490,6 +520,68 @@
             guard text != (item.result?.locationText ?? "") else { return }
             saveWhere(text)
             withAnimation { savedWhere = true }
+        }
+    }
+
+    /// New Item: the name of an item typed in for this job only (owner, 2026-10-26).
+    struct AddItemSheet: View {
+        var onAdd: (String) -> Void
+        @Environment(\.dismiss) private var dismiss
+        @State private var name = ""
+        @State private var confirmDiscard = false
+        @FocusState private var focused: Bool
+
+        var body: some View {
+            let typed = customItemName(name)
+            let dirty = !name.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+            NavigationStack {
+                ScrollView {
+                    Grouped(footer: addItemHint) {
+                        VStack(alignment: .leading, spacing: 4) {
+                            Text(addItemField).textRole(.secondary).foregroundStyle(Color.textMuted)
+                            TextField(
+                                "", text: $name, prompt: Text(addItemPlaceholder).foregroundStyle(Color.placeholder)
+                            )
+                            .textRole(.body)
+                            .foregroundStyle(Color.text)
+                            .textInputAutocapitalization(.sentences)
+                            .submitLabel(.done)
+                            .focused($focused)
+                            .accessibilityLabel(addItemField)
+                            .onChange(of: name) { _, now in
+                                if now.count > customItemMax { name = String(now.prefix(customItemMax)) }
+                            }
+                            .onSubmit { if let typed { add(typed) } }
+                        }
+                        .padding(.horizontal, CGFloat(Spacing.rowHorizontal))
+                        .padding(.vertical, 8)
+                        .frame(minHeight: minTarget, alignment: .leading)
+                    }
+                    .padding(.horizontal, CGFloat(Spacing.pageMargin))
+                    .padding(.top, 8)
+                }
+                .background(Color.bg)
+                .navigationTitle(addItemTitle)
+                .navigationBarTitleDisplayMode(.inline)
+                .toolbar {
+                    ToolbarItem(placement: .cancellationAction) {
+                        Button("Cancel") { if dirty { confirmDiscard = true } else { dismiss() } }
+                    }
+                    ToolbarItem(placement: .confirmationAction) {
+                        Button(addItemSave) { if let typed { add(typed) } }
+                            .fontWeight(.semibold)
+                            .disabled(typed == nil)
+                    }
+                }
+                .onAppear { focused = true }
+            }
+            .sheetPresentation(dirty: dirty, detents: [.medium])
+            .discardPrompt(dirty: dirty, isPresented: $confirmDiscard)
+        }
+
+        private func add(_ typed: String) {
+            onAdd(typed)
+            dismiss()
         }
     }
 #endif

@@ -78,6 +78,8 @@ import {
   nativeMapsUrl,
   newJobRecords,
   nextInstance,
+  nextCustomItem,
+  customItemName,
   removeItemConfirm,
   normalizeTestData,
   planComponents,
@@ -543,6 +545,36 @@ export const inspection: ModuleCases = {
       [types[1]!, [comp("r9", "return", 9, { deleted_at: "" })]],
       [type("single", { allows_multiple: true, default_count: 1 }), []],
       [type("single", { allows_multiple: true, default_count: 1 }), [comp("a", "single", 1)]],
+    ],
+  ),
+
+  customItemName: rule(
+    (raw: string) => customItemName(raw),
+    [["Cracked deck drain"], ["  Cracked   deck\n drain "], ["   "], [""], ["x".repeat(100)]],
+  ),
+  nextCustomItem: rule(
+    (t: ComponentType, existing: JobComponent[], name: string) => nextCustomItem(t, existing, name),
+    [
+      [
+        type("custom_leak", { allows_multiple: true, default_count: 0, sort_order: 9000 }),
+        [],
+        "Cracked deck drain",
+      ],
+      [
+        type("custom_leak", { allows_multiple: true, default_count: 0, sort_order: 9000 }),
+        [comp("c1", "custom_leak", 1), comp("c3", "custom_leak", 3)],
+        "Dead frog in skimmer",
+      ],
+      [
+        type("custom_leak", { allows_multiple: true, default_count: 0, sort_order: 9000 }),
+        [comp("c9", "custom_leak", 9, { deleted_at: "2026-10-01T00:00:00Z" })],
+        "  Loose ladder  ",
+      ],
+      [
+        type("custom_leak", { allows_multiple: true, default_count: 0, sort_order: 9000 }),
+        [],
+        "   ",
+      ],
     ],
   ),
 

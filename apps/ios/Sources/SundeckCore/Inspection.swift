@@ -466,6 +466,55 @@ public func nextInstance(_ type: ComponentType, _ existing: [JobComponent]) -> P
         componentTypeId: type.id, instanceNumber: n, label: instanceLabel(type, n), sortOrder: type.sortOrder * 100 + n)
 }
 
+// MARK: - Items typed in on a job (owner, 2026-10-26)
+
+// "There sometimes is weird things at a pool that we may need to type in." At the bottom of a
+// leak detection or visit checklist, Add Item takes a name. The item belongs to that job only: a
+// job_component whose label is the typed name, on one hidden stand-in component type per
+// checklist, so it syncs, is answered, shows on the report and goes with Undo like every other
+// item. Port of the same section in packages/core/src/inspection.ts.
+
+/// The hidden stand-in type's key for each checklist.
+public let customItemKeyDetection = "custom_leak"
+public let customItemKeyMaintenance = "custom_visit"
+
+/// Is this one of the stand-in types? They never appear in settings or in Add an item.
+public func isCustomItemType(_ type: ComponentType) -> Bool { type.key.hasPrefix("custom_") }
+
+public let addItemLabel = "Type a New Item"
+public let addItemTitle = "New Item"
+public let addItemField = "Item name"
+public let addItemPlaceholder = "For example, Cracked deck drain"
+public let addItemHint = "This item is only on this job."
+public let addItemSave = "Add"
+public let customItemMax = 80
+
+/// The typed name, tidied (spaces squeezed, 80 characters at most), or nil when it's blank.
+public func customItemName(_ raw: String) -> String? {
+    let squeezed = raw.split(whereSeparator: { $0.isWhitespace }).joined(separator: " ")
+    let name = String(squeezed.prefix(customItemMax)).trimmingCharacters(in: .whitespaces)
+    return name.isEmpty ? nil : name
+}
+
+/// The stand-in type for a checklist, when the shop has one (a shop that hasn't synced yet doesn't).
+public func customItemType(_ types: [ComponentType], _ jobType: JobType) -> ComponentType? {
+    let key = jobType == .maintenance ? customItemKeyMaintenance : customItemKeyDetection
+    return types.first { $0.key == key && isLive($0.deletedAt) }
+}
+
+/// Does this job's checklist take typed-in items? Not a pool inspection (its questions are fixed) or a repair.
+public func takesCustomItems(_ jobType: JobType) -> Bool {
+    jobType != .inspection && jobHasChecklist(jobType.rawValue)
+}
+
+/// The component to add for a typed-in item: after the rest, in the order typed.
+public func nextCustomItem(_ type: ComponentType, _ existing: [JobComponent], _ rawName: String) -> PlannedComponent? {
+    guard let name = customItemName(rawName) else { return nil }
+    var next = nextInstance(type, existing)
+    next.label = name
+    return next
+}
+
 /// The confirm before removing an item from a job's checklist.
 public struct RemoveItemConfirm: Codable, Equatable, Sendable {
     public var title: String

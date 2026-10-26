@@ -139,6 +139,9 @@ public struct ChecklistModel: Equatable, Sendable {
     public var inspection: InspectionChecklist
     /// "Add an item": active types not on the job yet, for this kind of job and this pool.
     public var missing: [ComponentType]
+    /// Add Item: the shop's stand-in type for typing an item in, on a leak detection or visit
+    /// checklist (nil: not offered).
+    public var customType: ComponentType?
 
     public init(config: InspectionConfig, inspection: JobInspection, jobType: JobType, property: Property?) {
         self.jobType = jobType
@@ -165,6 +168,9 @@ public struct ChecklistModel: Equatable, Sendable {
             }
             return ChecklistSectionRows(section: section, items: rows)
         }
+        customType =
+            takesCustomItems(jobType)
+            ? customItemType(Array(config.componentTypeById.values), checklistType) : nil
         missing = config.componentTypes.filter { t in
             !inspection.components.contains { $0.componentTypeId == t.id }
                 && (t.jobType ?? .detection) == checklistType
@@ -179,7 +185,7 @@ public struct ChecklistModel: Equatable, Sendable {
     public var addOptions: [ChecklistAddOption] {
         var seen = Set<String>()
         let repeatable = sections.flatMap(\.items).map(\.type).filter {
-            $0.allowsMultiple && seen.insert($0.id).inserted
+            $0.allowsMultiple && !isCustomItemType($0) && seen.insert($0.id).inserted
         }
         return repeatable.map { ChecklistAddOption(type: $0, label: "Another \($0.name)") }
             + missing.map { ChecklistAddOption(type: $0, label: $0.name) }

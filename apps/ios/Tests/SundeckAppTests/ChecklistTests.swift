@@ -29,7 +29,7 @@ import Testing
         func componentType(
             _ n: Int, _ key: String, _ name: String, section: String, answer: String = "leak",
             jobType: JSONValue = .null, poolType: JSONValue = .null, multiple: Bool = false, count: Int = 1,
-            appliesTo: String, sort: Int
+            appliesTo: String, sort: Int, active: Bool = true
         ) -> Row {
             [
                 "id": .string("00000000-0000-4000-8000-00000000010\(n)"), "company_id": .string(Self.company),
@@ -37,7 +37,7 @@ import Testing
                 "answer": .string(answer), "job_type": jobType, "applies_to_pool_type": poolType,
                 "on_schedule": false, "allows_multiple": .bool(multiple), "default_count": .number(Double(count)),
                 "applies_to": .string(appliesTo), "methods": ["Visual"], "sort_order": .number(Double(sort)),
-                "active": true,
+                "active": .bool(active),
             ]
         }
         let types = [
@@ -53,6 +53,10 @@ import Testing
             componentType(
                 5, "svc_skim", "Skim surface", section: "service", answer: "done", jobType: "maintenance",
                 appliesTo: "both", sort: 500),
+            // The hidden stand-in for items typed in on a job (inactive: no job copies it).
+            componentType(
+                7, "custom_leak", "Added on the job", section: "other", multiple: true, count: 0, appliesTo: "both",
+                sort: 9000, active: false),
         ]
         let tests: [Row] = [
             [
@@ -289,6 +293,43 @@ import Testing
         try RemovalWrites.remove(
             sync, companyId: Self.company, rows: RemovalRow.checklistItem(beam.component, beam.result))
         #expect(model(property: try property()).missing.map(\.key).contains("bond_beam"))
+    }
+
+    @Test func anItemTypedInIsOnThisJobOnlyAndWorksLikeAnyOther() throws {
+        try setUp(property: try property())
+        let m = model(property: try property())
+        // Offered on a leak checklist, through the hidden stand-in type; not as a type to pick.
+        let custom = try #require(m.customType)
+        #expect(custom.key == "custom_leak")
+        #expect(!m.addOptions.contains { $0.type.key == "custom_leak" })
+        #expect(model(.inspection, property: try property()).customType == nil)
+        // Nothing is added for a blank name.
+        #expect(
+            try InspectionWrites.addCustomItem(
+                sync, companyId: Self.company, jobId: Self.job, type: custom, existing: inspection.components,
+                name: "   ") == nil)
+        let before = sync.revision
+        try InspectionWrites.addCustomItem(
+            sync, companyId: Self.company, jobId: Self.job, type: custom, existing: inspection.components,
+            name: "  Cracked   deck drain ")
+        #expect(sync.revision == before + 1)
+        // It lands in the Other section, pending, and answers like any item.
+        let added = try row("Cracked deck drain")
+        #expect(added.type.section == .other && added.result?.status == .pending)
+        try InspectionWrites.setVerdict(
+            sync, companyId: Self.company, jobId: Self.job, componentId: added.component.id, existing: added.result,
+            verdict: .attention, userId: Self.me)
+        #expect(try row("Cracked deck drain").verdict == .attention)
+        // The next typed item is numbered after it; the new item goes with Undo like the rest.
+        try InspectionWrites.addCustomItem(
+            sync, companyId: Self.company, jobId: Self.job, type: custom, existing: inspection.components,
+            name: "Dead frog")
+        #expect(inspection.components.filter { $0.componentTypeId == custom.id }.map(\.instanceNumber) == [1, 2])
+        let rows = RemovalRow.checklistItem(added.component, added.result)
+        try RemovalWrites.remove(sync, companyId: Self.company, rows: rows)
+        #expect(!inspection.components.contains { $0.label == "Cracked deck drain" })
+        try RemovalWrites.restore(sync, companyId: Self.company, rows: rows)
+        #expect(inspection.components.contains { $0.label == "Cracked deck drain" })
     }
 
     @Test func anyItemCanBeRemovedAndACleaningSaysItStaysDue() throws {

@@ -8,6 +8,7 @@ import {
   chargeChemicalsSettings,
   chargesChemicals,
   formatCents,
+  isCustomItemType,
   localDate,
   offersPool,
   parseDollars,
@@ -356,7 +357,9 @@ function ItemForm({
         onChange={set("component")}
         options={[
           { value: "", label: "Any finding" },
-          ...types.map((t) => ({ value: t.key, label: t.name })),
+          ...types
+            .filter((t) => !isCustomItemType(t))
+            .map((t) => ({ value: t.key, label: t.name })),
         ]}
       />
       <FieldGroup footer="Shown on quotes.">

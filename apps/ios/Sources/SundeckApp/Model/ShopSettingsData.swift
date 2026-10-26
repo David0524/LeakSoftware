@@ -227,6 +227,8 @@ public func componentGroups(_ store: LocalStore, companyId: String, list: Checkl
 )] {
     let rows = configRows(store, "component_type", companyId)
         .filter { ($0["job_type"]?.string ?? "detection") == list.jobType }
+        // The hidden stand-ins for items typed in on a job (owner, 2026-10-26) aren't settings.
+        .filter { !($0["key"]?.string ?? "").hasPrefix("custom_") }
     guard list == .inspection else { return [(nil, componentItems(rows, pool: list == .pool))] }
     return inspectionSections.compactMap { section in
         let here = rows.filter { $0["section"]?.string == section.rawValue }

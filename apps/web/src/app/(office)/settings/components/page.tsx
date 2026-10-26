@@ -4,6 +4,7 @@ import {
   CHECKLIST_SECTION_LABELS,
   INSPECTION_SECTIONS,
   companyServices,
+  isCustomItemType,
   optionsToText,
   type ChecklistSection,
 } from "@leakbook/core";
@@ -254,13 +255,15 @@ export default async function ComponentsPage({ searchParams }: PageProps<"/setti
         ? ["leak", "inspection"]
         : ["pool"];
   const kind: Kind = kinds.includes(list as Kind) ? (list as Kind) : kinds[0]!;
-  const mine = types.filter((t) =>
-    kind === "pool"
-      ? t.job_type === "maintenance"
-      : kind === "inspection"
-        ? t.job_type === "inspection"
-        : (t.job_type ?? "detection") === "detection",
-  );
+  const mine = types
+    .filter((t) => !isCustomItemType(t))
+    .filter((t) =>
+      kind === "pool"
+        ? t.job_type === "maintenance"
+        : kind === "inspection"
+          ? t.job_type === "inspection"
+          : (t.job_type ?? "detection") === "detection",
+    );
   const groups =
     kind === "pool"
       ? [

@@ -283,6 +283,65 @@ export function nextInstance(type: ComponentType, existing: JobComponent[]): Pla
   };
 }
 
+// ---------------------------------------------------------------------------
+// Items typed in on a job (owner, 2026-10-26)
+// ---------------------------------------------------------------------------
+
+// "There sometimes is weird things at a pool that we may need to type in." At the bottom of a
+// leak detection or visit checklist, Add Item takes a name. The item belongs to that job only:
+// a job_component whose label is the typed name, on one hidden stand-in component type per
+// checklist (supabase/migrations/20261022003400_checklist_additions.sql), so it syncs, is
+// answered, shows on the report and goes with Undo like every other item. The same words on the
+// website, iPhone (SundeckCore/Inspection.swift) and Android.
+
+/** The hidden stand-in type's key for each checklist. */
+export const CUSTOM_ITEM_KEYS = { detection: "custom_leak", maintenance: "custom_visit" } as const;
+
+/** Is this one of the stand-in types? They never appear in settings or in Add an item. */
+export function isCustomItemType(type: { key: string } | null | undefined): boolean {
+  return type ? type.key.startsWith("custom_") : false;
+}
+
+export const ADD_ITEM_LABEL = "Type a New Item";
+export const ADD_ITEM_TITLE = "New Item";
+export const ADD_ITEM_FIELD = "Item name";
+export const ADD_ITEM_PLACEHOLDER = "For example, Cracked deck drain";
+export const ADD_ITEM_HINT = "This item is only on this job.";
+export const ADD_ITEM_SAVE = "Add";
+export const CUSTOM_ITEM_MAX = 80;
+
+/** The typed name, tidied (spaces squeezed, 80 characters at most), or null when it's blank. */
+export function customItemName(raw: string): string | null {
+  const name = raw.replace(/\s+/g, " ").trim().slice(0, CUSTOM_ITEM_MAX).trim();
+  return name ? name : null;
+}
+
+/** The stand-in type for a checklist, when the shop has one (a shop that hasn't synced yet doesn't). */
+export function customItemType<T extends { key: string; deleted_at?: string | null }>(
+  types: T[],
+  jobType: JobType,
+): T | undefined {
+  const key = jobType === "maintenance" ? CUSTOM_ITEM_KEYS.maintenance : CUSTOM_ITEM_KEYS.detection;
+  return types.find((t) => t.key === key && !t.deleted_at);
+}
+
+/** Does this job's checklist take typed-in items? Not a pool inspection (its questions are fixed) or a repair. */
+export function takesCustomItems(jobType: JobType): boolean {
+  return jobType !== "inspection" && jobHasChecklist(jobType);
+}
+
+/** The component to add for a typed-in item: after the rest, in the order typed. */
+export function nextCustomItem(
+  type: ComponentType,
+  existing: JobComponent[],
+  rawName: string,
+): PlannedComponent | null {
+  const name = customItemName(rawName);
+  if (!name) return null;
+  const next = nextInstance(type, existing);
+  return { ...next, label: name };
+}
+
 /**
  * Removing an item from a job's checklist (owner, 2026-10-19: "You can't remove items from the
  * checklist once added"): any item can go. A scheduled cleaning stays due on its plan, so it

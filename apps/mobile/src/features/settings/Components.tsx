@@ -3,6 +3,7 @@ import {
   CHECKLIST_SECTION_LABELS,
   INSPECTION_SECTIONS,
   companyServices,
+  isCustomItemType,
   optionsFromText,
   optionsToText,
   type ChecklistSection,
@@ -74,13 +75,15 @@ function ComponentsPage() {
         : ["pool"];
   const [chosen, setChosen] = useState<Kind>(kinds[0]!);
   const kind = kinds.includes(chosen) ? chosen : kinds[0]!;
-  const mine = types.filter((t) =>
-    kind === "pool"
-      ? t.job_type === "maintenance"
-      : kind === "inspection"
-        ? t.job_type === "inspection"
-        : (t.job_type ?? "detection") === "detection",
-  );
+  const mine = types
+    .filter((t) => !isCustomItemType(t))
+    .filter((t) =>
+      kind === "pool"
+        ? t.job_type === "maintenance"
+        : kind === "inspection"
+          ? t.job_type === "inspection"
+          : (t.job_type ?? "detection") === "detection",
+    );
   const groups: { value: string; label: string; rows: ComponentType[]; footer?: string }[] =
     kind === "pool"
       ? [

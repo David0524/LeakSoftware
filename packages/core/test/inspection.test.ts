@@ -7,6 +7,12 @@ import {
   calculate,
   componentApplies,
   nextInstance,
+  nextCustomItem,
+  customItemName,
+  customItemType,
+  isCustomItemType,
+  takesCustomItems,
+  CUSTOM_ITEM_MAX,
   normalizeTestData,
   planComponents,
   previewTest,
@@ -786,5 +792,48 @@ describe("the steps turn on tap (owner, 2026-10-21)", () => {
       landmarks: [{ kind: "steps", x: 0.5, y: 0.5, turn: 1 }],
     });
     expect([d.landmarks[0]!.turn, d.landmarks[0]!.flip]).toEqual([1, false]);
+  });
+});
+
+describe("items typed in on a job", () => {
+  const stand = type("custom_leak", {
+    allows_multiple: true,
+    default_count: 0,
+    active: false,
+    sort_order: 9000,
+  });
+  it("tidies the name and refuses a blank one", () => {
+    expect(customItemName("  Cracked   deck\n drain ")).toBe("Cracked deck drain");
+    expect(customItemName("   ")).toBeNull();
+    expect(customItemName("x".repeat(CUSTOM_ITEM_MAX + 20))).toHaveLength(CUSTOM_ITEM_MAX);
+  });
+  it("finds the stand-in type for each checklist and hides it as a type", () => {
+    const visit = type("custom_visit", { job_type: "maintenance" });
+    expect(customItemType([type("pool"), stand, visit], "detection")).toBe(stand);
+    expect(customItemType([stand, visit], "maintenance")).toBe(visit);
+    expect(customItemType([type("pool")], "detection")).toBeUndefined();
+    expect(isCustomItemType(stand)).toBe(true);
+    expect(isCustomItemType(type("skimmer"))).toBe(false);
+  });
+  it("is offered on leak and visit checklists, not an inspection or a repair", () => {
+    expect(takesCustomItems("detection")).toBe(true);
+    expect(takesCustomItems("maintenance")).toBe(true);
+    expect(takesCustomItems("inspection")).toBe(false);
+    expect(takesCustomItems("repair")).toBe(false);
+  });
+  it("adds each typed item after the last, labelled with its name", () => {
+    const one = nextCustomItem(stand, [], "Cracked deck drain");
+    expect(one).toMatchObject({
+      component_type_id: "custom_leak",
+      instance_number: 1,
+      label: "Cracked deck drain",
+    });
+    const existing = [
+      { ...one!, id: "a", company_id: "c", job_id: "j" } as unknown as JobComponent,
+    ];
+    const two = nextCustomItem(stand, existing, "Dead frog in skimmer");
+    expect(two).toMatchObject({ instance_number: 2, label: "Dead frog in skimmer" });
+    expect(two!.sort_order).toBeGreaterThan(one!.sort_order);
+    expect(nextCustomItem(stand, [], "  ")).toBeNull();
   });
 });
