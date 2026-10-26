@@ -89,6 +89,16 @@
             VStack(alignment: .leading, spacing: 0) {
                 top(c)
                     .accessibilitySortPriority(4)
+                // The day's end: how it went (owner, 2026-10-26), where an empty card was.
+                if hero.moment == .dayDone, let wrapUp = day.wrapUp {
+                    Text(wrapUp)
+                        .textRole(.body)
+                        .fontWeight(.medium)
+                        .foregroundStyle(Color.white)
+                        .fixedSize(horizontal: false, vertical: true)
+                        .padding(.top, 12)
+                        .accessibilityLabel(wrapUp)
+                }
                 if let job, hero.moment != .done {
                     details(job, c).padding(.top, 12)
                 }

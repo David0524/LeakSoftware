@@ -101,15 +101,7 @@ function TemplatesPage() {
     });
   return (
     <>
-      <SettingsList
-        title="Report Templates"
-        subtitle={
-          leak
-            ? "Which reports techs can send, and what they’re called. Each report is written from the job’s checklist, tests, and findings."
-            : "What goes to the customer after each maintenance visit."
-        }
-        notice={sheet.notice ?? savedSheet.notice}
-      >
+      <SettingsList title="Report Templates" notice={sheet.notice ?? savedSheet.notice}>
         {leak ? (
           <Group>
             {templates.map((t) => (
@@ -130,10 +122,7 @@ function TemplatesPage() {
         {/* Saved reports (owner, 2026-10-20): the shop's own wording, used word for word. */}
         {leak ? (
           <>
-            <Section
-              title="Saved reports"
-              footer="Text you use again and again. On a report, Use Saved Report puts it in word for word."
-            >
+            <Section title="Saved reports">
               {saved.length ? (
                 <Group>
                   {saved.map((r) => (
@@ -253,10 +242,7 @@ function VisitReportsSetting() {
     haptics.selection();
   };
   return (
-    <Section
-      title="Visit reports"
-      footer="A maintenance visit’s report: the water test, the checklist and cleanings, and photos, at a link for the customer."
-    >
+    <Section title="Visit reports">
       <View style={styles.part}>
         <T variant="bodyMedium">{VISIT_REPORT_TEXT.title}</T>
         <Segmented
@@ -275,9 +261,11 @@ function VisitReportsSetting() {
                 save(on ? "auto" : "manual");
               }}
             />
-            <T variant="secondary" muted>
-              {mode === "auto" ? VISIT_REPORT_TEXT.automaticOn : VISIT_REPORT_TEXT.automaticOff}
-            </T>
+            {mode === "auto" ? (
+              <T variant="secondary" muted>
+                {VISIT_REPORT_TEXT.automaticOn}
+              </T>
+            ) : null}
           </View>
         ) : timing === "monthly" ? (
           <View style={{ gap: space["2"] }}>

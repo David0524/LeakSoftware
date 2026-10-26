@@ -50,11 +50,7 @@ export default async function SchedulingSettingsPage() {
 
   return (
     <>
-      <PageHeader
-        back={{ href: "/settings", label: "Settings" }}
-        title="Scheduling and Routes"
-        subtitle="Routes start and end at the shop, or at home for anyone who starts there."
-      />
+      <PageHeader back={{ href: "/settings", label: "Settings" }} title="Scheduling and Routes" />
       <div className="max-w-2xl space-y-6">
         <SettingsSection title="Working day">
           <SchedulingForm

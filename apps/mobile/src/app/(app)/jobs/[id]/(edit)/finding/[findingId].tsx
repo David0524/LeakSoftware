@@ -24,7 +24,7 @@ import {
   T,
   Toggle,
 } from "../../../../../../ui/components";
-import { confirmDeleteFinding } from "../../../../../../features/inspection/remove";
+import { deleteFinding } from "../../../../../../features/inspection/remove";
 import { haptics } from "../../../../../../ui/haptics";
 import { PoolDiagram } from "../../../../../../ui/PoolDiagram";
 import { Select } from "../../../../../../ui/Select";
@@ -257,7 +257,7 @@ export default function FindingScreen() {
               kind="danger"
               wide
               onPress={() =>
-                confirmDeleteFinding(services.sync, company.id, existing.id, existing.title, () =>
+                deleteFinding(services.sync, company.id, existing.id, () =>
                   leave(() => router.back()),
                 )
               }

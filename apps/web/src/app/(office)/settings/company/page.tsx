@@ -61,11 +61,7 @@ export default async function CompanySettingsPage() {
 
   return (
     <>
-      <PageHeader
-        back={{ href: "/settings", label: "Settings" }}
-        title="Company and Branding"
-        subtitle="Shown on reports, quotes, and invoices."
-      />
+      <PageHeader back={{ href: "/settings", label: "Settings" }} title="Company and Branding" />
       {/* One form and one Save for the whole page (owner, 2026-10-22: "remove all the save
           buttons on that page and just have one floating one on the bottom"). */}
       <SettingsForm action={saveCompanySettings} floating className="max-w-2xl space-y-6">
@@ -110,7 +106,7 @@ export default async function CompanySettingsPage() {
               name="review_url"
               type="url"
               defaultValue={str("review_url")}
-              hint="Your Google or Yelp page. Review requests link here."
+              hint="Your Google or Yelp page."
               className="sm:col-span-2"
             />
           </SettingsFields>
@@ -126,14 +122,14 @@ export default async function CompanySettingsPage() {
               label="Quote reminders (days after sending)"
               name="quote_days"
               defaultValue={(settings.reminders?.quote_days ?? [3, 7]).join(", ")}
-              hint="For quotes not yet accepted. Leave empty for none."
+              hint="Leave empty for none."
               stacked
             />
             <SField
               label="Invoice reminders (days after sending)"
               name="invoice_days"
               defaultValue={(settings.reminders?.invoice_days ?? [7, 14, 30]).join(", ")}
-              hint="For invoices not yet paid in full. Leave empty for none."
+              hint="Leave empty for none."
               stacked
             />
           </SettingsFields>
@@ -159,7 +155,7 @@ export default async function CompanySettingsPage() {
                 name="report_disclaimer"
                 rows={8}
                 defaultValue={str("report_disclaimer")}
-                hint="Printed at the end of every report, as written. Reports already sent keep the text they were sent with."
+                hint="Ends every report. Reports already sent keep their old text."
               />
             </SettingsFields>
           </SettingsSection>

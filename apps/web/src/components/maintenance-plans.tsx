@@ -247,8 +247,7 @@ function PlanForm({
               Regular Cleanings
             </h3>
             <p className="text-[0.9375rem] text-text-muted">
-              Each goes on the first visit on or after its due date, then repeats from the day
-              it&apos;s done. Skipped, it moves to the next visit.
+              Each goes on the first visit on or after its due date.
             </p>
           </div>
           {cleaningTypes.map((t) => (
@@ -313,7 +312,6 @@ function CleaningFields({
                 name={`${field}_last`}
                 type="date"
                 defaultValue={cleaning?.last_done_on ?? ""}
-                hint="So the filter's age shows. Doing it on a visit updates it."
               />
             ) : null}
             <SField

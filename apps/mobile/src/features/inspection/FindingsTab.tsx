@@ -6,7 +6,7 @@ import { useSession } from "../../state/session";
 import { Group, ListRow, T } from "../../ui/components";
 import { useRowMenu } from "../../ui/RowMenu";
 import { color, face, space } from "../../ui/theme";
-import { confirmDeleteFinding } from "./remove";
+import { deleteFinding } from "./remove";
 
 /** The finding's number circle. */
 const NUM = 28;
@@ -42,9 +42,8 @@ export function FindingsTab({ job }: { job: Job }) {
                   key={f.id}
                   accessibilityLabel={`Edit ${f.title}`}
                   onPress={() => router.push(`/jobs/${job.id}/finding/${f.id}`)}
-                  onDelete={() =>
-                    confirmDeleteFinding(services.sync, job.company_id, f.id, f.title)
-                  }
+                  onDelete={() => deleteFinding(services.sync, job.company_id, f.id)}
+                  deleteAsks={false}
                   editMenu={{ menu, title: f.title }}
                   leading={
                     <View style={[styles.num, { backgroundColor: sev?.color ?? color.fail }]}>

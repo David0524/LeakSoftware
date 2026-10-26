@@ -30,17 +30,12 @@ export function JobVisibilityForm({
           { value: "own", label: "Only Their Own" },
         ]}
       />
-      <p className="px-4 text-[0.9375rem] text-text-muted sm:px-0">
-        {value === "all"
-          ? "Techs see every job and everyone’s schedule."
-          : "Techs see only jobs they’re on (as the tech or second tech), on the website and on their phones. Customers stay visible to everyone."}
-      </p>
-      <SSwitch
-        label="Techs can make new jobs"
-        name="techs_make_jobs"
-        defaultChecked={makesJobs}
-        hint="Off: only owners and admins add jobs, on the website and in the app."
-      />
+      {value === "own" ? (
+        <p className="px-4 text-[0.9375rem] text-text-muted sm:px-0">
+          Techs see only jobs they’re on. Customers stay visible to everyone.
+        </p>
+      ) : null}
+      <SSwitch label="Techs can make new jobs" name="techs_make_jobs" defaultChecked={makesJobs} />
     </SettingsForm>
   );
 }
@@ -56,13 +51,12 @@ export function CompleteJobForm({ checklist, photo }: { checklist: boolean; phot
         label="Finish the checklist first"
         name="require_checklist_to_finish"
         defaultChecked={checklist}
-        hint="On: Complete Job waits until every checklist item is answered."
       />
       <SSwitch
         label="Take a pool photo first"
         name="require_finish_photo"
         defaultChecked={photo}
-        hint="On: Complete Job, and sending a report, wait until the job has a photo."
+        hint="Reports need one too."
       />
     </SettingsForm>
   );

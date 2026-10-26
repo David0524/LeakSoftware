@@ -106,11 +106,7 @@ function ComponentsPage() {
       <SettingsList
         title="Checklist Components"
         subtitle={
-          kind === "pool"
-            ? "What techs do on every pool visit. Changes apply to new visits; visits already started keep their checklist."
-            : kind === "inspection"
-              ? "Every question of a pool inspection. Changes apply to new jobs; jobs already started keep their checklist."
-              : "What every leak inspection checks. Changes apply to new jobs; jobs already started keep their checklist."
+          kind === "pool" ? "Changes apply to new visits only." : "Changes apply to new jobs only."
         }
         addLabel="Add Component"
         onAdd={() => sheet.open("new")}
@@ -255,7 +251,6 @@ function TypeForm({
             value={f.count}
             onChangeText={set("count")}
             keyboardType="number-pad"
-            hint="How many a new job starts with."
             error={errors.count}
           />
         )}
@@ -441,10 +436,7 @@ function QuestionForm({ t, onDone }: { t?: ComponentType; onDone: (m: string) =>
           />
         </FieldGroup>
       )}
-      <FieldGroup
-        title="Banner"
-        footer="Shown above the question, and as a recommendation on the report."
-      >
+      <FieldGroup title="Banner" footer="Shown above the question and on the report.">
         <FieldRow label="Banner" multiline value={f.notice} onChangeText={set("notice")} />
       </FieldGroup>
       {t ? (

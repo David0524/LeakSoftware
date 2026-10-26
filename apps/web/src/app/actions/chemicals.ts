@@ -6,6 +6,7 @@ import {
   CHLORINE_PRODUCTS,
   READING_LABELS,
   READING_LIMITS,
+  RESTORE_ROW,
   uuidv7,
   type ReadingKey,
 } from "@leakbook/core";
@@ -80,6 +81,21 @@ export async function removeReading(_: FormState, form: FormData): Promise<FormS
   revalidatePath("/chemicals");
   revalidatePath("/customers", "layout");
   return { message: "Removed." };
+}
+
+/** Undo for Remove on a log entry: the readings are on the pool's chemical log again. */
+export async function restoreReading(_: FormState, form: FormData): Promise<FormState> {
+  await getOffice();
+  const { error } = await (
+    await createClient()
+  )
+    .from("chemical_reading")
+    .update(RESTORE_ROW)
+    .eq("id", text(form, "reading"));
+  if (error) return { error: error.message };
+  revalidatePath("/chemicals");
+  revalidatePath("/customers", "layout");
+  return { message: "Restored." };
 }
 
 // ---------------------------------------------------------------------------
@@ -272,4 +288,18 @@ export async function removeChemicalAction(job: string, id: string): Promise<For
   if (error) return { error: error.message };
   revalidatePath(`/jobs/${job}`);
   return { message: "Removed." };
+}
+
+/** Undo for Remove Chemical: it's on the visit and its report again. */
+export async function restoreChemicalAction(job: string, id: string): Promise<FormState> {
+  await getOffice();
+  const { error } = await (
+    await createClient()
+  )
+    .from("chemical_addition")
+    .update(RESTORE_ROW)
+    .eq("id", id);
+  if (error) return { error: error.message };
+  revalidatePath(`/jobs/${job}`);
+  return { message: "Restored." };
 }

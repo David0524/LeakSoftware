@@ -18,6 +18,7 @@
 
         @Environment(Session.self) private var session
         @Environment(SyncService.self) private var sync
+        @Environment(AppEnvironment.self) private var app
         @Environment(\.dismiss) private var dismiss
         @State private var form: FindingForm?
         @State private var existing: Finding?
@@ -26,7 +27,6 @@
         @State private var property: Row?
         @State private var loaded = false
         @State private var confirmDiscard = false
-        @State private var confirmDelete = false
         @State private var saveError: String?
         @State private var saves = 0
         /// A new finding saved by Add Photo: the sheet edits it from then on.
@@ -59,9 +59,6 @@
             .task(id: sync.revision) { load() }
             .sensoryFeedback(.success, trigger: saves)
             .discardPrompt(dirty: form?.isDirty ?? false, isPresented: $confirmDiscard)
-            .confirmationDialog(form?.deleteTitle ?? "", isPresented: $confirmDelete, titleVisibility: .visible) {
-                Button("Delete Finding", role: .destructive) { delete() }
-            }
             .alert(
                 "Couldn’t Save", isPresented: Binding(get: { saveError != nil }, set: { if !$0 { saveError = nil } })
             ) {
@@ -121,7 +118,7 @@
                             VStack(spacing: 16) {
                                 Hairline()
                                 Button(role: .destructive) {
-                                    confirmDelete = true
+                                    delete()
                                 } label: {
                                     Text("Delete Finding")
                                 }
@@ -259,8 +256,11 @@
 
         private func delete() {
             guard let existing, let company = session.company else { return }
+            // Deleted at once, with Undo for five seconds on the page behind this sheet (owner,
+            // 2026-10-26), not asked first.
             do {
-                try InspectionWrites.delete(sync, table: "finding", id: existing.id, companyId: company.id)
+                try app.removals.remove(
+                    .finding, [RemovalRow("finding", existing.id)], sync: sync, companyId: company.id)
                 dismiss()
             } catch {
                 saveError = String(describing: error)

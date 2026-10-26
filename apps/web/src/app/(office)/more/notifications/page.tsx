@@ -69,11 +69,11 @@ export default async function NotificationsPage() {
             </>
           ) : null}
         </SettingsForm>
-        <p className="px-4 text-[0.9375rem] text-text-muted sm:px-0">
-          {phones === 0
-            ? "Notifications go to the Sundeck Pro app on your phone. Sign in there and allow notifications."
-            : `Notifications go to the Sundeck Pro app on ${phones === 1 ? "your phone" : `your ${phones} phones`}.`}
-        </p>
+        {phones === 0 ? (
+          <p className="px-4 text-[0.9375rem] text-text-muted sm:px-0">
+            Sign in to the Sundeck Pro app on your phone and allow notifications.
+          </p>
+        ) : null}
       </div>
     </>
   );

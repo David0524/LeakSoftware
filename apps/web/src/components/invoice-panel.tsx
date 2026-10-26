@@ -246,9 +246,7 @@ export function InvoicePanel({
                 Send Without Email
               </Button>
             </div>
-            <p className="text-[0.9375rem] text-text-muted">
-              Sending locks the invoice and gives you a link for the customer.
-            </p>
+            <p className="text-[0.9375rem] text-text-muted">Sending locks the invoice.</p>
           </form>
           <SettingsForm
             action={voidInvoiceAction}

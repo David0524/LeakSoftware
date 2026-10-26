@@ -48,7 +48,7 @@ public struct InvoiceCardModel: Equatable, Sendable {
     public var dueDate: String?
     public var notes: String
 
-    public static let sendNote = "Sending locks the invoice and gives you a link for the customer."
+    public static let sendNote = "Sending locks the invoice."
     public static let emailHint = "Their other emails get it too."
     public static let dueHint = "Empty: due on receipt."
     public static let paymentHint = "A check, cash, or anything paid outside Sundeck Pro."
@@ -314,6 +314,9 @@ public final class InvoiceFlow {
     /// Send Receipt's sheet, opened right after Record Payment (that payment) or from the
     /// invoice (the latest).
     public var receipt: ReceiptStart?
+    /// Payments recorded through this flow, for the tap when one is (core
+    /// `HapticMoment.paymentRecorded`).
+    public private(set) var paymentsRecorded = 0
 
     public let sync: SyncService
     public let companyId: String
@@ -403,6 +406,7 @@ public final class InvoiceFlow {
                 ])
             let status = reply["status"]?.string ?? ""
             message = status == "paid" ? "Paid in full." : "Payment recorded."
+            paymentsRecorded += 1
             receipt = ReceiptStart(
                 invoiceId: invoiceId, paymentId: reply["payment_id"]?.string, status: status,
                 summary: receiptSummary(

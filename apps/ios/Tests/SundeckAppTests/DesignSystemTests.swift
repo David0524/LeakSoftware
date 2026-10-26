@@ -67,7 +67,8 @@ import Testing
         #expect(badgeText(100) == "99+")
         #expect(unreadAccessibilityText(3) == "3 unread")
         #expect(unreadAccessibilityText(0) == nil)
-        #expect(toDoAccessibilityText(4) == "4 to do")
+        #expect(attentionAccessibilityText(4) == "4 need attention")
+        #expect(attentionAccessibilityText(1) == "1 needs attention")
     }
 
     @Test func tintsAreTokensAtTheirOpacity() {

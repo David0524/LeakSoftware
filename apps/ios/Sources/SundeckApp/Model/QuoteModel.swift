@@ -136,10 +136,10 @@ public struct QuoteSectionModel: Equatable, Sendable {
     public var builder: QuoteBuilderModel?
     public var isManager: Bool
 
-    public static let startText = "No quote yet. Start one to price the repairs for these findings."
+    public static let startText = "No quote yet."
     /// With a quote already there (sent, declined or expired): never "No quote yet" (owner,
     /// 2026-10-22: it sat "directly above a quote that has already been sent").
-    public static let anotherText = "Need another price? Start a new quote."
+    public static let anotherText = "Need another price?"
     /// Which of the two lines shows: `anotherText` once the job has any quote.
     public var startLine: String = startText
 

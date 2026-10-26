@@ -13,12 +13,13 @@ import {
   type RepairItem,
   type RepairLine,
 } from "@leakbook/core";
-import { addRepairAction, removeRepairAction } from "@/app/actions/repairs";
+import { addRepairAction, removeRepairAction, restoreRepairAction } from "@/app/actions/repairs";
 import { NO_CONNECTION, whenOffline } from "@/lib/offline";
 import { saveFailed } from "./instant";
+import { showRemoved } from "./removed";
 import { RowActions, RowMenuButton, type MenuEntry, type SwipeAction } from "./row-actions";
 import { FieldError, SField, SettingsForm, SheetDone } from "./settings-forms";
-import { Sheet, useConfirm } from "./sheet";
+import { Sheet } from "./sheet";
 import { showBanner } from "./top-banner";
 import { Grouped, Select, buttonClass, cx } from "./ui";
 
@@ -205,7 +206,6 @@ export function JobRepairs({
   items: RepairItem[];
 }) {
   const [adding, setAdding] = useState(false);
-  const [confirm, confirmSheet] = useConfirm();
   const [, start] = useTransition();
   // Gone from the list at once; a failed removal brings it back.
   const [removed, remove] = useOptimistic<string[], string>([], (ids, id) => [...ids, id]);
@@ -216,19 +216,22 @@ export function JobRepairs({
     showBanner({ message });
   }, []);
 
-  async function removeLine(line: RepairLine) {
-    const ok = await confirm({
-      title: REPAIR_LABELS.removeTitle,
-      message: `${line.description}, ${formatCents(line.price_cents)}. ${REPAIR_LABELS.removeMessage}`,
-      confirmLabel: REPAIR_LABELS.removeConfirm,
-      destructive: true,
-    });
-    if (!ok) return;
+  // Removed at once, with Undo for five seconds (owner, 2026-10-26), not asked first.
+  function removeLine(line: RepairLine) {
     start(async () => {
       remove(line.id);
       const r = await whenOffline(removeRepairAction(jobId, line.id), { error: NO_CONNECTION });
-      if (r.error) saveFailed(r.error);
-      else showBanner({ message: "Removed." });
+      if (r.error) return saveFailed(r.error);
+      showRemoved(
+        "repair",
+        async () => {
+          const back = await whenOffline(restoreRepairAction(jobId, line.id), {
+            error: NO_CONNECTION,
+          });
+          return back.error ?? null;
+        },
+        REPAIR_LABELS.removeMessage,
+      );
     });
   }
 
@@ -240,13 +243,13 @@ export function JobRepairs({
             {
               label: REPAIR_LABELS.remove,
               destructive: true,
-              onSelect: () => void removeLine(line),
+              onSelect: () => removeLine(line),
             },
           ];
           const swipe: SwipeAction = {
             label: REPAIR_LABELS.remove,
             tone: "red",
-            onSelect: () => void removeLine(line),
+            onSelect: () => removeLine(line),
           };
           return (
             <RowActions
@@ -305,7 +308,6 @@ export function JobRepairs({
           {adding ? <AddRepairForm jobId={jobId} items={items} /> : null}
         </SheetDone>
       </Sheet>
-      {confirmSheet}
     </>
   );
 }

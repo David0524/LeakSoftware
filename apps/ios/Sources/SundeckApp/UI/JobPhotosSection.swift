@@ -95,19 +95,19 @@
         var text: MediaCardText
 
         @Environment(SyncService.self) private var sync
+        @Environment(AppEnvironment.self) private var app
         @Environment(\.mediaURLSigner) private var signer
         @Environment(\.displayScale) private var displayScale
         @Environment(\.openMedia) private var openMedia
         @State private var image: UIImage?
         @State private var source: MediaSourceState = .loading
         @State private var marking = false
-        @State private var confirmDelete = false
-        @State private var deletes = 0
 
         var body: some View {
-            // Swipe left for Delete (it asks first); touch and hold for Edit (the markup) and
-            // Delete… (gestures spec section 12). Mark Up and More stay the visible way.
-            SwipeDeleteRow(name: text.heading, delete: { confirmDelete = true }) { content }
+            // Swipe left for Delete (at once, with Undo for five seconds: owner, 2026-10-26); touch
+            // and hold for Edit (the markup) and Delete (gestures spec section 12). Mark Up and
+            // More stay the visible way.
+            SwipeDeleteRow(name: text.heading, delete: remove) { content }
                 .card(padding: 0)
                 .clipShape(RoundedRectangle(cornerRadius: CGFloat(Radius.card), style: .continuous))
                 .rowMenu(text.heading, menu)
@@ -118,23 +118,18 @@
                             media, files: sync.media, signer: signer, pixels: Int(displayScale * 400))
                     }
                 }
-                .sensoryFeedback(.warning, trigger: deletes)
                 .fullScreenCover(isPresented: $marking) {
                     if case .ready(let url) = source { MarkupEditor(media: media, url: url) }
                 }
-                .confirmationDialog(
-                    MediaDetail.deleteTitle(media.kind), isPresented: $confirmDelete, titleVisibility: .visible
-                ) {
-                    Button(MediaDetail.deleteButton(media.kind), role: .destructive) {
-                        if (try? MediaWrites.delete(sync, media)) != nil { deletes += 1 }
-                    }
-                    Button("Cancel", role: .cancel) {}
-                } message: {
-                    Text(MediaDetail.deleteMessage)
-                }
         }
 
-        /// Edit (Mark Up, on a photo whose file is here) and Delete…. Set as Pool Photo isn't on
+        /// Takes the photo, video or voice note off the job at once; the original stays on file.
+        private func remove() {
+            try? app.removals.remove(
+                RemovedKind(media: media.kind), [RemovalRow("media", media.id)], sync: sync, companyId: media.companyId)
+        }
+
+        /// Edit (Mark Up, on a photo whose file is here) and Delete. Set as Pool Photo isn't on
         /// the phone.
         private var menu: [SwipeAction] {
             var list: [SwipeAction] = []
@@ -145,8 +140,8 @@
                     })
             }
             list.append(
-                SwipeAction(title: "Delete…", systemImage: "trash", tint: Color.fail, role: .destructive) {
-                    confirmDelete = true
+                SwipeAction(title: "Delete", systemImage: "trash", tint: Color.fail, role: .destructive) {
+                    remove()
                 })
             return list
         }
@@ -174,7 +169,7 @@
                         Spacer(minLength: 0)
                         Menu {
                             Button(MediaDetail.deleteButton(media.kind), systemImage: "trash", role: .destructive) {
-                                confirmDelete = true
+                                remove()
                             }
                         } label: {
                             Image(systemName: "ellipsis")

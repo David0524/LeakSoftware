@@ -355,16 +355,13 @@ export const VISIT_REPORT_TIMINGS: { value: VisitReportTiming; label: string }[]
 export const VISIT_REPORT_TEXT = {
   title: "Send Visit Reports",
   automatic: "Send Automatically",
-  automaticOn:
-    "Each visit’s report goes to the customer when the tech completes the visit, by email (or a company text when there’s no email).",
-  automaticOff: "Techs send it with Send Visit Report.",
+  automaticOn: "Sent when the tech completes the visit, by email or text.",
   monthlyWhat: "One report a month",
   monthlyWhatDetail:
     "Every visit that month: readings, chemicals added, what was done, and photos.",
   monthlyWhen: "Sent with the monthly invoice",
   monthlyWhenDetail: "One email or text with both links, when you send the month’s invoice.",
-  monthlyFooter:
-    "Customers with no invoice that month get the report on its own on the 1st. Techs can still send one visit’s report with Send Visit Report.",
+  monthlyFooter: "Customers with no invoice that month get the report on the 1st.",
   off: "No visit reports.",
 } as const;
 

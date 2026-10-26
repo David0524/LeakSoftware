@@ -168,14 +168,14 @@
     }
 
     /// The job's section switcher (spec 3.9): the segmented control with equal columns filling the
-    /// width, 44 tall segments, footnote labels, and an optional to-do badge per segment.
+    /// width, 44 tall segments, footnote labels, and an optional badge per segment (what needs attention).
     ///
     ///     SectionSwitcher(selection: $section, options: sections, label: \.title) { $0 == .checklist ? toDo : 0 }
     struct SectionSwitcher<Value: Hashable>: View {
         @Binding var selection: Value
         var options: [Value]
         var label: (Value) -> String
-        /// The count of things still to do on a segment (0: no badge).
+        /// The count of things needing attention on a segment (0: no badge).
         var badge: (Value) -> Int = { _ in 0 }
         @Namespace private var thumb
         @State private var held = false
@@ -188,10 +188,10 @@
             // At accessibility text sizes five equal columns cut every label short ("Det…"), so
             // the segments keep their full labels and the row scrolls sideways in our own track.
             if #available(iOS 26, *), drawsGlass, !typeSize.isAccessibilitySize {
-                // The system control (equal segments), each to-do count as a badge over its segment.
+                // The system control (equal segments), each count as a badge over its segment.
                 SystemSegmented(
                     selection: $selection, options: options, label: label, title: "Job sections",
-                    hint: options.compactMap { o in toDoAccessibilityText(badge(o)).map { "\(label(o)), \($0)" } }
+                    hint: options.compactMap { o in attentionAccessibilityText(badge(o)).map { "\(label(o)), \($0)" } }
                         .joined(separator: ". ")
                 )
                 .overlay {
@@ -244,7 +244,7 @@
                     }
                     .buttonStyle(.plain)
                     .accessibilityLabel(
-                        [label(option), toDoAccessibilityText(count)].compactMap { $0 }.joined(separator: ", ")
+                        [label(option), attentionAccessibilityText(count)].compactMap { $0 }.joined(separator: ", ")
                     )
                     .accessibilityAddTraits(chosen ? [.isSelected] : [])
                     .segmentFrame(index) { frames[index] = $0 }

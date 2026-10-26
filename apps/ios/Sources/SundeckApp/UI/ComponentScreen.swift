@@ -17,6 +17,7 @@
         @State private var savedText = false
         @Environment(Session.self) private var session
         @Environment(SyncService.self) private var sync
+        @Environment(AppEnvironment.self) private var app
         @Environment(\.dismiss) private var dismiss
         @Environment(\.openEditor) private var openEditor
         @State private var form: ComponentForm?
@@ -24,8 +25,6 @@
         @State private var config: InspectionConfig?
         @State private var tests: [TestResult] = []
         @State private var findings: [Finding] = []
-        @State private var confirmRemove = false
-        @State private var deleting: Deleting?
         @State private var saved = 0
         @State private var reasons: [String] = []
         @State private var saveError: String?
@@ -33,26 +32,6 @@
         init(jobId: String, componentId: String) {
             self.jobId = jobId
             _componentId = State(initialValue: componentId)
-        }
-
-        /// A test or finding waiting for its delete confirmation (with its name for the title).
-        enum Deleting: Equatable {
-            case test(String, String)
-            case finding(String, String)
-
-            var title: String {
-                switch self {
-                case .test(_, let name): "Delete this \(name.lowercased())?"
-                case .finding(_, let title): "Delete “\(title)”?"
-                }
-            }
-
-            var button: String {
-                switch self {
-                case .test: "Delete Test"
-                case .finding: "Delete Finding"
-                }
-            }
         }
 
         var body: some View {
@@ -81,19 +60,7 @@
                 }
             }
             .sensoryFeedback(.success, trigger: saved)
-            .confirmationDialog(
-                "Remove \(form?.component.label ?? "") from the checklist?", isPresented: $confirmRemove,
-                titleVisibility: .visible
-            ) {
-                Button("Remove Item", role: .destructive) { remove() }
-            }
-            .confirmationDialog(
-                deleting?.title ?? "",
-                isPresented: Binding(get: { deleting != nil }, set: { if !$0 { deleting = nil } }),
-                titleVisibility: .visible, presenting: deleting
-            ) { target in
-                Button(target.button, role: .destructive) { delete(target) }
-            }
+            .removalBanner()
             .alert(
                 "Couldn’t Save", isPresented: Binding(get: { saveError != nil }, set: { if !$0 { saveError = nil } })
             ) {
@@ -166,7 +133,7 @@
                         Grouped {
                             ForEach(tests, id: \.id) { test in
                                 let name = config?.testTypeById[test.testTypeId]?.name ?? "Test"
-                                SwipeDeleteRow(name: name, delete: { deleting = .test(test.id, name) }) {
+                                SwipeDeleteRow(name: name, delete: { delete("test_result", .test, test.id) }) {
                                     Button {
                                         openEditor(
                                             .test(
@@ -196,7 +163,7 @@
                         Grouped {
                             ForEach(findings, id: \.id) { finding in
                                 SwipeDeleteRow(
-                                    name: finding.title, delete: { deleting = .finding(finding.id, finding.title) }
+                                    name: finding.title, delete: { delete("finding", .finding, finding.id) }
                                 ) {
                                     Button {
                                         openEditor(
@@ -215,7 +182,7 @@
                     .buttonStyle(.secondary)
                 }
 
-                Button("Remove Item", role: .destructive) { confirmRemove = true }
+                Button("Remove Item", role: .destructive) { remove() }
                     .buttonStyle(.danger)
                     .padding(.top, 8)
             }
@@ -266,24 +233,22 @@
 
         private func remove() {
             guard let form else { return }
+            // Removed at once, with Undo for five seconds on the job page behind this one (owner,
+            // 2026-10-26), not asked first.
             do {
-                try InspectionWrites.removeComponent(
-                    sync, companyId: form.companyId, component: form.component, result: form.result)
+                try app.removals.removeChecklistItem(
+                    form.component, result: form.result, sync: sync, companyId: form.companyId)
                 dismiss()
             } catch {
                 saveError = String(describing: error)
             }
         }
 
-        private func delete(_ target: Deleting) {
+        /// A test or finding on this item, deleted at once with Undo (owner, 2026-10-26).
+        private func delete(_ table: String, _ kind: RemovedKind, _ id: String) {
             guard let company = session.company else { return }
             do {
-                switch target {
-                case .test(let id, _):
-                    try InspectionWrites.delete(sync, table: "test_result", id: id, companyId: company.id)
-                case .finding(let id, _):
-                    try InspectionWrites.delete(sync, table: "finding", id: id, companyId: company.id)
-                }
+                try app.removals.remove(kind, [RemovalRow(table, id)], sync: sync, companyId: company.id)
             } catch {
                 saveError = String(describing: error)
             }

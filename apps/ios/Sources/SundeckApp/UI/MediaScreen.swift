@@ -18,6 +18,7 @@
 
         @Environment(Session.self) private var session
         @Environment(SyncService.self) private var sync
+        @Environment(AppEnvironment.self) private var app
         @Environment(\.dismiss) private var dismiss
         @Environment(\.mediaURLSigner) private var signer
         @State private var media: Media?
@@ -29,9 +30,7 @@
         @State private var captionEdited = false
         @State private var captionSaved = false
         @State private var editing = false
-        @State private var confirmDelete = false
         @State private var saveError: String?
-        @State private var deletes = 0
         @State private var pull: CGFloat = 0
         @FocusState private var captionFocused: Bool
 
@@ -70,19 +69,10 @@
             .task(id: sync.revision) { reload() }
             .task(id: attempt) { await resolveSource() }
             .onDisappear { flushCaption() }
-            .sensoryFeedback(.warning, trigger: deletes)
             .fullScreenCover(isPresented: $editing) {
                 if let media, case .ready(let url) = source {
                     MarkupEditor(media: media, url: url)
                 }
-            }
-            .confirmationDialog(
-                MediaDetail.deleteTitle(media?.kind ?? .photo), isPresented: $confirmDelete, titleVisibility: .visible
-            ) {
-                Button(MediaDetail.deleteButton(media?.kind ?? .photo), role: .destructive) { delete() }
-                Button("Cancel", role: .cancel) {}
-            } message: {
-                Text(MediaDetail.deleteMessage)
             }
             .alert(
                 "Couldn’t Save", isPresented: Binding(get: { saveError != nil }, set: { if !$0 { saveError = nil } })
@@ -178,7 +168,7 @@
                                 .buttonStyle(.secondary)
                                 .disabled(source.url == nil)
                         }
-                        Button("Delete") { confirmDelete = true }
+                        Button("Delete") { delete() }
                             .buttonStyle(.danger)
                             .accessibilityLabel(MediaDetail.deleteButton(media.kind))
                     }
@@ -259,9 +249,12 @@
 
         private func delete() {
             guard let media else { return }
+            // Removed at once, with Undo for five seconds on the job page behind this one (owner,
+            // 2026-10-26), not asked first.
             do {
-                try MediaWrites.delete(sync, media)
-                deletes += 1
+                try app.removals.remove(
+                    RemovedKind(media: media.kind), [RemovalRow("media", media.id)], sync: sync,
+                    companyId: media.companyId)
                 dismiss()
             } catch {
                 saveError = String(describing: error)

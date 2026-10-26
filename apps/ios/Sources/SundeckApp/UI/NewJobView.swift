@@ -247,6 +247,8 @@
                                 .padding(.leading, -20)
                             if let picked = form.picked {
                                 Text("Filled in: \(picked)").textRole(.secondary).foregroundStyle(Color.pass)
+                            } else if !form.usualNote.isEmpty {
+                                Text(form.usualNote).textRole(.secondary).foregroundStyle(Color.pass)
                             }
                         }
                     }

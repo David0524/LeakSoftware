@@ -3,6 +3,7 @@ import {
   addRepairWrites,
   jobRepairLines,
   removeRepairWrites,
+  repairsTotal,
   type JobRepair,
   type RepairJob,
   type RepairLine,
@@ -54,8 +55,16 @@ export function addRepair(job: Job, repair: RepairValues) {
   apply(job, writes, fee_cents);
 }
 
-/** Removes one repair (soft delete, so it syncs). */
-export function removeRepair(job: Job, id: string) {
-  const { writes, fee_cents } = removeRepairWrites(job, rowsOf(job), id, new Date().toISOString());
-  if (writes.length) apply(job, writes, fee_cents);
+/**
+ * Removes one repair (soft delete, so it syncs), and returns how to put it back, or null when
+ * it's already gone: Undo clears `deleted_at` on the same row and writes the job's price as it
+ * was (owner, 2026-10-26: Undo instead of "Are you sure?").
+ */
+export function removeRepair(job: Job, id: string): (() => void) | null {
+  const rows = rowsOf(job);
+  const priceBefore = repairsTotal(jobRepairLines(job, rows));
+  const { writes, fee_cents } = removeRepairWrites(job, rows, id, new Date().toISOString());
+  if (!writes.length) return null;
+  apply(job, writes, fee_cents);
+  return () => apply(job, [{ kind: "update", id, values: { deleted_at: null } }], priceBefore);
 }

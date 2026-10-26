@@ -10,14 +10,14 @@ public enum NotificationKind: String, Codable, CaseIterable, Sendable {
 }
 
 /// Each kind a person can turn off in More › Notifications (`NOTIFICATION_KINDS`).
-public let notificationKinds: [(key: NotificationKind, label: String, hint: String)] = [
-    (.text, "Customer texts", "A customer texts the shop's number."),
-    (.job, "New and moved jobs", "A job is given to you, or its time changes."),
-    (.quote, "Accepted quotes", "A customer accepts a quote."),
-    (.payment, "Payments", "A customer pays a deposit or an invoice."),
-    (.report, "Signed reports", "A customer signs a report."),
+public let notificationKinds: [(key: NotificationKind, label: String, hint: String?)] = [
+    (.text, "Customer texts", nil),
+    (.job, "New and moved jobs", nil),
+    (.quote, "Accepted quotes", nil),
+    (.payment, "Payments", nil),
+    (.report, "Signed reports", nil),
     // Owner, 2026-10-22: "Techs never hear the outcome." The customer's first open of a report.
-    (.opened, "Opened reports", "A customer opens a report for the first time."),
+    (.opened, "Opened reports", nil),
     (.live, "Live Activity", "Your current stop on the Lock Screen during the workday."),
     // Owner, 2026-10-22: "Techs: the first stop of the day opens in one tap from the notification."
     (.day, "Start of the day", "Your first stop, when your workday starts."),

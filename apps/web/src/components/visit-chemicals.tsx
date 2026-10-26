@@ -29,6 +29,7 @@ import {
   itemAddition,
   lineTotal,
   openSuggestions,
+  pickList,
   readingSummary,
   stepQuantity,
   suggestionText,
@@ -42,20 +43,24 @@ import {
   type ChemicalReading,
   type ChlorineProduct,
   type ChemicalRow,
+  type LastVisitNote,
   type ReadingKey,
   type Readings,
 } from "@leakbook/core";
 import {
   addChemicalsAction,
   removeChemicalAction,
+  restoreChemicalAction,
   saveVisitReadingAction,
   updateChemicalAction,
   type ChemicalInput,
 } from "@/app/actions/chemicals";
 import { createAutosave } from "@/lib/autosave";
+import { buzz, type HapticMoment } from "@/lib/haptics";
 import { NO_CONNECTION, whenOffline } from "@/lib/offline";
 import { saveFailed } from "./instant";
-import { Sheet, useConfirm } from "./sheet";
+import { showRemoved } from "./removed";
+import { Sheet } from "./sheet";
 import { buttonClass, cx } from "./ui";
 
 // A visit's Chemicals (owner, 2026-10-24: "the actual reading, the aim for, the suggested
@@ -105,16 +110,23 @@ function doneOnEnter(e: KeyboardEvent<HTMLInputElement>) {
   }
 }
 
-function Cell({ label, ...input }: ComponentProps<"input"> & { label: string }) {
+function Cell({
+  label,
+  hint,
+  ...input
+}: ComponentProps<"input"> & { label: string; hint?: string }) {
   return (
     <input
       {...input}
+      // A reading's last value from the pool's last visit (owner, 2026-10-26: "Last 7.6"): a
+      // hint, never a value; smaller so it fits the box.
+      placeholder={hint ?? input.placeholder}
       type="text"
       autoComplete="off"
       enterKeyHint="done"
       onKeyDown={doneOnEnter}
       aria-label={label}
-      className={FIELD}
+      className={cx(FIELD, hint && "px-2! placeholder:text-[0.8125rem]")}
     />
   );
 }
@@ -186,10 +198,17 @@ export interface VisitChemicalsProps {
   locked: string[];
   /** Opened at first (a visit whose chemicals were started). */
   startOpen?: boolean;
+  /** "Last 7.6" for each reading, from the pool's last visit (core readingHints). */
+  hints?: Partial<Record<ReadingKey, string>>;
+  /** The pool's usual chemicals, price book item ids, first in Add Chemical (core usualChemicalIds). */
+  usualItems?: string[];
+  /** The notes from the pool's last visit, under this visit's notes (core lastVisitNote). */
+  lastNote?: LastVisitNote | null;
 }
 
 export function VisitChemicals(props: VisitChemicalsProps) {
   const { jobId, propertyId, items, charges } = props;
+  const hints = props.hints ?? {};
   const [open, setOpen] = useState(!!props.startOpen);
   const panel = useId();
   const r = props.reading;
@@ -301,11 +320,12 @@ export function VisitChemicals(props: VisitChemicalsProps) {
   );
   const [, startTransition] = useTransition();
   const locked = useMemo(() => new Set(props.locked), [props.locked]);
-  const run = (op: Op, call: () => Promise<{ error?: string | null }>) =>
+  const run = (op: Op, call: () => Promise<{ error?: string | null }>, after?: () => void) =>
     startTransition(async () => {
       apply(op);
       const done = await whenOffline(call(), { error: NO_CONNECTION });
       if (done.error) saveFailed(done.error);
+      else after?.();
     });
   const draftRow = (d: AdditionDraft, i: number): ChemicalAddition => ({
     ...d,
@@ -317,14 +337,34 @@ export function VisitChemicals(props: VisitChemicalsProps) {
     added_at: new Date().toISOString(),
     sort_order: additions.length + i,
   });
-  const add = (drafts: AdditionDraft[], extra?: Partial<ChemicalAddition>) => {
+  const add = (
+    drafts: AdditionDraft[],
+    extra?: Partial<ChemicalAddition>,
+    moment: HapticMoment = "chemicalAdded",
+  ) => {
     const rows = drafts.map((d, i) => ({ ...draftRow(d, i), ...extra }));
+    buzz(moment);
     run({ type: "add", rows }, () => addChemicalsAction(jobId, propertyId, rows.map(toInput)));
   };
   const save = (row: ChemicalAddition) =>
     run({ type: "update", row }, () => updateChemicalAction(jobId, toInput(row)));
-  const remove = (row: ChemicalAddition) =>
-    run({ type: "remove", id: row.id }, () => removeChemicalAction(jobId, row.id));
+  // `undoable`: from the Remove Chemical button, which takes it off at once and says so for
+  // five seconds with Undo (owner, 2026-10-26). Tapping an added chemical's check unmarks it,
+  // and tapping again marks it added: no banner needed.
+  const remove = (row: ChemicalAddition, undoable = false) =>
+    run(
+      { type: "remove", id: row.id },
+      () => removeChemicalAction(jobId, row.id),
+      undoable
+        ? () =>
+            showRemoved("chemical", async () => {
+              const r = await whenOffline(restoreChemicalAction(jobId, row.id), {
+                error: NO_CONNECTION,
+              });
+              return r.error ?? null;
+            })
+        : undefined,
+    );
 
   // Worked out once per change, not again for every row.
   const readings: Readings = useMemo(
@@ -450,6 +490,7 @@ export function VisitChemicals(props: VisitChemicalsProps) {
                   status={status ? status.status : null}
                   target={recommended[row.key]?.target}
                   value={values[row.key] ?? ""}
+                  hint={hints[row.key]}
                   goal={goals[row.key] ?? ""}
                   charges={charges}
                   locked={row.added
@@ -467,13 +508,10 @@ export function VisitChemicals(props: VisitChemicalsProps) {
               );
             })}
           </ol>
-          <p className="text-[0.9375rem] text-text-muted">
-            Numbers are the order to add them. Aim For starts at the recommended level.
-          </p>
           {open_.length ? (
             <button
               type="button"
-              onClick={() => add(open_)}
+              onClick={() => add(open_, undefined, "allChemicalsAdded")}
               className={buttonClass("secondary", "mt-3 w-full")}
             >
               Mark All Added
@@ -581,6 +619,14 @@ export function VisitChemicals(props: VisitChemicalsProps) {
             onChange={(e) => change(setNotes)(e.target.value)}
             className="block min-h-20 w-full rounded-[10px] border border-control-border bg-surface px-3 py-2 text-text placeholder:text-placeholder focus:outline-3 focus:outline-offset-1 focus:outline-focus"
           />
+          {props.lastNote ? (
+            <p className="mt-1.5 text-[0.9375rem] text-text-muted" data-testid="last-visit-notes">
+              <span className="font-semibold">{props.lastNote.label}</span>
+              <span className="mt-0.5 line-clamp-3 block whitespace-pre-line">
+                {props.lastNote.text}
+              </span>
+            </p>
+          ) : null}
 
           {charges ? (
             <div className="mt-5 flex items-baseline justify-between border-t-[0.5px] border-separator pt-4">
@@ -596,8 +642,8 @@ export function VisitChemicals(props: VisitChemicalsProps) {
               : saveState === "saving"
                 ? "Saving…"
                 : charges
-                  ? `Saved as you go. Billed on ${props.customerName}’s ${props.month} invoice.`
-                  : "Saved as you go."}
+                  ? `Billed on ${props.customerName}’s ${props.month} invoice.`
+                  : ""}
           </p>
         </div>
       ) : null}
@@ -615,12 +661,13 @@ export function VisitChemicals(props: VisitChemicalsProps) {
         }}
         onRemove={(row) => {
           setEditing(null);
-          remove(row);
+          remove(row, true);
         }}
       />
       <PickSheet
         open={picking}
         items={items}
+        usual={props.usualItems ?? []}
         charges={charges}
         onClose={() => setPicking(false)}
         onAdd={(draft, supplied, note) => {
@@ -651,6 +698,8 @@ interface ReadingRowProps {
   status: "ok" | "low" | "high" | null;
   target: number | undefined;
   value: string;
+  /** "Last 7.6": the pool's last reading, shown in the empty box. */
+  hint?: string;
   goal: string;
   charges: boolean;
   /** The ids of this row's additions on a sent invoice, space-separated. */
@@ -676,6 +725,7 @@ const ReadingRow = memo(
     status,
     target,
     value,
+    hint,
     goal,
     charges,
     locked,
@@ -753,6 +803,7 @@ const ReadingRow = memo(
           </div>
           <Cell
             label={`${READING_LABELS[row.key]} reading`}
+            hint={hint}
             inputMode="decimal"
             value={value}
             onBlur={onBlur}
@@ -1069,7 +1120,6 @@ function AddedForm({
   const [qty, setQty] = useState(String(row.quantity));
   const [supplied, setSupplied] = useState(row.customer_supplied);
   const [note, setNote] = useState(row.note ?? "");
-  const [confirm, confirmSheet] = useConfirm();
   const quantity = num(qty);
   const price = item?.price_cents ?? row.unit_price_cents;
   const valid = quantity !== null && quantity > 0 && quantity <= 100_000;
@@ -1147,23 +1197,12 @@ function AddedForm({
       {row.id && !locked ? (
         <button
           type="button"
-          onClick={async () => {
-            if (
-              await confirm({
-                title: "Remove this chemical?",
-                message: "It comes off the visit and its report.",
-                confirmLabel: "Remove Chemical",
-                destructive: true,
-              })
-            )
-              onRemove(row);
-          }}
+          onClick={() => onRemove(row)}
           className={buttonClass("danger", "mt-6 w-full")}
         >
           Remove Chemical
         </button>
       ) : null}
-      {confirmSheet}
     </form>
   );
 }
@@ -1172,12 +1211,15 @@ function AddedForm({
 function PickSheet({
   open,
   items,
+  usual,
   charges,
   onClose,
   onAdd,
 }: {
   open: boolean;
   items: ChemicalItem[];
+  /** The pool's usual chemicals (item ids), listed first. */
+  usual: string[];
   charges: boolean;
   onClose: () => void;
   onAdd: (draft: AdditionDraft, supplied: boolean, note: string | null) => void;
@@ -1193,17 +1235,19 @@ function PickSheet({
           : undefined
       }
     >
-      {open ? <PickForm items={items} charges={charges} onAdd={onAdd} /> : null}
+      {open ? <PickForm items={items} usual={usual} charges={charges} onAdd={onAdd} /> : null}
     </Sheet>
   );
 }
 
 function PickForm({
   items,
+  usual,
   charges,
   onAdd,
 }: {
   items: ChemicalItem[];
+  usual: string[];
   charges: boolean;
   onAdd: (draft: AdditionDraft, supplied: boolean, note: string | null) => void;
 }) {
@@ -1213,12 +1257,46 @@ function PickForm({
   const [qty, setQty] = useState("1");
   const [supplied, setSupplied] = useState(false);
   const [note, setNote] = useState("");
-  const shown = list.filter((i) => i.name.toLowerCase().includes(query.trim().toLowerCase()));
+  // The chemicals this pool usually gets come first (owner, 2026-10-26).
+  const groups = pickList(list, usual, query);
+  const shownCount = groups.usual.length + groups.rest.length;
   const quantity = num(qty);
   const pick = (i: ChemicalItem) => {
     setPicked(i);
     setQty(String(itemAddition(i).quantity));
   };
+  const item = (i: ChemicalItem) => (
+    <button
+      key={i.id}
+      type="button"
+      onClick={() => pick(i)}
+      aria-pressed={picked?.id === i.id}
+      className="flex min-h-11 w-full items-center gap-3 px-4 py-2 text-left"
+    >
+      <span className="min-w-0 flex-1">
+        <span className="block">{i.name}</span>
+        {charges ? (
+          <span className="block text-[0.9375rem] text-text-muted">
+            {unitPriceLabel(i.price_cents, i.unit)}
+          </span>
+        ) : null}
+      </span>
+      {picked?.id === i.id ? (
+        <svg
+          viewBox="0 0 24 24"
+          aria-hidden="true"
+          className="size-5 text-link"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="2.6"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        >
+          <path d="M5 12.5l4.5 4.5L19 7.5" />
+        </svg>
+      ) : null}
+    </button>
+  );
   return (
     <form
       onSubmit={(e) => {
@@ -1285,45 +1363,19 @@ function PickForm({
           className="min-h-11 min-w-0 flex-1 bg-transparent placeholder:text-placeholder"
         />
       </div>
-      <Group title="Chemicals">
-        {shown.map((i) => (
-          <button
-            key={i.id}
-            type="button"
-            onClick={() => pick(i)}
-            aria-pressed={picked?.id === i.id}
-            className="flex min-h-11 w-full items-center gap-3 px-4 py-2 text-left"
-          >
-            <span className="min-w-0 flex-1">
-              <span className="block">{i.name}</span>
-              {charges ? (
-                <span className="block text-[0.9375rem] text-text-muted">
-                  {unitPriceLabel(i.price_cents, i.unit)}
-                </span>
-              ) : null}
-            </span>
-            {picked?.id === i.id ? (
-              <svg
-                viewBox="0 0 24 24"
-                aria-hidden="true"
-                className="size-5 text-link"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2.6"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              >
-                <path d="M5 12.5l4.5 4.5L19 7.5" />
-              </svg>
-            ) : null}
-          </button>
-        ))}
-        {shown.length === 0 ? (
-          <p className="px-4 py-3 text-text-muted">
-            No chemicals match. Add them in Settings › Price Book.
-          </p>
-        ) : null}
-      </Group>
+      {groups.usual.length ? (
+        <Group title="Usual for This Pool">{groups.usual.map(item)}</Group>
+      ) : null}
+      {groups.rest.length || shownCount === 0 ? (
+        <Group title={groups.usual.length ? "Other Chemicals" : "Chemicals"}>
+          {groups.rest.map(item)}
+          {shownCount === 0 ? (
+            <p className="px-4 py-3 text-text-muted">
+              No chemicals match. Add them in Settings › Price Book.
+            </p>
+          ) : null}
+        </Group>
+      ) : null}
       <button id="pick-form-submit" type="submit" className="sr-only" tabIndex={-1} aria-hidden>
         Add
       </button>

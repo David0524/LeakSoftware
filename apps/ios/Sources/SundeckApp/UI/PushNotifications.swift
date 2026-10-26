@@ -137,7 +137,7 @@
                     }
                 }
                 if let form {
-                    Grouped(footer: NotificationPrefsForm.footer) {
+                    Grouped {
                         ForEach(notificationKinds, id: \.key) { kind in
                             SwitchRow(
                                 kind.label, detail: kind.hint,

@@ -69,6 +69,8 @@
         var link: AppLink?
         /// Editors with unsaved changes; a link waits for "Discard changes?" while any are open.
         let unsavedEdits = UnsavedEdits()
+        /// "Photo removed" with Undo, shown by whichever screen is in front (owner, 2026-10-26).
+        let removals = RemovalCenter()
         /// Drops the same link arriving twice at once.
         @ObservationIgnored var linkGate = LinkGate()
         @ObservationIgnored private let monitor = NWPathMonitor()

@@ -33,7 +33,6 @@ function ExclusionsPage() {
     <>
       <SettingsList
         title="Exclusion Reasons"
-        subtitle="Why a component wasn’t inspected. Techs must pick one, and it appears on the report."
         addLabel="Add Reason"
         onAdd={() => sheet.open("new")}
         notice={sheet.notice}
@@ -162,7 +161,6 @@ function SeveritiesPage() {
     <>
       <SettingsList
         title="Severities"
-        subtitle="How serious a finding is. The color is the pin on the pool diagram."
         addLabel="Add Severity"
         onAdd={() => sheet.open("new")}
         notice={sheet.notice}

@@ -9,10 +9,10 @@ import {
   type ReactNode,
 } from "react";
 import {
-  MEDIA_KIND_LABELS,
   MARKUP_COLORS,
   MARKUP_TEXT_MAX,
   UPLOAD_LIMITS,
+  removedKindOfMedia,
   uploadRefusal,
   uploadRefusalMessage,
   MARKUP_TEXT_SIZE_MAX,
@@ -42,10 +42,12 @@ import {
   deleteMedia,
   finishSignature,
   finishUpload,
+  restoreMedia,
   saveMarkup,
   startUpload,
 } from "@/app/actions/media";
 import { MarkupOverlay } from "./markup";
+import { showRemoved } from "./removed";
 import { Segmented } from "./segmented";
 import { DISCARD_PROMPT } from "@/lib/dirty";
 import { useNextStep } from "./next-step-events";
@@ -534,8 +536,8 @@ export interface MediaCardInfo {
 
 /**
  * One photo or recording on the job page, as a card: its preview, what it shows, then Mark Up
- * and More (Delete). Touch and hold, right-click, or "⋯" opens its menu (Edit, Delete…), and a
- * swipe left shows Delete… (gestures.md section 12); Delete always asks first.
+ * and More (Delete). Touch and hold, right-click, or "⋯" opens its menu (Edit, Delete), and a
+ * swipe left shows Delete (gestures.md section 12); Delete happens at once, with Undo.
  */
 export function MediaCard({
   jobId,
@@ -552,26 +554,23 @@ export function MediaCard({
   const [editing, setEditing] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
-  const [confirm, confirmSheet] = useConfirm();
-  const kind = MEDIA_KIND_LABELS[media.kind];
   const canMarkUp = media.kind === "photo" && !!media.url;
+  // Removed at once, with Undo for five seconds (owner, 2026-10-26), not asked first. The
+  // original file stays on file either way.
   async function remove() {
-    const ok = await confirm({
-      title: `Remove this ${kind.toLowerCase()} from the job?`,
-      message: "The original stays on file.",
-      confirmLabel: `Delete ${kind}`,
-      destructive: true,
-    });
-    if (!ok) return;
     setBusy(true);
     const r = await deleteMedia({ jobId, mediaId: media.id });
     setBusy(false);
-    if (!r.ok) setError(r.error);
+    if (!r.ok) return setError(r.error);
+    showRemoved(removedKindOfMedia(media.kind), async () => {
+      const back = await restoreMedia({ jobId, mediaId: media.id });
+      return back.ok ? null : back.error;
+    });
   }
   const menu: MenuEntry[] = [
     canMarkUp && { label: "Edit", onSelect: () => setEditing(true) },
     "separator",
-    { label: "Delete…", destructive: true, onSelect: () => void remove() },
+    { label: "Delete", destructive: true, onSelect: () => void remove() },
   ];
   return (
     <>
@@ -579,7 +578,7 @@ export function MediaCard({
         as="li"
         title={media.label}
         menu={menu}
-        trailing={[{ label: "Delete…", tone: "red", onSelect: () => void remove() }]}
+        trailing={[{ label: "Delete", tone: "red", onSelect: () => void remove() }]}
         disabled={busy}
         className="overflow-hidden card"
         swipeClassName="rounded-[inherit]"
@@ -602,7 +601,7 @@ export function MediaCard({
                 {media.shapes.length ? "Edit Markup" : "Mark Up"}
               </button>
             ) : null}
-            {/* The card's menu (Edit, Delete…), the same as touch and hold or right-click. */}
+            {/* The card's menu (Edit, Delete), the same as touch and hold or right-click. */}
             <RowMenuButton visible className={iconButtonClass("disabled:opacity-50")} />
           </div>
           {error ? (
@@ -612,7 +611,6 @@ export function MediaCard({
           ) : null}
         </div>
       </RowActions>
-      {confirmSheet}
       {editing && media.url ? (
         <MarkupEditor
           background={

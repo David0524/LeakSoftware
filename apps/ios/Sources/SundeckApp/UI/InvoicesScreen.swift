@@ -23,6 +23,8 @@
         /// Each row's link, Record Payment and Void, read with the list (gestures spec section 12).
         @State private var rowActions: [String: InvoiceRowActions] = [:]
         @State private var banner: ResultBanner?
+        /// Bumped when a payment is recorded here, for its tap.
+        @State private var paid = 0
         /// Record Payment from a row, in a sheet (amount, Paid by, a check's number).
         @State private var paying: InvoiceListItem?
         @State private var voiding: InvoiceListItem?
@@ -140,6 +142,7 @@
             }
             .sheet(item: $shared) { FileShareSheet(url: $0.url) }
             .resultBanner($banner)
+            .haptic(.paymentRecorded, trigger: paid)
             .sheet(item: $paying) { item in
                 if let company = session.company {
                     RecordPaymentSheet(
@@ -148,6 +151,7 @@
                     ) { flow in
                         paying = nil
                         guard let flow else { return }
+                        paid += 1
                         if let message = flow.message { banner = ResultBanner(kind: .success, title: message) }
                         // Send Receipt once Record Payment's sheet has gone.
                         Task {

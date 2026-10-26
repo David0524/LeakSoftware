@@ -157,6 +157,7 @@
                 if !model.versions.isEmpty { versions }
             }
             .card()
+            .haptic(.reportSent, trigger: flow.reportsSent)
             .onAppear { if model.hasDraftText && flow.message != nil { open = true } }
             .task(id: sync.revision) {
                 // A text that went out while away: its message to send from here.
@@ -447,7 +448,7 @@
         var body: some View {
             VStack(alignment: .leading, spacing: 12) {
                 Text(
-                    "Hand the phone to the customer: they read the report and sign at the bottom. Signing locks this version; changes after that go out as a new version."
+                    "Hand the phone to the customer to read and sign. Signing locks this version."
                 )
                 .textRole(.secondary).foregroundStyle(Color.textMuted)
                 Button(ReportTabModel.reviewWithCustomer) {

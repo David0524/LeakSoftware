@@ -9,7 +9,7 @@ import { getServices } from "../../lib/services";
 import { watchVisitReports, type VisitSendResult } from "../../lib/visitReports";
 import { useCompany } from "../../state/session";
 import { Button, Card, Field, Notice, T } from "../../ui/components";
-import { haptics } from "../../ui/haptics";
+import { haptic } from "../../ui/haptics";
 import { space } from "../../ui/theme";
 import { shareLink } from "../../lib/shareLink";
 import { ReportPhotoNotice, useReportPhotoBlock } from "./ReportPhoto";
@@ -81,7 +81,7 @@ export function VisitReport({
       });
       if ("skipped" in sent) throw new Error("The visit report wasn’t sent.");
       await getServices().sync.syncNow();
-      haptics.success();
+      haptic("reportSent");
       if (!sent.delivered) {
         await shareLink(sent.message);
         setResult({ tone: "success", text: "Visit report ready. Text the customer the link." });

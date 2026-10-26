@@ -1,0 +1,521 @@
+{
+  "endOfDay": [
+    {
+      "args": [
+        [],
+        [],
+        [],
+        "2026-10-26",
+        "America/New_York"
+      ],
+      "result": null
+    },
+    {
+      "args": [
+        [
+          {
+            "id": "a",
+            "done": true
+          },
+          {
+            "id": "b",
+            "done": false
+          }
+        ],
+        [
+          {
+            "job_id": "a",
+            "sent_at": "2026-10-26T14:00:00Z",
+            "status": "sent"
+          },
+          {
+            "job_id": "a",
+            "sent_at": "2026-10-26T15:00:00.000Z",
+            "status": "sent"
+          },
+          {
+            "job_id": "b",
+            "sent_at": "2026-10-26T16:00:00Z",
+            "status": "superseded"
+          },
+          {
+            "job_id": "c",
+            "sent_at": null,
+            "status": "draft"
+          },
+          {
+            "job_id": "c",
+            "sent_at": "2026-10-26T17:00:00Z",
+            "status": "draft"
+          },
+          {
+            "job_id": "x",
+            "sent_at": "2026-10-26T14:00:00Z",
+            "status": "sent"
+          },
+          {
+            "job_id": "c",
+            "sent_at": "2026-10-25T14:00:00Z",
+            "status": "sent"
+          },
+          {
+            "job_id": "d",
+            "sent_at": "2026-10-27T03:30:00Z",
+            "status": "sent"
+          }
+        ],
+        [
+          {
+            "job_id": "a",
+            "accepted_at": "2026-10-26T18:00:00Z"
+          },
+          {
+            "job_id": "c",
+            "accepted_at": "2026-10-26T19:00:00+00:00"
+          },
+          {
+            "job_id": "b",
+            "accepted_at": null
+          },
+          {
+            "job_id": "x",
+            "accepted_at": "2026-10-26T18:00:00Z"
+          },
+          {
+            "job_id": "a",
+            "accepted_at": "2026-10-25T18:00:00Z"
+          }
+        ],
+        "2026-10-26",
+        "America/New_York"
+      ],
+      "result": null
+    },
+    {
+      "args": [
+        [
+          {
+            "id": "a",
+            "done": true
+          }
+        ],
+        [],
+        [],
+        "2026-10-26",
+        "America/New_York"
+      ],
+      "result": {
+        "pools": 1,
+        "reports": 0,
+        "quotes": 0,
+        "line": "Today: 1 pool"
+      }
+    },
+    {
+      "args": [
+        [
+          {
+            "id": "a",
+            "done": true
+          },
+          {
+            "id": "b",
+            "done": true
+          },
+          {
+            "id": "c",
+            "done": true
+          },
+          {
+            "id": "d",
+            "done": true
+          }
+        ],
+        [
+          {
+            "job_id": "a",
+            "sent_at": "2026-10-26T14:00:00Z",
+            "status": "sent"
+          },
+          {
+            "job_id": "a",
+            "sent_at": "2026-10-26T15:00:00.000Z",
+            "status": "sent"
+          },
+          {
+            "job_id": "b",
+            "sent_at": "2026-10-26T16:00:00Z",
+            "status": "superseded"
+          },
+          {
+            "job_id": "c",
+            "sent_at": null,
+            "status": "draft"
+          },
+          {
+            "job_id": "c",
+            "sent_at": "2026-10-26T17:00:00Z",
+            "status": "draft"
+          },
+          {
+            "job_id": "x",
+            "sent_at": "2026-10-26T14:00:00Z",
+            "status": "sent"
+          },
+          {
+            "job_id": "c",
+            "sent_at": "2026-10-25T14:00:00Z",
+            "status": "sent"
+          },
+          {
+            "job_id": "d",
+            "sent_at": "2026-10-27T03:30:00Z",
+            "status": "sent"
+          }
+        ],
+        [
+          {
+            "job_id": "a",
+            "accepted_at": "2026-10-26T18:00:00Z"
+          },
+          {
+            "job_id": "c",
+            "accepted_at": "2026-10-26T19:00:00+00:00"
+          },
+          {
+            "job_id": "b",
+            "accepted_at": null
+          },
+          {
+            "job_id": "x",
+            "accepted_at": "2026-10-26T18:00:00Z"
+          },
+          {
+            "job_id": "a",
+            "accepted_at": "2026-10-25T18:00:00Z"
+          }
+        ],
+        "2026-10-26",
+        "America/New_York"
+      ],
+      "result": {
+        "pools": 4,
+        "reports": 3,
+        "quotes": 2,
+        "line": "Today: 4 pools · 3 reports sent · 2 quotes accepted"
+      }
+    },
+    {
+      "args": [
+        [
+          {
+            "id": "a",
+            "done": true
+          },
+          {
+            "id": "b",
+            "done": true
+          },
+          {
+            "id": "c",
+            "done": true
+          },
+          {
+            "id": "d",
+            "done": true
+          }
+        ],
+        [
+          {
+            "job_id": "a",
+            "sent_at": "2026-10-26T14:00:00Z",
+            "status": "sent"
+          },
+          {
+            "job_id": "a",
+            "sent_at": "2026-10-26T15:00:00.000Z",
+            "status": "sent"
+          },
+          {
+            "job_id": "b",
+            "sent_at": "2026-10-26T16:00:00Z",
+            "status": "superseded"
+          },
+          {
+            "job_id": "c",
+            "sent_at": null,
+            "status": "draft"
+          },
+          {
+            "job_id": "c",
+            "sent_at": "2026-10-26T17:00:00Z",
+            "status": "draft"
+          },
+          {
+            "job_id": "x",
+            "sent_at": "2026-10-26T14:00:00Z",
+            "status": "sent"
+          },
+          {
+            "job_id": "c",
+            "sent_at": "2026-10-25T14:00:00Z",
+            "status": "sent"
+          },
+          {
+            "job_id": "d",
+            "sent_at": "2026-10-27T03:30:00Z",
+            "status": "sent"
+          }
+        ],
+        [
+          {
+            "job_id": "a",
+            "accepted_at": "2026-10-26T18:00:00Z"
+          },
+          {
+            "job_id": "c",
+            "accepted_at": "2026-10-26T19:00:00+00:00"
+          },
+          {
+            "job_id": "b",
+            "accepted_at": null
+          },
+          {
+            "job_id": "x",
+            "accepted_at": "2026-10-26T18:00:00Z"
+          },
+          {
+            "job_id": "a",
+            "accepted_at": "2026-10-25T18:00:00Z"
+          }
+        ],
+        "2026-10-26",
+        "UTC"
+      ],
+      "result": {
+        "pools": 4,
+        "reports": 2,
+        "quotes": 2,
+        "line": "Today: 4 pools · 2 reports sent · 2 quotes accepted"
+      }
+    },
+    {
+      "args": [
+        [
+          {
+            "id": "a",
+            "done": true
+          },
+          {
+            "id": "b",
+            "done": true
+          }
+        ],
+        [
+          {
+            "job_id": "a",
+            "sent_at": "2026-10-26T14:00:00Z",
+            "status": "sent"
+          },
+          {
+            "job_id": "a",
+            "sent_at": "2026-10-26T15:00:00.000Z",
+            "status": "sent"
+          },
+          {
+            "job_id": "b",
+            "sent_at": "2026-10-26T16:00:00Z",
+            "status": "superseded"
+          },
+          {
+            "job_id": "c",
+            "sent_at": null,
+            "status": "draft"
+          },
+          {
+            "job_id": "c",
+            "sent_at": "2026-10-26T17:00:00Z",
+            "status": "draft"
+          },
+          {
+            "job_id": "x",
+            "sent_at": "2026-10-26T14:00:00Z",
+            "status": "sent"
+          },
+          {
+            "job_id": "c",
+            "sent_at": "2026-10-25T14:00:00Z",
+            "status": "sent"
+          },
+          {
+            "job_id": "d",
+            "sent_at": "2026-10-27T03:30:00Z",
+            "status": "sent"
+          }
+        ],
+        [],
+        "2026-10-26",
+        "America/New_York"
+      ],
+      "result": {
+        "pools": 2,
+        "reports": 2,
+        "quotes": 0,
+        "line": "Today: 2 pools · 2 reports sent"
+      }
+    },
+    {
+      "args": [
+        [
+          {
+            "id": "a",
+            "done": true
+          },
+          {
+            "id": "b",
+            "done": true
+          }
+        ],
+        [],
+        [
+          {
+            "job_id": "a",
+            "accepted_at": "2026-10-26T18:00:00Z"
+          },
+          {
+            "job_id": "c",
+            "accepted_at": "2026-10-26T19:00:00+00:00"
+          },
+          {
+            "job_id": "b",
+            "accepted_at": null
+          },
+          {
+            "job_id": "x",
+            "accepted_at": "2026-10-26T18:00:00Z"
+          },
+          {
+            "job_id": "a",
+            "accepted_at": "2026-10-25T18:00:00Z"
+          }
+        ],
+        "2026-10-26",
+        "America/New_York"
+      ],
+      "result": {
+        "pools": 2,
+        "reports": 0,
+        "quotes": 1,
+        "line": "Today: 2 pools · 1 quote accepted"
+      }
+    },
+    {
+      "args": [
+        [
+          {
+            "id": "a",
+            "done": true
+          }
+        ],
+        [
+          {
+            "job_id": "a",
+            "sent_at": "not a date",
+            "status": "sent"
+          }
+        ],
+        [],
+        "2026-10-26",
+        "America/New_York"
+      ],
+      "result": {
+        "pools": 1,
+        "reports": 0,
+        "quotes": 0,
+        "line": "Today: 1 pool"
+      }
+    },
+    {
+      "args": [
+        [
+          {
+            "id": "a",
+            "done": true
+          }
+        ],
+        [
+          {
+            "job_id": "a",
+            "sent_at": "2026-10-26T14:00:00Z",
+            "status": "sent"
+          },
+          {
+            "job_id": "a",
+            "sent_at": "2026-10-26T15:00:00.000Z",
+            "status": "sent"
+          },
+          {
+            "job_id": "b",
+            "sent_at": "2026-10-26T16:00:00Z",
+            "status": "superseded"
+          },
+          {
+            "job_id": "c",
+            "sent_at": null,
+            "status": "draft"
+          },
+          {
+            "job_id": "c",
+            "sent_at": "2026-10-26T17:00:00Z",
+            "status": "draft"
+          },
+          {
+            "job_id": "x",
+            "sent_at": "2026-10-26T14:00:00Z",
+            "status": "sent"
+          },
+          {
+            "job_id": "c",
+            "sent_at": "2026-10-25T14:00:00Z",
+            "status": "sent"
+          },
+          {
+            "job_id": "d",
+            "sent_at": "2026-10-27T03:30:00Z",
+            "status": "sent"
+          }
+        ],
+        [
+          {
+            "job_id": "a",
+            "accepted_at": "2026-10-26T18:00:00Z"
+          },
+          {
+            "job_id": "c",
+            "accepted_at": "2026-10-26T19:00:00+00:00"
+          },
+          {
+            "job_id": "b",
+            "accepted_at": null
+          },
+          {
+            "job_id": "x",
+            "accepted_at": "2026-10-26T18:00:00Z"
+          },
+          {
+            "job_id": "a",
+            "accepted_at": "2026-10-25T18:00:00Z"
+          }
+        ],
+        "2026-10-25",
+        "America/New_York"
+      ],
+      "result": {
+        "pools": 1,
+        "reports": 0,
+        "quotes": 1,
+        "line": "Today: 1 pool · 1 quote accepted"
+      }
+    }
+  ]
+}

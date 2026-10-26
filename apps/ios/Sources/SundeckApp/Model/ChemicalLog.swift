@@ -51,11 +51,7 @@ public enum ChemicalLogText {
     public static let submitted = "Submitted."
     public static let removed = "Removed."
     public static let logTitle = "Chemical log"
-    public static let logFooter = "One entry for each Submit, newest first."
     public static let logEmpty = "No readings submitted yet"
-    public static let removeTitle = "Remove these readings?"
-    public static let removeMessage = "They come off the pool’s chemical log."
-    public static let removeButton = "Remove Readings"
     /// The customer's pool row when nothing is submitted yet.
     public static let poolRowEmpty = "Readings and the chemical log"
 }

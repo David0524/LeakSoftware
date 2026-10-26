@@ -257,7 +257,6 @@ export default async function TeamSettingsPage() {
   return (
     <SettingsListPage
       title="Team"
-      subtitle="Techs run jobs on the phone. Admins run the office. Owners also handle billing, payments setup, and roles."
       add={{
         label: "Invite Someone",
         // Under the open invites, where the new one appears (owner, 2026-10-16).
@@ -281,11 +280,7 @@ export default async function TeamSettingsPage() {
 
       <Grouped
         title="Open invites"
-        footer={
-          open.length
-            ? "Send the link by text or email. It works once, for that email address, for 14 days."
-            : "No open invites."
-        }
+        footer={open.length ? "The link works once and expires in 14 days." : "No open invites."}
       >
         {open.map((i) => (
           <SheetRow
@@ -298,7 +293,7 @@ export default async function TeamSettingsPage() {
             <div className="space-y-2">
               <CopyLink url={`${origin}/invite/${i.token}`} />
               <p className="text-[0.9375rem] text-text-muted">
-                Send the link by text or email. It works once, for that email address, for 14 days.
+                The link works once and expires in 14 days.
               </p>
             </div>
             {i.role !== "tech" && !office.isOwner ? null : (
@@ -319,10 +314,7 @@ export default async function TeamSettingsPage() {
         <SettingsAddRow label="Invite Someone" />
       </Grouped>
 
-      <Grouped
-        title="Without the app"
-        footer="Profiles for people who work for you without using the app. Only owners and admins see them."
-      >
+      <Grouped title="Without the app" footer="Only owners and admins see these.">
         {others.map((p) => (
           <SheetRow
             key={p.id}

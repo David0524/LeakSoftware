@@ -1,5 +1,11 @@
 import { describe, expect, it } from "vitest";
-import { checklistSectionSummary, markRemainingLabel } from "../src";
+import {
+  checklistSectionSummary,
+  checklistTallyText,
+  inspectionTallyText,
+  markRemainingLabel,
+  needAttentionText,
+} from "../src";
 
 const r = (
   status: "pending" | "inspected" | "excluded",
@@ -48,5 +54,29 @@ describe("markRemainingLabel", () => {
     expect(markRemainingLabel(["yes_no", "yes_no"])).toBe("Answer 2 Remaining No");
     expect(markRemainingLabel(["done"])).toBe("Mark 1 Remaining Done");
     expect(markRemainingLabel(["leak", "yes_no"])).toBe("Mark 2 Remaining Not Leaking");
+  });
+});
+
+describe("tally lines", () => {
+  it("leaves out zero counts", () => {
+    expect(inspectionTallyText({ answered: 1, total: 133, attention: 0, leaking: 0 })).toBe(
+      "1 of 133 answered",
+    );
+    expect(inspectionTallyText({ answered: 9, total: 12, attention: 1, leaking: 2 })).toBe(
+      "9 of 12 answered · 1 needs attention · 2 leaking",
+    );
+    expect(needAttentionText(3)).toBe("3 need attention");
+  });
+  it("words maintenance and leak checklists", () => {
+    const t = { pass: 3, attention: 0, leaking: 0, notApplicable: 0, pending: 5 };
+    expect(checklistTallyText(t, true)).toBe("3 done · 5 to do");
+    expect(checklistTallyText(t, true, false)).toBe("3 done");
+    expect(checklistTallyText({ ...t, attention: 2, notApplicable: 1 }, true)).toBe(
+      "3 done · 2 need attention · 1 skipped · 5 to do",
+    );
+    expect(checklistTallyText({ ...t, leaking: 1 }, false)).toBe(
+      "3 not leaking · 1 leaking · 5 to do",
+    );
+    expect(checklistTallyText({ ...t, pass: 0, pending: 0 }, false)).toBe("");
   });
 });

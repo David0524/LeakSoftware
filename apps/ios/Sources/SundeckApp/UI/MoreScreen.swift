@@ -417,8 +417,7 @@
 
         var body: some View {
             ScreenScroll {
-                Grouped(footer: "Calls you place from Messages ring here first, then connect from the company number.")
-                {
+                Grouped(footer: "Calls you place from Messages ring here first.") {
                     LabeledFieldRow(label: "Mobile", text: $phone, keyboard: .phonePad, contentType: .telephoneNumber)
                 }
                 if let result { Notice(kind: result.error ? .error : .success, text: result.text) }

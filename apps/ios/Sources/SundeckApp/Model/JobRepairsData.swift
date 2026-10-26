@@ -63,11 +63,27 @@ public func addJobRepair(_ sync: SyncService, job: Row, _ repair: RepairValues) 
     try apply(sync, job: job, addRepairWrites(repairJob(job), jobRepairRows(sync.store, job: job), repair))
 }
 
-/// Removes one repair (soft delete, so it syncs).
+/// Removes one repair (soft delete, so it syncs). Returns the job's price from before, for
+/// Undo, or nil when the repair was already gone.
 @MainActor
-public func removeJobRepair(_ sync: SyncService, job: Row, id: String, now: Date = Date()) throws {
-    let change = removeRepairWrites(
-        repairJob(job), jobRepairRows(sync.store, job: job), id: id, now: isoString(now))
-    guard !change.writes.isEmpty else { return }
+@discardableResult
+public func removeJobRepair(_ sync: SyncService, job: Row, id: String, now: Date = Date()) throws -> Int? {
+    let rows = jobRepairRows(sync.store, job: job)
+    let before = repairsTotal(jobRepairLines(repairJob(job), rows).map(\.priceCents))
+    let change = removeRepairWrites(repairJob(job), rows, id: id, now: isoString(now))
+    guard !change.writes.isEmpty else { return nil }
     try apply(sync, job: job, change)
+    return before
+}
+
+/// Undo for `removeJobRepair` (owner, 2026-10-26: Undo instead of "Are you sure?"): the row is live
+/// again, as it was, and the job's price is what it was before (the server keeps it at the
+/// repairs' sum). One transaction, like the removal.
+@MainActor
+public func restoreJobRepair(_ sync: SyncService, job: Row, id: String, feeCents: Int) throws {
+    try sync.batch {
+        try sync.store.write("job_repair", id: id, companyId: job.companyId, ["deleted_at": .null])
+        try sync.store.write(
+            "job", id: job.id, companyId: job.companyId, ["fee_cents": .number(Double(feeCents))])
+    }
 }

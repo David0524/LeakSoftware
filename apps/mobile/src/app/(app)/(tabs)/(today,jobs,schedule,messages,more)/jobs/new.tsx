@@ -36,6 +36,9 @@ import {
   toggleChoice,
   isManagerRole,
   maintenanceSettings,
+  clockToMinutes,
+  minutesLabel,
+  usualVisit,
   type JobType,
   type PlanRepeat as Repeat,
 } from "@leakbook/core";
@@ -136,6 +139,31 @@ function NewJobForm() {
   const [customerId, setCustomerId] = useState<string | undefined>();
   const [search, setSearch] = useState("");
   const [propertyId, setPropertyId] = useState<string | undefined>();
+  // The customer's usual start time (owner, 2026-10-26: "pre-fill what the app already knows"):
+  // put in Time (and a plan's time) when their pool is picked, from the time most of its last
+  // jobs share (core usualVisit). The tech stays Assign to me: this form has no tech picker.
+  const jobRows = useRows<{
+    property_id: string | null;
+    assigned_user_id: string | null;
+    scheduled_start: string | null;
+    status: string;
+  }>("job", company.id);
+  const [usualNote, setUsualNote] = useState("");
+  function pickPool(id: string | undefined) {
+    setPropertyId(id);
+    const usual = id
+      ? usualVisit(
+          jobRows.filter((j) => j.property_id === id && j.status !== "canceled"),
+          company.timezone,
+        )
+      : null;
+    const time = usual?.time ?? null;
+    setUsualNote(time ? `Usually ${minutesLabel(clockToMinutes(time))}.` : "");
+    if (time) {
+      setForm((f) => ({ ...f, scheduleTime: time }));
+      setPlanForm((p) => ({ ...p, time }));
+    }
+  }
   const [form, setForm] = useState<NewJobInput>({
     customerName: "",
     customerPhone: "",
@@ -497,7 +525,7 @@ function NewJobForm() {
               kind="quiet"
               onPress={() => {
                 setCustomerId(undefined);
-                setPropertyId(undefined);
+                pickPool(undefined);
               }}
             />
           </Card>
@@ -521,7 +549,7 @@ function NewJobForm() {
                       setCustomerId(c.id);
                       setSearch("");
                       const props = properties.filter((p) => p.customer_id === c.id);
-                      setPropertyId(props.length === 1 ? props[0]!.id : undefined);
+                      pickPool(props.length === 1 ? props[0]!.id : undefined);
                     }}
                   >
                     <T variant="strong">{c.name}</T>
@@ -690,7 +718,7 @@ function NewJobForm() {
               { value: "new", label: "New address" },
             ]}
             value={propertyId ?? "new"}
-            onChange={(v) => setPropertyId(v === "new" ? undefined : v)}
+            onChange={(v) => pickPool(v === "new" ? undefined : v)}
           />
         ) : null}
         {propertyId ? (
@@ -885,6 +913,11 @@ function NewJobForm() {
                     />
                   </View>
                 </View>
+                {usualNote ? (
+                  <T variant="secondary" style={{ color: color.pass }}>
+                    {usualNote}
+                  </T>
+                ) : null}
               </>
             ) : null}
           </>

@@ -196,7 +196,7 @@ private func sentQuote(_ status: String, accepted: Bool = false) -> [(String, JS
         #expect(m.shows)
         #expect(m.showsStart)
         #expect(m.cards.isEmpty && m.builder == nil)
-        #expect(QuoteSectionModel.startText == "No quote yet. Start one to price the repairs for these findings.")
+        #expect(QuoteSectionModel.startText == "No quote yet.")
         #expect(!(try MoneyJob(type: "repair")).quotes().shows)
         #expect(try MoneyJob(type: "maintenance").quotes().shows)
     }
@@ -345,7 +345,7 @@ private func sentQuote(_ status: String, accepted: Bool = false) -> [(String, JS
         // A sent quote isn't a draft or accepted: a new one can be started beside it.
         #expect(m.showsStart)
         // Never "No quote yet" above a quote (owner, 2026-10-22).
-        #expect(m.startLine == "Need another price? Start a new quote.")
+        #expect(m.startLine == "Need another price?")
         #expect(m.cards.first?.title == "Quote #1006 · Sent")
         #expect(m.cards.first?.acceptedText == nil)
     }

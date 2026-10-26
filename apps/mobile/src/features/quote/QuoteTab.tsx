@@ -128,9 +128,7 @@ export function QuoteTab({
         <View style={styles.start}>
           <T muted style={{ flexGrow: 1, flexBasis: 192, flexShrink: 1 }}>
             {/* With a quote already there, never "No quote yet" (owner, 2026-10-22). */}
-            {quotes.length
-              ? "Need another price? Start a new quote."
-              : "No quote yet. Start one to price the repairs for these findings."}
+            {quotes.length ? "Need another price?" : "No quote yet."}
           </T>
           <Button
             title="Start Quote"

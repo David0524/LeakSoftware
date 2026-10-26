@@ -3,6 +3,7 @@
 import { after } from "next/server";
 import { revalidatePath } from "next/cache";
 import {
+  RESTORE_ROW,
   extensionForMime,
   mediaStoragePath,
   parseMarkup,
@@ -174,6 +175,22 @@ export async function deleteMedia(input: {
   const { error } = await db
     .from("media")
     .update({ deleted_at: new Date().toISOString() })
+    .eq("id", input.mediaId)
+    .eq("company_id", office.company.id);
+  if (error) return { ok: false, error: error.message };
+  revalidatePath(`/jobs/${input.jobId}`);
+  return { ok: true, value: null };
+}
+
+/** Undo for removing a photo or recording: it's on the job again. */
+export async function restoreMedia(input: {
+  jobId: string;
+  mediaId: string;
+}): Promise<Result<null>> {
+  const { office, db } = await ctx();
+  const { error } = await db
+    .from("media")
+    .update(RESTORE_ROW)
     .eq("id", input.mediaId)
     .eq("company_id", office.company.id);
   if (error) return { ok: false, error: error.message };

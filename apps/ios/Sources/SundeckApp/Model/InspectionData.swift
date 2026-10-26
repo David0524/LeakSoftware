@@ -91,20 +91,6 @@ public enum InspectionWrites {
         return try sync.batch { try insertComponent(sync, companyId: companyId, jobId: jobId, next) }
     }
 
-    /// Removes an item added by mistake, with its result (soft deletes, one batch).
-    public static func removeComponent(
-        _ sync: SyncService, companyId: String, component: JobComponent, result: ChecklistItemResult?
-    ) throws {
-        let now = nowISO()
-        try sync.batch {
-            if let result {
-                try sync.store.write(
-                    "checklist_item_result", id: result.id, companyId: companyId, ["deleted_at": now])
-            }
-            try sync.store.write("job_component", id: component.id, companyId: companyId, ["deleted_at": now])
-        }
-    }
-
     /// Saves an item's answer: updates its result, or creates one if it has none.
     public static func saveChecklistResult(
         _ sync: SyncService, companyId: String, jobId: String, componentId: String, existing: ChecklistItemResult?,
@@ -178,11 +164,6 @@ public enum InspectionWrites {
         }
         values["job_id"] = .string(jobId)
         return try sync.insert("finding", companyId: companyId, values)
-    }
-
-    /// Deletes a test or finding (a soft delete that syncs).
-    public static func delete(_ sync: SyncService, table: String, id: String, companyId: String) throws {
-        try sync.write(table, id: id, companyId: companyId, ["deleted_at": nowISO()])
     }
 
     /// The pool's shape on the diagram; nil clears it.

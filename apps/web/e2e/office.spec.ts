@@ -93,7 +93,7 @@ test("owner views the M4 sample job", async ({ page }) => {
       .filter({ has: page.getByRole("radiogroup", { name: "Main drain 1", exact: true }) }),
   ).toContainText("No diver on site");
   await expect(
-    page.getByText(/\d+ not leaking · 1 attention · 1 leaking · 1 not applicable · 0 to do/),
+    page.getByText(/\d+ not leaking · 1 attention · 1 leaking · 1 not applicable$/),
   ).toBeVisible();
 
   // Tests: the failing pressure test and the bucket test, worked out from the readings.
@@ -474,9 +474,7 @@ test("the office adds a job for a new customer, with its checklist ready", async
   await expect(page.getByText("Tony Tech").first()).toBeVisible();
   // The checklist is ready for the tech, every item to do (its own tab, owner 2026-10-22).
   await jobSection(page, "Checklist");
-  await expect(
-    page.getByText(/0 not leaking · 0 attention · 0 leaking · 0 not applicable · \d+ to do/),
-  ).toBeVisible();
+  await expect(page.getByText(/^\d+ to do$/)).toBeVisible();
 });
 
 test("on a phone: a tab bar moves between sections and nothing scrolls sideways", async ({
@@ -619,7 +617,7 @@ test("on a phone: a tech starts a job, fills the checklist, and records a test a
   await expect(tech.getByLabel(`Where: ${itemName}`)).toHaveValue("Under the deck by the steps");
   expect(await wide()).toBeLessThanOrEqual(390);
   await finishChecklist(tech);
-  await expect(tech.getByText(/ · 1 leaking · 0 not applicable · 0 to do/)).toBeVisible();
+  await expect(tech.getByText(/ · 1 leaking$/)).toBeVisible();
 
   // A pressure test: the calculator works it out as it's typed.
   await jobSection(tech, "Findings");

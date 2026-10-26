@@ -7,6 +7,8 @@ import {
   formatAddress,
   inkLength,
   reportSignOffPurposes,
+  checklistTallyText,
+  inspectionTallyText,
   reportTitle,
   signatureStatement,
   signatureStoragePath,
@@ -74,7 +76,10 @@ export default function ReviewScreen() {
   const [drawing, setDrawing] = useState(false);
   // Signing finishes the report, so it waits for a photo when the shop requires one (owner
   // setting, 2026-10-19).
+  // Said only once Finish is tapped without one (owner, 2026-10-26: no warnings before the
+  // person acts), with Take Photo.
   const needsPhoto = useNeedsFinishPhoto(id);
+  const [photoAsked, setPhotoAsked] = useState(false);
   // A pool inspection counts only the questions its gates leave open (2026-10-20).
   const progress = useChecklistProgress(company.id, id, job?.type);
 
@@ -114,6 +119,9 @@ export default function ReviewScreen() {
   // A pool inspection's report lists the questions answered, so they don't hold up signing.
   const blocking = job.type === "inspection" ? 0 : toDo;
   const maintenance = job.type === "maintenance";
+  const tallyLine = progress.inspection
+    ? inspectionTallyText(progress.inspection)
+    : checklistTallyText(tally, maintenance, false);
   // A repair has no checklist (owner, 2026-10-22: its report is about the work), as the website.
   const noChecklist = job.type === "repair" && insp.components.length === 0;
   const written = (draft?.final_sections ?? []).filter((s) => s.text.trim());
@@ -124,7 +132,7 @@ export default function ReviewScreen() {
 
   async function finish(customerAway: boolean) {
     setError(null);
-    if (needsPhoto) return;
+    if (needsPhoto) return setPhotoAsked(true);
     if (!customerAway && purposes.length) {
       if (!purpose) return setError("Choose what this signature is for.");
       if (!signer) return setError("Enter your name.");
@@ -242,13 +250,7 @@ export default function ReviewScreen() {
       {noChecklist ? null : (
         <Card>
           <T variant="cardTitle">Checklist</T>
-          <T>
-            {progress.inspection
-              ? `${progress.inspection.answered} of ${progress.inspection.total} answered · ${progress.inspection.attention} need attention · ${progress.inspection.leaking} leaking`
-              : maintenance
-                ? `${tally.pass} done · ${tally.attention} need attention · ${tally.notApplicable} skipped`
-                : `${tally.pass} not leaking · ${tally.attention} attention · ${tally.leaking} leaking · ${tally.notApplicable} not applicable`}
-          </T>
+          {tallyLine ? <T>{tallyLine}</T> : null}
           {toDo ? <T variant="secondary" muted>{`${toDo} still to do`}</T> : null}
         </Card>
       )}
@@ -324,7 +326,7 @@ export default function ReviewScreen() {
           </>
         ) : null}
         {error ? <Notice tone="error">{error}</Notice> : null}
-        {!blocking && needsPhoto ? <FinishPhotoNotice jobId={job.id} /> : null}
+        {!blocking && photoAsked && needsPhoto ? <FinishPhotoNotice jobId={job.id} /> : null}
         {blocking ? null : (
           <>
             <Button
@@ -336,7 +338,7 @@ export default function ReviewScreen() {
                     : "Finish Report"
               }
               wide
-              disabled={busy !== null || needsPhoto}
+              disabled={busy !== null}
               onPress={() => void finish(false)}
             />
             {busy && draft ? (
@@ -351,7 +353,7 @@ export default function ReviewScreen() {
                 <Button
                   title={busy === "away" ? "Finishing…" : "Customer Not Here"}
                   kind="quiet"
-                  disabled={busy !== null || needsPhoto}
+                  disabled={busy !== null}
                   onPress={() => void finish(true)}
                 />
               </>

@@ -49,11 +49,7 @@ export default async function PaymentsSettingsPage({
 
   return (
     <>
-      <PageHeader
-        back={{ href: "/settings", label: "Settings" }}
-        title="Payments and Deposits"
-        subtitle="How customers pay, and the defaults for new quotes and invoices."
-      />
+      <PageHeader back={{ href: "/settings", label: "Settings" }} title="Payments and Deposits" />
       <div className="max-w-2xl space-y-6">
         <SettingsSection title="Online payments" boxed>
           <div className="space-y-3">
@@ -109,7 +105,7 @@ export default async function PaymentsSettingsPage({
                 label="Pass the card fee to customers"
                 name="card_fee_on"
                 defaultChecked={cardFeeBps(company.settings) > 0}
-                hint="Customers choose card or bank account before paying. Card adds the fee as its own line; bank has no fee."
+                hint="Customers pick card or bank. Only card adds the fee."
               />
               <SettingsFields labelWidth="10rem">
                 <SField
@@ -153,14 +149,12 @@ export default async function PaymentsSettingsPage({
                 name="deposit_percent"
                 inputMode="decimal"
                 defaultValue={bpsToPercent(deposit.value_bps ?? 0)}
-                hint="Used when the deposit is a percentage."
               />
               <SField
                 label="Fixed deposit ($)"
                 name="deposit_fixed"
                 inputMode="decimal"
                 defaultValue={dollars(deposit.value_cents)}
-                hint="Used when the deposit is fixed."
               />
               <SField
                 label="Minimum deposit ($)"

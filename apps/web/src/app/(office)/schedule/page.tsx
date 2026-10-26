@@ -441,13 +441,14 @@ export default async function SchedulePage({ searchParams }: PageProps<"/schedul
 
         {view === "day" ? <WeekStrip date={date} today={today} tech={tech} /> : null}
 
-        {/* Whose schedule: under the days of the week, with Reorder Techs at its end (owners
-            and admins). */}
+        {/* Whose schedule: under the days of the week, with Reorder Techs after the last name
+            (owners and admins), the whole row scrolling sideways so no name is ever cut off by
+            the button (owner, 2026-10-26). */}
         {techs.length > 1 ? (
-          <div className="mb-4 flex items-center gap-2 sm:hidden">
+          <div className="mb-4 sm:hidden">
             <nav
               aria-label="Whose schedule"
-              className="-ml-4 flex min-w-0 flex-1 gap-2 overflow-x-auto pb-1 pl-4"
+              className="-mx-4 flex items-center gap-2 overflow-x-auto px-4 pb-1"
             >
               {[
                 ...techs.map((t) => ({
@@ -472,8 +473,8 @@ export default async function SchedulePage({ searchParams }: PageProps<"/schedul
                   {t.name}
                 </Link>
               ))}
+              {reorder.length > 1 ? <ReorderTechs techs={reorder} /> : null}
             </nav>
-            {reorder.length > 1 ? <ReorderTechs techs={reorder} /> : null}
           </div>
         ) : null}
 

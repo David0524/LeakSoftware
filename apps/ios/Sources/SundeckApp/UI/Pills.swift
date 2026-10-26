@@ -24,6 +24,8 @@
                 HStack(spacing: 8) {
                     if let dot { TechDot(color: dot) }
                     Text(title)
+                        // A name is never cut short: the row scrolls instead.
+                        .fixedSize(horizontal: true, vertical: false)
                 }
                 .textRole(.bodyMedium)
                 .lineLimit(1)
@@ -49,6 +51,9 @@
         var onDrop: ((Value, String) -> Bool)?
         /// A tech's color for an option (a dot before its name), or nil.
         var dot: (Value) -> TechColor? = { _ in nil }
+        /// A control after the last pill, scrolling with them (Reorder Techs), so no pill is cut
+        /// off beside it.
+        var trailing: AnyView?
         @State private var targeted: Value?
 
         var body: some View {
@@ -71,6 +76,7 @@
                             pill
                         }
                     }
+                    if let trailing { trailing }
                 }
             }
             .contentMargins(.horizontal, CGFloat(Spacing.pageMargin), for: .scrollContent)

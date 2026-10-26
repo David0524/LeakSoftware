@@ -13,10 +13,8 @@ public func requiresReportPhoto(_ settings: JSONValue?) -> Bool {
 /// `REPORT_PHOTO_TEXT`: the switch's words and the message when a report is held up.
 public enum ReportPhotoText {
     public static let label = "Require a Photo"
-    public static let each =
-        "A visit’s report can’t be sent until the visit has at least one photo. With Send Automatically on, it goes once one is added."
-    public static let monthly =
-        "One visit’s report can’t be sent until the visit has at least one photo. The monthly report still goes with the invoice."
+    public static let each = "Each visit needs a photo before its report goes out."
+    public static let monthly = "A single visit’s report needs a photo. The monthly one still goes with the invoice."
     /// On Send Visit Report, and the server's refusal.
     public static let blocked = "Add a photo to send this report."
     public static let addPhoto = "Add Photo"

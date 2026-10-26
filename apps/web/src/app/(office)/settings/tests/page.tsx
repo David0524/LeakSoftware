@@ -75,6 +75,7 @@ function NameFields({ t, p, placeholder }: { t?: TestType; p: string; placeholde
         id={`name-${p}`}
         defaultValue={t?.name}
         placeholder={placeholder}
+        required
       />
       <SField
         label="Order"
@@ -93,7 +94,6 @@ export default async function TestTypesPage() {
   return (
     <SettingsListPage
       title="Test Types"
-      subtitle="Tests techs record on the phone. Pressure and bucket tests do the math; set the pass and fail lines your shop uses."
       add={{
         label: "Add Test Type",
         form: (
@@ -155,6 +155,7 @@ export default async function TestTypesPage() {
                         inputMode="decimal"
                         defaultValue={value}
                         stacked
+                        required
                       />
                     ))}
                   </SettingsFields>

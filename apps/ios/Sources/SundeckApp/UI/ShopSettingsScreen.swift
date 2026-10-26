@@ -805,8 +805,10 @@
         var body: some View {
             FormSheet(title: item?.name ?? "Add Item", dirty: form != original) {
                 Grouped {
-                    LabeledFieldRow(label: "Name", text: $form.name, labelWidth: 120)
-                    LabeledFieldRow(label: "Price ($)", text: $form.price, keyboard: .decimalPad, labelWidth: 120)
+                    LabeledFieldRow(label: "Name", text: $form.name, placeholder: "Required", labelWidth: 120)
+                    LabeledFieldRow(
+                        label: "Price ($)", text: $form.price, placeholder: "Required", keyboard: .decimalPad,
+                        labelWidth: 120)
                     LabeledFieldRow(label: "Unit", text: $form.unit, labelWidth: 120)
                     LabeledFieldRow(label: "Order", text: $form.order, keyboard: .numberPad, labelWidth: 120)
                 }
@@ -1003,7 +1005,7 @@
                         LabeledFieldRow(label: "Choices", text: $form.options, labelWidth: 120, multiline: true)
                     }
                 }
-                Grouped(footer: "Shown above the question, and as a recommendation on the report.") {
+                Grouped(footer: "Shown above the question and on the report.") {
                     LabeledFieldRow(label: "Banner", text: $form.notice, labelWidth: 120, multiline: true)
                 }
                 Grouped(footer: "Section and answer are changed on the website, in Settings › Checklist Components.") {

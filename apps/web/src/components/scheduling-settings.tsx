@@ -46,6 +46,7 @@ export function SchedulingForm({
           inputMode="decimal"
           defaultValue={defaults.jobHours}
           hint="For jobs booked without an end time."
+          required
         />
       </SettingsFields>
       {pool ? (
@@ -56,14 +57,15 @@ export function SchedulingForm({
             inputMode="numeric"
             defaultValue={String(defaults.visitMinutes)}
             hint="For new maintenance plans."
+            required
           />
           <SField
             label="Schedule maintenance ahead (weeks)"
             name="weeks_ahead"
             inputMode="numeric"
             defaultValue={String(defaults.weeksAhead)}
-            hint="How far ahead plans put visits on the schedule."
             stacked
+            required
           />
         </SettingsFields>
       ) : (

@@ -7,9 +7,8 @@ import { Segmented } from "./segmented";
 import { SettingsForm } from "./settings-forms";
 
 const NOTE: Record<OnMyWayVia, string> = {
-  messages:
-    "Sent from the company number and kept in Messages, so the whole team sees it and the customer’s reply.",
-  phone: "Opens the tech’s own Messages app with the text ready to send.",
+  messages: "Sent from the company number, so the whole team sees the reply.",
+  phone: "Opens the tech’s own Messages app.",
 };
 
 /** Settings › Phone and Texting: where On My Way texts go out from (owner, 2026-10-16). */

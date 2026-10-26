@@ -1,5 +1,5 @@
 import { useState, type Ref } from "react";
-import { StyleSheet, Text, TextInput, View, type TextInputProps } from "react-native";
+import { Pressable, StyleSheet, Text, TextInput, View, type TextInputProps } from "react-native";
 import {
   ACID_PRODUCTS,
   CHLORINE_PRODUCTS,
@@ -276,24 +276,20 @@ export function ReadingsFields({ calc }: { calc: ChemCalculatorState }) {
           );
         })}
       </View>
-      <Text
-        style={[type.secondary, { color: color.textMuted }]}
-        maxFontSizeMultiplier={MAX_TEXT_SCALE}
-      >
-        Aim For starts at the recommended level. Type your own to dose to it.
-        {calc.anyGoal ? (
-          <>
-            {" "}
-            <Text
-              accessibilityRole="button"
-              onPress={() => setGoals({})}
-              style={[face.semiBold, { color: color.link }]}
-            >
-              Use Recommended
-            </Text>
-          </>
-        ) : null}
-      </Text>
+      {calc.anyGoal ? (
+        <Pressable
+          accessibilityRole="button"
+          onPress={() => setGoals({})}
+          style={{ minHeight: minTap, justifyContent: "center", alignSelf: "flex-start" }}
+        >
+          <Text
+            style={[type.body, face.semiBold, { color: color.link }]}
+            maxFontSizeMultiplier={MAX_TEXT_SCALE}
+          >
+            Use Recommended
+          </Text>
+        </Pressable>
+      ) : null}
       <Select
         label="Chlorine"
         value={calc.chlorine}

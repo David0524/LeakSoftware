@@ -4,6 +4,7 @@ import { Animated, Linking, Pressable, RefreshControl, StyleSheet, Text, View } 
 import {
   canMakeJobs,
   daySummary,
+  endOfDay,
   formatAddress,
   mapStatus,
   formatDay,
@@ -48,7 +49,7 @@ import {
 } from "../../../../lib/liveStop";
 import { todayList } from "../../../../lib/todayHero";
 import { useLocateMissing } from "../../../../lib/locate";
-import { useFirstLoad } from "../../../../data/hooks";
+import { useFirstLoad, useRows } from "../../../../data/hooks";
 import { SkeletonCards } from "../../../../ui/Skeleton";
 import { useCompany, useSession } from "../../../../state/session";
 import { openDirections, useDirectionsChoice } from "../../../../state/directions";
@@ -235,6 +236,24 @@ export default function Today() {
     viewing,
   });
   const currentId = hero?.currentId ?? null;
+  // Once every stop is done, the card says how the day went (owner, 2026-10-26): the day's
+  // pools, and the reports sent and quotes accepted on them, from this phone's rows.
+  const reportRows = useRows<{ job_id: string; sent_at?: string | null; status?: string | null }>(
+    "report",
+    company.id,
+  );
+  const quoteRows = useRows<{ job_id: string; accepted_at?: string | null }>("quote", company.id);
+  const wrapUp = useMemo(
+    () =>
+      endOfDay({
+        stops: stops.map((j) => ({ id: j.id, done: stopDone(j, today) })),
+        reports: reportRows,
+        quotes: quoteRows,
+        today,
+        timeZone: tz,
+      })?.line ?? null,
+    [stops, today, tz, reportRows, quoteRows],
+  );
 
   // Mark Complete, here or on the job page, moves the card on at once; the banner says "Derek
   // Jeter done" with Undo (Reopen Visit or Mark Not Complete), on your own day (gestures spec
@@ -495,6 +514,7 @@ export default function Today() {
                 mine={mine}
                 day={today}
                 checklistDone={checklistDone}
+                wrapUp={wrapUp}
                 driveMin={heroAt >= 0 ? (summary.legs[heroAt] ?? null) : null}
                 notOnMap={!!heroJob && mapStatus(heroJob.property, routing) === "missing"}
                 stopIds={stopIds}

@@ -5,7 +5,7 @@ import { forgetCapture, rememberCapture, saveCapture, useJobMedia } from "../../
 import { MediaError, askLocationOnce, captureWithCamera, currentPosition } from "../../lib/media";
 import { photoCount } from "../../lib/visitReports";
 import { useCompany } from "../../state/session";
-import { Button, Notice, T } from "../../ui/components";
+import { Button, T } from "../../ui/components";
 import { space } from "../../ui/theme";
 
 // Require a Photo (owner, 2026-10-25: "require photo to send report"; core report-photo.ts).
@@ -59,7 +59,9 @@ export function ReportPhotoNotice({ jobId }: { jobId: string }) {
 
   return (
     <View style={{ gap: space["3"] }}>
-      <Notice tone="error">{REPORT_PHOTO_TEXT.blocked}</Notice>
+      {/* Where the send buttons would be: what it needs, in plain text, not a red bar (owner,
+          2026-10-26: no warnings before the person acts). */}
+      <T muted>{REPORT_PHOTO_TEXT.blocked}</T>
       <Button
         title={busy ? "Opening Camera…" : REPORT_PHOTO_TEXT.addPhoto}
         disabled={busy}

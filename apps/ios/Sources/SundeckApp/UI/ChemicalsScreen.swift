@@ -22,7 +22,6 @@
         @State private var started = false
         @State private var showDoses = false
         @State private var submitResult: (text: String, error: Bool)?
-        @State private var removing: ChemicalLogEntry?
         /// The readings last submitted to the pool's log.
         @State private var submitted: [ReadingKey: String] = [:]
 
@@ -65,15 +64,7 @@
             .sheet(isPresented: $showDoses) {
                 FormSheet(title: "What to Add", cancelTitle: "Close") { DoseList(result: result) }
             }
-            .confirmationDialog(
-                ChemicalLogText.removeTitle,
-                isPresented: Binding(get: { removing != nil }, set: { if !$0 { removing = nil } }),
-                titleVisibility: .visible, presenting: removing
-            ) { entry in
-                Button(ChemicalLogText.removeButton, role: .destructive) { remove(entry) }
-            } message: { _ in
-                Text(ChemicalLogText.removeMessage)
-            }
+            .removalBanner()
             .onAppear {
                 guard !started else { return }
                 started = true
@@ -109,7 +100,7 @@
                     poolAdditions(sync.store, companyId: company.id, propertyId: pool.propertyId),
                     timeZone: company.timeZone)
                 if !months.isEmpty {
-                    Grouped(label: "Chemicals added", footer: "Added on visits, by month.") {
+                    Grouped(label: "Chemicals added") {
                         ForEach(months, id: \.month) { m in
                             ListRow(m.label, detail: m.line).monospacedDigit()
                         }
@@ -126,13 +117,13 @@
                         sync.store, companyId: $0.id, propertyId: pool.propertyId, names: teamNames(sync.kv),
                         timeZone: $0.timeZone)
                 } ?? []
-            return Grouped(label: ChemicalLogText.logTitle, footer: ChemicalLogText.logFooter) {
+            return Grouped(label: ChemicalLogText.logTitle) {
                 if entries.isEmpty {
                     ListRow(ChemicalLogText.logEmpty).foregroundStyle(Color.textMuted)
                 }
                 ForEach(entries) { entry in
                     ListRow(entry.summary, detail: entry.detail.isEmpty ? nil : entry.detail) {
-                        Button("Remove") { removing = entry }
+                        Button("Remove") { remove(entry) }
                             .font(.role(.secondary))
                             .foregroundStyle(Color.fail)
                             .frame(minWidth: minTarget, minHeight: minTarget)
@@ -158,10 +149,13 @@
             }
         }
 
+        /// Removed at once, with "Readings removed" and Undo for five seconds (owner, 2026-10-26),
+        /// not asked first.
         private func remove(_ entry: ChemicalLogEntry) {
-            removing = nil
+            guard let companyId = session.company?.id else { return }
             do {
-                try ChemicalLogWrites.remove(sync, readingId: entry.id)
+                try app.removals.remove(
+                    .readings, [RemovalRow("chemical_reading", entry.id)], sync: sync, companyId: companyId)
             } catch {
                 submitResult = (String(describing: error), true)
             }
@@ -207,16 +201,11 @@
                         }
                     }
                 }
-                VStack(alignment: .leading, spacing: 0) {
-                    Text("Aim For starts at the recommended level. Type your own to dose to it.")
-                        .textRole(.secondary)
-                        .foregroundStyle(Color.textMuted)
-                    if form.anyGoal {
-                        Button("Use Recommended") { form.goals = [:] }
-                            .font(.role(.bodyEmphasis))
-                            .foregroundStyle(Color.link)
-                            .frame(minHeight: minTarget)
-                    }
+                if form.anyGoal {
+                    Button("Use Recommended") { form.goals = [:] }
+                        .font(.role(.bodyEmphasis))
+                        .foregroundStyle(Color.link)
+                        .frame(minHeight: minTarget)
                 }
                 SelectField(
                     label: "Chlorine", selection: $form.chlorine, options: ChlorineProduct.allCases,

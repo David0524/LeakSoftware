@@ -15,8 +15,9 @@ import {
   type RepairJob,
 } from "@leakbook/core";
 import { addRepair, removeRepair, useJobRepairs } from "../../data/repairs";
+import { removalFor } from "../../lib/removal";
+import { announceRemoved } from "../../lib/removedBanner";
 import { Button, Field, Group, ListRow, RoundButton, Section, T } from "../../ui/components";
-import { confirmDestructive } from "../../ui/confirm";
 import { haptics } from "../../ui/haptics";
 import { ModalSheet } from "../../ui/ModalSheet";
 import { Select, useMenu } from "../../ui/Select";
@@ -168,13 +169,11 @@ export function JobRepairs({
   const [adding, setAdding] = useState(false);
   const menu = useMenu();
   const items = repairItemsOf(priceBook);
-  const remove = (id: string, description: string, cents: number) =>
-    confirmDestructive({
-      title: REPAIR_LABELS.removeTitle,
-      message: `${description}, ${formatCents(cents)}. ${REPAIR_LABELS.removeMessage}`,
-      confirm: REPAIR_LABELS.removeConfirm,
-      onConfirm: () => removeRepair(job, id),
-    });
+  // Removed at once, with Undo for five seconds (owner, 2026-10-26), not asked first.
+  const remove = (id: string) => {
+    const undo = removeRepair(job, id);
+    if (undo) announceRemoved(removalFor("repair", undo, REPAIR_LABELS.removeMessage));
+  };
   return (
     <Section title={REPAIR_LABELS.section} footer={REPAIR_LABELS.footer}>
       <Group>
@@ -182,8 +181,9 @@ export function JobRepairs({
           <ListRow
             key={l.id}
             title={l.description}
-            onDelete={() => remove(l.id, l.description, l.price_cents)}
+            onDelete={() => remove(l.id)}
             deleteLabel={REPAIR_LABELS.remove}
+            deleteAsks={false}
             trailing={
               <View style={styles.trailing}>
                 <T muted style={tabular}>
@@ -199,7 +199,7 @@ export function JobRepairs({
                         {
                           label: REPAIR_LABELS.remove,
                           destructive: true,
-                          onPress: () => remove(l.id, l.description, l.price_cents),
+                          onPress: () => remove(l.id),
                         },
                       ],
                     })

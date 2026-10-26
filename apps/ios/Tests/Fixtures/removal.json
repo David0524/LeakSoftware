@@ -1,0 +1,63 @@
+{
+  "HAPTIC_MOMENTS": [
+    {
+      "args": [],
+      "result": {
+        "moments": {
+          "checklistItemDone": "light",
+          "chemicalAdded": "light",
+          "allChemicalsAdded": "success",
+          "jobCompleted": "success",
+          "reportSent": "success",
+          "paymentRecorded": "success"
+        },
+        "webMs": 10
+      }
+    }
+  ],
+  "REMOVED_TEXT": [
+    {
+      "args": [],
+      "result": {
+        "checklistItem": "Item removed",
+        "chemical": "Chemical removed",
+        "readings": "Readings removed",
+        "photo": "Photo removed",
+        "video": "Video removed",
+        "voiceNote": "Voice note removed",
+        "test": "Test removed",
+        "finding": "Finding removed",
+        "repair": "Repair removed"
+      }
+    }
+  ],
+  "removedUndo": [
+    {
+      "args": [],
+      "result": {
+        "label": "Undo",
+        "seconds": 5
+      }
+    }
+  ],
+  "removedKindOfMedia": [
+    {
+      "args": [
+        "photo"
+      ],
+      "result": "photo"
+    },
+    {
+      "args": [
+        "video"
+      ],
+      "result": "video"
+    },
+    {
+      "args": [
+        "audio"
+      ],
+      "result": "voiceNote"
+    }
+  ]
+}

@@ -34,6 +34,7 @@ import {
   lineTotal,
   monthName,
   openSuggestions,
+  pickList,
   readingSummary,
   stepQuantity,
   suggestionText,
@@ -45,6 +46,7 @@ import {
   type ChemicalItem,
   type ChemicalRow,
   type ChlorineProduct,
+  type HapticMoment,
   type Property,
   type ReadingKey,
   type Readings,
@@ -54,6 +56,7 @@ import {
   addChemicals,
   createVisitReadingSaver,
   removeChemical,
+  removeChemicalWithUndo,
   updateChemical,
   useChemicalItems,
   useChemicalLog,
@@ -65,12 +68,12 @@ import {
 import { getServices } from "../../lib/services";
 import { useCompany } from "../../state/session";
 import { Button, Check, Chevron, Group, Section, T, Toggle } from "../../ui/components";
-import { confirmDestructive } from "../../ui/confirm";
-import { haptics } from "../../ui/haptics";
+import { haptic, haptics } from "../../ui/haptics";
 import { ModalSheet, useUnsavedChanges } from "../../ui/ModalSheet";
 import { Select } from "../../ui/Select";
 import { color, face, MAX_TEXT_SCALE, minTap, shape, space, tabular, type } from "../../ui/theme";
 import { WebIcon } from "../../ui/WebIcon";
+import { usePoolHistory } from "../../data/poolHistory";
 import { Cell, withCommas } from "./Calculator";
 
 // A visit's Chemicals, first on its Checklist and opened in place (owner, 2026-10-19 and
@@ -240,6 +243,8 @@ const Body = memo(function Body({
   const large = useLargeText();
   const charges = chargesChemicals(company.settings);
   const locked = useLockedAdditions(company.id, additions);
+  // What the pool's earlier visits tell this one (owner, 2026-10-26): hints, never values.
+  const history = usePoolHistory(company.id, pool.id, jobId, company.timezone);
   // The form starts from the visit's own row, once; after that the phone's typing leads.
   const r = useVisitReading(jobId);
   const [gallonsText, setGallonsText] = useState(() =>
@@ -328,12 +333,17 @@ const Body = memo(function Body({
   const add = (
     drafts: AdditionDraft[],
     extra?: { customer_supplied?: boolean; note?: string | null },
+    moment: HapticMoment = "chemicalAdded",
   ) => {
     addChemicals(company.id, jobId, pool.id, drafts, additions.length, extra);
-    haptics.success();
+    haptic(moment);
   };
-  const remove = (a: ChemicalAddition) => {
-    removeChemical(company.id, a.id);
+  // Tapping an added chemical's check unmarks it, and tapping again marks it added: no banner.
+  // The sheet's Remove Chemical takes it off at once, with Undo for five seconds
+  // (owner, 2026-10-26).
+  const remove = (a: ChemicalAddition, undoable = false) => {
+    if (undoable) removeChemicalWithUndo(company.id, a.id);
+    else removeChemical(company.id, a.id);
     haptics.selection();
   };
   const draftRow = (d: AdditionDraft): ChemicalAddition => ({
@@ -415,6 +425,7 @@ const Body = memo(function Body({
             status={status ? status.status : null}
             target={recommended[row.key]?.target}
             value={values[row.key] ?? ""}
+            hint={history.hints[row.key]}
             goal={goals[row.key] ?? ""}
             last={i === rows.length - 1}
             locked={row.added
@@ -433,16 +444,18 @@ const Body = memo(function Body({
           />
         );
       })}
-      <T variant="secondary" muted>
-        Numbers are the order to add them. Aim For starts at the recommended level.
-      </T>
       {problem ? (
         <T variant="secondary" style={{ color: color.fail }}>
           {problem}
         </T>
       ) : null}
       {unadded.length ? (
-        <Button title="Mark All Added" kind="secondary" wide onPress={() => add(unadded)} />
+        <Button
+          title="Mark All Added"
+          kind="secondary"
+          wide
+          onPress={() => add(unadded, undefined, "allChemicalsAdded")}
+        />
       ) : null}
 
       <Section title="Also Added">
@@ -543,6 +556,17 @@ const Body = memo(function Body({
             { borderColor: color.controlBorder, backgroundColor: color.surface, color: color.text },
           ]}
         />
+        {history.note ? (
+          // Last visit's notes, where this visit's go (owner, 2026-10-26).
+          <View accessible testID="last-visit-notes">
+            <T variant="secondary" muted style={face.semiBold}>
+              {history.note.label}
+            </T>
+            <T variant="secondary" muted numberOfLines={3}>
+              {history.note.text}
+            </T>
+          </View>
+        ) : null}
       </View>
 
       {charges ? (
@@ -558,11 +582,11 @@ const Body = memo(function Body({
           </T>
         </View>
       ) : null}
-      <T variant="secondary" muted>
-        {charges
-          ? `Saved as you go. Billed on ${firstName}’s ${month} invoice.`
-          : "Saved as you go."}
-      </T>
+      {charges ? (
+        <T variant="secondary" muted>
+          {`Billed on ${firstName}’s ${month} invoice.`}
+        </T>
+      ) : null}
 
       <AddedSheet
         editing={editing}
@@ -577,12 +601,13 @@ const Body = memo(function Body({
         }}
         onRemove={(row) => {
           setEditing(null);
-          remove(row);
+          remove(row, true);
         }}
       />
       <PickSheet
         open={picking}
         items={items}
+        usual={history.usual}
         charges={charges}
         onClose={() => setPicking(false)}
         onAdd={(draft, supplied, note) => {
@@ -605,6 +630,8 @@ interface ReadingRowProps {
   status: "ok" | "low" | "high" | null;
   target: number | undefined;
   value: string;
+  /** "Last 7.6": the pool's last reading, shown in the empty box. */
+  hint?: string;
   goal: string;
   /** The ids of this row's additions on a sent invoice, space-separated. */
   locked: string;
@@ -630,6 +657,7 @@ const ReadingRow = memo(
     status,
     target,
     value,
+    hint,
     goal,
     locked,
     onReading,
@@ -715,13 +743,15 @@ const ReadingRow = memo(
             <Cell
               ref={fieldRef(readingName)}
               accessibilityLabel={`${READING_LABELS[row.key]} reading`}
+              placeholder={hint}
               value={value}
               returnKeyType="next"
               submitBehavior="submit"
               onSubmitEditing={() => focusNext(readingName)}
               onBlur={onBlur}
               onChangeText={(v) => onReading(row.key, v)}
-              style={large ? styles.wide : undefined}
+              // The hint is smaller so it fits the box; typed numbers are full size.
+              style={[large ? styles.wide : undefined, !value && hint ? styles.hint : undefined]}
             />
           </Labeled>
           <Labeled title="Aim For" large={large}>
@@ -1070,19 +1100,7 @@ function AddedSheetForm({
             </Group>
           </Section>
           {!isNew && !locked ? (
-            <Button
-              title="Remove Chemical"
-              kind="danger"
-              wide
-              onPress={() =>
-                confirmDestructive({
-                  title: "Remove this chemical?",
-                  message: "It comes off the visit and its report.",
-                  confirm: "Remove Chemical",
-                  onConfirm: () => onRemove(row),
-                })
-              }
-            />
+            <Button title="Remove Chemical" kind="danger" wide onPress={() => onRemove(row)} />
           ) : null}
         </View>
       ) : null}
@@ -1119,6 +1137,8 @@ function ToggleRow({
 function PickSheet(props: {
   open: boolean;
   items: ChemicalItem[];
+  /** The pool's usual chemicals (item ids), listed first. */
+  usual: string[];
   charges: boolean;
   onClose: () => void;
   onAdd: (draft: AdditionDraft, supplied: boolean, note: string | null) => void;
@@ -1130,12 +1150,14 @@ function PickSheet(props: {
 function PickSheetForm({
   open,
   items,
+  usual,
   charges,
   onClose,
   onAdd,
 }: {
   open: boolean;
   items: ChemicalItem[];
+  usual: string[];
   charges: boolean;
   onClose: () => void;
   onAdd: (draft: AdditionDraft, supplied: boolean, note: string | null) => void;
@@ -1146,13 +1168,42 @@ function PickSheetForm({
   const [qty, setQty] = useState("1");
   const [supplied, setSupplied] = useState(false);
   const [note, setNote] = useState("");
-  const shown = list.filter((i) => i.name.toLowerCase().includes(query.trim().toLowerCase()));
+  // The chemicals this pool usually gets come first (owner, 2026-10-26).
+  const groups = pickList(list, usual, query);
+  const shownCount = groups.usual.length + groups.rest.length;
   const quantity = num(qty);
   const valid = picked !== null && quantity !== null && quantity > 0 && quantity <= 100_000;
   const add = () => {
     if (!picked || quantity === null || !valid) return;
     onAdd(itemAddition(picked, quantity), supplied, note.trim() || null);
   };
+  const item = (i: ChemicalItem) => (
+    <Pressable
+      key={i.id}
+      accessibilityRole="button"
+      accessibilityState={{ selected: picked?.id === i.id }}
+      onPress={() => {
+        setPicked(i);
+        setQty(String(itemAddition(i).quantity));
+        haptics.selection();
+      }}
+      android_ripple={{ color: color.ripple }}
+      style={styles.listRow}
+    >
+      <View style={{ flex: 1 }}>
+        <T>{i.name}</T>
+        {charges ? (
+          <T variant="secondary" muted>
+            {unitPriceLabel(i.price_cents, i.unit)}
+          </T>
+        ) : null}
+      </View>
+      {picked?.id === i.id ? (
+        <WebIcon name="check" size={20} color={color.link} strokeWidth={2.6} />
+      ) : null}
+    </Pressable>
+  );
+
   return (
     <ModalSheet
       visible={open}
@@ -1204,42 +1255,24 @@ function PickSheetForm({
               style={[type.body, { flex: 1, color: color.text, minHeight: minTap }]}
             />
           </View>
-          <Section title="Chemicals">
-            <Group>
-              {shown.length
-                ? shown.map((i) => (
-                    <Pressable
-                      key={i.id}
-                      accessibilityRole="button"
-                      accessibilityState={{ selected: picked?.id === i.id }}
-                      onPress={() => {
-                        setPicked(i);
-                        setQty(String(itemAddition(i).quantity));
-                        haptics.selection();
-                      }}
-                      android_ripple={{ color: color.ripple }}
-                      style={styles.listRow}
-                    >
-                      <View style={{ flex: 1 }}>
-                        <T>{i.name}</T>
-                        {charges ? (
-                          <T variant="secondary" muted>
-                            {unitPriceLabel(i.price_cents, i.unit)}
-                          </T>
-                        ) : null}
-                      </View>
-                      {picked?.id === i.id ? (
-                        <WebIcon name="check" size={20} color={color.link} strokeWidth={2.6} />
-                      ) : null}
-                    </Pressable>
-                  ))
-                : [
-                    <View key="none" style={styles.listRow}>
-                      <T muted>No chemicals match. Add them in Settings › Price Book.</T>
-                    </View>,
-                  ]}
-            </Group>
-          </Section>
+          {groups.usual.length ? (
+            <Section title="Usual for This Pool">
+              <Group>{groups.usual.map(item)}</Group>
+            </Section>
+          ) : null}
+          {groups.rest.length || shownCount === 0 ? (
+            <Section title={groups.usual.length ? "Other Chemicals" : "Chemicals"}>
+              <Group>
+                {shownCount === 0 ? (
+                  <View style={styles.listRow}>
+                    <T muted>No chemicals match. Add them in Settings › Price Book.</T>
+                  </View>
+                ) : (
+                  groups.rest.map(item)
+                )}
+              </Group>
+            </Section>
+          ) : null}
         </View>
       ) : null}
     </ModalSheet>
@@ -1275,6 +1308,7 @@ const styles = StyleSheet.create({
     columnGap: space["2"],
   },
   wide: { width: "100%" },
+  hint: { fontSize: 13 },
   dividerTop: { borderTopWidth: StyleSheet.hairlineWidth },
   totalStacked: { flexDirection: "column", alignItems: "flex-start", gap: 2 },
   unit: {

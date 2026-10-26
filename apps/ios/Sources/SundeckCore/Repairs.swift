@@ -23,17 +23,16 @@ public enum RepairLabels {
     public static let fallback = "Repair"
     public static let empty = "No repairs yet."
     public static let save = "Add Repair"
-    public static let removeTitle = "Remove this repair?"
+    /// The note under "Repair removed" (nothing asks first since 2026-10-26: it has Undo).
     public static let removeMessage = "It comes off the job’s price. An invoice already made keeps it."
-    public static let removeConfirm = "Remove Repair"
-    public static let footer = "Billed on the invoice, one line each."
+    public static let footer = "Billed on the invoice."
 
     /// Every label by its TypeScript key (the fixtures check them).
     public static let all: [String: String] = [
         "section": section, "add": add, "remove": remove, "total": total, "first": first,
         "additional": additional, "item": item, "pick": pick, "custom": custom, "description": description,
-        "price": price, "fallback": fallback, "empty": empty, "save": save, "removeTitle": removeTitle,
-        "removeMessage": removeMessage, "removeConfirm": removeConfirm, "footer": footer,
+        "price": price, "fallback": fallback, "empty": empty, "save": save, "removeMessage": removeMessage,
+        "footer": footer,
     ]
 }
 

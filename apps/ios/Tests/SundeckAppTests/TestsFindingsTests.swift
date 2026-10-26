@@ -281,7 +281,6 @@ private struct Inspection {
         #expect(form.chosenOutcome == .pass)
         #expect(form.discardTitle == "Discard changes?")
         #expect(form.sheetTitle == "Edit Dye test" && form.submitTitle == "Save Test")
-        #expect(form.deleteTitle == "Delete this dye test?")
         form.values["observation"] = "Dye drawn in (leak)"
         form.chosenOutcome = .fail
         form.componentId = "jc1"
@@ -302,10 +301,15 @@ private struct Inspection {
         form.values = ["location": "Light niche", "observation": "No draw"]
         let saved3 = try form.save(s.sync, companyId: "c1", jobId: "j1", existing: nil)
         let id = try #require(saved3)
-        try InspectionWrites.delete(s.sync, table: "test_result", id: id, companyId: "c1")
+        let rows = [RemovalRow("test_result", id)]
+        try RemovalWrites.remove(s.sync, companyId: "c1", rows: rows)
         #expect(s.insp.tests.isEmpty)
         #expect(testRows(s.insp, s.config, now: Date(), timeZone: "America/Phoenix").isEmpty)
         #expect(try s.store.get("test_result", id)?["deleted_at"]?.string != nil)
+        // Undo (owner, 2026-10-26): the same test is back on the tab.
+        try RemovalWrites.restore(s.sync, companyId: "c1", rows: rows)
+        #expect(s.insp.tests.map(\.id) == [id])
+        #expect(try s.store.get("test_result", id)?["deleted_at"]?.string == nil)
     }
 }
 
@@ -397,7 +401,6 @@ private struct Inspection {
         #expect(form.showsStatus)
         #expect(form.navigationTitle == "Edit Finding" && form.submitTitle == "Save Finding")
         #expect(form.discardTitle == "Discard changes?")
-        #expect(form.deleteTitle == "Delete “Second”?")
         #expect(findingStatusChoices.map(\.label) == ["Open", "Quoted", "Repaired", "Monitor"])
         let pins = editorPins(s.config, form: form)
         #expect(
@@ -418,8 +421,11 @@ private struct Inspection {
         #expect(row["pin_x"] == .null)
         #expect(findingRows(s.insp, s.config).map(\.number) == [1, 2])
 
-        try InspectionWrites.delete(s.sync, table: "finding", id: first, companyId: "c1")
+        let rows = [RemovalRow("finding", first)]
+        try RemovalWrites.remove(s.sync, companyId: "c1", rows: rows)
         #expect(s.insp.findings.map(\.id) == [second])
+        try RemovalWrites.restore(s.sync, companyId: "c1", rows: rows)
+        #expect(Set(s.insp.findings.map(\.id)) == [first, second])
     }
 
     @Test func severityColorsComeFromTheirHex() throws {

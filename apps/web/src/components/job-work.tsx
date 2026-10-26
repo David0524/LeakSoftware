@@ -25,10 +25,11 @@ import {
   type TestData,
   type TestType,
   type Verdict,
-  removeItemConfirm,
   COMPLETE_READY_LINE,
+  FINISH_PHOTO_MESSAGE,
 } from "@leakbook/core";
 import type { FormState } from "@/app/actions/auth";
+import { buzz } from "@/lib/haptics";
 import { orOffline } from "@/lib/offline";
 import {
   addComponent,
@@ -37,6 +38,9 @@ import {
   deleteFinding,
   deleteTest,
   removeComponent,
+  restoreComponent,
+  restoreFinding,
+  restoreTest,
   saveFinding,
   saveJobDetails,
   saveTest,
@@ -47,6 +51,7 @@ import {
   setVerdict,
 } from "@/app/actions/inspection";
 import { InspectionChecklist } from "./inspection-checklist";
+import { showPhotos } from "./job-tab";
 import { useNextStep } from "./next-step-events";
 import { DiagramShapes } from "./pool-diagram";
 import { Segmented } from "./segmented";
@@ -58,6 +63,7 @@ import { Sheet, useConfirm } from "./sheet";
 import { Button, Checkbox, Chip, Select, buttonClass, cx } from "./ui";
 import { SavedNote, useAutosave } from "./undo";
 import { saveFailed, useJobStatus, useSetJobStatus } from "./instant";
+import { restoreWith, showRemoved } from "./removed";
 
 // Working a job on the website (M9.5): the phone's job screen, for a browser.
 
@@ -92,7 +98,16 @@ export function useRun({ instant = false }: { instant?: boolean } = {}) {
         const result = await orOffline(action)({}, form);
         const failed = result.error ?? Object.values(result.fields ?? {})[0] ?? null;
         setError(failed);
-        if (instant && failed) saveFailed(failed);
+        // Nothing is said about the photo rule until Complete Job is tapped without one; then
+        // the banner explains and offers Take Photo (owner, 2026-10-26: no warnings before the
+        // person acts).
+        if (instant && failed)
+          saveFailed(
+            failed,
+            failed === FINISH_PHOTO_MESSAGE
+              ? { label: "Take Photo", onAction: showPhotos }
+              : undefined,
+          );
         after?.(result);
         resolve(result);
       }),
@@ -135,7 +150,7 @@ export function JobStatusActions({
   cancel?: boolean;
 }) {
   // The new status shows at once (owner, 2026-10-22); a failed save puts it back.
-  const { error, run } = useRun({ instant: true });
+  const { error, call } = useRun({ instant: true });
   const shown = useJobStatus(jobId, status);
   const setStatus = useSetJobStatus();
   const [confirm, confirmSheet] = useConfirm();
@@ -166,7 +181,14 @@ export function JobStatusActions({
               )
                 return;
               if (to === "done" && prompt && !(await confirm({ ...prompt, alert: true }))) return;
-              run(changeJobStatus, { job: jobId, to }, () => setStatus(jobId, to));
+              void call(
+                changeJobStatus,
+                { job: jobId, to },
+                () => setStatus(jobId, to),
+                (r) => {
+                  if (to === "done" && !r.error) buzz("jobCompleted");
+                },
+              );
             }}
           >
             {jobActionLabel(shown, to)}
@@ -235,7 +257,7 @@ export function CompleteJobButton({
   /** The last thing left: a one-time scale-in (none with Reduce Motion). */
   ready?: boolean;
 }) {
-  const { pending, error, run } = useRun({ instant: true });
+  const { pending, error, call } = useRun({ instant: true });
   const setStatus = useSetJobStatus();
   const [confirm, confirmSheet] = useConfirm();
   return (
@@ -246,7 +268,14 @@ export function CompleteJobButton({
         disabled={pending}
         onClick={async () => {
           if (prompt && !(await confirm({ ...prompt, alert: true }))) return;
-          run(changeJobStatus, { job: jobId, to: "done" }, () => setStatus(jobId, "done"));
+          void call(
+            changeJobStatus,
+            { job: jobId, to: "done" },
+            () => setStatus(jobId, "done"),
+            (r) => {
+              if (!r.error) buzz("jobCompleted");
+            },
+          );
         }}
       >
         Complete Job
@@ -615,8 +644,7 @@ function ChecklistItem({
   row: ChecklistRow;
   editing: boolean;
 }) {
-  const { error, run } = useRun({ instant: true });
-  const [confirm, confirmSheet] = useConfirm();
+  const { error, run, call } = useRun({ instant: true });
   const saved = currentVerdict(row.result ?? undefined);
   const [shown, show] = useOptimistic(saved);
   // Where only for leak items marked Leaking or Attention.
@@ -628,19 +656,18 @@ function ChecklistItem({
 
   async function choose(value: string) {
     if (value === REMOVE) {
-      const ask = removeItemConfirm(row.label, row.fromPlan === true);
-      if (
-        await confirm({
-          title: ask.title,
-          message: ask.message ?? undefined,
-          confirmLabel: ask.confirm,
-          destructive: true,
-        })
-      )
-        run(removeComponent, { job: jobId, component: row.id });
+      // Removed at once, with Undo for five seconds (owner, 2026-10-26), not asked first.
+      void call(removeComponent, { job: jobId, component: row.id }, undefined, (r) => {
+        if (!r.error)
+          showRemoved(
+            "checklistItem",
+            restoreWith(restoreComponent, { job: jobId, component: row.id }),
+          );
+      });
       return;
     }
     const v = value === "todo" ? null : (value as Verdict);
+    if (v === "ok" && shown !== "ok") buzz("checklistItemDone");
     run(
       setVerdict,
       { job: jobId, component: row.id, result: row.result?.id ?? "", verdict: value },
@@ -661,7 +688,6 @@ function ChecklistItem({
           Remove
         </button>
         <ErrorText error={error} />
-        {confirmSheet}
       </div>
     );
   }
@@ -747,7 +773,6 @@ function ChecklistItem({
           <ErrorText error={error} />
         </div>
       </RowActions>
-      {confirmSheet}
     </>
   );
 }
@@ -794,11 +819,11 @@ function WhereField({
 // ---------------------------------------------------------------------------
 
 /**
- * An iOS list row with Edit and Delete… (gestures.md section 12): it swipes left on touch to
- * show a red Delete…, and touch and hold, right-click, or its "⋯" button opens a menu with
- * Edit and Delete…. Delete always asks first (the caller's `onDelete`). The row's edit sheet
- * has Delete too, so the gesture is never the only way. `inset` is where the separator above
- * the row starts (where the text does).
+ * An iOS list row with Edit and Delete (gestures.md section 12): it swipes left on touch to
+ * show a red Delete, and touch and hold, right-click, or its "⋯" button opens a menu with
+ * Edit and Delete. Delete happens at once, with Undo for five seconds (the caller's
+ * `onDelete`). The row's edit sheet has Delete too, so the gesture is never the only way.
+ * `inset` is where the separator above the row starts (where the text does).
  */
 function SwipeRow({
   children,
@@ -821,7 +846,7 @@ function SwipeRow({
   const menu: MenuEntry[] = [
     onEdit && { label: "Edit", onSelect: onEdit },
     "separator",
-    { label: "Delete…", destructive: true, onSelect: onDelete },
+    { label: "Delete", destructive: true, onSelect: onDelete },
   ];
   return (
     // A row that swipes by itself never swipes to the next job section (owner, 2026-10-20).
@@ -829,7 +854,7 @@ function SwipeRow({
       as="li"
       title={title}
       menu={menu}
-      trailing={[{ label: "Delete…", tone: "red", onSelect: onDelete }]}
+      trailing={[{ label: "Delete", tone: "red", onSelect: onDelete }]}
       disabled={disabled}
       className="overflow-hidden"
       data-no-swipe=""
@@ -916,24 +941,17 @@ export function TestsEditor({
   // "new", a test's id, or null: which sheet is up.
   const [editing, setEditing] = useState<string | null>(null);
   const close = useCallback(() => setEditing(null), []);
-  const { pending, error, run } = useRun();
-  const [confirm, confirmSheet] = useConfirm();
+  const { pending, error, call } = useRun();
   const typeOf = new Map(types.map((t) => [t.id, t]));
   const componentLabel = new Map(components.map((c) => [c.id, c.label]));
   const current = editing && editing !== "new" ? tests.find((t) => t.id === editing) : undefined;
   const currentType = current ? typeOf.get(current.typeId) : undefined;
-  const remove = (t: TestRow) => run(deleteTest, { job: jobId, test: t.id }, close);
-  // Delete… from the row's swipe or menu asks first, as the sheet's Delete Test does.
-  const askRemove = async (t: TestRow, name: string) => {
-    if (
-      await confirm({
-        title: `Delete this ${name.toLowerCase()}?`,
-        confirmLabel: "Delete Test",
-        destructive: true,
-      })
-    )
-      remove(t);
-  };
+  // Deleted at once, from the row's swipe or menu or the sheet's Delete Test, with Undo for
+  // five seconds (owner, 2026-10-26), not asked first.
+  const remove = (t: TestRow) =>
+    void call(deleteTest, { job: jobId, test: t.id }, close, (r) => {
+      if (!r.error) showRemoved("test", restoreWith(restoreTest, { job: jobId, test: t.id }));
+    });
   useNextStep("add-test", () => {
     if (types.length) setEditing("new");
   });
@@ -965,7 +983,7 @@ export function TestsEditor({
                 title={name}
                 disabled={pending}
                 onEdit={type ? () => setEditing(t.id) : undefined}
-                onDelete={() => void askRemove(t, name)}
+                onDelete={() => remove(t)}
               >
                 <button
                   type="button"
@@ -1033,24 +1051,10 @@ export function TestsEditor({
               test={current}
               onDone={close}
             />
-            <SheetDelete
-              label="Delete Test"
-              disabled={pending}
-              onClick={async () => {
-                if (
-                  await confirm({
-                    title: `Delete this ${currentType.name.toLowerCase()}?`,
-                    confirmLabel: "Delete Test",
-                    destructive: true,
-                  })
-                )
-                  remove(current);
-              }}
-            />
+            <SheetDelete label="Delete Test" disabled={pending} onClick={() => remove(current)} />
           </>
         ) : null}
       </Sheet>
-      {confirmSheet}
     </div>
   );
 }
@@ -1222,23 +1226,17 @@ export function FindingsEditor({
   // "new", a finding's id, or null: which sheet is up.
   const [editing, setEditing] = useState<string | null>(null);
   const close = useCallback(() => setEditing(null), []);
-  const { pending, error, run } = useRun();
-  const [confirm, confirmSheet] = useConfirm();
+  const { pending, error, call } = useRun();
   const sev = new Map(severities.map((s) => [s.key, s]));
   const componentLabel = new Map(components.map((c) => [c.id, c.label]));
   const current = editing && editing !== "new" ? findings.find((f) => f.id === editing) : undefined;
-  const remove = (f: FindingRow) => run(deleteFinding, { job: jobId, finding: f.id }, close);
-  // Delete… from the row's swipe or menu asks first, as the sheet's Delete Finding does.
-  const askRemove = async (f: FindingRow) => {
-    if (
-      await confirm({
-        title: `Delete “${f.title}”?`,
-        confirmLabel: "Delete Finding",
-        destructive: true,
-      })
-    )
-      remove(f);
-  };
+  // Deleted at once, from the row's swipe or menu or the sheet's Delete Finding, with Undo for
+  // five seconds (owner, 2026-10-26), not asked first.
+  const remove = (f: FindingRow) =>
+    void call(deleteFinding, { job: jobId, finding: f.id }, close, (r) => {
+      if (!r.error)
+        showRemoved("finding", restoreWith(restoreFinding, { job: jobId, finding: f.id }));
+    });
   useNextStep("add-finding", () => setEditing("new"));
   return (
     <div className="space-y-4">
@@ -1256,7 +1254,7 @@ export function FindingsEditor({
                 title={f.title}
                 disabled={pending}
                 onEdit={() => setEditing(f.id)}
-                onDelete={() => void askRemove(f)}
+                onDelete={() => remove(f)}
               >
                 <button
                   type="button"
@@ -1322,23 +1320,9 @@ export function FindingsEditor({
           />
         ) : null}
         {current ? (
-          <SheetDelete
-            label="Delete Finding"
-            disabled={pending}
-            onClick={async () => {
-              if (
-                await confirm({
-                  title: `Delete “${current.title}”?`,
-                  confirmLabel: "Delete Finding",
-                  destructive: true,
-                })
-              )
-                remove(current);
-            }}
-          />
+          <SheetDelete label="Delete Finding" disabled={pending} onClick={() => remove(current)} />
         ) : null}
       </Sheet>
-      {confirmSheet}
     </div>
   );
 }

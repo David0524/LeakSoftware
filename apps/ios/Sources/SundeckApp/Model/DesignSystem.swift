@@ -321,8 +321,8 @@ public func unreadAccessibilityText(_ count: Int) -> String? {
     return "\(count) unread"
 }
 
-/// How a screen reader reads a section switcher's to-do badge (", 3 to do").
-public func toDoAccessibilityText(_ count: Int) -> String? {
+/// How a screen reader reads a section switcher's badge, what needs attention (", 3 need attention").
+public func attentionAccessibilityText(_ count: Int) -> String? {
     guard count > 0 else { return nil }
-    return "\(count) to do"
+    return needAttentionText(count)
 }

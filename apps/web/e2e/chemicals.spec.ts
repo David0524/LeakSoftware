@@ -139,7 +139,6 @@ test("a tech records what was added, priced when the shop charges, and the repor
     await expect(card.getByTestId("chemicals-today")).toHaveText("$28.75");
 
     // Saved: after a reload it's all still there.
-    await expect(card).toContainText("Saved as you go.");
     await page.reload();
     const again = await openChemicals(page, v.id);
     await expect(again.getByLabel("Free chlorine reading")).toHaveValue("1");

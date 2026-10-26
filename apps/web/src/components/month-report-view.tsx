@@ -4,6 +4,9 @@ import {
   dateFormat,
   formatCents,
   monthName,
+  monthSummary,
+  reportByLine,
+  reportHeroPhoto,
   textOnBrand,
   waterTestRows,
   type ChemicalAddition,
@@ -15,6 +18,7 @@ import type { ReactNode } from "react";
 import { ContactLine } from "./contact-line";
 import { PdfLink } from "./pdf-link";
 import { PHONE_CARD } from "./doc-ui";
+import { ReportLead } from "./report-lead";
 import type { VisitSnapshot } from "./visit-report-view";
 import { cx } from "./ui";
 
@@ -90,9 +94,14 @@ export function MonthReportView({
   );
   const totals = chemicalTotals(added);
   const chemCents = totals.reduce((sum, t) => sum + t.total_cents, 0);
+  // The month opens like a visit's report (owner, 2026-10-26): the newest visit's finished-pool
+  // photo, one line on the month's water tests, and who did the work.
+  const shown = (m: { storage_path: string }) => urls.has(m.storage_path);
+  const heroVisit = s.visits.find((v) => reportHeroPhoto(v.media, shown));
+  const hero = heroVisit ? reportHeroPhoto(heroVisit.media, shown) : null;
   const photos = (v: { media: ReportSnapshot["media"] }) =>
-    v.media.filter((m) => m.kind === "photo" && urls.has(m.storage_path));
-  const photoCount = s.visits.reduce((n, v) => n + photos(v).length, 0);
+    v.media.filter((m) => m.kind === "photo" && shown(m) && m.id !== hero?.id);
+  const photoCount = s.visits.reduce((n, v) => n + photos(v).length, 0) + (hero ? 1 : 0);
   const day = (d: string) =>
     dateFormat("en-US", {
       weekday: "long",
@@ -199,6 +208,20 @@ export function MonthReportView({
           {pdfHref ? <PdfLink href={pdfHref} className="inline-flex" /> : null}
         </div>
       </header>
+
+      <ReportLead
+        testId="month-report-lead"
+        headline={monthSummary(s.visits)}
+        byLine={reportByLine(
+          "maintenance",
+          s.visits.flatMap((v) => [v.job.tech_name, v.job.second_tech_name]),
+        )}
+        photo={
+          hero
+            ? { url: urls.get(hero.storage_path)!, alt: hero.caption ?? "The pool after the visit" }
+            : null
+        }
+      />
 
       <Card>
         <div className="grid grid-cols-3 text-center">

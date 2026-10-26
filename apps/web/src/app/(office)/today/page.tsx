@@ -26,6 +26,7 @@ import {
   techDayProgress,
   lastDoneLine,
   scheduleBounds,
+  endOfDay,
 } from "@leakbook/core";
 import { TodayHeroCard, type HeroJob } from "@/components/today-hero";
 import { TodayDays } from "@/components/today-days";
@@ -62,6 +63,7 @@ import {
   getCompany,
   getJob,
   getPlanCleanings,
+  getDayWrapUp,
   visitCleanings,
   mayMakeJobs,
 } from "@/lib/data";
@@ -117,7 +119,8 @@ export default async function TodayPage({ searchParams }: PageProps<"/today">) {
   // The plan's cleanings on each visit's checklist, with how they stand against their due date
   // (owner, 2026-10-19; 2026-10-20: what Today shows is what the checklist has), and a started
   // job's checklist count for the card, read from its rows: all at once.
-  const [cleanings, onVisits, counts] = await Promise.all([
+  const bounds = scheduleBounds([ctx.today], ctx.timeZone);
+  const [cleanings, onVisits, counts, sentToday] = await Promise.all([
     getPlanCleanings(office, [
       ...new Set(allJobs.map((j) => j.service_plan_id).filter((id): id is string => !!id)),
     ]).catch(() => []),
@@ -134,6 +137,13 @@ export default async function TodayPage({ searchParams }: PageProps<"/today">) {
           return [j.id, detail ? checklistCount(detail) : { done: 0, total: 0 }] as const;
         }),
     ).then((rows) => new Map(rows)),
+    // The end-of-day card's reports and quotes (owner, 2026-10-26).
+    getDayWrapUp(
+      office,
+      allJobs.map((j) => j.id),
+      bounds.from,
+      bounds.to,
+    ).catch(() => ({ reports: [], quotes: [] })),
   ]);
   const dueAt = (j: (typeof allJobs)[number]) => {
     const here = new Set((onVisits.get(j.id) ?? []).map((x) => x.planCleaningId));
@@ -182,6 +192,15 @@ export default async function TodayPage({ searchParams }: PageProps<"/today">) {
       })),
     }));
     const hero = todayHero({ stops, today: ctx.today, timeZone: ctx.timeZone });
+    // Once every stop is done, the card says how the day went (owner, 2026-10-26).
+    const wrapUp =
+      endOfDay({
+        stops: jobs.map((j) => ({ id: j.id, done: stopDone(j, ctx.today) })),
+        reports: sentToday.reports,
+        quotes: sentToday.quotes,
+        today: ctx.today,
+        timeZone: ctx.timeZone,
+      })?.line ?? null;
     // The stop the day is on: the Now row (it follows the day, not the card's browsing).
     const next = jobs.find((j) => j.id === hero?.stopId);
     const heroJob = (j: (typeof jobs)[number]): HeroJob => {
@@ -460,6 +479,7 @@ export default async function TodayPage({ searchParams }: PageProps<"/today">) {
                     jobs={Object.fromEntries(jobs.map((j) => [j.id, heroJob(j)]))}
                     today={ctx.today}
                     timeZone={ctx.timeZone}
+                    wrapUp={wrapUp}
                     mine={mine}
                     onMyWay={{
                       tech: office.user.name ?? tech?.name ?? "your tech",
@@ -528,7 +548,7 @@ export default async function TodayPage({ searchParams }: PageProps<"/today">) {
   };
 
   // Live (owner, 2026-10-22): a stop started or done on a phone shows here within seconds.
-  const live = scheduleBounds([ctx.today], ctx.timeZone);
+  const live = bounds;
   return (
     <MapProviderScope provider={resolveMapProvider()}>
       <LiveRefresh from={live.from} to={live.to} />

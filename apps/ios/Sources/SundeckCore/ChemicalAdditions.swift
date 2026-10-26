@@ -172,8 +172,8 @@ public func chargeChemicalsSettings(_ on: Bool, today: String) -> [String: JSONV
 public enum ChargeChemicalsText {
     public static let label = "Charge for Chemicals"
     public static let on =
-        "Chemicals techs add on visits go on the customer’s monthly invoice at these prices, one line per chemical, and on the visit report with their prices."
-    public static let off = "Chemicals techs add are recorded and shown on visit reports, without prices."
+        "Added chemicals go on the monthly invoice at these prices, and on the visit report."
+    public static let off = "Added chemicals show on visit reports without prices."
     public static let all: [String: String] = ["label": label, "on": on, "off": off]
 }
 

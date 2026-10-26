@@ -246,11 +246,11 @@ private func signature(_ id: String, _ name: String, purpose: String = "inspecti
         #expect(!m.finishesWithSignature)
         #expect(
             m.finishNote
-                == "Hand the phone to the customer: they read the report and sign at the bottom. Signing locks this version; changes after that go out as a new version."
+                == "Hand the phone to the customer to read and sign. Signing locks this version."
         )
-        #expect(m.collapsedText == "Draft version 2 is ready to read, edit, and review with the customer.")
+        #expect(m.collapsedText == "Draft version 2.")
         #expect(ReportTabModel.sendWithoutSignature == "Send Without a Signature")
-        #expect(ReportTabModel.sendWithoutSignatureNote == "Sending saves your edits and locks this version.")
+        #expect(ReportTabModel.sendWithoutSignatureNote == "Sending locks this version.")
     }
 
     @Test func aSignatureNotYetOnAVersionTurnsTheButtonIntoFinishReport() throws {

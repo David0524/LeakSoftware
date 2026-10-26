@@ -190,8 +190,7 @@ export function WrapUpList({
             {reportDraft ? (
               <Card style={styles.review}>
                 <T variant="secondary" muted>
-                  Hand the phone to the customer: they read the report and sign at the bottom.
-                  Signing locks this version; changes after that go out as a new version.
+                  Hand the phone to the customer to read and sign. Signing locks this version.
                 </T>
                 <Button
                   title="Review with Customer"

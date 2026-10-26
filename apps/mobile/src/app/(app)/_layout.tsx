@@ -7,6 +7,7 @@ import { ReportRequestQueue } from "../../features/report/ReportTab";
 import { LiveStopNotification } from "../../features/today/LiveStop";
 import { UsageTracker } from "../../features/usage/UsageTracker";
 import { HeaderButton } from "../../ui/components";
+import { RemovedHost } from "../../ui/RemovedHost";
 import { stackScreenOptions } from "../../ui/navigation";
 import { ios } from "../../ui/theme";
 
@@ -73,6 +74,8 @@ export default function AppLayout() {
           }}
         />
       </Stack>
+      {/* "Photo removed" with Undo, for removals made anywhere in the app (2026-10-26). */}
+      <RemovedHost />
     </>
   );
 }

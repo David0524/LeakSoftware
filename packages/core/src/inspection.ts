@@ -286,7 +286,8 @@ export function nextInstance(type: ComponentType, existing: JobComponent[]): Pla
 /**
  * Removing an item from a job's checklist (owner, 2026-10-19: "You can't remove items from the
  * checklist once added"): any item can go. A scheduled cleaning stays due on its plan, so it
- * goes on the next visit, and the confirm says so.
+ * goes on the next visit, and says so. Since 2026-10-26 nothing asks first: the item goes at
+ * once with Undo, and `message` is the note under the "Item removed" banner.
  */
 export function removeItemConfirm(
   label: string,

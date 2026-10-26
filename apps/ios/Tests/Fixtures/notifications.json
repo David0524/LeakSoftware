@@ -5,33 +5,27 @@
       "result": [
         {
           "key": "text",
-          "label": "Customer texts",
-          "hint": "A customer texts the shop's number."
+          "label": "Customer texts"
         },
         {
           "key": "job",
-          "label": "New and moved jobs",
-          "hint": "A job is given to you, or its time changes."
+          "label": "New and moved jobs"
         },
         {
           "key": "quote",
-          "label": "Accepted quotes",
-          "hint": "A customer accepts a quote."
+          "label": "Accepted quotes"
         },
         {
           "key": "payment",
-          "label": "Payments",
-          "hint": "A customer pays a deposit or an invoice."
+          "label": "Payments"
         },
         {
           "key": "report",
-          "label": "Signed reports",
-          "hint": "A customer signs a report."
+          "label": "Signed reports"
         },
         {
           "key": "opened",
-          "label": "Opened reports",
-          "hint": "A customer opens a report for the first time."
+          "label": "Opened reports"
         },
         {
           "key": "live",

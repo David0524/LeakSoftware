@@ -51,9 +51,7 @@ export function StartQuote({ jobId, another = false }: { jobId: string; another?
     <div className="flex flex-wrap items-center justify-between gap-3">
       <p className="min-w-0 flex-1 basis-48 text-text-muted">
         {/* With a quote already there, never "No quote yet" (owner, 2026-10-22). */}
-        {another
-          ? "Need another price? Start a new quote."
-          : "No quote yet. Start one to price the repairs for these findings."}
+        {another ? "Need another price?" : "No quote yet."}
       </p>
       <Button
         type="button"

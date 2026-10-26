@@ -59,7 +59,6 @@ function TestTypesPage() {
     <>
       <SettingsList
         title="Test Types"
-        subtitle="Tests techs record on the phone. Pressure and bucket tests do the math; set the pass and fail lines your shop uses."
         addLabel="Add Test Type"
         onAdd={() => sheet.open("new")}
         notice={sheet.notice}

@@ -18,7 +18,7 @@ import Testing
 
     @Test func kinds() {
         checkRule(module, "NOTIFICATION_KINDS") { _ in
-            notificationKinds.map { ["key": $0.key.rawValue, "label": $0.label, "hint": $0.hint] }
+            notificationKinds.map { KindRow(key: $0.key.rawValue, label: $0.label, hint: $0.hint) }
         }
         checkRule(module, "SHOP_KINDS") { _ in shopNotificationKinds.map(\.rawValue) }
         checkRule(module, "notificationOn") { c in
@@ -71,4 +71,11 @@ import Testing
                 underway: try c.arg(4))
         }
     }
+}
+
+/// A kind as the fixture lists it: `hint` is left out when a kind has none.
+private struct KindRow: Encodable {
+    var key: String
+    var label: String
+    var hint: String?
 }

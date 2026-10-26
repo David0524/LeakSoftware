@@ -23,6 +23,8 @@ export interface BannerInput {
   detail?: string;
   /** One button at the end, such as Undo. */
   action?: { label: string; onAction: () => void };
+  /** How long it stays, when not the usual (Undo after a removal: five seconds). */
+  ms?: number;
 }
 
 interface Banner extends BannerInput {
@@ -108,7 +110,7 @@ function BannerView({ banner: b, leaving }: { banner: Banner; leaving: boolean }
   const [dy, setDy] = useState(0);
   const start = useRef<{ y: number; moved: boolean } | null>(null);
   const timed = tone !== "error";
-  const ms = b.action ? ACTION_MS : SHOW_MS;
+  const ms = b.ms ?? (b.action ? ACTION_MS : SHOW_MS);
 
   useEffect(() => {
     if (!timed || held || leaving) return;

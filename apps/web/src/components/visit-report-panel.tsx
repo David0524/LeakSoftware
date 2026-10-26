@@ -1,9 +1,10 @@
 "use client";
 
-import { useActionState, useState } from "react";
+import { useActionState, useEffect, useState } from "react";
 import { flushSync } from "react-dom";
 import { REPORT_PHOTO_TEXT, dateFormat } from "@leakbook/core";
 import { sendVisitReportAction } from "@/app/actions/reports";
+import { buzz } from "@/lib/haptics";
 import { orOffline } from "@/lib/offline";
 import { showPhotos } from "./job-tab";
 import { CopyLink } from "./settings-forms";
@@ -45,6 +46,10 @@ export function VisitReportPanel({
   photoNeeded?: boolean;
 }) {
   const [state, action, sending] = useActionState(orOffline(sendVisitReportAction), {});
+  // The report went out: a tap you can feel (owner, 2026-10-26).
+  useEffect(() => {
+    if (state.message && !state.error) buzz("reportSent");
+  }, [state]);
   const [to, setTo] = useState(customerEmail ?? "");
   // Which button sent the form (set on click, so it doesn't depend on the submitter).
   const [channel, setChannel] = useState("email");
@@ -79,9 +84,11 @@ export function VisitReportPanel({
       ) : null}
 
       {photoNeeded ? (
-        // Why it can't be sent yet, and the way to fix it: Photos, where Add Photo is.
+        // Where the send buttons would be: what it needs, and the way to it (Photos, where Add
+        // Photo is). Plain text, not a red bar: nothing is wrong until a send is tried
+        // (owner, 2026-10-26: no warnings before the person acts).
         <div className="space-y-3" data-testid="report-photo-needed">
-          <Notice tone="error">{REPORT_PHOTO_TEXT.blocked}</Notice>
+          <p className="text-[0.9375rem] text-text-muted">{REPORT_PHOTO_TEXT.blocked}</p>
           <Button type="button" onClick={showPhotos}>
             {REPORT_PHOTO_TEXT.addPhoto}
           </Button>

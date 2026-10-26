@@ -18,6 +18,8 @@
         var undoable = false
         /// What Undo does, for VoiceOver (Plan Week's by default).
         var undoHint: String? = nil
+        /// How long it stays when not the usual (Undo after a removal: five seconds).
+        var holdSeconds: Double? = nil
 
         var symbol: String { kind == .success ? "checkmark.circle.fill" : "exclamationmark.triangle.fill" }
 
@@ -29,11 +31,11 @@
             }
         }
 
-        /// How long it stays: 4 seconds, 8 with Undo, longer with VoiceOver; errors until dismissed
+        /// How long it stays: 4 seconds, 8 with Undo (5 after a removal), longer with VoiceOver; errors until dismissed
         /// (feedback.md: people need to know when something didn't happen).
         @MainActor var seconds: Double? {
             guard kind != .error else { return nil }
-            let base: Double = undoable ? 8 : 4
+            let base: Double = holdSeconds ?? (undoable ? 8 : 4)
             return UIAccessibility.isVoiceOverRunning ? base * 2.5 : base
         }
 

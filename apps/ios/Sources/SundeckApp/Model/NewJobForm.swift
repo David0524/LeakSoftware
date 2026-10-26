@@ -106,8 +106,13 @@ public final class NewJobForm {
     public var jobType: JobType
     public var mode: Mode = .new
     public private(set) var customerId: String?
-    /// One of the chosen customer's properties, or nil for another address.
-    public var propertyId: String?
+    /// One of the chosen customer's properties, or nil for another address. Picking a pool fills in
+    /// its usual tech and start time when most of its last jobs share them (`applyUsual`).
+    public var propertyId: String? {
+        didSet { if propertyId != oldValue { applyUsual() } }
+    }
+    /// "Usually Marco at 9:00 AM.", under Suggest Times, after the usual tech and time were filled in.
+    public private(set) var usualNote = ""
     /// Name, phone, email, address, and schedule as typed. The date starts on today and the
     /// time on 9:00 AM, as the website's Start field does.
     public var input = NewJobInput()
@@ -426,6 +431,36 @@ public final class NewJobForm {
         customerId = id
         let theirs = properties.filter { $0["customer_id"]?.string == id }
         propertyId = theirs.count == 1 ? theirs[0].id : nil
+    }
+
+    /// The pool's usual tech and start time (owner, 2026-10-26: "pre-fill what the app already
+    /// knows"): the tech and the time most of its last scheduled jobs share (core `usualVisit`),
+    /// put in Tech and Start. Only when it's obvious, and a tech who books only for themselves
+    /// keeps their own name. Website components/new-job-form.tsx.
+    private func applyUsual() {
+        usualNote = ""
+        guard mode == .existing, let propertyId else { return }
+        let jobs = rows("job")
+            .filter {
+                $0["property_id"]?.string == propertyId && $0["deleted_at"]?.string == nil
+                    && $0["status"]?.string != "canceled"
+            }
+            .map {
+                HintVisit(assignedUserId: $0["assigned_user_id"]?.string, scheduledStart: $0["scheduled_start"]?.string)
+            }
+        guard let usual = try? usualVisit(jobs, timeZone: company.timeZone) else { return }
+        if let time = usual.time {
+            input.scheduleTime = time
+            plan.time = time
+        }
+        var who: String?
+        if let tech = usual.techId, seesAll, team.contains(where: { $0.id == tech }) {
+            techId = tech
+            who = name(tech)
+        }
+        let at = usual.time.map { minutesLabel(clockToMinutes($0)) }
+        let said = [who, at].compactMap { $0 }.joined(separator: " at ")
+        usualNote = said.isEmpty ? "" : "Usually \(said)."
     }
 
     /// Back to no customer picked.

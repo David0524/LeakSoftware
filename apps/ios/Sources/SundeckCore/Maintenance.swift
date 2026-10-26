@@ -464,21 +464,18 @@ public let visitReportTimings: [VisitReportTiming] = [.each, .monthly, .off]
 public enum VisitReportTimingText {
     public static let title = "Send Visit Reports"
     public static let automatic = "Send Automatically"
-    public static let automaticOn =
-        "Each visit’s report goes to the customer when the tech completes the visit, by email (or a company text when there’s no email)."
-    public static let automaticOff = "Techs send it with Send Visit Report."
+    public static let automaticOn = "Sent when the tech completes the visit, by email or text."
     public static let monthlyWhat = "One report a month"
     public static let monthlyWhatDetail =
         "Every visit that month: readings, chemicals added, what was done, and photos."
     public static let monthlyWhen = "Sent with the monthly invoice"
     public static let monthlyWhenDetail = "One email or text with both links, when you send the month’s invoice."
-    public static let monthlyFooter =
-        "Customers with no invoice that month get the report on its own on the 1st. Techs can still send one visit’s report with Send Visit Report."
+    public static let monthlyFooter = "Customers with no invoice that month get the report on the 1st."
     public static let off = "No visit reports."
 
     /// Keyed as `VISIT_REPORT_TEXT`.
     public static let all: [String: String] = [
-        "title": title, "automatic": automatic, "automaticOn": automaticOn, "automaticOff": automaticOff,
+        "title": title, "automatic": automatic, "automaticOn": automaticOn,
         "monthlyWhat": monthlyWhat, "monthlyWhatDetail": monthlyWhatDetail, "monthlyWhen": monthlyWhen,
         "monthlyWhenDetail": monthlyWhenDetail, "monthlyFooter": monthlyFooter, "off": off,
     ]

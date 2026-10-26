@@ -12,6 +12,8 @@ import {
   POOL_TYPE_LABELS,
   SIGNATURE_PURPOSE_LABELS,
   checklistTally,
+  checklistTallyText,
+  inspectionTallyText,
   checklistReady,
   jobReschedulable,
   mapStatus,
@@ -46,6 +48,10 @@ import {
   jobHasChecklist,
   writeDraftIntro,
   readingSummary,
+  readingHints,
+  lastOtherReading,
+  lastVisitNote,
+  usualChemicalIds,
   chargesChemicals,
   monthName,
   jobLock,
@@ -89,6 +95,7 @@ import {
   auditFor,
   getChemicalReadings,
   getVisitChemicals,
+  getPoolHistory,
   getCompany,
   getInvoices,
   getJob,
@@ -491,7 +498,7 @@ export default async function JobPage({ params, searchParams }: PageProps<"/jobs
                 {
                   id: "checklist",
                   label: "Checklist",
-                  badge: inspection ? inspection.toDo : tally.pending,
+                  badge: inspection ? inspection.attention : tally.attention,
                   content: (
                     <section aria-labelledby="checklist">
                       {/* Chemical first, at the top of the checklist (owner, 2026-10-19). */}
@@ -511,27 +518,9 @@ export default async function JobPage({ params, searchParams }: PageProps<"/jobs
                       <p className="mb-3 text-text-muted">
                         {total === 0
                           ? "No checklist yet."
-                          : (inspection
-                              ? [
-                                  `${inspection.answered} of ${inspection.total} answered`,
-                                  `${inspection.attention} need attention`,
-                                  `${inspection.leaking} leaking`,
-                                ]
-                              : job.type === "maintenance"
-                                ? [
-                                    `${tally.pass} done`,
-                                    `${tally.attention} need attention`,
-                                    `${tally.notApplicable} skipped`,
-                                    `${tally.pending} to do`,
-                                  ]
-                                : [
-                                    `${tally.pass} not leaking`,
-                                    `${tally.attention} attention`,
-                                    `${tally.leaking} leaking`,
-                                    `${tally.notApplicable} not applicable`,
-                                    `${tally.pending} to do`,
-                                  ]
-                            ).join(" · ")}
+                          : inspection
+                            ? inspectionTallyText(inspection)
+                            : checklistTallyText(tally, job.type === "maintenance")}
                       </p>
                       {detail.components.length > 0 ? (
                         <Checklist detail={detail} />
@@ -1028,8 +1017,7 @@ function SignStep({
       {draftId ? (
         <div className="card p-5">
           <p className="text-[0.9375rem] text-text-muted">
-            Hand the phone to the customer: they read the report and sign at the bottom. Signing
-            locks this version; changes after that go out as a new version.
+            Hand the phone to the customer to read and sign. Signing locks this version.
           </p>
           <Link
             href={`/sign-off/${draftId}`}
@@ -1415,13 +1403,14 @@ async function Chemical({ detail, tz }: { detail: JobDetail; tz: string }) {
   const office = await getOffice();
   const job = detail.job;
   const property = job.property!;
-  const [readings, visit, company] = await Promise.all([
-    getChemicalReadings(office, property.id, 2).catch(() => []),
+  const [readings, visit, company, history] = await Promise.all([
+    getChemicalReadings(office, property.id, 8).catch(() => []),
     getVisitChemicals(office, job.id).catch(() => null),
     getCompany(office),
+    getPoolHistory(office, property.id, job.id).catch(() => ({ additions: [], jobs: [] })),
   ]);
   const own = visit?.reading ?? null;
-  const last = readings.find((r) => r.job_id !== job.id);
+  const last = lastOtherReading(readings, job.id);
   const visitDay = (job as { plan_date?: string | null }).plan_date;
   const day = visitDay ?? job.scheduled_start ?? job.completed_at ?? new Date().toISOString();
   return (
@@ -1442,6 +1431,16 @@ async function Chemical({ detail, tz }: { detail: JobDetail; tz: string }) {
       month={monthName(day, tz)}
       locked={visit?.locked ?? []}
       startOpen={!!own || !!visit?.additions.length}
+      // What the app already knows (owner, 2026-10-26): the pool's last readings as hints, its
+      // usual chemicals first in Add Chemical, and last visit's notes.
+      hints={readingHints(last)}
+      usualItems={usualChemicalIds(history.additions)}
+      lastNote={lastVisitNote({
+        jobId: job.id,
+        jobs: history.jobs,
+        readings,
+        timeZone: tz,
+      })}
     />
   );
 }

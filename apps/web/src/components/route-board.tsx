@@ -1369,9 +1369,7 @@ function DayColumn({
           under it takes a drop too. */}
       <div ref={setNodeRef} className="mt-3 min-h-16 flex-1">
         {stops.length === 0 ? (
-          <p className="card p-4 text-center text-text-muted">
-            {c.open ? "Nothing scheduled. Drop a job here." : "Nothing scheduled."}
-          </p>
+          <p className="card p-4 text-center text-text-muted">Nothing scheduled.</p>
         ) : (
           <StopBlock column={c} stops={stops} />
         )}
@@ -2541,9 +2539,7 @@ function Tray({
       />
       <div id={listId} hidden={!open}>
         {jobs.length === 0 ? (
-          <p className="mt-1 text-[0.9375rem] text-text-muted">
-            Every job has a time. Drag a job here to take it off the schedule.
-          </p>
+          <p className="mt-1 text-[0.9375rem] text-text-muted">Every job has a time.</p>
         ) : (
           <SortableContext id={TRAY} items={jobs.map((j) => j.id)} strategy={rectSortingStrategy}>
             {/* One row that scrolls sideways (the next card peeks in), so a long list doesn't

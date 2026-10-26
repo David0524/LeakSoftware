@@ -12,11 +12,7 @@ export default async function ImportPage() {
   const company = await getCompany(await getOffice());
   return (
     <>
-      <PageHeader
-        back={{ href: "/settings", label: "Settings" }}
-        title="Import Customers"
-        subtitle="Bring your customers over from a spreadsheet or the software you use now."
-      />
+      <PageHeader back={{ href: "/settings", label: "Settings" }} title="Import Customers" />
       <ImportWizard services={companyServices(company.settings)} />
     </>
   );

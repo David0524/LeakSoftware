@@ -7,7 +7,6 @@ import {
   checklistSectionSummary,
   componentApplies,
   markRemainingLabel,
-  removeItemConfirm,
   verdictIcon,
   type ChecklistSection,
   type ComponentType,
@@ -19,7 +18,6 @@ import {
   addComponent,
   checklistJobType,
   createChecklist,
-  removeComponent,
   saveChecklistResult,
   saveWhere,
   useInspectionConfig,
@@ -28,10 +26,10 @@ import {
 import { useJobMedia } from "../../data/media";
 import { useSession } from "../../state/session";
 import { Button, T } from "../../ui/components";
-import { confirmDestructive } from "../../ui/confirm";
-import { haptics } from "../../ui/haptics";
+import { haptic, haptics } from "../../ui/haptics";
 import { Select } from "../../ui/Select";
 import { useNoSwipe } from "../../ui/SwipeNav";
+import { removeChecklistItem } from "./remove";
 import { checklistRowActions } from "../../lib/rowActions";
 import { rowGestures, useRowMenu, type RowMenu } from "../../ui/RowMenu";
 import { SwipeActions } from "../../ui/SwipeRow";
@@ -396,15 +394,10 @@ function ChecklistItem({
       ...(v === null || v === "ok" || v === "na" ? { location_text: null } : {}),
     });
   }
+  // Removed at once, with Undo for five seconds (owner, 2026-10-26), not asked first. A
+  // scheduled cleaning stays due on its plan, so it goes on the next visit.
   function remove() {
-    // A scheduled cleaning stays due on its plan, so it goes on the next visit.
-    const ask = removeItemConfirm(component.label, !!component.plan_cleaning_id);
-    confirmDestructive({
-      title: ask.title,
-      message: ask.message ?? undefined,
-      confirm: ask.confirm,
-      onConfirm: () => removeComponent(services.sync, job.company_id, component, result),
-    });
+    removeChecklistItem(services.sync, job.company_id, component, result);
   }
 
   const photoText = photos ? `${photos} photo${photos === 1 ? "" : "s"}` : null;
@@ -435,8 +428,10 @@ function ChecklistItem({
   // and Not Done (gestures spec section 12). The answers under the name stay the visible way.
   const actions = checklistRowActions(options, verdict);
   const answer = (id: string) => {
-    haptics.selection();
-    choose(id === "clear" ? null : (id.slice("answer:".length) as Verdict));
+    const v = id === "clear" ? null : (id.slice("answer:".length) as Verdict);
+    if (v === "ok" && verdict !== "ok") haptic("checklistItemDone");
+    else haptics.selection();
+    choose(v);
   };
   const g = rowGestures(actions, answer, () => menu.open(component.label, actions.menu, answer));
 
@@ -469,6 +464,7 @@ function ChecklistItem({
             label: o.label,
             icon: verdictIcon(itemType.answer, o.value),
             chosen: verdict === o.value,
+            done: o.value === "ok",
             onPress: () => choose(verdict === o.value ? null : o.value),
           }))}
         />

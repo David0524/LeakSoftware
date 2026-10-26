@@ -1,6 +1,9 @@
 import {
   CHECKLIST_SECTION_LABELS,
   checklistSectionSummary,
+  checklistTallyText,
+  inspectionTallyText,
+  needAttentionText,
   INSPECTION_SECTIONS,
   NOT_PRESENT_LABEL,
   choiceOptions,
@@ -1614,6 +1617,42 @@ export const inspection: ModuleCases = {
       [{ answered: 5, total: 5, attention: 0, leaking: 3 }],
       [{ answered: 5, total: 5, attention: 2, leaking: 1 }],
       [{ answered: 6, total: 5, attention: 0, leaking: 0 }],
+    ],
+  ),
+  needAttentionText: rule((n: number) => needAttentionText(n), [[0], [1], [2], [12]]),
+  inspectionTallyText: rule(
+    (p: { answered: number; total: number; attention: number; leaking: number }) =>
+      inspectionTallyText(p),
+    [
+      [{ answered: 1, total: 133, attention: 0, leaking: 0 }],
+      [{ answered: 0, total: 0, attention: 0, leaking: 0 }],
+      [{ answered: 12, total: 49, attention: 1, leaking: 0 }],
+      [{ answered: 5, total: 5, attention: 2, leaking: 0 }],
+      [{ answered: 5, total: 5, attention: 0, leaking: 3 }],
+      [{ answered: 5, total: 5, attention: 2, leaking: 1 }],
+    ],
+  ),
+  checklistTallyText: rule(
+    (
+      t: {
+        pass: number;
+        attention: number;
+        leaking: number;
+        notApplicable: number;
+        pending: number;
+      },
+      maintenance: boolean,
+      pending?: boolean,
+    ) => checklistTallyText(t, maintenance, pending),
+    [
+      [{ pass: 3, attention: 0, leaking: 0, notApplicable: 0, pending: 5 }, true],
+      [{ pass: 3, attention: 0, leaking: 0, notApplicable: 0, pending: 5 }, true, false],
+      [{ pass: 3, attention: 2, leaking: 0, notApplicable: 1, pending: 5 }, true],
+      [{ pass: 1, attention: 1, leaking: 0, notApplicable: 0, pending: 0 }, true],
+      [{ pass: 3, attention: 0, leaking: 1, notApplicable: 0, pending: 5 }, false],
+      [{ pass: 3, attention: 2, leaking: 1, notApplicable: 2, pending: 5 }, false],
+      [{ pass: 3, attention: 2, leaking: 1, notApplicable: 2, pending: 5 }, false, false],
+      [{ pass: 0, attention: 0, leaking: 0, notApplicable: 0, pending: 0 }, false],
     ],
   ),
   intakeQuestionsFor: rule(

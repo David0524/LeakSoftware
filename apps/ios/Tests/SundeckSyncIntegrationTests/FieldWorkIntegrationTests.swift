@@ -137,9 +137,9 @@ struct FieldWorkIntegrationTests {
             a.sync, companyId: co.id, jobId: job, type: type("light"),
             existing: JobInspection(a.sync.store, jobId: job).components)
         var inspection = JobInspection(a.sync.store, jobId: job)
-        try InspectionWrites.removeComponent(
-            a.sync, companyId: co.id, component: inspection.componentById[extra]!,
-            result: inspection.resultByComponent[extra])
+        try RemovalWrites.remove(
+            a.sync, companyId: co.id,
+            rows: RemovalRow.checklistItem(inspection.componentById[extra]!, inspection.resultByComponent[extra]))
 
         inspection = JobInspection(a.sync.store, jobId: job)
         let of = { (key: String) in

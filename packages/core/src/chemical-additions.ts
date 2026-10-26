@@ -86,8 +86,8 @@ export function chargeChemicalsSettings(on: boolean, today: string): Record<stri
 
 export const CHARGE_CHEMICALS_TEXT = {
   label: "Charge for Chemicals",
-  on: "Chemicals techs add on visits go on the customer’s monthly invoice at these prices, one line per chemical, and on the visit report with their prices.",
-  off: "Chemicals techs add are recorded and shown on visit reports, without prices.",
+  on: "Added chemicals go on the monthly invoice at these prices, and on the visit report.",
+  off: "Added chemicals show on visit reports without prices.",
 } as const;
 
 // ---------------------------------------------------------------------------

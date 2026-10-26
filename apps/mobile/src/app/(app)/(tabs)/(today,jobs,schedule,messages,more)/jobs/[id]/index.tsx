@@ -32,6 +32,8 @@ import {
   type PriceBookItem,
   COMPLETE_READY_LINE,
   checklistReady,
+  checklistTallyText,
+  inspectionTallyText,
   visitReportBar,
   visitReportMode,
 } from "@leakbook/core";
@@ -75,6 +77,7 @@ import {
 import { BAR_HEIGHT, barState, setBarStill } from "../../../../../../ui/Bar";
 import { confirmDestructive } from "../../../../../../ui/confirm";
 import { Glass } from "../../../../../../ui/Glass";
+import { haptic } from "../../../../../../ui/haptics";
 import {
   CompleteBlockedNotice,
   confirmCompleteVisit,
@@ -274,7 +277,13 @@ export default function JobDetail() {
     // A repair job has no checklist (owner, 2026-10-22: "Remove the checklist entirely for
     // repair jobs."); rows an older one has are kept, not shown.
     ...(jobHasChecklist(job.type)
-      ? [{ value: "checklist" as const, label: "Checklist", badge: progress.toDo || undefined }]
+      ? [
+          {
+            value: "checklist" as const,
+            label: "Checklist",
+            badge: progress.attention || undefined,
+          },
+        ]
       : []),
     ...(maintenance ? [] : [{ value: "findings" as const, label: "Findings" }]),
     { value: "photos", label: "Photos" },
@@ -294,7 +303,10 @@ export default function JobDetail() {
       if (to === "in_progress" && !job!.started_at) values.started_at = new Date().toISOString();
       update(values);
       // Automatic visit reports: sent once the completed visit reaches the server.
-      if (to === "done") queueAutoVisitReport(job!, company.settings);
+      if (to === "done") {
+        queueAutoVisitReport(job!, company.settings);
+        haptic("jobCompleted");
+      }
     };
     // Completing asks first when it sends the visit report (owner, 2026-10-20).
     if (to === "done") return confirmCompleteVisit(job!, customer?.name, company.settings, apply);
@@ -540,10 +552,8 @@ export default function JobDetail() {
                     {insp.components.length === 0
                       ? "No checklist yet."
                       : inspection
-                        ? `${inspection.answered} of ${inspection.total} answered · ${inspection.attention} need attention · ${inspection.leaking} leaking`
-                        : maintenance
-                          ? `${tally.pass} done · ${tally.attention} need attention · ${tally.notApplicable} skipped · ${tally.pending} to do`
-                          : `${tally.pass} not leaking · ${tally.attention} attention · ${tally.leaking} leaking · ${tally.notApplicable} not applicable · ${tally.pending} to do`}
+                        ? inspectionTallyText(inspection)
+                        : checklistTallyText(tally, maintenance)}
                   </T>
                 </View>
                 <ChecklistTab job={job} property={property} />

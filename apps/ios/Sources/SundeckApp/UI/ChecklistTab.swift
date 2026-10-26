@@ -14,6 +14,8 @@
         @Environment(AppEnvironment.self) private var app
         @State private var adding = ""
         @State private var saveError: String?
+        /// Bumped when an item is marked done, for its tap (core `HapticMoment.checklistItemDone`).
+        @State private var doneTicks = 0
         /// Edit, as in an iOS list: every item gets Remove (owner, 2026-10-19).
         @State private var editing: Bool
         /// A pool inspection question's camera button: photos attached to that question.
@@ -95,6 +97,7 @@
                     }
                 }
                 .captureFlow(capture)
+                .haptic(.checklistItemDone, trigger: doneTicks)
                 .alert(
                     "Couldn’t Save",
                     isPresented: Binding(get: { saveError != nil }, set: { if !$0 { saveError = nil } })
@@ -156,6 +159,7 @@
                 try InspectionWrites.setVerdict(
                     sync, companyId: company.id, jobId: job.id, componentId: item.component.id, existing: item.result,
                     verdict: verdict, userId: session.user?.id)
+                if verdict == .ok && item.verdict != .ok { doneTicks += 1 }
             }
         }
 
@@ -189,10 +193,13 @@
 
         private func remove(_ item: ChecklistItemRow) { remove(item.component, item.result) }
 
+        /// Removed at once, with "Item removed" and Undo for five seconds (owner, 2026-10-26), not
+        /// asked first. A scheduled cleaning stays due on its plan, so it goes on the next visit,
+        /// and the banner says so.
         private func remove(_ component: JobComponent, _ result: ChecklistItemResult?) {
             guard let company = session.company else { return }
             run {
-                try InspectionWrites.removeComponent(sync, companyId: company.id, component: component, result: result)
+                try app.removals.removeChecklistItem(component, result: result, sync: sync, companyId: company.id)
             }
         }
 
@@ -331,12 +338,10 @@
         var remove: () -> Void
         @Environment(\.openRoute) private var openRoute
         @State private var draft: String?
-        @State private var confirmRemove = false
         @State private var savedWhere = false
         @FocusState private var focused: Bool
 
         var body: some View {
-            let ask = item.removeConfirm
             Group {
                 if editing {
                     editRow
@@ -347,7 +352,7 @@
                     SwipeActionsRow(
                         actions: [
                             SwipeAction(title: "Remove", systemImage: "minus.circle", tint: Color.fail) {
-                                confirmRemove = true
+                                remove()
                             }
                         ],
                         leading: doneAction.map { [$0] } ?? [], menuTitle: item.component.label,
@@ -356,11 +361,6 @@
                         verdictRow
                     }
                 }
-            }
-            .confirmationDialog(ask.title, isPresented: $confirmRemove, titleVisibility: .visible) {
-                Button(ask.confirm, role: .destructive, action: remove)
-            } message: {
-                if let message = ask.message { Text(message) }
             }
         }
 
@@ -394,7 +394,7 @@
                     .foregroundStyle(Color.text)
                     .multilineTextAlignment(.leading)
                     .frame(maxWidth: .infinity, minHeight: minTarget, alignment: .leading)
-                Button("Remove", role: .destructive) { confirmRemove = true }
+                Button("Remove", role: .destructive) { remove() }
                     .buttonStyle(.danger)
                     .accessibilityLabel("Remove \(item.component.label)")
             }

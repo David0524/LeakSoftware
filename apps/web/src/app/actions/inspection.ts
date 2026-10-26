@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { after } from "next/server";
 import {
+  RESTORE_ROW,
   isDiagramShape,
   calculate,
   nextInstance,
@@ -412,6 +413,20 @@ export async function removeComponent(_: FormState, form: FormData): Promise<For
   return done(text(form, "job"), "Removed.");
 }
 
+/** Undo for Remove: the item and its checklist row are live again, as they were. */
+export async function restoreComponent(_: FormState, form: FormData): Promise<FormState> {
+  const { db } = await ctx();
+  const id = text(form, "component");
+  const { error: rowError } = await db
+    .from("checklist_item_result")
+    .update(RESTORE_ROW)
+    .eq("job_component_id", id);
+  if (rowError) return { error: rowError.message };
+  const { error } = await db.from("job_component").update(RESTORE_ROW).eq("id", id);
+  if (error) return { error: error.message };
+  return done(text(form, "job"), "Restored.");
+}
+
 // ---------------------------------------------------------------------------
 // Tests
 // ---------------------------------------------------------------------------
@@ -472,6 +487,14 @@ export async function deleteTest(_: FormState, form: FormData): Promise<FormStat
   return done(text(form, "job"), "Test deleted.");
 }
 
+/** Undo for Delete Test. */
+export async function restoreTest(_: FormState, form: FormData): Promise<FormState> {
+  const { db } = await ctx();
+  const { error } = await db.from("test_result").update(RESTORE_ROW).eq("id", text(form, "test"));
+  if (error) return { error: error.message };
+  return done(text(form, "job"), "Restored.");
+}
+
 // ---------------------------------------------------------------------------
 // Findings
 // ---------------------------------------------------------------------------
@@ -522,6 +545,14 @@ export async function deleteFinding(_: FormState, form: FormData): Promise<FormS
     .eq("id", text(form, "finding"));
   if (error) return { error: error.message };
   return done(text(form, "job"), "Finding deleted.");
+}
+
+/** Undo for Delete Finding. */
+export async function restoreFinding(_: FormState, form: FormData): Promise<FormState> {
+  const { db } = await ctx();
+  const { error } = await db.from("finding").update(RESTORE_ROW).eq("id", text(form, "finding"));
+  if (error) return { error: error.message };
+  return done(text(form, "job"), "Restored.");
 }
 
 /** The pool's shape, for the diagram findings are pinned on (the job page's Findings part). */

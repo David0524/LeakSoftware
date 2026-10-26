@@ -20,6 +20,7 @@
         var target: ChemicalTarget
         @Environment(SyncService.self) private var sync
         @Environment(Session.self) private var session
+        @Environment(AppEnvironment.self) private var app
         @State private var open: Bool
         @State private var form = ChemicalForm()
         @State private var saved = ChemicalForm()
@@ -28,7 +29,14 @@
         @State private var editing: AddedChemicalTarget?
         @State private var picking = false
         @State private var saveError: String?
+        /// Bumped when a chemical is marked added (one by one, or Mark All Added), for their taps
+        /// (core `HapticMoment.chemicalAdded` and `.allChemicalsAdded`).
+        @State private var addedOne = 0
+        @State private var addedAll = 0
         @State private var stored = Stored()
+        /// The pool's earlier visits, read once when the card appears (owner, 2026-10-26): the
+        /// readings' last values as hints, the usual chemicals, last visit's notes.
+        @State private var history = PoolHistory()
         /// The field with the keyboard, for the keyboard bar's Previous, Next and Done.
         @FocusState private var focus: String?
         @Environment(\.accessibilityReduceMotion) private var reduceMotion
@@ -124,6 +132,11 @@
             .onAppear {
                 guard !started else { return }
                 load()
+                if let company = session.company {
+                    history = poolHistory(
+                        sync.store, companyId: company.id, propertyId: target.propertyId, jobId: target.jobId,
+                        timeZone: company.timeZone)
+                }
                 started = true
                 let pool = chemicalPool(sync.store, target)
                 let remembered = sync.kv.getJSON(KVKey.chemicalGoals, as: [String: String].self) ?? [:]
@@ -148,13 +161,15 @@
             }
             .onChange(of: focus) { flush() }
             .onDisappear { flush() }
+            .haptic(.chemicalAdded, trigger: addedOne)
+            .haptic(.allChemicalsAdded, trigger: addedAll)
             .sheet(item: $editing) { t in
                 AddedChemicalSheet(
                     target: t, items: items, charges: charges, locked: locked.contains(t.id),
-                    onSave: { save(t, $0) }, onRemove: { remove($0) })
+                    onSave: { save(t, $0) }, onRemove: { remove($0, undoable: true) })
             }
             .sheet(isPresented: $picking) {
-                AddChemicalSheet(items: items, charges: charges) { draft, supplied, note in
+                AddChemicalSheet(items: items, usual: history.usual, charges: charges) { draft, supplied, note in
                     add([draft], added: added, supplied: supplied, note: note)
                 }
             }
@@ -219,12 +234,9 @@
                     )
                     .padding(.vertical, 12)
                 }
-                Text("Numbers are the order to add them. Aim For starts at the recommended level.")
-                    .textRole(.secondary)
-                    .foregroundStyle(Color.textMuted)
                 if let problem { FieldHint(text: problem, error: true).padding(.top, 4) }
                 if !unadded.isEmpty {
-                    Button("Mark All Added") { add(unadded, added: added) }
+                    Button("Mark All Added") { add(unadded, added: added, all: true) }
                         .buttonStyle(.secondary(fullWidth: true, size: .field))
                         .padding(.top, 12)
                 }
@@ -260,6 +272,17 @@
                     multiline: true, chain: $focus, chainKey: "notes"
                 )
                 .padding(.top, 16)
+                // Last visit's notes, where this visit's go (owner, 2026-10-26).
+                if let note = history.note {
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text(note.label).font(.role(.secondary).weight(.semibold))
+                        Text(note.text).textRole(.secondary).lineLimit(3)
+                    }
+                    .foregroundStyle(Color.textMuted)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .padding(.top, 6)
+                    .accessibilityElement(children: .combine)
+                }
                 if charges {
                     Hairline().padding(.top, 20)
                     rowLayout(spacing: 8) {
@@ -273,14 +296,12 @@
                     .frame(minHeight: minTarget)
                     .accessibilityElement(children: .combine)
                 }
-                Text(
-                    charges
-                        ? "Saved as you go. Billed on \(stored.firstName)’s \(stored.month) invoice."
-                        : "Saved as you go."
-                )
-                .textRole(.secondary)
-                .foregroundStyle(Color.textMuted)
-                .padding(.top, 4)
+                if charges {
+                    Text("Billed on \(stored.firstName)’s \(stored.month) invoice.")
+                        .textRole(.secondary)
+                        .foregroundStyle(Color.textMuted)
+                        .padding(.top, 4)
+                }
             }
             // Tapping beside the fields puts the keyboard away.
             .background {
@@ -305,10 +326,12 @@
                 .accessibilityHidden(true)
         }
 
-        private func cell(_ label: String, _ text: Binding<String>, key: String, placeholder: String = "")
-            -> some View
-        {
-            TextField("", text: text, prompt: Text(placeholder).foregroundStyle(Color.placeholder))
+        private func cell(
+            _ label: String, _ text: Binding<String>, key: String, placeholder: String = "", hint: Bool = false
+        ) -> some View {
+            // A hint is a reading's last value ("Last 7.6"): smaller, so it fits the box.
+            let prompt = Text(placeholder).font(hint ? .system(size: 13) : nil).foregroundStyle(Color.placeholder)
+            return TextField("", text: text, prompt: prompt)
                 .keyboardType(.decimalPad)
                 .multilineTextAlignment(.trailing)
                 .monospacedDigit()
@@ -354,7 +377,9 @@
                             + Text(word).fontWeight(status == nil ? .regular : .semibold).foregroundStyle(tone))
                             .textRole(.bodyMedium)
                             .accessibilityElement(children: .combine)
-                        labeledCell("Reading", "\(key.label) reading", reading, key: "reading-\(key.rawValue)")
+                        labeledCell(
+                            "Reading", "\(key.label) reading", reading, key: "reading-\(key.rawValue)",
+                            placeholder: history.hints[key.rawValue] ?? "")
                         labeledCell(
                             "Aim For", aimLabel, goal, key: "goal-\(key.rawValue)", placeholder: aimPlaceholder)
                     }
@@ -368,7 +393,9 @@
                         }
                         .frame(maxWidth: .infinity, alignment: .leading)
                         .accessibilityElement(children: .combine)
-                        cell("\(key.label) reading", reading, key: "reading-\(key.rawValue)")
+                        cell(
+                            "\(key.label) reading", reading, key: "reading-\(key.rawValue)",
+                            placeholder: history.hints[key.rawValue] ?? "", hint: true)
                         cell(aimLabel, goal, key: "goal-\(key.rawValue)", placeholder: aimPlaceholder)
                     }
                 }
@@ -582,13 +609,15 @@
         }
 
         private func add(
-            _ drafts: [AdditionDraft], added: [ChemicalAddition], supplied: Bool = false, note: String? = nil
+            _ drafts: [AdditionDraft], added: [ChemicalAddition], supplied: Bool = false, note: String? = nil,
+            all: Bool = false
         ) {
             guard let company = session.company, let jobId = target.jobId else { return }
             do {
                 try VisitChemicalWrites.add(
                     sync, companyId: company.id, jobId: jobId, propertyId: target.propertyId, drafts,
                     customerSupplied: supplied, note: note, firstSort: added.count)
+                if all { addedAll += 1 } else { addedOne += 1 }
             } catch {
                 saveError = String(describing: error)
             }
@@ -614,8 +643,18 @@
             }
         }
 
-        private func remove(_ a: ChemicalAddition) {
-            do { try VisitChemicalWrites.remove(sync, id: a.id) } catch { saveError = String(describing: error) }
+        /// Tapping an added chemical's check unmarks it, and tapping again marks it added: no
+        /// banner. The sheet's Remove Chemical (`undoable`) takes it off at once, with "Chemical
+        /// removed" and Undo for five seconds (owner, 2026-10-26), not asked first.
+        private func remove(_ a: ChemicalAddition, undoable: Bool = false) {
+            do {
+                if undoable, let company = session.company {
+                    try app.removals.remove(
+                        .chemical, [RemovalRow("chemical_addition", a.id)], sync: sync, companyId: company.id)
+                } else {
+                    try VisitChemicalWrites.remove(sync, id: a.id)
+                }
+            } catch { saveError = String(describing: error) }
         }
     }
 
@@ -703,7 +742,6 @@
         @State private var supplied = false
         @State private var note = ""
         @State private var loaded = false
-        @State private var confirmRemove = false
         @State private var confirmDiscard = false
 
         private var original: ChemicalAddition { target.addition }
@@ -758,8 +796,11 @@
                         }
                         .disabled(locked)
                         if !isNew && !locked {
-                            Button("Remove Chemical", role: .destructive) { confirmRemove = true }
-                                .buttonStyle(.danger(fullWidth: true, size: .field))
+                            Button("Remove Chemical", role: .destructive) {
+                                onRemove(original)
+                                dismiss()
+                            }
+                            .buttonStyle(.danger(fullWidth: true, size: .field))
                         }
                     }
                     .padding(.horizontal, CGFloat(Spacing.pageMargin))
@@ -796,14 +837,6 @@
                             .disabled(!valid)
                         }
                     }
-                }
-                .confirmationDialog("Remove this chemical?", isPresented: $confirmRemove, titleVisibility: .visible) {
-                    Button("Remove Chemical", role: .destructive) {
-                        onRemove(original)
-                        dismiss()
-                    }
-                } message: {
-                    Text("It comes off the visit and its report.")
                 }
             }
             .sheetPresentation(dirty: dirty, detents: [.medium, .large])
@@ -852,6 +885,8 @@
     /// Add Chemical: the shop's chemicals with search, then the amount.
     struct AddChemicalSheet: View {
         var items: [ChemicalItem]
+        /// The pool's usual chemicals (item ids), listed first (owner, 2026-10-26).
+        var usual: [String] = []
         var charges: Bool
         var onAdd: (AdditionDraft, Bool, String?) -> Void
         @Environment(\.dismiss) private var dismiss
@@ -862,9 +897,41 @@
         @State private var note = ""
         @State private var confirmDiscard = false
 
+        /// One chemical in the list: its name (and price), and a check when it's the one picked.
+        private func itemRow(_ i: ChemicalItem) -> some View {
+            Button {
+                picked = i
+                amount = levelText(itemAddition(i).quantity)
+            } label: {
+                HStack(spacing: 8) {
+                    VStack(alignment: .leading, spacing: 0) {
+                        Text(i.name).textRole(.body).foregroundStyle(Color.text)
+                        if charges {
+                            Text(unitPriceLabel(i.priceCents, unit: i.unit))
+                                .textRole(.secondary)
+                                .foregroundStyle(Color.textMuted)
+                        }
+                    }
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    if picked?.id == i.id {
+                        Image(systemName: "checkmark")
+                            .font(.system(size: 17, weight: .semibold))
+                            .foregroundStyle(Color.link)
+                            .accessibilityHidden(true)
+                    }
+                }
+                .padding(.horizontal, CGFloat(Spacing.rowHorizontal))
+                .padding(.vertical, 8)
+                .frame(minHeight: minTarget)
+                .contentShape(Rectangle())
+            }
+            .buttonStyle(.row)
+            .accessibilityAddTraits(picked?.id == i.id ? .isSelected : [])
+        }
+
         var body: some View {
-            let list = chemicalItems(items)
-            let shown = query.isEmpty ? list : list.filter { $0.name.localizedCaseInsensitiveContains(query) }
+            let groups = pickList(chemicalItems(items), usualIds: usual, query: query)
+            let shownCount = groups.usual.count + groups.rest.count
             let quantity = chemicalNumber(amount)
             let valid = picked != nil && (quantity ?? 0) > 0 && (quantity ?? 0) <= 100_000
             NavigationStack {
@@ -888,43 +955,25 @@
                                 ChemicalNoteRow(note: $note)
                             }
                         }
-                        Grouped(label: "Chemicals") {
-                            ForEach(shown, id: \.id) { i in
-                                Button {
-                                    picked = i
-                                    amount = levelText(itemAddition(i).quantity)
-                                } label: {
-                                    HStack(spacing: 8) {
-                                        VStack(alignment: .leading, spacing: 0) {
-                                            Text(i.name).textRole(.body).foregroundStyle(Color.text)
-                                            if charges {
-                                                Text(unitPriceLabel(i.priceCents, unit: i.unit))
-                                                    .textRole(.secondary)
-                                                    .foregroundStyle(Color.textMuted)
-                                            }
-                                        }
-                                        .frame(maxWidth: .infinity, alignment: .leading)
-                                        if picked?.id == i.id {
-                                            Image(systemName: "checkmark")
-                                                .font(.system(size: 17, weight: .semibold))
-                                                .foregroundStyle(Color.link)
-                                                .accessibilityHidden(true)
-                                        }
-                                    }
-                                    .padding(.horizontal, CGFloat(Spacing.rowHorizontal))
-                                    .padding(.vertical, 8)
-                                    .frame(minHeight: minTarget)
-                                    .contentShape(Rectangle())
+                        if !groups.usual.isEmpty {
+                            Grouped(label: "Usual for This Pool") {
+                                ForEach(groups.usual, id: \.id) { i in
+                                    itemRow(i)
                                 }
-                                .buttonStyle(.row)
-                                .accessibilityAddTraits(picked?.id == i.id ? .isSelected : [])
                             }
-                            if shown.isEmpty {
-                                Text("No chemicals match. Add them in Settings › Price Book.")
-                                    .textRole(.body)
-                                    .foregroundStyle(Color.textMuted)
-                                    .padding(.horizontal, CGFloat(Spacing.rowHorizontal))
-                                    .frame(maxWidth: .infinity, minHeight: minTarget, alignment: .leading)
+                        }
+                        if !groups.rest.isEmpty || shownCount == 0 {
+                            Grouped(label: groups.usual.isEmpty ? "Chemicals" : "Other Chemicals") {
+                                ForEach(groups.rest, id: \.id) { i in
+                                    itemRow(i)
+                                }
+                                if shownCount == 0 {
+                                    Text("No chemicals match. Add them in Settings › Price Book.")
+                                        .textRole(.body)
+                                        .foregroundStyle(Color.textMuted)
+                                        .padding(.horizontal, CGFloat(Spacing.rowHorizontal))
+                                        .frame(maxWidth: .infinity, minHeight: minTarget, alignment: .leading)
+                                }
                             }
                         }
                     }

@@ -33,8 +33,11 @@ function followsRules(a: RowActions) {
   expect(a.trailing.length).toBeLessThanOrEqual(MAX_SWIPE_ACTIONS);
   // Nothing destructive on the leading side, ever.
   expect(a.leading?.destructive ?? false).toBe(false);
-  // Destructive menu items ask first: their label ends in an ellipsis.
-  for (const m of a.menu) if (m.destructive) expect(m.label.endsWith("…")).toBe(true);
+  // Destructive menu items ask first: their label ends in an ellipsis. The deletes that happen
+  // at once with Undo (a test, finding, photo; owner, 2026-10-26) have no ellipsis.
+  const undoable = /^Delete( Photo| Video| Voice Note)?$/;
+  for (const m of a.menu)
+    if (m.destructive) expect(m.label.endsWith("…") || undoable.test(m.label)).toBe(true);
   // Title Case labels (each word capitalized, small words aside).
   for (const m of [...a.menu, ...swipeList(a)])
     for (const w of m.label.replace("…", "").split(" "))
@@ -231,13 +234,17 @@ describe("Reports, settings lists, findings, photos", () => {
     expect(ids(reportRowActions())).toEqual({ leading: null, trailing: [], menu: ["open"] });
   });
 
-  it("settings rows and findings hold for Edit and their own delete, which asks", () => {
+  it("settings rows hold for Edit and their own delete, which asks; tests and findings delete at once", () => {
     const a = editRowActions({ deleteLabel: "Remove Test Type" });
     expect(labels(a.menu)).toEqual(["Edit", "Remove Test Type…"]);
     expect(a.trailing[0]?.short).toBe("Remove");
     followsRules(a);
     // Rows without a delete (checklist items in Settings) get Edit only.
     expect(labels(editRowActions({}).menu)).toEqual(["Edit"]);
+    // A delete with Undo has no "…": nothing asks (owner, 2026-10-26).
+    const undoable = editRowActions({ deleteLabel: "Delete", asks: false });
+    expect(labels(undoable.menu)).toEqual(["Edit", "Delete"]);
+    followsRules(undoable);
   });
 
   it("photos hold for Mark Up and Delete; videos and voice notes for Delete", () => {
@@ -247,18 +254,18 @@ describe("Reports, settings lists, findings, photos", () => {
       hasMarkup: false,
       ready: true,
     });
-    expect(labels(photo.menu)).toEqual(["Mark Up", "Delete Photo…"]);
+    expect(labels(photo.menu)).toEqual(["Mark Up", "Delete Photo"]);
     followsRules(photo);
     expect(
       labels(
         mediaRowActions({ kind: "photo", kindLabel: "Photo", hasMarkup: true, ready: true }).menu,
       ),
-    ).toEqual(["Edit Markup", "Delete Photo…"]);
+    ).toEqual(["Edit Markup", "Delete Photo"]);
     expect(
       labels(
         mediaRowActions({ kind: "video", kindLabel: "Video", hasMarkup: false, ready: true }).menu,
       ),
-    ).toEqual(["Delete Video…"]);
+    ).toEqual(["Delete Video"]);
   });
 });
 

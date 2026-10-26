@@ -57,7 +57,7 @@ public struct ReportTabModel: Equatable, Sendable {
     public static let reviewWithCustomer = "Review with Customer"
     public static let finishReport = "Finish Report"
     public static let sendWithoutSignature = "Send Without a Signature"
-    public static let sendWithoutSignatureNote = "Sending saves your edits and locks this version."
+    public static let sendWithoutSignatureNote = "Sending locks this version."
     public static let finishedNote = "Send it to the customer, or download the PDF."
     public static let textedLabel = "Message to text the customer"
     public static let otherEmailsHint = "They get the report too. Separate with spaces."
@@ -161,10 +161,10 @@ public struct ReportTabModel: Equatable, Sendable {
     public var finishTitle: String? { draft.map { "Finish version \($0.version)" } }
     /// Someone signed on this phone: Finish Report locks the version with the signature.
     public var finishesWithSignature: Bool { !waitingSigners.isEmpty }
-    /// The draft folded away: "Draft version 2 is ready to read, edit, and review with the customer."
+    /// The draft folded away: "Draft version 2."
     public var collapsedText: String? {
         guard hasDraftText, let draft else { return nil }
-        return "Draft version \(draft.version) is ready to read, edit, and review with the customer."
+        return "Draft version \(draft.version)."
     }
 
     /// The title row's link to the newest finished version ("View version 2").
@@ -172,7 +172,7 @@ public struct ReportTabModel: Equatable, Sendable {
 
     public var finishNote: String {
         waitingSigners.isEmpty
-            ? "Hand the phone to the customer: they read the report and sign at the bottom. Signing locks this version; changes after that go out as a new version."
+            ? "Hand the phone to the customer to read and sign. Signing locks this version."
             : "Signed by \(waitingSigners.joined(separator: ", ")). Finish the report to lock this version with the signature."
     }
 
@@ -234,6 +234,9 @@ public final class ReportFlow {
     public var texted: String?
     /// A local write that failed.
     public var saveError: String?
+    /// Reports sent through this flow (an email, or a text once its share sheet closes), for the
+    /// tap when one goes (core `HapticMoment.reportSent`).
+    public private(set) var reportsSent = 0
 
     public let sync: SyncService
     public let companyId: String
@@ -370,6 +373,7 @@ public final class ReportFlow {
         texted = share
         share = nil
         message = "Report sent."
+        reportsSent += 1
     }
 
     /// Writes the draft, finishes it, or sends a version (`reportId`, else the draft).
@@ -427,6 +431,7 @@ public final class ReportFlow {
                     share = sent.message
                 } else {
                     message = "Sent to \(email)."
+                    reportsSent += 1
                 }
             }
         } catch let failure as WebAPI.Failure

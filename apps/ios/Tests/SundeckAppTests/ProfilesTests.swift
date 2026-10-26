@@ -82,7 +82,7 @@ import Testing
         #expect(ProfileText.deleteConfirm == "Delete this profile? Their account and jobs stay.")
         #expect(
             ProfileText.footer
-                == "Each person’s phone, email, address, emergency contact, and notes. Only owners and admins see them."
+                == "Only owners and admins see these."
         )
     }
 }

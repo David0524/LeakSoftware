@@ -21,6 +21,7 @@ import {
   type ReceiptChannel,
 } from "@leakbook/core";
 import { recordPaymentAction, sendReceiptAction } from "@/app/actions/invoices";
+import { buzz } from "@/lib/haptics";
 import { Segmented } from "./segmented";
 import { Sheet } from "./sheet";
 import { showBanner } from "./top-banner";
@@ -96,6 +97,7 @@ export async function recordPayment(
     return { errors: { amount: "No connection. Try again when you’re back online." } };
   const r = await recordPaymentAction({}, form);
   if (r.fields || r.error || !r.recorded) return { errors: r.fields ?? { amount: r.error ?? "" } };
+  buzz("paymentRecorded");
   return { recorded: { ...r.recorded, message: r.message ?? "Payment recorded." } };
 }
 

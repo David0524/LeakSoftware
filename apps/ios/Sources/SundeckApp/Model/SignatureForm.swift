@@ -293,9 +293,7 @@ public struct ReviewSummary: Sendable {
 
     public var tallyText: String {
         if let inspection { return inspection.tallyText }
-        return maintenance
-            ? "\(tally.pass) done · \(tally.attention) need attention · \(tally.notApplicable) skipped"
-            : "\(tally.pass) not leaking · \(tally.attention) attention · \(tally.leaking) leaking · \(tally.notApplicable) not applicable"
+        return checklistTallyText(tally, maintenance: maintenance, pending: false)
     }
 
     /// Items still to do: a pool inspection leaves out the questions its gates folded away.

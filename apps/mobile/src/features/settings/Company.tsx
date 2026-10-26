@@ -356,7 +356,6 @@ function CompanyPage() {
   return (
     <Screen
       title="Company and Branding"
-      subtitle="Shown on reports, quotes, and invoices."
       overlay={
         <SaveBar changed={changed} busy={saving} result={result} onSave={() => void save()} />
       }
@@ -484,7 +483,7 @@ function ProfilePart({
           keyboardType="url"
           autoCapitalize="none"
           error={errors.review_url}
-          hint="Your Google or Yelp page. Review requests link here."
+          hint="Your Google or Yelp page."
         />
       </FieldGroup>
       <Select
@@ -520,7 +519,7 @@ function FollowupsPart({
           value={value.quote}
           onChangeText={set("quote")}
           error={errors.quote}
-          hint="For quotes not yet accepted. Leave empty for none."
+          hint="Leave empty for none."
         />
         <FieldRow
           label="Invoice reminders (days after sending)"
@@ -528,7 +527,7 @@ function FollowupsPart({
           value={value.invoice}
           onChangeText={set("invoice")}
           error={errors.invoice}
-          hint="For invoices not yet paid in full. Leave empty for none."
+          hint="Leave empty for none."
         />
         <View style={styles.setting}>
           <Toggle
@@ -560,7 +559,7 @@ function TermsPart({
     <View style={styles.part}>
       <FieldGroup
         title="Report terms"
-        footer="Printed at the end of every report, as written. Reports already sent keep the text they were sent with."
+        footer="Ends every report. Reports already sent keep their old text."
       >
         <FieldRow
           label="Disclaimer"

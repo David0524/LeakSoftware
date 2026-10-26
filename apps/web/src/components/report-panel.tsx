@@ -9,6 +9,7 @@ import {
 } from "@/app/actions/reports";
 import { reviewWithCustomer } from "@/app/actions/sign-off";
 import type { ReportRow } from "@/lib/data";
+import { buzz } from "@/lib/haptics";
 import { orOffline } from "@/lib/offline";
 import { SavedReportActions, type SavedReportOption } from "./saved-reports";
 import { CopyLink } from "./settings-forms";
@@ -49,6 +50,10 @@ export function ReportPanel({
   const [sendState, sendAction, sending] = useActionState(orOffline(sendReportAction), {});
   const [reviewState, reviewAction, reviewing] = useActionState(orOffline(reviewWithCustomer), {});
   const problems = draft?.ai_draft?.problems ?? [];
+  // The report went out: a tap you can feel (owner, 2026-10-26).
+  useEffect(() => {
+    if (sendState.message && !sendState.error) buzz("reportSent");
+  }, [sendState]);
   // A submit button's name/value is not passed to a formAction, so each one sets its channel.
   const sendVia = (form: FormData, channel: "email" | "sms_device") => {
     form.set("channel", channel);
@@ -170,9 +175,7 @@ export function ReportPanel({
         </form>
       ) : (
         <p className="mt-1 text-[0.9375rem] text-text-muted">
-          {hasDraft
-            ? `Draft version ${draft!.version} is ready to read, edit, and review with the customer.`
-            : "No draft yet."}
+          {hasDraft ? `Draft version ${draft!.version}.` : "No draft yet."}
         </p>
       )}
       {latestSent ? <div className="mt-3">{status}</div> : null}
@@ -272,8 +275,7 @@ export function ReportPanel({
               <div className="mt-6 border-t-[0.5px] border-separator pt-4">
                 <h4 className="font-medium">Finish version {draft.version}</h4>
                 <p className="text-[0.9375rem] text-text-muted">
-                  Hand the phone to the customer: they read the report and sign at the bottom.
-                  Signing locks this version; changes after that go out as a new version.
+                  Hand the phone to the customer to read and sign. Signing locks this version.
                 </p>
                 <div className="mt-3 flex flex-wrap items-center gap-3">
                   <Button type="submit" formAction={reviewAction} disabled={reviewing}>
@@ -289,9 +291,7 @@ export function ReportPanel({
                   <summary className="inline-flex min-h-11 cursor-pointer items-center font-semibold text-link">
                     Send Without a Signature
                   </summary>
-                  <p className="text-[0.9375rem] text-text-muted">
-                    Sending saves your edits and locks this version.
-                  </p>
+                  <p className="text-[0.9375rem] text-text-muted">Sending locks this version.</p>
                   <SendControls
                     id={draft.id}
                     customerEmail={customerEmail}

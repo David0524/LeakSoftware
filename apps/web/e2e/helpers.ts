@@ -44,7 +44,7 @@ async function showChecklist(page: Page) {
 /** Unfold every checklist section (finished ones start folded). */
 export async function openChecklist(page: Page) {
   await showChecklist(page);
-  await expect(page.getByText(/not leaking · .* to do$/)).toBeVisible();
+  await expect(page.locator("#checklist + p")).toBeVisible();
   // Each click takes a section out of the set, so always open the first one left.
   const folded = page.locator('button[aria-controls^="checklist-"][aria-expanded="false"]');
   while ((await folded.count()) > 0) await folded.first().click();
@@ -53,8 +53,8 @@ export async function openChecklist(page: Page) {
 /** Answer everything still to do with each section's "Mark … Remaining" shortcut. */
 export async function finishChecklist(page: Page) {
   await showChecklist(page);
-  const tally = page.getByText(/not leaking · .* to do$/);
-  const toDo = async () => Number(/(\d+) to do/.exec(await tally.innerText())![1]);
+  const tally = page.locator("#checklist + p");
+  const toDo = async () => Number(/(\d+) to do/.exec(await tally.innerText())?.[1] ?? 0);
   for (;;) {
     const before = await toDo();
     if (before === 0) return;

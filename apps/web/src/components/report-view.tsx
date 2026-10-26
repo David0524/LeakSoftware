@@ -4,8 +4,10 @@ import {
   REPORT_BLOCKS,
   SIGNATURE_PURPOSE_LABELS,
   formatCents,
+  leakSummary,
   leaksNoted,
   narrativeTemplate,
+  reportByLine,
   reportChecklist,
   reportTitle,
   inspectionReport,
@@ -28,6 +30,7 @@ import { PoolDiagram } from "./pool-diagram";
 import { ContactLine } from "./contact-line";
 import { PdfLink } from "./pdf-link";
 import { PHONE_CARD, PHONE_GROUP, PHONE_LABEL, PHONE_ROW, PHONE_VALUE } from "./doc-ui";
+import { ReportLead } from "./report-lead";
 import { cx } from "./ui";
 
 // The customer-facing report, rendered from the frozen snapshot and the tech-approved text
@@ -284,6 +287,14 @@ export function ReportView(p: ReportViewProps) {
             {SAMPLE_TEXT.reportBanner}
           </p>
         ) : null}
+        {/* One plain line from the findings and who did the work (owner, 2026-10-26: the same
+          opening as a visit report; no finished-pool photo, since these reports' photos belong to
+          their findings). */}
+        <ReportLead
+          headline={leakSummary(s)}
+          byLine={reportByLine(s.job.type, [s.job.tech_name, s.job.second_tech_name])}
+          photo={null}
+        />
       </>
     ),
 

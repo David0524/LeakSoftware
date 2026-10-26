@@ -4,7 +4,6 @@ import {
   CHEMICALS_CATEGORY,
   PRICE_BOOK_TEXT,
   chargesChemicals,
-  companyServices,
   offersPool,
   priceBookCategoryChoices,
   priceBookSections,
@@ -60,6 +59,7 @@ function ItemFields({
           id={`name-${p}`}
           defaultValue={item?.name}
           className="sm:col-span-2"
+          required
         />
         <SField
           label="Price ($)"
@@ -67,6 +67,7 @@ function ItemFields({
           id={`price-${p}`}
           inputMode="decimal"
           defaultValue={item ? (item.price_cents / 100).toFixed(2) : ""}
+          required
         />
         <SField label="Unit" name="unit" id={`unit-${p}`} defaultValue={item?.unit ?? "each"} />
         <PriceCategoryField idPrefix={p} category={item?.category} choices={categories} />
@@ -108,7 +109,6 @@ function ItemFields({
           name="on_repair_call"
           id={`repair-call-${p}`}
           defaultChecked={item?.on_repair_call ?? false}
-          hint="On the menu of what a customer needs when booking a repair."
         />
         {item ? (
           <SSwitch
@@ -130,12 +130,6 @@ export default async function PriceBookPage() {
     listConfig<ComponentType>(office, "component_type"),
     getCompany(office),
   ]);
-  // What the items are for follows what the shop does (owner, 2026-10-16).
-  const what = {
-    pool: "Cleanings, chemicals, and repairs techs pick from when quoting extra work.",
-    leak: "Detection fees and repairs techs pick from when building a quote.",
-    both: "Detection fees, cleanings, chemicals, and repairs techs pick from when building a quote.",
-  }[companyServices(company.settings)];
   // Grouped by category, Chemicals first and uncategorized items last (owner, 2026-10-25).
   const pool = offersPool(company.settings);
   const sections = priceBookSections(items);
@@ -190,7 +184,6 @@ export default async function PriceBookPage() {
   return (
     <SettingsListPage
       title="Price Book"
-      subtitle={`${what} Prices are suggestions; a tech can adjust within the discount limit.`}
       add={{
         label: "Add Item",
         form: (

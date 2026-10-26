@@ -15,9 +15,12 @@
         @Environment(AppEnvironment.self) private var app
         @State private var job: JobView?
         @State private var section: JobPageSection?
-        @State private var toDo = 0
+        /// Checklist items marked needs attention: the Checklist tab's badge.
+        @State private var attention = 0
         @State private var saveError: String?
         @State private var changes = 0
+        /// Bumped when a job is completed, for its tap (core `HapticMoment.jobCompleted`).
+        @State private var completed = 0
         /// Why Complete Job was stopped (the checklist, or the pool photo), shown under the header.
         @State private var blocked: String?
         /// Complete Job on a visit whose report goes out by itself asks first (owner, 2026-10-20).
@@ -89,6 +92,8 @@
                 if let job { RecentSearches(kv: sync.kv).opened(recentItem(job: job)) }
             }
             .sensoryFeedback(.success, trigger: changes)
+            .haptic(.jobCompleted, trigger: completed)
+            .removalBanner()
             .alert(
                 "Couldn’t Save", isPresented: Binding(get: { saveError != nil }, set: { if !$0 { saveError = nil } })
             ) {
@@ -374,7 +379,7 @@
         private func switcher(_ sections: [JobPageSection], _ current: JobPageSection) -> some View {
             SectionSwitcher(
                 selection: Binding(get: { current }, set: { choose($0) }), options: sections, label: \.title,
-                badge: { $0 == .checklist ? toDo : 0 }
+                badge: { $0 == .checklist ? attention : 0 }
             )
             .padding(.horizontal, CGFloat(Spacing.pageMargin))
             .padding(.vertical, 8)
@@ -439,7 +444,7 @@
                     app.visitReports.completed(jobType: job.type, jobId: jobId, settings: company.settings)
                 }
                 blocked = nil
-                changes += 1
+                if to == .done { completed += 1 } else { changes += 1 }
             } catch {
                 saveError = String(describing: error)
             }
@@ -455,7 +460,7 @@
             job = found
             let inspection = JobInspection(sync.store, jobId: jobId)
             // A pool inspection counts only the questions its gates leave open (2026-10-20).
-            toDo = checklistToDo(
+            attention = checklistAttention(
                 config: InspectionConfig(sync.store, companyId: company.id), inspection: inspection,
                 jobType: found.type)
             if section == nil { section = JobSectionMemory.section(for: jobId, type: found.type) }

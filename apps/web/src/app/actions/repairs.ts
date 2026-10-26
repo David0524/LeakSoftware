@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import {
+  RESTORE_ROW,
   addRepairWrites,
   checkRepairDraft,
   removeRepairWrites,
@@ -135,4 +136,18 @@ export async function removeRepairAction(jobId: string, repairId: string): Promi
   if (error) return { error };
   revalidatePath(`/jobs/${jobId}`);
   return { message: "Removed." };
+}
+
+/** Undo for Remove on a repair: the row is live again (the server keeps the job's price at their sum). */
+export async function restoreRepairAction(jobId: string, repairId: string): Promise<FormState> {
+  const { office, db, job } = await load(jobId);
+  if (!job || job.type !== "repair") return { error: "This job is gone. Refresh the page." };
+  const { error } = await db
+    .from("job_repair")
+    .update(RESTORE_ROW)
+    .eq("id", repairId)
+    .eq("company_id", office.company.id);
+  if (error) return { error: error.message };
+  revalidatePath(`/jobs/${jobId}`);
+  return { message: "Restored." };
 }

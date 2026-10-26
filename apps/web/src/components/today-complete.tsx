@@ -3,6 +3,7 @@
 import { useRouter } from "next/navigation";
 import { useOptimistic, useTransition } from "react";
 import { markStop } from "@/app/actions/inspection";
+import { buzz } from "@/lib/haptics";
 import { orOffline } from "@/lib/offline";
 import type { SendPrompt } from "./job-work";
 import { saveFailed, useSetJobStatus } from "./instant";
@@ -77,6 +78,7 @@ export function TodayComplete({
           label: "Open Job",
           onAction: () => router.push(`/jobs/${jobId}`),
         });
+      else if (complete) buzz("jobCompleted");
     });
   return (
     <div className="space-y-1">

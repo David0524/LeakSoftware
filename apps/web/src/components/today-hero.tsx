@@ -110,6 +110,7 @@ export function TodayHeroCard({
   jobs,
   today,
   timeZone,
+  wrapUp = null,
   mine,
   onMyWay,
   laterIds,
@@ -120,6 +121,11 @@ export function TodayHeroCard({
   jobs: Record<string, HeroJob>;
   today: string;
   timeZone: string;
+  /**
+   * The end-of-day line ("Today: 8 pools · 3 reports sent", core endOfDay) that fills the card
+   * once every stop is done (owner, 2026-10-26).
+   */
+  wrapUp?: string | null;
   mine: boolean;
   onMyWay: HeroOnMyWay;
   /**
@@ -308,6 +314,18 @@ export function TodayHeroCard({
             </div>
           )}
         </div>
+
+        {hero.moment === "day_done" && wrapUp ? (
+          <p className="mt-3 text-[1.0625rem] font-medium" data-testid="hero-wrap-up">
+            {/* Wraps between the parts, never inside one ("1 quote accepted"). */}
+            {wrapUp.split(" · ").map((part, i) => (
+              <span key={part}>
+                {i > 0 ? " · " : null}
+                <span className="inline-block">{part}</span>
+              </span>
+            ))}
+          </p>
+        ) : null}
 
         {job && hero.moment !== "done" ? (
           <ul className="mt-3 space-y-1.5">

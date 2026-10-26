@@ -134,7 +134,7 @@
         private var companyProfile: some View {
             Grouped(
                 label: "Company profile",
-                footer: "Review link: your Google or Yelp page. Review requests link here."
+                footer: "Review link: your Google or Yelp page."
             ) {
                 LabeledFieldRow(label: "Company name", text: $profile.name, labelWidth: 132)
                 LabeledFieldRow(
@@ -190,7 +190,7 @@
                         isOn: $followups.reviewRequests)
                 }
                 Text(
-                    "Days after sending. Quote reminders are for quotes not yet accepted; invoice reminders for invoices not yet paid in full. Leave empty for none."
+                    "Days after sending. Leave empty for none."
                 )
                 .textRole(.secondary).foregroundStyle(Color.textMuted)
             }
@@ -418,7 +418,7 @@
                         .textRole(.secondary).foregroundStyle(Color.textMuted)
                     if offersPool(company?.settings) {
                         Grouped(
-                            footer: "For new maintenance plans, and how far ahead plans put visits on the schedule."
+                            footer: "For new maintenance plans."
                         ) {
                             LabeledFieldRow(
                                 label: "Maintenance visit (minutes)", text: $form.visitMinutes, keyboard: .numberPad,
@@ -576,8 +576,6 @@
         var body: some View {
             ScreenScroll {
                 let leak = offersLeak(session.company?.settings)
-                Text(reportTemplatesSubtitle(session.company?.settings)).textRole(.body).foregroundStyle(
-                    Color.textMuted)
                 if let notice { Notice(kind: .success, text: notice) }
                 // A pool-only shop has only its visit reports here (owner, 2026-10-20).
                 if leak {
@@ -672,7 +670,6 @@
         var body: some View {
             let manager = isManagerRole(session.company?.role)
             ScreenScroll {
-                Text(PhoneText.subtitle).textRole(.body).foregroundStyle(Color.textMuted)
                 if let model {
                     if let result = model.result { Notice(kind: result.error ? .error : .success, text: result.text) }
                     if model.loaded {
@@ -793,7 +790,7 @@
             @Bindable var model = model
             return VStack(alignment: .leading, spacing: 12) {
                 Grouped(label: PhoneText.textsAndCalls) {
-                    SwitchRow(PhoneText.pictures, detail: PhoneText.picturesHint, isOn: $model.pictures)
+                    SwitchRow(PhoneText.pictures, isOn: $model.pictures)
                     VStack(alignment: .leading, spacing: 4) {
                         Text(PhoneText.greeting).textRole(.body).foregroundStyle(Color.text)
                         TextField(

@@ -1,8 +1,10 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
   POOL_TYPE_LABELS,
+  clockToMinutes,
+  minutesLabel,
   minutesToClock,
   intakeQuestionsFor,
   newJobTypes,
@@ -27,7 +29,13 @@ interface CustomerOption {
   id: string;
   name: string;
   detail: string;
-  pools: { id: string; label: string; gallons?: number | null }[];
+  pools: {
+    id: string;
+    label: string;
+    gallons?: number | null;
+    /** The tech and start time most of its last jobs share (core usualVisit). */
+    usual?: { techId: string | null; time: string | null };
+  }[];
 }
 
 /** A group of fields, as iOS forms draw them: a small gray header over a rounded block. */
@@ -60,6 +68,14 @@ function GallonsField({ known }: { known: number | null }) {
       hint="Saved on the pool for the Chemical calculator."
     />
   );
+}
+
+/** Set the named fields inside `container` (the visit's Date, Start, Tech). */
+function fillFields(container: HTMLElement | null, values: Record<string, string>) {
+  for (const [name, value] of Object.entries(values)) {
+    const el = container?.querySelector<HTMLInputElement | HTMLSelectElement>(`[name="${name}"]`);
+    if (el) el.value = value;
+  }
 }
 
 export function NewJobForm({
@@ -111,14 +127,30 @@ export function NewJobForm({
   const visit = useRef<HTMLDivElement>(null);
   const [picked, setPicked] = useState("");
 
+  // The customer's usual tech and start time (owner, 2026-10-26: "pre-fill what the app already
+  // knows"): put in the Tech and Start fields when their pool is picked, and the time again when
+  // the Start field comes back (Scheduled, Plan). Only when it's obvious from their last jobs.
+  const usual = newPool ? undefined : customer?.pools.find((p) => p.id === pool)?.usual;
+  const usualKey = `${customerId}:${pool}`;
+  const usualFor = useRef("");
+  useEffect(() => {
+    const first = usualFor.current !== usualKey;
+    usualFor.current = usualKey;
+    if (!usual) return;
+    const values: Record<string, string> = {};
+    if (usual.time) values.time = usual.time;
+    if (usual.techId && first && !lockedTech) values.tech = usual.techId;
+    fillFields(visit.current, values);
+  }, [usual, usualKey, when, plan, lockedTech]);
+  const usualTech = usual?.techId ? team.find((t) => t.id === usual.techId)?.name : null;
+  const usualNote =
+    usual && !lockedTech && (usualTech || usual.time)
+      ? `Usually ${[usualTech, usual.time ? minutesLabel(clockToMinutes(usual.time)) : null].filter(Boolean).join(" at ")}.`
+      : "";
+
   /** Fill the visit fields from a suggested slot. */
   function fill(values: Record<string, string>) {
-    for (const [name, value] of Object.entries(values)) {
-      const el = visit.current?.querySelector<HTMLInputElement | HTMLSelectElement>(
-        `[name="${name}"]`,
-      );
-      if (el) el.value = value;
-    }
+    fillFields(visit.current, values);
   }
 
   return (
@@ -300,7 +332,7 @@ export function NewJobForm({
                 }}
               />
               <p role="status" className="text-[0.9375rem] text-status-pass">
-                {picked ? `Filled in: ${picked}` : ""}
+                {picked ? `Filled in: ${picked}` : usualNote}
               </p>
             </div>
           ) : null}

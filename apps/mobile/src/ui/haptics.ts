@@ -1,3 +1,4 @@
+import { HAPTIC_MOMENTS, type HapticMoment } from "@leakbook/core";
 import * as Haptics from "expo-haptics";
 import { Platform } from "react-native";
 
@@ -29,3 +30,13 @@ export const haptics = {
   /** Something was picked up to drag (a schedule stop held down). */
   pickUp: () => play(() => Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium)),
 } as const;
+
+/**
+ * The tap for one of the moments that finish something (owner, 2026-10-26: Apple principle 5),
+ * listed once in core's HAPTIC_MOMENTS so this app, the iPhone app and the website buzz at the
+ * same ones: a checklist item or chemical marked done is a light tap; a whole set, a job, a
+ * report or a payment is the success tap.
+ */
+export function haptic(moment: HapticMoment) {
+  haptics[HAPTIC_MOMENTS[moment]]();
+}

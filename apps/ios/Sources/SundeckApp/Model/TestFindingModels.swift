@@ -118,8 +118,6 @@ public struct TestForm: Equatable, Sendable {
     public var sheetTitle: String { isNew ? "Add Test" : "Edit \(type.name)" }
     /// The sheet's main button.
     public var submitTitle: String { isNew ? "Add Test" : "Save Test" }
-    /// "Delete this pressure test?"
-    public var deleteTitle: String { "Delete this \(type.name.lowercased())?" }
 
     /// The "Result" choices: nil follows the calculation, then the type's results.
     public var resultChoices: [Outcome?] { [nil] + type.resultOptions.map { Optional($0) } }
@@ -249,8 +247,6 @@ public struct FindingForm: Equatable, Sendable {
     public var navigationTitle: String { isNew ? "Add Finding" : "Edit Finding" }
     public var submitTitle: String { isNew ? "Add Finding" : "Save Finding" }
     public var discardTitle: String { DiscardText.title }
-    /// "Delete “Skimmer seam leak”?"
-    public var deleteTitle: String { "Delete “\(title)”?" }
     public var pinHint: String { "Tap where the leak is." }
     /// Under the diagram: "Pin placed." (with Clear Pin) or "No pin yet."
     public var pinStatus: String { pin == nil ? "No pin yet." : "Pin placed." }

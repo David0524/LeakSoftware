@@ -509,7 +509,7 @@ function DraftParts({ invoice, customer }: { invoice: JobInvoice; customer?: Cus
           />
         </View>
         <T variant="secondary" muted>
-          Sending locks the invoice and gives you a link for the customer.
+          Sending locks the invoice.
         </T>
         {sendMessage ? <Notice tone={sendMessage.tone}>{sendMessage.text}</Notice> : null}
       </View>

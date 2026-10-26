@@ -69,7 +69,6 @@ private func sha256(_ count: Int) throws -> String {
             ])
         #expect(MediaDetail.markupButton(photo) == "Mark Up")
         #expect(MediaDetail.photoRatio(photo) == 0.75)
-        #expect(MediaDetail.deleteTitle(photo.kind) == "Remove this photo from the job?")
         #expect(MediaDetail.deleteButton(photo.kind) == "Delete Photo")
     }
 
@@ -93,9 +92,7 @@ private func sha256(_ count: Int) throws -> String {
         let v = try Viewer()
         let note = try v.capture(.audio, mime: "audio/mp4", bytes: 500, durationMs: 65_000)
         #expect(MediaDetail.size(note) == "500 B · 1:05")
-        #expect(MediaDetail.deleteTitle(.audio) == "Remove this voice note from the job?")
         #expect(MediaDetail.deleteButton(.audio) == "Delete Voice Note")
-        #expect(MediaDetail.deleteMessage == "The original stays on file.")
         try v.store.applyPage(
             PullPage(
                 rows: [
@@ -307,10 +304,25 @@ private func sha256(_ count: Int) throws -> String {
     @Test func deleteMarksTheRowDeletedAndKeepsTheFile() throws {
         let v = try Viewer()
         let video = try v.capture(.video, mime: "video/mp4", bytes: 10)
-        try MediaWrites.delete(v.sync, video)
+        try RemovalWrites.remove(v.sync, companyId: video.companyId, rows: [RemovalRow("media", video.id)])
         let row = try #require(try v.store.get("media", video.id))
         #expect(row["deleted_at"]?.string?.isEmpty == false)
         #expect(jobMedia(v.store, MediaTarget(jobId: "j1")).isEmpty)
         #expect(v.sync.media?.localURL(video.id, mime: video.mimeType) != nil)
+    }
+
+    /// Undo after Remove (owner, 2026-10-26): the same row is live again, through the same sync path.
+    @Test func undoPutsARemovedCaptureBackExactlyAsItWas() throws {
+        let v = try Viewer()
+        let photo = try v.capture(.photo, mime: "image/jpeg", bytes: 10)
+        let rows = [RemovalRow("media", photo.id)]
+        try RemovalWrites.remove(v.sync, companyId: photo.companyId, rows: rows)
+        #expect(jobMedia(v.store, MediaTarget(jobId: "j1")).isEmpty)
+        try RemovalWrites.restore(v.sync, companyId: photo.companyId, rows: rows)
+        let row = try #require(try v.store.get("media", photo.id))
+        #expect(row["deleted_at"]?.string == nil)
+        #expect(jobMedia(v.store, MediaTarget(jobId: "j1")).map(\.id) == [photo.id])
+        // Both changes are in the outbox, so they sync like any other.
+        #expect(try v.store.pendingCount() > 0)
     }
 }

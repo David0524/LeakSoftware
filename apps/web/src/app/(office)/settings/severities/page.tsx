@@ -19,7 +19,7 @@ function SeverityFields({ s }: { s?: SeverityLevel }) {
   return (
     <>
       <SettingsFields labelWidth="5rem" className="sm:grid sm:grid-cols-[1fr_120px] sm:gap-4">
-        <SField label="Name" name="name" id={`name-${p}`} defaultValue={s?.name} />
+        <SField label="Name" name="name" id={`name-${p}`} defaultValue={s?.name} required />
         <SField
           label="Order"
           name="sort_order"
@@ -62,7 +62,6 @@ export default async function SeveritiesPage() {
   return (
     <SettingsListPage
       title="Severities"
-      subtitle="How serious a finding is. The color is the pin on the pool diagram."
       add={{
         label: "Add Severity",
         form: (

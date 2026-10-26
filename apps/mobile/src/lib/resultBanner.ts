@@ -13,15 +13,17 @@ export interface BannerNote {
   detail?: string;
   /** Puts the change back; shows Undo and keeps the banner up longer. */
   undo?: () => void;
+  /** How long it stays, when not the usual (Undo after a removal: five seconds). */
+  ms?: number;
 }
 
 /** How long a banner stays: 4 s, 8 s with Undo; an error stays until it's dismissed. */
 export const BANNER_MS = 4000;
 export const BANNER_UNDO_MS = 8000;
 
-export function bannerDuration(n: Pick<BannerNote, "tone" | "undo">): number | null {
+export function bannerDuration(n: Pick<BannerNote, "tone" | "undo" | "ms">): number | null {
   if (n.tone === "error") return null;
-  return n.undo ? BANNER_UNDO_MS : BANNER_MS;
+  return n.ms ?? (n.undo ? BANNER_UNDO_MS : BANNER_MS);
 }
 
 /** Notes as sentences: "Runs 20 min late. A fixed time can’t be met." */

@@ -16,9 +16,8 @@ export function requiresReportPhoto(settings: unknown): boolean {
 
 export const REPORT_PHOTO_TEXT = {
   label: "Require a Photo",
-  each: "A visit’s report can’t be sent until the visit has at least one photo. With Send Automatically on, it goes once one is added.",
-  monthly:
-    "One visit’s report can’t be sent until the visit has at least one photo. The monthly report still goes with the invoice.",
+  each: "Each visit needs a photo before its report goes out.",
+  monthly: "A single visit’s report needs a photo. The monthly one still goes with the invoice.",
   /** On Send Visit Report, and the server's refusal. */
   blocked: "Add a photo to send this report.",
   addPhoto: "Add Photo",

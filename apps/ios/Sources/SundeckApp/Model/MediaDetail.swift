@@ -112,10 +112,8 @@ public enum MediaDetail {
         parseMarkup(media.markup).shapes.isEmpty ? "Mark Up" : "Edit Markup"
     }
 
-    /// The delete confirmation, as the website asks it (spec 3.15): "Remove this photo from the
-    /// job?", "The original stays on file.", Delete Photo.
-    public static func deleteTitle(_ kind: MediaKind) -> String { "Remove this \(kindName(kind)) from the job?" }
-    public static let deleteMessage = "The original stays on file."
+    /// The delete button: Delete Photo. It takes the capture off the job at once, with Undo (owner,
+    /// 2026-10-26); the original stays on file.
     public static func deleteButton(_ kind: MediaKind) -> String { "Delete \(kind.label)" }
 
     /// Shown while a capture that isn't on this phone downloads, or when it can't be reached.

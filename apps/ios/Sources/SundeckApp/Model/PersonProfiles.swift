@@ -60,7 +60,7 @@ public struct ProfileListRow: Identifiable, Equatable, Sendable {
 public enum ProfileText {
     public static let title = "Profiles"
     public static let footer =
-        "Each person’s phone, email, address, emergency contact, and notes. Only owners and admins see them."
+        "Only owners and admins see these."
     public static let addDetails = "Add Details"
     public static let noApp = "No app"
     public static let addPerson = "Add Person"

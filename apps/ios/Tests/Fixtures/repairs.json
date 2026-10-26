@@ -17,10 +17,8 @@
         "fallback": "Repair",
         "empty": "No repairs yet.",
         "save": "Add Repair",
-        "removeTitle": "Remove this repair?",
         "removeMessage": "It comes off the job’s price. An invoice already made keeps it.",
-        "removeConfirm": "Remove Repair",
-        "footer": "Billed on the invoice, one line each.",
+        "footer": "Billed on the invoice.",
         "custom_value": "custom"
       }
     }

@@ -39,6 +39,8 @@ import {
   type JobTypeFilter,
   techColor,
   type TechColor,
+  usualVisit,
+  type UsualVisit,
 } from "@leakbook/core";
 import type { Office } from "./auth";
 import { createClient } from "./supabase/server";
@@ -1249,6 +1251,38 @@ export async function listReports(
   return reports.map((r) => ({ ...r, token: tokenOf.get(r.id) ?? null }));
 }
 
+/**
+ * What was sent and accepted today on a day's jobs, for Today's end-of-day card (owner,
+ * 2026-10-26): reports sent and quotes accepted between `from` and `to` (the shop's day).
+ */
+export async function getDayWrapUp(office: Office, jobIds: string[], from: string, to: string) {
+  if (jobIds.length === 0) return { reports: [], quotes: [] };
+  const supabase = await db();
+  const [reports, quotes] = await Promise.all([
+    supabase
+      .from("report")
+      .select("job_id, sent_at, status")
+      .eq("company_id", office.company.id)
+      .in("job_id", jobIds)
+      .in("status", ["sent", "superseded"])
+      .gte("sent_at", from)
+      .lt("sent_at", to)
+      .is("deleted_at", null),
+    supabase
+      .from("quote")
+      .select("job_id, accepted_at")
+      .eq("company_id", office.company.id)
+      .in("job_id", jobIds)
+      .gte("accepted_at", from)
+      .lt("accepted_at", to)
+      .is("deleted_at", null),
+  ]);
+  return {
+    reports: (reports.data ?? []) as { job_id: string; sent_at: string; status: string }[],
+    quotes: (quotes.data ?? []) as { job_id: string; accepted_at: string }[],
+  };
+}
+
 /** A pool's chemical log, newest first (owner, 2026-10-19). */
 export async function getChemicalReadings(office: Office, propertyId: string, limit = 12) {
   const supabase = await db();
@@ -1262,6 +1296,91 @@ export async function getChemicalReadings(office: Office, propertyId: string, li
       .order("recorded_at", { ascending: false })
       .limit(limit),
   ) as ChemicalReading[];
+}
+
+/**
+ * Each pool's usual tech and start time for a new job (owner, 2026-10-26): the tech and the time
+ * most of its last scheduled jobs share, when that's obvious (core `usualVisit`). By property id.
+ */
+export async function getUsualVisits(office: Office, timeZone: string) {
+  const supabase = await db();
+  const rows = (must(
+    await supabase
+      .from("job")
+      .select("property_id, assigned_user_id, scheduled_start")
+      .eq("company_id", office.company.id)
+      .not("scheduled_start", "is", null)
+      .not("property_id", "is", null)
+      .neq("status", "canceled")
+      .is("deleted_at", null)
+      .order("scheduled_start", { ascending: false })
+      .limit(3000),
+  ) ?? []) as {
+    property_id: string;
+    assigned_user_id: string | null;
+    scheduled_start: string;
+  }[];
+  const byPool = new Map<string, typeof rows>();
+  for (const r of rows) {
+    const list = byPool.get(r.property_id) ?? [];
+    if (list.length < 4) list.push(r);
+    byPool.set(r.property_id, list);
+  }
+  const usual: Record<string, UsualVisit> = {};
+  for (const [id, jobs] of byPool) {
+    const u = usualVisit(jobs, timeZone);
+    if (u) usual[id] = u;
+  }
+  return usual;
+}
+
+/**
+ * What a pool's earlier visits can tell this one (owner, 2026-10-26: "pre-fill what the app
+ * already knows"): the chemicals added on them, and their notes. Core prefill.ts turns these into
+ * the usual chemicals and the last visit's notes.
+ */
+export async function getPoolHistory(office: Office, propertyId: string, jobId: string) {
+  const supabase = await db();
+  const [additions, jobs] = await Promise.all([
+    supabase
+      .from("chemical_addition")
+      .select("price_book_item_id, job_id, added_at")
+      .eq("company_id", office.company.id)
+      .eq("property_id", propertyId)
+      .neq("job_id", jobId)
+      .is("deleted_at", null)
+      .order("added_at", { ascending: false })
+      .limit(100),
+    supabase
+      .from("job")
+      .select("id, summary_notes, scheduled_start, completed_at")
+      .eq("company_id", office.company.id)
+      .eq("property_id", propertyId)
+      .neq("id", jobId)
+      .not("summary_notes", "is", null)
+      .is("deleted_at", null)
+      .order("scheduled_start", { ascending: false, nullsFirst: false })
+      .limit(5),
+  ]);
+  return {
+    additions: (additions.data ?? []) as {
+      price_book_item_id: string | null;
+      job_id: string;
+      added_at: string;
+    }[],
+    jobs: (
+      (jobs.data ?? []) as {
+        id: string;
+        summary_notes: string | null;
+        scheduled_start: string | null;
+        completed_at: string | null;
+      }[]
+    ).map((j) => ({
+      id: j.id,
+      summary_notes: j.summary_notes,
+      when: j.completed_at ?? j.scheduled_start,
+    })),
+  };
 }
 
 /**

@@ -56,9 +56,8 @@ interface PhoneState {
 type Result = { message?: string; error?: string; fields?: Record<string, string> };
 
 const NOTE: Record<OnMyWayVia, string> = {
-  messages:
-    "Sent from the company number and kept in Messages, so the whole team sees it and the customer’s reply.",
-  phone: "Opens the tech’s own Messages app with the text ready to send.",
+  messages: "Sent from the company number, so the whole team sees the reply.",
+  phone: "Opens the tech’s own Messages app.",
 };
 
 async function phoneApi<T>(method: "GET" | "POST", body?: object): Promise<T & Result> {
@@ -123,10 +122,7 @@ function PhonePage() {
   }
 
   return (
-    <Screen
-      title="Phone and Texting"
-      subtitle="Text and call customers from one company number the whole team shares."
-    >
+    <Screen title="Phone and Texting">
       {notice ? <Notice tone={notice.tone}>{notice.text}</Notice> : null}
       {loadError ? <Notice tone="warning">{loadError}</Notice> : null}
       {!state && !loadError ? <SkeletonRows count={4} label="Loading Phone and Texting" /> : null}
@@ -329,12 +325,7 @@ function LineSettings({ line, team, act }: { line: Line; team: Teammate[]; act: 
   return (
     <Section title="Texts and calls">
       <View style={styles.part}>
-        <View>
-          <Toggle label="Photos in texts" value={pictures} onChange={setPictures} />
-          <T variant="secondary" muted>
-            Send and receive pictures (MMS).
-          </T>
-        </View>
+        <Toggle label="Photos in texts" value={pictures} onChange={setPictures} />
         <FieldGroup>
           <FieldRow
             label="Voicemail greeting"

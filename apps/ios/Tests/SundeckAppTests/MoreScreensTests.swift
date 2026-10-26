@@ -72,9 +72,6 @@ import Testing
         let pool = settingsGroups(.pool)
         #expect(pool.map(\.title) == ["Your shop", "Money", "Checklists and reports"])
         #expect(pool[2].pages == [.components, .reports])
-        #expect(
-            reportTemplatesSubtitle(["services": "pool"]) == "What goes to the customer after each maintenance visit.")
-        #expect(reportTemplatesSubtitle(["services": "both"]) == reportTemplatesSubtitle)
         #expect(settingsGroups(.leak)[2].pages == [.components, .tests, .severities, .exclusions, .reports])
         #expect(SettingsPage.priceBook.detail(.pool) == "Services, chemicals, and repairs for quotes")
     }
@@ -526,7 +523,6 @@ import Testing
             ChemicalLogText.noPool
                 == "To save readings to a pool’s log, open Chemical from a visit or the customer’s pool.")
         #expect(ChemicalLogText.poolRowEmpty == "Readings and the chemical log")
-        #expect(ChemicalLogText.removeTitle == "Remove these readings?")
     }
 }
 

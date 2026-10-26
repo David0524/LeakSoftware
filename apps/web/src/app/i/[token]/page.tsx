@@ -6,6 +6,7 @@ import {
   cardFeeChoice,
   formatCents,
   formatQuantity,
+  invoiceSummary,
   monthName,
   latestReceiptPayment,
   lineTotal,
@@ -31,6 +32,7 @@ import {
   actionCardClass,
 } from "@/components/doc-ui";
 import { PdfLink } from "@/components/pdf-link";
+import { ReportLead } from "@/components/report-lead";
 import { DocSkeleton } from "@/components/page-skeleton";
 import { documentMetadata, fromPreviewFetcher } from "@/server/link-preview";
 
@@ -134,6 +136,7 @@ async function InvoicePage({ params, searchParams }: PageProps<"/i/[token]">) {
   const lastPaid = i.status === "partially_paid" ? latestReceiptPayment(received) : null;
   const isPrint = !!print;
   const title = `${isReceipt ? "Receipt" : "Invoice"}${i.number ? ` #${i.number}` : ""}`;
+  const invoiceSummaryLine = invoiceSummary(i);
 
   return (
     <article className="mx-auto max-w-2xl p-4 sm:p-8">
@@ -170,6 +173,17 @@ async function InvoicePage({ params, searchParams }: PageProps<"/i/[token]">) {
           {!print ? <PdfLink href={`/i/${token}/pdf`} className="hidden sm:inline-flex" /> : null}
         </div>
       </header>
+
+      {/* The invoice opens with one plain line (owner, 2026-10-26: the same opening as a report):
+          what is due and when, or thanks once it's paid. */}
+      {invoiceSummaryLine ? (
+        <ReportLead
+          testId="invoice-lead"
+          headline={invoiceSummaryLine}
+          byLine={null}
+          photo={null}
+        />
+      ) : null}
 
       {i.status === "void" ? (
         <div className="mt-6">

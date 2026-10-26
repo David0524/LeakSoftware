@@ -1,7 +1,7 @@
 import { Pressable, StyleSheet, Text, View } from "react-native";
 import Svg, { Path } from "react-native-svg";
 import { CHOOSE_HINT, CHOOSE_LABEL, type AnswerIcon, type AnswerTone } from "@leakbook/core";
-import { haptics } from "../../ui/haptics";
+import { haptic, haptics } from "../../ui/haptics";
 import { useMenu } from "../../ui/Select";
 import { color, face, MAX_TEXT_SCALE, minTap, tint } from "../../ui/theme";
 import { WebIcon } from "../../ui/WebIcon";
@@ -64,6 +64,8 @@ export interface AnswerIconChoice {
   icon: AnswerIcon;
   chosen: boolean;
   onPress: () => void;
+  /** The answer that finishes the item ("Done", "Not Leaking", "No"): a tap you can feel. */
+  done?: boolean;
 }
 
 /**
@@ -89,7 +91,8 @@ export function AnswerIconButtons({
             accessibilityState={{ selected: c.chosen }}
             accessibilityHint={c.chosen ? "Tap again to clear" : undefined}
             onPress={() => {
-              haptics.selection();
+              if (c.done && !c.chosen) haptic("checklistItemDone");
+              else haptics.selection();
               c.onPress();
             }}
             style={styles.target}

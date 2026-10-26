@@ -86,6 +86,7 @@ export const TodayHeroCard = memo(function TodayHeroCard({
   driveMin,
   notOnMap,
   checklistDone = false,
+  wrapUp = null,
   stopIds,
   onBrowse,
   onMessage,
@@ -104,6 +105,11 @@ export const TodayHeroCard = memo(function TodayHeroCard({
   notOnMap: boolean;
   /** The card's stop's checklist is all done (useTodayHero). */
   checklistDone?: boolean;
+  /**
+   * The end-of-day line ("Today: 8 pools · 3 reports sent", core endOfDay) that fills the card
+   * once every stop is done (owner, 2026-10-26).
+   */
+  wrapUp?: string | null;
   /** The day's stops in route order, for swiping and the segments. */
   stopIds: readonly string[];
   /** Show a stop (null: back to the stop the day is on). */
@@ -432,6 +438,16 @@ export const TodayHeroCard = memo(function TodayHeroCard({
           </Animated.View>
         </Pressable>
 
+        {hero.moment === "day_done" && wrapUp ? (
+          <Text
+            testID="hero-wrap-up"
+            style={[type.body, face.medium, styles.wrapUp, { color: white }]}
+            maxFontSizeMultiplier={MAX_TEXT_SCALE}
+          >
+            {wrapUp}
+          </Text>
+        ) : null}
+
         {details ? (
           <View style={styles.details}>
             {address ? (
@@ -706,6 +722,7 @@ const styles = StyleSheet.create({
   figureBox: { flexShrink: 0, alignItems: "flex-end" },
   figureStacked: { alignItems: "flex-start" },
   figure: { fontFamily: font.displayBold, lineHeight: 30 },
+  wrapUp: { marginTop: space["3"] },
   details: { marginTop: space["3"], gap: 6 },
   detail: { flexDirection: "row", alignItems: "flex-start", gap: space["2"] },
   detailIcon: { width: 20, flexShrink: 0, alignItems: "center", justifyContent: "center" },

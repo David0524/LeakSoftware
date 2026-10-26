@@ -30,7 +30,7 @@ test("a pool inspection: New Job, answers and gates, and its report", async ({ p
   await expect(page.getByText("Spa, Deck Jets")).toBeVisible();
   // The job page shows one tab at a time on every screen (owner, 2026-10-22).
   await jobSection(page, "Checklist");
-  await expect(page.getByText(/^0 of \d+ answered · 0 need attention · 0 leaking$/)).toBeVisible();
+  await expect(page.getByText(/^0 of \d+ answered$/)).toBeVisible();
 
   // On a phone each question is one line (owner, 2026-10-22): Yes and No as icons, and a
   // question whose answers have no clear icons as one pill that opens a menu.
@@ -67,7 +67,7 @@ test("a pool inspection: New Job, answers and gates, and its report", async ({ p
   expect(await tech.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(390);
   await phone.close();
   await page.reload();
-  await expect(page.getByText(/^0 of \d+ answered · 0 need attention · 0 leaking$/)).toBeVisible();
+  await expect(page.getByText(/^0 of \d+ answered$/)).toBeVisible();
 
   // Equipment opens first; a flagged answer counts as needing attention.
   const leaking = page.getByRole("radiogroup", { name: "Does the system show visible leaking?" });
@@ -84,7 +84,7 @@ test("a pool inspection: New Job, answers and gates, and its report", async ({ p
   });
   await describe.fill("Drip at the filter union");
   await describe.blur();
-  await expect(page.getByText(/· 1 need attention · 0 leaking$/)).toBeVisible();
+  await expect(page.getByText(/· 1 needs attention$/)).toBeVisible();
 
   // No on a gate folds its group away.
   await page.getByRole("button", { name: "Fencing and Child Barriers" }).click();
@@ -107,7 +107,7 @@ test("a pool inspection: New Job, answers and gates, and its report", async ({ p
     .getByRole("radiogroup", { name: "Main drain", exact: true })
     .getByRole("radio", { name: "Leaking", exact: true })
     .click();
-  await expect(page.getByText(/· 1 need attention · 1 leaking$/)).toBeVisible();
+  await expect(page.getByText(/· 1 needs attention · 1 leaking$/)).toBeVisible();
 
   // The report: Write Draft from the answers, then send.
   await wrapUpStep(page, "Report");

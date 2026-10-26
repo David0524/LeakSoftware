@@ -15,7 +15,6 @@ export default async function ExclusionsPage() {
   return (
     <SettingsListPage
       title="Exclusion Reasons"
-      subtitle="Why a component wasn’t inspected. Techs must pick one, and it appears on the report."
       add={{
         label: "Add Reason",
         form: (
@@ -26,6 +25,7 @@ export default async function ExclusionsPage() {
                 name="label"
                 id="label-new"
                 placeholder="Equipment locked"
+                required
               />
             </SettingsFields>
           </SettingsForm>
@@ -53,7 +53,13 @@ export default async function ExclusionsPage() {
                 labelWidth="5rem"
                 className="sm:grid sm:grid-cols-[1fr_120px] sm:gap-4"
               >
-                <SField label="Reason" name="label" id={`label-${r.id}`} defaultValue={r.label} />
+                <SField
+                  label="Reason"
+                  name="label"
+                  id={`label-${r.id}`}
+                  defaultValue={r.label}
+                  required
+                />
                 <SField
                   label="Order"
                   name="sort_order"

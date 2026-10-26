@@ -201,7 +201,7 @@ import Testing
             sync, companyId: Self.company, jobId: Self.job, componentId: skim.component.id, existing: skim.result,
             verdict: skim.isDone ? nil : .ok, userId: Self.me)
         #expect(try item().isDone)
-        #expect(model(.maintenance, property: nil).tallyText == "1 done · 0 need attention · 0 skipped · 0 to do")
+        #expect(model(.maintenance, property: nil).tallyText == "1 done")
         let done = try item()
         try InspectionWrites.setVerdict(
             sync, companyId: Self.company, jobId: Self.job, componentId: done.component.id, existing: done.result,
@@ -221,7 +221,7 @@ import Testing
             ChecklistModel.tallyText(t, jobType: .repair)
                 == "3 not leaking · 1 attention · 2 leaking · 4 not applicable · 5 to do")
         #expect(
-            ChecklistModel.tallyText(t, jobType: .maintenance) == "3 done · 1 need attention · 4 skipped · 5 to do")
+            ChecklistModel.tallyText(t, jobType: .maintenance) == "3 done · 1 needs attention · 4 skipped · 5 to do")
     }
 
     @Test func sectionsComeInTheFixedOrderWithItemsByType() throws {
@@ -237,7 +237,7 @@ import Testing
         #expect(plumbing.items.map(\.component.label) == ["Returns 1", "Returns 2", "Spa jets"])
         // "+ Add" only on the last of a type that repeats.
         #expect(plumbing.items.map(\.addsAnother) == [false, true, false])
-        #expect(m.tallyText == "0 not leaking · 0 attention · 0 leaking · 0 not applicable · 7 to do")
+        #expect(m.tallyText == "7 to do")
     }
 
     @Test func addAnItemListsMissingTypesForThisJobAndPool() throws {
@@ -264,8 +264,8 @@ import Testing
         #expect(added.result?.status == .pending)
 
         before = sync.revision
-        try InspectionWrites.removeComponent(
-            sync, companyId: Self.company, component: added.component, result: added.result)
+        let rows = RemovalRow.checklistItem(added.component, added.result)
+        try RemovalWrites.remove(sync, companyId: Self.company, rows: rows)
         #expect(sync.revision == before + 1)
         #expect(!inspection.components.contains { $0.label == "Returns 3" })
         let all = try sync.store.list("job_component", jobId: Self.job, includeDeleted: true)
@@ -276,10 +276,18 @@ import Testing
         #expect(goneResult["deleted_at"]?.string != nil)
         // The next one added after a removal takes the next number.
         #expect(nextInstance(returns, inspection.components).label == "Returns 3")
+        // Undo (owner, 2026-10-26): the item and its result are live again, in one batch.
+        before = sync.revision
+        try RemovalWrites.restore(sync, companyId: Self.company, rows: rows)
+        #expect(sync.revision == before + 1)
+        #expect(inspection.components.contains { $0.label == "Returns 3" })
+        #expect(try row("Returns 3").result?.status == .pending)
+        let back = try sync.store.list("job_component", jobId: Self.job, includeDeleted: true)
+        #expect(back.first { $0.id == added.component.id }?["deleted_at"]?.string == nil)
         // Removing the only bond beam puts it back in "Add an item".
         let beam = try row("Bond beam")
-        try InspectionWrites.removeComponent(
-            sync, companyId: Self.company, component: beam.component, result: beam.result)
+        try RemovalWrites.remove(
+            sync, companyId: Self.company, rows: RemovalRow.checklistItem(beam.component, beam.result))
         #expect(model(property: try property()).missing.map(\.key).contains("bond_beam"))
     }
 
@@ -299,8 +307,8 @@ import Testing
             verdict: .ok, userId: Self.me)
         let answered = try row("Bond beam")
         let before = sync.revision
-        try InspectionWrites.removeComponent(
-            sync, companyId: Self.company, component: answered.component, result: answered.result)
+        try RemovalWrites.remove(
+            sync, companyId: Self.company, rows: RemovalRow.checklistItem(answered.component, answered.result))
         #expect(sync.revision == before + 1)
         #expect(!inspection.components.contains { $0.label == "Bond beam" })
         let results = try sync.store.list("checklist_item_result", jobId: Self.job, includeDeleted: true)

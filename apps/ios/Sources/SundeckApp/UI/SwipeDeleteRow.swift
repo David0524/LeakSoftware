@@ -3,7 +3,8 @@
 
     /// A row in our own grouped block that swipes left to show a red Delete (spec 3.16): 88 wide,
     /// `fail` with white semibold text; a full swipe deletes too. `delete` asks first (the caller's
-    /// confirmation), and the row always has a visible way to do the same (Delete in its sheet).
+    /// confirmation) unless the delete can be undone and says so with Undo (RemovalCenter, owner
+    /// 2026-10-26), and the row always has a visible way to do the same (Delete in its sheet).
     /// VoiceOver gets a Delete action. For rows in a `List`, use `.swipeActions` instead.
     ///
     ///     SwipeDeleteRow(name: "Pressure test", delete: { deleting = row }) { … }

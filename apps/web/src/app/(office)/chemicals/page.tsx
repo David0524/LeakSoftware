@@ -47,22 +47,14 @@ export default async function ChemicalsPage({ searchParams }: PageProps<"/chemic
       />
       {/* What the pool took each month (owner, 2026-10-24), from what techs added on visits. */}
       {pool && added.length ? (
-        <Grouped
-          title="Chemicals added"
-          className="mt-8 max-w-2xl"
-          footer="Added on visits, by month."
-        >
+        <Grouped title="Chemicals added" className="mt-8 max-w-2xl">
           {monthlyUsage(added, tz).map((m) => (
             <Row key={m.month} label={m.label} detail={m.line} />
           ))}
         </Grouped>
       ) : null}
       {pool ? (
-        <Grouped
-          title="Chemical log"
-          className="mt-8 max-w-2xl"
-          footer="One entry for each Submit, newest first."
-        >
+        <Grouped title="Chemical log" className="mt-8 max-w-2xl">
           {readings.length === 0 ? (
             <Row label={<span className="text-text-muted">No readings submitted yet</span>} />
           ) : (

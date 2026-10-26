@@ -36,10 +36,9 @@ export const REPAIR_LABELS = {
   empty: "No repairs yet.",
   /** The add sheet's button. */
   save: "Add Repair",
-  removeTitle: "Remove this repair?",
+  /** The note under "Repair removed" (nothing asks first since 2026-10-26: it has Undo). */
   removeMessage: "It comes off the job’s price. An invoice already made keeps it.",
-  removeConfirm: "Remove Repair",
-  footer: "Billed on the invoice, one line each.",
+  footer: "Billed on the invoice.",
 } as const;
 
 /** The picker's value for "Something else" (a typed description). */

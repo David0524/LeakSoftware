@@ -34,6 +34,9 @@ import { password } from "./cases/password";
 import { linkShare } from "./cases/link-share";
 import { chemicalAdditions } from "./cases/chemical-additions";
 import { reportPhoto } from "./cases/report-photo";
+import { endOfDayCases } from "./cases/end-of-day";
+import { prefill } from "./cases/prefill";
+import { removal } from "./cases/removal";
 
 /** One fixture file per entry: apps/ios/Tests/Fixtures/<name>.json. */
 export const modules: Record<string, ModuleCases> = {
@@ -72,4 +75,7 @@ export const modules: Record<string, ModuleCases> = {
   password,
   "link-share": linkShare,
   "report-photo": reportPhoto,
+  "end-of-day": endOfDayCases,
+  prefill,
+  removal,
 };

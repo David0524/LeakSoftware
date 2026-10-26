@@ -185,7 +185,7 @@ import Testing
         #expect(equipment.questions.map(\.header) == ["Solar", nil, nil, "Filtration System"])
         #expect(equipment.questions[3].notice?.hasPrefix("FOR ANY UNKNOWN GAS ISSUES") == true)
         #expect(equipment.progressText == "0 of 4 answered")
-        #expect(c.tallyText == "0 of 6 answered · 0 need attention · 0 leaking")
+        #expect(c.tallyText == "0 of 6 answered")
         let model = ChecklistModel(
             config: config, inspection: JobInspection(sync.store, jobId: jobId), jobType: .inspection, property: nil)
         #expect(model.sections.isEmpty && model.canEdit)
@@ -317,7 +317,7 @@ import Testing
         // The report lists what was answered, so a question left open doesn't hold up signing.
         #expect(form.pending == 1 && form.pendingText == "1 still to do")
         #expect(form.pendingNotice == nil && form.showsButtons)
-        #expect(form.tallyText == "3 of 4 answered · 1 need attention · 0 leaking")
+        #expect(form.tallyText == "3 of 4 answered · 1 needs attention")
         try InspectionWrites.saveTextAnswer(
             sync, companyId: Self.company, jobId: jobId, question: try question(jobId, "Heater make"), draft: "Gas",
             userId: Self.me)
@@ -337,10 +337,9 @@ import Testing
         #expect(groups[2].items.first?.detail == "Several choices")
         let leak = componentGroups(sync.store, companyId: Self.company, list: .leak)
         #expect(leak.flatMap(\.items).map(\.name) == ["Skimmer"])
-        #expect(
-            settingsSubtitle(.components, services: .leak, list: .inspection)
-                == "Every question of a pool inspection. Changes apply to new jobs; jobs already started keep their checklist."
-        )
+        #expect(settingsSubtitle(.components, services: .leak, list: .inspection) == "Changes apply to new jobs only.")
+        #expect(settingsSubtitle(.components, services: .pool, list: .pool) == "Changes apply to new visits only.")
+        #expect(settingsSubtitle(.priceBook, services: .both) == nil)
     }
 
     @Test func aQuestionsFormSavesItsChoicesAsOptions() throws {

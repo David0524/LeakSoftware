@@ -188,11 +188,7 @@ function TeamPage() {
 
   return (
     <>
-      <SettingsList
-        title="Team"
-        subtitle="Techs run jobs on the phone. Admins run the office. Owners also handle billing, payments setup, and roles."
-        notice={sheet.notice}
-      >
+      <SettingsList title="Team" notice={sheet.notice}>
         <Section title="Active">
           <Group separatorInset={space["4"] + 10 + space["3"]}>
             {order.active.map((m) => (
@@ -231,7 +227,7 @@ function TeamPage() {
           title="Open invites"
           footer={
             invites?.length
-              ? "Send the link by text or email. It works once, for that email address, for 14 days."
+              ? "The link works once and expires in 14 days."
               : invites
                 ? "No open invites."
                 : "Open invites show when there’s a signal."
@@ -251,10 +247,7 @@ function TeamPage() {
           </Group>
         </Section>
 
-        <Section
-          title="Without the app"
-          footer="Profiles for people who work for you without using the app. Only owners and admins see them."
-        >
+        <Section title="Without the app" footer="Only owners and admins see these.">
           <Group>
             {others.map((p) => (
               <ListRow
@@ -310,9 +303,6 @@ function TeamPage() {
                 value={requiresFinishedChecklist(settings)}
                 onChange={(v) => saveSetting({ require_checklist_to_finish: v })}
               />
-              <T variant="secondary" muted>
-                On: Complete Job waits until every checklist item is answered.
-              </T>
             </View>
             <View style={styles.setting}>
               <Toggle
@@ -321,7 +311,7 @@ function TeamPage() {
                 onChange={(v) => saveSetting({ require_finish_photo: v })}
               />
               <T variant="secondary" muted>
-                On: Complete Job, and sending a report, wait until the job has a photo.
+                Reports need one too.
               </T>
             </View>
           </Group>

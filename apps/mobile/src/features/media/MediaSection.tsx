@@ -49,7 +49,7 @@ import { useInSheet } from "../../ui/sheet";
 import { SwipeToDelete } from "../../ui/SwipeRow";
 import { color, face, MAX_TEXT_SCALE, shape, space, tabular } from "../../ui/theme";
 import { WebIcon, type WebIconName } from "../../ui/WebIcon";
-import { confirmDeleteMedia } from "./remove";
+import { deleteMedia } from "./remove";
 import { VoiceRecorder } from "./VoiceRecorder";
 import { Bone } from "../../ui/Skeleton";
 
@@ -409,7 +409,7 @@ function MediaCard({ media }: { media: Media }) {
     hasMarkup: shapes.length > 0,
     ready: source.state === "ready",
   });
-  const remove = () => confirmDeleteMedia(services.sync, media.company_id, media);
+  const remove = () => deleteMedia(services.sync, media.company_id, media);
   const openMenu = () =>
     hold.open(`${kind} · ${attached}`, actions.menu, (id) =>
       id === "markup" ? open(true) : remove(),
@@ -494,7 +494,7 @@ function MediaCard({ media }: { media: Media }) {
                     {
                       label: `Delete ${kind}`,
                       destructive: true,
-                      onPress: () => confirmDeleteMedia(services.sync, media.company_id, media),
+                      onPress: () => deleteMedia(services.sync, media.company_id, media),
                     },
                   ],
                 })
@@ -629,7 +629,7 @@ function Thumb({ media, size, menu }: { media: Media; size: number; menu: RowMen
   const markup = parseMarkup(media.markup);
   const label = `${MEDIA_KIND_LABELS[media.kind]}${media.duration_ms ? `, ${formatDuration(media.duration_ms)}` : ""}${media.upload_state === "pending" ? ", waiting to upload" : ""}`;
   const where = `/jobs/${media.job_id}/${inSheet ? "capture" : "media"}/${media.id}`;
-  const remove = () => confirmDeleteMedia(services.sync, media.company_id, media);
+  const remove = () => deleteMedia(services.sync, media.company_id, media);
   const actions = mediaRowActions({
     kind: media.kind,
     kindLabel: MEDIA_KIND_LABELS[media.kind],

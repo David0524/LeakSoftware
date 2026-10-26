@@ -7,7 +7,6 @@ import {
   PRICE_BOOK_TEXT,
   chargeChemicalsSettings,
   chargesChemicals,
-  companyServices,
   formatCents,
   localDate,
   offersPool,
@@ -72,11 +71,6 @@ function PriceBookPage() {
   const sheet = useEditSheet<PriceItem>();
   // Touch and hold a row for Edit and its delete (gestures spec section 12).
   const menu = useRowMenu();
-  const what = {
-    pool: "Cleanings, chemicals, and repairs techs pick from when quoting extra work.",
-    leak: "Detection fees and repairs techs pick from when building a quote.",
-    both: "Detection fees, cleanings, chemicals, and repairs techs pick from when building a quote.",
-  }[companyServices(company.settings)];
   // Chemicals first, uncategorized items last (owner, 2026-10-25), as on the website.
   const pool = offersPool(company.settings);
   const sections = priceBookSections(items);
@@ -114,7 +108,6 @@ function PriceBookPage() {
     <>
       <SettingsList
         title="Price Book"
-        subtitle={`${what} Prices are suggestions; a tech can adjust within the discount limit.`}
         addLabel="Add Item"
         onAdd={() => sheet.open("new")}
         notice={sheet.notice}
@@ -316,11 +309,18 @@ function ItemForm({
   return (
     <>
       <FieldGroup labelWidth={120}>
-        <FieldRow label="Name" value={f.name} onChangeText={set("name")} error={errors.name} />
+        <FieldRow
+          label="Name"
+          value={f.name}
+          onChangeText={set("name")}
+          placeholder="Required"
+          error={errors.name}
+        />
         <FieldRow
           label="Price ($)"
           value={f.price}
           onChangeText={set("price")}
+          placeholder="Required"
           keyboardType="decimal-pad"
           error={errors.price}
         />

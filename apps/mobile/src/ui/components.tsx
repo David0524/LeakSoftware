@@ -43,7 +43,7 @@ import { Stack } from "expo-router";
 import type { NativeStackNavigationOptions } from "expo-router/native-stack";
 import { useNavigationState, useRoute, useScrollToTop } from "expo-router/react-navigation";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { JOB_STATUS_LABELS, SAMPLE_PILL, type JobStatus } from "@leakbook/core";
+import { JOB_STATUS_LABELS, SAMPLE_PILL, needAttentionText, type JobStatus } from "@leakbook/core";
 import { tokens as sampleTokens } from "@leakbook/tokens";
 import {
   cardShadow,
@@ -718,6 +718,7 @@ export function FilterPills<V extends string>({
   value,
   onChange,
   label,
+  trailing,
 }: {
   /** `dot`: a tech's color key, drawn as their dot before the name (team and week spec 3). */
   options: { value: V; label: string; dot?: string | null }[];
@@ -725,6 +726,8 @@ export function FilterPills<V extends string>({
   onChange: (v: V) => void;
   /** For screen readers ("Status", "Whose day"). */
   label: string;
+  /** A control after the last pill, scrolling with them (Reorder Techs), so no pill is cut off beside it. */
+  trailing?: ReactNode;
 }) {
   return (
     <ScrollView
@@ -747,6 +750,7 @@ export function FilterPills<V extends string>({
           }}
         />
       ))}
+      {trailing}
     </ScrollView>
   );
 }
@@ -986,7 +990,7 @@ export function useReduceMotion(): boolean {
  * it. For two to five related views or states (house rule); use Choice for longer lists.
  * `fill` (default) spreads the segments over the row; otherwise each is sized to its label
  * (at least `minSegmentWidth`). The "switcher" variant is the job page's section switcher:
- * equal columns, 13 pt labels, and a to-do badge on a segment.
+ * equal columns, 13 pt labels, and a badge on a segment (what needs attention).
  */
 export function Segmented<V extends string>({
   label,
@@ -1111,7 +1115,7 @@ export function Segmented<V extends string>({
             key={o.value}
             accessibilityRole="radio"
             accessibilityState={{ checked: on }}
-            accessibilityLabel={o.badge ? `${o.label}, ${o.badge} to do` : o.label}
+            accessibilityLabel={o.badge ? `${o.label}, ${needAttentionText(o.badge)}` : o.label}
             onLayout={(e) => {
               const l = e.nativeEvent.layout;
               setLayouts((prev) => {
@@ -1362,6 +1366,7 @@ export function ListRow({
   accessibilityRole,
   onDelete,
   deleteLabel = "Delete",
+  deleteAsks,
   leadingAction,
   onLongPress: holdProp,
   gestures,
@@ -1384,11 +1389,14 @@ export function ListRow({
   accessibilityRole?: "button" | "link";
   /**
    * Swipe left to delete, plus a "Delete" action for VoiceOver and TalkBack. Should ask first
-   * (confirmDestructive). The screen the row opens keeps its own visible Delete button.
+   * (confirmDestructive), unless the delete can be undone and says so with Undo (`deleteAsks:
+   * false`). The screen the row opens keeps its own visible Delete button.
    */
   onDelete?: () => void;
   /** The swipe and accessibility action's name, as on the visible button ("Remove"). */
   deleteLabel?: string;
+  /** `onDelete` asks first (the default); false when it removes at once with Undo. */
+  deleteAsks?: boolean;
   /**
    * Swipe right for a blue action (Unread in Messages), plus the same accessibility action.
    * Not for rows that also delete.
@@ -1412,7 +1420,12 @@ export function ListRow({
   const onLongPress =
     holdProp ??
     (editMenu && onPress
-      ? editRowMenu(editMenu.menu, editMenu.title, { onEdit: onPress, onDelete, deleteLabel })
+      ? editRowMenu(editMenu.menu, editMenu.title, {
+          onEdit: onPress,
+          onDelete,
+          deleteLabel,
+          deleteAsks,
+        })
       : undefined);
   const action = tone !== "default";
   const showChevron = Boolean(onPress) && (chevron ?? !action);
@@ -2048,7 +2061,7 @@ const styles = StyleSheet.create({
     overflow: "hidden",
   },
   pillScroller: { marginHorizontal: -gutter, flexGrow: 0 },
-  pillRow: { paddingHorizontal: gutter, gap: space["2"] },
+  pillRow: { paddingHorizontal: gutter, gap: space["2"], alignItems: "center" },
   pill: {
     minHeight: minTap,
     paddingHorizontal: space["4"],

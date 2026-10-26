@@ -958,42 +958,41 @@ export function ScheduleScreen() {
 
         {view === "day" ? <WeekStrip date={date} today={today} onChange={setDate} /> : null}
 
-        {/* Whose schedule, with Reorder Techs as a round button at its end (owners and admins;
-            owner, 2026-10-21: not a row of its own), as the website. */}
+        {/* Whose schedule, with Reorder Techs as a round button after the last name (owners and
+            admins), scrolling with the names so none is cut off beside it (owner, 2026-10-26),
+            as the website. */}
         {techs.length > 1 ? (
-          <View style={styles.whoseRow}>
-            <View style={styles.whosePills}>
-              <FilterPills
-                label="Whose schedule"
-                options={[
-                  ...techs.map((t) => ({
-                    value: t.user_id,
-                    label: t.user_id === me ? "Me" : t.name,
-                    dot: t.color,
-                  })),
-                  { value: "all", label: "Everyone" },
-                ]}
-                value={tech}
-                onChange={setWanted}
-              />
-            </View>
-            {manager && seesAll ? (
-              <ReorderTechs
-                techs={techs
-                  .filter((t) => t.status === "active")
-                  .map((t) => ({ id: t.membership_id, name: t.name, color: t.color }))}
-                onSave={(ordered) => {
-                  try {
-                    saveTechOrder(getServices().sync, company.id, team, ordered);
-                    banner.show({ tone: "success", message: REORDER_TECHS.saved });
-                    return null;
-                  } catch (e) {
-                    return e instanceof Error ? e.message : String(e);
-                  }
-                }}
-              />
-            ) : null}
-          </View>
+          <FilterPills
+            label="Whose schedule"
+            options={[
+              ...techs.map((t) => ({
+                value: t.user_id,
+                label: t.user_id === me ? "Me" : t.name,
+                dot: t.color,
+              })),
+              { value: "all", label: "Everyone" },
+            ]}
+            value={tech}
+            onChange={setWanted}
+            trailing={
+              manager && seesAll ? (
+                <ReorderTechs
+                  techs={techs
+                    .filter((t) => t.status === "active")
+                    .map((t) => ({ id: t.membership_id, name: t.name, color: t.color }))}
+                  onSave={(ordered) => {
+                    try {
+                      saveTechOrder(getServices().sync, company.id, team, ordered);
+                      banner.show({ tone: "success", message: REORDER_TECHS.saved });
+                      return null;
+                    } catch (e) {
+                      return e instanceof Error ? e.message : String(e);
+                    }
+                  }}
+                />
+              ) : null
+            }
+          />
         ) : null}
 
         {/* Only while someone shown starts at the shop (owner, 2026-10-21), as the website. */}
@@ -1201,8 +1200,6 @@ export function ScheduleScreen() {
 }
 
 const styles = StyleSheet.create({
-  whoseRow: { flexDirection: "row", alignItems: "center", gap: space["1"] },
-  whosePills: { flex: 1, minWidth: 0 },
   pages: { gap: space["5"] },
   controls: { flexDirection: "row", alignItems: "center", gap: space["2"] },
   dayHead: {

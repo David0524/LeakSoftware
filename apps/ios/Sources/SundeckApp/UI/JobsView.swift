@@ -137,7 +137,7 @@
             .refreshable { await sync.syncNow() }
             .sensoryFeedback(.impact(weight: .light), trigger: sync.status.phase == .syncing)
             .rootTitleScroll()
-            .sensoryFeedback(.success, trigger: completes)
+            .haptic(.jobCompleted, trigger: completes)
             .resultBanner($banner, onUndo: reopen.map { id in { reopenVisit(id) } })
             .sheet(item: $moving) { target in
                 JobMoveSheet(jobId: target.id) { result in

@@ -15,7 +15,7 @@ import { useCompany, useSession } from "../../../../../../state/session";
 import { MediaSection } from "../../../../../../features/media/MediaSection";
 import { Button, Field, HeaderButton, Notice, Screen, T } from "../../../../../../ui/components";
 import { OUTCOME_LABELS } from "../../../../../../features/inspection/OutcomeChip";
-import { confirmDeleteTest } from "../../../../../../features/inspection/remove";
+import { deleteTest } from "../../../../../../features/inspection/remove";
 import { haptics } from "../../../../../../ui/haptics";
 import { Select } from "../../../../../../ui/Select";
 import { useDiscardChanges } from "../../../../../../ui/discard";
@@ -279,9 +279,7 @@ export default function TestScreen() {
               kind="danger"
               wide
               onPress={() =>
-                confirmDeleteTest(services.sync, company.id, existing.id, type.name, () =>
-                  leave(() => router.back()),
-                )
+                deleteTest(services.sync, company.id, existing.id, () => leave(() => router.back()))
               }
             />
           </View>

@@ -27,7 +27,7 @@ import { ReportServerError, call } from "../../data/reports";
 import { getServices } from "../../lib/services";
 import { useUnsavedChanges, ModalSheet } from "../../ui/ModalSheet";
 import { Button, Field, Notice, Segmented, T } from "../../ui/components";
-import { haptics } from "../../ui/haptics";
+import { haptic, haptics } from "../../ui/haptics";
 import { space } from "../../ui/theme";
 
 // Receipts for cash and check (owner, 2026-10-22: "A receipt for cash or check"), as on the
@@ -96,7 +96,7 @@ export function RecordPayment({
       const r = data as { status: string; payment_id: string };
       setAmount(null);
       setCheckNumber("");
-      haptics.success();
+      haptic("paymentRecorded");
       onRecorded({
         paymentId: r.payment_id,
         status: r.status,

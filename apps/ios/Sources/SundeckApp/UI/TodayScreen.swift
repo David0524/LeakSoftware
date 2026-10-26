@@ -470,6 +470,8 @@
         var routing = false
         /// The stops as Today's card reads them (core `todayHero`, owner 2026-10-20).
         var heroStops: [HeroStop] = []
+        /// "Today: 8 pools · 3 reports sent" once every stop is done (core `endOfDay`).
+        var wrapUp: String?
         /// The card for the stop the day is on, worked out once (`hero(viewing:)`).
         private var restingHero: TodayHero?
         /// The card for each other stop, worked out once off the main thread too, so swiping the
@@ -519,6 +521,7 @@
             routing = MapLookups.on(kv, company: try? store.get("company", company.id))
             heroStops = dayHeroStops(store, companyId: company.id, stops: route?.jobs ?? [], cleanings: cleanings)
             restingHero = try? todayHero(stops: heroStops, today: ctx.today, timeZone: ctx.timeZone)
+            wrapUp = dayWrapUp(store, stops: route?.jobs ?? [], today: ctx.today, timeZone: ctx.timeZone)
             for stop in heroStops where stop.id != restingHero?.stopId {
                 if let hero = try? todayHero(
                     stops: heroStops, today: ctx.today, timeZone: ctx.timeZone, viewing: stop.id)
@@ -922,7 +925,7 @@
                         .foregroundStyle(onCard ? Color.white : Color.fail)
                 }
             }
-            .sensoryFeedback(.success, trigger: marked)
+            .haptic(.jobCompleted, trigger: marked)
             .alert(CompleteSendPrompt.title, isPresented: $askingSend) {
                 Button(CompleteSendPrompt.cancel, role: .cancel) {}
                 Button(CompleteSendPrompt.confirm) { mark(complete: true) }
@@ -967,7 +970,11 @@
                 blocked = try StopWrites.mark(
                     sync, companyId: company.id, settings: company.settings, jobId: job.id, complete: complete,
                     day: day.ctx.today, visitReports: app.visitReports)
-                if let blocked { AccessibilityNotification.Announcement(blocked).post() } else { marked += 1 }
+                if let blocked {
+                    AccessibilityNotification.Announcement(blocked).post()
+                } else if complete {
+                    marked += 1
+                }
             } catch {
                 blocked = String(describing: error)
             }

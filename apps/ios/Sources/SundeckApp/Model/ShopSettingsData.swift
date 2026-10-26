@@ -371,40 +371,12 @@ public enum TeamWrites {
     }
 }
 
-/// The list pages' subtitles, as the website's.
+/// The list pages' subtitles, as the website's: only Checklist Components has one, since changing
+/// it doesn't change a job already started (owner, 2026-10-26: no descriptions under titles).
 public func settingsSubtitle(_ page: SettingsPage, services: Services, list: ChecklistList = .leak) -> String? {
     switch page {
-    case .priceBook:
-        let what =
-            switch services {
-            case .pool: "Cleanings, chemicals, and repairs techs pick from when quoting extra work."
-            case .leak: "Detection fees and repairs techs pick from when building a quote."
-            case .both:
-                "Detection fees, cleanings, chemicals, and repairs techs pick from when building a quote."
-            }
-        return "\(what) Prices are suggestions; a tech can adjust within the discount limit."
-    case .components:
-        switch list {
-        case .pool:
-            return
-                "What techs do on every pool visit. Changes apply to new visits; visits already started keep their checklist."
-        case .inspection:
-            return
-                "Every question of a pool inspection. Changes apply to new jobs; jobs already started keep their checklist."
-        case .leak:
-            return
-                "What every leak inspection checks. Changes apply to new jobs; jobs already started keep their checklist."
-        }
-    case .tests:
-        return
-            "Tests techs record on the phone. Pressure and bucket tests do the math; set the pass and fail lines your shop uses."
-    case .severities: return "How serious a finding is. The color is the pin on the pool diagram."
-    case .exclusions:
-        return "Why a component wasn’t inspected. Techs must pick one, and it appears on the report."
-    case .team:
-        return
-            "Techs run jobs on the phone. Admins run the office. Owners also handle billing, payments setup, and roles."
-    default: return nil
+    case .components: list == .pool ? "Changes apply to new visits only." : "Changes apply to new jobs only."
+    default: nil
     }
 }
 
@@ -623,10 +595,10 @@ public enum CompleteJobSetting: String, CaseIterable, Sendable {
         }
     }
 
-    public var hint: String {
+    public var hint: String? {
         switch self {
-        case .checklist: "On: Complete Job waits until every checklist item is answered."
-        case .photo: "On: Complete Job, and sending a report, wait until the job has a photo."
+        case .checklist: nil
+        case .photo: "Reports need one too."
         }
     }
 

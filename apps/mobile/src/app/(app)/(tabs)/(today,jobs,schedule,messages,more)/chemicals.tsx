@@ -19,10 +19,11 @@ import {
 import { useChemicalLog, usePoolAdditions } from "../../../../data/chemicals";
 import { useRow } from "../../../../data/hooks";
 import { useTeam } from "../../../../data/schedule";
+import { removeRows } from "../../../../lib/removal";
+import { announceRemoved } from "../../../../lib/removedBanner";
 import { getServices } from "../../../../lib/services";
 import { useCompany } from "../../../../state/session";
 import { Card, Group, ListRow, Screen, Section, T } from "../../../../ui/components";
-import { confirmDestructive } from "../../../../ui/confirm";
 import { Glass } from "../../../../ui/Glass";
 import { ModalSheet } from "../../../../ui/ModalSheet";
 import { color, face, MAX_TEXT_SCALE, minTap, space, tabular, type } from "../../../../ui/theme";
@@ -51,16 +52,11 @@ export default function Chemicals() {
   const [sheet, setSheet] = useState(false);
   const barTop = useTabBarTop();
 
+  // Removed at once, with Undo for five seconds (owner, 2026-10-26), not asked first.
   function remove(id: string) {
-    confirmDestructive({
-      title: "Remove these readings?",
-      message: "They come off the pool’s chemical log.",
-      confirm: "Remove Readings",
-      onConfirm: () =>
-        getServices().sync.write("chemical_reading", id, company.id, {
-          deleted_at: new Date().toISOString(),
-        }),
-    });
+    announceRemoved(
+      removeRows(getServices().sync, company.id, "readings", [{ table: "chemical_reading", id }]),
+    );
   }
   const who = (uid: string | null | undefined) =>
     uid ? team.find((t) => t.user_id === uid)?.name : undefined;
@@ -88,7 +84,7 @@ export default function Chemicals() {
           )}
         </Card>
         {pool && months.length ? (
-          <Section title="Chemicals added" footer="Added on visits, by month.">
+          <Section title="Chemicals added">
             <Group>
               {months.map((m) => (
                 <ListRow key={m.month} title={m.label} subtitle={m.line} />
@@ -97,7 +93,7 @@ export default function Chemicals() {
           </Section>
         ) : null}
         {pool ? (
-          <Section title="Chemical log" footer="One entry for each Submit, newest first.">
+          <Section title="Chemical log">
             <Group>
               {log.length === 0 ? (
                 <ListRow>

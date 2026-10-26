@@ -73,18 +73,18 @@ test("a weekly cleaning plan puts visits on the route, and a visit is marked don
   await page.getByRole("button", { name: "Start Job" }).click();
   // The job page shows one tab at a time on every screen (owner, 2026-10-22).
   await jobSection(page, "Checklist");
-  await expect(page.getByText(/^0 done · 0 need attention · 0 skipped · 7 to do$/)).toBeVisible();
+  await expect(page.getByText(/^7 to do$/)).toBeVisible();
   // Each item's answers are a segmented control: Done · Needs Attention · Skipped (owner,
   // 2026-10-20).
   const first = page.locator("#part-checklist").getByRole("radiogroup").first();
   await first.getByRole("radio", { name: "Done", exact: true }).click();
-  await expect(page.getByText(/^1 done · 0 need attention · 0 skipped · 6 to do$/)).toBeVisible();
+  await expect(page.getByText(/^1 done · 6 to do$/)).toBeVisible();
   await expect(first.getByRole("radio", { name: "Done", exact: true })).toHaveAttribute(
     "aria-checked",
     "true",
   );
   await page.getByRole("button", { name: /^Mark 6 Remaining Done$/ }).click();
-  await expect(page.getByText(/^7 done · 0 need attention · 0 skipped · 0 to do$/)).toBeVisible();
+  await expect(page.getByText(/^7 done$/)).toBeVisible();
   // No "Marked 6" and Undo after it (owner, 2026-10-22).
   await expect(page.getByText("Marked 6", { exact: true })).toHaveCount(0);
   await expect(page.getByRole("button", { name: "Complete Job" })).toHaveCount(2);
@@ -163,7 +163,7 @@ test("New Job books a maintenance visit, or starts a plan for a new customer", a
   await expect(page.getByText(/^Job #\d+$/).first()).toBeVisible();
   // The service checklist, not the leak one.
   await jobSection(page, "Checklist");
-  await expect(page.getByText(/^0 done · 0 need attention · 0 skipped · 7 to do$/)).toBeVisible();
+  await expect(page.getByText(/^7 to do$/)).toBeVisible();
   await jobSection(page, "Details");
 
   // Its visit report (owner, 2026-10-20): sent by hand by default, opened at the customer link.

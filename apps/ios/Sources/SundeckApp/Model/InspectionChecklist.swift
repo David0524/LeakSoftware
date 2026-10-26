@@ -142,10 +142,8 @@ public struct InspectionChecklist: Equatable, Sendable {
 
     public var isEmpty: Bool { sections.isEmpty }
 
-    /// The line under "Checklist": "12 of 49 answered · 1 need attention · 0 leaking".
-    public var tallyText: String {
-        "\(progress.answered) of \(progress.total) answered · \(progress.attention) need attention · \(progress.leaking) leaking"
-    }
+    /// The line under "Checklist": "12 of 49 answered · 1 needs attention", zero counts left out.
+    public var tallyText: String { inspectionTallyText(progress) }
 
     static func row(_ c: JobComponent, _ t: ComponentType, _ r: ChecklistItemResult?) -> InspectionRow {
         InspectionRow(
@@ -161,6 +159,15 @@ public func checklistToDo(config: InspectionConfig, inspection: JobInspection, j
     jobType == .inspection
         ? InspectionChecklist(config: config, inspection: inspection).progress.toDo
         : checklistTally(inspection.components, inspection.results).pending
+}
+
+/// Checklist items marked needs attention, the Checklist tab's badge (owner, 2026-10-26: a badge
+/// counts what needs action, not every unanswered item). A pool inspection leaves out folded
+/// questions.
+public func checklistAttention(config: InspectionConfig, inspection: JobInspection, jobType: JobType) -> Int {
+    jobType == .inspection
+        ? InspectionChecklist(config: config, inspection: inspection).progress.attention
+        : checklistTally(inspection.components, inspection.results).attention
 }
 
 /// The pool inspection's writes, on top of `InspectionWrites`. Each goes through the sync layer.

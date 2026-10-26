@@ -20,7 +20,6 @@ import {
   inspectionProgressText,
   inspectionValue,
   isGate,
-  removeItemConfirm,
   toggleChoice,
   type ChecklistItemResult,
   type ChecklistSection,
@@ -28,12 +27,7 @@ import {
   type Job,
   type JobComponent,
 } from "@leakbook/core";
-import {
-  removeComponent,
-  saveChecklistResult,
-  saveInspectionAnswer,
-  useJobInspection,
-} from "../../data/inspection";
+import { saveChecklistResult, saveInspectionAnswer, useJobInspection } from "../../data/inspection";
 import { saveCapture } from "../../data/media";
 import {
   MediaError,
@@ -44,7 +38,6 @@ import {
 } from "../../lib/media";
 import { useSession } from "../../state/session";
 import { Button, T } from "../../ui/components";
-import { confirmDestructive } from "../../ui/confirm";
 import { useMenu } from "../../ui/Select";
 import {
   color,
@@ -59,6 +52,7 @@ import {
 } from "../../ui/theme";
 import { WebIcon, type WebIconName } from "../../ui/WebIcon";
 import { AnswerIconButtons, AnswerMenuPill, flagTone } from "./AnswerControls";
+import { removeChecklistItem } from "./remove";
 import { ChipToggles } from "./ChoicePills";
 
 // Pool Inspection's checklist (owner, 2026-10-20; docs/plans/pool-inspection.md), as the
@@ -330,15 +324,8 @@ function InspectionItem({
           title="Remove"
           kind="danger"
           accessibilityLabel={`Remove ${component.label}`}
-          onPress={() => {
-            const ask = removeItemConfirm(component.label, false);
-            confirmDestructive({
-              title: ask.title,
-              message: ask.message ?? undefined,
-              confirm: ask.confirm,
-              onConfirm: () => removeComponent(services.sync, job.company_id, component, result),
-            });
-          }}
+          // Removed at once, with Undo for five seconds (owner, 2026-10-26).
+          onPress={() => removeChecklistItem(services.sync, job.company_id, component, result)}
         />
       </View>
     );

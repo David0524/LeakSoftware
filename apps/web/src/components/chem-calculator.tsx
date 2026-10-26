@@ -303,21 +303,17 @@ export function ChemCalculator({
             );
           })}
         </div>
-        <p className="text-[0.9375rem] text-text-muted">
-          Aim For starts at the recommended level. Type your own to dose to it.
-          {anyGoal ? (
-            <>
-              {" "}
-              <button
-                type="button"
-                onClick={() => saveGoals({})}
-                className="min-h-11 font-semibold text-link"
-              >
-                Use Recommended
-              </button>
-            </>
-          ) : null}
-        </p>
+        {anyGoal ? (
+          <p>
+            <button
+              type="button"
+              onClick={() => saveGoals({})}
+              className="min-h-11 font-semibold text-link"
+            >
+              Use Recommended
+            </button>
+          </p>
+        ) : null}
         <div className="grid gap-3 sm:grid-cols-2 sm:gap-4">
           <Select
             label="Chlorine"
@@ -455,21 +451,17 @@ export function ChemCalculator({
               );
             })}
           </div>
-          <p className="text-[0.9375rem] text-text-muted">
-            Aim For starts at the recommended level. Type your own to dose to it.
-            {anyGoal ? (
-              <>
-                {" "}
-                <button
-                  type="button"
-                  onClick={() => saveGoals({})}
-                  className="min-h-11 font-semibold text-link"
-                >
-                  Use Recommended
-                </button>
-              </>
-            ) : null}
-          </p>
+          {anyGoal ? (
+            <p>
+              <button
+                type="button"
+                onClick={() => saveGoals({})}
+                className="min-h-11 font-semibold text-link"
+              >
+                Use Recommended
+              </button>
+            </p>
+          ) : null}
           <div className="grid gap-3 sm:grid-cols-2 sm:gap-4">
             <Select
               label="Chlorine"

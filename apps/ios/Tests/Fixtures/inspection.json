@@ -31218,6 +31218,208 @@
       "result": "All answered"
     }
   ],
+  "needAttentionText": [
+    {
+      "args": [
+        0
+      ],
+      "result": "0 need attention"
+    },
+    {
+      "args": [
+        1
+      ],
+      "result": "1 needs attention"
+    },
+    {
+      "args": [
+        2
+      ],
+      "result": "2 need attention"
+    },
+    {
+      "args": [
+        12
+      ],
+      "result": "12 need attention"
+    }
+  ],
+  "inspectionTallyText": [
+    {
+      "args": [
+        {
+          "answered": 1,
+          "total": 133,
+          "attention": 0,
+          "leaking": 0
+        }
+      ],
+      "result": "1 of 133 answered"
+    },
+    {
+      "args": [
+        {
+          "answered": 0,
+          "total": 0,
+          "attention": 0,
+          "leaking": 0
+        }
+      ],
+      "result": "0 of 0 answered"
+    },
+    {
+      "args": [
+        {
+          "answered": 12,
+          "total": 49,
+          "attention": 1,
+          "leaking": 0
+        }
+      ],
+      "result": "12 of 49 answered · 1 needs attention"
+    },
+    {
+      "args": [
+        {
+          "answered": 5,
+          "total": 5,
+          "attention": 2,
+          "leaking": 0
+        }
+      ],
+      "result": "5 of 5 answered · 2 need attention"
+    },
+    {
+      "args": [
+        {
+          "answered": 5,
+          "total": 5,
+          "attention": 0,
+          "leaking": 3
+        }
+      ],
+      "result": "5 of 5 answered · 3 leaking"
+    },
+    {
+      "args": [
+        {
+          "answered": 5,
+          "total": 5,
+          "attention": 2,
+          "leaking": 1
+        }
+      ],
+      "result": "5 of 5 answered · 2 need attention · 1 leaking"
+    }
+  ],
+  "checklistTallyText": [
+    {
+      "args": [
+        {
+          "pass": 3,
+          "attention": 0,
+          "leaking": 0,
+          "notApplicable": 0,
+          "pending": 5
+        },
+        true
+      ],
+      "result": "3 done · 5 to do"
+    },
+    {
+      "args": [
+        {
+          "pass": 3,
+          "attention": 0,
+          "leaking": 0,
+          "notApplicable": 0,
+          "pending": 5
+        },
+        true,
+        false
+      ],
+      "result": "3 done"
+    },
+    {
+      "args": [
+        {
+          "pass": 3,
+          "attention": 2,
+          "leaking": 0,
+          "notApplicable": 1,
+          "pending": 5
+        },
+        true
+      ],
+      "result": "3 done · 2 need attention · 1 skipped · 5 to do"
+    },
+    {
+      "args": [
+        {
+          "pass": 1,
+          "attention": 1,
+          "leaking": 0,
+          "notApplicable": 0,
+          "pending": 0
+        },
+        true
+      ],
+      "result": "1 done · 1 needs attention"
+    },
+    {
+      "args": [
+        {
+          "pass": 3,
+          "attention": 0,
+          "leaking": 1,
+          "notApplicable": 0,
+          "pending": 5
+        },
+        false
+      ],
+      "result": "3 not leaking · 1 leaking · 5 to do"
+    },
+    {
+      "args": [
+        {
+          "pass": 3,
+          "attention": 2,
+          "leaking": 1,
+          "notApplicable": 2,
+          "pending": 5
+        },
+        false
+      ],
+      "result": "3 not leaking · 2 attention · 1 leaking · 2 not applicable · 5 to do"
+    },
+    {
+      "args": [
+        {
+          "pass": 3,
+          "attention": 2,
+          "leaking": 1,
+          "notApplicable": 2,
+          "pending": 5
+        },
+        false,
+        false
+      ],
+      "result": "3 not leaking · 2 attention · 1 leaking · 2 not applicable"
+    },
+    {
+      "args": [
+        {
+          "pass": 0,
+          "attention": 0,
+          "leaking": 0,
+          "notApplicable": 0,
+          "pending": 0
+        },
+        false
+      ],
+      "result": ""
+    }
+  ],
   "intakeQuestionsFor": [
     {
       "args": [

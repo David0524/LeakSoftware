@@ -48,10 +48,7 @@ export default function NotificationsScreen() {
         </Section>
       )}
       {prefs ? (
-        <Section
-          title="Notify me about"
-          footer="Notifications go to the Sundeck Pro app on your phones where you’re signed in."
-        >
+        <Section title="Notify me about">
           <Group>
             {NOTIFICATION_KINDS.map((k) => (
               <View key={k.key} style={styles.setting}>
@@ -60,9 +57,11 @@ export default function NotificationsScreen() {
                   value={notificationOn(prefs, k.key)}
                   onChange={(on) => void set(k.key, on)}
                 />
-                <T variant="secondary" muted>
-                  {k.hint}
-                </T>
+                {k.hint ? (
+                  <T variant="secondary" muted>
+                    {k.hint}
+                  </T>
+                ) : null}
               </View>
             ))}
           </Group>

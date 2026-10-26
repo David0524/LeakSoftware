@@ -81,9 +81,9 @@ export function VisitReportSetting({ initial }: { initial: VisitReportMode }) {
                 onChange={(e) => setAutomatic(e.target.checked)}
               />
             </label>
-            <p className="text-[0.9375rem] text-text-muted">
-              {automatic ? VISIT_REPORT_TEXT.automaticOn : VISIT_REPORT_TEXT.automaticOff}
-            </p>
+            {automatic ? (
+              <p className="text-[0.9375rem] text-text-muted">{VISIT_REPORT_TEXT.automaticOn}</p>
+            ) : null}
           </div>
         ) : timing === "monthly" ? (
           <div>

@@ -4,7 +4,8 @@
     import SwiftUI
 
     /// "Findings" in the job's Findings section (spec 5.4): a
-    /// numbered grouped row per finding (swipe left to delete); Add Finding is on the job page's
+    /// numbered grouped row per finding (swipe left to delete, at once, with Undo for five seconds:
+    /// owner, 2026-10-26); Add Finding is on the job page's
     /// Next Step bar (owner, 2026-10-20). Tapping a row
     /// opens its Edit sheet; the pool's shape is set in that sheet. Port of FindingsEditor in
     /// apps/web/src/components/job-work.tsx.
@@ -12,7 +13,7 @@
         var job: JobView
         @Environment(SyncService.self) private var sync
         @Environment(\.openEditor) private var openEditor
-        @State private var deleting: FindingRowItem?
+        @Environment(AppEnvironment.self) private var app
         @State private var saveError: String?
 
         private var companyId: String { job.job["company_id"]?.string ?? "" }
@@ -32,7 +33,7 @@
                         VStack(spacing: 20) {
                             Grouped(separatorInset: 60) {
                                 ForEach(rows) { row in
-                                    SwipeDeleteRow(name: row.title, delete: { deleting = row }) {
+                                    SwipeDeleteRow(name: row.title, delete: { delete(row.id) }) {
                                         Button {
                                             openEditor(.finding(jobId: job.id, findingId: row.id, componentId: nil))
                                         } label: {
@@ -41,7 +42,7 @@
                                         .buttonStyle(.row)
                                         .accessibilityLabel("Edit \(row.title)")
                                     }
-                                    // Touch and hold: Edit, Delete… (gestures spec section 12).
+                                    // Touch and hold: Edit, Delete (gestures spec section 12).
                                     .rowMenu(
                                         row.title,
                                         [
@@ -49,22 +50,15 @@
                                                 openEditor(.finding(jobId: job.id, findingId: row.id, componentId: nil))
                                             },
                                             SwipeAction(
-                                                title: "Delete…", systemImage: "trash", tint: Color.fail,
+                                                title: "Delete", systemImage: "trash", tint: Color.fail,
                                                 role: .destructive
-                                            ) { deleting = row },
+                                            ) { delete(row.id) },
                                         ])
                                 }
                             }
                         }
                     }
                 }
-            }
-            .confirmationDialog(
-                deleting.map { "Delete “\($0.title)”?" } ?? "",
-                isPresented: Binding(get: { deleting != nil }, set: { if !$0 { deleting = nil } }),
-                titleVisibility: .visible, presenting: deleting
-            ) { row in
-                Button("Delete Finding", role: .destructive) { delete(row.id) }
             }
             .alert(
                 "Couldn’t Save", isPresented: Binding(get: { saveError != nil }, set: { if !$0 { saveError = nil } })
@@ -76,9 +70,8 @@
         }
 
         private func delete(_ id: String) {
-            deleting = nil
             do {
-                try InspectionWrites.delete(sync, table: "finding", id: id, companyId: companyId)
+                try app.removals.remove(.finding, [RemovalRow("finding", id)], sync: sync, companyId: companyId)
             } catch {
                 saveError = String(describing: error)
             }

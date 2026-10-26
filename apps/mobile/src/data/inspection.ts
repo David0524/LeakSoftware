@@ -129,20 +129,6 @@ export function addComponent(
   return sync.batch(() => insertComponent(sync, companyId, jobId, nextInstance(type, existing)));
 }
 
-/** Remove an instance added by mistake. Its checklist row goes with it. */
-export function removeComponent(
-  sync: SyncService,
-  companyId: string,
-  component: JobComponent,
-  result?: ChecklistItemResult,
-) {
-  const now = new Date().toISOString();
-  sync.batch(() => {
-    if (result) sync.write("checklist_item_result", result.id, companyId, { deleted_at: now });
-    sync.write("job_component", component.id, companyId, { deleted_at: now });
-  });
-}
-
 export function saveChecklistResult(
   sync: SyncService,
   companyId: string,
@@ -246,11 +232,12 @@ export function useChecklistProgress(companyId: string, jobId: string, jobType?:
   return useMemo(() => {
     // A repair job has no checklist (owner, 2026-10-22): rows an older one has aren't counted.
     if (!jobHasChecklist(jobType))
-      return { tally: checklistTally([], []), inspection: null, toDo: 0 };
+      return { tally: checklistTally([], []), inspection: null, toDo: 0, attention: 0 };
     const tally = checklistTally(insp.components, insp.results);
-    if (jobType !== "inspection") return { tally, inspection: null, toDo: tally.pending };
+    if (jobType !== "inspection")
+      return { tally, inspection: null, toDo: tally.pending, attention: tally.attention };
     const rows = inspectionRows(insp.components, insp.resultByComponent, config.componentTypeById);
     const inspection = inspectionProgress(rows, foldedItems(rows));
-    return { tally, inspection, toDo: inspection.toDo };
+    return { tally, inspection, toDo: inspection.toDo, attention: inspection.attention };
   }, [insp, config.componentTypeById, jobType]);
 }

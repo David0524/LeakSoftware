@@ -66,10 +66,7 @@ function SchedulingPage() {
       !(t as { deleted_at?: string | null }).deleted_at,
   );
   return (
-    <Screen
-      title="Scheduling and Routes"
-      subtitle="Routes start and end at the shop, or at home for anyone who starts there."
-    >
+    <Screen title="Scheduling and Routes">
       {notice ? <Notice tone={notice.tone}>{notice.text}</Notice> : null}
       <WorkingDay onSaved={said} />
       {offersPool(company.settings) && types.length ? (
@@ -187,7 +184,6 @@ function WorkingDay({ onSaved }: { onSaved: Said }) {
               onChangeText={set("weeks")}
               keyboardType="number-pad"
               error={errors.weeks}
-              hint="How far ahead plans put visits on the schedule."
             />
           ) : null}
         </FieldGroup>

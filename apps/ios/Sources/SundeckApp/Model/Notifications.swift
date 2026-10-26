@@ -108,7 +108,6 @@ public final class NotificationPrefsForm {
     public static let rowDetail = "Texts, new jobs, quotes, payments, reports, and Live Activity"
     public static let systemOff = "Notifications are off for Sundeck Pro in the iPhone's Settings."
     public static let openSettings = "Open Settings"
-    public static let footer = "Notifications go to the Sundeck Pro app on your phone."
     static let cacheKey = KVKey.notificationPrefs
 
     private let kv: KeyValue

@@ -89,8 +89,4 @@ public enum MediaWrites {
         let value: JSONValue = try markup.flatMap { $0.shapes.isEmpty ? nil : try json($0) } ?? .null
         try sync.write("media", id: media.id, companyId: media.companyId, ["markup": value])
     }
-
-    public static func delete(_ sync: SyncService, _ media: Media) throws {
-        try sync.write("media", id: media.id, companyId: media.companyId, ["deleted_at": nowISO()])
-    }
 }

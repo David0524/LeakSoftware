@@ -159,7 +159,7 @@ test("a new shop signs up and runs the whole loop, then subscribes", async ({
   await page.reload();
   await expect(page.getByLabel("Where: Skimmer")).toHaveValue("Throat seam");
   await finishChecklist(page);
-  await expect(page.getByText(/ · 1 leaking · 0 not applicable · 0 to do/)).toBeVisible();
+  await expect(page.getByText(/ · 1 leaking$/)).toBeVisible();
 
   await jobSection(page, "Findings");
   await page.getByRole("button", { name: "Add Finding" }).click();

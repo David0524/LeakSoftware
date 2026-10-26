@@ -97,11 +97,6 @@ export default async function ReportTemplatesPage() {
   return (
     <SettingsListPage
       title="Report Templates"
-      subtitle={
-        leak
-          ? "Which reports techs can send, and what they’re called. Each report is written from the job’s checklist, tests, and findings."
-          : "What goes to the customer after each maintenance visit."
-      }
       add={
         leak
           ? {
@@ -129,7 +124,13 @@ export default async function ReportTemplatesPage() {
               <SettingsForm action={saveReportTemplate} primary full>
                 <input type="hidden" name="id" value={t.id} />
                 <SettingsFields labelWidth="5rem">
-                  <SField label="Name" name="name" id={`name-${t.id}`} defaultValue={t.name} />
+                  <SField
+                    label="Name"
+                    name="name"
+                    id={`name-${t.id}`}
+                    defaultValue={t.name}
+                    required
+                  />
                 </SettingsFields>
                 <SettingsFields>
                   <SSwitch
@@ -148,11 +149,7 @@ export default async function ReportTemplatesPage() {
       {/* Your own wording, used word for word (owner, 2026-10-20: "Not like AI prompts, but a
           copy/paste essentially that the tech uses each time"). */}
       {offersPool(company.settings) ? (
-        <Grouped
-          title="Visit reports"
-          className={leak ? "mt-8" : undefined}
-          footer="A maintenance visit’s report: the water test, the checklist and cleanings, and photos, at a link for the customer."
-        >
+        <Grouped title="Visit reports" className={leak ? "mt-8" : undefined}>
           <li className="py-3">
             <VisitReportSetting initial={visitReportMode(company.settings)} />
           </li>
@@ -166,11 +163,7 @@ export default async function ReportTemplatesPage() {
       ) : null}
 
       {leak ? (
-        <Grouped
-          title="Saved reports"
-          className="mt-8"
-          footer="Text you use again and again. On a report, Use Saved Report puts it in word for word."
-        >
+        <Grouped title="Saved reports" className="mt-8">
           {saved.map((r) => (
             <SheetRow
               key={r.id}

@@ -445,6 +445,38 @@ import Testing
         #expect(form(role: "admin", settings: ["techs_make_jobs": false]).canMakeJobs)
     }
 
+    /// A customer's usual tech and start time fill the visit when most of their last jobs share
+    /// them (owner, 2026-10-26); picking another address leaves the fields alone.
+    @Test func fillsInTheCustomersUsualTechAndTime() throws {
+        try seedTeam()
+        let (customer, property) = try seedCustomer(spa: false)
+        func job(_ n: Int, start: String) -> PulledRow {
+            PulledRow(
+                table: "job", xid: "4",
+                row: [
+                    "id": .string("00000000-0000-4000-8000-00000000060\(n)"), "company_id": .string(Self.company),
+                    "property_id": .string(property), "assigned_user_id": .string(Self.teammate),
+                    "status": "done", "scheduled_start": .string(start), "deleted_at": nil,
+                ])
+        }
+        // 9:00 AM in Phoenix (UTC-7), three Mondays running.
+        try sync.store.applyPage(
+            PullPage(
+                rows: [
+                    job(1, start: "2027-01-04T16:00:00.000Z"), job(2, start: "2027-01-11T16:00:00.000Z"),
+                    job(3, start: "2026-12-28T16:00:00.000Z"),
+                ], done: true, cursor: [:], serverHLC: "1800000000003-0000-server"))
+        let f = form()
+        f.input.scheduleTime = "14:00"
+        f.mode = .existing
+        f.selectCustomer(customer)
+        #expect(f.techId == Self.teammate)
+        #expect(f.input.scheduleTime == "09:00")
+        #expect(f.usualNote == "Usually Sam at 9:00 AM.")
+        f.propertyId = nil
+        #expect(f.usualNote.isEmpty)
+    }
+
     /// Two active members with names, as the server sends them.
     func seedTeam() throws {
         sync.kv.setTeam([
@@ -555,10 +587,17 @@ import Testing
         #expect(
             jobRepairs(sync.store, job: after).map(\.description) == ["Pump motor", "Skimmer lid", "Heater igniter"])
         let lid = try #require(lines.last)
-        try removeJobRepair(sync, job: after, id: lid.id)
+        let priceBefore = try #require(try removeJobRepair(sync, job: after, id: lid.id))
+        #expect(priceBefore == 68500)
         let end = try #require(try sync.store.get("job", job.id))
         #expect(end["fee_cents"] == 66000)
         #expect(jobRepairs(sync.store, job: end).map(\.description) == ["Pump motor", "Heater igniter"])
+        // Undo (owner, 2026-10-26): the repair is live again and the price is what it was.
+        try restoreJobRepair(sync, job: end, id: lid.id, feeCents: priceBefore)
+        let undone = try #require(try sync.store.get("job", job.id))
+        #expect(undone["fee_cents"] == 68500)
+        #expect(
+            jobRepairs(sync.store, job: undone).map(\.description) == ["Pump motor", "Skimmer lid", "Heater igniter"])
     }
 
     /// A repair booked before repairs were rows (`intake.repair_item` and the price only): it shows

@@ -95,28 +95,26 @@
                             onDrop: { day, id in drop(id, on: .day(day)) })
                     }
                     if board.techs.count > 1 {
-                        // Reorder Techs (owners and admins) as a round button at the row's end,
-                        // not a row of its own (owner, 2026-10-21).
+                        // Reorder Techs (owners and admins) as a round button after the last name,
+                        // not a row of its own (owner, 2026-10-21); it scrolls with the names so none
+                        // is cut off beside it (owner, 2026-10-26).
                         let reorder = board.ctx.isManager && board.ctx.seesAll && board.reorderTechs.count > 1
-                        HStack(spacing: 8) {
-                            FilterPills(
-                                selection: Binding(get: { board.tech }, set: { tech = $0 }),
-                                options: board.techs.map(\.id) + ["all"],
-                                label: { id in
-                                    id == "all" ? "Everyone" : id == board.ctx.userId ? "Me" : board.name(id)
-                                },
-                                canDrop: { $0 != "all" },
-                                // A stop dropped on a person goes last on their day (Day view).
-                                onDrop: view == .day
-                                    ? { id, job in drop(job, on: .route(tech: id, date: board.date, index: nil)) }
-                                    : nil,
-                                dot: { id in board.color(id) }
-                            )
-                            .padding(.leading, -16)
-                            .padding(.trailing, reorder ? 0 : -16)
-                            .accessibilityLabel("Whose schedule")
-                            if reorder { ReorderTechsButton { reorderingTechs = true } }
-                        }
+                        FilterPills(
+                            selection: Binding(get: { board.tech }, set: { tech = $0 }),
+                            options: board.techs.map(\.id) + ["all"],
+                            label: { id in
+                                id == "all" ? "Everyone" : id == board.ctx.userId ? "Me" : board.name(id)
+                            },
+                            canDrop: { $0 != "all" },
+                            // A stop dropped on a person goes last on their day (Day view).
+                            onDrop: view == .day
+                                ? { id, job in drop(job, on: .route(tech: id, date: board.date, index: nil)) }
+                                : nil,
+                            dot: { id in board.color(id) },
+                            trailing: reorder ? AnyView(ReorderTechsButton { reorderingTechs = true }) : nil
+                        )
+                        .padding(.horizontal, -16)
+                        .accessibilityLabel("Whose schedule")
                     }
                     if let route = board.leadRoute {
                         DayLead(route: route, board: board, busy: optimizing == route.id) {
@@ -1388,7 +1386,7 @@
             VStack(alignment: .leading, spacing: 12) {
                 CardTitle("Needs a Time" + (jobs.isEmpty ? "" : " (\(jobs.count))"))
                 if jobs.isEmpty {
-                    Text("Every job has a time. Drag a job here to take it off the schedule.")
+                    Text("Every job has a time.")
                         .textRole(.secondary).foregroundStyle(Color.textMuted)
                 } else {
                     GeometryReader { geo in
@@ -1551,7 +1549,7 @@
                     if let route, !jobs.isEmpty {
                         RouteFacts(route: route, board: board, busy: busy, onPlan: onPlan)
                     } else {
-                        Text(open ? "Nothing scheduled. Drop a job here." : "Nothing scheduled.")
+                        Text("Nothing scheduled.")
                             .textRole(.body).foregroundStyle(Color.textMuted)
                             .frame(maxWidth: .infinity)
                             .padding(16)

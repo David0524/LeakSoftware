@@ -382,7 +382,7 @@ private final class FinishCalls {
         let s = try b.summary()
         #expect(s.title == "Leak Detection Report" && s.customerText == "Dana Whitfield")
         #expect(s.address == "1 Main St, Mesa, AZ 85201")
-        #expect(s.tallyText == "0 not leaking · 0 attention · 1 leaking · 0 not applicable")
+        #expect(s.tallyText == "1 leaking")
         #expect(s.pendingText == "1 still to do")
         #expect(s.pendingNotice == "1 checklist item is still to do. Finish the checklist, then come back to sign.")
         #expect(!s.showsSignOff && !s.showsButtons)
@@ -413,7 +413,7 @@ private final class FinishCalls {
         ])
         let s = try b.summary()
         #expect(s.pendingText == nil && s.pendingNotice == nil && s.showsSignOff && s.showsButtons)
-        #expect(s.tallyText == "0 not leaking · 0 attention · 1 leaking · 1 not applicable")
+        #expect(s.tallyText == "1 leaking · 1 not applicable")
         #expect(s.sections.map(\.title) == ["Summary"] && s.draftId == "rep1")
         #expect(s.signTitle == "Sign" && s.showsCustomerNotHere)
         #expect(s.purposes.map(\.value) == [.inspectionAck])
@@ -427,7 +427,7 @@ private final class FinishCalls {
         try b.seedInspection(allDone: true)
         let s = try b.summary()
         #expect(s.title == "Service Report")
-        #expect(s.tallyText == "0 done · 0 need attention · 1 skipped")
+        #expect(s.tallyText == "1 skipped")
     }
 
     @Test func theStatementLeavesOutAMissingAddress() throws {

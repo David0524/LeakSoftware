@@ -7,7 +7,7 @@ import { Group, ListRow, T } from "../../ui/components";
 import { useRowMenu } from "../../ui/RowMenu";
 import { space } from "../../ui/theme";
 import { OutcomeChip } from "./OutcomeChip";
-import { confirmDeleteTest } from "./remove";
+import { deleteTest } from "./remove";
 
 /**
  * Tests, as on the website (spec 5.4 Findings): a row per test with its item and time, the
@@ -53,7 +53,8 @@ export function TestsTab({ job }: { job: Job }) {
                 key={t.id}
                 accessibilityLabel={`Edit ${name}`}
                 onPress={() => router.push(`/jobs/${job.id}/test/${t.id}`)}
-                onDelete={() => confirmDeleteTest(services.sync, job.company_id, t.id, name)}
+                onDelete={() => deleteTest(services.sync, job.company_id, t.id)}
+                deleteAsks={false}
                 editMenu={{ menu, title: name }}
                 trailing={<OutcomeChip outcome={t.outcome} />}
               >

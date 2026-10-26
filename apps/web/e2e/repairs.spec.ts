@@ -93,13 +93,27 @@ test("a repair job: two repairs booked in New Job, one added and one removed on 
       formatCents(firstPrice + 2500 + 18500),
     );
 
-    // Remove one from its "⋯" menu (it asks first).
-    await rows
-      .filter({ hasText: `Skimmer lid ${RUN}` })
-      .getByRole("button", { name: /^More:/ })
-      .click();
-    await page.getByRole("menuitem", { name: "Remove" }).click();
-    await page.getByRole("button", { name: "Remove Repair" }).click();
+    // Remove one from its "⋯" menu: it goes at once (nothing asks first) and the banner says
+    // so with Undo (owner, 2026-10-26); Undo puts it back, then remove it again.
+    const removeSkimmer = async () => {
+      await rows
+        .filter({ hasText: `Skimmer lid ${RUN}` })
+        .getByRole("button", { name: /^More:/ })
+        .click();
+      await page.getByRole("menuitem", { name: "Remove" }).click();
+    };
+    await removeSkimmer();
+    await expect(page.getByRole("alertdialog")).toHaveCount(0);
+    await expect(rows).toHaveCount(2);
+    const banner = page.getByTestId("top-banner");
+    await expect(banner).toContainText("Repair removed");
+    await banner.getByRole("button", { name: "Undo" }).click();
+    await expect(rows).toHaveCount(3);
+    await expect(rows.filter({ hasText: `Skimmer lid ${RUN}` })).toHaveCount(1);
+    await expect(page.getByTestId("repairs-total")).toContainText(
+      formatCents(firstPrice + 2500 + 18500),
+    );
+    await removeSkimmer();
     await expect(rows).toHaveCount(2);
     await expect(page.getByTestId("repairs-total")).toContainText(formatCents(firstPrice + 18500));
 

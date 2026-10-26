@@ -3,8 +3,11 @@ import {
   monthName,
   reportAddedRows,
   reportAddedTotal,
+  reportByLine,
+  reportHeroPhoto,
   saturationIndex,
   textOnBrand,
+  visitSummary,
   waterTestRows,
   type ReadingKey,
   type ReportAddition,
@@ -15,6 +18,7 @@ import type { ReactNode } from "react";
 import { ContactLine } from "./contact-line";
 import { PdfLink } from "./pdf-link";
 import { PHONE_CARD } from "./doc-ui";
+import { ReportLead } from "./report-lead";
 import { cx } from "./ui";
 
 // A maintenance visit's report for the customer (owner, 2026-10-20: "build a report with the
@@ -188,7 +192,12 @@ export function VisitReportView({
     iso ? dateFormat("en-US", { dateStyle: "long", timeZone: tz }).format(new Date(iso)) : "";
   const when = s.completed_at ?? s.job.completed_at ?? s.job.started_at ?? sentAt;
   const done = s.components.filter((c) => c.status === "inspected");
-  const photos = s.media.filter((m) => m.kind === "photo" && urls.has(m.storage_path));
+  // The report opens with the finished-pool photo, one plain line, and who did the work (owner,
+  // 2026-10-26); the photo isn't repeated in Photos below.
+  const hero = reportHeroPhoto(s.media, (m) => urls.has(m.storage_path));
+  const photos = s.media.filter(
+    (m) => m.kind === "photo" && urls.has(m.storage_path) && m.id !== hero?.id,
+  );
   const techs = [s.job.tech_name, s.job.second_tech_name].filter(Boolean).join(" and ");
 
   return (
@@ -228,6 +237,16 @@ export function VisitReportView({
           {pdfHref ? <PdfLink href={pdfHref} className="inline-flex" /> : null}
         </div>
       </header>
+
+      <ReportLead
+        headline={visitSummary(s)}
+        byLine={reportByLine("maintenance", [s.job.tech_name, s.job.second_tech_name])}
+        photo={
+          hero
+            ? { url: urls.get(hero.storage_path)!, alt: hero.caption ?? "The pool after the visit" }
+            : null
+        }
+      />
 
       <section className={cx("mt-6", PHONE_CARD)}>
         <dl className="grid gap-x-6 gap-y-2 text-[0.9375rem] sm:grid-cols-3">

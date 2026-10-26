@@ -6,13 +6,14 @@
     /// A repair job's Repairs on Details (owner, 2026-10-22: "On repair jobs, (in the intake and
     /// actually working the job) we need a button to 'add additional repair'"): each repair and its
     /// price, the total, and Add Additional Repair. A repair is removed by a swipe left, its "⋯"
-    /// button (always shown), or touch and hold; each asks first. Saved through the sync layer, so
-    /// it works offline. Port of apps/mobile/src/features/job/Repairs.tsx.
+    /// button (always shown), or touch and hold; it goes at once, with Undo for five seconds
+    /// (owner, 2026-10-26). Saved through the sync layer, so it works offline. Port of
+    /// apps/mobile/src/features/job/Repairs.tsx.
     struct JobRepairsGroup: View {
         var job: JobView
         @Environment(SyncService.self) private var sync
+        @Environment(AppEnvironment.self) private var app
         @State private var adding = false
-        @State private var pendingRemoval: RepairLine?
         @State private var saveError: String?
 
         var body: some View {
@@ -21,7 +22,7 @@
             Grouped(label: RepairLabels.section, footer: RepairLabels.footer) {
                 ForEach(lines) { line in
                     SwipeDeleteRow(
-                        name: line.description, title: RepairLabels.remove, delete: { pendingRemoval = line }
+                        name: line.description, title: RepairLabels.remove, delete: { removeLine(line) }
                     ) {
                         repairRow(line)
                     }
@@ -60,15 +61,6 @@
                 .buttonStyle(.row)
             }
             .sheet(isPresented: $adding) { AddRepairSheet(job: job) }
-            .confirmationDialog(
-                RepairLabels.removeTitle,
-                isPresented: Binding(get: { pendingRemoval != nil }, set: { if !$0 { pendingRemoval = nil } }),
-                titleVisibility: .visible, presenting: pendingRemoval
-            ) { line in
-                Button(RepairLabels.removeConfirm, role: .destructive) { removeLine(line) }
-            } message: { line in
-                Text(verbatim: "\(line.description), \(formatCents(line.priceCents)). \(RepairLabels.removeMessage)")
-            }
             .alert(
                 "Couldn’t Save", isPresented: Binding(get: { saveError != nil }, set: { if !$0 { saveError = nil } })
             ) {
@@ -89,7 +81,7 @@
                     .foregroundStyle(Color.textMuted)
                     .monospacedDigit()
                 Menu {
-                    Button(RepairLabels.remove, systemImage: "trash", role: .destructive) { pendingRemoval = line }
+                    Button(RepairLabels.remove, systemImage: "trash", role: .destructive) { removeLine(line) }
                 } label: {
                     Image(systemName: "ellipsis")
                         .font(.system(size: 17, weight: .semibold))
@@ -106,14 +98,19 @@
                 line.description,
                 [
                     SwipeAction(title: RepairLabels.remove, systemImage: "trash", tint: .fail, role: .destructive) {
-                        pendingRemoval = line
+                        removeLine(line)
                     }
                 ])
         }
 
         private func removeLine(_ line: RepairLine) {
             do {
-                try removeJobRepair(sync, job: job.job, id: line.id)
+                guard let priceBefore = try removeJobRepair(sync, job: job.job, id: line.id) else { return }
+                let row = job.job
+                app.removals.show(.repair, detail: RepairLabels.removeMessage) { [weak sync] in
+                    guard let sync else { return }
+                    try? restoreJobRepair(sync, job: row, id: line.id, feeCents: priceBefore)
+                }
             } catch {
                 saveError = String(describing: error)
             }

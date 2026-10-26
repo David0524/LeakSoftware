@@ -20,9 +20,9 @@ import {
 import { checklistOrder } from "../../../../../../../features/inspection/ChecklistTab";
 import { OutcomeChip } from "../../../../../../../features/inspection/OutcomeChip";
 import {
-  confirmDeleteFinding,
-  confirmDeleteTest,
-  confirmRemoveComponent,
+  deleteFinding,
+  deleteTest,
+  removeChecklistItem,
 } from "../../../../../../../features/inspection/remove";
 import { haptics } from "../../../../../../../ui/haptics";
 import { useRowMenu } from "../../../../../../../ui/RowMenu";
@@ -184,7 +184,8 @@ export default function ComponentScreen() {
                     title={name}
                     trailing={<OutcomeChip outcome={t.outcome} />}
                     onPress={() => router.push(`/jobs/${jobId}/test/${t.id}`)}
-                    onDelete={() => confirmDeleteTest(services.sync, company.id, t.id, name)}
+                    onDelete={() => deleteTest(services.sync, company.id, t.id)}
+                    deleteAsks={false}
                     editMenu={{ menu, title: name }}
                   />
                 );
@@ -211,7 +212,8 @@ export default function ComponentScreen() {
                   key={f.id}
                   title={f.title}
                   onPress={() => router.push(`/jobs/${jobId}/finding/${f.id}`)}
-                  onDelete={() => confirmDeleteFinding(services.sync, company.id, f.id, f.title)}
+                  onDelete={() => deleteFinding(services.sync, company.id, f.id)}
+                  deleteAsks={false}
                   editMenu={{ menu, title: f.title }}
                 />
               ))}
@@ -229,7 +231,7 @@ export default function ComponentScreen() {
         title="Remove Item"
         kind="danger"
         onPress={() =>
-          confirmRemoveComponent(services.sync, company.id, comp, result, () => router.back())
+          removeChecklistItem(services.sync, company.id, comp, result, () => router.back())
         }
       />
     </Screen>

@@ -57,3 +57,40 @@ public func markRemainingLabel(_ answers: [ComponentAnswer?]) -> String {
     if answers.allSatisfy({ $0 == .done }) { return "Mark \(n) Remaining Done" }
     return "Mark \(n) Remaining Not Leaking"
 }
+
+/// "1 needs attention", "2 need attention".
+public func needAttentionText(_ n: Int) -> String {
+    "\(n) need\(n == 1 ? "s" : "") attention"
+}
+
+/// The line under a pool inspection's Checklist heading: "12 of 49 answered", then what needs
+/// attention or is leaking, each only when there is some (owner, 2026-10-26: no zero counts).
+public func inspectionTallyText(_ p: InspectionProgress) -> String {
+    [
+        "\(p.answered) of \(p.total) answered",
+        p.attention > 0 ? needAttentionText(p.attention) : nil,
+        p.leaking > 0 ? "\(p.leaking) leaking" : nil,
+    ].compactMap { $0 }.joined(separator: " · ")
+}
+
+/// The line under a leak or maintenance checklist's heading: the counts that aren't zero.
+/// Maintenance: done, needs attention, skipped, to do. Leak detection: not leaking, attention,
+/// leaking, not applicable, to do. `pending: false` leaves out "to do". Empty when every count is
+/// zero.
+public func checklistTallyText(_ t: ChecklistTally, maintenance: Bool, pending: Bool = true) -> String {
+    var parts: [String?] =
+        maintenance
+        ? [
+            t.pass > 0 ? "\(t.pass) done" : nil,
+            t.attention > 0 ? needAttentionText(t.attention) : nil,
+            t.notApplicable > 0 ? "\(t.notApplicable) skipped" : nil,
+        ]
+        : [
+            t.pass > 0 ? "\(t.pass) not leaking" : nil,
+            t.attention > 0 ? "\(t.attention) attention" : nil,
+            t.leaking > 0 ? "\(t.leaking) leaking" : nil,
+            t.notApplicable > 0 ? "\(t.notApplicable) not applicable" : nil,
+        ]
+    if pending && t.pending > 0 { parts.append("\(t.pending) to do") }
+    return parts.compactMap { $0 }.joined(separator: " · ")
+}

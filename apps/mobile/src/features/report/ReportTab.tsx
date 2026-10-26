@@ -41,7 +41,7 @@ import { getServices } from "../../lib/services";
 import { useCompany, useSession } from "../../state/session";
 import { Button, Card, Field, Notice, T } from "../../ui/components";
 import { confirmDestructive } from "../../ui/confirm";
-import { haptics } from "../../ui/haptics";
+import { haptic, haptics } from "../../ui/haptics";
 import { color, face, MAX_TEXT_SCALE, minTap, space } from "../../ui/theme";
 import { StepList } from "../../ui/Progress";
 import { WebIcon } from "../../ui/WebIcon";
@@ -339,6 +339,7 @@ export function ReportTab({
           kind === "email" ? email : (customer?.phone ?? null),
           setStep,
         );
+        haptic("reportSent");
         if (kind === "text") {
           await shareLink(r.message);
           setSendStatus({ tone: "success", text: "Report sent." });
@@ -475,7 +476,7 @@ export function ReportTab({
         </View>
       ) : hasDraft && draft ? (
         <T variant="secondary" muted>
-          {`Draft version ${draft.version} is ready to read, edit, and review with the customer.`}
+          {`Draft version ${draft.version}.`}
         </T>
       ) : null}
 
@@ -587,7 +588,7 @@ export function ReportTab({
             <T variant="secondary" muted>
               {waiting.length
                 ? `Signed by ${waiting.map((w) => w.signer_name).join(", ")}. Finish the report to lock this version with the signature.`
-                : "Hand the phone to the customer: they read the report and sign at the bottom. Signing locks this version; changes after that go out as a new version."}
+                : "Hand the phone to the customer to read and sign. Signing locks this version."}
             </T>
           </View>
           {waiting.length ? (
@@ -612,7 +613,7 @@ export function ReportTab({
           {sendOpen ? (
             <>
               <T variant="secondary" muted>
-                Sending saves your edits and locks this version.
+                Sending locks this version.
               </T>
               {sendControls(draft.id, false)}
             </>

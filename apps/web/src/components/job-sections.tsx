@@ -5,6 +5,7 @@ import { SwipePages, useSegmentDrag, useTrackOverflow } from "./gestures";
 import { JOB_TAB_EVENT as TAB_EVENT, showJobTab } from "./job-tab";
 import { useStillNavBar } from "./nav-bar";
 import { NextStepBar, type NextStepJob } from "./next-step-bar";
+import { needAttentionText } from "@leakbook/core";
 import { cx } from "./ui";
 
 const PHONE = "(max-width: 639.98px)";
@@ -12,7 +13,7 @@ const PHONE = "(max-width: 639.98px)";
 export interface JobSection {
   id: string;
   label: string;
-  /** Shown as a small count after the label, e.g. checklist items still to do. */
+  /** Shown as a small count after the label, e.g. checklist items that need attention. */
   badge?: number;
   content: ReactNode;
 }
@@ -147,7 +148,7 @@ export function JobSections({
                     "absolute -top-1 right-0 min-w-5 rounded-full px-1 text-[0.6875rem] leading-5",
                     "bg-status-warning text-on-status",
                   )}
-                  aria-label={`, ${s.badge} to do`}
+                  aria-label={`, ${needAttentionText(s.badge)}`}
                 >
                   {s.badge}
                 </span>

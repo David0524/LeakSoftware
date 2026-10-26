@@ -63,6 +63,7 @@ function InspectionFields({ t }: { t?: ComponentType }) {
           defaultValue={t?.name}
           className="sm:col-span-2"
           stacked
+          required
         />
         <SSelect
           label="Section"
@@ -111,7 +112,7 @@ function InspectionFields({ t }: { t?: ComponentType }) {
           id={`notice-${p}`}
           rows={2}
           defaultValue={t?.notice ?? ""}
-          hint="Shown above the question, and as a recommendation on the report."
+          hint="Shown above the question and on the report."
         />
       </SettingsFields>
       {t ? (
@@ -138,7 +139,7 @@ function TypeFields({ t, kind }: { t?: ComponentType; kind: Kind }) {
       <>
         <input type="hidden" name="job_type" value="maintenance" />
         <SettingsFields labelWidth="8.5rem" className="sm:grid sm:grid-cols-2 sm:gap-4">
-          <SField label="Name" name="name" id={`name-${p}`} defaultValue={t?.name} />
+          <SField label="Name" name="name" id={`name-${p}`} defaultValue={t?.name} required />
           <SSelect
             label="Applies to"
             name="applies_to"
@@ -160,7 +161,7 @@ function TypeFields({ t, kind }: { t?: ComponentType; kind: Kind }) {
             name="on_schedule"
             id={`schedule-${p}`}
             defaultChecked={t?.on_schedule ?? false}
-            hint="Done every few months, like cleaning the filter. Each maintenance plan sets how often."
+            hint="Done every few months, like a filter cleaning."
           />
           {t ? (
             <SSwitch
@@ -177,7 +178,7 @@ function TypeFields({ t, kind }: { t?: ComponentType; kind: Kind }) {
     <>
       <input type="hidden" name="job_type" value="detection" />
       <SettingsFields labelWidth="8.5rem" className="sm:grid sm:grid-cols-2 sm:gap-4">
-        <SField label="Name" name="name" id={`name-${p}`} defaultValue={t?.name} />
+        <SField label="Name" name="name" id={`name-${p}`} defaultValue={t?.name} required />
         <SSelect
           label="Section"
           name="section"
@@ -198,7 +199,6 @@ function TypeFields({ t, kind }: { t?: ComponentType; kind: Kind }) {
           id={`count-${p}`}
           inputMode="numeric"
           defaultValue={t?.default_count ?? 1}
-          hint="How many a new job starts with."
         />
         <SField
           label="Order"
@@ -269,7 +269,6 @@ export default async function ComponentsPage({ searchParams }: PageProps<"/setti
             value: "schedule",
             label: "On a schedule",
             rows: mine.filter((t) => t.on_schedule),
-            footer: "Each maintenance plan sets how often, from the customer's page.",
           },
         ].filter((g) => g.rows.length)
       : (kind === "inspection" ? INSPECTION_SECTIONS : LEAK_SECTIONS)
@@ -284,11 +283,7 @@ export default async function ComponentsPage({ searchParams }: PageProps<"/setti
     <SettingsListPage
       title="Checklist Components"
       subtitle={
-        kind === "pool"
-          ? "What techs do on every pool visit. Changes apply to new visits; visits already started keep their checklist."
-          : kind === "inspection"
-            ? "Every question of a pool inspection. Changes apply to new jobs; jobs already started keep their checklist."
-            : "What every leak inspection checks. Changes apply to new jobs; jobs already started keep their checklist."
+        kind === "pool" ? "Changes apply to new visits only." : "Changes apply to new jobs only."
       }
       add={{
         label: "Add Component",
@@ -322,7 +317,7 @@ export default async function ComponentsPage({ searchParams }: PageProps<"/setti
         <SettingsAddButton label="Add Component" />
       </div>
       {groups.map((g) => (
-        <Grouped key={g.value} title={g.label} footer={"footer" in g ? g.footer : undefined}>
+        <Grouped key={g.value} title={g.label}>
           {g.rows.map((t) => (
             <SheetRow
               key={t.id}

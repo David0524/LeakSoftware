@@ -180,7 +180,7 @@ public func lastJobNumber(_ store: LocalStore, companyId: String) -> Int {
 }
 
 public let reportDisclaimerHint =
-    "Printed at the end of every report, as written. Reports already sent keep the text they were sent with."
+    "Ends every report. Reports already sent keep their old text."
 
 public func reportDisclaimerProblem(_ text: String) -> String? {
     trimmed(text).count > 20_000 ? "Keep it under 20,000 characters." : nil
@@ -298,8 +298,8 @@ public enum OnMyWayChoice: String, CaseIterable, Hashable, Sendable {
 
     public var note: String {
         self == .messages
-            ? "Sent from the company number and kept in Messages, so the whole team sees it and the customer’s reply."
-            : "Opens the tech’s own Messages app with the text ready to send."
+            ? "Sent from the company number, so the whole team sees the reply."
+            : "Opens the tech’s own Messages app."
     }
 
     public init(_ settings: JSONValue?) { self = onMyWayFromPhone(settings) ? .phone : .messages }
@@ -321,16 +321,6 @@ public struct ReportTemplateItem: Identifiable, Equatable, Sendable {
 
     public var value: String { enabled ? "On" : "Off" }
     public var editable: Bool { true }
-}
-
-public let reportTemplatesSubtitle =
-    "Which reports techs can send, and what they’re called. Each report is written from the job’s checklist, tests, and findings."
-
-/// A pool-only shop's Report Templates holds just its visit reports.
-public let visitReportsSubtitle = "What goes to the customer after each maintenance visit."
-
-public func reportTemplatesSubtitle(_ settings: JSONValue?) -> String {
-    offersLeak(settings) ? reportTemplatesSubtitle : visitReportsSubtitle
 }
 
 public func reportTemplateItems(_ store: LocalStore, companyId: String) -> [ReportTemplateItem] {

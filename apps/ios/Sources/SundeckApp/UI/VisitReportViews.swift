@@ -21,6 +21,8 @@
         @State private var result: (text: String, error: Bool)?
         @State private var share: String?
         @State private var browsing: BrowsedPage?
+        /// Bumped when a visit report is sent, for its tap (core `HapticMoment.reportSent`).
+        @State private var sentReports = 0
         @FocusState private var focused: Bool
 
         var body: some View {
@@ -106,6 +108,7 @@
                     }
                     .card()
                 }
+                .haptic(.reportSent, trigger: sentReports)
                 .browser($browsing)
                 // Messages gets the link as a link, with the report's preview card (2026-10-24).
                 .linkShareSheet(share) { share = nil }
@@ -128,6 +131,7 @@
                         to: channel == .email ? email : nil, onStep: { step = $0 })
                     result = (sent.message, false)
                     share = sent.share
+                    sentReports += 1
                 } catch {
                     result = ((error as? WebAPI.Failure)?.description ?? String(describing: error), true)
                 }
@@ -149,7 +153,9 @@
 
         var body: some View {
             VStack(alignment: .leading, spacing: 12) {
-                Notice(kind: .error, text: ReportPhotoText.blocked)
+                // Where the send buttons would be: what it needs, in plain text, not a red bar
+                // (owner, 2026-10-26: no warnings before the person acts).
+                Text(ReportPhotoText.blocked).textRole(.secondary).foregroundStyle(Color.textMuted)
                 Button {
                     Task { await capture.takeOrChoose(.photo) }
                 } label: {
@@ -193,9 +199,11 @@
                             }
                             .tint(Color.pass)
                             .frame(minHeight: minTarget)
-                            Text(mode == .auto ? VisitReportTimingText.automaticOn : VisitReportTimingText.automaticOff)
-                                .textRole(.secondary)
-                                .foregroundStyle(Color.textMuted)
+                            if mode == .auto {
+                                Text(VisitReportTimingText.automaticOn)
+                                    .textRole(.secondary)
+                                    .foregroundStyle(Color.textMuted)
+                            }
                         case .monthly:
                             VStack(alignment: .leading, spacing: 0) {
                                 monthlyRow(
@@ -230,7 +238,6 @@
                         }
                     }
                     .card()
-                    Text(VisitReportText.settingsFooter).textRole(.footnote).foregroundStyle(Color.textMuted)
                     if let error { Notice(kind: .error, text: error) }
                 }
             }

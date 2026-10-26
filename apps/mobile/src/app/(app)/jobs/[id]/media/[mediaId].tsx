@@ -17,7 +17,7 @@ import { useMediaSource, type MediaSourceState } from "../../../../../data/media
 import { useCompany, useSession } from "../../../../../state/session";
 import { Button, Field, T } from "../../../../../ui/components";
 import { AudioRow, useAttachedTo } from "../../../../../features/media/MediaSection";
-import { confirmDeleteMedia } from "../../../../../features/media/remove";
+import { deleteMedia } from "../../../../../features/media/remove";
 import { Glass } from "../../../../../ui/Glass";
 import { haptics } from "../../../../../ui/haptics";
 import { KeyboardAvoider } from "../../../../../ui/keyboard";
@@ -194,9 +194,7 @@ export default function MediaScreen() {
             <Button
               title="Delete"
               kind="danger"
-              onPress={() =>
-                confirmDeleteMedia(services.sync, company.id, capture, () => router.back())
-              }
+              onPress={() => deleteMedia(services.sync, company.id, capture, () => router.back())}
             />
           </View>
         </ScrollView>

@@ -9,7 +9,6 @@ import SundeckCore
 
 public enum PhoneText {
     public static let title = "Phone and Texting"
-    public static let subtitle = "Text and call customers from one company number the whole team shares."
     public static let needsNumber =
         "Texting needs a company number: a local number that texts, sends photos, and takes calls. Included with Sundeck Pro. Your own mobile number, below, is only where calls ring."
     public static let newNumber = "Get a New Number"
@@ -27,7 +26,6 @@ public enum PhoneText {
     public static let cancelConfirm = "Stop setting up this number?"
     public static let textsAndCalls = "Texts and calls"
     public static let pictures = "Photos in texts"
-    public static let picturesHint = "Send and receive pictures (MMS)."
     public static let greeting = "Voicemail greeting"
     public static let callsRing = "Calls ring"
     public static let callsRingHint =
@@ -36,7 +34,7 @@ public enum PhoneText {
     public static let onMyWay = "On My Way"
     public static let myMobile = "Your mobile number"
     public static let myMobileHint =
-        "Calls you place ring here first, then connect from the company number. Customers never see it, and texts don’t come from it. Each person adds their own on the phone app or here."
+        "Calls you place ring here first. Customers never see this number."
     public static let saveMobile = "Save Number"
     public static let notManager = "Only owners and admins can change the company number."
 

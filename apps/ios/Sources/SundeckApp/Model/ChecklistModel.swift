@@ -60,8 +60,9 @@ public struct ChecklistItemRow: Identifiable, Equatable, Sendable {
     /// Put on this visit by the plan's scheduled cleaning (`job_component.plan_cleaning_id`).
     public var fromPlan: Bool { component.planCleaningId != nil }
 
-    /// The confirm before Remove (core `removeItemConfirm`): any item can go (owner, 2026-10-19),
-    /// and a scheduled cleaning's says it goes on the next visit.
+    /// Remove (core `removeItemConfirm`): any item can go (owner, 2026-10-19). Nothing asks first
+    /// since 2026-10-26: its `message`, for a scheduled cleaning, is the note under the "Item
+    /// removed" banner (it goes on the next visit).
     public var removeConfirm: RemoveItemConfirm { removeItemConfirm(component.label, fromPlan: fromPlan) }
 
     /// Why an item was left out ("Covered by deck"), shown under its row.
@@ -191,9 +192,7 @@ public struct ChecklistModel: Equatable, Sendable {
     }
 
     public static func tallyText(_ t: ChecklistTally, jobType: JobType) -> String {
-        jobType == .maintenance
-            ? "\(t.pass) done · \(t.attention) need attention · \(t.notApplicable) skipped · \(t.pending) to do"
-            : "\(t.pass) not leaking · \(t.attention) attention · \(t.leaking) leaking · \(t.notApplicable) not applicable · \(t.pending) to do"
+        checklistTallyText(t, maintenance: jobType == .maintenance)
     }
 
     /// The pool the default checklist is planned for: the job's property, or a pool without a

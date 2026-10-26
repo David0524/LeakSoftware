@@ -15,6 +15,8 @@ import Testing
             "validateNewJob", "formatAddress", "newJobRecords", "localDate", "groupJobs", "formatSchedule",
             "propertyLocation", "nativeMapsUrl", "instanceLabel", "FINDING_STATUS_LABELS", "verdictLabel",
             "verdictOptions", "currentVerdict", "verdictValues", "checklistSectionSummary", "markRemainingLabel",
+            "needAttentionText", "inspectionTallyText",
+            "checklistTallyText",
             "SPA_SIZES", "SPA_SHAPES", "mirrorPath", "offsetPath", "centerLayout", "POOL_CENTER_OFFSET",
             "parseDiagramLayout", "removeItemConfirm", "LANDMARKS",
             "DRAWING_MAX",
@@ -319,6 +321,19 @@ import Testing
                 InspectionProgress(
                     answered: p.answered, total: p.total, toDo: p.total - p.answered, attention: p.attention,
                     leaking: p.leaking))
+        }
+        checkRule(module, "needAttentionText") { c in needAttentionText(try c.arg(0)) }
+        checkRule(module, "inspectionTallyText") { c in
+            let p = try c.arg(0, as: ProgressArg.self)
+            return inspectionTallyText(
+                InspectionProgress(
+                    answered: p.answered, total: p.total, toDo: p.total - p.answered, attention: p.attention,
+                    leaking: p.leaking))
+        }
+        checkRule(module, "checklistTallyText") { c in
+            checklistTallyText(
+                try c.arg(0, as: ChecklistTally.self), maintenance: try c.arg(1),
+                pending: try c.arg(2, as: Bool?.self) ?? true)
         }
         checkRule(module, "optionsToText") { c in optionsToText(c.args.first) }
         checkRule(module, "optionsFromText") { c in optionsFromText(try c.arg(0)) }

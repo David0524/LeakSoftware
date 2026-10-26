@@ -9,7 +9,14 @@ import {
 import { NewJobForm } from "@/components/new-job-form";
 import { Notice, PageHeader } from "@/components/ui";
 import { getOffice } from "@/lib/auth";
-import { getCompany, getTeam, listConfig, listCustomers, mayMakeJobs } from "@/lib/data";
+import {
+  getCompany,
+  getTeam,
+  getUsualVisits,
+  listConfig,
+  listCustomers,
+  mayMakeJobs,
+} from "@/lib/data";
 
 export const metadata: Metadata = { title: "New Job · Sundeck Pro" };
 
@@ -40,6 +47,9 @@ export default async function NewJobPage() {
     getCompany(office),
     listConfig<PriceItem>(office, "price_book_item"),
   ]);
+  // Each pool's usual tech and start time, so a customer's next job starts filled in (owner,
+  // 2026-10-26).
+  const usual = await getUsualVisits(office, company.timezone).catch(() => ({}));
   const settings = company.settings as Partial<CompanySettings>;
   return (
     <>
@@ -61,6 +71,7 @@ export default async function NewJobPage() {
             id: p.id,
             label: formatAddress(p),
             gallons: p.approx_gallons ?? null,
+            usual: (usual as Record<string, { techId: string | null; time: string | null }>)[p.id],
           })),
         }))}
         team={team

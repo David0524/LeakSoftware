@@ -18,8 +18,6 @@ public enum VisitReportText {
     public static let sendText = "Send by Text"
     public static let getLink = "Get Link to Text"
     public static let settingsGroup = "Visit reports"
-    public static let settingsFooter =
-        "A maintenance visit’s report: the water test, the checklist and cleanings, and photos, at a link for the customer."
     public static let emailed = "Visit report emailed."
     public static let texted = "Visit report texted."
     public static let ready = "Visit report ready. Text the customer the link."

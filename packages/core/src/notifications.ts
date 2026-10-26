@@ -11,19 +11,15 @@ export type NotificationKind =
   "text" | "job" | "quote" | "payment" | "report" | "opened" | "live" | "day";
 
 /** Each kind a person can turn off in More › Notifications or Settings › Notifications. */
-export const NOTIFICATION_KINDS: { key: NotificationKind; label: string; hint: string }[] = [
-  { key: "text", label: "Customer texts", hint: "A customer texts the shop's number." },
-  { key: "job", label: "New and moved jobs", hint: "A job is given to you, or its time changes." },
-  { key: "quote", label: "Accepted quotes", hint: "A customer accepts a quote." },
-  { key: "payment", label: "Payments", hint: "A customer pays a deposit or an invoice." },
-  { key: "report", label: "Signed reports", hint: "A customer signs a report." },
+export const NOTIFICATION_KINDS: { key: NotificationKind; label: string; hint?: string }[] = [
+  { key: "text", label: "Customer texts" },
+  { key: "job", label: "New and moved jobs" },
+  { key: "quote", label: "Accepted quotes" },
+  { key: "payment", label: "Payments" },
+  { key: "report", label: "Signed reports" },
   // Owner, 2026-10-22: "Techs never hear the outcome." The first time a customer opens a
   // report's link (not visit reports), to the job's techs and the owners and admins.
-  {
-    key: "opened",
-    label: "Opened reports",
-    hint: "A customer opens a report for the first time.",
-  },
+  { key: "opened", label: "Opened reports" },
   // Owner, 2026-10-20: "Add a Live Activities toggle in the notifications setting." The stop
   // you're on, on the Lock Screen during the workday (iPhone's Live Activity, Android's ongoing
   // notification).

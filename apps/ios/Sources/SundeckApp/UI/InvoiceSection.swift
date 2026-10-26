@@ -54,6 +54,7 @@
                     }
                 }
                 .frame(maxWidth: .infinity, alignment: .leading)
+                .haptic(.paymentRecorded, trigger: flow.paymentsRecorded)
             } else if let company = session.company {
                 SkeletonCard(label: "Loading the invoice")
                     .onAppear { flow = InvoiceFlow(sync: sync, companyId: company.id, jobId: job.id) }

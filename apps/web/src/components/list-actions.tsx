@@ -12,6 +12,7 @@ import {
   type LatLng,
 } from "@leakbook/core";
 import { changeJobStatus } from "@/app/actions/inspection";
+import { buzz } from "@/lib/haptics";
 import { voidInvoiceAction } from "@/app/actions/invoices";
 import {
   RecordPaymentFields,
@@ -113,6 +114,7 @@ export function JobActions({
       });
       const error = r.error ?? Object.values(r.fields ?? {})[0];
       if (error) saveFailed(error);
+      else buzz("jobCompleted");
     });
   }
 
@@ -391,6 +393,7 @@ export function ReportActions({
               formOf({ job: r.jobId, report: r.id, channel: "email", to }),
             );
       bannerFor(result, `Sent to ${to}.`);
+      if (!result.error) buzz("reportSent");
     });
   }
   const menu: MenuEntry[] = [

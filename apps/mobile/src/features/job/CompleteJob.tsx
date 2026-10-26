@@ -16,7 +16,7 @@ import { takeStopAction } from "../../lib/liveStop";
 import { queueAutoVisitReport } from "../../lib/visitReports";
 import { useCompany } from "../../state/session";
 import { Button, Notice } from "../../ui/components";
-import { haptics } from "../../ui/haptics";
+import { haptic, haptics } from "../../ui/haptics";
 import { confirmAlert } from "../../ui/confirm";
 import { color, face, MAX_TEXT_SCALE, space, type } from "../../ui/theme";
 import { FinishPhotoNotice } from "../media/FinishPhoto";
@@ -160,9 +160,7 @@ export function TodayComplete({
         ...markCompleteValues(job, day),
         stop_done_at: new Date().toISOString(),
       });
-      // A light tap on Today's card (docs/design/2026-10-20-today-card.md).
-      if (onWater) haptics.light();
-      else haptics.success();
+      haptic("jobCompleted");
       if (job.type === "maintenance") queueAutoVisitReport(job, company.settings);
     };
     // Asks first when completing sends the visit report (Automatic shops).

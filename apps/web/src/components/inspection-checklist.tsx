@@ -12,17 +12,21 @@ import {
   inspectionProgressText,
   inspectionValue,
   isGate,
-  removeItemConfirm,
   toggleChoice,
   type ChecklistSection,
   type ChoiceOption,
   type InspectionValue,
 } from "@leakbook/core";
-import { removeComponent, saveItemNotes, setAnswer } from "@/app/actions/inspection";
+import {
+  removeComponent,
+  restoreComponent,
+  saveItemNotes,
+  setAnswer,
+} from "@/app/actions/inspection";
 import { ErrorText, useRun, type ChecklistRow } from "./job-work";
 import { AnswerIconButtons, AnswerMenuPill, flagTone } from "./answer-controls";
 import { uploadItemPhotos } from "./media-work";
-import { useConfirm } from "./sheet";
+import { restoreWith, showRemoved } from "./removed";
 import { buttonClass, cx } from "./ui";
 
 // Pool Inspection's checklist (owner, 2026-10-20; docs/plans/pool-inspection.md): Leaktronics'
@@ -205,8 +209,7 @@ function InspectionItem({
   row: ChecklistRow;
   editing: boolean;
 }) {
-  const { error, run } = useRun({ instant: true });
-  const [confirm, confirmSheet] = useConfirm();
+  const { error, run, call } = useRun({ instant: true });
   const answer = row.type.answer ?? "choice";
   const options = choiceOptions(row.type.options);
   const saved = inspectionValue(answer, row.result?.value);
@@ -245,24 +248,21 @@ function InspectionItem({
         <button
           type="button"
           aria-label={`Remove ${row.label}`}
-          onClick={async () => {
-            const ask = removeItemConfirm(row.label, false);
-            if (
-              await confirm({
-                title: ask.title,
-                message: ask.message ?? undefined,
-                confirmLabel: ask.confirm,
-                destructive: true,
-              })
-            )
-              run(removeComponent, { job: jobId, component: row.id });
-          }}
+          onClick={() =>
+            // Removed at once, with Undo for five seconds (owner, 2026-10-26), not asked first.
+            void call(removeComponent, { job: jobId, component: row.id }, undefined, (r) => {
+              if (!r.error)
+                showRemoved(
+                  "checklistItem",
+                  restoreWith(restoreComponent, { job: jobId, component: row.id }),
+                );
+            })
+          }
           className={buttonClass("danger", "min-h-9 px-4")}
         >
           Remove
         </button>
         <ErrorText error={error} />
-        {confirmSheet}
       </div>
     );
   }
@@ -466,7 +466,6 @@ function InspectionItem({
       ) : null}
       {uploading ? <p className="pt-1 text-[0.9375rem] text-text-muted">Uploading…</p> : null}
       <ErrorText error={error ?? photoError} />
-      {confirmSheet}
     </div>
   );
 }

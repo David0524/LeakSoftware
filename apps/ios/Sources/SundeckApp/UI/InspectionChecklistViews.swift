@@ -144,19 +144,12 @@
         @State private var describing = false
         @State private var textDraft: String?
         @State private var notesDraft: String?
-        @State private var confirmRemove = false
         @FocusState private var textFocused: Bool
         @FocusState private var notesFocused: Bool
 
         var body: some View {
-            let ask = removeItemConfirm(question.label, fromPlan: false)
             Group {
                 if editing { editRow } else { answerRow }
-            }
-            .confirmationDialog(ask.title, isPresented: $confirmRemove, titleVisibility: .visible) {
-                Button(ask.confirm, role: .destructive, action: remove)
-            } message: {
-                if let message = ask.message { Text(message) }
             }
         }
 
@@ -167,7 +160,7 @@
                     .foregroundStyle(Color.text)
                     .multilineTextAlignment(.leading)
                     .frame(maxWidth: .infinity, minHeight: minTarget, alignment: .leading)
-                Button("Remove", role: .destructive) { confirmRemove = true }
+                Button("Remove", role: .destructive, action: remove)
                     .buttonStyle(.danger)
                     .accessibilityLabel("Remove \(question.label)")
             }

@@ -47,11 +47,7 @@ export default async function PhoneSettingsPage() {
 
   return (
     <>
-      <PageHeader
-        back={{ href: "/settings", label: "Settings" }}
-        title="Phone and Texting"
-        subtitle="Text and call customers from one company number the whole team shares."
-      />
+      <PageHeader back={{ href: "/settings", label: "Settings" }} title="Phone and Texting" />
       <div className="max-w-2xl space-y-6">
         {line ? (
           <SettingsSection title="Company number" boxed>
@@ -104,12 +100,7 @@ export default async function PhoneSettingsPage() {
           <SettingsSection title="Texts and calls">
             <SettingsForm action={saveLine} primary>
               <SettingsFields labelWidth="8rem">
-                <SSwitch
-                  label="Photos in texts"
-                  name="pictures"
-                  defaultChecked={line.pictures}
-                  hint="Send and receive pictures (MMS)."
-                />
+                <SSwitch label="Photos in texts" name="pictures" defaultChecked={line.pictures} />
                 <STextArea
                   label="Voicemail greeting"
                   name="voicemail_greeting"
@@ -159,7 +150,7 @@ export default async function PhoneSettingsPage() {
                 autoComplete="tel"
                 placeholder="(480) 555-0100"
                 defaultValue={mine ? formatPhone(toE164(mine) ?? mine) : ""}
-                hint="Calls you place ring here first, then connect from the company number. Customers never see it, and texts don’t come from it. Each person adds their own on the phone app or here."
+                hint="Calls you place ring here first. Customers never see this number."
               />
             </SettingsFields>
           </SettingsForm>

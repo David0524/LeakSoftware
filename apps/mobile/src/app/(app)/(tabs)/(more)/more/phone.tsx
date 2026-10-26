@@ -45,7 +45,7 @@ export default function MyPhone() {
   }
   return (
     <Screen title="My Mobile Number">
-      <FieldGroup footer="Calls you place from Messages ring here first, then connect from the company number.">
+      <FieldGroup footer="Calls you place from Messages ring here first.">
         <FieldRow
           label="Mobile"
           value={phone ?? ""}

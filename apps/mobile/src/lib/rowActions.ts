@@ -282,7 +282,8 @@ export type EditActionId = "edit" | "delete";
 
 /**
  * Settings lists (checklist items, test types, severities, exclusion reasons, the price book,
- * saved reports) and findings: swipe left Delete… (asks first); hold for Edit and Delete….
+ * saved reports) swipe left Delete… (asks first); hold for Edit and Delete…. Tests and
+ * findings delete at once with Undo (owner, 2026-10-26), so theirs are "Delete" (`asks: false`).
  * `deleteLabel` is the row's own button ("Remove", "Remove Test Type"). Left out: Duplicate,
  * Move Up and Move Down (the app orders by each row's Order field). Checklist items in
  * Settings are removed by turning them off, so they get Edit only.
@@ -290,11 +291,13 @@ export type EditActionId = "edit" | "delete";
 export function editRowActions(opts: {
   deleteLabel?: string | null;
   editLabel?: string;
+  /** The delete asks first (…); false when it happens at once with Undo. Default true. */
+  asks?: boolean;
 }): RowActions<EditActionId> {
   const del = opts.deleteLabel
     ? {
         id: "delete" as const,
-        label: `${opts.deleteLabel}…`,
+        label: opts.asks === false ? opts.deleteLabel : `${opts.deleteLabel}…`,
         short: opts.deleteLabel.split(" ")[0],
         destructive: true,
       }
@@ -308,7 +311,8 @@ export function editRowActions(opts: {
 
 /**
  * A photo, video or voice note on the job page: hold for Mark Up (photos; Edit Markup once it
- * has some) and Delete…. Left out: Set as Pool Photo (the app has no pool photo).
+ * has some) and Delete (at once, with Undo: owner, 2026-10-26). Left out: Set as Pool Photo
+ * (the app has no pool photo).
  */
 export function mediaRowActions(m: {
   kind: string;
@@ -319,7 +323,7 @@ export function mediaRowActions(m: {
 }): RowActions<"markup" | "delete"> {
   const del = {
     id: "delete" as const,
-    label: `Delete ${m.kindLabel}…`,
+    label: `Delete ${m.kindLabel}`,
     short: "Delete",
     destructive: true,
   };

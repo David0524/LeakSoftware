@@ -284,10 +284,10 @@
 
         @Environment(Session.self) private var session
         @Environment(SyncService.self) private var sync
+        @Environment(AppEnvironment.self) private var app
         @Environment(\.openMedia) private var openMedia
         @State private var media: [Media] = []
         @State private var capture: CaptureController
-        @State private var deleting: Media?
 
         init(target: MediaTarget?, jobId: String? = nil, title: String? = nil, prepare: (() -> MediaTarget?)? = nil) {
             self.target = target
@@ -323,7 +323,7 @@
                             }
                             .buttonStyle(.borderless)
                             .accessibilityLabel(CaptureRules.accessibilityLabel(item))
-                            .accessibilityAction(named: "Delete") { deleting = item }
+                            .accessibilityAction(named: "Delete") { delete(item) }
                         }
                     }
                     .padding(.vertical, 4)
@@ -340,16 +340,12 @@
                 media = jobMedia(sync.store, target)
             }
             .captureFlow(capture)
-            .confirmationDialog(
-                deleting.map { MediaDetail.deleteTitle($0.kind) } ?? "",
-                isPresented: Binding(get: { deleting != nil }, set: { if !$0 { deleting = nil } }),
-                titleVisibility: .visible, presenting: deleting
-            ) { item in
-                Button(MediaDetail.deleteButton(item.kind), role: .destructive) { try? MediaWrites.delete(sync, item) }
-                Button("Cancel", role: .cancel) {}
-            } message: { _ in
-                Text(MediaDetail.deleteMessage)
-            }
+        }
+
+        /// VoiceOver's Delete: removed at once, with Undo for five seconds (owner, 2026-10-26).
+        private func delete(_ item: Media) {
+            try? app.removals.remove(
+                RemovedKind(media: item.kind), [RemovalRow("media", item.id)], sync: sync, companyId: item.companyId)
         }
 
         /// Add Photo, Add Video and Voice Note, as the Photos section's tiles.

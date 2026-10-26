@@ -26,7 +26,7 @@ export default async function BillingPage({ searchParams }: PageProps<"/settings
       <PageHeader
         back={{ href: "/settings", label: "Settings" }}
         title="Sundeck Pro Billing"
-        subtitle="Your shop’s subscription to Sundeck Pro. Separate from the payments your customers make to you."
+        subtitle="Your own subscription, not what customers pay you."
       />
       <div className="max-w-2xl">
         <SettingsSection title="Subscription" boxed>

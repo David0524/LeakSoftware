@@ -14,6 +14,8 @@ import {
 } from "@leakbook/core";
 import type { JsonValue, Row as SyncRow } from "@leakbook/sync";
 import { createAutosave, type Autosave } from "../lib/autosave";
+import { removeRows } from "../lib/removal";
+import { announceRemoved } from "../lib/removedBanner";
 import { getServices } from "../lib/services";
 import { useJobRows, useRow, useRows } from "./hooks";
 
@@ -295,4 +297,14 @@ export function removeChemical(companyId: string, id: string) {
   getServices().sync.write("chemical_addition", id, companyId, {
     deleted_at: new Date().toISOString(),
   });
+}
+
+/**
+ * Remove Chemical on the Added Chemical sheet: off the visit at once, with "Chemical removed"
+ * and Undo for five seconds (owner, 2026-10-26), not asked first.
+ */
+export function removeChemicalWithUndo(companyId: string, id: string) {
+  announceRemoved(
+    removeRows(getServices().sync, companyId, "chemical", [{ table: "chemical_addition", id }]),
+  );
 }
