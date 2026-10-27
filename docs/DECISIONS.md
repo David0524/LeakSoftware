@@ -2,6 +2,9 @@
 
 Newest first. Each entry: date, decision, reason.
 
+## 2026-10-27 (owner: Cole's price book changes become the defaults)
+- **New shops price Salt cell clean at $45** (was $85), as Cole set it in Canyon State (`20261022003500_salt_cell_default.sql`). Existing shops keep their own prices. Cole also deleted Replace return fitting ($185); it stays a default until the owner confirms that was meant.
+
 ## 2026-10-26 (owner: "tile and grout" in the bond beam section; "type in a new item" at the bottom of the checklist; "We don't need the instructions on how to add/adjust a landmark")
 - **Tile and grout** is a seventh leak checklist item in the Bond Beam section, after Pool and Spa (order 315, Pool and spa, Dye test and Visual), for new shops (`app.config_default`) and for every existing shop that has a bond beam section and no item by that name (`app.add_tile_grout_item`, migration `20261022003400_checklist_additions.sql`). Jobs already started keep their checklists; the next job takes it.
 - **Type a New Item at the bottom of a leak detection or visit checklist** takes a typed name (sheet: "New Item", field "Item name", "This item is only on this job.", button "Add") on the website, iPhone and Android. It is one item on that job only: a `job_component` whose `label` is the typed name and a pending `checklist_item_result`, written through the same paths as every other item (sync layer on the phones). It is answered, undone and removed like the rest, and the report snapshot reads it unchanged. A leak item goes in the Other section (Not leaking, Leaking, Needs attention); a visit item at the end of the service list (Done, Needs Attention, Skipped). Not on a pool inspection (its questions are fixed) or a repair (no checklist). "Add an item" (the shop's own item types) stays as it was: on the website "Type a New Item" is a quiet link under its select; on iPhone and Android it is the last entry of that menu, "Type a New Item…", opening the sheet at once.
