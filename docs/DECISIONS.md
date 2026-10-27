@@ -3,7 +3,7 @@
 Newest first. Each entry: date, decision, reason.
 
 ## 2026-10-27 (owner: Cole's price book changes become the defaults)
-- **New shops price Salt cell clean at $45** (was $85), as Cole set it in Canyon State (`20261022003500_salt_cell_default.sql`). Existing shops keep their own prices. Cole also deleted Replace return fitting ($185); it stays a default until the owner confirms that was meant.
+- **New shops price Salt cell clean at $45** (was $85), as Cole set it in Canyon State (`20261022003500_salt_cell_default.sql`). Existing shops keep their own prices. Cole deleted Replace return fitting ($185) on purpose, so new shops no longer get it (owner: "It should not be included by default"; `20261022003600_no_return_fitting_default.sql`).
 
 ## 2026-10-26 (owner: "tile and grout" in the bond beam section; "type in a new item" at the bottom of the checklist; "We don't need the instructions on how to add/adjust a landmark")
 - **Tile and grout** is a seventh leak checklist item in the Bond Beam section, after Pool and Spa (order 315, Pool and spa, Dye test and Visual), for new shops (`app.config_default`) and for every existing shop that has a bond beam section and no item by that name (`app.add_tile_grout_item`, migration `20261022003400_checklist_additions.sql`). Jobs already started keep their checklists; the next job takes it.
