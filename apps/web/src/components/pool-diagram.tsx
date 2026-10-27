@@ -1,6 +1,5 @@
 import {
-  parseDiagramLayout,
-  poolDiagram,
+  shownDiagram,
   type DiagramShape,
   type LandmarkPart,
   type MarkupShape,
@@ -144,7 +143,7 @@ export function PoolDiagram({
   /** The job page draws it as a plain rounded panel (no outline) on the grouped gray. */
   className?: string;
 }) {
-  const d = poolDiagram(shape, hasSpa, parseDiagramLayout(layout));
+  const d = shownDiagram(shape, hasSpa, layout);
   return (
     <div className="relative">
       <svg

@@ -37,6 +37,8 @@ import {
   T,
 } from "../../../../ui/components";
 import { useDiscardChanges } from "../../../../ui/discard";
+import { DraftNote } from "../../../../ui/DraftNote";
+import { useDraft } from "../../../../ui/useDraft";
 import { color, space } from "../../../../ui/theme";
 
 /**
@@ -60,7 +62,16 @@ export default function EmailCustomers() {
   const [message, setMessage] = useState<string | null>(null);
   const [sending, setSending] = useState(false);
   // A message typed and not sent: leaving asks "Discard changes?" (owner, 2026-10-20: everywhere).
-  useDiscardChanges(subject.trim() !== "" || body.trim() !== "");
+  // What was typed is kept as a draft until it's sent or discarded (owner, 2026-10-27).
+  const draft = useDraft({
+    form: "mass-email",
+    fields: { subject, body },
+    restore: (c) => {
+      if (c.subject !== undefined) setSubject(c.subject);
+      if (c.body !== undefined) setBody(c.body);
+    },
+  });
+  useDiscardChanges(subject.trim() !== "" || body.trim() !== "", draft.clear);
   const audience = { show, city: city || null, days: days ? Number(days) : null };
   const { count, counting, error: countError } = useMassEmailCount(company.id, audience);
 
@@ -117,6 +128,7 @@ export default function EmailCustomers() {
       setMessage(r.message);
       setSubject("");
       setBody("");
+      draft.clear();
       load();
     } catch (e) {
       setError(massEmailError(e));
@@ -136,6 +148,7 @@ export default function EmailCustomers() {
 
   return (
     <Screen title={MASS_EMAIL_TITLE}>
+      <DraftNote draft={draft} />
       {loadError ? <Notice tone="error">{loadError}</Notice> : null}
       {setup && !setup.shop.address ? (
         <Notice tone="warning">{MASS_EMAIL_NO_ADDRESS}</Notice>

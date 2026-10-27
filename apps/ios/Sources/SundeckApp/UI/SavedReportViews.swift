@@ -167,11 +167,19 @@
         @State private var loaded = false
         @State private var error: String?
         @State private var confirmDelete = false
+        /// The wording typed, kept until it's saved or discarded (owner, 2026-10-27).
+        @State private var draft = DraftHandle()
+
+        private var draftFields: [String: String] {
+            var fields = ["name": name]
+            for section in savedReportSectionList { fields["t.\(section.key)"] = texts[section.key] ?? "" }
+            return fields
+        }
 
         var body: some View {
             FormSheet(
                 title: saved?.name ?? SavedReportText.add,
-                dirty: loaded && (name != (saved?.name ?? "") || texts != (saved?.sections ?? [:]))
+                dirty: loaded && (name != (saved?.name ?? "") || texts != (saved?.sections ?? [:])), draft: draft
             ) {
                 Grouped(footer: SavedReportText.nameHint) {
                     LabeledFieldRow(label: "Name", text: $name, labelWidth: 80)
@@ -209,6 +217,16 @@
                     loaded = true
                 }
             }
+            .keepsDraft(draft, form: "saved-report", id: saved?.id ?? "new", fields: draftFields, ready: loaded) {
+                changes in
+                for (key, value) in changes {
+                    if key == "name" {
+                        name = value
+                    } else if key.hasPrefix("t.") {
+                        texts[String(key.dropFirst(2))] = value
+                    }
+                }
+            }
         }
 
         private func save() {
@@ -223,6 +241,7 @@
                 } else {
                     try SavedReportWrites.add(sync, companyId: company.id, name: name, sections: texts)
                 }
+                draft.clear()
                 dismiss()
             } catch {
                 self.error = userMessage(error)

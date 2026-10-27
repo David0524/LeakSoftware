@@ -65,7 +65,7 @@
         var outlined = false
         var onPlace: ((Double, Double) -> Void)?
 
-        private var diagram: SundeckCore.PoolDiagram { poolDiagram(shape, hasSpa, layout) }
+        private var diagram: SundeckCore.PoolDiagram { shownDiagram(shape, hasSpa, layout) }
 
         var body: some View {
             let d = diagram

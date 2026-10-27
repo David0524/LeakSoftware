@@ -11,6 +11,8 @@
         @Environment(AppEnvironment.self) private var app
         @State private var form: MassEmailForm
         @State private var confirming = false
+        /// The subject and message, kept until sent or discarded (owner, 2026-10-27).
+        @State private var draft = DraftHandle()
         /// Screenshots pass loaded data and nothing is fetched.
         private let preview: Bool
 
@@ -35,7 +37,16 @@
             .navigationTitle(MassEmailText.title)
             .navigationBarTitleDisplayMode(.large)
             // A message typed and not sent: Back asks "Discard changes?" (owner, 2026-10-20: everywhere).
-            .discardOnBack(dirty: textChanged(form.subject, from: "") || textChanged(form.body, from: ""))
+            .discardOnBack(
+                dirty: textChanged(form.subject, from: "") || textChanged(form.body, from: ""), draft: draft
+            )
+            .keepsDraft(
+                draft, form: "mass-email", fields: ["subject": form.subject, "body": form.body],
+                ready: form.setup != nil
+            ) { changes in
+                if let value = changes["subject"] { form.subject = value }
+                if let value = changes["body"] { form.body = value }
+            }
             .task {
                 guard !preview, form.setup == nil else { return }
                 await form.load(app.api, companyId: companyId)
@@ -47,7 +58,10 @@
             .alert(form.confirm.title, isPresented: $confirming) {
                 Button("Cancel", role: .cancel) {}
                 Button(form.confirm.confirmLabel) {
-                    Task { await form.send(app.api, companyId: companyId) }
+                    Task {
+                        await form.send(app.api, companyId: companyId)
+                        if form.subject.isEmpty && form.body.isEmpty { draft.clear() }
+                    }
                 }
                 .keyboardShortcut(.defaultAction)
             } message: {
@@ -62,6 +76,7 @@
                     if !setup.configured {
                         Notice(kind: .warning, text: "Email isn’t set up yet. Try again later.")
                     }
+                    DraftNote(draft: draft)
                     to(setup)
                     message
                     buttons

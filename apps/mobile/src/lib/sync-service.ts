@@ -25,6 +25,7 @@ import {
 } from "@leakbook/sync";
 import { API_URL } from "./config";
 import type { KeyValue } from "./database";
+import { dropAllDrafts } from "./drafts";
 import { deleteAllMedia } from "./media";
 import { withWaitingSince } from "./syncNote";
 
@@ -567,6 +568,8 @@ export class SyncService {
     ]) {
       this.kv.remove(key);
     }
+    // Typed text not saved yet goes too (lib/drafts).
+    dropAllDrafts(this.kv);
     this.statusValue = {
       phase: "signed_out",
       pending: 0,

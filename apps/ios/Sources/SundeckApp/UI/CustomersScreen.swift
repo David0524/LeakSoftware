@@ -415,6 +415,8 @@
         @State private var noReminders = false
         @State private var error: String?
         @State private var ready = false
+        /// Typed text kept until it's saved or discarded (owner, 2026-10-27).
+        @State private var draft = DraftHandle()
 
         private var dirty: Bool {
             ready
@@ -424,7 +426,7 @@
         }
 
         var body: some View {
-            FormSheet(title: "Contact Details", dirty: dirty) {
+            FormSheet(title: "Contact Details", dirty: dirty, draft: draft) {
                 Grouped {
                     LabeledFieldRow(label: "Name", text: $name, contentType: .name)
                     LabeledPickerRow(
@@ -456,6 +458,17 @@
                 noReminders = !customer.remindersOn
                 ready = true
             }
+            .keepsDraft(
+                draft, form: "customer", id: customer.id,
+                fields: ["name": name, "company": company, "phone": phone, "email": email, "notes": notes],
+                ready: ready
+            ) { changes in
+                if let value = changes["name"] { name = value }
+                if let value = changes["company"] { company = value }
+                if let value = changes["phone"] { phone = value }
+                if let value = changes["email"] { email = value }
+                if let value = changes["notes"] { notes = value }
+            }
         }
 
         private func save() {
@@ -468,6 +481,7 @@
                 try CustomerWrites.saveContact(
                     sync, companyId: companyId, customerId: customer.id, name: name, kind: kind, companyName: company,
                     phone: phone, email: email, notes: notes, noReminders: noReminders)
+                draft.clear()
                 saved()
                 dismiss()
             } catch {
@@ -499,11 +513,13 @@
         @State private var access = ""
         @State private var original: [String] = []
         @State private var error: String?
+        /// Typed text kept until it's saved or discarded (owner, 2026-10-27).
+        @State private var draft = DraftHandle()
 
         private var current: [String] { [street, unit, city, state, zip, poolType, gallons, String(hasSpa), access] }
 
         var body: some View {
-            FormSheet(title: "Pool Details", dirty: !original.isEmpty && current != original) {
+            FormSheet(title: "Pool Details", dirty: !original.isEmpty && current != original, draft: draft) {
                 Grouped {
                     LabeledFieldRow(
                         label: "Street", text: $street, contentType: .streetAddressLine1,
@@ -550,6 +566,21 @@
                 access = r["access_notes"]?.string ?? ""
                 original = current
             }
+            .keepsDraft(
+                draft, form: "pool-details", id: propertyId,
+                fields: [
+                    "street": street, "unit": unit, "city": city, "state": state, "zip": zip, "gallons": gallons,
+                    "access": access,
+                ], ready: !original.isEmpty
+            ) { changes in
+                if let value = changes["street"] { street = value }
+                if let value = changes["unit"] { unit = value }
+                if let value = changes["city"] { city = value }
+                if let value = changes["state"] { state = value }
+                if let value = changes["zip"] { zip = value }
+                if let value = changes["gallons"] { gallons = value }
+                if let value = changes["access"] { access = value }
+            }
         }
 
         private func save() {
@@ -578,6 +609,7 @@
                         "postal_code": opt(zip), "pool_type": opt(poolType), "has_spa": .bool(hasSpa),
                         "approx_gallons": approxGallons, "access_notes": opt(access),
                     ], locate: app.locate)
+                draft.clear()
                 saved()
                 dismiss()
             } catch {

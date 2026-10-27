@@ -74,6 +74,8 @@ import {
 } from "../../../../../ui/components";
 import { jobDateError } from "../../../../../lib/limits";
 import { useDiscardChanges } from "../../../../../ui/discard";
+import { DraftNote } from "../../../../../ui/DraftNote";
+import { useDraft } from "../../../../../ui/useDraft";
 import { haptics } from "../../../../../ui/haptics";
 import { DateField, TimeField } from "../../../../../features/schedule/DateField";
 import { ShapePicker } from "../../../../../ui/ShapePicker";
@@ -295,8 +297,35 @@ function NewJobForm() {
     Object.values(form).some((v) => v.trim()),
   );
 
+  // What was typed is kept as a draft and comes back when New Job opens again (owner,
+  // 2026-10-27): the customer's and pool's text, and the notes.
+  const draft = useDraft({
+    form: "new-job",
+    fields: {
+      customerName: form.customerName,
+      customerPhone: form.customerPhone,
+      customerEmail: form.customerEmail,
+      addressLine1: form.addressLine1,
+      city: form.city,
+      state: form.state,
+      postalCode: form.postalCode,
+      accessNotes,
+      otherEmails,
+      repairNotes,
+      planNotes: planForm.notes,
+    },
+    restore: (c) => {
+      const { accessNotes: a, otherEmails: o, repairNotes: r, planNotes: p, ...typed } = c;
+      if (Object.keys(typed).length) setForm((f) => ({ ...f, ...typed }));
+      if (a !== undefined) setAccessNotes(a);
+      if (o !== undefined) setOtherEmails(o);
+      if (r !== undefined) setRepairNotes(r);
+      if (p !== undefined) setPlanForm((f) => ({ ...f, notes: p }));
+    },
+  });
+
   // New Job is a pushed screen (spec decision 3): leaving it with entries asks first.
-  const leave = useDiscardChanges(dirty);
+  const leave = useDiscardChanges(dirty, draft.clear);
 
   /**
    * Start a maintenance plan (owners and admins), with a new customer and pool if needed, in
@@ -370,6 +399,7 @@ function NewJobForm() {
       if (gallons && typeof pool === "string")
         sync.write("property", pool, company.id, { approx_gallons: gallons });
       haptics.success();
+      draft.clear();
       leave(() => router.replace(`/customers/${(data as { customer: string }).customer}`));
     } catch (err) {
       const message = err instanceof Error ? err.message : String(err);
@@ -499,6 +529,7 @@ function NewJobForm() {
     // A new pool is found on the map from its address once it's up.
     if (newPool) void locateAfterSync(company.id, { property_id: newPool });
     haptics.success();
+    draft.clear();
     leave(() => router.replace(`/jobs/${jobId}`));
   }
 
@@ -512,6 +543,7 @@ function NewJobForm() {
           : "Accepted quotes make their own repair jobs."
       }
     >
+      <DraftNote draft={draft} />
       {/* Service, Repair, Leak, Inspection (owner, 2026-10-20: "Repair is cut off"): short
           labels with tight sides, so all four fit across a phone. */}
       <Segmented

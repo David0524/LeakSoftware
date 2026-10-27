@@ -37,6 +37,7 @@ import { reportPhoto } from "./cases/report-photo";
 import { endOfDayCases } from "./cases/end-of-day";
 import { prefill } from "./cases/prefill";
 import { removal } from "./cases/removal";
+import { drafts } from "./cases/drafts";
 import { friendlyErrorCases } from "./cases/friendly-error";
 
 /** One fixture file per entry: apps/ios/Tests/Fixtures/<name>.json. */
@@ -79,5 +80,6 @@ export const modules: Record<string, ModuleCases> = {
   "end-of-day": endOfDayCases,
   prefill,
   removal,
+  drafts,
   "friendly-error": friendlyErrorCases,
 };

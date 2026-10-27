@@ -41,7 +41,9 @@ import { haptics } from "../../ui/haptics";
 import { Select } from "../../ui/Select";
 import { color, face, MAX_TEXT_SCALE, minTap, shape, space, tabular } from "../../ui/theme";
 import { WebIcon } from "../../ui/WebIcon";
+import { DraftNote } from "../../ui/DraftNote";
 import { useUnsavedChanges } from "../../ui/ModalSheet";
+import { useDraft } from "../../ui/useDraft";
 import { shareLink } from "../../lib/shareLink";
 
 const PAYMENT_LABELS: Record<string, string> = {
@@ -186,11 +188,19 @@ function QuoteBuilder({ job, quote }: { job: Job; quote: JobQuote }) {
   const [discount, setDiscountText] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [sending, setSending] = useState(false);
+  // A custom line typed is kept as a draft until it's added or discarded (owner, 2026-10-27).
+  const draft = useDraft({
+    form: "quote-line",
+    id: quote.id,
+    fields: { description: custom.description, price: custom.price },
+    restore: (c) => setCustom((old) => ({ ...old, ...c })),
+  });
   // A line or discount typed but not added or saved asks before leaving (owner, 2026-10-20).
   useUnsavedChanges(
     Boolean(custom.description.trim() || custom.price.trim()) ||
       (discount !== null &&
         (discount.trim() === "" ? 0 : parseDollars(discount)) !== (quote.discount_cents ?? 0)),
+    draft,
   );
   // Owners and admins may discount past the techs' limit (owner, 2026-10-18).
   const isOwner = isManagerRole(membership?.role);
@@ -241,6 +251,7 @@ function QuoteBuilder({ job, quote }: { job: Job; quote: JobQuote }) {
       taxable: true,
     });
     setCustom({ description: "", price: "" });
+    draft.clear();
     haptics.success();
   }
 
@@ -321,6 +332,7 @@ function QuoteBuilder({ job, quote }: { job: Job; quote: JobQuote }) {
       ) : null}
 
       <View style={styles.stack}>
+        <DraftNote draft={draft} />
         <Field
           label="Custom line"
           placeholder="Replace skimmer lid"

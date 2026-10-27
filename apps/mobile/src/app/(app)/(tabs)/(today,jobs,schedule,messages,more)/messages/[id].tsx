@@ -187,7 +187,7 @@ export default function Conversation() {
         {composer}
       </Animated.ScrollView>
       {active && !conversation.opted_out ? (
-        <Composer pictures={line.pictures} onSend={send} initialBody={draft?.body} />
+        <Composer pictures={line.pictures} onSend={send} initialBody={draft?.body} draftId={id} />
       ) : null}
     </View>
   );

@@ -42,6 +42,27 @@ describe("clearing this phone's data", () => {
     expect(kv.get("visit_report:queue")).toBeUndefined();
   });
 
+  it("forgets typed text kept as drafts (owner, 2026-10-27)", () => {
+    const kv = new Map<string, string>();
+    const service = new SyncService(
+      LocalStore.open(memoryDb()),
+      {
+        auth: { getSession: async () => ({ data: { session: null } }) },
+      } as never as SupabaseClient,
+      {
+        get: (k) => kv.get(k) ?? null,
+        set: (k, v) => void kv.set(k, v),
+        remove: (k) => void kv.delete(k),
+      },
+      {} as Uploader,
+    );
+    kv.set("draft:u1:finding:new-j1", JSON.stringify({ v: 1, at: Date.now(), fields: { a: "x" } }));
+    kv.set("drafts:index", JSON.stringify(["draft:u1:finding:new-j1"]));
+    service.clearLocalData();
+    expect(kv.get("draft:u1:finding:new-j1")).toBeUndefined();
+    expect(kv.get("drafts:index")).toBeUndefined();
+  });
+
   it("knows when a job's signature image or photo is still waiting to upload", () => {
     const kv = new Map<string, string>();
     const service = new SyncService(

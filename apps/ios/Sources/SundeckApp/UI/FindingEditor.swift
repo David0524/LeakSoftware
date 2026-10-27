@@ -30,6 +30,8 @@
         @State private var saveError: String?
         @State private var saves = 0
         @State private var closing = false
+        /// Typed text kept until it's saved or discarded (owner, 2026-10-27).
+        @State private var draft = DraftHandle()
         /// A new finding saved by Add Photo: the sheet edits it from then on.
         @State private var savedId: String?
         /// The field with the keyboard, for the keyboard bar's Previous and Next.
@@ -59,7 +61,17 @@
             .sheetPresentation(dirty: form?.isDirty ?? false)
             .task(id: sync.revision) { load() }
             .sensoryFeedback(.success, trigger: saves)
-            .discardPrompt(dirty: form?.isDirty ?? false, isPresented: $confirmDiscard)
+            .discardPrompt(dirty: form?.isDirty ?? false, isPresented: $confirmDiscard, draft: draft)
+            .keepsDraft(
+                draft, form: "finding", id: findingId ?? "new-\(jobId)",
+                fields: [
+                    "title": form?.title ?? "", "location": form?.location ?? "", "notes": form?.notes ?? "",
+                ], ready: form != nil
+            ) { changes in
+                if let value = changes["title"] { self.form?.title = value }
+                if let value = changes["location"] { self.form?.location = value }
+                if let value = changes["notes"] { self.form?.notes = value }
+            }
             .alert(
                 "Couldn’t Save", isPresented: Binding(get: { saveError != nil }, set: { if !$0 { saveError = nil } })
             ) {
@@ -79,6 +91,7 @@
             if let form, let insp, let config {
                 ScrollView {
                     VStack(alignment: .leading, spacing: 16) {
+                        DraftNote(draft: draft)
                         OutlinedField(
                             label: "What", text: binding(\.title, ""), placeholder: "Crack at the skimmer throat",
                             error: form.errors["title"], chain: $focus, chainKey: "title")
@@ -152,6 +165,7 @@
                 }
                 current.markSaved(id)
                 form = current
+                draft.clear()
                 savedId = id
                 existing = JobInspection(sync.store, jobId: jobId).findings.first { $0.id == id }
                 saves += 1
@@ -250,6 +264,7 @@
                 if id != nil {
                     closing = true
                     saves += 1
+                    draft.clear()
                     dismiss()
                 }
             } catch {

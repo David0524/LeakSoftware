@@ -86,6 +86,10 @@
         @State private var method = ManualPaymentMethod.cash
         @State private var checkNumber = ""
         @State private var savedDetails = false
+        /// A line and the details typed, each kept until added or saved (owner, 2026-10-27).
+        @State private var lineKept = DraftHandle()
+        @State private var detailsKept = DraftHandle()
+        @State private var detailsLoaded = false
 
         private var server: MoneyServer { MoneyServer(sync: sync, api: app.api) }
         private var rpc: any RPCClient { LenientRPC(client: app.client) }
@@ -116,13 +120,31 @@
             .card()
             // A line typed but not added, or details not saved: leaving the job asks first (owner,
             // 2026-10-20).
-            .tracksUnsaved("job:\(flow.jobId)", dirty: card.isDraft && unsaved)
+            .tracksUnsaved(
+                "job:\(flow.jobId)", dirty: card.isDraft && unsaved, drafts: [lineKept, detailsKept]
+            )
             .sendReceiptSheet(
                 $flow.receipt, email: card.customerEmail, phone: card.customerPhone,
                 texting: companyLine(sync.store, companyId: companyId)?.status == "active"
             ) { sent in flow.message = sent }
-            .onAppear(perform: resetDetails)
+            .onAppear {
+                resetDetails()
+                detailsLoaded = true
+            }
             .onChange(of: card.invoice.invoice) { resetDetails() }
+            .keepsDraft(
+                lineKept, form: "invoice-line", id: card.invoice.id,
+                fields: ["description": description, "price": price], ready: card.isDraft
+            ) { changes in
+                if let value = changes["description"] { description = value }
+                if let value = changes["price"] { price = value }
+            }
+            .keepsDraft(
+                detailsKept, form: "invoice-details", id: card.invoice.id, fields: ["notes": notes],
+                ready: card.isDraft && detailsLoaded
+            ) { changes in
+                if let value = changes["notes"] { notes = value }
+            }
             .confirmationDialog(
                 removing.map { "Remove “\($0.description)” from the invoice?" } ?? "",
                 isPresented: Binding(get: { removing != nil }, set: { if !$0 { removing = nil } }),
@@ -173,6 +195,7 @@
 
         @ViewBuilder private var draftParts: some View {
             VStack(alignment: .leading, spacing: 12) {
+                DraftNote(draft: lineKept)
                 SubHeading("Add a Line")
                 CommitField(
                     label: "Description", text: $description,
@@ -201,12 +224,14 @@
                         quantity = "1"
                         price = ""
                         taxable = true
+                        lineKept.clear()
                     }
                 }
                 .buttonStyle(.secondary)
             }
 
             VStack(alignment: .leading, spacing: 12) {
+                DraftNote(draft: detailsKept)
                 SubHeading("Details")
                 HStack(alignment: .top, spacing: 12) {
                     CommitField(
@@ -247,6 +272,7 @@
                                 sync, companyId: companyId, invoice: card.invoice, discount: discount,
                                 dueDate: hasDue ? isoDay(due) : nil, notes: notes)
                         }
+                        if savedDetails { detailsKept.clear() }
                     }
                     .buttonStyle(.secondary)
                     if savedDetails { Text("Saved.").textRole(.secondary).foregroundStyle(Color.pass) }

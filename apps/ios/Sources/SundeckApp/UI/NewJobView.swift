@@ -56,6 +56,8 @@
         /// Address suggestions under the street field (owner, 2026-10-20).
         @State private var suggester = AddressSuggester()
         @State private var streetFocused = false
+        /// The customer's and pool's text and the notes, kept until saved or discarded (owner, 2026-10-27).
+        @State private var draft = DraftHandle()
 
         private var offline: Bool { sync.status.phase == .offline }
 
@@ -63,6 +65,7 @@
             ScreenScroll(spacing: 16) {
                 PageHeader(subtitle: form.subtitle)
                 if form.canMakeJobs {
+                    DraftNote(draft: draft)
                     customerCard
                     if form.newPool { poolCard }
                     visitCard
@@ -94,7 +97,27 @@
             .navigationTitle("New Job")
             .navigationBarTitleDisplayMode(.large)
             // Back with something typed asks "Discard changes?" (owner, 2026-10-20: everywhere).
-            .discardOnBack(dirty: form.isDirty && saved == 0, back: back)
+            .discardOnBack(dirty: form.isDirty && saved == 0, back: back, draft: draft)
+            .keepsDraft(
+                draft, form: "new-job",
+                fields: [
+                    "customerName": form.input.customerName, "customerPhone": form.input.customerPhone,
+                    "customerEmail": form.input.customerEmail, "addressLine1": form.input.addressLine1,
+                    "city": form.input.city, "state": form.input.state, "postalCode": form.input.postalCode,
+                    "otherEmails": form.otherEmails, "accessNotes": form.accessNotes, "notes": form.notes,
+                ], ready: form.canMakeJobs
+            ) { changes in
+                if let value = changes["customerName"] { form.input.customerName = value }
+                if let value = changes["customerPhone"] { form.input.customerPhone = value }
+                if let value = changes["customerEmail"] { form.input.customerEmail = value }
+                if let value = changes["addressLine1"] { form.input.addressLine1 = value }
+                if let value = changes["city"] { form.input.city = value }
+                if let value = changes["state"] { form.input.state = value }
+                if let value = changes["postalCode"] { form.input.postalCode = value }
+                if let value = changes["otherEmails"] { form.otherEmails = value }
+                if let value = changes["accessNotes"] { form.accessNotes = value }
+                if let value = changes["notes"] { form.notes = value }
+            }
             .sensoryFeedback(.success, trigger: saved)
             .alert(
                 "Couldn’t Save the Job",
@@ -501,6 +524,7 @@
                     await sync.syncNow()
                     // The new pool's gallons, now that its row is here.
                     form.savePlanGallons()
+                    draft.clear()
                     saved += 1
                     onPlanStarted(customer)
                 } catch NewJobFormError.invalid {
@@ -518,6 +542,7 @@
                 let id = try form.save()
                 created = true
                 saved += 1
+                draft.clear()
                 onCreated(id)
             } catch NewJobFormError.invalid {
                 // The fields show what to fix.

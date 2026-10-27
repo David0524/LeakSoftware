@@ -38,7 +38,9 @@ import {
 import { useJobMedia } from "../../data/media";
 import { useSession } from "../../state/session";
 import { Button, Field, T } from "../../ui/components";
+import { DraftNote } from "../../ui/DraftNote";
 import { ModalSheet, useUnsavedChanges } from "../../ui/ModalSheet";
+import { useDraft } from "../../ui/useDraft";
 import { haptic, haptics } from "../../ui/haptics";
 import { Select } from "../../ui/Select";
 import { useNoSwipe } from "../../ui/SwipeNav";
@@ -266,6 +268,7 @@ export function ChecklistTab({ job, property }: { job: Job; property?: Property 
           <ModalSheet visible={typing} onClose={() => setTyping(false)} title={ADD_ITEM_TITLE}>
             {typing ? (
               <AddItemForm
+                jobId={job.id}
                 onAdd={(name) => {
                   addCustomItem(
                     services.sync,
@@ -288,12 +291,26 @@ export function ChecklistTab({ job, property }: { job: Job; property?: Property 
 }
 
 /** The New Item sheet's form: one name, for this job only. */
-function AddItemForm({ onAdd }: { onAdd: (name: string) => void }) {
+function AddItemForm({ jobId, onAdd }: { jobId: string; onAdd: (name: string) => void }) {
   const [name, setName] = useState("");
   const typed = customItemName(name);
-  useUnsavedChanges(name.trim() !== "");
+  // The typed name is kept as a draft until it's added or discarded (owner, 2026-10-27).
+  const draft = useDraft({
+    form: "new-item",
+    id: jobId,
+    fields: { name },
+    restore: (c) => {
+      if (c.name !== undefined) setName(c.name);
+    },
+  });
+  useUnsavedChanges(name.trim() !== "", draft);
+  const add = (value: string) => {
+    draft.clear();
+    onAdd(value);
+  };
   return (
     <View style={{ gap: space["4"] }}>
+      <DraftNote draft={draft} />
       <Field
         label={ADD_ITEM_FIELD}
         hint={ADD_ITEM_HINT}
@@ -304,9 +321,9 @@ function AddItemForm({ onAdd }: { onAdd: (name: string) => void }) {
         autoFocus
         autoCapitalize="sentences"
         returnKeyType="done"
-        onSubmitEditing={() => typed && onAdd(typed)}
+        onSubmitEditing={() => typed && add(typed)}
       />
-      <Button title={ADD_ITEM_SAVE} wide disabled={!typed} onPress={() => typed && onAdd(typed)} />
+      <Button title={ADD_ITEM_SAVE} wide disabled={!typed} onPress={() => typed && add(typed)} />
     </View>
   );
 }

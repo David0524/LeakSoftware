@@ -866,8 +866,8 @@ public struct DiagramLayout: Codable, Equatable, Sendable {
     public var mirror: Bool?
     /// The pool is drawn in the middle of the diagram (owner, 2026-10-20: "Pool shapes are not
     /// centered"). Pools saved before sat 10 units left, to leave room for the spa; their spa,
-    /// landmarks, drawing and finding pins were placed against that, so they keep it until the
-    /// shape is saved again (`centerLayout`). True or absent.
+    /// landmarks, drawing and finding pins were placed against that. Every screen draws them
+    /// moved to the centered pool (`shownDiagram`); pins stay where they were stored. True or absent.
     public var centered: Bool?
     public var spa: Spa?
     /// Lines, circles, and freehand strokes drawn on the diagram (Draw), 0..1 of it.
@@ -1528,6 +1528,14 @@ public func poolDiagram(_ shape: DiagramShape?, _ hasSpa: Bool, _ layout: Diagra
                 mirror: l.kind.mirrorAxis ?? "x", turn: landmarkTurn(kind: l.kind, flip: l.flip, turn: l.turn),
                 parts: l.kind.parts)
         })
+}
+
+/// The diagram every screen draws from a property's layout (owner, 2026-10-27: "The pool shape
+/// on Findings doesn't have the landmarks, draw, etc."); core `shownDiagram`. A layout saved
+/// before "centered" is moved to the centered pool, as the shape editor opens it, so the spa,
+/// landmarks and drawing sit where the editor shows them. Pins stay where they were stored.
+public func shownDiagram(_ shape: DiagramShape?, _ hasSpa: Bool, _ layout: DiagramLayout) -> PoolDiagram {
+    poolDiagram(shape, hasSpa, centerLayout(layout))
 }
 
 // MARK: - JavaScript semantics

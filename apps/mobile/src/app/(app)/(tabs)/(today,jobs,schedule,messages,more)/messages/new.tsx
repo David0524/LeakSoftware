@@ -90,6 +90,7 @@ export default function NewMessage() {
           docked={false}
           autoFocus={Boolean(customer)}
           initialBody={draft?.body}
+          draftId={customer?.id ?? "new"}
         />
       ) : (
         <Notice>Texting is off until the company number is working.</Notice>

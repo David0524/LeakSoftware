@@ -3,7 +3,7 @@
 import { useState } from "react";
 import {
   parseDiagramLayout,
-  poolDiagram,
+  shownDiagram,
   type DiagramShape,
   type MarkupShape,
 } from "@leakbook/core";
@@ -87,7 +87,7 @@ export function DiagramPanel({
               aria-hidden="true"
               className="block h-full w-full rounded bg-surface"
             >
-              <DiagramShapes d={poolDiagram(shape, hasSpa, parseDiagramLayout(layout))} />
+              <DiagramShapes d={shownDiagram(shape, hasSpa, layout)} />
               {pins.map((p) => (
                 <g key={p.id}>
                   <circle cx={p.x * 160} cy={p.y * 100} r={6} fill={p.color} />

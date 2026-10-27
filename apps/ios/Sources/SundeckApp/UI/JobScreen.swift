@@ -85,7 +85,7 @@
             // so switching sections never moves the bar.
             .navigationBarTitleDisplayMode(.inline)
             // An invoice or quote line typed but not added: Back asks first (owner, 2026-10-20).
-            .discardOnBack(dirty: app.unsavedEdits.any(under: "job:\(jobId)"))
+            .discardOnBack(dirty: app.unsavedEdits.any(under: "job:\(jobId)"), draftsUnder: "job:\(jobId)")
             .task(id: sync.revision) { reload() }
             // First under Recent in search (docs/plans/search-and-activity.md).
             .task(id: job.map { recentItem(job: $0) }) {

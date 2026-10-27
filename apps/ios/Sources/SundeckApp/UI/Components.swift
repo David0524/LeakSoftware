@@ -102,20 +102,24 @@
         /// `sheetPresentation(dirty:)` on it, which holds the sheet). Discard Changes runs
         /// `onDiscard` (closing the sheet or screen by default); Keep Editing stays. The editor is
         /// recorded in `UnsavedEdits`, so a notification or Live Activity link asks first too.
-        func discardPrompt(dirty: Bool, isPresented: Binding<Bool>, onDiscard: (() -> Void)? = nil) -> some View {
-            modifier(DiscardPrompt(dirty: dirty, isPresented: isPresented, onDiscard: onDiscard))
+        func discardPrompt(
+            dirty: Bool, isPresented: Binding<Bool>, draft: DraftHandle? = nil, onDiscard: (() -> Void)? = nil
+        ) -> some View {
+            modifier(DiscardPrompt(dirty: dirty, isPresented: isPresented, draft: draft, onDiscard: onDiscard))
         }
 
         /// A pushed editor (a form screen): while it has unsaved changes the Back button (and the
         /// edge swipe) is replaced by one that asks "Discard changes?" first.
-        func discardOnBack(dirty: Bool, back: String = "Back") -> some View {
-            modifier(DiscardOnBack(dirty: dirty, back: back))
+        func discardOnBack(
+            dirty: Bool, back: String = "Back", draft: DraftHandle? = nil, draftsUnder: String? = nil
+        ) -> some View {
+            modifier(DiscardOnBack(dirty: dirty, back: back, draft: draft, draftsUnder: draftsUnder))
         }
 
         /// Records a part of a screen with unsaved changes (a line typed but not added on the job
         /// page) under `scope` ("job:<id>"), so the screen's Back and links ask first.
-        func tracksUnsaved(_ scope: String, dirty: Bool) -> some View {
-            modifier(UnsavedTracker(scope: scope, dirty: dirty))
+        func tracksUnsaved(_ scope: String, dirty: Bool, drafts: [DraftHandle] = []) -> some View {
+            modifier(UnsavedTracker(scope: scope, dirty: dirty, drafts: drafts))
         }
     }
 
@@ -123,6 +127,7 @@
         var scope = "editor"
         var dirty: Bool
         var sheet = false
+        var drafts: [DraftHandle] = []
         @State private var id = UUID().uuidString
         @Environment(UnsavedEdits.self) private var edits: UnsavedEdits?
 
@@ -131,14 +136,21 @@
         func body(content: Content) -> some View {
             content
                 .onChange(of: dirty, initial: true) { _, now in edits?.set(key, dirty: now, sheet: sheet) }
-                .onAppear { edits?.set(key, dirty: dirty, sheet: sheet) }
-                .onDisappear { edits?.set(key, dirty: false) }
+                .onAppear {
+                    edits?.set(key, dirty: dirty, sheet: sheet)
+                    edits?.track(key, drafts: drafts)
+                }
+                .onDisappear {
+                    edits?.set(key, dirty: false)
+                    edits?.track(key, drafts: [])
+                }
         }
     }
 
     private struct DiscardPrompt: ViewModifier {
         var dirty: Bool
         @Binding var isPresented: Bool
+        var draft: DraftHandle?
         var onDiscard: (() -> Void)?
         @Environment(\.dismiss) private var dismiss
         @Environment(UnsavedEdits.self) private var edits: UnsavedEdits?
@@ -148,6 +160,7 @@
                 .background(DismissAttemptHook(active: dirty) { isPresented = true })
                 .confirmationDialog(DiscardText.title, isPresented: $isPresented, titleVisibility: .visible) {
                     Button(DiscardText.discard, role: .destructive) {
+                        draft?.clear()
                         if let onDiscard { onDiscard() } else { dismiss() }
                     }
                     Button(DiscardText.keepEditing, role: .cancel) {}
@@ -176,8 +189,11 @@
     private struct DiscardOnBack: ViewModifier {
         var dirty: Bool
         var back: String
+        var draft: DraftHandle?
+        var draftsUnder: String?
         @State private var asking = false
         @Environment(\.dismiss) private var dismiss
+        @Environment(UnsavedEdits.self) private var edits: UnsavedEdits?
 
         func body(content: Content) -> some View {
             content
@@ -199,7 +215,11 @@
                 }
                 .modifier(UnsavedTracker(dirty: dirty))
                 .confirmationDialog(DiscardText.title, isPresented: $asking, titleVisibility: .visible) {
-                    Button(DiscardText.discard, role: .destructive) { dismiss() }
+                    Button(DiscardText.discard, role: .destructive) {
+                        draft?.clear()
+                        if let draftsUnder { edits?.clearDrafts(under: draftsUnder) }
+                        dismiss()
+                    }
                     Button(DiscardText.keepEditing, role: .cancel) {}
                 }
         }

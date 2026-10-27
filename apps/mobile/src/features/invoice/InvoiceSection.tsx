@@ -39,7 +39,9 @@ import { color, face, MAX_TEXT_SCALE, space, tabular } from "../../ui/theme";
 import { Divider } from "../report/ReportTab";
 import { DateField } from "../schedule/DateField";
 import { LinkRow } from "../quote/QuoteTab";
+import { DraftNote } from "../../ui/DraftNote";
 import { useUnsavedChanges } from "../../ui/ModalSheet";
+import { useDraft } from "../../ui/useDraft";
 import { useLine } from "../../data/texting";
 import { RecordPayment, SendReceiptSheet } from "./Receipt";
 import { shareLink } from "../../lib/shareLink";
@@ -331,6 +333,22 @@ function DraftParts({ invoice, customer }: { invoice: JobInvoice; customer?: Cus
   const email = (to ?? customer?.email ?? "").trim();
   const [busy, setBusy] = useState<"email" | "link" | null>(null);
   const [sendMessage, setSendMessage] = useState<Message>(null);
+  // The typed text is kept as drafts until the line is added or the details saved (owner,
+  // 2026-10-27).
+  const lineDraft = useDraft({
+    form: "invoice-line",
+    id: invoice.id,
+    fields: { description: line.description, price: line.price },
+    restore: (c) => setLine((l) => ({ ...l, ...c })),
+  });
+  const detailsDraft = useDraft({
+    form: "invoice-details",
+    id: invoice.id,
+    fields: { notes },
+    restore: (c) => {
+      if (c.notes !== undefined) setNotes(c.notes);
+    },
+  });
   // A line or details typed but not added or saved ask before leaving (owner, 2026-10-20).
   useUnsavedChanges(
     Boolean(line.description.trim() || line.price.trim()) ||
@@ -338,6 +356,12 @@ function DraftParts({ invoice, customer }: { invoice: JobInvoice; customer?: Cus
       (discount.trim() ? parseDollars(discount) : 0) !== (invoice.discount_cents ?? 0) ||
       due.trim() !== (invoice.due_date ?? "") ||
       notes.trim() !== (invoice.notes ?? "").trim(),
+    {
+      clear: () => {
+        lineDraft.clear();
+        detailsDraft.clear();
+      },
+    },
   );
 
   function addLine() {
@@ -360,6 +384,7 @@ function DraftParts({ invoice, customer }: { invoice: JobInvoice; customer?: Cus
       sort_order: invoice.lines.filter((l) => l.kind === "item").length + 1,
     });
     setLine({ description: "", quantity: "1", price: "", taxable: true });
+    lineDraft.clear();
     haptics.success();
   }
 
@@ -380,6 +405,7 @@ function DraftParts({ invoice, customer }: { invoice: JobInvoice; customer?: Cus
       notes: notes.trim() || null,
     });
     setDetailsMessage({ tone: "success", text: "Saved." });
+    detailsDraft.clear();
     haptics.success();
   }
 
@@ -411,6 +437,7 @@ function DraftParts({ invoice, customer }: { invoice: JobInvoice; customer?: Cus
   return (
     <View style={styles.parts}>
       <View style={styles.stack}>
+        <DraftNote draft={lineDraft} />
         <T variant="subHeading">Add a Line</T>
         <Field
           label="Description"
@@ -468,6 +495,7 @@ function DraftParts({ invoice, customer }: { invoice: JobInvoice; customer?: Cus
             />
           </View>
         </View>
+        <DraftNote draft={detailsDraft} />
         <Field label="Note to the customer" value={notes} onChangeText={setNotes} multiline />
         <View style={styles.row}>
           <Button title="Save" kind="secondary" onPress={saveDetails} />

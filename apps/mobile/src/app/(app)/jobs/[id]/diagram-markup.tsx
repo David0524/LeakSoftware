@@ -2,9 +2,8 @@ import { Stack, router, useLocalSearchParams } from "expo-router";
 import { View } from "react-native";
 import Svg, { Circle, Text as SvgText } from "react-native-svg";
 import {
-  parseDiagramLayout,
   parseMarkup,
-  poolDiagram,
+  shownDiagram,
   type DiagramShape,
   type Job,
   type Markup,
@@ -43,10 +42,10 @@ export default function DiagramMarkupScreen() {
       </Screen>
     );
   }
-  const d = poolDiagram(
+  const d = shownDiagram(
     property.diagram_shape as DiagramShape | null,
     property.has_spa,
-    parseDiagramLayout(property.diagram_layout),
+    property.diagram_layout,
   );
   const pins = [...insp.findings]
     .sort((a, b) => a.id.localeCompare(b.id))

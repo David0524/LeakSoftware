@@ -151,6 +151,8 @@
         @State private var custom = ""
         @State private var customPrice = ""
         @State private var removing: QuoteLine?
+        /// A custom line typed, kept until it's added or discarded (owner, 2026-10-27).
+        @State private var kept = DraftHandle()
 
         var body: some View {
             VStack(alignment: .leading, spacing: 20) {
@@ -211,6 +213,7 @@
                 }
 
                 VStack(alignment: .leading, spacing: 12) {
+                    DraftNote(draft: kept)
                     CommitField(label: "Custom line", text: $custom, placeholder: QuoteBuilderModel.customPlaceholder)
                     HStack(alignment: .bottom, spacing: 12) {
                         CommitField(label: "Price ($)", text: $customPrice, keyboard: .decimalPad, numeric: true)
@@ -218,6 +221,7 @@
                             if flow.addCustom(description: custom, price: customPrice, to: quoteId) {
                                 custom = ""
                                 customPrice = ""
+                                kept.clear()
                             }
                         }
                         .buttonStyle(.secondary)
@@ -231,8 +235,14 @@
             }
             // A custom line typed but not added: leaving the job asks first (owner, 2026-10-20).
             .tracksUnsaved(
-                "job:\(flow.jobId)", dirty: textChanged(custom, from: "") || textChanged(customPrice, from: "")
+                "job:\(flow.jobId)", dirty: textChanged(custom, from: "") || textChanged(customPrice, from: ""),
+                drafts: [kept]
             )
+            .keepsDraft(kept, form: "quote-line", id: quoteId, fields: ["description": custom, "price": customPrice]) {
+                changes in
+                if let value = changes["description"] { custom = value }
+                if let value = changes["price"] { customPrice = value }
+            }
             .confirmationDialog(
                 removing.map(QuoteBuilderModel.removeTitle) ?? "",
                 isPresented: Binding(get: { removing != nil }, set: { if !$0 { removing = nil } }),

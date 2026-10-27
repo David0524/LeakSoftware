@@ -8,7 +8,9 @@ import { Button, FieldGroup, FieldRow, Toggle } from "../../ui/components";
 import { haptics } from "../../ui/haptics";
 import { Select } from "../../ui/Select";
 import { formChanged } from "../../lib/discard";
+import { DraftNote } from "../../ui/DraftNote";
 import { useUnsavedChanges } from "../../ui/ModalSheet";
+import { useDraft } from "../../ui/useDraft";
 
 /**
  * A pool's details (the website's pool-details.tsx): the street with address suggestions, unit,
@@ -31,7 +33,22 @@ export function PoolForm({ pool, onSaved }: { pool: Property; onSaved: () => voi
   });
   // Unsaved entries ask before closing (owner, 2026-10-20: "Discard changes?" everywhere).
   const [startF] = useState(f);
-  useUnsavedChanges(formChanged(startF, f));
+  // Typed text is kept as a draft until it's saved or discarded (owner, 2026-10-27).
+  const draft = useDraft({
+    form: "pool-details",
+    id: pool.id,
+    fields: {
+      address_line1: f.address_line1,
+      address_line2: f.address_line2,
+      city: f.city,
+      state: f.state,
+      postal_code: f.postal_code,
+      approx_gallons: f.approx_gallons,
+      access_notes: f.access_notes,
+    },
+    restore: (c) => setF((old) => ({ ...old, ...c })),
+  });
+  useUnsavedChanges(formChanged(startF, f), draft);
   const [error, setError] = useState<string | undefined>();
   const [gallonsError, setGallonsError] = useState<string | undefined>();
   const set = (k: keyof typeof f) => (v: string) => setF({ ...f, [k]: v });
@@ -84,11 +101,13 @@ export function PoolForm({ pool, onSaved }: { pool: Property; onSaved: () => voi
     // Once it's up, the server finds the new address on the map.
     if (moved) void locateAfterSync(company.id, { property_id: pool.id });
     haptics.success();
+    draft.clear();
     onSaved();
   }
 
   return (
     <>
+      <DraftNote draft={draft} />
       <FieldGroup labelWidth={104}>
         <FieldRow
           label="Street"

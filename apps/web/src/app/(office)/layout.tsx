@@ -7,6 +7,7 @@ import { AccountMenu } from "@/components/account-menu";
 import { BannerHost } from "@/components/top-banner";
 import { SupportBanner } from "@/components/support-banner";
 import { UsageTracker } from "@/components/usage-tracker";
+import { DraftUser } from "@/components/draft-keeper";
 import { InstantProvider } from "@/components/instant";
 import { PullToRefresh } from "@/components/pull-to-refresh";
 import { accessNotice, mustFinishSetup } from "@leakbook/core";
@@ -62,6 +63,10 @@ export default function OfficeLayout({ children }: LayoutProps<"/">) {
       <Suspense fallback={null}>
         <Usage />
       </Suspense>
+      {/* Whose unsaved typing is kept as a draft in this browser (components/draft-keeper). */}
+      <Suspense fallback={null}>
+        <Drafts />
+      </Suspense>
       {/* Sundeck Pro staff helping this shop (Admin portal). */}
       <Suspense fallback={null}>
         <SupportBanner />
@@ -95,6 +100,11 @@ export default function OfficeLayout({ children }: LayoutProps<"/">) {
 async function Usage() {
   const office = await getOffice();
   return office.support ? null : <UsageTracker companyId={office.company.id} />;
+}
+
+async function Drafts() {
+  const office = await getOffice();
+  return <DraftUser userId={office.user.id} />;
 }
 
 async function PhoneTabs() {

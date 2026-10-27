@@ -30,6 +30,8 @@ import { PoolDiagram } from "../../../../../../ui/PoolDiagram";
 import { Select } from "../../../../../../ui/Select";
 import { ShapePicker } from "../../../../../../ui/ShapePicker";
 import { useDiscardChanges } from "../../../../../../ui/discard";
+import { DraftNote } from "../../../../../../ui/DraftNote";
+import { useDraft } from "../../../../../../ui/useDraft";
 import { useSheetLock } from "../../../../../../ui/sheet";
 import { color, space } from "../../../../../../ui/theme";
 
@@ -82,8 +84,19 @@ export default function FindingScreen() {
   const [initial, setInitial] = useState(snapshot);
   const dirty = snapshot() !== initial;
   useSheetLock(dirty);
+  // Typed text is kept as a draft until it's saved or discarded (owner, 2026-10-27).
+  const draft = useDraft({
+    form: "finding",
+    id: params.findingId === "new" ? `new-${jobId}` : params.findingId,
+    fields: { title, location, notes },
+    restore: (c) => {
+      if (c.title !== undefined) setTitle(c.title);
+      if (c.location !== undefined) setLocation(c.location);
+      if (c.notes !== undefined) setNotes(c.notes);
+    },
+  });
   // Every way out asks first while there are changes (owner, 2026-10-20).
-  const leave = useDiscardChanges(dirty);
+  const leave = useDiscardChanges(dirty, draft.clear);
 
   function cancel() {
     router.back();
@@ -137,7 +150,11 @@ export default function FindingScreen() {
     if (stay) {
       setSavedId(id);
       setInitial(snapshot());
-    } else leave(() => router.back());
+      draft.clear();
+    } else {
+      draft.clear();
+      leave(() => router.back());
+    }
     return id;
   }
 
@@ -161,6 +178,7 @@ export default function FindingScreen() {
     >
       {bar}
       <View style={styles.form}>
+        <DraftNote draft={draft} />
         <Field
           label="What"
           value={title}

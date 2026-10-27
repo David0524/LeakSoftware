@@ -39,6 +39,7 @@ import {
 import { SheetNotices, SheetRow } from "@/components/settings-list";
 import { ContactButtons } from "@/components/contact-buttons";
 import { Empty, Grouped, PageHeader, Row } from "@/components/ui";
+import { Draft } from "@/components/draft-keeper";
 import { LiveStatusBadge } from "@/components/instant";
 import { getOffice } from "@/lib/auth";
 import {
@@ -171,53 +172,55 @@ export default async function CustomerPage({ params }: PageProps<"/customers/[id
             title="Contact Details"
             label={<span className="text-link">Edit Contact Details</span>}
           >
-            <SettingsForm action={saveCustomer} primary full>
-              <input type="hidden" name="customer" value={customer.id} />
-              <SettingsFields labelWidth="6.5rem">
-                <SField label="Name" name="name" defaultValue={customer.name} required />
-                <SSelect
-                  label="Type"
-                  name="kind"
-                  defaultValue={customer.kind}
-                  options={kindOptions}
-                />
-                <SField
-                  label="Company"
-                  name="company_name"
-                  defaultValue={customer.company_name ?? ""}
-                  placeholder="Optional"
-                />
-                <SField
-                  label="Phone"
-                  name="phone"
-                  type="tel"
-                  defaultValue={customer.phone ?? ""}
-                  autoComplete="off"
-                />
-                <SField
-                  label="Email"
-                  name="email"
-                  type="email"
-                  defaultValue={customer.email ?? ""}
-                  autoComplete="off"
-                />
-              </SettingsFields>
-              <SettingsFields>
-                <SField
-                  label="Other emails"
-                  name="cc_emails"
-                  defaultValue={cc.join(" ")}
-                  hint="They get reports too. Separate with spaces."
-                  stacked
-                />
-                <STextArea label="Notes" name="notes" defaultValue={customer.notes ?? ""} />
-                <SSwitch
-                  name="no_followups"
-                  label={CUSTOMER_EMAILS_OFF_LABEL}
-                  defaultChecked={customer.marketing_opt_out ?? false}
-                />
-              </SettingsFields>
-            </SettingsForm>
+            <Draft form="customer" id={customer.id}>
+              <SettingsForm action={saveCustomer} primary full>
+                <input type="hidden" name="customer" value={customer.id} />
+                <SettingsFields labelWidth="6.5rem">
+                  <SField label="Name" name="name" defaultValue={customer.name} required />
+                  <SSelect
+                    label="Type"
+                    name="kind"
+                    defaultValue={customer.kind}
+                    options={kindOptions}
+                  />
+                  <SField
+                    label="Company"
+                    name="company_name"
+                    defaultValue={customer.company_name ?? ""}
+                    placeholder="Optional"
+                  />
+                  <SField
+                    label="Phone"
+                    name="phone"
+                    type="tel"
+                    defaultValue={customer.phone ?? ""}
+                    autoComplete="off"
+                  />
+                  <SField
+                    label="Email"
+                    name="email"
+                    type="email"
+                    defaultValue={customer.email ?? ""}
+                    autoComplete="off"
+                  />
+                </SettingsFields>
+                <SettingsFields>
+                  <SField
+                    label="Other emails"
+                    name="cc_emails"
+                    defaultValue={cc.join(" ")}
+                    hint="They get reports too. Separate with spaces."
+                    stacked
+                  />
+                  <STextArea label="Notes" name="notes" defaultValue={customer.notes ?? ""} />
+                  <SSwitch
+                    name="no_followups"
+                    label={CUSTOMER_EMAILS_OFF_LABEL}
+                    defaultChecked={customer.marketing_opt_out ?? false}
+                  />
+                </SettingsFields>
+              </SettingsForm>
+            </Draft>
           </SheetRow>
         </Grouped>
 

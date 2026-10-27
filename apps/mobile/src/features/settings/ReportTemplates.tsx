@@ -48,7 +48,9 @@ import { color, space } from "../../ui/theme";
 import { useRowMenu } from "../../ui/RowMenu";
 import { EditSheet, FormActions, ManagersOnly, SettingsList, useEditSheet } from "./SettingsList";
 import { formChanged } from "../../lib/discard";
+import { DraftNote } from "../../ui/DraftNote";
 import { useUnsavedChanges } from "../../ui/ModalSheet";
+import { useDraft } from "../../ui/useDraft";
 
 // Settings › Report Templates (the website's settings/reports): which reports techs can send,
 // and what they're called. report_template rows are synced; owners and admins save through
@@ -369,7 +371,21 @@ function SavedReportForm({
   // Unsaved entries ask before closing (owner, 2026-10-20: "Discard changes?" everywhere).
   const entries = { name, text };
   const [startEntries] = useState(entries);
-  useUnsavedChanges(formChanged(startEntries, entries));
+  // The wording typed is kept as a draft until it's saved or discarded (owner, 2026-10-27).
+  const draft = useDraft({
+    form: "saved-report",
+    id: saved?.id ?? "new",
+    fields: {
+      name,
+      ...Object.fromEntries(SAVED_REPORT_SECTIONS.map((s) => [s.key, text[s.key] ?? ""])),
+    },
+    restore: (c) => {
+      const { name: n, ...sectionText } = c;
+      if (n !== undefined) setName(n);
+      if (Object.keys(sectionText).length) setText((t) => ({ ...t, ...sectionText }));
+    },
+  });
+  useUnsavedChanges(formChanged(startEntries, entries), draft);
   function save() {
     if (!name.trim()) return setError("Enter a name.");
     if (name.trim().length > 80) return setError("Use 80 characters or fewer.");
@@ -377,10 +393,12 @@ function SavedReportForm({
     if (saved) updateSavedReport(company.id, saved.id, name, sections);
     else addSavedReport(company.id, name, sections);
     haptics.success();
+    draft.clear();
     onDone(saved ? "Saved." : "Added.");
   }
   return (
     <View style={styles.form}>
+      <DraftNote draft={draft} />
       <FieldGroup labelWidth={80}>
         <FieldRow
           label="Name"

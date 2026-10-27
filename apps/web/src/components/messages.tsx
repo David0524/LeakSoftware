@@ -13,6 +13,7 @@ import {
 } from "@/app/actions/texting";
 import { Banner } from "./doc-ui";
 import { CameraIcon, PhoneIcon } from "./icons";
+import { Draft } from "./draft-keeper";
 import { Button, cx, iconButtonClass } from "./ui";
 import { NO_CONNECTION, orOffline, whenOffline } from "@/lib/offline";
 
@@ -69,82 +70,84 @@ export function Composer({
   }, {});
 
   return (
-    <form ref={form} action={action} className="space-y-2">
-      {conversationId ? (
-        <input type="hidden" name="conversation_id" value={conversationId} />
-      ) : null}
-      {customerId ? <input type="hidden" name="customer_id" value={customerId} /> : null}
-      {jobId ? <input type="hidden" name="job_id" value={jobId} /> : null}
-      {askPhone ? (
-        <div>
-          <label htmlFor={phoneId} className="mb-1 block font-medium">
-            To
-          </label>
-          <input
-            id={phoneId}
-            name="phone"
-            type="tel"
-            autoComplete="off"
-            required
-            placeholder="Mobile number"
-            className="block min-h-11 w-full rounded-[10px] border border-control-border bg-surface px-3 text-text placeholder:text-placeholder focus:outline-3 focus:outline-focus"
-          />
-        </div>
-      ) : null}
-      <div className="flex items-end gap-2">
-        {pictures ? (
-          <>
-            <label
-              htmlFor={photosId}
-              className={iconButtonClass("cursor-pointer has-[:focus-visible]:outline-3")}
-            >
-              <CameraIcon />
-              <span className="sr-only">Add Photos</span>
+    <Draft form="message" id={conversationId ?? customerId ?? "new"}>
+      <form ref={form} action={action} className="space-y-2">
+        {conversationId ? (
+          <input type="hidden" name="conversation_id" value={conversationId} />
+        ) : null}
+        {customerId ? <input type="hidden" name="customer_id" value={customerId} /> : null}
+        {jobId ? <input type="hidden" name="job_id" value={jobId} /> : null}
+        {askPhone ? (
+          <div>
+            <label htmlFor={phoneId} className="mb-1 block font-medium">
+              To
             </label>
             <input
-              id={photosId}
-              name="pictures"
-              type="file"
-              accept="image/jpeg,image/png,image/gif,image/webp,image/heic"
-              multiple
-              className="sr-only"
-              onChange={(e) => setChosen(e.currentTarget.files?.length ?? 0)}
+              id={phoneId}
+              name="phone"
+              type="tel"
+              autoComplete="off"
+              required
+              placeholder="Mobile number"
+              className="block min-h-11 w-full rounded-[10px] border border-control-border bg-surface px-3 text-text placeholder:text-placeholder focus:outline-3 focus:outline-focus"
             />
-          </>
+          </div>
         ) : null}
-        <label htmlFor={bodyId} className="sr-only">
-          Message
-        </label>
-        <textarea
-          id={bodyId}
-          name="body"
-          rows={2}
-          maxLength={1600}
-          placeholder="Text message"
-          onKeyDown={(e) => {
-            // Enter sends, as in Messages; Shift-Enter starts a new line.
-            if (e.key === "Enter" && !e.shiftKey && !e.nativeEvent.isComposing) {
-              e.preventDefault();
-              // A second Enter while the first is sending sends nothing more.
-              if (!pending) form.current?.requestSubmit();
-            }
-          }}
-          className="block min-h-11 min-w-0 flex-1 resize-y rounded-[1.375rem] border border-control-border bg-surface px-4 py-2.5 text-text placeholder:text-placeholder focus:outline-3 focus:outline-focus"
-        />
-        <Button type="submit" disabled={pending}>
-          {pending ? "Sending…" : "Send"}
-        </Button>
-      </div>
-      {chosen > 0 ? (
-        <p className="text-[0.9375rem] text-text-muted">
-          {chosen === 1 ? "1 photo" : `${chosen} photos`} attached
+        <div className="flex items-end gap-2">
+          {pictures ? (
+            <>
+              <label
+                htmlFor={photosId}
+                className={iconButtonClass("cursor-pointer has-[:focus-visible]:outline-3")}
+              >
+                <CameraIcon />
+                <span className="sr-only">Add Photos</span>
+              </label>
+              <input
+                id={photosId}
+                name="pictures"
+                type="file"
+                accept="image/jpeg,image/png,image/gif,image/webp,image/heic"
+                multiple
+                className="sr-only"
+                onChange={(e) => setChosen(e.currentTarget.files?.length ?? 0)}
+              />
+            </>
+          ) : null}
+          <label htmlFor={bodyId} className="sr-only">
+            Message
+          </label>
+          <textarea
+            id={bodyId}
+            name="body"
+            rows={2}
+            maxLength={1600}
+            placeholder="Text message"
+            onKeyDown={(e) => {
+              // Enter sends, as in Messages; Shift-Enter starts a new line.
+              if (e.key === "Enter" && !e.shiftKey && !e.nativeEvent.isComposing) {
+                e.preventDefault();
+                // A second Enter while the first is sending sends nothing more.
+                if (!pending) form.current?.requestSubmit();
+              }
+            }}
+            className="block min-h-11 min-w-0 flex-1 resize-y rounded-[1.375rem] border border-control-border bg-surface px-4 py-2.5 text-text placeholder:text-placeholder focus:outline-3 focus:outline-focus"
+          />
+          <Button type="submit" disabled={pending}>
+            {pending ? "Sending…" : "Send"}
+          </Button>
+        </div>
+        {chosen > 0 ? (
+          <p className="text-[0.9375rem] text-text-muted">
+            {chosen === 1 ? "1 photo" : `${chosen} photos`} attached
+          </p>
+        ) : null}
+        {state.error ? <Banner tone="error">{state.error}</Banner> : null}
+        <p role="status" className="sr-only">
+          {state.sentAt ? "Sent." : ""}
         </p>
-      ) : null}
-      {state.error ? <Banner tone="error">{state.error}</Banner> : null}
-      <p role="status" className="sr-only">
-        {state.sentAt ? "Sent." : ""}
-      </p>
-    </form>
+      </form>
+    </Draft>
   );
 }
 

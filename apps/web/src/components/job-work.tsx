@@ -17,8 +17,7 @@ import {
   jobFeeLabel,
   calculate,
   currentVerdict,
-  parseDiagramLayout,
-  poolDiagram,
+  shownDiagram,
   previewTest,
   userTransitions,
   verdictIcon,
@@ -65,6 +64,7 @@ import { useNextStep } from "./next-step-events";
 import { DiagramShapes } from "./pool-diagram";
 import { Segmented } from "./segmented";
 import { ShapePicker } from "./shape-picker";
+import { Draft } from "./draft-keeper";
 import { FieldError, SField, STextArea, SettingsForm } from "./settings-forms";
 import { AnswerIconButtons } from "./answer-controls";
 import { RowActions, RowMenuButton, type MenuEntry } from "./row-actions";
@@ -323,85 +323,87 @@ export function JobDetailsForm({
   const repair = jobType === "repair";
   const [gallons, setGallons] = useState(pool?.gallons ? pool.gallons.toLocaleString("en-US") : "");
   return (
-    <SettingsForm action={saveJobDetails} submit="Save">
-      <input type="hidden" name="job" value={jobId} />
-      {detection ? <input type="hidden" name="detection" value="1" /> : null}
-      <div>
-        <ul className="grouped">
-          {/* A repair job's price is its repairs' (Repairs, owner 2026-10-22). */}
+    <Draft form="job-details" id={jobId}>
+      <SettingsForm action={saveJobDetails} submit="Save">
+        <input type="hidden" name="job" value={jobId} />
+        {detection ? <input type="hidden" name="detection" value="1" /> : null}
+        <div>
+          <ul className="grouped">
+            {/* A repair job's price is its repairs' (Repairs, owner 2026-10-22). */}
+            {repair ? null : (
+              <li className="flex min-h-11 items-center gap-3 px-4 py-1.5">
+                <label htmlFor="job-fee" className="min-w-0 flex-1">
+                  {jobFeeLabel(jobType)}
+                </label>
+                <span aria-hidden="true" className="text-text-muted">
+                  $
+                </span>
+                <input
+                  id="job-fee"
+                  name="fee"
+                  inputMode="decimal"
+                  placeholder="0.00"
+                  defaultValue={fee != null ? (fee / 100).toFixed(2) : ""}
+                  aria-describedby="job-fee-note"
+                  className={cx(ROW_INPUT, "min-h-11 w-28 text-right tabular-nums")}
+                />
+              </li>
+            )}
+            {pool ? (
+              <li className="flex min-h-11 items-center gap-3 px-4 py-1.5">
+                <input type="hidden" name="property" value={pool.id} />
+                <label htmlFor="job-gallons" className="min-w-0 flex-1">
+                  Pool gallons
+                </label>
+                <input
+                  id="job-gallons"
+                  name="approx_gallons"
+                  inputMode="numeric"
+                  placeholder="20,000"
+                  value={gallons}
+                  onChange={(e) => {
+                    const digits = e.target.value.replace(/\D/g, "").slice(0, 7);
+                    setGallons(digits ? Number(digits).toLocaleString("en-US") : "");
+                  }}
+                  className={cx(ROW_INPUT, "min-h-11 w-28 text-right tabular-nums")}
+                />
+              </li>
+            ) : null}
+            {detection ? (
+              <li className="px-4">
+                <Checkbox
+                  name="location_marked"
+                  label="Leak location marked"
+                  defaultChecked={locationMarked}
+                />
+              </li>
+            ) : null}
+            <li className="px-4 pt-2.5 pb-3">
+              <label htmlFor="job-notes" className="block text-[0.9375rem] text-text-muted">
+                Job notes
+              </label>
+              <textarea
+                id="job-notes"
+                name="notes"
+                defaultValue={notes}
+                placeholder="Anything the office should know"
+                className={cx(ROW_INPUT, "mt-1 block min-h-24 w-full py-2")}
+              />
+            </li>
+          </ul>
           {repair ? null : (
-            <li className="flex min-h-11 items-center gap-3 px-4 py-1.5">
-              <label htmlFor="job-fee" className="min-w-0 flex-1">
-                {jobFeeLabel(jobType)}
-              </label>
-              <span aria-hidden="true" className="text-text-muted">
-                $
-              </span>
-              <input
-                id="job-fee"
-                name="fee"
-                inputMode="decimal"
-                placeholder="0.00"
-                defaultValue={fee != null ? (fee / 100).toFixed(2) : ""}
-                aria-describedby="job-fee-note"
-                className={cx(ROW_INPUT, "min-h-11 w-28 text-right tabular-nums")}
-              />
-            </li>
+            <p id="job-fee-note" className="mt-2 px-4 text-[0.8125rem] text-text-muted">
+              {detection ? "The detection fee is shown on the report." : "Billed on the invoice."}
+            </p>
           )}
-          {pool ? (
-            <li className="flex min-h-11 items-center gap-3 px-4 py-1.5">
-              <input type="hidden" name="property" value={pool.id} />
-              <label htmlFor="job-gallons" className="min-w-0 flex-1">
-                Pool gallons
-              </label>
-              <input
-                id="job-gallons"
-                name="approx_gallons"
-                inputMode="numeric"
-                placeholder="20,000"
-                value={gallons}
-                onChange={(e) => {
-                  const digits = e.target.value.replace(/\D/g, "").slice(0, 7);
-                  setGallons(digits ? Number(digits).toLocaleString("en-US") : "");
-                }}
-                className={cx(ROW_INPUT, "min-h-11 w-28 text-right tabular-nums")}
-              />
-            </li>
-          ) : null}
-          {detection ? (
-            <li className="px-4">
-              <Checkbox
-                name="location_marked"
-                label="Leak location marked"
-                defaultChecked={locationMarked}
-              />
-            </li>
-          ) : null}
-          <li className="px-4 pt-2.5 pb-3">
-            <label htmlFor="job-notes" className="block text-[0.9375rem] text-text-muted">
-              Job notes
-            </label>
-            <textarea
-              id="job-notes"
-              name="notes"
-              defaultValue={notes}
-              placeholder="Anything the office should know"
-              className={cx(ROW_INPUT, "mt-1 block min-h-24 w-full py-2")}
-            />
-          </li>
-        </ul>
-        {repair ? null : (
-          <p id="job-fee-note" className="mt-2 px-4 text-[0.8125rem] text-text-muted">
-            {detection ? "The detection fee is shown on the report." : "Billed on the invoice."}
-          </p>
-        )}
-        <div className="px-4">
-          <FieldError name="fee" />
-          <FieldError name="approx_gallons" />
-          <FieldError name="notes" />
+          <div className="px-4">
+            <FieldError name="fee" />
+            <FieldError name="approx_gallons" />
+            <FieldError name="notes" />
+          </div>
         </div>
-      </div>
-    </SettingsForm>
+      </SettingsForm>
+    </Draft>
   );
 }
 
@@ -541,25 +543,27 @@ export function ChecklistEditor({
             {ADD_ITEM_LABEL}
           </button>
           <Sheet open={typing} onClose={() => setTyping(false)} title={ADD_ITEM_TITLE}>
-            <SettingsForm
-              action={addCustomItem}
-              submit={ADD_ITEM_SAVE}
-              onSaved={() => setTyping(false)}
-              primary
-              pinned
-            >
-              <input type="hidden" name="job" value={jobId} />
-              <SField
-                label={ADD_ITEM_FIELD}
-                name="name"
-                placeholder={ADD_ITEM_PLACEHOLDER}
-                maxLength={CUSTOM_ITEM_MAX}
-                autoComplete="off"
-                autoFocus
-                required
-                hint={ADD_ITEM_HINT}
-              />
-            </SettingsForm>
+            <Draft form="new-item" id={jobId}>
+              <SettingsForm
+                action={addCustomItem}
+                submit={ADD_ITEM_SAVE}
+                onSaved={() => setTyping(false)}
+                primary
+                pinned
+              >
+                <input type="hidden" name="job" value={jobId} />
+                <SField
+                  label={ADD_ITEM_FIELD}
+                  name="name"
+                  placeholder={ADD_ITEM_PLACEHOLDER}
+                  maxLength={CUSTOM_ITEM_MAX}
+                  autoComplete="off"
+                  autoFocus
+                  required
+                  hint={ADD_ITEM_HINT}
+                />
+              </SettingsForm>
+            </Draft>
           </Sheet>
         </>
       ) : null}
@@ -1141,105 +1145,107 @@ function TestForm({
   const set = (k: string, v: string) => setValues((old) => ({ ...old, [k]: v }));
   // In a sheet: the sheet carries the title and Cancel.
   return (
-    <SettingsForm
-      action={saveTest}
-      submit={test ? "Save Test" : "Add Test"}
-      onSaved={onDone}
-      primary
-      pinned
-    >
-      <input type="hidden" name="job" value={jobId} />
-      <input type="hidden" name="test" value={test?.id ?? ""} />
-      {test ? (
-        <input type="hidden" name="type" value={typeId} />
-      ) : (
+    <Draft form="test" id={test?.id ?? `new-${jobId}`}>
+      <SettingsForm
+        action={saveTest}
+        submit={test ? "Save Test" : "Add Test"}
+        onSaved={onDone}
+        primary
+        pinned
+      >
+        <input type="hidden" name="job" value={jobId} />
+        <input type="hidden" name="test" value={test?.id ?? ""} />
+        {test ? (
+          <input type="hidden" name="type" value={typeId} />
+        ) : (
+          <Select
+            label="Test"
+            name="type"
+            value={typeId}
+            onChange={(e) => {
+              setTypeId(e.target.value);
+              setValues({});
+            }}
+            options={types.map((t) => ({ value: t.id, label: t.name }))}
+          />
+        )}
         <Select
-          label="Test"
-          name="type"
-          value={typeId}
-          onChange={(e) => {
-            setTypeId(e.target.value);
-            setValues({});
-          }}
-          options={types.map((t) => ({ value: t.id, label: t.name }))}
+          label="Item (optional)"
+          name="component"
+          defaultValue={test?.componentId ?? ""}
+          options={[
+            { value: "", label: "Whole job" },
+            ...components.map((c) => ({ value: c.id, label: c.label })),
+          ]}
         />
-      )}
-      <Select
-        label="Item (optional)"
-        name="component"
-        defaultValue={test?.componentId ?? ""}
-        options={[
-          { value: "", label: "Whole job" },
-          ...components.map((c) => ({ value: c.id, label: c.label })),
-        ]}
-      />
-      <div className="grid gap-4 sm:grid-cols-2">
-        {(type?.field_schema.fields ?? []).map((f) => {
-          const name = `f_${f.key}`;
-          const label = f.unit ? `${f.label} (${f.unit})` : f.label;
-          if (f.type === "select")
+        <div className="grid gap-4 sm:grid-cols-2">
+          {(type?.field_schema.fields ?? []).map((f) => {
+            const name = `f_${f.key}`;
+            const label = f.unit ? `${f.label} (${f.unit})` : f.label;
+            if (f.type === "select")
+              return (
+                <div key={f.key}>
+                  <Select
+                    label={label}
+                    name={name}
+                    value={values[f.key] ?? ""}
+                    onChange={(e) => set(f.key, e.target.value)}
+                    options={[
+                      { value: "", label: "Choose…" },
+                      ...(f.options ?? []).map((o) => ({ value: o, label: o })),
+                    ]}
+                  />
+                  <FieldError name={name} />
+                </div>
+              );
+            if (f.type === "textarea")
+              return (
+                <div key={f.key} className="sm:col-span-2">
+                  <STextArea
+                    label={label}
+                    name={name}
+                    value={values[f.key] ?? ""}
+                    onChange={(e) => set(f.key, e.target.value)}
+                  />
+                </div>
+              );
             return (
-              <div key={f.key}>
-                <Select
-                  label={label}
-                  name={name}
-                  value={values[f.key] ?? ""}
-                  onChange={(e) => set(f.key, e.target.value)}
-                  options={[
-                    { value: "", label: "Choose…" },
-                    ...(f.options ?? []).map((o) => ({ value: o, label: o })),
-                  ]}
-                />
-                <FieldError name={name} />
-              </div>
+              <SField
+                key={f.key}
+                label={label}
+                name={name}
+                inputMode={f.type === "number" ? "decimal" : undefined}
+                value={values[f.key] ?? ""}
+                onChange={(e) => set(f.key, e.target.value)}
+              />
             );
-          if (f.type === "textarea")
-            return (
-              <div key={f.key} className="sm:col-span-2">
-                <STextArea
-                  label={label}
-                  name={name}
-                  value={values[f.key] ?? ""}
-                  onChange={(e) => set(f.key, e.target.value)}
-                />
-              </div>
-            );
-          return (
-            <SField
-              key={f.key}
-              label={label}
-              name={name}
-              inputMode={f.type === "number" ? "decimal" : undefined}
-              value={values[f.key] ?? ""}
-              onChange={(e) => set(f.key, e.target.value)}
-            />
-          );
-        })}
-      </div>
-      {calc?.summary ? (
-        <p className="font-semibold" aria-live="polite">
-          {calc.summary}
-        </p>
-      ) : null}
-      <Select
-        label="Result"
-        name="outcome"
-        defaultValue={test?.outcome ?? ""}
-        options={[
-          {
-            value: "",
-            label: calc?.suggested
-              ? `Use the calculation (${OUTCOME[calc.suggested].label})`
-              : "Not decided",
-          },
-          ...(type?.result_options ?? ["pass", "fail", "inconclusive"]).map((o) => ({
-            value: o,
-            label: OUTCOME[o].label,
-          })),
-        ]}
-      />
-      <STextArea label="Notes (optional)" name="notes" defaultValue={test?.notes ?? ""} />
-    </SettingsForm>
+          })}
+        </div>
+        {calc?.summary ? (
+          <p className="font-semibold" aria-live="polite">
+            {calc.summary}
+          </p>
+        ) : null}
+        <Select
+          label="Result"
+          name="outcome"
+          defaultValue={test?.outcome ?? ""}
+          options={[
+            {
+              value: "",
+              label: calc?.suggested
+                ? `Use the calculation (${OUTCOME[calc.suggested].label})`
+                : "Not decided",
+            },
+            ...(type?.result_options ?? ["pass", "fail", "inconclusive"]).map((o) => ({
+              value: o,
+              label: OUTCOME[o].label,
+            })),
+          ]}
+        />
+        <STextArea label="Notes (optional)" name="notes" defaultValue={test?.notes ?? ""} />
+      </SettingsForm>
+    </Draft>
   );
 }
 
@@ -1414,102 +1420,104 @@ function FindingForm({
   const shapeSave = useRun();
   // In a sheet: the sheet carries the title and Cancel.
   return (
-    <SettingsForm
-      action={saveFinding}
-      submit={finding ? "Save Finding" : "Add Finding"}
-      onSaved={onDone}
-      primary
-      pinned
-    >
-      <input type="hidden" name="job" value={jobId} />
-      <input type="hidden" name="finding" value={finding?.id ?? ""} />
-      <input type="hidden" name="pin_x" value={pin ? String(pin.x) : ""} />
-      <input type="hidden" name="pin_y" value={pin ? String(pin.y) : ""} />
-      <SField
-        label="What"
-        name="title"
-        defaultValue={finding?.title ?? ""}
-        placeholder="Crack at the skimmer throat"
-      />
-      <div className="grid gap-4 sm:grid-cols-2">
-        <div>
+    <Draft form="finding" id={finding?.id ?? `new-${jobId}`}>
+      <SettingsForm
+        action={saveFinding}
+        submit={finding ? "Save Finding" : "Add Finding"}
+        onSaved={onDone}
+        primary
+        pinned
+      >
+        <input type="hidden" name="job" value={jobId} />
+        <input type="hidden" name="finding" value={finding?.id ?? ""} />
+        <input type="hidden" name="pin_x" value={pin ? String(pin.x) : ""} />
+        <input type="hidden" name="pin_y" value={pin ? String(pin.y) : ""} />
+        <SField
+          label="What"
+          name="title"
+          defaultValue={finding?.title ?? ""}
+          placeholder="Crack at the skimmer throat"
+        />
+        <div className="grid gap-4 sm:grid-cols-2">
+          <div>
+            <Select
+              label="Severity"
+              name="severity"
+              value={severity}
+              onChange={(e) => setSeverity(e.target.value)}
+              options={[
+                { value: "", label: "Choose…" },
+                ...severities.map((s) => ({ value: s.key, label: s.name })),
+              ]}
+            />
+            <FieldError name="severity" />
+          </div>
           <Select
-            label="Severity"
-            name="severity"
-            value={severity}
-            onChange={(e) => setSeverity(e.target.value)}
+            label="Item (optional)"
+            name="component"
+            defaultValue={finding?.componentId ?? ""}
             options={[
-              { value: "", label: "Choose…" },
-              ...severities.map((s) => ({ value: s.key, label: s.name })),
+              { value: "", label: "None" },
+              ...components.map((c) => ({ value: c.id, label: c.label })),
             ]}
           />
-          <FieldError name="severity" />
         </div>
-        <Select
-          label="Item (optional)"
-          name="component"
-          defaultValue={finding?.componentId ?? ""}
-          options={[
-            { value: "", label: "None" },
-            ...components.map((c) => ({ value: c.id, label: c.label })),
-          ]}
+        <SField
+          label="Where (optional)"
+          name="location"
+          defaultValue={finding?.location ?? ""}
+          placeholder="Two feet left of the skimmer"
         />
-      </div>
-      <SField
-        label="Where (optional)"
-        name="location"
-        defaultValue={finding?.location ?? ""}
-        placeholder="Two feet left of the skimmer"
-      />
-      <Segmented
-        label="Status"
-        name="status"
-        value={status}
-        onChange={setStatus}
-        options={STATUSES.map((s) => ({ value: s, label: FINDING_STATUS_LABELS[s] }))}
-      />
-      {diagram?.propertyId ? (
-        <div>
-          <ShapePicker
-            value={shape}
-            hint={shape ? undefined : "Pick one so the diagram matches the pool."}
-            disabled={shapeSave.pending}
-            onChange={(next) => {
-              setShape(next);
-              shapeSave.run(setPoolShape, {
-                job: jobId,
-                property: diagram.propertyId!,
-                shape: next ?? "",
-              });
-            }}
-          />
-          <Checkbox
-            label="Has a spa"
-            checked={spa}
-            disabled={shapeSave.pending}
-            onChange={(e) => {
-              const next = e.target.checked;
-              setSpa(next);
-              shapeSave.run(setPoolSpa, {
-                job: jobId,
-                property: diagram.propertyId!,
-                spa: String(next),
-              });
-            }}
-          />
-          <ErrorText error={shapeSave.error} />
-        </div>
-      ) : null}
-      {diagram ? (
-        <PinPicker
-          diagram={{ ...diagram, shape, hasSpa: spa }}
-          pin={pin}
-          color={severities.find((s) => s.key === severity)?.color}
-          onChange={setPin}
+        <Segmented
+          label="Status"
+          name="status"
+          value={status}
+          onChange={setStatus}
+          options={STATUSES.map((s) => ({ value: s, label: FINDING_STATUS_LABELS[s] }))}
         />
-      ) : null}
-      <STextArea label="Notes (optional)" name="notes" defaultValue={finding?.notes ?? ""} />
-    </SettingsForm>
+        {diagram?.propertyId ? (
+          <div>
+            <ShapePicker
+              value={shape}
+              hint={shape ? undefined : "Pick one so the diagram matches the pool."}
+              disabled={shapeSave.pending}
+              onChange={(next) => {
+                setShape(next);
+                shapeSave.run(setPoolShape, {
+                  job: jobId,
+                  property: diagram.propertyId!,
+                  shape: next ?? "",
+                });
+              }}
+            />
+            <Checkbox
+              label="Has a spa"
+              checked={spa}
+              disabled={shapeSave.pending}
+              onChange={(e) => {
+                const next = e.target.checked;
+                setSpa(next);
+                shapeSave.run(setPoolSpa, {
+                  job: jobId,
+                  property: diagram.propertyId!,
+                  spa: String(next),
+                });
+              }}
+            />
+            <ErrorText error={shapeSave.error} />
+          </div>
+        ) : null}
+        {diagram ? (
+          <PinPicker
+            diagram={{ ...diagram, shape, hasSpa: spa }}
+            pin={pin}
+            color={severities.find((s) => s.key === severity)?.color}
+            onChange={setPin}
+          />
+        ) : null}
+        <STextArea label="Notes (optional)" name="notes" defaultValue={finding?.notes ?? ""} />
+      </SettingsForm>
+    </Draft>
   );
 }
 
@@ -1525,7 +1533,7 @@ function PinPicker({
   color: string | undefined;
   onChange: (pin: { x: number; y: number } | null) => void;
 }) {
-  const d = poolDiagram(diagram.shape, diagram.hasSpa, parseDiagramLayout(diagram.layout));
+  const d = shownDiagram(diagram.shape, diagram.hasSpa, diagram.layout);
   const round = (n: number) => Math.round(Math.min(1, Math.max(0, n)) * 10_000) / 10_000;
   return (
     <div className="space-y-2">

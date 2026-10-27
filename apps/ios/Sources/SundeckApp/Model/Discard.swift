@@ -30,7 +30,23 @@ public final class UnsavedEdits {
     /// Goes up each time the person discards for a link: open editors close themselves.
     public private(set) var discarded = 0
 
+    /// The typed-text drafts of the editors in `keys` (owner, 2026-10-27), so Discard Changes on a
+    /// screen made of parts can clear them all.
+    @ObservationIgnored private var drafts: [String: [DraftHandle]] = [:]
+
     public init() {}
+
+    /// An editor's drafts, by the same key as `set` (an empty list forgets them).
+    public func track(_ key: String, drafts handles: [DraftHandle]) {
+        if handles.isEmpty { drafts[key] = nil } else { drafts[key] = handles }
+    }
+
+    /// Discard Changes for a screen: the drafts of everything under `prefix` go.
+    public func clearDrafts(under prefix: String) {
+        for (key, handles) in drafts where key == prefix || key.hasPrefix(prefix + ":") {
+            for handle in handles { handle.clear() }
+        }
+    }
 
     /// An editor's changes now: dirty or not (a closed editor reports `false`).
     public func set(_ key: String, dirty: Bool, sheet: Bool = false) {

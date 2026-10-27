@@ -2,10 +2,11 @@
 
 import { revalidatePath } from "next/cache";
 import { cookies } from "next/headers";
-import { redirect } from "next/navigation";
+import { redirect, unstable_rethrow } from "next/navigation";
 import { ACTIVE_COMPANY_COOKIE } from "@/lib/auth";
 import { sendPasswordReset } from "@/server/password-reset";
 import { logStaffAction, requireStaff } from "@/server/staff";
+import { staffActionError, staffFailure } from "@/server/staff-error";
 
 import { friendlyDbError } from "@/lib/limits";
 // The Admin portal's actions (owner, 2026-10-22). Each checks staff and two-step, writes the
@@ -14,6 +15,26 @@ import { friendlyDbError } from "@/lib/limits";
 export interface AdminState {
   error?: string;
   message?: string;
+}
+
+/**
+ * What staff see when an action fails (owner, 2026-10-27): a sentence, never the database's or
+ * a provider's text, which goes to the server log. An action that throws (the staff log, a
+ * missing key) answers the same way instead of breaking the page.
+ */
+async function guarded(where: string, run: () => Promise<AdminState>): Promise<AdminState> {
+  try {
+    return await run();
+  } catch (e) {
+    unstable_rethrow(e);
+    return { error: staffActionError(e, where) };
+  }
+}
+
+/** A refusal from the database: the portal's own sentences stay, anything raw is replaced. */
+function refused(error: { message: string }, where: string): AdminState {
+  console.error(`[admin] ${where}:`, error.message);
+  return { error: friendlyDbError(error.message) };
 }
 
 const text = (form: FormData, key: string, max = 500) =>
@@ -34,6 +55,10 @@ async function shopName(
  * 30 minutes to 2 hours, with a reason (owner: staff open shops without asking, logged).
  */
 export async function startSupport(_: AdminState, form: FormData): Promise<AdminState> {
+  return guarded("startSupport", () => startSupportAction(form));
+}
+
+async function startSupportAction(form: FormData): Promise<AdminState> {
   const { staff, db } = await requireStaff();
   const companyId = text(form, "company_id", 40);
   const reason = text(form, "reason");
@@ -50,7 +75,7 @@ export async function startSupport(_: AdminState, form: FormData): Promise<Admin
     minutes,
     how: access,
   });
-  if (error) return { error: friendlyDbError(error.message) };
+  if (error) return refused(error, "start support");
   await logStaffAction(staff, "support_start", {
     companyId,
     companyName: name,
@@ -69,6 +94,10 @@ export async function startSupport(_: AdminState, form: FormData): Promise<Admin
 
 /** Extend Trial by 7, 14, or 30 days (owner, 2026-10-22). */
 export async function extendTrial(_: AdminState, form: FormData): Promise<AdminState> {
+  return guarded("extendTrial", () => extendTrialAction(form));
+}
+
+async function extendTrialAction(form: FormData): Promise<AdminState> {
   const { staff, db } = await requireStaff();
   const companyId = text(form, "company_id", 40);
   const days = Number(form.get("days"));
@@ -78,7 +107,7 @@ export async function extendTrial(_: AdminState, form: FormData): Promise<AdminS
     target_company: companyId,
     days,
   });
-  if (error) return { error: friendlyDbError(error.message) };
+  if (error) return refused(error, "extend trial");
   await logStaffAction(staff, "trial_extend", {
     companyId,
     companyName: await shopName(db, companyId),
@@ -91,6 +120,10 @@ export async function extendTrial(_: AdminState, form: FormData): Promise<AdminS
 
 /** Make Demo Shop (no charge, like the VIP26 code) or End Demo (a week of trial). */
 export async function setDemo(_: AdminState, form: FormData): Promise<AdminState> {
+  return guarded("setDemo", () => setDemoAction(form));
+}
+
+async function setDemoAction(form: FormData): Promise<AdminState> {
   const { staff, db } = await requireStaff();
   const companyId = text(form, "company_id", 40);
   const demo = form.get("demo") === "1";
@@ -98,7 +131,7 @@ export async function setDemo(_: AdminState, form: FormData): Promise<AdminState
   if (reason.length < 3)
     return { error: demo ? "Say why this shop is free." : "Say why the demo is ending." };
   const { error } = await db.rpc("admin_set_demo", { target_company: companyId, demo });
-  if (error) return { error: friendlyDbError(error.message) };
+  if (error) return refused(error, "set demo");
   await logStaffAction(staff, demo ? "demo_on" : "demo_off", {
     companyId,
     companyName: await shopName(db, companyId),
@@ -112,6 +145,10 @@ export async function setDemo(_: AdminState, form: FormData): Promise<AdminState
 
 /** A staff note on a shop (kept with who wrote it and when). */
 export async function addShopNote(_: AdminState, form: FormData): Promise<AdminState> {
+  return guarded("addShopNote", () => addShopNoteAction(form));
+}
+
+async function addShopNoteAction(form: FormData): Promise<AdminState> {
   const { staff, db } = await requireStaff();
   const companyId = text(form, "company_id", 40);
   const note = text(form, "note", 4000);
@@ -119,7 +156,7 @@ export async function addShopNote(_: AdminState, form: FormData): Promise<AdminS
   const { error } = await db
     .from("shop_note")
     .insert({ company_ref: companyId, staff_email: staff.email, note });
-  if (error) return { error: friendlyDbError(error.message) };
+  if (error) return refused(error, "add note");
   await logStaffAction(staff, "note", {
     companyId,
     companyName: await shopName(db, companyId),
@@ -133,6 +170,10 @@ export async function addShopNote(_: AdminState, form: FormData): Promise<AdminS
  * (it was a manual SQL step in HANDOVER). Removes their factors and the profile flag.
  */
 export async function turnOffTwoStep(_: AdminState, form: FormData): Promise<AdminState> {
+  return guarded("turnOffTwoStep", () => turnOffTwoStepAction(form));
+}
+
+async function turnOffTwoStepAction(form: FormData): Promise<AdminState> {
   const { staff, db } = await requireStaff();
   const userId = text(form, "user_id", 40);
   const reason = text(form, "reason");
@@ -142,13 +183,13 @@ export async function turnOffTwoStep(_: AdminState, form: FormData): Promise<Adm
   const { data: user, error: findError } = await db.auth.admin.getUserById(userId);
   if (findError || !user.user) return { error: "No such person." };
   const { data: factors, error: listError } = await db.auth.admin.mfa.listFactors({ userId });
-  if (listError) return { error: friendlyDbError(listError.message) };
+  if (listError) return { error: staffFailure(listError.message, "list factors").message };
   for (const f of factors.factors) {
     const { error } = await db.auth.admin.mfa.deleteFactor({ id: f.id, userId });
-    if (error) return { error: friendlyDbError(error.message) };
+    if (error) return { error: staffFailure(error.message, "delete factor").message };
   }
   const { error } = await db.rpc("set_two_step", { target_user: userId, enabled: false });
-  if (error) return { error: friendlyDbError(error.message) };
+  if (error) return refused(error, "two-step flag");
   await logStaffAction(staff, "two_step_off", {
     targetUser: userId,
     targetEmail: user.user.email ?? null,
@@ -166,6 +207,10 @@ export async function turnOffTwoStep(_: AdminState, form: FormData): Promise<Adm
  * Password?, to their own address. Staff never see or set the password.
  */
 export async function staffPasswordReset(_: AdminState, form: FormData): Promise<AdminState> {
+  return guarded("staffPasswordReset", () => staffPasswordResetAction(form));
+}
+
+async function staffPasswordResetAction(form: FormData): Promise<AdminState> {
   const { staff, db } = await requireStaff();
   const userId = text(form, "user_id", 40);
   const { data: user } = await db.auth.admin.getUserById(userId);

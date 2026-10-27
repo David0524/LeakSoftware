@@ -41,6 +41,20 @@ import Testing
         #expect(Fixtures.rules(module) == checked)
     }
 
+    /// Findings, the reports and the shape editor draw the same diagram (owner, 2026-10-27).
+    @Test func shownDiagramIsWhatTheEditorOpensOn() {
+        let saved = DiagramLayout(
+            spa: .init(x: 0.8, y: 0.2, r: 13), drawing: [.line(x1: 0.2, y1: 0.2, x2: 0.4, y2: 0.4)],
+            landmarks: [Landmark(kind: .tree, x: 0.1, y: 0.5)])
+        let shown = shownDiagram(.kidney, true, saved)
+        #expect(shown == poolDiagram(.kidney, true, centerLayout(saved)))
+        #expect(shown.landmarks.count == 1)
+        #expect(shown.drawing.count == 1)
+        var centered = saved
+        centered.centered = true
+        #expect(abs(shownDiagram(.kidney, true, centered).landmarks[0].cx - 16) < 0.001)
+    }
+
     @Test func checklist() {
         checkRule(module, "CHECKLIST_SECTION_LABELS") { _ in labelTable(\ChecklistSection.label) }
         checkRule(module, "componentApplies") { c in

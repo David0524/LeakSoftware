@@ -31,6 +31,18 @@ function onFirstFocus(e: FocusEvent) {
 }
 
 /**
+ * Starts watching the forms in (or around) an element as they are now: a draft is about to be
+ * put back into them, and that text must count as unsaved (components/draft-keeper.tsx).
+ */
+export function watchFormsIn(root: Element) {
+  const forms = new Set<HTMLFormElement>(root.querySelectorAll("form"));
+  const own = root.closest("form");
+  if (own) forms.add(own);
+  for (const form of forms)
+    if (tracked(form) && !baseline.has(form)) baseline.set(form, signature(fieldsOf(form)));
+}
+
+/**
  * A form touched before anyone was listening (typed into while the page was still loading): its
  * starting point is what the page's HTML gave its typed fields. Holding focus, or a typed field
  * that differs from the HTML, marks such a form.

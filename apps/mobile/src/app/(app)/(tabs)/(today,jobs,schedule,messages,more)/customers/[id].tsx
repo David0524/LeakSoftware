@@ -1,4 +1,6 @@
 import { router, useLocalSearchParams } from "expo-router";
+import { DraftNote } from "../../../../../ui/DraftNote";
+import { useDraft } from "../../../../../ui/useDraft";
 import {
   CUSTOMER_EMAILS_LABEL,
   CUSTOMER_EMAILS_OFF_LABEL,
@@ -377,7 +379,21 @@ function ContactForm({ customer, onSaved }: { customer: CustomerFields; onSaved:
   });
   // Unsaved entries ask before closing (owner, 2026-10-20: "Discard changes?" everywhere).
   const [startF] = useState(f);
-  useUnsavedChanges(formChanged(startF, f));
+  // Typed text is kept as a draft until it's saved or discarded (owner, 2026-10-27).
+  const draft = useDraft({
+    form: "customer",
+    id: customer.id,
+    fields: {
+      name: f.name,
+      company_name: f.company_name,
+      phone: f.phone,
+      email: f.email,
+      cc: f.cc,
+      notes: f.notes,
+    },
+    restore: (c) => setF((old) => ({ ...old, ...c })),
+  });
+  useUnsavedChanges(formChanged(startF, f), draft);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const set = (k: keyof typeof f) => (v: string) => setF({ ...f, [k]: v });
 
@@ -402,11 +418,13 @@ function ContactForm({ customer, onSaved }: { customer: CustomerFields; onSaved:
       marketing_opt_out: f.optOut,
     } as Record<string, JsonValue>);
     haptics.success();
+    draft.clear();
     onSaved();
   }
 
   return (
     <>
+      <DraftNote draft={draft} />
       <FieldGroup labelWidth={104}>
         <FieldRow label="Name" value={f.name} onChangeText={set("name")} error={errors.name} />
         <FieldRow

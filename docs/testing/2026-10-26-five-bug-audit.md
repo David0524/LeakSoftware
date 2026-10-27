@@ -195,8 +195,10 @@ Customers, and `UnsavedWhen` (new, `ModalSheet.tsx`) on the Add Additional Repai
 
 **Left.** Fields that save by themselves are excluded on purpose. Small pickers with one typed
 value (the brand color hex, a date field) and sheets whose text is re-typed in seconds (Send
-Receipt's address) do not ask. Nothing is kept as a draft across the app being killed in the
-background: the apps keep what was typed in memory, as before; saving drafts is a new feature.
+Receipt's address) do not ask. Update 2026-10-27: typed text is now also kept as a local draft
+and put back when the same form opens again (website, iPhone, Android; see DECISIONS.md, "Fix
+the draft text"), so a killed app or a closed tab no longer loses it. Still not kept: files and
+photos, passwords, choices (pickers, switches, dates) and fields that save by themselves.
 
 ## Checks run
 

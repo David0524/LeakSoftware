@@ -4,8 +4,7 @@ import Svg, { Circle, G, Path, Rect, Text as SvgText } from "react-native-svg";
 import { tokens } from "@leakbook/tokens";
 import { useNoSwipe } from "./SwipeNav";
 import {
-  parseDiagramLayout,
-  poolDiagram,
+  shownDiagram,
   type DiagramShape,
   type LandmarkPart,
   type MarkupShape,
@@ -62,7 +61,7 @@ export function PoolDiagram({
     onMove: (dx: number, dy: number) => void;
   };
 }) {
-  const d = poolDiagram(shape, hasSpa, parseDiagramLayout(layout));
+  const d = shownDiagram(shape, hasSpa, layout);
   const [width, setWidth] = useState(0);
   const height = (width * d.height) / d.width;
 

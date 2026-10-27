@@ -669,8 +669,8 @@ export interface DiagramLayout {
   /**
    * The pool is drawn in the middle of the diagram (owner, 2026-10-20: "Pool shapes are not
    * centered"). Pools saved before sat 10 units left, to leave room for the spa; their spa,
-   * landmarks, drawing and finding pins were placed against that, so they keep it until the
-   * shape is saved again (centerLayout).
+   * landmarks, drawing and finding pins were placed against that. Every screen draws them
+   * moved to the centered pool (shownDiagram); pins stay where they were stored.
    */
   centered?: boolean;
   /**
@@ -1359,4 +1359,20 @@ export function poolDiagram(
       };
     }),
   };
+}
+
+/**
+ * The diagram every screen draws from a property's synced `diagram_layout` (owner, 2026-10-27:
+ * "The pool shape on Findings doesn't have the landmarks, draw, etc."): the Findings diagram,
+ * the finding's pin picker, Mark Up, the report, and the shape editor all show the same
+ * thing. Layouts saved before "centered" are moved to the centered pool (centerLayout), as the
+ * shape editor opens them, so the spa, landmarks and drawing sit where the editor shows them.
+ * Pins stay where they were stored.
+ */
+export function shownDiagram(
+  shape: DiagramShape | null | undefined,
+  hasSpa: boolean,
+  layout: unknown,
+): PoolDiagram {
+  return poolDiagram(shape, hasSpa, centerLayout(parseDiagramLayout(layout)));
 }

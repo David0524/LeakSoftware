@@ -16,6 +16,8 @@ import { Glass } from "../../ui/Glass";
 import { color, MAX_TEXT_SCALE, minTap, shape, space, type } from "../../ui/theme";
 import { WebIcon } from "../../ui/WebIcon";
 import { useUnsavedChanges } from "../../ui/ModalSheet";
+import { DraftNote } from "../../ui/DraftNote";
+import { useDraft } from "../../ui/useDraft";
 
 import { friendlyError } from "@leakbook/core";
 /** Where the floating tab bar's top is, from the bottom of the screen. */
@@ -50,6 +52,7 @@ export function Composer({
   docked = true,
   autoFocus = false,
   initialBody,
+  draftId,
 }: {
   pictures: boolean;
   onSend: (body: string, picture: { uri: string; type: string } | null) => Promise<boolean>;
@@ -57,12 +60,25 @@ export function Composer({
   autoFocus?: boolean;
   /** Text already filled in (Today's Message with On My Way, owner 2026-10-20); editable. */
   initialBody?: string;
+  /** The conversation (or customer) this message is for: its typed text is kept as a draft. */
+  draftId?: string;
 }) {
   const [body, setBody] = useState(initialBody ?? "");
   const [picture, setPicture] = useState<{ uri: string; type: string } | null>(null);
   const [sending, setSending] = useState(false);
+  // Typed text is kept per conversation until it's sent or discarded (owner, 2026-10-27); a
+  // text filled in by On My Way is new each time, so it isn't.
+  const draft = useDraft({
+    form: "message",
+    id: draftId ?? "new",
+    fields: { body },
+    restore: (c) => {
+      if (c.body !== undefined) setBody(c.body);
+    },
+    ready: initialBody === undefined,
+  });
   // A message typed but not sent asks before leaving (owner, 2026-10-20).
-  useUnsavedChanges(!sending && (Boolean(body.trim()) || picture !== null));
+  useUnsavedChanges(!sending && (Boolean(body.trim()) || picture !== null), draft);
   const barTop = useTabBarTop();
   const keyboard = useKeyboardHeight();
 
@@ -84,11 +100,13 @@ export function Composer({
     if (ok) {
       setBody("");
       setPicture(null);
+      draft.clear();
     }
   }
 
   const inner = (
     <View style={{ gap: space["2"] }}>
+      <DraftNote draft={draft} />
       {picture ? (
         <View style={styles.row}>
           <Image

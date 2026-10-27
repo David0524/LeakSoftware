@@ -374,6 +374,7 @@ public final class SyncService {
         try? store.clearAll()
         media?.deleteAll()
         for key in KVKey.signOutClears { kv.remove(key) }
+        kv.dropAllDrafts()
         status = SyncStatus()
         status.phase = .signedOut
         revision += 1

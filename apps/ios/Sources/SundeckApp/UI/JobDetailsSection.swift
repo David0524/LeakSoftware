@@ -539,6 +539,8 @@
         @State private var loaded = false
         @State private var error: String?
         @State private var confirm = false
+        /// The typed notes, kept until saved or discarded (owner, 2026-10-27).
+        @State private var draft = DraftHandle()
         @FocusState private var focused: Bool
 
         private var dirty: Bool { loaded && text != notes }
@@ -547,6 +549,7 @@
             NavigationStack {
                 ScrollView {
                     VStack(alignment: .leading, spacing: 16) {
+                        DraftNote(draft: draft)
                         Grouped {
                             TextField(
                                 "Access Notes", text: $text,
@@ -581,7 +584,10 @@
                     }
                 }
                 .confirmationDialog("Discard changes?", isPresented: $confirm, titleVisibility: .visible) {
-                    Button("Discard Changes", role: .destructive) { dismiss() }
+                    Button("Discard Changes", role: .destructive) {
+                        draft.clear()
+                        dismiss()
+                    }
                 }
             }
             .sheetPresentation(dirty: dirty, detents: [.medium, .large])
@@ -590,6 +596,10 @@
                 text = notes
                 loaded = true
                 focused = true
+            }
+            .keepsDraft(draft, form: "access-notes", id: propertyId, fields: ["text": text], ready: loaded) {
+                changes in
+                if let value = changes["text"] { text = value }
             }
         }
 
@@ -600,6 +610,7 @@
                 try sync.write(
                     "property", id: propertyId, companyId: companyId,
                     ["access_notes": trimmed.isEmpty ? .null : .string(trimmed)])
+                draft.clear()
                 saved()
                 dismiss()
             } catch {

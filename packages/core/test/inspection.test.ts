@@ -27,6 +27,7 @@ import {
   type TestFieldSchema,
   removeItemConfirm,
   centerLayout,
+  shownDiagram,
   offsetPath,
   parseDiagramLayout,
 } from "../src";
@@ -749,6 +750,28 @@ describe("centered pools (owner, 2026-10-20)", () => {
     });
     expect(centerLayout(layout)).toBe(layout);
     expect(parseDiagramLayout({ centered: true, mirror: "yes" })).toEqual({ centered: true });
+  });
+
+  it("draws the same diagram on Findings, the reports and the shape editor (owner, 2026-10-27)", () => {
+    const saved = {
+      spa: { x: 0.8, y: 0.2, r: 13 },
+      landmarks: [{ kind: "tree", x: 0.1, y: 0.5 }],
+      drawing: [{ type: "line", x1: 0.2, y1: 0.2, x2: 0.4, y2: 0.4 }],
+    };
+    // What the editor shows when it opens that layout, and what every other screen draws.
+    const editor = poolDiagram("kidney", true, centerLayout(parseDiagramLayout(saved)));
+    const shown = shownDiagram("kidney", true, saved);
+    expect(shown).toEqual(editor);
+    expect(shown.landmarks).toHaveLength(1);
+    expect(shown.drawing).toHaveLength(1);
+    expect(shown.spa?.cx).toBeCloseTo(0.8625 * 160);
+    // Centered already: nothing moves a second time.
+    expect(shownDiagram("kidney", true, { ...saved, centered: true }).landmarks[0]!.cx).toBeCloseTo(
+      16,
+    );
+    expect(shownDiagram(null, false, null).pool).toBe(
+      poolDiagram("rectangle", false, { centered: true }).pool,
+    );
   });
 });
 

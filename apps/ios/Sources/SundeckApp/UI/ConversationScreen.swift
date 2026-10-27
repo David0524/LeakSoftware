@@ -44,7 +44,7 @@
             }
             .navigationTitle(conversation?.name ?? "")
             .navigationBarTitleDisplayMode(.large)
-            .discardOnBack(dirty: draft.hasUnsent)
+            .discardOnBack(dirty: draft.hasUnsent, draft: draft.kept)
             .task(id: "\(sync.revision)|\(session.company?.id ?? "")") { reload() }
             // Opening it marks it read for the whole team, and so does a new message while open.
             .task(id: conversation?.lastAt) {
@@ -135,7 +135,7 @@
                 .padding(8)
                 .chromeBar(hairline: nil)
             } else if let line, line.status == "active" {
-                TextComposer(draft: draft, pictures: line.pictures) {
+                TextComposer(draft: draft, pictures: line.pictures, draftId: conversationId) {
                     await draft.send(app: app, sync: sync, companyId: session.company?.id) { server, body, pictures in
                         try await server.send(conversationId: c.id, body: body, pictures: pictures)
                     }
@@ -307,6 +307,8 @@
     /// What's being written: the words, the chosen photos, and how sending went.
     @MainActor @Observable
     final class TextDraft {
+        /// The words kept as a draft until sent or discarded (owner, 2026-10-27).
+        let kept = DraftHandle()
         var body = ""
         var photos: [Data] = []
         var sending = false
@@ -339,6 +341,7 @@
                 try await deliver(TextingServer(sync: sync, api: app.api), body, pictures)
                 body = ""
                 photos = []
+                kept.clear()
             } catch {
                 let message = String(describing: error)
                 // The bucket's own limits, or a read-only shop (security review M2), in plain words.
@@ -354,11 +357,14 @@
         @Bindable var draft: TextDraft
         var pictures: Bool
         var docked = true
+        /// The conversation this text is for ("new" for a first text): its typed words are kept as a draft.
+        var draftId = "new"
         var send: () async -> Void
         @State private var choosing = false
 
         var body: some View {
             VStack(alignment: .leading, spacing: 8) {
+                DraftNote(draft: draft.kept)
                 HStack(alignment: .bottom, spacing: 8) {
                     if pictures {
                         Button {
@@ -419,6 +425,9 @@
             }
             .sheet(isPresented: $choosing) {
                 TextPhotoPicker { draft.photos = $0 }.ignoresSafeArea()
+            }
+            .keepsDraft(draft.kept, form: "message", id: draftId, fields: ["body": draft.body]) { changes in
+                if let value = changes["body"] { draft.body = value }
             }
         }
     }
@@ -549,7 +558,7 @@
             }
             .navigationTitle("New Message")
             .navigationBarTitleDisplayMode(.large)
-            .discardOnBack(dirty: draft.hasUnsent)
+            .discardOnBack(dirty: draft.hasUnsent, draft: draft.kept)
             .browserSheet($browser)
             .task(id: "\(sync.revision)|\(to)") { reload() }
         }

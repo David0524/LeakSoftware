@@ -19,6 +19,7 @@ import { saveFailed } from "./instant";
 import { showRemoved } from "./removed";
 import { RowActions, RowMenuButton, type MenuEntry, type SwipeAction } from "./row-actions";
 import { FieldError, SField, SettingsForm, SheetDone } from "./settings-forms";
+import { Draft } from "./draft-keeper";
 import { Sheet } from "./sheet";
 import { showBanner } from "./top-banner";
 import { Grouped, Select, buttonClass, cx } from "./ui";
@@ -158,37 +159,39 @@ function AddRepairForm({ jobId, items }: { jobId: string; items: RepairItem[] })
   const [draft, setDraft] = useState<RepairDraft>(EMPTY_REPAIR_DRAFT);
   const typed = !items.length || draft.pick === REPAIR_CUSTOM;
   return (
-    <SettingsForm action={addRepairAction} submit={REPAIR_LABELS.save} full primary>
-      <input type="hidden" name="job" value={jobId} />
-      {items.length ? (
-        <div>
-          <Select
-            label={REPAIR_LABELS.item}
-            name="pick"
-            value={draft.pick}
-            onChange={(e) => setDraft(pickRepair(draft, e.target.value, items))}
-            options={pickOptions(items)}
+    <Draft form="repair" id={jobId}>
+      <SettingsForm action={addRepairAction} submit={REPAIR_LABELS.save} full primary>
+        <input type="hidden" name="job" value={jobId} />
+        {items.length ? (
+          <div>
+            <Select
+              label={REPAIR_LABELS.item}
+              name="pick"
+              value={draft.pick}
+              onChange={(e) => setDraft(pickRepair(draft, e.target.value, items))}
+              options={pickOptions(items)}
+            />
+            <FieldError name="pick" />
+          </div>
+        ) : null}
+        {typed ? (
+          <SField
+            label={REPAIR_LABELS.description}
+            name="description"
+            value={draft.description}
+            maxLength={200}
+            onChange={(e) => setDraft({ ...draft, description: e.target.value })}
           />
-          <FieldError name="pick" />
-        </div>
-      ) : null}
-      {typed ? (
+        ) : null}
         <SField
-          label={REPAIR_LABELS.description}
-          name="description"
-          value={draft.description}
-          maxLength={200}
-          onChange={(e) => setDraft({ ...draft, description: e.target.value })}
+          label={REPAIR_LABELS.price}
+          name="price"
+          inputMode="decimal"
+          value={draft.price}
+          onChange={(e) => setDraft({ ...draft, price: e.target.value })}
         />
-      ) : null}
-      <SField
-        label={REPAIR_LABELS.price}
-        name="price"
-        inputMode="decimal"
-        value={draft.price}
-        onChange={(e) => setDraft({ ...draft, price: e.target.value })}
-      />
-    </SettingsForm>
+      </SettingsForm>
+    </Draft>
   );
 }
 

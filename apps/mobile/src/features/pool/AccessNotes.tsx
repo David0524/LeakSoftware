@@ -4,7 +4,9 @@ import type { Property } from "@leakbook/core";
 import { getServices } from "../../lib/services";
 import { Button, Field, ListRow, T } from "../../ui/components";
 import { haptics } from "../../ui/haptics";
-import { ModalSheet } from "../../ui/ModalSheet";
+import { DraftNote } from "../../ui/DraftNote";
+import { ModalSheet, useUnsavedChanges } from "../../ui/ModalSheet";
+import { useDraft } from "../../ui/useDraft";
 import { space } from "../../ui/theme";
 
 /**
@@ -68,6 +70,16 @@ function AccessNotesSheet({
 
 function AccessNotesForm({ property, onDone }: { property: Property; onDone: () => void }) {
   const [text, setText] = useState(property.access_notes ?? "");
+  // Typed text is kept as a draft until it's saved or discarded (owner, 2026-10-27).
+  const draft = useDraft({
+    form: "access-notes",
+    id: property.id,
+    fields: { text },
+    restore: (c) => {
+      if (c.text !== undefined) setText(c.text);
+    },
+  });
+  useUnsavedChanges(text.trim() !== (property.access_notes?.trim() ?? ""), draft);
 
   function save() {
     const value = text.trim() ? text.trim() : null;
@@ -76,11 +88,13 @@ function AccessNotesForm({ property, onDone }: { property: Property; onDone: () 
         access_notes: value,
       });
     haptics.success();
+    draft.clear();
     onDone();
   }
 
   return (
     <View style={{ gap: space["4"] }}>
+      <DraftNote draft={draft} />
       <Field
         label="Access Notes"
         value={text}

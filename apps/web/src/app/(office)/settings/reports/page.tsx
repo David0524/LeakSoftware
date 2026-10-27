@@ -1,3 +1,4 @@
+import { Draft } from "@/components/draft-keeper";
 import type { Metadata } from "next";
 import {
   SAVED_REPORT_SECTIONS,
@@ -103,9 +104,11 @@ export default async function ReportTemplatesPage() {
               label: "Add Saved Report",
               inList: true,
               form: (
-                <SettingsForm action={saveSavedReport} submit="Add Saved Report" primary full>
-                  <SavedReportFields />
-                </SettingsForm>
+                <Draft form="saved-report">
+                  <SettingsForm action={saveSavedReport} submit="Add Saved Report" primary full>
+                    <SavedReportFields />
+                  </SettingsForm>
+                </Draft>
               ),
             }
           : undefined
@@ -180,10 +183,12 @@ export default async function ReportTemplatesPage() {
                 .map((s) => s.title)
                 .join(", ")}
             >
-              <SettingsForm action={saveSavedReport} primary full>
-                <input type="hidden" name="id" value={r.id} />
-                <SavedReportFields saved={r} />
-              </SettingsForm>
+              <Draft form="saved-report" id={r.id}>
+                <SettingsForm action={saveSavedReport} primary full>
+                  <input type="hidden" name="id" value={r.id} />
+                  <SavedReportFields saved={r} />
+                </SettingsForm>
+              </Draft>
               <SheetDanger>
                 <SettingsForm
                   action={removeConfigRow}

@@ -99,7 +99,7 @@
                             addItem(model, inspection).padding(.top, 16)
                                 .sheet(isPresented: $typing) {
                                     if let custom = model.customType {
-                                        AddItemSheet { name in addTyped(custom, name, inspection) }
+                                        AddItemSheet(jobId: job.id) { name in addTyped(custom, name, inspection) }
                                     }
                                 }
                         }
@@ -525,10 +525,13 @@
 
     /// New Item: the name of an item typed in for this job only (owner, 2026-10-26).
     struct AddItemSheet: View {
+        var jobId: String
         var onAdd: (String) -> Void
         @Environment(\.dismiss) private var dismiss
         @State private var name = ""
         @State private var confirmDiscard = false
+        /// The typed name, kept until it's added or discarded (owner, 2026-10-27).
+        @State private var draft = DraftHandle()
         @FocusState private var focused: Bool
 
         var body: some View {
@@ -536,6 +539,7 @@
             let dirty = !name.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
             NavigationStack {
                 ScrollView {
+                    DraftNote(draft: draft).padding(.horizontal, CGFloat(Spacing.pageMargin)).padding(.top, 8)
                     Grouped(footer: addItemHint) {
                         VStack(alignment: .leading, spacing: 4) {
                             Text(addItemField).textRole(.secondary).foregroundStyle(Color.textMuted)
@@ -576,10 +580,14 @@
                 .onAppear { focused = true }
             }
             .sheetPresentation(dirty: dirty, detents: [.medium])
-            .discardPrompt(dirty: dirty, isPresented: $confirmDiscard)
+            .discardPrompt(dirty: dirty, isPresented: $confirmDiscard, draft: draft)
+            .keepsDraft(draft, form: "new-item", id: jobId, fields: ["name": name]) { changes in
+                if let value = changes["name"] { name = value }
+            }
         }
 
         private func add(_ typed: String) {
+            draft.clear()
             onAdd(typed)
             dismiss()
         }

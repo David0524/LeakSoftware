@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { getUser } from "@/lib/auth";
 import { adminClient } from "@/server/admin";
 import { isStaff, saveLead } from "@/server/leads";
+import { StaffError, staffFailure } from "@/server/staff-error";
 
 /**
  * The sign-up form, as it's filled in: once the email is valid, what's been typed is kept so
@@ -28,9 +29,10 @@ export async function captureLead(fields: {
 
 async function staffOnly() {
   const user = await getUser();
-  if (!isStaff(user) || user?.aal !== "aal2") throw new Error("Staff only.");
+  if (!isStaff(user) || user?.aal !== "aal2")
+    throw new StaffError("Only Sundeck Pro staff with two-step sign-in can do this.");
   const admin = adminClient();
-  if (!admin) throw new Error("The server key is missing.");
+  if (!admin) throw staffFailure("The server key is missing.", "lead notes");
   return admin;
 }
 
@@ -40,7 +42,7 @@ export async function saveLeadNotes(form: FormData): Promise<void> {
   const id = String(form.get("id") ?? "");
   const notes = String(form.get("notes") ?? "").slice(0, 2000);
   const called = form.get("called") === "1";
-  await admin
+  const { error } = await admin
     .from("signup_lead")
     .update({
       notes: notes || null,
@@ -48,5 +50,6 @@ export async function saveLeadNotes(form: FormData): Promise<void> {
       updated_at: new Date().toISOString(),
     })
     .eq("id", id);
+  if (error) throw staffFailure(error.message, "lead notes");
   revalidatePath("/admin/leads");
 }

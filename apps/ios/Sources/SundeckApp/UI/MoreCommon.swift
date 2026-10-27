@@ -60,6 +60,9 @@
         var title: String
         var dirty = false
         var cancelTitle = "Cancel"
+        /// The sheet's typed text kept as a draft (owner, 2026-10-27): "Draft restored" shows at the
+        /// top, and Discard Changes clears it.
+        var draft: DraftHandle?
         @ViewBuilder var content: Content
         @Environment(\.dismiss) private var dismiss
         @State private var confirm = false
@@ -67,10 +70,13 @@
         var body: some View {
             NavigationStack {
                 ScrollView {
-                    VStack(alignment: .leading, spacing: 24) { content }
-                        .padding(.horizontal, CGFloat(Spacing.pageMargin))
-                        .padding(.top, 8)
-                        .padding(.bottom, 24)
+                    VStack(alignment: .leading, spacing: 24) {
+                        if let draft { DraftNote(draft: draft) }
+                        content
+                    }
+                    .padding(.horizontal, CGFloat(Spacing.pageMargin))
+                    .padding(.top, 8)
+                    .padding(.bottom, 24)
                 }
                 .background(Color.bg)
                 .navigationTitle(title)
@@ -82,7 +88,7 @@
                 }
             }
             .sheetPresentation(dirty: dirty)
-            .discardPrompt(dirty: dirty, isPresented: $confirm)
+            .discardPrompt(dirty: dirty, isPresented: $confirm, draft: draft)
         }
     }
 

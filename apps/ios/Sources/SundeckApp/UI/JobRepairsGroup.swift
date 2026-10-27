@@ -126,6 +126,8 @@
         @State private var errors = RepairErrors()
         @State private var saveError: String?
         @State private var confirmDiscard = false
+        /// What was typed, kept until it's added or discarded (owner, 2026-10-27).
+        @State private var kept = DraftHandle()
 
         private var dirty: Bool { draft != RepairDraft() }
 
@@ -134,6 +136,7 @@
             NavigationStack {
                 ScrollView {
                     VStack(alignment: .leading, spacing: 16) {
+                        DraftNote(draft: kept)
                         if !items.isEmpty {
                             VStack(alignment: .leading, spacing: 4) {
                                 SelectField(
@@ -178,10 +181,20 @@
                     }
                 }
                 .confirmationDialog("Discard changes?", isPresented: $confirmDiscard, titleVisibility: .visible) {
-                    Button("Discard Changes", role: .destructive) { dismiss() }
+                    Button("Discard Changes", role: .destructive) {
+                        kept.clear()
+                        dismiss()
+                    }
                 }
             }
             .sheetPresentation(dirty: dirty, detents: [.medium, .large])
+            .keepsDraft(
+                kept, form: "repair", id: job.job.id,
+                fields: ["description": draft.description, "price": draft.price]
+            ) { changes in
+                if let value = changes["description"] { draft.description = value }
+                if let value = changes["price"] { draft.price = value }
+            }
         }
 
         private func choiceLabel(_ pick: String, _ items: [RepairItem]) -> String {
@@ -196,6 +209,7 @@
             guard let repair = checked.repair else { return }
             do {
                 try addJobRepair(sync, job: job.job, repair)
+                kept.clear()
                 dismiss()
             } catch {
                 saveError = userMessage(error)

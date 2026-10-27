@@ -19,7 +19,9 @@ import { removalFor } from "../../lib/removal";
 import { announceRemoved } from "../../lib/removedBanner";
 import { Button, Field, Group, ListRow, RoundButton, Section, T } from "../../ui/components";
 import { haptics } from "../../ui/haptics";
+import { DraftNote } from "../../ui/DraftNote";
 import { ModalSheet, UnsavedWhen } from "../../ui/ModalSheet";
+import { useDraft } from "../../ui/useDraft";
 import { Select, useMenu } from "../../ui/Select";
 import { WebIcon } from "../../ui/WebIcon";
 import { color, space, tabular } from "../../ui/theme";
@@ -117,7 +119,15 @@ function AddRepairSheet({
 }) {
   const [draft, setDraft] = useState<RepairDraft>(EMPTY_REPAIR_DRAFT);
   const [errors, setErrors] = useState<RepairCheck["errors"]>({});
+  // A repair typed and not added is kept as a draft (owner, 2026-10-27).
+  const kept = useDraft({
+    form: "repair",
+    id: job.id,
+    fields: { description: draft.description, price: draft.price },
+    restore: (c) => setDraft((d) => ({ ...d, ...c })),
+  });
   const close = () => {
+    kept.clear();
     setDraft(EMPTY_REPAIR_DRAFT);
     setErrors({});
     onClose();
@@ -138,7 +148,11 @@ function AddRepairSheet({
       done={{ label: "Add", onPress: save }}
     >
       <View style={styles.sheet}>
-        <UnsavedWhen dirty={JSON.stringify(draft) !== JSON.stringify(EMPTY_REPAIR_DRAFT)} />
+        <UnsavedWhen
+          dirty={JSON.stringify(draft) !== JSON.stringify(EMPTY_REPAIR_DRAFT)}
+          draft={kept}
+        />
+        <DraftNote draft={kept} />
         <RepairFields
           draft={draft}
           onChange={setDraft}

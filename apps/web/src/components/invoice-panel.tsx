@@ -26,6 +26,7 @@ import {
 import type { InvoiceRow } from "@/lib/data";
 import { CopyLink, SField, STextArea, SettingsForm } from "./settings-forms";
 import { Button, Checkbox, Field, Notice } from "./ui";
+import { Draft } from "./draft-keeper";
 import { orOffline } from "@/lib/offline";
 import {
   RecordPaymentFields,
@@ -179,44 +180,48 @@ export function InvoicePanel({
         <div className="mt-5 space-y-6">
           <div>
             <h4 className="mb-2 font-display text-lg font-bold">Add a Line</h4>
-            <SettingsForm action={addInvoiceLine} submit="Add Line">
-              <input type="hidden" name="invoice" value={invoice.id} />
-              <input type="hidden" name="job" value={jobId} />
-              <input type="hidden" name="sort" value={String(live.length + 1)} />
-              <SField label="Description" name="description" />
-              <div className="grid grid-cols-2 gap-3">
-                <SField label="Quantity" name="quantity" inputMode="decimal" defaultValue="1" />
-                <SField label="Price ($)" name="price" inputMode="decimal" />
-              </div>
-              <Checkbox name="taxable" label="Taxable" defaultChecked />
-            </SettingsForm>
+            <Draft form="invoice-line" id={invoice.id}>
+              <SettingsForm action={addInvoiceLine} submit="Add Line">
+                <input type="hidden" name="invoice" value={invoice.id} />
+                <input type="hidden" name="job" value={jobId} />
+                <input type="hidden" name="sort" value={String(live.length + 1)} />
+                <SField label="Description" name="description" />
+                <div className="grid grid-cols-2 gap-3">
+                  <SField label="Quantity" name="quantity" inputMode="decimal" defaultValue="1" />
+                  <SField label="Price ($)" name="price" inputMode="decimal" />
+                </div>
+                <Checkbox name="taxable" label="Taxable" defaultChecked />
+              </SettingsForm>
+            </Draft>
           </div>
           <div>
             <h4 className="mb-2 font-display text-lg font-bold">Details</h4>
-            <SettingsForm action={saveInvoiceDetails}>
-              <input type="hidden" name="invoice" value={invoice.id} />
-              <input type="hidden" name="job" value={jobId} />
-              <div className="grid grid-cols-2 gap-3">
-                <SField
-                  label="Discount ($)"
-                  name="discount"
-                  inputMode="decimal"
-                  defaultValue={invoice.discount_cents ? dollars(invoice.discount_cents) : ""}
+            <Draft form="invoice-details" id={invoice.id}>
+              <SettingsForm action={saveInvoiceDetails}>
+                <input type="hidden" name="invoice" value={invoice.id} />
+                <input type="hidden" name="job" value={jobId} />
+                <div className="grid grid-cols-2 gap-3">
+                  <SField
+                    label="Discount ($)"
+                    name="discount"
+                    inputMode="decimal"
+                    defaultValue={invoice.discount_cents ? dollars(invoice.discount_cents) : ""}
+                  />
+                  <SField
+                    label="Due date"
+                    name="due_date"
+                    type="date"
+                    defaultValue={invoice.due_date ?? ""}
+                    hint="Empty: due on receipt."
+                  />
+                </div>
+                <STextArea
+                  label="Note to the customer"
+                  name="notes"
+                  defaultValue={invoice.notes ?? ""}
                 />
-                <SField
-                  label="Due date"
-                  name="due_date"
-                  type="date"
-                  defaultValue={invoice.due_date ?? ""}
-                  hint="Empty: due on receipt."
-                />
-              </div>
-              <STextArea
-                label="Note to the customer"
-                name="notes"
-                defaultValue={invoice.notes ?? ""}
-              />
-            </SettingsForm>
+              </SettingsForm>
+            </Draft>
           </div>
           <form action={(f) => sendVia(f, "email")} className="space-y-3">
             <h4 className="font-display text-lg font-bold">Send</h4>

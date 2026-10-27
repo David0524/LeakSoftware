@@ -23,7 +23,7 @@ import { KeyboardAvoider, useKeepFieldVisible } from "./keyboard";
 import { confirmDiscard } from "./sheet";
 import { color, face, ios, minTap, shape, space, type } from "./theme";
 
-type ReportDirty = (id: string, dirty: boolean) => void;
+type ReportDirty = (id: string, dirty: boolean, clear?: () => void) => void;
 const SheetDirty = createContext<ReportDirty | null>(null);
 
 /**
@@ -32,15 +32,19 @@ const SheetDirty = createContext<ReportDirty | null>(null);
  * leaving the screen does. Returns `leave` for navigating away after a save (see
  * useDiscardChanges). Fields that save by themselves don't count.
  */
-export function useUnsavedChanges(dirty: boolean): (go: () => void) => void {
+export function useUnsavedChanges(
+  dirty: boolean,
+  draft?: { clear: () => void },
+): (go: () => void) => void {
   const report = useContext(SheetDirty);
   const id = useId();
+  const clear = draft?.clear;
   useEffect(() => {
     if (!report) return;
-    report(id, dirty);
+    report(id, dirty, clear);
     return () => report(id, false);
-  }, [report, id, dirty]);
-  return useDiscardChanges(dirty && !report);
+  }, [report, id, dirty, clear]);
+  return useDiscardChanges(dirty && !report, clear);
 }
 
 /**
@@ -48,8 +52,8 @@ export function useUnsavedChanges(dirty: boolean): (go: () => void) => void {
  * form is built from parts that don't ask by themselves): closing it any way asks "Discard
  * changes?" first. Renders nothing.
  */
-export function UnsavedWhen({ dirty }: { dirty: boolean }) {
-  useUnsavedChanges(dirty);
+export function UnsavedWhen({ dirty, draft }: { dirty: boolean; draft?: { clear: () => void } }) {
+  useUnsavedChanges(dirty, draft);
   return null;
 }
 
@@ -85,7 +89,11 @@ export function ModalSheet({
 }) {
   // Forms inside report unsaved changes (useUnsavedChanges): closing then asks first.
   const [dirtyIds, setDirtyIds] = useState<ReadonlySet<string>>(() => new Set());
-  const report = useCallback<ReportDirty>((id, dirty) => {
+  // What each form inside would clear if its changes are discarded (their drafts).
+  const clears = useRef(new Map<string, () => void>());
+  const report = useCallback<ReportDirty>((id, dirty, clear) => {
+    if (dirty && clear) clears.current.set(id, clear);
+    else clears.current.delete(id);
     setDirtyIds((prev) => {
       if (prev.has(id) === dirty) return prev;
       const next = new Set(prev);
@@ -95,9 +103,16 @@ export function ModalSheet({
     });
   }, []);
   const dirty = visible && dirtyIds.size > 0;
-  useDiscardChanges(dirty);
+  const discarded = () => clears.current.forEach((clear) => clear());
+  useDiscardChanges(dirty, discarded);
   const held = locked || dirty;
-  const close = dirty ? () => confirmDiscard(onClose) : onClose;
+  const close = dirty
+    ? () =>
+        confirmDiscard(() => {
+          discarded();
+          onClose();
+        })
+    : onClose;
   const insets = useSafeAreaInsets();
   const { height } = useWindowDimensions();
   // The form scrolls the field being typed in above the keyboard.

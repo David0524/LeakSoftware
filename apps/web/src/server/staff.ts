@@ -5,6 +5,7 @@ import type { AdminShop, SubscriptionEvent } from "@leakbook/core";
 import { getUser } from "@/lib/auth";
 import { adminClient } from "./admin";
 import { isStaff } from "./leads";
+import { StaffError, failedSendText, reportedErrorText, staffFailure } from "./staff-error";
 
 // The Admin portal (owner, 2026-10-22; docs/plans/admin-portal.md). Staff are the emails in
 // SUNDECK_STAFF_EMAILS and every page and action needs a session that passed two-step. All
@@ -34,21 +35,22 @@ export const STAFF_ONLY = "Only Sundeck Pro staff with two-step sign-in can do t
 /** For portal actions and downloads: the staff person and the service-role client. */
 export async function requireStaff() {
   const user = await getUser();
-  if (!user || !isStaff(user) || user.aal !== "aal2") throw new Error(STAFF_ONLY);
+  if (!user || !isStaff(user) || user.aal !== "aal2") throw new StaffError(STAFF_ONLY);
   const db = adminClient();
-  if (!db) throw new Error("The server key is missing.");
+  if (!db) throw staffFailure("The server key is missing.", "requireStaff");
   return { staff: { id: user.id, email: user.email!.toLowerCase() } as Staff, db };
 }
 
 function db() {
   const client = adminClient();
-  if (!client) throw new Error("The server key is missing (SUPABASE_SERVICE_ROLE_KEY).");
+  if (!client)
+    throw staffFailure("The server key is missing (SUPABASE_SERVICE_ROLE_KEY).", "database client");
   return client;
 }
 
 async function rpc<T>(name: string, args?: Record<string, unknown>): Promise<T> {
   const { data, error } = await db().rpc(name, args);
-  if (error) throw new Error(error.message);
+  if (error) throw staffFailure(error.message, `rpc ${name}`);
   return data as T;
 }
 
@@ -89,7 +91,7 @@ export async function logStaffAction(
       reason: about.reason ?? null,
       details: about.details ?? {},
     });
-  if (error) throw new Error(error.message);
+  if (error) throw staffFailure(error.message, "staff log");
 }
 
 // ---------------------------------------------------------------------------
@@ -175,7 +177,14 @@ export interface SupportRow {
 export async function loadShop(id: string): Promise<ShopDetail | null> {
   if (!/^[0-9a-f-]{36}$/i.test(id)) return null;
   const data = await rpc<ShopDetail | null>("admin_shop", { target: id });
-  return data?.shop ? data : null;
+  if (!data?.shop) return null;
+  return {
+    ...data,
+    failed_messages: data.failed_messages.map((f) => ({
+      ...f,
+      error: failedSendText(f.error, "failed send"),
+    })),
+  };
 }
 
 export interface PersonRow {
@@ -259,7 +268,16 @@ export interface Health {
   locked_shops: number;
 }
 
-export const loadHealth = () => rpc<Health>("admin_health");
+export async function loadHealth(): Promise<Health> {
+  const h = await rpc<Health>("admin_health");
+  return {
+    ...h,
+    failed_messages_24h: h.failed_messages_24h.map((f) => ({
+      ...f,
+      last_error: failedSendText(f.last_error, "failed sends"),
+    })),
+  };
+}
 
 export interface StaffActionRow {
   id: number;
@@ -289,7 +307,7 @@ export async function loadStaffActions(filter: {
   if (filter.companyId) q = q.eq("company_ref", filter.companyId);
   if (filter.staffEmail) q = q.eq("staff_email", filter.staffEmail);
   const { data, error } = await q;
-  if (error) throw new Error(error.message);
+  if (error) throw staffFailure(error.message, "staff actions");
   return (data ?? []) as StaffActionRow[];
 }
 
@@ -301,7 +319,7 @@ export async function loadSupportSessions(limit = 200): Promise<SupportRow[]> {
     )
     .order("started_at", { ascending: false })
     .limit(limit);
-  if (error) throw new Error(error.message);
+  if (error) throw staffFailure(error.message, "support sessions");
   return ((data ?? []) as unknown as (SupportRow & { company: { name: string } | null })[]).map(
     ({ company, ...s }) => ({ ...s, company_name: company?.name ?? null }),
   );
@@ -341,10 +359,17 @@ export interface Usage {
 }
 
 /** Usage (owner, 2026-10-22): screen time, screens, features, versions, errors. */
-export function loadUsage(days: number, scope: { companyId?: string; userId?: string } = {}) {
-  return rpc<Usage>("admin_usage", {
+export async function loadUsage(
+  days: number,
+  scope: { companyId?: string; userId?: string } = {},
+): Promise<Usage> {
+  const u = await rpc<Usage>("admin_usage", {
     days,
     target_company: scope.companyId ?? null,
     target_user: scope.userId ?? null,
   });
+  return {
+    ...u,
+    errors: u.errors.map((e) => ({ ...e, detail: reportedErrorText(e.detail, "reported error") })),
+  };
 }

@@ -32,6 +32,8 @@
         @State private var saveError: String?
         @State private var saves = 0
         @State private var closing = false
+        /// The notes, kept until the test is saved or discarded (owner, 2026-10-27).
+        @State private var draft = DraftHandle()
         /// The field with the keyboard, for the keyboard bar's Previous and Next.
         @FocusState private var focus: String?
 
@@ -59,7 +61,13 @@
             .sheetPresentation(dirty: form?.isDirty ?? false)
             .task(id: sync.revision) { load() }
             .sensoryFeedback(.success, trigger: saves)
-            .discardPrompt(dirty: form?.isDirty ?? false, isPresented: $confirmDiscard)
+            .discardPrompt(dirty: form?.isDirty ?? false, isPresented: $confirmDiscard, draft: draft)
+            .keepsDraft(
+                draft, form: "test", id: testId ?? "new-\(jobId)", fields: ["notes": form?.notes ?? ""],
+                ready: form != nil
+            ) { changes in
+                if let value = changes["notes"] { self.form?.notes = value }
+            }
             .alert(
                 "Couldn’t Save", isPresented: Binding(get: { saveError != nil }, set: { if !$0 { saveError = nil } })
             ) {
@@ -74,6 +82,7 @@
         private func editor(_ form: TestForm) -> some View {
             ScrollView {
                 VStack(alignment: .leading, spacing: 16) {
+                    DraftNote(draft: draft)
                     if form.isNew {
                         SelectField(
                             label: "Test",
@@ -158,6 +167,7 @@
                 }
                 current.markSaved(id)
                 form = current
+                draft.clear()
                 savedId = id
                 existing = JobInspection(sync.store, jobId: jobId).tests.first { $0.id == id }
                 saves += 1
@@ -231,6 +241,7 @@
                 if id != nil {
                     closing = true
                     saves += 1
+                    draft.clear()
                     dismiss()
                 }
             } catch {

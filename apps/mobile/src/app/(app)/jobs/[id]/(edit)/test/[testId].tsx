@@ -19,6 +19,8 @@ import { deleteTest } from "../../../../../../features/inspection/remove";
 import { haptics } from "../../../../../../ui/haptics";
 import { Select } from "../../../../../../ui/Select";
 import { useDiscardChanges } from "../../../../../../ui/discard";
+import { DraftNote } from "../../../../../../ui/DraftNote";
+import { useDraft } from "../../../../../../ui/useDraft";
 import { useSheetLock } from "../../../../../../ui/sheet";
 import { color, space } from "../../../../../../ui/theme";
 
@@ -74,8 +76,17 @@ export default function TestScreen() {
   const [initial, setInitial] = useState(snapshot);
   const dirty = snapshot() !== initial;
   useSheetLock(dirty);
+  // The notes are kept as a draft until saved or discarded (owner, 2026-10-27).
+  const draft = useDraft({
+    form: "test",
+    id: params.testId === "new" ? `new-${jobId}` : params.testId,
+    fields: { notes },
+    restore: (c) => {
+      if (c.notes !== undefined) setNotes(c.notes);
+    },
+  });
   // Every way out asks first while there are changes (owner, 2026-10-20).
-  const leave = useDiscardChanges(dirty);
+  const leave = useDiscardChanges(dirty, draft.clear);
   // The readings' fields, in order, for Return / Next.
   const [refs] = useState(() => new Map<string, RefObject<TextInput | null>>());
   const refFor = (key: string) => {
@@ -159,7 +170,11 @@ export default function TestScreen() {
     if (stay) {
       setSavedId(id);
       setInitial(snapshot());
-    } else leave(() => router.back());
+      draft.clear();
+    } else {
+      draft.clear();
+      leave(() => router.back());
+    }
     return id;
   }
 
@@ -180,6 +195,7 @@ export default function TestScreen() {
     >
       {bar}
       <View style={styles.form}>
+        <DraftNote draft={draft} />
         {existing || savedId ? null : (
           <Select
             label="Test"
