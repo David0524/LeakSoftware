@@ -145,7 +145,8 @@ test("a new shop signs up and runs the whole loop, then subscribes", async ({
 
   // 4. Inspect: start, one leak with where, the rest not leaking; a finding.
   await page.getByRole("button", { name: "Start Job" }).click();
-  await expect(page.getByRole("button", { name: "Move Back to Scheduled" })).toBeVisible();
+  // Steps back are in the ••• menu (owner, 2026-10-29).
+  await expect(page.getByRole("button", { name: "More Job Actions" })).toBeVisible();
   // The job page shows one tab at a time on every screen (owner, 2026-10-22).
   await jobSection(page, "Checklist");
   await page
@@ -238,7 +239,8 @@ test("a new shop signs up and runs the whole loop, then subscribes", async ({
   // 8. The repair: started, invoiced with the deposit credited, paid online.
   await page.goto(`/jobs/${quote!.repair_job_id}`);
   await page.getByRole("button", { name: "Start Job" }).click();
-  await expect(page.getByRole("button", { name: "Move Back to Scheduled" })).toBeVisible();
+  // Steps back are in the ••• menu (owner, 2026-10-29).
+  await expect(page.getByRole("button", { name: "More Job Actions" })).toBeVisible();
   // A repair job's finish list has no quote rows; the invoice opens in a sheet.
   await expect(page.getByTestId("wrap-up-quote")).toHaveCount(0);
   await wrapUpStep(page, "Invoice");

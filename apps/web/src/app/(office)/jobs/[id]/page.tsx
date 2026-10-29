@@ -74,6 +74,7 @@ import {
   ChecklistEditor,
   FindingsEditor,
   JobDetailsForm,
+  JobMoreMenu,
   JobStatusActions,
   CompleteJob,
   SetUpChecklist,
@@ -232,13 +233,23 @@ export default async function JobPage({ params, searchParams }: PageProps<"/jobs
           </span>
         }
         actions={
-          <JobStatusActions
-            jobId={job.id}
-            status={job.status}
-            jobType={job.type}
-            prompt={completePrompt}
-          />
+          <div className="flex flex-wrap items-start gap-3">
+            <JobStatusActions
+              jobId={job.id}
+              status={job.status}
+              jobType={job.type}
+              prompt={completePrompt}
+            />
+            <JobMoreMenu
+              jobId={job.id}
+              status={job.status}
+              jobType={job.type}
+              className="max-sm:hidden"
+            />
+          </div>
         }
+        // Phones: the ••• menu in the navigation bar, as on iPhone (owner, 2026-10-29).
+        navAction={<JobMoreMenu jobId={job.id} status={job.status} jobType={job.type} />}
       />
 
       <JobSections

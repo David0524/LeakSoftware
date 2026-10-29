@@ -587,7 +587,12 @@ test("on a phone: a tech starts a job, fills the checklist, and records a test a
   // Start Job.
   await tech.getByRole("button", { name: "Start Job" }).click();
   await expect(tech.getByText("In progress", { exact: true }).first()).toBeVisible();
-  await expect(tech.getByRole("button", { name: "Move Back to Scheduled" })).toBeVisible();
+  // Steps back are in the ••• menu (owner, 2026-10-29), not beside the forward ones.
+  await expect(tech.getByRole("button", { name: "Move Back to Scheduled" })).toHaveCount(0);
+  await tech.getByRole("button", { name: "More Job Actions" }).click();
+  await expect(tech.getByRole("menuitem", { name: "Move Back to Scheduled" })).toBeVisible();
+  await tech.keyboard.press("Escape");
+  await expect(tech.getByRole("menu")).toHaveCount(0);
 
   // Checklist: one item leaking with where, the rest marked with the section shortcuts.
   await jobSection(tech, "Checklist");

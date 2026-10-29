@@ -14,6 +14,7 @@ import {
   mapStatus,
   formatSchedule,
   jobActionLabel,
+  isBackwardMove,
   parseGallons,
   jobFeeLabel,
   jobHasWrapUp,
@@ -59,6 +60,7 @@ import { useConversations, useLine } from "../../../../../../data/texting";
 import { openDirections, useDirectionsChoice } from "../../../../../../state/directions";
 import { useCompany, useSession } from "../../../../../../state/session";
 import {
+  HeaderButton,
   Button,
   Group,
   ListRow,
@@ -73,6 +75,7 @@ import {
   useReduceMotion,
   useScreenChrome,
 } from "../../../../../../ui/components";
+import { useMenu } from "../../../../../../ui/Select";
 import { BAR_HEIGHT, barState, setBarStill } from "../../../../../../ui/Bar";
 import { confirmDestructive } from "../../../../../../ui/confirm";
 import { Glass } from "../../../../../../ui/Glass";
@@ -199,6 +202,11 @@ export default function JobDetail() {
   }, [section]);
   const reportControls = useRef<ReportControls | null>(null);
   const sync = usePinnedSyncBar(() => router.push("/more/sync"));
+  const moreMenu = useMenu();
+  const backMoves =
+    job && !job.sample
+      ? jobMoves(job.status, job.type).filter((to) => isBackwardMove(job.status, to))
+      : [];
   const {
     header: titleBlock,
     ref: scroll,
@@ -208,6 +216,24 @@ export default function JobDetail() {
     // The customer's name on top, the job number smaller below (owner, 2026-10-20).
     title: job ? (customer?.name ?? (job.number ? `Job #${job.number}` : "New Job")) : "Job",
     topInset: sync.height,
+    // Steps back, in a ••• menu so the page's buttons move the job forward (owner, 2026-10-29).
+    headerRight: backMoves.length
+      ? () => (
+          <HeaderButton
+            title="More Job Actions"
+            icon="more"
+            onPress={() =>
+              moreMenu.open({
+                title: "Job",
+                items: backMoves.map((to) => ({
+                  label: jobActionLabel(job!.status, to),
+                  onPress: () => changeStatus(to),
+                })),
+              })
+            }
+          />
+        )
+      : () => null,
   });
   const routeKey = useRoute().key;
   const barY = barState(routeKey).y;
@@ -330,7 +356,8 @@ export default function JobDetail() {
   // Start Job moved to the Next Step bar (owner, 2026-10-20); the other moves stay here.
   const startable = job.status === "scheduled" || job.status === "unscheduled";
   const transitions = jobMoves(job.status, job.type).filter(
-    (to) => to !== "canceled" && !(to === "in_progress" && startable),
+    (to) =>
+      to !== "canceled" && !(to === "in_progress" && startable) && !isBackwardMove(job.status, to),
   );
 
   // A maintenance visit's report on the bar (core visitReportBar), and its page once sent.
@@ -674,6 +701,7 @@ export default function JobDetail() {
           <VisitReport job={job} customer={customer} heading={false} />
         </ModalSheet>
       ) : null}
+      {moreMenu.element}
     </KeyboardAvoider>
   );
 }

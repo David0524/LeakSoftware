@@ -2,6 +2,10 @@
 
 Newest first. Each entry: date, decision, reason.
 
+## 2026-10-29 (owner: "1. Yes 2. Yes 3. Fix 4. Fix 5. Yes", "Begin"; plan `docs/design/2026-10-29-great-app-plan.md`, with its recommended choices)
+- **Edit Finding asks for the pool's shape only while it has none.** Once the pool has a shape (a drawn one included), the finding editor shows just the pin diagram; Edit Pool Shape on Findings changes it. With no shape, the tiles and Has a Spa show as before and stay for the rest of that edit. A tap on the chosen tile can no longer clear a pool's shape from inside a finding.
+- **The job page's steps back are in a ••• menu** (core `isBackwardMove`): Move Back to Scheduled and Unschedule. iPhone and Android: the navigation bar; website: the navigation bar on phones, beside the status buttons on wider screens. Forward steps stay in view (Start Job, Complete Job, Reopen Job, Reopen Visit); Cancel Job stays at the end of Details. No steps back, no ••• button.
+
 ## 2026-10-29 (owner: "Do another pass through of the app … regarding what makes this a great app"; `docs/design/2026-10-29-great-app-pass.md`)
 - **Signing never dead-ends.** When checklist items are left, the signing screen's notice has **Go to Checklist** under it (website: a link to the job's `?tab=checklist`; phones: back to the job page, which opens its Checklist). Writing the report first still says so with Back to Job.
 - **The Chemical page's button is Save Readings** (was Submit), "Saving…" while it saves, then "Saved to the log." Visits still save as you type.

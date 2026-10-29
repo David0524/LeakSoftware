@@ -84,6 +84,23 @@
             // Findings and Wrap Up "the navigation bar should not shrink"). Same on every section,
             // so switching sections never moves the bar.
             .navigationBarTitleDisplayMode(.inline)
+            // Steps back, in a ••• menu so the page's buttons move the job forward (owner, 2026-10-29).
+            .toolbar {
+                if let job, job.job["sample"]?.bool != true {
+                    let back = jobMenuActions(job.status, type: job.type)
+                    if !back.isEmpty {
+                        ToolbarItem(placement: .topBarTrailing) {
+                            Menu {
+                                ForEach(back, id: \.self) { to in
+                                    Button(jobActionLabel(from: job.status, to: to)) { changeStatus(to) }
+                                }
+                            } label: {
+                                Label("More Job Actions", systemImage: "ellipsis.circle")
+                            }
+                        }
+                    }
+                }
+            }
             // An invoice or quote line typed but not added: Back asks first (owner, 2026-10-20).
             .discardOnBack(dirty: app.unsavedEdits.any(under: "job:\(jobId)"), draftsUnder: "job:\(jobId)")
             .task(id: sync.revision) { reload() }

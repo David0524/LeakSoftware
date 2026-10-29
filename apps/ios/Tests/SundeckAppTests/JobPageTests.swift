@@ -186,11 +186,16 @@ import Testing
         #expect(steps(.checklist, type: "maintenance", visit: .send) == ["Complete Job"])
         #expect(steps(.details).isEmpty)
 
-        // On the phone the header drops Start Job (it's on the bar) and keeps the rest.
+        // On the phone the header drops Start Job (it's on the bar) and the steps back (the •••
+        // menu, owner 2026-10-29), and keeps the rest.
+        #expect(jobHeaderPhoneActions(.scheduled, type: .detection).isEmpty)
+        #expect(jobMenuActions(.scheduled, type: .detection) == [.unscheduled])
         #expect(
-            jobHeaderPhoneActions(.scheduled, type: .detection).map { jobActionLabel(from: .scheduled, to: $0) } == [
-                "Unschedule"
+            jobMenuActions(.inProgress, type: .detection).map { jobActionLabel(from: .inProgress, to: $0) } == [
+                "Move Back to Scheduled"
             ])
+        #expect(jobHeaderPhoneActions(.inProgress, type: .maintenance) == [.done])  // Complete Job
+        #expect(jobMenuActions(.canceled, type: .detection).isEmpty)  // Reopen Job is forward
         #expect(jobHeaderPhoneActions(.done, type: .maintenance) == [.inProgress])  // Reopen Visit
     }
 }

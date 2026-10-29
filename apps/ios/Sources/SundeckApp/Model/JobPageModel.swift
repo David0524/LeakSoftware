@@ -83,9 +83,17 @@ public func jobHeaderActions(_ status: JobStatus, type: JobType) -> [JobStatus] 
 }
 
 /// The header's status buttons on a phone (owner, 2026-10-20): Start Job moves to the Next Step
-/// bar, so the header keeps the rest (Unschedule, Reopen Visit, Complete Job).
+/// bar, and steps back go in the ••• menu (owner, 2026-10-29), so the header keeps the forward
+/// ones (Reopen Visit, Reopen Job, Complete Job).
 public func jobHeaderPhoneActions(_ status: JobStatus, type: JobType) -> [JobStatus] {
-    jobHeaderActions(status, type: type).filter { !($0 == .inProgress && jobCanStart(status, type: type)) }
+    jobHeaderActions(status, type: type).filter {
+        !($0 == .inProgress && jobCanStart(status, type: type)) && !isBackwardMove(from: status, to: $0)
+    }
+}
+
+/// The job page's ••• menu (owner, 2026-10-29): the steps back, Move Back to Scheduled and Unschedule.
+public func jobMenuActions(_ status: JobStatus, type: JobType) -> [JobStatus] {
+    jobHeaderActions(status, type: type).filter { isBackwardMove(from: status, to: $0) }
 }
 
 /// The job can be started (Scheduled or Unscheduled): the Next Step bar's Start Job.

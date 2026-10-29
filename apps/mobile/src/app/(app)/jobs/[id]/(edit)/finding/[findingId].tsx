@@ -53,6 +53,10 @@ export default function FindingScreen() {
   const insp = useJobInspection(company.id, jobId);
   const job = useRow<Job>("job", jobId);
   const property = useRow<Property>("property", job?.property_id);
+  // The shape tiles show only while the pool has no shape (owner, 2026-10-29); once shown, they
+  // stay for the rest of this edit. Decided when the pool first loads.
+  const [asksShape, setAsksShape] = useState<boolean | null>(null);
+  if (asksShape === null && property) setAsksShape(!property.diagram_shape);
   // Add Photo on a new finding saves it first; the sheet then edits that finding.
   const [savedId, setSavedId] = useState<string | null>(null);
   // The id of a finding this screen just made, kept synchronously: a second tap before the screen
@@ -224,7 +228,7 @@ export default function FindingScreen() {
           value={status}
           onChange={setStatus}
         />
-        {property ? (
+        {property && asksShape ? (
           <View style={{ gap: space["2"] }}>
             <ShapePicker
               value={shape}

@@ -75,6 +75,14 @@ export function jobActionLabel(from: JobStatus, to: JobStatus): string {
   return JOB_STATUS_LABELS[to];
 }
 
+/**
+ * A step back (owner, 2026-10-29): Move Back to Scheduled and Unschedule sit in the job page's
+ * ••• menu, so the buttons in view are forward steps. Reopen Job on a canceled job is forward.
+ */
+export function isBackwardMove(from: JobStatus, to: JobStatus): boolean {
+  return to === "scheduled" || (to === "unscheduled" && from !== "canceled");
+}
+
 /** Labels from the handoff, used in the office view. */
 export const JOB_STATUS_LABELS: Record<JobStatus, string> = {
   unscheduled: "Unscheduled",

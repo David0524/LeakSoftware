@@ -39,6 +39,8 @@ const ICONS = {
   /** Show or hide a password. */
   show: { sf: "eye", ion: "eye-outline" },
   hide: { sf: "eye.slash", ion: "eye-off-outline" },
+  /** A page's ••• menu (the job page's steps back). */
+  more: { sf: "ellipsis.circle", ion: "ellipsis-horizontal-circle-outline" },
 } as const satisfies Record<string, { sf: SFSymbolName; ion: IoniconName }>;
 
 export type IconName = keyof typeof ICONS;

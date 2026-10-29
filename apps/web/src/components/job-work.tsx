@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useOptimistic, useState, useTransition, type ReactNode } from "react";
+import { useCallback, useOptimistic, useRef, useState, useTransition, type ReactNode } from "react";
 import {
   ADD_ITEM_FIELD,
   ADD_ITEM_HINT,
@@ -20,6 +20,7 @@ import {
   shownDiagram,
   previewTest,
   userTransitions,
+  isBackwardMove,
   verdictIcon,
   verdictOptions,
   type ChecklistItemResult,
@@ -67,9 +68,9 @@ import { ShapePicker } from "./shape-picker";
 import { Draft } from "./draft-keeper";
 import { FieldError, SField, STextArea, SettingsForm } from "./settings-forms";
 import { AnswerIconButtons } from "./answer-controls";
-import { RowActions, RowMenuButton, type MenuEntry } from "./row-actions";
+import { ContextMenu, RowActions, RowMenuButton, type MenuEntry } from "./row-actions";
 import { Sheet, useConfirm } from "./sheet";
-import { Button, Checkbox, Chip, Select, buttonClass, cx } from "./ui";
+import { Button, Checkbox, Chip, Select, buttonClass, cx, iconButtonClass } from "./ui";
 import { SavedNote, useAutosave } from "./undo";
 import { saveFailed, useJobStatus, useSetJobStatus } from "./instant";
 import { restoreWith, showRemoved } from "./removed";
@@ -163,11 +164,24 @@ export function JobStatusActions({
   const shown = useJobStatus(jobId, status);
   const setStatus = useSetJobStatus();
   const [confirm, confirmSheet] = useConfirm();
-  const next = userTransitions(shown, jobType).filter((to) => (to === "canceled") === cancel);
+  // Steps back are in the ••• menu (JobMoreMenu), so the buttons in view move the job forward
+  // (owner, 2026-10-29). Cancel Job keeps its own place at the end of Details.
+  const next = userTransitions(shown, jobType).filter(
+    (to) => (to === "canceled") === cancel && !isBackwardMove(shown, to),
+  );
   if (next.length === 0) return null;
+  const move = (to: JobStatus) =>
+    void call(
+      changeJobStatus,
+      { job: jobId, to },
+      () => setStatus(jobId, to),
+      (r) => {
+        if (to === "done" && !r.error) buzz("jobCompleted");
+      },
+    );
   return (
     <div className="space-y-2">
-      <div className="flex flex-wrap gap-3">
+      <div className="flex flex-wrap items-center gap-3">
         {next.map((to) => (
           <Button
             key={to}
@@ -197,14 +211,7 @@ export function JobStatusActions({
               )
                 return;
               if (to === "done" && prompt && !(await confirm({ ...prompt, alert: true }))) return;
-              void call(
-                changeJobStatus,
-                { job: jobId, to },
-                () => setStatus(jobId, to),
-                (r) => {
-                  if (to === "done" && !r.error) buzz("jobCompleted");
-                },
-              );
+              move(to);
             }}
           >
             {jobActionLabel(shown, to)}
@@ -213,6 +220,69 @@ export function JobStatusActions({
       </div>
       <ErrorText error={error} />
       {confirmSheet}
+    </div>
+  );
+}
+
+/**
+ * The job page's ••• menu (owner, 2026-10-29): the steps back, Move Back to Scheduled and
+ * Unschedule. Phones show it in the navigation bar, wider screens beside the status buttons.
+ */
+export function JobMoreMenu({
+  jobId,
+  status,
+  jobType,
+  className,
+}: {
+  jobId: string;
+  status: JobStatus;
+  jobType?: string;
+  className?: string;
+}) {
+  const { error, call } = useRun({ instant: true });
+  const shown = useJobStatus(jobId, status);
+  const setStatus = useSetJobStatus();
+  const button = useRef<HTMLButtonElement>(null);
+  const [at, setAt] = useState<{ x: number; y: number } | null>(null);
+  const back = userTransitions(shown, jobType).filter((to) => isBackwardMove(shown, to));
+  if (back.length === 0) return null;
+  return (
+    <div className={className}>
+      <button
+        ref={button}
+        type="button"
+        aria-label="More Job Actions"
+        title="More"
+        aria-haspopup="menu"
+        aria-expanded={at != null}
+        onClick={(e) => {
+          const r = e.currentTarget.getBoundingClientRect();
+          setAt({ x: r.right, y: r.bottom + 4 });
+        }}
+        className={iconButtonClass()}
+      >
+        <svg viewBox="0 0 24 24" aria-hidden="true" className="size-6" fill="currentColor">
+          <circle cx="5.5" cy="12" r="1.8" />
+          <circle cx="12" cy="12" r="1.8" />
+          <circle cx="18.5" cy="12" r="1.8" />
+        </svg>
+      </button>
+      {at ? (
+        <ContextMenu
+          title="Job"
+          entries={back.map((to) => ({
+            label: jobActionLabel(shown, to),
+            onSelect: () =>
+              void call(changeJobStatus, { job: jobId, to }, () => setStatus(jobId, to)),
+          }))}
+          at={at}
+          onClose={(refocus) => {
+            setAt(null);
+            if (refocus) button.current?.focus();
+          }}
+        />
+      ) : null}
+      <ErrorText error={error} />
     </div>
   );
 }
@@ -1424,6 +1494,9 @@ function FindingForm({
   // tapped, and the pin diagram redraws.
   const [shape, setShape] = useState<DiagramShape | null>(diagram?.shape ?? null);
   const [spa, setSpa] = useState(diagram?.hasSpa ?? false);
+  // Only while the pool has no shape (owner, 2026-10-29): once it has one, the diagram shows it
+  // and Edit Pool Shape on Findings changes it. Kept for the rest of this edit once shown.
+  const [asksShape] = useState(!diagram?.shape);
   const shapeSave = useRun();
   // In a sheet: the sheet carries the title and Cancel.
   return (
@@ -1482,7 +1555,7 @@ function FindingForm({
           onChange={setStatus}
           options={STATUSES.map((s) => ({ value: s, label: FINDING_STATUS_LABELS[s] }))}
         />
-        {diagram?.propertyId ? (
+        {diagram?.propertyId && asksShape ? (
           <div>
             <ShapePicker
               value={shape}

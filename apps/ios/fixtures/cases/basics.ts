@@ -22,6 +22,7 @@ import {
   isHexColor,
   isManagerRole,
   jobActionLabel,
+  isBackwardMove,
   jobFeeLabel,
   jobOnPhones,
   newJobTypes,
@@ -106,6 +107,10 @@ export const basics: ModuleCases = {
   JOB_STATUS_LABELS: rule(() => JOB_STATUS_LABELS, [[]]),
   jobActionLabel: rule(
     (from: JobStatus, to: JobStatus) => jobActionLabel(from, to),
+    JOB_STATUSES.flatMap((from) => JOB_STATUSES.map((to) => [from, to] as [JobStatus, JobStatus])),
+  ),
+  isBackwardMove: rule(
+    (from: JobStatus, to: JobStatus) => isBackwardMove(from, to),
     JOB_STATUSES.flatMap((from) => JOB_STATUSES.map((to) => [from, to] as [JobStatus, JobStatus])),
   ),
   // A pool's gallons as typed (import.ts): New Job's Gallons and the job's Pool gallons.

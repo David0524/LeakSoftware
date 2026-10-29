@@ -25,6 +25,9 @@
         @State private var insp: JobInspection?
         @State private var config: InspectionConfig?
         @State private var property: Row?
+        /// The shape tiles show only while the pool has no shape (owner, 2026-10-29); once shown,
+        /// they stay for the rest of this edit. Set on the first load.
+        @State private var asksShape: Bool?
         @State private var loaded = false
         @State private var confirmDiscard = false
         @State private var saveError: String?
@@ -118,7 +121,7 @@
                                 selection: binding(\.status, .open), options: findingStatusChoices, label: \.label,
                                 title: "Status", fillsWidth: true, segmentPadding: 8)
                         }
-                        if let property { pool(property) }
+                        if let property, asksShape == true { pool(property) }
                         pin(form, config)
                         OutlinedField(
                             label: "Notes (optional)", text: binding(\.notes, ""), multiline: true, chain: $focus,
@@ -245,6 +248,7 @@
             config = InspectionConfig(sync.store, companyId: company.id)
             let job = try? sync.store.get("job", jobId)
             property = (job?["property_id"]?.string).flatMap { try? sync.store.get("property", $0) }
+            if asksShape == nil, let property { asksShape = diagramShape(of: property) == nil }
             existing = (findingId ?? savedId).flatMap { id in current.findings.first { $0.id == id } }
             defer { loaded = true }
             guard form == nil, findingId == nil || existing != nil else { return }

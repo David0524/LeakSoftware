@@ -1102,6 +1102,708 @@
       "result": "Complete Job"
     }
   ],
+  "isBackwardMove": [
+    {
+      "args": [
+        "unscheduled",
+        "unscheduled"
+      ],
+      "result": true
+    },
+    {
+      "args": [
+        "unscheduled",
+        "scheduled"
+      ],
+      "result": true
+    },
+    {
+      "args": [
+        "unscheduled",
+        "in_progress"
+      ],
+      "result": false
+    },
+    {
+      "args": [
+        "unscheduled",
+        "report_sent"
+      ],
+      "result": false
+    },
+    {
+      "args": [
+        "unscheduled",
+        "quote_sent"
+      ],
+      "result": false
+    },
+    {
+      "args": [
+        "unscheduled",
+        "quote_accepted"
+      ],
+      "result": false
+    },
+    {
+      "args": [
+        "unscheduled",
+        "invoiced"
+      ],
+      "result": false
+    },
+    {
+      "args": [
+        "unscheduled",
+        "paid"
+      ],
+      "result": false
+    },
+    {
+      "args": [
+        "unscheduled",
+        "canceled"
+      ],
+      "result": false
+    },
+    {
+      "args": [
+        "unscheduled",
+        "done"
+      ],
+      "result": false
+    },
+    {
+      "args": [
+        "scheduled",
+        "unscheduled"
+      ],
+      "result": true
+    },
+    {
+      "args": [
+        "scheduled",
+        "scheduled"
+      ],
+      "result": true
+    },
+    {
+      "args": [
+        "scheduled",
+        "in_progress"
+      ],
+      "result": false
+    },
+    {
+      "args": [
+        "scheduled",
+        "report_sent"
+      ],
+      "result": false
+    },
+    {
+      "args": [
+        "scheduled",
+        "quote_sent"
+      ],
+      "result": false
+    },
+    {
+      "args": [
+        "scheduled",
+        "quote_accepted"
+      ],
+      "result": false
+    },
+    {
+      "args": [
+        "scheduled",
+        "invoiced"
+      ],
+      "result": false
+    },
+    {
+      "args": [
+        "scheduled",
+        "paid"
+      ],
+      "result": false
+    },
+    {
+      "args": [
+        "scheduled",
+        "canceled"
+      ],
+      "result": false
+    },
+    {
+      "args": [
+        "scheduled",
+        "done"
+      ],
+      "result": false
+    },
+    {
+      "args": [
+        "in_progress",
+        "unscheduled"
+      ],
+      "result": true
+    },
+    {
+      "args": [
+        "in_progress",
+        "scheduled"
+      ],
+      "result": true
+    },
+    {
+      "args": [
+        "in_progress",
+        "in_progress"
+      ],
+      "result": false
+    },
+    {
+      "args": [
+        "in_progress",
+        "report_sent"
+      ],
+      "result": false
+    },
+    {
+      "args": [
+        "in_progress",
+        "quote_sent"
+      ],
+      "result": false
+    },
+    {
+      "args": [
+        "in_progress",
+        "quote_accepted"
+      ],
+      "result": false
+    },
+    {
+      "args": [
+        "in_progress",
+        "invoiced"
+      ],
+      "result": false
+    },
+    {
+      "args": [
+        "in_progress",
+        "paid"
+      ],
+      "result": false
+    },
+    {
+      "args": [
+        "in_progress",
+        "canceled"
+      ],
+      "result": false
+    },
+    {
+      "args": [
+        "in_progress",
+        "done"
+      ],
+      "result": false
+    },
+    {
+      "args": [
+        "report_sent",
+        "unscheduled"
+      ],
+      "result": true
+    },
+    {
+      "args": [
+        "report_sent",
+        "scheduled"
+      ],
+      "result": true
+    },
+    {
+      "args": [
+        "report_sent",
+        "in_progress"
+      ],
+      "result": false
+    },
+    {
+      "args": [
+        "report_sent",
+        "report_sent"
+      ],
+      "result": false
+    },
+    {
+      "args": [
+        "report_sent",
+        "quote_sent"
+      ],
+      "result": false
+    },
+    {
+      "args": [
+        "report_sent",
+        "quote_accepted"
+      ],
+      "result": false
+    },
+    {
+      "args": [
+        "report_sent",
+        "invoiced"
+      ],
+      "result": false
+    },
+    {
+      "args": [
+        "report_sent",
+        "paid"
+      ],
+      "result": false
+    },
+    {
+      "args": [
+        "report_sent",
+        "canceled"
+      ],
+      "result": false
+    },
+    {
+      "args": [
+        "report_sent",
+        "done"
+      ],
+      "result": false
+    },
+    {
+      "args": [
+        "quote_sent",
+        "unscheduled"
+      ],
+      "result": true
+    },
+    {
+      "args": [
+        "quote_sent",
+        "scheduled"
+      ],
+      "result": true
+    },
+    {
+      "args": [
+        "quote_sent",
+        "in_progress"
+      ],
+      "result": false
+    },
+    {
+      "args": [
+        "quote_sent",
+        "report_sent"
+      ],
+      "result": false
+    },
+    {
+      "args": [
+        "quote_sent",
+        "quote_sent"
+      ],
+      "result": false
+    },
+    {
+      "args": [
+        "quote_sent",
+        "quote_accepted"
+      ],
+      "result": false
+    },
+    {
+      "args": [
+        "quote_sent",
+        "invoiced"
+      ],
+      "result": false
+    },
+    {
+      "args": [
+        "quote_sent",
+        "paid"
+      ],
+      "result": false
+    },
+    {
+      "args": [
+        "quote_sent",
+        "canceled"
+      ],
+      "result": false
+    },
+    {
+      "args": [
+        "quote_sent",
+        "done"
+      ],
+      "result": false
+    },
+    {
+      "args": [
+        "quote_accepted",
+        "unscheduled"
+      ],
+      "result": true
+    },
+    {
+      "args": [
+        "quote_accepted",
+        "scheduled"
+      ],
+      "result": true
+    },
+    {
+      "args": [
+        "quote_accepted",
+        "in_progress"
+      ],
+      "result": false
+    },
+    {
+      "args": [
+        "quote_accepted",
+        "report_sent"
+      ],
+      "result": false
+    },
+    {
+      "args": [
+        "quote_accepted",
+        "quote_sent"
+      ],
+      "result": false
+    },
+    {
+      "args": [
+        "quote_accepted",
+        "quote_accepted"
+      ],
+      "result": false
+    },
+    {
+      "args": [
+        "quote_accepted",
+        "invoiced"
+      ],
+      "result": false
+    },
+    {
+      "args": [
+        "quote_accepted",
+        "paid"
+      ],
+      "result": false
+    },
+    {
+      "args": [
+        "quote_accepted",
+        "canceled"
+      ],
+      "result": false
+    },
+    {
+      "args": [
+        "quote_accepted",
+        "done"
+      ],
+      "result": false
+    },
+    {
+      "args": [
+        "invoiced",
+        "unscheduled"
+      ],
+      "result": true
+    },
+    {
+      "args": [
+        "invoiced",
+        "scheduled"
+      ],
+      "result": true
+    },
+    {
+      "args": [
+        "invoiced",
+        "in_progress"
+      ],
+      "result": false
+    },
+    {
+      "args": [
+        "invoiced",
+        "report_sent"
+      ],
+      "result": false
+    },
+    {
+      "args": [
+        "invoiced",
+        "quote_sent"
+      ],
+      "result": false
+    },
+    {
+      "args": [
+        "invoiced",
+        "quote_accepted"
+      ],
+      "result": false
+    },
+    {
+      "args": [
+        "invoiced",
+        "invoiced"
+      ],
+      "result": false
+    },
+    {
+      "args": [
+        "invoiced",
+        "paid"
+      ],
+      "result": false
+    },
+    {
+      "args": [
+        "invoiced",
+        "canceled"
+      ],
+      "result": false
+    },
+    {
+      "args": [
+        "invoiced",
+        "done"
+      ],
+      "result": false
+    },
+    {
+      "args": [
+        "paid",
+        "unscheduled"
+      ],
+      "result": true
+    },
+    {
+      "args": [
+        "paid",
+        "scheduled"
+      ],
+      "result": true
+    },
+    {
+      "args": [
+        "paid",
+        "in_progress"
+      ],
+      "result": false
+    },
+    {
+      "args": [
+        "paid",
+        "report_sent"
+      ],
+      "result": false
+    },
+    {
+      "args": [
+        "paid",
+        "quote_sent"
+      ],
+      "result": false
+    },
+    {
+      "args": [
+        "paid",
+        "quote_accepted"
+      ],
+      "result": false
+    },
+    {
+      "args": [
+        "paid",
+        "invoiced"
+      ],
+      "result": false
+    },
+    {
+      "args": [
+        "paid",
+        "paid"
+      ],
+      "result": false
+    },
+    {
+      "args": [
+        "paid",
+        "canceled"
+      ],
+      "result": false
+    },
+    {
+      "args": [
+        "paid",
+        "done"
+      ],
+      "result": false
+    },
+    {
+      "args": [
+        "canceled",
+        "unscheduled"
+      ],
+      "result": false
+    },
+    {
+      "args": [
+        "canceled",
+        "scheduled"
+      ],
+      "result": true
+    },
+    {
+      "args": [
+        "canceled",
+        "in_progress"
+      ],
+      "result": false
+    },
+    {
+      "args": [
+        "canceled",
+        "report_sent"
+      ],
+      "result": false
+    },
+    {
+      "args": [
+        "canceled",
+        "quote_sent"
+      ],
+      "result": false
+    },
+    {
+      "args": [
+        "canceled",
+        "quote_accepted"
+      ],
+      "result": false
+    },
+    {
+      "args": [
+        "canceled",
+        "invoiced"
+      ],
+      "result": false
+    },
+    {
+      "args": [
+        "canceled",
+        "paid"
+      ],
+      "result": false
+    },
+    {
+      "args": [
+        "canceled",
+        "canceled"
+      ],
+      "result": false
+    },
+    {
+      "args": [
+        "canceled",
+        "done"
+      ],
+      "result": false
+    },
+    {
+      "args": [
+        "done",
+        "unscheduled"
+      ],
+      "result": true
+    },
+    {
+      "args": [
+        "done",
+        "scheduled"
+      ],
+      "result": true
+    },
+    {
+      "args": [
+        "done",
+        "in_progress"
+      ],
+      "result": false
+    },
+    {
+      "args": [
+        "done",
+        "report_sent"
+      ],
+      "result": false
+    },
+    {
+      "args": [
+        "done",
+        "quote_sent"
+      ],
+      "result": false
+    },
+    {
+      "args": [
+        "done",
+        "quote_accepted"
+      ],
+      "result": false
+    },
+    {
+      "args": [
+        "done",
+        "invoiced"
+      ],
+      "result": false
+    },
+    {
+      "args": [
+        "done",
+        "paid"
+      ],
+      "result": false
+    },
+    {
+      "args": [
+        "done",
+        "canceled"
+      ],
+      "result": false
+    },
+    {
+      "args": [
+        "done",
+        "done"
+      ],
+      "result": false
+    }
+  ],
   "parseGallons": [
     {
       "args": [

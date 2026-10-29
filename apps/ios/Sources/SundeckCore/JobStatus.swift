@@ -62,6 +62,12 @@ public func jobActionLabel(from: JobStatus, to: JobStatus) -> String {
     }
 }
 
+/// A step back (owner, 2026-10-29): Move Back to Scheduled and Unschedule sit in the job page's ••• menu,
+/// so the buttons in view are forward steps. Reopen Job on a canceled job is forward. Port of core's.
+public func isBackwardMove(from: JobStatus, to: JobStatus) -> Bool {
+    to == .scheduled || (to == .unscheduled && from != .canceled)
+}
+
 /// Next statuses a person (not the server) can pick. Done is how a maintenance visit ends;
 /// leak detection and repairs end with a report or invoice.
 public func userTransitions(from: JobStatus, type: String? = nil) -> [JobStatus] {
