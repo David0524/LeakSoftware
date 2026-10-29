@@ -24,7 +24,7 @@ import { rowGestures, useRowMenu } from "../../../../ui/RowMenu";
 import { FlatGroupedRow } from "../../../../features/more/FlatGroupedRow";
 import { useCompany, useSession } from "../../../../state/session";
 import { Empty, HeaderButton, SearchField, T, useScreenChrome } from "../../../../ui/components";
-import { Select } from "../../../../ui/Select";
+import { MenuButton, useMenu } from "../../../../ui/Select";
 import { color, MAX_TEXT_SCALE, space, type } from "../../../../ui/theme";
 
 /**
@@ -37,6 +37,7 @@ export default function Customers() {
   const company = useCompany();
   const [search, setSearch] = useState("");
   const [sort, setSort] = useState<CustomerSort>("name");
+  const pick = useMenu();
   // Opened from the Dashboard's trackers (`/customers?show=plan`).
   const { show: asked } = useLocalSearchParams<{ show?: string }>();
   const [show, setShow] = useState(() =>
@@ -103,18 +104,40 @@ export default function Customers() {
         placeholder="Name, phone, or email"
         label="Search customers"
       />
+      {/* Show and Sort as the two menus Jobs has (owner, 2026-10-29). */}
       <View style={styles.selects}>
-        <Select
-          label="Sort"
-          value={sort}
-          onChange={setSort}
-          options={Object.entries(CUSTOMER_SORTS).map(([value, label]) => ({
-            value: value as CustomerSort,
-            label,
-          }))}
+        <MenuButton
+          title="Show"
+          value={shows.find((o) => o.value === show)?.label ?? ""}
+          icon="filter"
+          onPress={() =>
+            pick.open({
+              title: "Show",
+              items: shows.map((o) => ({
+                label: o.label,
+                checked: o.value === show,
+                onPress: () => setShow(o.value),
+              })),
+            })
+          }
         />
-        <Select label="Show" value={show} onChange={setShow} options={shows} />
+        <MenuButton
+          title="Sort"
+          value={CUSTOMER_SORTS[sort]}
+          icon="updown"
+          onPress={() =>
+            pick.open({
+              title: "Sort",
+              items: Object.entries(CUSTOMER_SORTS).map(([value, label]) => ({
+                label,
+                checked: value === sort,
+                onPress: () => setSort(value as CustomerSort),
+              })),
+            })
+          }
+        />
       </View>
+      {pick.element}
     </View>
   );
 
@@ -182,5 +205,5 @@ export default function Customers() {
 const styles = StyleSheet.create({
   top: { gap: space["4"], marginBottom: space["5"] },
   // Sort above Show, so Show's count is never cut off ("On a Plan (65)").
-  selects: { gap: space["3"] },
+  selects: { flexDirection: "row", justifyContent: "flex-end", gap: space["3"] },
 });

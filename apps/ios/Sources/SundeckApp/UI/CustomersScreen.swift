@@ -43,20 +43,9 @@
                 // The search and pickers aren't clipped by the list's rounded corners (owner,
                 // 2026-10-22): see ListTopSection.
                 ListTopSection {
-                    VStack(alignment: .leading, spacing: 16) {
-                        SearchField(text: $search, placeholder: "Name, phone, or email")
-                        // Sort above Show, so Show's count is never cut off ("On a Plan (65)").
-                        VStack(alignment: .leading, spacing: 12) {
-                            SelectField(
-                                label: "Sort", selection: $sort, options: CustomerSort.allCases, optionLabel: \.label)
-                            SelectField(
-                                label: "Show",
-                                selection: Binding(
-                                    get: { shows.first { $0.value == show } ?? shows[0] }, set: { show = $0.value }),
-                                options: shows, optionLabel: \.label)
-                        }
-                    }
-                    .plainListRow()
+                    // Show and Sort are menus in the navigation bar, as on Jobs (owner, 2026-10-29).
+                    SearchField(text: $search, placeholder: "Name, phone, or email")
+                        .plainListRow()
                 }
                 if loaded && rows.isEmpty {
                     Section { EmptyState(text: customersEmptyText(search: search, show: show)).plainListRow() }
@@ -89,6 +78,36 @@
             .navigationTitle("Customers")
             .navigationBarTitleDisplayMode(.large)
             .toolbar {
+                // Show: the filter symbol, filled while a choice other than All Customers is picked.
+                ToolbarItem(placement: .topBarTrailing) {
+                    Menu {
+                        Picker(
+                            "Show",
+                            selection: Binding(
+                                get: { shows.first { $0.value == show }?.value ?? "all" }, set: { show = $0 })
+                        ) {
+                            ForEach(shows, id: \.value) { Text($0.label).tag($0.value) }
+                        }
+                    } label: {
+                        Image(
+                            systemName: show == "all"
+                                ? "line.3.horizontal.decrease.circle" : "line.3.horizontal.decrease.circle.fill"
+                        )
+                        .frame(width: minTarget, height: minTarget)
+                    }
+                    .accessibilityLabel("Show, \(shows.first { $0.value == show }?.label ?? "")")
+                }
+                ToolbarItem(placement: .topBarTrailing) {
+                    Menu {
+                        Picker("Sort", selection: $sort) {
+                            ForEach(CustomerSort.allCases, id: \.self) { Text($0.label).tag($0) }
+                        }
+                    } label: {
+                        Image(systemName: "arrow.up.arrow.down")
+                            .frame(width: minTarget, height: minTarget)
+                    }
+                    .accessibilityLabel("Sort, \(sort.label)")
+                }
                 if isManagerRole(company?.role) {
                     ToolbarItem(placement: .topBarTrailing) {
                         BarIconButton(systemImage: "envelope", label: MassEmailText.title) { emailing = true }
