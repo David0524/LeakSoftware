@@ -594,6 +594,9 @@ import Testing
         #expect(open[0].when == "9:00 AM · Dana Tech")
         #expect(open[2].when == "Wed, Oct 21, 9:00 AM · Sam Sample")
         #expect(open[4].when == "Not scheduled · Unassigned")
+        // Shown with the time held together, so a wrapped line breaks only before the tech.
+        #expect(unbrokenWhen(open[2].when) == "Wed,\u{00A0}Oct\u{00A0}21,\u{00A0}9:00\u{00A0}AM\u{00A0}· Sam Sample")
+        #expect(unbrokenWhen("Started") == "Started")
         #expect(list(.canceled, "", true).map(\.customer) == ["Gone Away"])
         #expect(list(.all, "", true).count == 6)
         #expect(list(.open, "grace", true).map(\.customer) == ["Grace Holloway"])

@@ -602,8 +602,9 @@ function JobRowFace({
           </T>
         ) : null}
         <T variant="secondary">
-          {when}
-          {/* The dot stays with the time, so a wrapped line never starts with it. */}
+          {/* The time stays on one line with the dot after it, so a wrapped line breaks only
+              before the tech, never inside the time or before "·". */}
+          {when.replace(/ /g, "\u00a0")}
           {"\u00a0· "}
           {tech ?? "Unassigned"}
         </T>

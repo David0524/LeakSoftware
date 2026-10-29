@@ -212,14 +212,15 @@ export default async function JobsPage({ searchParams }: PageProps<"/jobs">) {
                           <span className="block truncate">{formatAddress(j.property)}</span>
                         ) : null}
                         <span className="block text-text">
+                          {/* The time stays on one line with the dot after it, so a wrapped line
+                              breaks only before the tech, never inside the time or before "·". */}
                           {j.status === "in_progress" && j.started_at
                             ? "Started"
                             : formatSchedule(
                                 j.scheduled_start ?? null,
                                 now,
                                 office.company.timezone,
-                              )}
-                          {/* The dot stays with the time, so a wrapped line never starts with it. */}
+                              ).replace(/ /g, "\u00a0")}
                           {"\u00a0· "}
                           {j.techName ?? "Unassigned"}
                         </span>
