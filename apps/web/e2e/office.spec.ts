@@ -823,16 +823,16 @@ test("customers sort and filter", async ({ page }) => {
   await signIn(page, OWNER, "/customers");
   const names = page.getByRole("main").getByRole("listitem").locator(".font-semibold");
   await expect(names.first()).toBeVisible();
-  await page.getByLabel("Sort").selectOption("name_desc");
+  await page.getByRole("combobox", { name: "Sort", exact: true }).selectOption("name_desc");
   await expect(page).toHaveURL(/sort=name_desc/);
-  await expect(page.getByLabel("Sort")).toHaveValue("name_desc");
+  await expect(page.getByRole("combobox", { name: "Sort", exact: true })).toHaveValue("name_desc");
   // Read the list once the sorted page has rendered.
   await expect.poll(async () => (await names.allInnerTexts()).length).toBeGreaterThan(1);
   const all = await names.allInnerTexts();
   expect(all[0]!.localeCompare(all.at(-1)!)).toBeGreaterThanOrEqual(0);
-  await page.getByLabel("Show").selectOption("pool_company");
+  await page.getByRole("combobox", { name: "Show", exact: true }).selectOption("pool_company");
   await expect(page).toHaveURL(/show=pool_company/);
-  await expect(page.getByLabel("Sort")).toHaveValue("name_desc");
+  await expect(page.getByRole("combobox", { name: "Sort", exact: true })).toHaveValue("name_desc");
 });
 
 // Owner, Admin, Tech (owner, 2026-10-18): an owner invites an admin, who runs the office

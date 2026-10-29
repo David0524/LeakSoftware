@@ -126,7 +126,7 @@
             let customer = try store.insert("customer", companyId: "c1", ["name": .string(name)])
             let pool = try store.insert(
                 "property", companyId: "c1",
-                ["customer_id": .string(customer), "address_line1": "\(100 + i) E Main St", "city": "Mesa"])
+                ["customer_id": .string(customer), "address_line1": .string("\(100 + i) E Main St"), "city": "Mesa"])
             try store.insert(
                 "job", companyId: "c1",
                 [
