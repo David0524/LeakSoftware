@@ -120,7 +120,8 @@ test("field parity report: counts, verdicts, fee, and disclaimer", async ({ page
       .filter({ has: page.getByText("With", { exact: true }) })
       .filter({ hasText: "Dana Owner" }),
   ).toBeVisible();
-  await expect(page.getByText("$649.00", { exact: true })).toBeVisible();
+  // The fee shows once, in On Site's field (2026-10-29).
+  await expect(page.getByLabel("Detection fee", { exact: true })).toHaveValue("649.00");
   await expect(page.getByText("Pool water level dropping")).toBeVisible();
   await openChecklist(page);
   await expect(

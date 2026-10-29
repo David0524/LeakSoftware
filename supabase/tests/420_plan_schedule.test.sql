@@ -71,12 +71,14 @@ select is((select count(*)::int from job where service_plan_id = (select id from
   0, 'plan visits carry no price of their own');
 
 -- Billing: one line per plan per month, however many visits were done.
-create temp table done_visits on commit drop as
-  select j.id from job j where j.service_plan_id = (select id from plan) and j.deleted_at is null
-  order by j.plan_date limit 1;
-update job set plan_date = date_trunc('month', current_date)::date + 3, status = 'in_progress'
-  where id = (select id from done_visits);
-update job set status = 'done' where id = (select id from done_visits);
+-- The visits are added here, not taken from the plan's own: a plan starting tomorrow may have
+-- none yet (2026-10-29: tomorrow was a 5th Thursday, so its first visit was weeks out).
+insert into job (company_id, property_id, bill_to_customer_id, type, status, plan_date,
+                 service_plan_id, assigned_user_id)
+  select ca, prop_a, cust_a, 'maintenance', 'in_progress',
+         date_trunc('month', current_date)::date + 3, (select id from plan), tech_a from ids;
+update job set status = 'done' where service_plan_id = (select id from plan)
+  and plan_date = date_trunc('month', current_date)::date + 3;
 insert into job (company_id, property_id, bill_to_customer_id, type, status, plan_date,
                  service_plan_id, assigned_user_id)
   select ca, prop_a, cust_a, 'maintenance', 'in_progress',
