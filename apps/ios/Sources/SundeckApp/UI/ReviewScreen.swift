@@ -143,7 +143,15 @@
 
         @ViewBuilder private func signOff(_ summary: ReviewSummary, _ form: SignatureForm) -> some View {
             if let pending = summary.pendingNotice {
-                Notice(kind: .warning, text: pending)
+                VStack(alignment: .leading, spacing: 12) {
+                    Notice(kind: .warning, text: pending)
+                    // The way out goes where the work is.
+                    Button(ReviewSummary.goToChecklist) {
+                        JobSectionMemory.request(.checklist, for: jobId)
+                        dismiss()
+                    }
+                    .buttonStyle(.primary)
+                }
             } else if summary.showsSignOff {
                 VStack(alignment: .leading, spacing: 16) {
                     VStack(alignment: .leading, spacing: 2) {

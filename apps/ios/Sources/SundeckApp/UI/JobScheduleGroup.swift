@@ -33,10 +33,7 @@
                 if let board {
                     let item = board.jobs.first(where: { $0.id == job.id }) ?? ScheduleJob(job)
                     Grouped(label: "Schedule") {
-                        ListRow(
-                            "Tech",
-                            value: item.assignedUserId.flatMap { id in board.team.first { $0.id == id }?.name }
-                                ?? "Nobody yet")
+                        // The tech is under Assigned to, right above; Change Schedule still sets it.
                         ListRow(
                             "When",
                             value: item.scheduledStart.flatMap { try? formatSchedule($0, Date(), board.ctx.timeZone) }

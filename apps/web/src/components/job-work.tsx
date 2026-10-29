@@ -172,7 +172,14 @@ export function JobStatusActions({
           <Button
             key={to}
             type="button"
-            kind={to === "in_progress" ? "primary" : to === "canceled" ? "danger" : "secondary"}
+            // Starting is the page's main step; reopening a finished job isn't (2026-10-29).
+            kind={
+              to === "in_progress" && (shown === "scheduled" || shown === "unscheduled")
+                ? "primary"
+                : to === "canceled"
+                  ? "danger"
+                  : "secondary"
+            }
             // Phones start a job from the Next Step bar instead (owner, 2026-10-20).
             className={
               to === "in_progress" && (shown === "scheduled" || shown === "unscheduled")

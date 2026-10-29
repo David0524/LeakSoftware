@@ -33,6 +33,7 @@ export function SignOff({
   address,
   blocked,
   back,
+  fix,
 }: {
   reportId: string;
   jobId: string;
@@ -43,6 +44,8 @@ export function SignOff({
   /** Why the report can't be finished yet, if it can't. */
   blocked: string | null;
   back: string;
+  /** Where to finish what blocks signing, instead of Back to Job. */
+  fix?: { href: string; label: string } | null;
 }) {
   const router = useRouter();
   const [purpose, setPurpose] = useState<SignaturePurpose | "">(purposes[0]?.value ?? "");
@@ -56,8 +59,8 @@ export function SignOff({
     return (
       <div className="space-y-3 border-t border-border pt-6 max-sm:border-0 max-sm:pt-4">
         <Banner tone="warning">{blocked}</Banner>
-        <Link href={back} className={buttonClass("secondary")}>
-          Back to Job
+        <Link href={fix?.href ?? back} className={buttonClass(fix ? "primary" : "secondary")}>
+          {fix?.label ?? "Back to Job"}
         </Link>
       </div>
     );

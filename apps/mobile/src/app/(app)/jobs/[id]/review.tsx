@@ -30,6 +30,7 @@ import {
 import { REPORT_STEPS, finishReportFromPhone, useJobReports } from "../../../../data/reports";
 import { StepList } from "../../../../ui/Progress";
 import { FinishPhotoNotice, useNeedsFinishPhoto } from "../../../../features/media/FinishPhoto";
+import { requestJobSection } from "../../../../features/job/sectionRequest";
 import { currentPosition, storeSignatureSvg } from "../../../../lib/media";
 import { useCompany, useSession } from "../../../../state/session";
 import {
@@ -279,9 +280,19 @@ export default function ReviewScreen() {
 
       <View style={[styles.sign, { borderTopColor: color.separator }]}>
         {blocking ? (
-          <Notice tone="warning">
-            {`${blocking} checklist ${blocking === 1 ? "item is" : "items are"} still to do. Finish the checklist, then come back to sign.`}
-          </Notice>
+          <>
+            <Notice tone="warning">
+              {`${blocking} checklist ${blocking === 1 ? "item is" : "items are"} still to do. Finish the checklist, then come back to sign.`}
+            </Notice>
+            {/* The way out goes where the work is. */}
+            <Button
+              title="Go to Checklist"
+              onPress={() => {
+                requestJobSection(id, "checklist");
+                router.back();
+              }}
+            />
+          </>
         ) : purposes.length ? (
           <>
             <T variant="largeTitle">Please Sign</T>

@@ -80,7 +80,7 @@
             VStack(alignment: .leading, spacing: 12) {
                 Hairline()
                 if let pool {
-                    Button("Submit") { save(pool) }
+                    Button("Save Readings") { save(pool) }
                         .buttonStyle(.primary(fullWidth: true, size: .field))
                         .disabled(form.result.statuses.isEmpty)
                     Text(ChemicalLogText.submitHint(pool)).textRole(.secondary).foregroundStyle(Color.textMuted)

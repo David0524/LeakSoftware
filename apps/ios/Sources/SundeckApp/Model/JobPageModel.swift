@@ -47,6 +47,16 @@ public enum JobSectionMemory {
     }
 
     public static func remember(_ section: JobPageSection, for jobId: String) { chosen[jobId] = section }
+
+    /// A screen opened from the job asks the job page to show a part when it's back in front
+    /// (the signing screen's Go to Checklist).
+    private static var requested: [String: JobPageSection] = [:]
+    public static func request(_ section: JobPageSection, for jobId: String) {
+        requested[jobId] = section
+        chosen[jobId] = section
+    }
+    /// The part asked for, once.
+    public static func takeRequest(for jobId: String) -> JobPageSection? { requested.removeValue(forKey: jobId) }
 }
 
 // MARK: - Header

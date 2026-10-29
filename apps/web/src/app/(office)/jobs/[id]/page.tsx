@@ -393,12 +393,7 @@ export default async function JobPage({ params, searchParams }: PageProps<"/jobs
                         }
                       />
                       {job.secondTechName ? <Row label="With" value={job.secondTechName} /> : null}
-                      {job.fee_cents != null && job.type !== "repair" ? (
-                        <Row
-                          label={jobFeeLabel(job.type)}
-                          value={<span className="tabular-nums">{formatCents(job.fee_cents)}</span>}
-                        />
-                      ) : null}
+                      {/* The fee is edited under On Site, so it isn't repeated here. */}
                     </Grouped>
 
                     {/* A repair job's repairs and its price (owner, 2026-10-22). */}
@@ -1108,7 +1103,6 @@ async function Schedule({ detail, tz }: { detail: JobDetail; tz: string }) {
   const seesAll = seesAllJobs(office.company.role, (await getCompany(office)).settings);
   return (
     <JobSchedule
-      tech={job.techName ?? "Nobody yet"}
       when={job.scheduled_start ? formatSchedule(job.scheduled_start, new Date(), tz) : null}
       lock={jobLock(job)}
       jobId={job.id}

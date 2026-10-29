@@ -14,17 +14,15 @@ import { NO_CONNECTION, orOffline, whenOffline } from "@/lib/offline";
 type ScheduleFormProps = Parameters<typeof ScheduleForm>[0];
 
 /**
- * The job's schedule as an iOS grouped list (tech, when), with the form in a sheet: Change
+ * The job's schedule as an iOS grouped list (when, and a lock), with the form in a sheet: Change
  * Schedule opens it, and saving closes it and says so under the list.
  */
 export function JobSchedule({
-  tech,
   when,
   lock,
   ...form
 }: Omit<ScheduleFormProps, "onSaved"> & {
   /** Already formatted on the server. */
-  tech: string;
   when: string | null;
   lock: JobLock;
 }) {
@@ -35,10 +33,7 @@ export function JobSchedule({
   return (
     <div>
       <ul className="grouped">
-        <li className={row}>
-          <span className="flex-1">Tech</span>
-          <span className="text-right text-text-muted">{tech}</span>
-        </li>
+        {/* The tech is under Assigned To, right above; Change Schedule still sets it. */}
         <li className={row}>
           <span className="flex-1">When</span>
           <span className="text-right text-text-muted">{when ?? "Not scheduled"}</span>

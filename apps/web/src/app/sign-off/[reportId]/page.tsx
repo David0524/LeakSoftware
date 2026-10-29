@@ -120,6 +120,12 @@ async function Review({ params }: { params: Promise<{ reportId: string }> }) {
                 : null
           }
           back={back}
+          // The way out goes where the work is: the Checklist when items are left.
+          fix={
+            hasText && r.pending > 0
+              ? { href: `/jobs/${r.job_id}?tab=checklist`, label: "Go to Checklist" }
+              : null
+          }
         />
       </section>
     </>

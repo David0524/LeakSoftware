@@ -630,7 +630,7 @@
         "report_sent",
         "in_progress"
       ],
-      "result": "Start Job"
+      "result": "Reopen Job"
     },
     {
       "args": [

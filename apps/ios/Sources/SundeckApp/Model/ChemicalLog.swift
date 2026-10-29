@@ -48,7 +48,7 @@ public enum ChemicalLogText {
         "Saves these readings to \(pool.name)’s chemical log."
     }
     public static let noPool = "To save readings to a pool’s log, open Chemical from a visit or the customer’s pool."
-    public static let submitted = "Submitted."
+    public static let submitted = "Saved to the log."
     public static let removed = "Removed."
     public static let logTitle = "Chemical log"
     public static let logEmpty = "No readings submitted yet"

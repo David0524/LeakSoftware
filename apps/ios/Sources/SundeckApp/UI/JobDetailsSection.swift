@@ -64,7 +64,7 @@
                     if let with = details.with {
                         ListRow("With") { techValue(with, colors[job.job["second_tech_id"]?.string ?? ""]) }
                     }
-                    if details.showsFee, let fee = details.fee { ListRow(details.feeLabel, value: fee) }
+                    // The fee is edited under On site, so it isn't repeated here.
                 }
                 // A repair job's repairs and its price (owner, 2026-10-22).
                 if details.showsRepairs { JobRepairsGroup(job: job) }

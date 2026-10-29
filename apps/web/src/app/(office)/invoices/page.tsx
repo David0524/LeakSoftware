@@ -130,14 +130,16 @@ export default async function InvoicesPage({ searchParams }: PageProps<"/invoice
                 key={f.key}
                 href={href({ filter: f.key })}
                 aria-current={f.key === filter ? "page" : undefined}
-                className={pillClass(f.key === filter)}
+                // A flex pill drops the space between the words, so the count gets a gap.
+                className={pillClass(f.key === filter, "gap-1.5")}
               >
                 {f.label} <span className="tabular-nums opacity-70">{count(f.key)}</span>
               </Link>
             ))}
           </PillRow>
           <div className="mb-5 flex flex-wrap items-center gap-3">
-            <form action="/invoices" role="search" className="flex min-w-0 flex-1 gap-2">
+            {/* At least 18rem, so on a phone Sort wraps under it instead of squeezing the field. */}
+            <form action="/invoices" role="search" className="flex min-w-0 flex-1 basis-72 gap-2">
               {filter !== "all" ? <input type="hidden" name="filter" value={filter} /> : null}
               {sort !== "newest" ? <input type="hidden" name="sort" value={sort} /> : null}
               <label htmlFor="invoice-q" className="sr-only">
@@ -149,7 +151,7 @@ export default async function InvoicesPage({ searchParams }: PageProps<"/invoice
                 type="search"
                 defaultValue={q}
                 placeholder="Customer, invoice, or job number"
-                className="min-h-11 min-w-0 flex-1 rounded-[10px] border border-control-border bg-surface px-3 focus:outline-3 focus:outline-focus"
+                className="min-h-11 min-w-0 flex-1 truncate rounded-[10px] border border-control-border bg-surface px-3 focus:outline-3 focus:outline-focus"
               />
               <Button type="submit" kind="secondary">
                 Search

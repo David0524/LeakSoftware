@@ -1,6 +1,6 @@
-import { router, useLocalSearchParams } from "expo-router";
+import { router, useFocusEffect, useLocalSearchParams } from "expo-router";
 import { useRoute } from "expo-router/react-navigation";
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { pageFits } from "../../../../../../lib/pageScroll";
 import { Animated, Linking, StyleSheet, TextInput, View } from "react-native";
 import Reanimated, { FadeIn, FadeInLeft, FadeInRight } from "react-native-reanimated";
@@ -12,7 +12,6 @@ import {
   intakeQuestionsFor,
   formatAddress,
   mapStatus,
-  formatCents,
   formatSchedule,
   jobActionLabel,
   parseGallons,
@@ -89,6 +88,7 @@ import {
   NextStepBar,
   type NextStepButton,
 } from "../../../../../../features/job/NextStepBar";
+import { takeJobSection } from "../../../../../../features/job/sectionRequest";
 import {
   FormKeyboardBar,
   KeyboardAvoider,
@@ -251,6 +251,15 @@ export default function JobDetail() {
       scroll.current as unknown as { scrollTo?: (o: { y: number; animated: boolean }) => void }
     )?.scrollTo?.({ y, animated: false });
   }
+
+  // Back from a screen that asked for a part (the signing screen's Go to Checklist).
+  useFocusEffect(
+    useCallback(() => {
+      const asked = takeJobSection(id);
+      if (asked) setSection(asked);
+      // eslint-disable-next-line react-hooks/exhaustive-deps -- setSection reads refs only
+    }, [id]),
+  );
 
   function setSection(next: JobSection, dir?: 1 | -1) {
     if (next === sectionRef.current) return;
@@ -476,7 +485,13 @@ export default function JobDetail() {
                 <Button
                   key={to}
                   title={jobActionLabel(job.status, to)}
-                  kind={to === "in_progress" ? "primary" : "secondary"}
+                  // Starting is the page's main step; reopening a finished job isn't.
+                  kind={
+                    to === "in_progress" &&
+                    (job.status === "scheduled" || job.status === "unscheduled")
+                      ? "primary"
+                      : "secondary"
+                  }
                   onPress={() => changeStatus(to)}
                 />
               ))}
@@ -933,16 +948,7 @@ function Details({
               }
             />
           ) : null}
-          {job.fee_cents != null && !repair ? (
-            <ListRow
-              title={jobFeeLabel(job.type)}
-              detail={
-                <T muted style={tabular}>
-                  {formatCents(job.fee_cents)}
-                </T>
-              }
-            />
-          ) : null}
+          {/* The fee is edited under On site, so it isn't repeated here. */}
         </Group>
       </Section>
 

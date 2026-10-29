@@ -606,7 +606,9 @@
                     if let address = row.address {
                         Text(address).textRole(.secondary).foregroundStyle(Color.textMuted).lineLimit(1)
                     }
-                    Text(row.when).textRole(.secondary).foregroundStyle(Color.text)
+                    // The dot stays with the time, so a wrapped line never starts with "·".
+                    Text(row.when.replacingOccurrences(of: " · ", with: "\u{00A0}· ")).textRole(.secondary)
+                        .foregroundStyle(Color.text)
                 }
                 .frame(maxWidth: .infinity, alignment: .leading)
                 StatusChip(status: row.status)

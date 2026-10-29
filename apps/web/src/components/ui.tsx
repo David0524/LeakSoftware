@@ -337,7 +337,8 @@ export function GroupedField({
           aria-describedby={error || hint ? `${id}-note` : undefined}
           className={cx(
             "block w-full min-h-11 min-w-0 text-text placeholder:text-placeholder disabled:text-text-muted",
-            "max-sm:flex-1 max-sm:rounded-md max-sm:bg-transparent max-sm:focus-visible:outline-offset-0",
+            // A value too long for the row ends in "…" until it's tapped, instead of being cut.
+            "max-sm:flex-1 max-sm:truncate max-sm:rounded-md max-sm:bg-transparent max-sm:focus-visible:outline-offset-0",
             "sm:rounded-[10px] sm:border sm:border-control-border sm:bg-surface sm:px-3 sm:py-2",
             "sm:focus:outline-3 sm:focus:outline-offset-1 sm:focus:outline-focus sm:aria-[invalid=true]:border-status-fail",
           )}

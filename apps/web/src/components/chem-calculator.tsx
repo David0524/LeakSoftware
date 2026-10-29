@@ -360,7 +360,7 @@ export function ChemCalculator({
               disabled={submitting || result.statuses.length === 0}
               className="w-full sm:w-auto sm:px-8"
             >
-              {submitting ? "Submitting…" : "Submit"}
+              {submitting ? "Saving…" : "Save Readings"}
             </Button>
             <p className="text-[0.9375rem] text-text-muted">
               Saves these readings to {pool.name}’s chemical log.
@@ -495,7 +495,7 @@ export function ChemCalculator({
                 disabled={submitting || result.statuses.length === 0}
                 className="w-full sm:w-auto sm:px-8"
               >
-                {submitting ? "Submitting…" : "Submit"}
+                {submitting ? "Saving…" : "Save Readings"}
               </Button>
               <p className="text-[0.9375rem] text-text-muted">
                 Saves these readings to {pool.name}’s chemical log.

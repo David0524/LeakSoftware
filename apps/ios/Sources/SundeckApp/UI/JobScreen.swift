@@ -87,6 +87,8 @@
             // An invoice or quote line typed but not added: Back asks first (owner, 2026-10-20).
             .discardOnBack(dirty: app.unsavedEdits.any(under: "job:\(jobId)"), draftsUnder: "job:\(jobId)")
             .task(id: sync.revision) { reload() }
+            // Back from a screen that asked for a part (the signing screen's Go to Checklist).
+            .onAppear { if let asked = JobSectionMemory.takeRequest(for: jobId) { choose(asked) } }
             // First under Recent in search (docs/plans/search-and-activity.md).
             .task(id: job.map { recentItem(job: $0) }) {
                 if let job { RecentSearches(kv: sync.kv).opened(recentItem(job: job)) }

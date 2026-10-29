@@ -182,7 +182,7 @@ export function useChemCalculator(pool: Property | undefined, jobId: string | nu
     if (size !== null && !pool.approx_gallons)
       sync.write("property", pool.id, pool.company_id, { approx_gallons: size });
     setSubmittedValues(values);
-    setSubmitted({ message: "Submitted." });
+    setSubmitted({ message: "Saved to the log." });
   }
 
   return {
@@ -317,7 +317,7 @@ export function SubmitReadings({ calc, whose }: { calc: ChemCalculatorState; who
   return (
     <View style={[styles.submit, { borderTopColor: color.separator }]}>
       <Button
-        title="Submit"
+        title="Save Readings"
         wide
         disabled={calc.result.statuses.length === 0}
         onPress={calc.submit}

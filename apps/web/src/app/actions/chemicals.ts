@@ -66,7 +66,7 @@ export async function submitReadings(_: FormState, form: FormData): Promise<Form
   revalidatePath("/customers", "layout");
   // From the visit's Checklist: its Chemical line shows the new readings.
   if (job) revalidatePath(`/jobs/${job}`);
-  return { message: "Submitted." };
+  return { message: "Saved to the log." };
 }
 
 /** Remove a reading submitted by mistake. */

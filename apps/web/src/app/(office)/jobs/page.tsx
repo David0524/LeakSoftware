@@ -219,7 +219,8 @@ export default async function JobsPage({ searchParams }: PageProps<"/jobs">) {
                                 now,
                                 office.company.timezone,
                               )}
-                          {" · "}
+                          {/* The dot stays with the time, so a wrapped line never starts with it. */}
+                          {"\u00a0· "}
                           {j.techName ?? "Unassigned"}
                         </span>
                       </>

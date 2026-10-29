@@ -2,6 +2,14 @@
 
 Newest first. Each entry: date, decision, reason.
 
+## 2026-10-29 (owner: "Do another pass through of the app … regarding what makes this a great app"; `docs/design/2026-10-29-great-app-pass.md`)
+- **Signing never dead-ends.** When checklist items are left, the signing screen's notice has **Go to Checklist** under it (website: a link to the job's `?tab=checklist`; phones: back to the job page, which opens its Checklist). Writing the report first still says so with Back to Job.
+- **The Chemical page's button is Save Readings** (was Submit), "Saving…" while it saves, then "Saved to the log." Visits still save as you type.
+- **The job page says each thing once:** the fee or price is only under On site, where it's edited (no longer also read-only under Assigned to), and the tech only under Assigned to (no longer also in Schedule; Change Schedule still sets it).
+- **A Jobs list line never starts with "·":** the dot between the time and the tech stays with the time when the line wraps.
+- **A job whose report went out offers Reopen Job, not Start Job** (core `jobActionLabel`), as a secondary button: it read like the work hadn't begun, in the page's main blue. Start Job stays the main button only on a scheduled or unscheduled job.
+- **Website on phones:** the Invoices filter pills read "All 26", not "All26" (a flex pill drops the space); the Invoices search field keeps at least 18rem and Sort wraps under it instead of squeezing the field to a sliver; a settings value too long for its row ends in "…" until tapped instead of being cut mid-word.
+
 ## 2026-10-27 (owner: "Fix the draft text"; the audit in `docs/testing/2026-10-26-five-bug-audit.md`, section 5, found typed text lost when the app is killed or the tab closed before saving)
 - **Typed text is kept as a local draft and put back when the same form opens again**, on all four platforms with the same words: a quiet gray row at the top of the form, "Draft restored" with **Discard Draft** (sentence-case text, Title Case button; no snackbar). Discard Draft puts the form back to how it opened and removes the draft. A draft is removed when the form is saved, sent or discarded (Discard Changes clears it too, on every path: Cancel, Back, a swipe down, a notification or Live Activity link), after 7 days, and at sign-out. A restored draft counts as unsaved, so "Discard changes?" still asks.
 - **What is kept:** text only, by field name, at most 40 fields of 20,000 characters; never files, photos, passwords or codes, never choices (pickers, switches, dates), never fields that save by themselves (`data-autosave`, chemicals readings, checklist answers, job notes and report text on the phones). A draft of only blanks is not kept, and text that is already in the form (a draft equal to what the form shows) restores nothing and shows no note. Kept per signed-in person (`draft:<user>:<form>:<record id>`, "new" for a form that makes a record).

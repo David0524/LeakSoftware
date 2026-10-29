@@ -602,7 +602,10 @@ function JobRowFace({
           </T>
         ) : null}
         <T variant="secondary">
-          {when} · {tech ?? "Unassigned"}
+          {when}
+          {/* The dot stays with the time, so a wrapped line never starts with it. */}
+          {"\u00a0· "}
+          {tech ?? "Unassigned"}
         </T>
       </View>
       <StatusChip status={job.status} style={{ alignSelf: "center" }} />

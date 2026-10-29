@@ -59,12 +59,16 @@ export function userTransitions(from: JobStatus, type?: string): JobStatus[] {
 
 /**
  * The button that moves a job from one status to another (owner, 2026-10-19: "Your call" on
- * "Reopen Job" for a scheduled job). Unschedule takes a job off the calendar; Reopen Job is
- * only for a canceled one; Reopen Visit puts a finished visit back in progress.
+ * "Reopen Job" for a scheduled job). Unschedule takes a job off the calendar; Reopen Job brings
+ * back a canceled job, or puts one whose report went out back in progress (2026-10-29: it read
+ * Start Job, as if the work hadn't begun); Reopen Visit puts a finished visit back in progress.
  */
 export function jobActionLabel(from: JobStatus, to: JobStatus): string {
   if (to === "unscheduled") return from === "canceled" ? "Reopen Job" : "Unschedule";
-  if (to === "in_progress") return from === "done" ? "Reopen Visit" : "Start Job";
+  if (to === "in_progress") {
+    if (from === "done") return "Reopen Visit";
+    return from === "report_sent" ? "Reopen Job" : "Start Job";
+  }
   if (to === "scheduled") return "Move Back to Scheduled";
   if (to === "canceled") return "Cancel Job";
   if (to === "done") return "Complete Job";

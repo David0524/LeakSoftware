@@ -306,6 +306,9 @@ public struct ReviewSummary: Sendable {
     /// questions answered (2026-10-20).
     var blocking: Int { inspection != nil ? 0 : pending }
 
+    /// The button under the notice: the way out goes where the work is.
+    public static let goToChecklist = "Go to Checklist"
+
     /// Signing waits for the checklist.
     public var pendingNotice: String? {
         guard blocking > 0 else { return nil }

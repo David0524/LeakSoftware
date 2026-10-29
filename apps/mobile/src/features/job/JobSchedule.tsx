@@ -37,7 +37,6 @@ import { Button, Group, ListRow, Section, Segmented, T } from "../../ui/componen
 import { haptics } from "../../ui/haptics";
 import { ModalSheet } from "../../ui/ModalSheet";
 import { color, space } from "../../ui/theme";
-import { TechValue } from "../../ui/TechDot";
 import { WebIcon } from "../../ui/WebIcon";
 import { MoveSheet, SuggestSheet, type MoveTarget } from "../schedule/MoveSheet";
 import { jobDateError } from "../../lib/limits";
@@ -232,9 +231,6 @@ export function JobSchedule({ jobId }: { jobId: string }) {
   if (!job) return null;
 
   const lock = jobLock(job);
-  const techName = job.assigned_user_id
-    ? (team.find((t) => t.user_id === job.assigned_user_id)?.name ?? "Teammate")
-    : "Nobody yet";
 
   function suggest(j: JobView) {
     const dates = suggestionDates(ctx);
@@ -271,19 +267,7 @@ export function JobSchedule({ jobId }: { jobId: string }) {
   return (
     <Section title="Schedule">
       <Group>
-        <ListRow
-          title="Tech"
-          detail={
-            job.assigned_user_id ? (
-              <TechValue
-                name={techName}
-                tech={team.find((t) => t.user_id === job.assigned_user_id)?.color}
-              />
-            ) : (
-              techName
-            )
-          }
-        />
+        {/* The tech is under Assigned to, right above; Change Schedule still sets it. */}
         <ListRow
           title="When"
           detail={
