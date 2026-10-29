@@ -118,6 +118,26 @@
             "job", companyId: "c1", ["property_id": .string(samPool), "status": "unscheduled", "type": "repair"])
     }
 
+    /// Three stops tomorrow for the signed-in tech (u1) and none today.
+    func seedTomorrow(_ store: LocalStore) throws {
+        let zone = "America/Phoenix"
+        let tomorrow = try addDays(localDay(Date(), timeZone: zone), 1)
+        for (i, name) in ["Grace Holloway", "Riley Rivera", "Daniel Reyes"].enumerated() {
+            let customer = try store.insert("customer", companyId: "c1", ["name": .string(name)])
+            let pool = try store.insert(
+                "property", companyId: "c1",
+                ["customer_id": .string(customer), "address_line1": "\(100 + i) E Main St", "city": "Mesa"])
+            try store.insert(
+                "job", companyId: "c1",
+                [
+                    "property_id": .string(pool), "bill_to_customer_id": .string(customer), "status": "scheduled",
+                    "type": "detection", "assigned_user_id": "u1", "number": .number(Double(1100 + i)),
+                    "scheduled_start": .string(
+                        zonedInstant(tomorrow, 8 * 60 + i * 150, timeZone: zone).map(isoString) ?? ""),
+                ])
+        }
+    }
+
     /// Today's route for the signed-in tech (u1) and a teammate: the shop and pools with map
     /// locations, three stops today in route order (one with access notes), and a stop tomorrow.
     func seedRoute(_ store: LocalStore) throws {
@@ -728,6 +748,10 @@
             try await snapshot("30-today-reorder-scrolled", scrolled: 160, reorder())
             let empty = try sampleEnvironment(jobs: false)
             try await snapshot("30-today-empty", MainView().app(empty))
+            // Nothing today, stops tomorrow: the next day's card (owner, 2026-10-29).
+            let next = try sampleEnvironment(jobs: false)
+            try seedTomorrow(next.session.sync.store)
+            try await snapshot("30-today-next-day", MainView().app(next))
         }
 
         /// Filter and salt cell cleanings (owner, 2026-10-19): a maintenance stop on Today with

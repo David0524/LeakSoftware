@@ -18,9 +18,11 @@ import {
   routingSettings,
   workDay,
   scheduleOrder,
+  nextDayCard,
 } from "@leakbook/core";
 import { inRouteOrderViews, stopLockTag, useJobViews, type JobView } from "../../../../data/jobs";
-import { useDriveTimes, useTeam } from "../../../../data/schedule";
+import { upcomingStops, useDriveTimes, useTeam } from "../../../../data/schedule";
+import { NextDay } from "../../../../features/today/NextDay";
 import { useRouteStart } from "../../../../data/memberStarts";
 import { useLine } from "../../../../data/texting";
 import { useWeather } from "../../../../data/weather";
@@ -55,7 +57,6 @@ import { useCompany, useSession } from "../../../../state/session";
 import { openDirections, useDirectionsChoice } from "../../../../state/directions";
 import {
   Button,
-  Empty,
   FilterPills,
   HeaderButton,
   Notice,
@@ -187,6 +188,12 @@ export default function Today() {
         dayJobs.filter((j) => j.assigned_user_id === shownTech || j.second_tech_id === shownTech),
       ),
     [dayJobs, shownTech],
+  );
+  // No stops today: the next day with stops (owner, 2026-10-29).
+  const nextDay = useMemo(
+    () =>
+      stops.length === 0 ? nextDayCard(upcomingStops(jobs, shownTech, today, tz), today, tz) : null,
+    [stops.length, jobs, shownTech, today, tz],
   );
   const points = useMemo(
     () => [depot, ...stops.map((j) => propertyLocation(j.property))],
@@ -488,19 +495,7 @@ export default function Today() {
           // Placeholder cards while the first download fills the phone, not an empty day.
           <SkeletonCards />
         ) : stops.length === 0 ? (
-          <Empty>
-            <Text style={[type.body, styles.center, { color: color.textMuted }]}>
-              Nothing on {mine ? "your" : "this"} route today.{" "}
-              <Text
-                accessibilityRole="link"
-                onPress={() => router.navigate("/schedule")}
-                style={{ color: color.link, textDecorationLine: "underline" }}
-              >
-                Open the schedule
-              </Text>
-              .
-            </Text>
-          </Empty>
+          <NextDay empty={`Nothing on ${mine ? "your" : "this"} route today.`} card={nextDay} />
         ) : (
           <View style={styles.route}>
             {/* No summary line (owner, 2026-10-22: "Get rid of this on all platforms: 0 of 4

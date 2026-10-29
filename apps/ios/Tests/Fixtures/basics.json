@@ -1804,6 +1804,150 @@
       "result": false
     }
   ],
+  "nextDayCard": [
+    {
+      "args": [
+        [
+          {
+            "date": "2026-10-30",
+            "start": "2026-10-30T15:00:00Z",
+            "name": "Grace Holloway"
+          },
+          {
+            "date": "2026-10-30",
+            "start": "2026-10-30T17:30:00Z",
+            "name": "Riley Rivera"
+          },
+          {
+            "date": "2026-10-30",
+            "start": null,
+            "name": "Daniel Reyes"
+          },
+          {
+            "date": "2026-10-30",
+            "start": "2026-10-30T22:00:00Z",
+            "name": "Sam Sample"
+          }
+        ],
+        "2026-10-29",
+        "America/Phoenix"
+      ],
+      "result": {
+        "date": "2026-10-30",
+        "heading": "Tomorrow",
+        "button": "See Tomorrow",
+        "line": "4 stops · first at 8:00 AM",
+        "names": "Grace Holloway, Riley Rivera, and 2 more"
+      }
+    },
+    {
+      "args": [
+        [
+          {
+            "date": "2026-10-29",
+            "start": null,
+            "name": "Today"
+          },
+          {
+            "date": "2026-11-03",
+            "start": "2026-11-03T16:15:00Z",
+            "name": "Riley Rivera"
+          },
+          {
+            "date": "2026-11-03",
+            "start": null,
+            "name": "Grace Holloway"
+          }
+        ],
+        "2026-10-29",
+        "America/Phoenix"
+      ],
+      "result": {
+        "date": "2026-11-03",
+        "heading": "Tue, Nov 3",
+        "button": "See Tuesday",
+        "line": "2 stops · first at 9:15 AM",
+        "names": "Riley Rivera and Grace Holloway"
+      }
+    },
+    {
+      "args": [
+        [
+          {
+            "date": "2026-11-13",
+            "start": null,
+            "name": "Too Far"
+          }
+        ],
+        "2026-10-29",
+        "America/Phoenix"
+      ],
+      "result": null
+    },
+    {
+      "args": [
+        [
+          {
+            "date": "2026-11-12",
+            "start": null,
+            "name": "Sam Sample"
+          }
+        ],
+        "2026-10-29",
+        "America/Phoenix"
+      ],
+      "result": {
+        "date": "2026-11-12",
+        "heading": "Thu, Nov 12",
+        "button": "See Thursday",
+        "line": "1 stop",
+        "names": "Sam Sample"
+      }
+    },
+    {
+      "args": [
+        [
+          {
+            "date": "2026-10-30",
+            "start": null,
+            "name": "A"
+          },
+          {
+            "date": "2026-10-30",
+            "start": null,
+            "name": "B"
+          },
+          {
+            "date": "2026-10-30",
+            "start": null,
+            "name": "C"
+          },
+          {
+            "date": "2026-10-30",
+            "start": null,
+            "name": "A"
+          }
+        ],
+        "2026-10-29",
+        "America/New_York"
+      ],
+      "result": {
+        "date": "2026-10-30",
+        "heading": "Tomorrow",
+        "button": "See Tomorrow",
+        "line": "4 stops",
+        "names": "A, B, and C"
+      }
+    },
+    {
+      "args": [
+        [],
+        "2026-10-29",
+        "America/Phoenix"
+      ],
+      "result": null
+    }
+  ],
   "parseGallons": [
     {
       "args": [

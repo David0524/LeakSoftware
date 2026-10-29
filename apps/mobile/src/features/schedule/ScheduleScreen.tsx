@@ -1,4 +1,4 @@
-import { router } from "expo-router";
+import { router, useFocusEffect } from "expo-router";
 import { useCallback, useMemo, useState } from "react";
 import {
   Alert,
@@ -60,6 +60,7 @@ import {
   saveJobLock,
   useDriveTimes,
   useTeam,
+  takeScheduleDay,
 } from "../../data/schedule";
 import { menuTitle, stopRowActions, toggleLock, type StopActionId } from "../../lib/rowActions";
 import { rowGestures, useRowMenu } from "../../ui/RowMenu";
@@ -170,6 +171,16 @@ export function ScheduleScreen() {
 
   const [view, setView] = useState<ScheduleView>("day");
   const [date, setDate] = useState(today);
+  // Today's next-day card opens a day here (owner, 2026-10-29).
+  useFocusEffect(
+    useCallback(() => {
+      const asked = takeScheduleDay();
+      if (asked) {
+        setView("day");
+        setDate(asked);
+      }
+    }, []),
+  );
   const [wanted, setWanted] = useState<string | null>(null);
   const [goTo, setGoTo] = useState(false);
   const banner = useResultBanner();

@@ -306,6 +306,36 @@ public func isFinished(_ status: JobStatus) -> Bool {
 
 public func routeKey(_ techId: String?, _ date: String) -> String { "\(techId ?? "none")|\(date)" }
 
+/// A tech's stops on the two weeks after today, in route order, for an empty Today's next-day card
+/// (owner, 2026-10-29: "An empty Today shows what's next"). Port of the website's `upcomingStops`.
+public func upcomingStops(_ jobs: [ScheduleJob], techId: String, today: String, timeZone: String) -> [UpcomingStop] {
+    let last = (try? addDays(today, nextDayLookahead)) ?? today
+    var byDate: [String: [ScheduleJob]] = [:]
+    for j in jobs where j.status != .canceled && (j.assignedUserId == techId || j.secondTechId == techId) {
+        guard let start = j.start else { continue }
+        let date = localDay(start, timeZone: timeZone)
+        guard date > today, date <= last else { continue }
+        byDate[date, default: []].append(j)
+    }
+    return byDate.keys.sorted().flatMap { date in
+        inRouteOrder(byDate[date] ?? []).map {
+            UpcomingStop(date: date, start: $0.scheduledStart, name: $0.customerName)
+        }
+    }
+}
+
+/// A day another screen asks the Schedule to open on (Today's next-day card), taken once when the
+/// Schedule shows.
+@MainActor
+public enum ScheduleRequest {
+    private static var day: String?
+    public static func open(_ date: String) { day = date }
+    public static func take() -> String? {
+        defer { day = nil }
+        return day
+    }
+}
+
 /// Every job on the phone that the schedule can show: not deleted, not canceled.
 public func scheduleJobs(_ store: LocalStore, companyId: String) -> [ScheduleJob] {
     ((try? jobViews(store, companyId: companyId)) ?? [])

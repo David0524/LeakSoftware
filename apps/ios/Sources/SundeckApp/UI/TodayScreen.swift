@@ -243,6 +243,29 @@
                     .clipShape(RoundedRectangle(cornerRadius: CGFloat(Radius.card), style: .continuous))
                     .card(padding: 0)
                 }
+            } else if let next = day.nextDay {
+                // The next day with stops (owner, 2026-10-29: "An empty Today shows what's next").
+                VStack(alignment: .leading, spacing: 12) {
+                    Text("Nothing on \(day.techId == day.ctx.userId ? "your" : "this") route today.")
+                        .textRole(.body).foregroundStyle(Color.textMuted)
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text(next.heading).textRole(.cardTitle).foregroundStyle(Color.text)
+                            .accessibilityAddTraits(.isHeader)
+                        Text(next.line).textRole(.body).foregroundStyle(Color.text)
+                        Text(next.names).textRole(.body).foregroundStyle(Color.textMuted)
+                        HStack {
+                            Spacer()
+                            Button(next.button) {
+                                ScheduleRequest.open(next.date)
+                                openTab(.schedule)
+                            }
+                            .buttonStyle(.secondary)
+                        }
+                        .padding(.top, 8)
+                    }
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .card()
+                }
             } else {
                 EmptyState(
                     text: "Nothing on \(day.techId == day.ctx.userId ? "your" : "this") route today.",
@@ -472,6 +495,8 @@
         var heroStops: [HeroStop] = []
         /// "Today: 8 pools · 3 reports sent" once every stop is done (core `endOfDay`).
         var wrapUp: String?
+        /// No stops today: the next day with stops, up to two weeks out (owner, 2026-10-29).
+        var nextDay: NextDayCard?
         /// The card for the stop the day is on, worked out once (`hero(viewing:)`).
         private var restingHero: TodayHero?
         /// The card for each other stop, worked out once off the main thread too, so swiping the
@@ -495,6 +520,11 @@
             let pick = wanted ?? userId
             techId = ctx.isManager && techs.contains { $0.id == pick } ? pick : userId
             route = loaded.routes[routeKey(techId, ctx.today)]
+            if route?.jobs.isEmpty ?? true {
+                nextDay = try? nextDayCard(
+                    upcomingStops(jobs, techId: techId, today: ctx.today, timeZone: ctx.timeZone), today: ctx.today,
+                    timeZone: ctx.timeZone)
+            }
             // The owner's Team (owner, 2026-10-22: techs' progress live): each tech with stops
             // today, their ring, the stop they're on and the last one done.
             if ctx.isManager && techs.count > 1 {

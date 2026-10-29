@@ -169,6 +169,13 @@
             .resultBanner($banner, onUndo: undo.map { u in { undoLast(u) } })
             .rootTitle("Schedule")
             .toolbar { NewJobToolbar(back: "Schedule") }
+            // Today's next-day card opens a day here (owner, 2026-10-29).
+            .onAppear {
+                if let asked = ScheduleRequest.take() {
+                    view = .day
+                    date = asked
+                }
+            }
             .sensoryFeedback(.success, trigger: saved)
             .sensoryFeedback(.error, trigger: failed)
             .task(

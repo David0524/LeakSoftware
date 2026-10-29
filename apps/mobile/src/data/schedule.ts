@@ -1,5 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import {
+  addDays,
+  NEXT_DAY_LOOKAHEAD,
   estimateDriveMinutes,
   localDate,
   localMinutes,
@@ -14,6 +16,7 @@ import {
   type LatLng,
   type PlanContext,
   type TechColor,
+  type UpcomingStop,
 } from "@leakbook/core";
 import type { JsonValue } from "@leakbook/sync";
 import { getServices } from "../lib/services";
@@ -116,6 +119,38 @@ export function routesFor(jobs: JobView[], dates: string[], timeZone: string) {
   for (const [k, list] of routes) routes.set(k, inRouteOrderViews(list));
   for (const [k, list] of unassigned) unassigned.set(k, inRouteOrderViews(list));
   return { routes, unassigned };
+}
+
+/**
+ * A tech's stops on the two weeks after today, in route order, for an empty Today's next-day
+ * card (owner, 2026-10-29: "An empty Today shows what's next"). The website's upcomingStops.
+ */
+export function upcomingStops(
+  jobs: JobView[],
+  techId: string,
+  today: string,
+  timeZone: string,
+): UpcomingStop[] {
+  const dates = Array.from({ length: NEXT_DAY_LOOKAHEAD }, (_, i) => addDays(today, i + 1));
+  const { routes } = routesFor(jobs, dates, timeZone);
+  return dates.flatMap((date) =>
+    (routes.get(routeKey(techId, date)) ?? []).map((j) => ({
+      date,
+      start: j.scheduled_start ?? null,
+      name: j.customer?.name ?? "Customer",
+    })),
+  );
+}
+
+/** A day another screen asks the Schedule to open on (Today's next-day card), taken once. */
+let askedDay: string | null = null;
+export function requestScheduleDay(date: string) {
+  askedDay = date;
+}
+export function takeScheduleDay(): string | null {
+  const date = askedDay;
+  askedDay = null;
+  return date;
 }
 
 /**

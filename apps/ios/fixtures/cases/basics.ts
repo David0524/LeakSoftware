@@ -23,6 +23,7 @@ import {
   isManagerRole,
   jobActionLabel,
   isBackwardMove,
+  nextDayCard,
   jobFeeLabel,
   jobOnPhones,
   newJobTypes,
@@ -112,6 +113,45 @@ export const basics: ModuleCases = {
   isBackwardMove: rule(
     (from: JobStatus, to: JobStatus) => isBackwardMove(from, to),
     JOB_STATUSES.flatMap((from) => JOB_STATUSES.map((to) => [from, to] as [JobStatus, JobStatus])),
+  ),
+  // An empty Today's next day (owner, 2026-10-29).
+  nextDayCard: rule(
+    (stops: { date: string; start: string | null; name: string }[], today: string, tz: string) =>
+      nextDayCard(stops, today, tz),
+    [
+      [
+        [
+          { date: "2026-10-30", start: "2026-10-30T15:00:00Z", name: "Grace Holloway" },
+          { date: "2026-10-30", start: "2026-10-30T17:30:00Z", name: "Riley Rivera" },
+          { date: "2026-10-30", start: null, name: "Daniel Reyes" },
+          { date: "2026-10-30", start: "2026-10-30T22:00:00Z", name: "Sam Sample" },
+        ],
+        "2026-10-29",
+        "America/Phoenix",
+      ],
+      [
+        [
+          { date: "2026-10-29", start: null, name: "Today" },
+          { date: "2026-11-03", start: "2026-11-03T16:15:00Z", name: "Riley Rivera" },
+          { date: "2026-11-03", start: null, name: "Grace Holloway" },
+        ],
+        "2026-10-29",
+        "America/Phoenix",
+      ],
+      [[{ date: "2026-11-13", start: null, name: "Too Far" }], "2026-10-29", "America/Phoenix"],
+      [[{ date: "2026-11-12", start: null, name: "Sam Sample" }], "2026-10-29", "America/Phoenix"],
+      [
+        [
+          { date: "2026-10-30", start: null, name: "A" },
+          { date: "2026-10-30", start: null, name: "B" },
+          { date: "2026-10-30", start: null, name: "C" },
+          { date: "2026-10-30", start: null, name: "A" },
+        ],
+        "2026-10-29",
+        "America/New_York",
+      ],
+      [[], "2026-10-29", "America/Phoenix"],
+    ],
   ),
   // A pool's gallons as typed (import.ts): New Job's Gallons and the job's Pool gallons.
   parseGallons: rule(

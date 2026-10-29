@@ -1,6 +1,5 @@
 import { SamplePill } from "@/components/sample-pill";
 import type { Metadata } from "next";
-import Link from "next/link";
 import {
   formatAddress,
   formatDay,
@@ -27,6 +26,8 @@ import {
   lastDoneLine,
   scheduleBounds,
   endOfDay,
+  nextDayCard,
+  type UpcomingStop,
 } from "@leakbook/core";
 import { TodayHeroCard, type HeroJob } from "@/components/today-hero";
 import { TodayDays } from "@/components/today-days";
@@ -56,7 +57,7 @@ import {
 } from "@/components/today-reorder";
 import { WeatherBadge } from "@/components/weather-badge";
 import { AddressLink } from "@/components/open-in-maps";
-import { Empty, StatusBadge, cx, iconButtonClass } from "@/components/ui";
+import { StatusBadge, cx, iconButtonClass } from "@/components/ui";
 import { getOffice } from "@/lib/auth";
 import {
   checklistCount,
@@ -68,7 +69,8 @@ import {
   mayMakeJobs,
 } from "@/lib/data";
 import { getLine } from "@/lib/messages";
-import { loadRoutes, routeContext, routeKey, shopToday } from "@/server/route-days";
+import { loadRoutes, routeContext, routeKey, shopToday, upcomingStops } from "@/server/route-days";
+import { NextDay } from "@/components/next-day";
 import { NavPlus } from "@/components/nav-bar";
 import { GettingStarted } from "@/components/getting-started";
 import { LiveRefresh } from "@/components/live-refresh";
@@ -120,7 +122,9 @@ export default async function TodayPage({ searchParams }: PageProps<"/today">) {
   // (owner, 2026-10-19; 2026-10-20: what Today shows is what the checklist has), and a started
   // job's checklist count for the card, read from its rows: all at once.
   const bounds = scheduleBounds([ctx.today], ctx.timeZone);
-  const [cleanings, onVisits, counts, sentToday] = await Promise.all([
+  // Whose day is empty today: their next day with stops (owner, 2026-10-29).
+  const emptyDays = dayIds.filter((id) => !routes.get(routeKey(id, ctx.today))?.jobs.length);
+  const [cleanings, onVisits, counts, sentToday, upcoming] = await Promise.all([
     getPlanCleanings(office, [
       ...new Set(allJobs.map((j) => j.service_plan_id).filter((id): id is string => !!id)),
     ]).catch(() => []),
@@ -144,6 +148,7 @@ export default async function TodayPage({ searchParams }: PageProps<"/today">) {
       bounds.from,
       bounds.to,
     ).catch(() => ({ reports: [], quotes: [] })),
+    upcomingStops(office, ctx, emptyDays).catch(() => new Map<string, UpcomingStop[]>()),
   ]);
   const dueAt = (j: (typeof allJobs)[number]) => {
     const here = new Set((onVisits.get(j.id) ?? []).map((x) => x.planCleaningId));
@@ -458,13 +463,10 @@ export default async function TodayPage({ searchParams }: PageProps<"/today">) {
       content: (
         <>
           {jobs.length === 0 ? (
-            <Empty>
-              Nothing on {mine ? "your" : "this"} route today.{" "}
-              <Link href="/schedule" className="text-link underline">
-                Open the schedule
-              </Link>
-              .
-            </Empty>
+            <NextDay
+              empty={`Nothing on ${mine ? "your" : "this"} route today.`}
+              card={nextDayCard(upcoming.get(dayTech) ?? [], ctx.today, ctx.timeZone)}
+            />
           ) : (
             <TodayReorderProvider tech={dayTech}>
               {/* No summary line (owner, 2026-10-22: "Get rid of this on all platforms: 0 of 4

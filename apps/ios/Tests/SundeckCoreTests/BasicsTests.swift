@@ -13,6 +13,7 @@ import Testing
             "offersPool", "newJobTypes", "seesAllJobs", "canMakeJobs", "roleLabel",
             "isManagerRole", "splitEmails", "POOL_TYPE_LABELS", "jobOnPhones", "requiresFinishPhoto",
             "FINISH_PHOTO_MESSAGE", "REPAIR_ITEM_KEY", "REPAIR_ITEM_LABEL", "jobActionLabel", "isBackwardMove",
+            "nextDayCard",
             "jobFeeLabel",
             "parseGallons", "requiresFinishedChecklist", "FINISH_CHECKLIST_MESSAGE", "completeJobBlocker",
             "jobHasWrapUp", "jobHasChecklist", "stopDone", "markCompleteValues", "isHexColor", "parseReminderDays",
@@ -66,6 +67,9 @@ import Testing
         checkRule(module, "JOB_STATUS_LABELS") { _ in labelTable(\JobStatus.label) }
         checkRule(module, "jobActionLabel") { c in jobActionLabel(from: try c.arg(0), to: try c.arg(1)) }
         checkRule(module, "isBackwardMove") { c in isBackwardMove(from: try c.arg(0), to: try c.arg(1)) }
+        checkRule(module, "nextDayCard") { c in
+            try nextDayCard(try c.arg(0), today: try c.arg(1), timeZone: try c.arg(2))
+        }
         checkRule(module, "jobFeeLabel") { c in jobFeeLabel(try c.arg(0, as: String?.self)) }
         checkRule(module, "JOB_TYPE_LABELS") { _ in labelTable(\JobType.label) }
         checkRule(module, "reportTitle") { c in reportTitle(try c.arg(0, as: String?.self)) }

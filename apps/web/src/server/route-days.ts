@@ -2,7 +2,9 @@ import "server-only";
 import { after } from "next/server";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import {
+  addDays,
   daySummary,
+  NEXT_DAY_LOOKAHEAD,
   formatAddress,
   inRouteOrder,
   localDate,
@@ -19,6 +21,7 @@ import {
   type LatLng,
   type RouteStart,
   type RoutingSettings,
+  type UpcomingStop,
 } from "@leakbook/core";
 import type { Office } from "@/lib/auth";
 import {
@@ -321,4 +324,39 @@ export async function locateCompanyWith(
     .update({ latitude: found.lat, longitude: found.lng, geocoded_address: address })
     .eq("id", companyId);
   return error ? null : found;
+}
+
+/**
+ * Each tech's stops on the two weeks after today, in route order, for an empty Today's next-day
+ * card (owner, 2026-10-29: "An empty Today shows what's next"). Only the job rows: no routing.
+ */
+export async function upcomingStops(
+  office: Office,
+  ctx: Pick<RouteContext, "today" | "timeZone">,
+  techIds: string[],
+): Promise<Map<string, UpcomingStop[]>> {
+  const out = new Map<string, UpcomingStop[]>();
+  if (techIds.length === 0) return out;
+  const dates = Array.from({ length: NEXT_DAY_LOOKAHEAD }, (_, i) => addDays(ctx.today, i + 1));
+  const { from, to } = scheduleBounds(dates, ctx.timeZone);
+  const jobs = await jobsBetween(office, from, to);
+  for (const id of techIds) {
+    const byDate = new Map<string, JobRow[]>();
+    for (const j of jobs) {
+      if (j.assigned_user_id !== id && j.second_tech_id !== id) continue;
+      const date = localDate(new Date(j.scheduled_start!), ctx.timeZone);
+      byDate.set(date, [...(byDate.get(date) ?? []), j]);
+    }
+    out.set(
+      id,
+      [...byDate].flatMap(([date, day]) =>
+        inRouteOrder(day).map((j) => ({
+          date,
+          start: j.scheduled_start ?? null,
+          name: j.customer?.name ?? "Customer",
+        })),
+      ),
+    );
+  }
+  return out;
 }
