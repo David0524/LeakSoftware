@@ -460,6 +460,11 @@ test("the office adds a job for a new customer, with its checklist ready", async
   await page.getByLabel("Street address").fill("12 Office Way");
   await page.getByLabel("City").fill("Tempe");
   await page.getByLabel("State", { exact: true }).fill("az");
+  // Pool details, the second tech and the price are under More Details (owner, 2026-10-29).
+  const more = page.getByRole("button", { name: /^More Details/ });
+  await expect(more).toHaveAttribute("aria-expanded", "false");
+  await expect(page.getByLabel("Has a spa")).toBeHidden();
+  await more.click();
   await page.getByLabel("Has a spa").check();
   const tomorrow = new Date(Date.now() + 86_400_000).toISOString().slice(0, 10);
   await page.getByLabel("Date").fill(tomorrow);

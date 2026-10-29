@@ -136,6 +136,8 @@ test("a new shop signs up and runs the whole loop, then subscribes", async ({
   await page.getByLabel("State", { exact: true }).fill("AZ");
   await page.getByLabel("Date").fill(new Date().toISOString().slice(0, 10));
   await page.getByLabel("Tech", { exact: true }).selectOption({ label: OWNER.name });
+  // The price is under More Details (owner, 2026-10-29: "New Job in 20 seconds").
+  await page.getByRole("button", { name: /^More Details/ }).click();
   await page
     .getByLabel("Detection price")
     .selectOption({ label: "Leak detection - pool ($375.00)" });

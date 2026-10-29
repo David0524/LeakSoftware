@@ -23,6 +23,7 @@ import type { RepeatChoice } from "@/lib/plan-repeat";
 import { PlanRepeat } from "./plan-repeat";
 import { Draft } from "./draft-keeper";
 import { Segmented } from "./segmented";
+import { MoreDetails } from "./more-details";
 import { ShapePicker } from "./shape-picker";
 import { Checkbox, ChipToggle, cx, SectionTitle, Select } from "./ui";
 
@@ -149,6 +150,37 @@ export function NewJobForm({
       ? `Usually ${[usualTech, usual.time ? minutesLabel(clockToMinutes(usual.time)) : null].filter(Boolean).join(" at ")}.`
       : "";
 
+  // The price, in view for a plan and in More Details otherwise.
+  const priceField = (
+    <SField
+      label={plan ? "Price per month ($)" : detection ? "Detection fee ($)" : "Price ($)"}
+      name="fee"
+      inputMode="decimal"
+      value={fee}
+      onChange={(e) => setFee(e.target.value)}
+      hint={
+        maintenance
+          ? "Billed monthly with the customer's other visits."
+          : detection
+            ? "Shown on the report and billed on the invoice."
+            : "Billed on the invoice. Add parts there before sending."
+      }
+    />
+  );
+  const intake = intakeQuestionsFor(questions, kind);
+  // What More Details holds, for its closed row.
+  const moreHint = [
+    mode === "new" ? "other emails" : null,
+    newPool ? "pool type, spa, gallons, shape, access notes" : null,
+    detection || kind === "inspection" ? (newPool ? null : "gallons") : null,
+    maintenance ? null : "second tech",
+    kind === "repair" || plan ? null : "price",
+    "notes",
+  ]
+    .filter(Boolean)
+    .join(", ")
+    .replace(/^./, (c) => c.toUpperCase());
+
   /** Fill the visit fields from a suggested slot. */
   function fill(values: Record<string, string>) {
     fillFields(visit.current, values);
@@ -215,55 +247,18 @@ export function NewJobForm({
               <SField label="Name" name="customer_name" autoComplete="off" />
               <SField label="Phone" name="customer_phone" type="tel" />
               <SField label="Email" name="customer_email" type="email" />
-              <SField
-                label="Other emails (optional)"
-                name="cc_emails"
-                hint="They get reports too. Separate with spaces."
-              />
             </div>
           )}
         </Section>
 
         {newPool ? (
-          <Section title="Pool">
+          <Section title="Address">
             <div className="grid gap-4 sm:grid-cols-2">
               <AddressField label="Street address" name="address_line1" className="sm:col-span-2" />
               <SField label="City" name="city" />
               <div className="grid grid-cols-2 gap-4">
                 <SField label="State" name="state" maxLength={2} />
                 <SField label="ZIP" name="postal_code" />
-              </div>
-              <Select
-                label="Pool type"
-                name="pool_type"
-                defaultValue=""
-                options={[
-                  { value: "", label: "Not sure" },
-                  ...(Object.keys(POOL_TYPE_LABELS) as PoolType[]).map((k) => ({
-                    value: k,
-                    label: POOL_TYPE_LABELS[k],
-                  })),
-                ]}
-              />
-              <div className="self-end">
-                <Checkbox name="has_spa" label="Has a spa" />
-              </div>
-              {detection || kind === "inspection" ? null : <GallonsField known={null} />}
-              <div className={cx("sm:col-span-2", maintenance && "hidden")}>
-                <ShapePicker
-                  name="diagram_shape"
-                  value={shape}
-                  onChange={setShape}
-                  label="Pool shape (optional)"
-                  hint="Leave it blank if you don’t know yet; it can be set on the job’s Findings."
-                />
-              </div>
-              <div className="sm:col-span-2">
-                <STextArea
-                  label="Access notes (optional)"
-                  name="access_notes"
-                  hint="Gate code, dog, where to park."
-                />
               </div>
             </div>
           </Section>
@@ -368,57 +363,8 @@ export function NewJobForm({
                       ]
                 }
               />
-              {maintenance ? null : (
-                <div>
-                  <Select
-                    label="Second tech (optional)"
-                    name="second_tech"
-                    defaultValue=""
-                    options={[
-                      { value: "", label: "None" },
-                      ...team.map((t) => ({ value: t.id, label: t.name })),
-                    ]}
-                  />
-                  <FieldError name="second_tech" />
-                </div>
-              )}
-              {fees.length && detection ? (
-                <Select
-                  label="Detection price"
-                  name="fee_item"
-                  defaultValue=""
-                  onChange={(e) => {
-                    const item = fees.find((f) => f.id === e.target.value);
-                    if (item) setFee((item.cents / 100).toFixed(2));
-                  }}
-                  options={[
-                    { value: "", label: "Pick from the price book…" },
-                    ...fees.map((f) => ({
-                      value: f.id,
-                      label: `${f.name} ($${(f.cents / 100).toFixed(2)})`,
-                    })),
-                  ]}
-                />
-              ) : null}
-              {/* A repair's price is its repairs' (From the Customer). */}
-              {kind === "repair" ? null : (
-                <SField
-                  label={
-                    plan ? "Price per month ($)" : detection ? "Detection fee ($)" : "Price ($)"
-                  }
-                  name="fee"
-                  inputMode="decimal"
-                  value={fee}
-                  onChange={(e) => setFee(e.target.value)}
-                  hint={
-                    maintenance
-                      ? "Billed monthly with the customer's other visits."
-                      : detection
-                        ? "Shown on the report and billed on the invoice."
-                        : "Billed on the invoice. Add parts there before sending."
-                  }
-                />
-              )}
+              {/* A plan's monthly price is part of starting it, so it stays in view. */}
+              {plan ? priceField : null}
             </div>
           </div>
         </Section>
@@ -428,16 +374,10 @@ export function NewJobForm({
             {/* One or more repairs (owner, 2026-10-22: "add additional repair"); the job's price
               is their sum. */}
             <NewJobRepairs items={repairItems} />
-            <STextArea
-              label="What they said (optional)"
-              name="notes"
-              hint="Shown to the tech with the job."
-            />
           </Section>
-        ) : detection || kind === "inspection" ? (
+        ) : (detection || kind === "inspection") && intake.length ? (
           <Section title="From the Customer">
-            <GallonsField key={pool} known={knownGallons} />
-            {intakeQuestionsFor(questions, kind).map((q) =>
+            {intake.map((q) =>
               q.type === "multi" ? (
                 <fieldset key={q.key}>
                   <legend className="font-medium">{q.label}</legend>
@@ -463,13 +403,102 @@ export function NewJobForm({
                 <SField key={q.key} label={q.label} name={`q_${q.key}`} />
               ),
             )}
-            <STextArea label="Notes for the tech (optional)" name="notes" />
           </Section>
-        ) : (
-          <Section title="Notes">
+        ) : null}
+
+        {/* What a call rarely needs, behind one row (owner, 2026-10-29: "New Job in 20
+            seconds"). */}
+        <MoreDetails hint={moreHint}>
+          {mode === "new" ? (
+            <SField
+              label="Other emails (optional)"
+              name="cc_emails"
+              hint="They get reports too. Separate with spaces."
+            />
+          ) : null}
+          {newPool ? (
+            <div className="grid gap-4 sm:grid-cols-2">
+              <Select
+                label="Pool type"
+                name="pool_type"
+                defaultValue=""
+                options={[
+                  { value: "", label: "Not sure" },
+                  ...(Object.keys(POOL_TYPE_LABELS) as PoolType[]).map((k) => ({
+                    value: k,
+                    label: POOL_TYPE_LABELS[k],
+                  })),
+                ]}
+              />
+              <div className="self-end">
+                <Checkbox name="has_spa" label="Has a spa" />
+              </div>
+              {detection || kind === "inspection" ? null : <GallonsField known={null} />}
+              <div className={cx("sm:col-span-2", maintenance && "hidden")}>
+                <ShapePicker
+                  name="diagram_shape"
+                  value={shape}
+                  onChange={setShape}
+                  label="Pool shape (optional)"
+                  hint="Leave it blank if you don’t know yet; it can be set on the job’s Findings."
+                />
+              </div>
+              <div className="sm:col-span-2">
+                <STextArea
+                  label="Access notes (optional)"
+                  name="access_notes"
+                  hint="Gate code, dog, where to park."
+                />
+              </div>
+            </div>
+          ) : null}
+          {detection || kind === "inspection" ? (
+            <GallonsField key={pool} known={knownGallons} />
+          ) : null}
+          {maintenance ? null : (
+            <div>
+              <Select
+                label="Second tech (optional)"
+                name="second_tech"
+                defaultValue=""
+                options={[
+                  { value: "", label: "None" },
+                  ...team.map((t) => ({ value: t.id, label: t.name })),
+                ]}
+              />
+              <FieldError name="second_tech" />
+            </div>
+          )}
+          {fees.length && detection ? (
+            <Select
+              label="Detection price"
+              name="fee_item"
+              defaultValue=""
+              onChange={(e) => {
+                const item = fees.find((f) => f.id === e.target.value);
+                if (item) setFee((item.cents / 100).toFixed(2));
+              }}
+              options={[
+                { value: "", label: "Pick from the price book…" },
+                ...fees.map((f) => ({
+                  value: f.id,
+                  label: `${f.name} ($${(f.cents / 100).toFixed(2)})`,
+                })),
+              ]}
+            />
+          ) : null}
+          {/* A repair's price is its repairs'; a plan's is above. */}
+          {kind === "repair" || plan ? null : priceField}
+          {kind === "repair" ? (
+            <STextArea
+              label="What they said (optional)"
+              name="notes"
+              hint="Shown to the tech with the job."
+            />
+          ) : (
             <STextArea label="Notes for the tech (optional)" name="notes" />
-          </Section>
-        )}
+          )}
+        </MoreDetails>
       </SettingsForm>
     </Draft>
   );

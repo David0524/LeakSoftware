@@ -214,6 +214,61 @@ public final class NewJobForm {
     /// The title over what the customer said: a repair's and leak detection's (owner, 2026-10-19).
     public static let fromCustomerTitle = "From the Customer"
 
+    // MARK: - More Details
+
+    // What a call rarely needs, behind one row (owner, 2026-10-29: "New Job in 20 seconds"): other
+    // emails, the pool's details, the second tech, the price (a plan's stays in view) and the notes.
+    // The website's MoreDetails.
+
+    /// The price is under More Details (a plan's monthly price stays in view; a repair's is its repairs').
+    public var feeInMoreDetails: Bool { !showsRepairCall && !isPlan }
+
+    /// What More Details holds, for its closed row: "Other emails, pool type, spa, …, notes".
+    public var moreDetailsHint: String {
+        let parts: [String?] = [
+            mode == .new ? "other emails" : nil,
+            newPool ? "pool type, spa, gallons, shape, access notes" : nil,
+            showsBooking && !newPool ? "gallons" : nil,
+            showsSecondTech ? "second tech" : nil,
+            feeInMoreDetails ? "price" : nil,
+            "notes",
+        ]
+        let text = parts.compactMap { $0 }.joined(separator: ", ")
+        return text.prefix(1).uppercased() + text.dropFirst()
+    }
+
+    /// The fields filled in under More Details, by their labels, in the order they show.
+    public var moreDetailsFilled: [String] {
+        var names: [String] = []
+        if mode == .new, !otherEmails.trimmingCharacters(in: .whitespaces).isEmpty { names.append("Other emails") }
+        if newPool {
+            if poolType != nil { names.append("Pool type") }
+            if hasSpa { names.append("Has a spa") }
+            if gallonsInPool, !gallons.isEmpty { names.append("Gallons") }
+            if !accessNotes.trimmingCharacters(in: .whitespaces).isEmpty { names.append("Access notes") }
+        }
+        if gallonsInBooking, !gallons.isEmpty { names.append("Gallons") }
+        if showsSecondTech, secondTech != nil { names.append("Second tech") }
+        if feeInMoreDetails {
+            if isLeak, feeItems.contains(where: { dollarsText($0.cents) == fee }) { names.append("Detection price") }
+            if !fee.trimmingCharacters(in: .whitespaces).isEmpty {
+                names.append(feeLabel.replacingOccurrences(of: " ($)", with: ""))
+            }
+        }
+        if !notes.trimmingCharacters(in: .whitespaces).isEmpty {
+            names.append(showsRepairCall ? "What they said" : "Notes for the tech")
+        }
+        return names
+    }
+
+    /// More Details' second line: what's filled in, else what it holds.
+    public var moreDetailsLine: String {
+        moreDetailsFilled.isEmpty ? moreDetailsHint : "Filled in: \(moreDetailsFilled.joined(separator: ", "))"
+    }
+
+    /// An error under More Details, so it opens to show it.
+    public var moreDetailsHasError: Bool { errors["secondTech"] != nil || (feeInMoreDetails && feeError != nil) }
+
     // Gallons (owner, 2026-10-19: replaces "Size of the pool"), saved on the pool.
 
     /// Leak detection and pool inspections ask in From the Customer; other jobs in a new pool's card.

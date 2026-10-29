@@ -58,6 +58,8 @@
         @State private var streetFocused = false
         /// The customer's and pool's text and the notes, kept until saved or discarded (owner, 2026-10-27).
         @State private var draft = DraftHandle()
+        /// More Details is open (owner, 2026-10-29: "New Job in 20 seconds").
+        @State private var moreOpen = false
 
         private var offline: Bool { sync.status.phase == .offline }
 
@@ -70,6 +72,7 @@
                     if form.newPool { poolCard }
                     visitCard
                     calledCard
+                    moreDetails
                     if !form.errors.isEmpty || !form.planErrors.isEmpty || form.feeError != nil {
                         Notice(kind: .error, text: "Fix the highlighted fields.")
                     }
@@ -94,6 +97,7 @@
             }
             .scrollDismissesKeyboard(.interactively)
             .onChange(of: form.jobType) { form.jobTypeChanged() }
+            .onChange(of: form.moreDetailsHasError) { _, error in if error { moreOpen = true } }
             .navigationTitle("New Job")
             .navigationBarTitleDisplayMode(.large)
             // Back with something typed asks "Discard changes?" (owner, 2026-10-20: everywhere).
@@ -117,6 +121,8 @@
                 if let value = changes["otherEmails"] { form.otherEmails = value }
                 if let value = changes["accessNotes"] { form.accessNotes = value }
                 if let value = changes["notes"] { form.notes = value }
+                // Restored text under More Details opens it, so nothing typed is hidden.
+                if ["otherEmails", "accessNotes", "notes"].contains(where: { changes[$0] != nil }) { moreOpen = true }
             }
             .sensoryFeedback(.success, trigger: saved)
             .alert(
@@ -178,18 +184,12 @@
                     )
                     .textInputAutocapitalization(.never)
                     .autocorrectionDisabled()
-                    OutlinedField(
-                        label: "Other emails (optional)", text: $form.otherEmails,
-                        hint: "They get reports too. Separate with spaces.", keyboard: .emailAddress
-                    )
-                    .textInputAutocapitalization(.never)
-                    .autocorrectionDisabled()
                 }
             }
         }
 
         private var poolCard: some View {
-            FormCard("Pool") {
+            FormCard("Address") {
                 OutlinedField(
                     label: "Street address", text: $form.input.addressLine1, error: form.errors["addressLine1"],
                     onFocusChange: { streetFocused = $0 }
@@ -218,21 +218,6 @@
                     OutlinedField(label: "ZIP", text: $form.input.postalCode, keyboard: .numberPad)
                         .textContentType(.postalCode)
                 }
-                SelectField(
-                    label: "Pool type", selection: $form.poolType,
-                    options: [nil] + PoolType.allCases.map { Optional($0) },
-                    optionLabel: { $0?.label ?? "Not sure" })
-                SwitchRow("Has a spa", isOn: $form.hasSpa).padding(.horizontal, -16)
-                if form.gallonsInPool { gallonsField }
-                if !form.isMaintenance {
-                    ShapePicker(
-                        value: form.shape, label: "Pool shape (optional)",
-                        hint: "Leave it blank if you don’t know yet; it can be set on the job’s Findings."
-                    ) { form.shape = $0 }
-                }
-                OutlinedField(
-                    label: "Access notes (optional)", text: $form.accessNotes, hint: "Gate code, dog, where to park.",
-                    multiline: true)
             }
         }
 
@@ -283,29 +268,97 @@
                         label: "Tech", selection: $form.techId, options: form.techChoices, optionLabel: form.name)
                     if let error = form.errors["tech"] { FieldHint(text: error, error: true) }
                 }
-                if form.showsSecondTech {
-                    VStack(alignment: .leading, spacing: 4) {
-                        SelectField(
-                            label: "Second tech (optional)", selection: $form.secondTech,
-                            options: [nil] + form.team.map { Optional($0.id) },
-                            optionLabel: { $0 == nil ? "None" : form.name($0) })
-                        if let error = form.errors["secondTech"] { FieldHint(text: error, error: true) }
+                // A plan's monthly price is part of starting it, so it stays in view.
+                if form.isPlan { feeField }
+            }
+        }
+
+        private var feeField: some View {
+            OutlinedField(
+                label: form.feeLabel, text: $form.fee, hint: form.feeHint, error: form.feeError, keyboard: .decimalPad)
+        }
+
+        /// What a call rarely needs, behind one row that opens in place (owner, 2026-10-29: "New Job
+        /// in 20 seconds"); it says what's filled in, and opens by itself for a restored draft or an error.
+        private var moreDetails: some View {
+            VStack(alignment: .leading, spacing: 16) {
+                Button {
+                    withAnimation(Motion.smooth) { moreOpen.toggle() }
+                } label: {
+                    HStack(spacing: 12) {
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text("More Details").textRole(.bodyEmphasis).foregroundStyle(Color.text)
+                            Text(form.moreDetailsLine).textRole(.secondary).foregroundStyle(Color.textMuted)
+                                .multilineTextAlignment(.leading)
+                        }
+                        Spacer(minLength: 0)
+                        Image(systemName: "chevron.down")
+                            .font(.system(size: 15, weight: .semibold))
+                            .foregroundStyle(Color.textMuted)
+                            .rotationEffect(.degrees(moreOpen ? 180 : 0))
                     }
+                    .frame(maxWidth: .infinity, minHeight: minTarget, alignment: .leading)
+                    .contentShape(Rectangle())
                 }
-                if form.isLeak && !form.feeItems.isEmpty {
-                    SelectField(
-                        label: "Detection price",
-                        selection: Binding(
-                            get: { form.feeItems.first { dollars($0.cents) == form.fee } },
-                            set: { if let item = $0 { form.pickFee(item) } }),
-                        options: [nil] + form.feeItems.map { Optional($0) },
-                        optionLabel: { $0?.label ?? "Pick from the price book…" })
-                }
-                // A repair's price is its repairs' (From the Customer, owner 2026-10-22).
-                if !form.showsRepairCall {
-                    OutlinedField(
-                        label: form.feeLabel, text: $form.fee, hint: form.feeHint, error: form.feeError,
-                        keyboard: .decimalPad)
+                .buttonStyle(.plain)
+                .card()
+                .accessibilityValue(moreOpen ? "Expanded" : "Collapsed")
+                if moreOpen {
+                    VStack(alignment: .leading, spacing: 16) {
+                        if form.mode == .new {
+                            OutlinedField(
+                                label: "Other emails (optional)", text: $form.otherEmails,
+                                hint: "They get reports too. Separate with spaces.", keyboard: .emailAddress
+                            )
+                            .textInputAutocapitalization(.never)
+                            .autocorrectionDisabled()
+                        }
+                        if form.newPool {
+                            SelectField(
+                                label: "Pool type", selection: $form.poolType,
+                                options: [nil] + PoolType.allCases.map { Optional($0) },
+                                optionLabel: { $0?.label ?? "Not sure" })
+                            SwitchRow("Has a spa", isOn: $form.hasSpa).padding(.horizontal, -16)
+                            if form.gallonsInPool { gallonsField }
+                            if !form.isMaintenance {
+                                ShapePicker(
+                                    value: form.shape, label: "Pool shape (optional)",
+                                    hint: "Leave it blank if you don’t know yet; it can be set on the job’s Findings."
+                                ) { form.shape = $0 }
+                            }
+                            OutlinedField(
+                                label: "Access notes (optional)", text: $form.accessNotes,
+                                hint: "Gate code, dog, where to park.", multiline: true)
+                        }
+                        if form.gallonsInBooking { gallonsField }
+                        if form.showsSecondTech {
+                            VStack(alignment: .leading, spacing: 4) {
+                                SelectField(
+                                    label: "Second tech (optional)", selection: $form.secondTech,
+                                    options: [nil] + form.team.map { Optional($0.id) },
+                                    optionLabel: { $0 == nil ? "None" : form.name($0) })
+                                if let error = form.errors["secondTech"] { FieldHint(text: error, error: true) }
+                            }
+                        }
+                        if form.isLeak && !form.feeItems.isEmpty && form.feeInMoreDetails {
+                            SelectField(
+                                label: "Detection price",
+                                selection: Binding(
+                                    get: { form.feeItems.first { dollars($0.cents) == form.fee } },
+                                    set: { if let item = $0 { form.pickFee(item) } }),
+                                options: [nil] + form.feeItems.map { Optional($0) },
+                                optionLabel: { $0?.label ?? "Pick from the price book…" })
+                        }
+                        if form.feeInMoreDetails { feeField }
+                        if form.showsRepairCall {
+                            OutlinedField(
+                                label: "What they said (optional)", text: $form.notes,
+                                hint: "Shown to the tech with the job.", multiline: true)
+                        } else {
+                            OutlinedField(label: "Notes for the tech (optional)", text: $form.notes, multiline: true)
+                        }
+                    }
+                    .card()
                 }
             }
         }
@@ -392,13 +445,10 @@
                         }
                     }
                     FieldHint(text: RepairLabels.footer)
-                    OutlinedField(
-                        label: "What they said (optional)", text: $form.notes, hint: "Shown to the tech with the job.",
-                        multiline: true)
                 }
-            } else if form.showsBooking {
+            } else if form.showsBooking && !form.questions.isEmpty {
+                // The shop's own booking questions stay in view; gallons and notes are under More Details.
                 FormCard(NewJobForm.fromCustomerTitle) {
-                    gallonsField
                     ForEach(form.questions) { question in
                         switch question.kind {
                         case .multi:
@@ -429,11 +479,6 @@
                                     get: { form.answer(question.key) }, set: { form.setAnswer(question.key, $0) }))
                         }
                     }
-                    OutlinedField(label: "Notes for the tech (optional)", text: $form.notes, multiline: true)
-                }
-            } else {
-                FormCard("Notes") {
-                    OutlinedField(label: "Notes for the tech (optional)", text: $form.notes, multiline: true)
                 }
             }
         }

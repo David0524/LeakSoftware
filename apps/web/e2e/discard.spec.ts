@@ -72,3 +72,23 @@ test("a field typed into while the page is still loading still asks", async ({ p
   await ask(page).getByRole("button", { name: "Keep Editing" }).click();
   await expect(page).toHaveURL(/\/jobs\/new$/);
 });
+
+test("New Job's More Details opens by itself for a restored draft", async ({ page }) => {
+  // Owner, 2026-10-29: "New Job in 20 seconds": the rarely needed fields sit behind one row,
+  // but nothing typed is ever hidden.
+  await signIn(page, OWNER, "/jobs/new");
+  const more = page.getByRole("button", { name: /^More Details/ });
+  await expect(more).toHaveAttribute("aria-expanded", "false");
+  await expect(page.getByLabel("Notes for the tech (optional)")).toBeHidden();
+  await more.click();
+  await page.getByLabel("Notes for the tech (optional)").fill("Gate sticks; lift it");
+  await expect(more).toContainText("Filled in: Notes for the tech");
+  // Kept as a draft, then put back on the next visit, with More Details open.
+  await page.waitForTimeout(800);
+  await page.reload();
+  await expect(page.getByLabel("Notes for the tech (optional)")).toHaveValue(
+    "Gate sticks; lift it",
+  );
+  await expect(more).toHaveAttribute("aria-expanded", "true");
+  await page.getByRole("button", { name: "Discard Draft" }).click();
+});

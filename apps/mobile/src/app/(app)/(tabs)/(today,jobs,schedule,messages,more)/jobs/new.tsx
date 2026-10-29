@@ -76,6 +76,7 @@ import { jobDateError } from "../../../../../lib/limits";
 import { useDiscardChanges } from "../../../../../ui/discard";
 import { DraftNote } from "../../../../../ui/DraftNote";
 import { useDraft } from "../../../../../ui/useDraft";
+import { MoreDetails } from "../../../../../features/job/MoreDetails";
 import { haptics } from "../../../../../ui/haptics";
 import { DateField, TimeField } from "../../../../../features/schedule/DateField";
 import { ShapePicker } from "../../../../../ui/ShapePicker";
@@ -297,6 +298,34 @@ function NewJobForm() {
     Object.values(form).some((v) => v.trim()),
   );
 
+  // More Details (owner, 2026-10-29): opens for a restored draft (below), and stays open while
+  // an error inside is showing.
+  const [moreOpen, setMoreOpen] = useState(false);
+  const showMore = moreOpen || !!feeError || !!gallonsError;
+  const moreFilled = [
+    !customerId && otherEmails.trim() ? "Other emails" : null,
+    !propertyId && poolType ? "Pool type" : null,
+    !propertyId && hasSpa ? "Has a spa" : null,
+    gallonsText && (leak || inspection || !propertyId) ? "Gallons" : null,
+    !propertyId && accessNotes.trim() ? "Access notes" : null,
+    !maintenance && secondTech !== "none" ? "Second tech" : null,
+    (leak || inspection) && feeText.trim() ? (inspection ? "Price" : "Detection fee") : null,
+    repair && repairNotes.trim() ? "What they said" : null,
+    plan && planForm.notes.trim() ? "Notes for the tech" : null,
+  ].filter((x): x is string => !!x);
+  const moreHint = [
+    !customerId ? "other emails" : null,
+    !propertyId ? "pool type, spa, gallons, shape, access notes" : null,
+    (leak || inspection) && propertyId ? "gallons" : null,
+    maintenance ? null : "second tech",
+    leak || inspection ? "price" : null,
+    repair || plan ? "notes" : null,
+  ]
+    .filter(Boolean)
+    .join(", ")
+    .replace(/^./, (c) => c.toUpperCase());
+  const moreLine = moreFilled.length ? `Filled in: ${moreFilled.join(", ")}` : moreHint;
+
   // What was typed is kept as a draft and comes back when New Job opens again (owner,
   // 2026-10-27): the customer's and pool's text, and the notes.
   const draft = useDraft({
@@ -321,6 +350,8 @@ function NewJobForm() {
       if (o !== undefined) setOtherEmails(o);
       if (r !== undefined) setRepairNotes(r);
       if (p !== undefined) setPlanForm((f) => ({ ...f, notes: p }));
+      // Restored text under More Details opens it, so nothing typed is hidden.
+      if ([a, o, r, p].some((v) => v !== undefined)) setMoreOpen(true);
     },
   });
 
@@ -620,21 +651,12 @@ function NewJobForm() {
               keyboardType="email-address"
               autoCapitalize="none"
             />
-            <Field
-              label="Other emails (optional)"
-              value={otherEmails}
-              onChangeText={setOtherEmails}
-              keyboardType="email-address"
-              autoCapitalize="none"
-              hint="They get the report too. Separate with spaces."
-            />
           </>
         )}
       </Section>
 
-      {leak || inspection ? (
+      {(leak || inspection) && questions.length ? (
         <Section title="From the Customer">
-          {gallonsField}
           {questions.map((q) =>
             q.type === "multi" ? (
               <View key={q.key} style={{ gap: space["2"] }}>
@@ -673,18 +695,6 @@ function NewJobForm() {
               />
             ),
           )}
-          <Field
-            label={inspection ? "Price ($)" : "Detection fee ($)"}
-            value={feeText}
-            onChangeText={setFee}
-            keyboardType="decimal-pad"
-            error={feeError}
-            hint={
-              inspection
-                ? "Billed on the invoice. Add parts there before sending."
-                : "Shown on the report."
-            }
-          />
         </Section>
       ) : null}
 
@@ -738,13 +748,6 @@ function NewJobForm() {
           <T variant="secondary" muted>
             {REPAIR_LABELS.footer}
           </T>
-          <Field
-            label="What they said (optional)"
-            value={repairNotes}
-            onChangeText={setRepairNotes}
-            multiline
-            hint="Shown to the tech with the job."
-          />
         </Section>
       ) : null}
 
@@ -803,32 +806,6 @@ function NewJobForm() {
               onChangeText={set("postalCode")}
               keyboardType="number-pad"
               maxLength={10}
-            />
-            <Choice
-              label="Pool type"
-              options={(Object.keys(POOL_TYPE_LABELS) as PoolType[]).map((k) => ({
-                value: k,
-                label: POOL_TYPE_LABELS[k],
-              }))}
-              value={poolType}
-              onChange={setPoolType}
-            />
-            <Toggle label="Has a spa" value={hasSpa} onChange={setHasSpa} />
-            {leak || inspection ? null : gallonsField}
-            {leak ? (
-              <ShapePicker
-                value={shape}
-                onChange={setShape}
-                label="Pool shape (optional)"
-                hint="Leave it blank if you don’t know yet; set it later on Findings."
-              />
-            ) : null}
-            <Field
-              label="Access notes"
-              value={accessNotes}
-              onChangeText={setAccessNotes}
-              placeholder="Gate code, dogs, where to park"
-              multiline
             />
           </>
         )}
@@ -900,12 +877,6 @@ function NewJobForm() {
               hint="Billed monthly with the customer's other visits."
               error={planErrors.price}
             />
-            <Field
-              label="Notes for the tech (optional)"
-              value={planForm.notes}
-              onChangeText={setPlan("notes")}
-              multiline
-            />
           </>
         ) : (
           <>
@@ -964,6 +935,51 @@ function NewJobForm() {
         {seesAll && !plan ? (
           <Toggle label="Assign to me" value={assignToMe} onChange={setAssignToMe} />
         ) : null}
+      </Section>
+
+      {/* What a call rarely needs, behind one row (owner, 2026-10-29: "New Job in 20 seconds"). */}
+      <MoreDetails open={showMore} onToggle={() => setMoreOpen(!showMore)} line={moreLine}>
+        {!selectedCustomer ? (
+          <Field
+            label="Other emails (optional)"
+            value={otherEmails}
+            onChangeText={setOtherEmails}
+            keyboardType="email-address"
+            autoCapitalize="none"
+            hint="They get the report too. Separate with spaces."
+          />
+        ) : null}
+        {!propertyId ? (
+          <>
+            <Choice
+              label="Pool type"
+              options={(Object.keys(POOL_TYPE_LABELS) as PoolType[]).map((k) => ({
+                value: k,
+                label: POOL_TYPE_LABELS[k],
+              }))}
+              value={poolType}
+              onChange={setPoolType}
+            />
+            <Toggle label="Has a spa" value={hasSpa} onChange={setHasSpa} />
+            {leak || inspection ? null : gallonsField}
+            {leak ? (
+              <ShapePicker
+                value={shape}
+                onChange={setShape}
+                label="Pool shape (optional)"
+                hint="Leave it blank if you don’t know yet; set it later on Findings."
+              />
+            ) : null}
+            <Field
+              label="Access notes"
+              value={accessNotes}
+              onChangeText={setAccessNotes}
+              placeholder="Gate code, dogs, where to park"
+              multiline
+            />
+          </>
+        ) : null}
+        {leak || inspection ? gallonsField : null}
         {team.length > 0 && !maintenance ? (
           <Choice
             label="Second tech"
@@ -975,7 +991,38 @@ function NewJobForm() {
             onChange={setSecondTech}
           />
         ) : null}
-      </Section>
+        {leak || inspection ? (
+          <Field
+            label={inspection ? "Price ($)" : "Detection fee ($)"}
+            value={feeText}
+            onChangeText={setFee}
+            keyboardType="decimal-pad"
+            error={feeError}
+            hint={
+              inspection
+                ? "Billed on the invoice. Add parts there before sending."
+                : "Shown on the report."
+            }
+          />
+        ) : null}
+        {repair ? (
+          <Field
+            label="What they said (optional)"
+            value={repairNotes}
+            onChangeText={setRepairNotes}
+            multiline
+            hint="Shown to the tech with the job."
+          />
+        ) : null}
+        {plan ? (
+          <Field
+            label="Notes for the tech (optional)"
+            value={planForm.notes}
+            onChangeText={setPlan("notes")}
+            multiline
+          />
+        ) : null}
+      </MoreDetails>
 
       {Object.keys(errors).length > 0 || (plan && Object.keys(planErrors).length > 0) ? (
         <Notice tone="error">Fix the highlighted fields.</Notice>

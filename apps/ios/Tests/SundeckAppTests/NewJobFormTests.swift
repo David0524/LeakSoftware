@@ -367,6 +367,28 @@ import Testing
             job["intake"] == ["reason": ["Pool water level dropping"], "pool_size": "Normal", "spa_size": "6x6"])
     }
 
+    /// More Details (owner, 2026-10-29: "New Job in 20 seconds"): what it holds, what's filled in, and
+    /// that a plan's price stays in view.
+    @Test func moreDetailsSaysWhatItHoldsAndWhatsFilled() throws {
+        try seedTeam()
+        let f = form(settings: ["services": "both"])
+        #expect(f.jobType == .detection)
+        #expect(
+            f.moreDetailsLine
+                == "Other emails, pool type, spa, gallons, shape, access notes, second tech, price, notes")
+        #expect(f.feeInMoreDetails)
+        f.poolType = .gunitePlaster
+        f.secondTech = Self.teammate
+        f.fee = "649"
+        f.notes = "Gate sticks"
+        #expect(f.moreDetailsFilled == ["Pool type", "Second tech", "Detection fee", "Notes for the tech"])
+        #expect(f.moreDetailsLine == "Filled in: Pool type, Second tech, Detection fee, Notes for the tech")
+        f.jobType = .repair
+        f.jobTypeChanged()
+        #expect(!f.feeInMoreDetails)
+        #expect(f.moreDetailsFilled.last == "What they said")
+    }
+
     @Test func poolServiceLeavesIntakeAndSecondTechOff() throws {
         try seedTeam()
         let f = form(settings: [
