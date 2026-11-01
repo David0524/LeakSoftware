@@ -186,7 +186,8 @@ export function OnMyWayDemo() {
         )}
       >
         <div className="max-w-[85%] rounded-[1.25rem] rounded-br-md bg-[#0a84ff] px-4 py-2.5 text-[0.9rem] text-white">
-          Hi, this is Jake from {SHOP[pkg]}. I’m on my way and should be there about 10:15 AM.
+          Hi, this is Jake from {SHOP[pkg].replace(/\.$/, "")}. I’m on my way and should be there
+          about 10:15 AM.
         </div>
       </div>
       <p
