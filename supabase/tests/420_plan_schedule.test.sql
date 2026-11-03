@@ -73,18 +73,21 @@ select is((select count(*)::int from job where service_plan_id = (select id from
 -- Billing: one line per plan per month, however many visits were done.
 -- The visits are added here, not taken from the plan's own: a plan starting tomorrow may have
 -- none yet (2026-10-29: tomorrow was a 5th Thursday, so its first visit was weeks out).
+-- (2026-11-03: the plan's own first visit fell on one of these days, so a visit already there
+-- is used instead of adding a second.)
 insert into job (company_id, property_id, bill_to_customer_id, type, status, plan_date,
                  service_plan_id, assigned_user_id)
   select ca, prop_a, cust_a, 'maintenance', 'in_progress',
-         date_trunc('month', current_date)::date + 3, (select id from plan), tech_a from ids;
+         date_trunc('month', current_date)::date + d, (select id from plan), tech_a
+  from ids, (values (3), (10)) as v(d)
+  on conflict do nothing;
+update job set status = 'in_progress', assigned_user_id = (select tech_a from ids)
+  where service_plan_id = (select id from plan) and status not in ('in_progress', 'done')
+    and plan_date in (date_trunc('month', current_date)::date + 3,
+                      date_trunc('month', current_date)::date + 10);
 update job set status = 'done' where service_plan_id = (select id from plan)
-  and plan_date = date_trunc('month', current_date)::date + 3;
-insert into job (company_id, property_id, bill_to_customer_id, type, status, plan_date,
-                 service_plan_id, assigned_user_id)
-  select ca, prop_a, cust_a, 'maintenance', 'in_progress',
-         date_trunc('month', current_date)::date + 10, (select id from plan), tech_a from ids;
-update job set status = 'done' where service_plan_id = (select id from plan)
-  and plan_date = date_trunc('month', current_date)::date + 10;
+  and plan_date in (date_trunc('month', current_date)::date + 3,
+                    date_trunc('month', current_date)::date + 10);
 
 select tests.authenticate_as((select owner_a from ids));
 select is((unbilled_maintenance((select ca from ids)) -> 0 ->> 'total_cents')::int, 20000,
