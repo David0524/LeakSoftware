@@ -74,6 +74,9 @@ jobs:
           # TestFlight skips the export compliance questions (standard HTTPS only).
           test "$(/usr/libexec/PlistBuddy -c 'Print :ITSAppUsesNonExemptEncryption' Info.plist)" = "false"
           version=$(/usr/libexec/PlistBuddy -c 'Print :CFBundleShortVersionString' Info.plist)
+          # The Live Activity extension must carry the app's version, or App Store Connect warns.
+          widget=$(/usr/libexec/PlistBuddy -c 'Print :CFBundleShortVersionString' LiveActivity-Info.plist)
+          test "$widget" = "$version" || { echo "::error::LiveActivity-Info.plist says $widget, Info.plist $version; raise both"; exit 1; }
           echo "MARKETING_VERSION=$version" >> "$GITHUB_ENV"
           echo "Version $version, build $BUILD_NUMBER"
 

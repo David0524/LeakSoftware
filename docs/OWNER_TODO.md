@@ -3,6 +3,32 @@
 Owner, 2026-10-22: "a list of things you need from me. I'll knock them out later." Newest
 first. Tick an item off by deleting it (and tell Claude, so it can check the result).
 
+## From 2026-11-05: after Apple approved 1.0.0
+
+1. **Release 1.0.0 if it isn't out yet.** Apple allows one version at a time, so 1.0.1 can't be
+   submitted while 1.0.0 waits for release. App Store Connect › Sundeck Pro › Distribution ›
+   1.0.0 › **Release This Version**. Tell Claude "1.0.0 is released"; Claude then submits 1.0.1
+   (the App Store workflow, `submit`).
+
+2. **Move the Apple developer account to Sundeck Pro, LLC.** Until then the App Store shows your
+   own name as the seller. Apps, ratings and testers carry over.
+   1. The LLC's D-U-N-S number (the same one Google Play needs below). Apple's free lookup finds
+      it or requests one: https://developer.apple.com/enroll/duns-lookup/. The legal name and
+      address must match the LLC's Nevada registration exactly. A new number takes up to about
+      a week through Apple's tool.
+   2. Apple needs: the D-U-N-S number, a public website on the company's domain
+      (`sundeckpro.com`), a work email on that domain, and you as someone who can sign for the
+      LLC.
+   3. https://developer.apple.com/contact/topic/select › **Membership and Account** › ask to
+      convert the individual membership to an organization. Apple replies with a form and may
+      call to confirm you can sign for the LLC.
+   4. When Apple confirms, check App Store Connect › Business: the LLC's bank and tax details
+      (the app is free, so nothing is paid, but Apple may ask). Tell Claude "Apple account is
+      on the LLC"; Claude updates the App Store copyright and docs if anything changed.
+
+3. **Android:** the Google Play steps below are still all open (the Android workflow has never
+   run). Start with step 1's D-U-N-S number, which also does 2.1 above.
+
 ## From 2026-10-22: Android on Google Play
 
 1. **Set up Google Play, Expo and Firebase for the Android app**, in the order in

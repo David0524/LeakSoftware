@@ -1,0 +1,60 @@
+name: App Store
+
+# Shows where the iPhone app stands on App Store Connect (versions, builds), or submits the
+# version in apps/ios/Info.plist for App Review with its newest TestFlight build and the What's
+# New text in docs/release/APP_STORE.md (scripts/app-store-submit.mjs). Only when asked:
+# Actions › App Store › Run workflow. It never releases a version; the owner does that.
+# Same App Store Connect key as the TestFlight workflow (ASC_KEY_ID, ASC_ISSUER_ID, ASC_KEY_P8).
+
+on:
+  workflow_dispatch:
+    inputs:
+      action:
+        description: "status: show versions and builds. submit: submit the Info.plist version for App Review."
+        type: choice
+        options: [status, submit]
+        default: status
+      build:
+        description: "Build number to submit (blank: the newest processed build of that version)"
+        type: string
+        default: ""
+
+concurrency:
+  group: app-store
+  cancel-in-progress: false
+
+jobs:
+  app-store:
+    name: App Store Connect
+    runs-on: ubuntu-24.04
+    timeout-minutes: 50
+    env:
+      APP_STORE_APP_ID: "6824555420"
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Write the App Store Connect key
+        env:
+          ASC_KEY_ID: ${{ secrets.ASC_KEY_ID }}
+          ASC_KEY_P8: ${{ secrets.ASC_KEY_P8 }}
+        run: |
+          dir="$RUNNER_TEMP/asc"
+          mkdir -p "$dir"
+          printf '%s\n' "$ASC_KEY_P8" > "$dir/AuthKey_$ASC_KEY_ID.p8"
+          echo "ASC_KEY_PATH=$dir/AuthKey_$ASC_KEY_ID.p8" >> "$GITHUB_ENV"
+
+      - name: ${{ inputs.action == 'submit' && 'Submit for App Review' || 'Status' }}
+        env:
+          ASC_KEY_ID: ${{ secrets.ASC_KEY_ID }}
+          ASC_ISSUER_ID: ${{ secrets.ASC_ISSUER_ID }}
+          ACTION: ${{ inputs.action }}
+          BUILD: ${{ inputs.build }}
+        run: node scripts/app-store-submit.mjs
+
+      - name: Delete the key
+        if: always()
+        run: rm -rf "$RUNNER_TEMP/asc"

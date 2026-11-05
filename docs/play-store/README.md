@@ -114,7 +114,7 @@ Play Console.
 3. Play Console › Sundeck Pro › **Test and release › Testing › Internal testing › Create new
    release**. If asked about **Play App Signing**, choose "Use Google-generated key" (Google
    keeps the app's signing key; the EAS key is the upload key). Upload the `.aab`. Release name
-   `0.1.0`; release notes "First release." **Save › Review release › Start rollout to Internal
+   `1.0.0`; release notes "First release." **Save › Review release › Start rollout to Internal
    testing**.
 4. **Internal testing › Testers**: make an email list with your team's Google accounts, save,
    and open the "Copy link" invite on an Android phone to install it.

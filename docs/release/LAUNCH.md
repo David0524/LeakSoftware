@@ -53,6 +53,22 @@ npx eas-cli@latest build --profile production --platform android
   release.
 - Testers are added in App Store Connect › TestFlight.
 
+### Updates to App Review
+
+1.0.0 (build 1057) is approved (owner, 2026-11-05). Each update after it:
+
+1. Raise `CFBundleShortVersionString` in `apps/ios/Info.plist` and
+   `apps/ios/LiveActivity-Info.plist` (the TestFlight workflow refuses a mismatch), and write
+   the update's What's New in `docs/release/APP_STORE.md` § 1.9.
+2. Run the TestFlight workflow on that commit.
+3. GitHub › Actions › **App Store** › Run workflow: `status` lists the App Store versions and
+   the newest builds; `submit` makes the App Store version if needed (released by hand after
+   approval), sets What's New, attaches the newest processed build of that version (or the
+   build number given), and submits it for App Review. The listing, screenshots, App Privacy
+   and review contact carry over from the last version. It stops with a message when another
+   version is still in review or approved but not released (Apple allows one at a time).
+4. After approval, the owner releases it in App Store Connect.
+
 ## 3. App Store listing, App Privacy, and review notes
 
 The iPhone app's App Store Connect text is in **`docs/release/APP_STORE.md`** (2026-10-24), in

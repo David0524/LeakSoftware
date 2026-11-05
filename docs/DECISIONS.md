@@ -2,6 +2,12 @@
 
 Newest first. Each entry: date, decision, reason.
 
+## 2026-11-05 (owner: "We were approved by Apple!"; next: move the Apple account to the business, submit the latest update, submit for Android)
+- **iPhone 1.0.1 is the first update**: every iPhone change since 1.0.0 (build 1057, commit f98f49b), with its What's New in `docs/release/APP_STORE.md` § 1.9. Released by hand after approval, like 1.0.0. Backend stays the dev project, which is production for now.
+- **Updates are submitted by a workflow** (Actions › App Store; `scripts/app-store-submit.mjs`) with the TestFlight upload key: `status` shows versions and builds, `submit` makes the version, sets What's New, attaches the newest processed build and submits it. It never releases a version.
+- **The Android app's version is 1.0.0** (was 0.1.0) for its first Play release, matching the iPhone launch.
+- **Moving the Apple account to Sundeck Pro, LLC and the Google Play account both need the LLC's D-U-N-S number**; the owner's steps are in `docs/OWNER_TODO.md`.
+
 ## 2026-11-03 (owner: "My Vercel keeps getting charged with CPU usage"; the top rows were build CPU minutes and function storage)
 
 - **Vercel builds only the live branch, and only when the website changed.** `scripts/vercel-ignore.sh` (vercel.json `ignoreCommand`) skips preview builds of session branches and production pushes that touch nothing the website is built from (iPhone, Android, docs, database and website-test changes). CI still tests every branch; nothing relied on Vercel previews.
