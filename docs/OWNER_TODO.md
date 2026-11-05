@@ -5,10 +5,8 @@ first. Tick an item off by deleting it (and tell Claude, so it can check the res
 
 ## From 2026-11-05: after Apple approved 1.0.0
 
-1. **Release 1.0.0 if it isn't out yet.** Apple allows one version at a time, so 1.0.1 can't be
-   submitted while 1.0.0 waits for release. App Store Connect › Sundeck Pro › Distribution ›
-   1.0.0 › **Release This Version**. Tell Claude "1.0.0 is released"; Claude then submits 1.0.1
-   (the App Store workflow, `submit`).
+1. **Done (2026-11-05):** 1.0.0 released and 1.0.1 (build 1076) submitted for App Review, set
+   to release automatically once Apple approves it.
 
 2. **Move the Apple developer account to Sundeck Pro, LLC.** Until then the App Store shows your
    own name as the seller. Apps, ratings and testers carry over. **Requested from Apple
