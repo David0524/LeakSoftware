@@ -11,7 +11,9 @@ first. Tick an item off by deleting it (and tell Claude, so it can check the res
    (the App Store workflow, `submit`).
 
 2. **Move the Apple developer account to Sundeck Pro, LLC.** Until then the App Store shows your
-   own name as the seller. Apps, ratings and testers carry over.
+   own name as the seller. Apps, ratings and testers carry over. **Requested from Apple
+   (2026-11-05; D-U-N-S number in hand).** Waiting on Apple: answer their email or call and
+   form (step 3), then tell Claude "Apple account is on the LLC".
    1. The LLC's D-U-N-S number (the same one Google Play needs below). Apple's free lookup finds
       it or requests one: https://developer.apple.com/enroll/duns-lookup/. The legal name and
       address must match the LLC's Nevada registration exactly. A new number takes up to about
@@ -26,8 +28,9 @@ first. Tick an item off by deleting it (and tell Claude, so it can check the res
       (the app is free, so nothing is paid, but Apple may ask). Tell Claude "Apple account is
       on the LLC"; Claude updates the App Store copyright and docs if anything changed.
 
-3. **Android:** the Google Play steps below are still all open (the Android workflow has never
-   run). Start with step 1's D-U-N-S number, which also does 2.1 above.
+3. **Android:** the Google Play steps below are still open (the Android workflow found no
+   `EXPO_TOKEN` or `GOOGLE_SERVICES_JSON`, 2026-11-05). The D-U-N-S number from 2.1 is the one
+   step 1 asks for, so start at step 2 (the Play developer account).
 
 ## From 2026-10-22: Android on Google Play
 

@@ -7,6 +7,7 @@ Newest first. Each entry: date, decision, reason.
 - **Updates are submitted by a workflow** (Actions › App Store; `scripts/app-store-submit.mjs`) with the TestFlight upload key: `status` shows versions and builds, `submit` makes the version, sets What's New, attaches the newest processed build and submits it. It never releases a version.
 - **The Android app's version is 1.0.0** (was 0.1.0) for its first Play release, matching the iPhone launch.
 - **Moving the Apple account to Sundeck Pro, LLC and the Google Play account both need the LLC's D-U-N-S number**; the owner's steps are in `docs/OWNER_TODO.md`.
+- **The Apple account conversion to Sundeck Pro, LLC is requested** (owner: "Apple conversion requested", same day). Apple now confirms the owner can sign for the LLC; the App Store seller name changes when it is done.
 
 ## 2026-11-03 (owner: "My Vercel keeps getting charged with CPU usage"; the top rows were build CPU minutes and function storage)
 
