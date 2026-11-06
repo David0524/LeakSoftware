@@ -2,6 +2,9 @@
 
 Newest first. Each entry: date, decision, reason.
 
+## 2026-11-06 (owner: "our business phone number is (702) 785-1548. Add that to all contact us sections.")
+- **The business phone (702) 785-1548 sits beside the email everywhere we say how to reach us**, as a link that dials (`tel:+17027851548`): a **Call Us** row under Contact Us in More (website on phones, iPhone, Android) and in the account menu (website on computers); "Call Us: (702) 785-1548" in the public site's footer; "or call (702) 785-1548" after the home page's contact line; and "by phone at" in the Contact sections of the Terms and the Privacy Policy. One value per platform: `CONTACT_PHONE` (website, `lib/site.ts`; Android, More), `HelpMail.contactPhone` (iPhone). The iPhone app goes to 1.0.2 (1.0.1 is released, so its version can't take new builds).
+
 ## 2026-11-05 (owner: "We were approved by Apple!"; next: move the Apple account to the business, submit the latest update, submit for Android)
 - **iPhone 1.0.1 is the first update**: every iPhone change since 1.0.0 (build 1057, commit f98f49b), with its What's New in `docs/release/APP_STORE.md` § 1.9. Released by hand after approval, like 1.0.0. Backend stays the dev project, which is production for now.
 - **Updates are submitted by a workflow** (Actions › App Store; `scripts/app-store-submit.mjs`) with the TestFlight upload key: `status` shows versions and builds, `submit` makes the version, sets What's New, attaches the newest processed build and submits it. It never releases a version.

@@ -1,5 +1,5 @@
 import { LegalPage } from "@/components/legal-page";
-import { COMPANY, SUPPORT_EMAIL } from "@/lib/site";
+import { COMPANY, CONTACT_PHONE, CONTACT_PHONE_URL, SUPPORT_EMAIL } from "@/lib/site";
 
 /** Terms of service: the App Store and Google Play listings and the apps' More screens link here. */
 export function TermsBody({ inApp = false }: { inApp?: boolean }) {
@@ -178,6 +178,10 @@ export function TermsBody({ inApp = false }: { inApp?: boolean }) {
         <p>
           <a className="text-link underline" href={`mailto:${SUPPORT_EMAIL}`}>
             {SUPPORT_EMAIL}
+          </a>
+          , by phone at{" "}
+          <a className="text-link underline" href={CONTACT_PHONE_URL}>
+            {CONTACT_PHONE}
           </a>
           , or by mail to {COMPANY.legalName}, {COMPANY.mailingAddress}.
         </p>

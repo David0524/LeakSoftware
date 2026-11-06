@@ -18,7 +18,7 @@ import { officeLinks } from "@/lib/nav";
 import { activityUnread } from "@/lib/activity";
 import { Dot } from "@/components/nav-links";
 import { createClient } from "@/lib/supabase/server";
-import { CONTACT_EMAIL } from "@/lib/site";
+import { CONTACT_EMAIL, CONTACT_PHONE, CONTACT_PHONE_URL } from "@/lib/site";
 import { memberStartOf } from "@/server/member-start";
 
 export const metadata: Metadata = { title: "More · Sundeck Pro" };
@@ -100,6 +100,7 @@ export default async function MorePage() {
         <Grouped title="Help">
           {[
             { href: `mailto:${CONTACT_EMAIL}`, label: "Contact Us", detail: CONTACT_EMAIL },
+            { href: CONTACT_PHONE_URL, label: "Call Us", detail: CONTACT_PHONE },
             { href: "/privacy", label: "Privacy Policy" },
             { href: "/terms", label: "Terms of Service" },
             { href: "/status", label: "System Status" },

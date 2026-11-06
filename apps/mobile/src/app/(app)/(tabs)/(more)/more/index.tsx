@@ -37,6 +37,9 @@ import { appearance, color, space, type Scheme } from "../../../../../ui/theme";
 
 /** Sundeck Pro's contact address, as the website's CONTACT_EMAIL (owner, 2026-10-19). */
 const CONTACT_EMAIL = "office@sundeckpro.com";
+/** The business phone, as the website's CONTACT_PHONE (owner, 2026-11-06). */
+const CONTACT_PHONE = "(702) 785-1548";
+const CONTACT_PHONE_URL = "tel:+17027851548";
 
 // The setting names the company, since that's where it's picked; buttons say "Maps" (team and
 // week spec section 4).
@@ -231,6 +234,12 @@ export default function More() {
             subtitle={CONTACT_EMAIL}
             accessibilityRole="link"
             onPress={() => void Linking.openURL(`mailto:${CONTACT_EMAIL}`)}
+          />
+          <ListRow
+            title="Call Us"
+            subtitle={CONTACT_PHONE}
+            accessibilityRole="link"
+            onPress={() => void Linking.openURL(CONTACT_PHONE_URL)}
           />
           {API_URL ? (
             <ListRow

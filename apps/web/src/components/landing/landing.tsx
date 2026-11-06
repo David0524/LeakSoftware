@@ -2,7 +2,7 @@
 
 import type { ReactNode } from "react";
 import type { PlanId } from "@leakbook/core";
-import { CONTACT_EMAIL } from "@/lib/site";
+import { CONTACT_EMAIL, CONTACT_PHONE, CONTACT_PHONE_URL } from "@/lib/site";
 import { ButtonLink } from "../ui";
 import {
   DashboardDemo,
@@ -182,6 +182,13 @@ function Body() {
             Still have a question? Contact us at{" "}
             <a href={`mailto:${CONTACT_EMAIL}`} className="font-semibold text-link underline">
               {CONTACT_EMAIL}
+            </a>{" "}
+            or call{" "}
+            <a
+              href={CONTACT_PHONE_URL}
+              className="font-semibold whitespace-nowrap text-link underline"
+            >
+              {CONTACT_PHONE}
             </a>
             .
           </p>

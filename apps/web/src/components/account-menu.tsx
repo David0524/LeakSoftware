@@ -7,7 +7,7 @@ import { switchCompany } from "@/app/actions/auth";
 import { FeatureRequest } from "./feature-request";
 import { ThemeToggle } from "./theme-toggle";
 import { SignOutForm } from "./sign-out-form";
-import { CONTACT_EMAIL } from "@/lib/site";
+import { CONTACT_EMAIL, CONTACT_PHONE, CONTACT_PHONE_URL } from "@/lib/site";
 import { cx } from "./ui";
 
 /** Up to two initials from a name, or the email's first letter. */
@@ -131,6 +131,10 @@ export function AccountMenu({
           >
             Contact Us
             <span className="text-[0.8125rem] text-text-muted">{CONTACT_EMAIL}</span>
+          </a>
+          <a href={CONTACT_PHONE_URL} className={cx(row, "flex-col items-start justify-center")}>
+            Call Us
+            <span className="text-[0.8125rem] text-text-muted">{CONTACT_PHONE}</span>
           </a>
           <FeatureRequest className="px-4 text-text hover:bg-text/[0.05]" />
           <div className="border-t-[0.5px] border-separator" />

@@ -4,6 +4,10 @@ export const SUPPORT_EMAIL = process.env.SUPPORT_EMAIL || "support@sundeckpro.co
 /** Where shops and visitors reach Sundeck Pro (owner, 2026-10-19: "Add a contact us"). */
 export const CONTACT_EMAIL = "office@sundeckpro.com";
 
+/** The business phone, shown beside the email wherever we say how to reach us (owner, 2026-11-06). */
+export const CONTACT_PHONE = "(702) 785-1548";
+export const CONTACT_PHONE_URL = "tel:+17027851548";
+
 /**
  * The company behind Sundeck Pro (owner, 2026-10-24; docs/DECISIONS.md). The privacy policy,
  * the terms, the site's footer and the App Store copyright line (docs/release/APP_STORE.md)

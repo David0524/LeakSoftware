@@ -1,5 +1,5 @@
 import { LegalPage } from "@/components/legal-page";
-import { COMPANY, SUPPORT_EMAIL } from "@/lib/site";
+import { COMPANY, CONTACT_PHONE, CONTACT_PHONE_URL, SUPPORT_EMAIL } from "@/lib/site";
 
 const Mail = () => (
   <a className="text-link underline" href={`mailto:${SUPPORT_EMAIL}`}>
@@ -251,8 +251,11 @@ export function PrivacyBody({ inApp = false }: { inApp?: boolean }) {
       <section>
         <h2>Contact</h2>
         <p>
-          Questions about privacy: <Mail />, or by mail to {COMPANY.legalName},{" "}
-          {COMPANY.mailingAddress}.
+          Questions about privacy: <Mail />, by phone at{" "}
+          <a className="text-link underline" href={CONTACT_PHONE_URL}>
+            {CONTACT_PHONE}
+          </a>
+          , or by mail to {COMPANY.legalName}, {COMPANY.mailingAddress}.
         </p>
       </section>
     </LegalPage>

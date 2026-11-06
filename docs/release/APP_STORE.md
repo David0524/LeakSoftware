@@ -120,21 +120,13 @@ https://sundeckpro.com/
 
 ### 1.9 What's New in This Version (4,000)
 
-1.0.0 (the first release) had none. This is **1.0.1**'s; the App Store workflow's `submit`
+1.0.0 (the first release) had none. This is **1.0.2**'s; the App Store workflow's `submit`
 sends it, so replace it for each update (raise `CFBundleShortVersionString` in
 `apps/ios/Info.plist` and `apps/ios/LiveActivity-Info.plist` together).
 
 <!-- field:whats-new limit:4000 -->
 ```text
-- New Job is quicker: what a call needs comes first, and the rest sits under More Details.
-- Text you type is kept as a draft if the app closes before you save.
-- Remove a checklist item, photo, test, finding or chemical and you get Undo instead of "Are you sure?"
-- Add your own item to a job's checklist. Tile and grout is now in Bond Beam.
-- Five new pool landmarks: Skimmer, Main Drain, Light, Return and Suction Line.
-- An empty Today shows your next day with stops.
-- Customers and Reports sort and filter the way Jobs does.
-- Each reading shows the pool's last value as a hint, and the pool's usual chemicals are listed first.
-- Fixes: nothing sends twice, errors are in plain words, and fields stay above the keyboard.
+- Call Us: our phone number is now in More, under Contact Us.
 ```
 
 ### 1.10 Build

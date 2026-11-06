@@ -103,6 +103,8 @@ import Testing
     @Test func helpMailGoesToTheOffice() {
         #expect(HelpMail.contactEmail == "office@sundeckpro.com")
         #expect(HelpMail.contactURL.absoluteString == "mailto:office@sundeckpro.com")
+        #expect(HelpMail.contactPhone == "(702) 785-1548")
+        #expect(HelpMail.phoneURL.absoluteString == "tel:+17027851548")
     }
 
     func featureAPI(_ host: String) -> WebAPI {

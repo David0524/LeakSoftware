@@ -81,6 +81,9 @@ public func syncRowDetail(_ status: SyncStatus, now: Date = Date()) -> String {
 public enum HelpMail {
     public static let contactEmail = "office@sundeckpro.com"
     public static let contactURL = URL(string: "mailto:\(contactEmail)")!
+    /// The business phone (website `CONTACT_PHONE`; owner, 2026-11-06).
+    public static let contactPhone = "(702) 785-1548"
+    public static let phoneURL = URL(string: "tel:+17027851548")!
 }
 
 /// Request a Feature (owner, 2026-10-19: "a text box built into the platform"): one box, sent

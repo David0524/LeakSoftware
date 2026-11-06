@@ -2,7 +2,7 @@ import Link from "next/link";
 import { Logo } from "@/components/logo";
 import { LightOnly } from "@/components/light-only";
 import { buttonClass, cx } from "@/components/ui";
-import { CONTACT_EMAIL, COPYRIGHT } from "@/lib/site";
+import { CONTACT_EMAIL, CONTACT_PHONE, CONTACT_PHONE_URL, COPYRIGHT } from "@/lib/site";
 
 export default function PublicLayout({ children }: LayoutProps<"/">) {
   return (
@@ -51,6 +51,7 @@ export default function PublicLayout({ children }: LayoutProps<"/">) {
             { href: "/security", label: "Security" },
             { href: "/status", label: "Status" },
             { href: `mailto:${CONTACT_EMAIL}`, label: `Contact Us: ${CONTACT_EMAIL}` },
+            { href: CONTACT_PHONE_URL, label: `Call Us: ${CONTACT_PHONE}` },
             // Sundeck Pro staff (owner, 2026-10-22); others land in their own office. Computers
             // only, like the portal itself, and just "Admin" (owner, 2026-10-24).
             { href: "/sign-in?next=/admin", label: "Admin", computerOnly: true },
