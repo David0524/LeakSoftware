@@ -19,6 +19,7 @@ import { InteractiveMap } from "./interactive-map";
 import { useMapProvider } from "./map-provider-scope";
 import { Sheet } from "./sheet";
 import { cx, iconButtonClass } from "./ui";
+import { StopNumber } from "./stop-number";
 
 // A day's map on Schedule (owner, 2026-10-20, docs/plans/route-maps.md: "the maps up top for
 // route building"): the shop and the stops as numbered pins in route order, drawn by the server
@@ -248,15 +249,8 @@ function EnlargeSheet({
                     on ? "bg-link/10" : "hover:bg-text/[0.03] active:bg-text/[0.06]",
                   )}
                 >
-                  <span
-                    aria-hidden="true"
-                    className={cx(
-                      "grid size-7 shrink-0 place-items-center rounded-full font-display text-[0.9375rem] font-bold",
-                      on ? "bg-link text-on-status" : "bg-fill",
-                    )}
-                  >
-                    {i + 1}
-                  </span>
+                  {/* As on Today and the Schedule (owner, 2026-11-06): the number alone. */}
+                  <StopNumber position={i + 1} done={false} current={on} />
                   <span className="min-w-0">
                     <span className="sr-only">Stop {i + 1}: </span>
                     {s.time == null && s.detail != null ? (

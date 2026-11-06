@@ -33,6 +33,7 @@ import { haptics } from "../../ui/haptics";
 import { useUndoWindow } from "../../ui/Undo";
 import { WebIcon } from "../../ui/WebIcon";
 import { DriveChip } from "../../ui/DriveChip";
+import { StopNumber } from "../../ui/StopNumber";
 import {
   cardShadow,
   color,
@@ -376,12 +377,7 @@ export function ReorderStopRow({
           }
           style={styles.top}
         >
-          <View
-            style={[styles.number, { backgroundColor: now ? color.link : color.bg }]}
-            importantForAccessibility="no"
-          >
-            <Text style={[styles.numberText, { color: now ? color.bg : color.text }]}>{n}</Text>
-          </View>
+          <StopNumber n={n} done={false} current={now} />
           <View style={styles.summary}>
             <Text style={[styles.time, tabular, { color: color.text }]}>{time}</Text>
             <Text
@@ -434,14 +430,6 @@ const styles = StyleSheet.create({
     paddingRight: space["1"],
     paddingVertical: space["2"],
   },
-  number: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  numberText: { fontFamily: font.displayBold, fontSize: 17, fontVariant: ["tabular-nums"] },
   time: { fontFamily: font.displayBold, fontSize: 17 },
   summary: {
     flex: 1,

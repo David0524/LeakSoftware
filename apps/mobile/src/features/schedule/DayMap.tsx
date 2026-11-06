@@ -18,7 +18,6 @@ import {
   appearance,
   color,
   face,
-  font,
   MAX_TEXT_SCALE,
   minTap,
   shape,
@@ -28,6 +27,7 @@ import {
   type,
 } from "../../ui/theme";
 import { WebIcon } from "../../ui/WebIcon";
+import { StopNumber } from "../../ui/StopNumber";
 
 // A day's map on Schedule (owner, 2026-10-20, docs/plans/route-maps.md: "the maps up top for
 // route building"), the website's day-map.tsx on Android: the shop and the stops as numbered
@@ -322,14 +322,8 @@ function EnlargeSheet({
               }
               style={styles.stop}
             >
-              <View style={[styles.number, { backgroundColor: color.fill }]}>
-                <Text
-                  style={[styles.numberText, tabular, { color: color.text }]}
-                  maxFontSizeMultiplier={1.6}
-                >
-                  {i + 1}
-                </Text>
-              </View>
+              {/* As on Today and the Schedule (owner, 2026-11-06): the number alone. */}
+              <StopNumber n={i + 1} done={false} current={false} />
               <View style={{ flex: 1, minWidth: 0 }}>
                 <Text
                   style={[type.body, face.semiBold, tabular, { color: color.text }]}
@@ -382,12 +376,4 @@ const styles = StyleSheet.create({
     paddingHorizontal: space["4"],
     paddingVertical: space["2"],
   },
-  number: {
-    width: 28,
-    height: 28,
-    borderRadius: 14,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  numberText: { fontFamily: font.displayBold, fontSize: 15, lineHeight: 20 },
 });

@@ -476,13 +476,8 @@
                         if !on { focus(s.id) }
                     } label: {
                         HStack(spacing: 12) {
-                            Text("\(s.number)")
-                                .font(.system(size: 15, weight: .bold, design: .rounded))
-                                .monospacedDigit()
-                                .foregroundStyle(on ? Color.onStatus : Color.text)
-                                .frame(width: 30, height: 30)
-                                .background(Circle().fill(on ? Color.link : Color.fill))
-                                .accessibilityHidden(true)
+                            // As on Today and the Schedule (owner, 2026-11-06): the number alone.
+                            StopNumberMark(number: s.number, done: false, current: on)
                             VStack(alignment: .leading, spacing: 2) {
                                 Text(s.time).textRole(.bodyEmphasis).monospacedDigit().foregroundStyle(Color.text)
                                 Text(s.customer).textRole(.secondary).foregroundStyle(Color.textMuted).lineLimit(1)
