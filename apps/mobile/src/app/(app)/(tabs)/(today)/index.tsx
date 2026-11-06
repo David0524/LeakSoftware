@@ -710,8 +710,8 @@ const Stop = memo(function Stop({
         }}
         style={({ pressed }) => [styles.stopTop, pressed && { opacity: 0.7 }]}
       >
-        {/* As on the Schedule (owner, 2026-11-06): the number, then a thin line. */}
-        <StopNumber n={n} done={done} current={next} stretch={false} />
+        {/* As on the Schedule (owner, 2026-11-06): the number alone. */}
+        <StopNumber n={n} done={done} current={next} />
         <View style={[styles.summary, done && { opacity: 0.7 }]}>
           <Text style={[styles.time, tabular, { color: color.text }]}>
             {job.scheduled_start ? formatTime(job.scheduled_start, timeZone) : ""}

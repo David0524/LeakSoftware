@@ -824,8 +824,8 @@
 
         private func summary(done: Bool, expanded: Bool) -> some View {
             HStack(spacing: 8) {
-                // As on the Schedule (owner, 2026-11-06): the number, then a thin line.
-                StopNumberMark(number: number, done: done, current: isNext, stretch: false)
+                // As on the Schedule (owner, 2026-11-06): the number alone.
+                StopNumberMark(number: number, done: done, current: isNext)
                 HStack(spacing: 8) {
                     Text(formatTime(job.scheduledStart, timeZone: day.ctx.timeZone))
                         .font(.custom(BrandFonts.Weight.bold.rawValue, size: 17, relativeTo: .body))

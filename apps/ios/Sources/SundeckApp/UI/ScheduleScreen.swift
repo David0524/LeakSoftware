@@ -1711,14 +1711,11 @@
             HStack(spacing: 0) {
                 HStack(alignment: .center, spacing: 10) {
                     StopBadge(number: number, status: job.status)
-                        .frame(maxHeight: .infinity)
                     StopLines(
                         job: job, note: note, timeZone: timeZone, notOnMap: notOnMap, cleanings: cleanings,
                         drive: drive, driveHidden: driveHidden,
                         onOpen: { if opens { openRoute(.job(job.id)) } })
                 }
-                // The number's line runs the tile's height (the tallest of the two sides).
-                .fixedSize(horizontal: false, vertical: true)
                 .padding(EdgeInsets(top: 8, leading: 16, bottom: 8, trailing: 0))
                 .frame(maxWidth: .infinity, minHeight: 58, alignment: .leading)
                 .contentShape(Rectangle())
