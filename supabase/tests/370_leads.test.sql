@@ -32,6 +32,14 @@ select is((select x ->> 'company' from jsonb_array_elements(lead_list()) x
   'a signed-up lead shows their shop');
 select is((select (x ->> 'card_in')::boolean from jsonb_array_elements(lead_list()) x
            where x ->> 'email' = 'a-owner@test.local'), false, 'and whether a card is in');
+select is((select x ->> 'archived_at' from jsonb_array_elements(lead_list()) x
+           where x ->> 'email' = 'walkaway@test.local'), null, 'a new lead isn''t archived');
+update signup_lead set archived_at = now() where email = 'walkaway@test.local';
+select isnt((select x ->> 'archived_at' from jsonb_array_elements(lead_list()) x
+             where x ->> 'email' = 'walkaway@test.local'), null,
+  'an archived lead says when (archived without being called)');
+select is((select x ->> 'contacted_at' from jsonb_array_elements(lead_list()) x
+           where x ->> 'email' = 'walkaway@test.local'), null, 'and still not called');
 select throws_ok($$ insert into signup_lead (email) values ('Mixed@Test.local') $$, '23514', null,
   'emails are stored lowercased');
 

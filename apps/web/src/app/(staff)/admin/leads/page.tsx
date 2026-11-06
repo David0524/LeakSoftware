@@ -12,7 +12,7 @@ import {
   parseServices,
   type LeadRow,
 } from "@leakbook/core";
-import { saveLeadNotes } from "@/app/actions/leads";
+import { archiveLead, saveLeadNotes } from "@/app/actions/leads";
 import { MailIcon, PhoneIcon } from "@/components/icons";
 import {
   Button,
@@ -29,7 +29,7 @@ import { isStaff } from "@/server/leads";
 
 export const metadata: Metadata = { title: "Leads", robots: { index: false } };
 
-const VIEWS = { call: "To Call", unpaid: "Not Paid", all: "All" } as const;
+const VIEWS = { call: "To Call", unpaid: "Not Paid", all: "All", archived: "Archived" } as const;
 type View = keyof typeof VIEWS;
 
 /**
@@ -67,14 +67,17 @@ async function Leads({
     );
   const admin = adminClient();
   const { data } = admin ? await admin.rpc("lead_list") : { data: [] };
-  const all = (data ?? []) as LeadRow[];
+  const rowsAll = (data ?? []) as LeadRow[];
+  // Archived leads (owner, 2026-11-06) are only under Archived.
+  const all = rowsAll.filter((l) => !l.archived_at);
   const { show } = await searchParams;
-  const view: View = show === "unpaid" || show === "all" ? show : "call";
+  const view: View = show === "unpaid" || show === "all" || show === "archived" ? show : "call";
   const unpaid = all.filter((l) => !leadPaid(l));
   const lists: Record<View, LeadRow[]> = {
     call: unpaid.filter((l) => !l.contacted_at),
     unpaid,
     all,
+    archived: rowsAll.filter((l) => l.archived_at),
   };
   const rows = lists[view];
   const day = new Intl.DateTimeFormat("en-US", {
@@ -106,7 +109,13 @@ async function Leads({
         ))}
       </nav>
       {rows.length === 0 ? (
-        <Empty>{view === "call" ? "Nobody left to call." : "No leads yet."}</Empty>
+        <Empty>
+          {view === "call"
+            ? "Nobody left to call."
+            : view === "archived"
+              ? "No archived leads."
+              : "No leads yet."}
+        </Empty>
       ) : (
         <ul className="space-y-3" aria-label="Leads">
           {rows.map((l) => {
@@ -132,6 +141,7 @@ async function Leads({
                           : null,
                         `Signed up ${day.format(new Date(l.created_at))}`,
                         l.contacted_at ? `Called ${day.format(new Date(l.contacted_at))}` : null,
+                        l.archived_at ? `Archived ${day.format(new Date(l.archived_at))}` : null,
                       ]
                         .filter(Boolean)
                         .join(" · ")}
@@ -192,6 +202,16 @@ async function Leads({
                       Mark Called
                     </Button>
                   )}
+                  {/* Off the call list without a call (owner, 2026-11-06). Its own form, so
+                      the notes box isn't sent with it. */}
+                  <Button
+                    type="submit"
+                    kind="secondary"
+                    form={`archive-${l.id}`}
+                    aria-label={`${l.archived_at ? "Unarchive" : "Archive"} ${l.name ?? l.email}`}
+                  >
+                    {l.archived_at ? "Unarchive" : "Archive"}
+                  </Button>
                   {l.company_id ? (
                     <Link
                       href={`/admin/import?company=${l.company_id}`}
@@ -200,6 +220,10 @@ async function Leads({
                       Import Customers
                     </Link>
                   ) : null}
+                </form>
+                <form id={`archive-${l.id}`} action={archiveLead} hidden>
+                  <input type="hidden" name="id" value={l.id} />
+                  <input type="hidden" name="archive" value={l.archived_at ? "0" : "1"} />
                 </form>
               </li>
             );

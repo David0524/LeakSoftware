@@ -13,7 +13,13 @@ import {
   type FormState,
 } from "@/app/actions/auth";
 import { captureLead } from "@/app/actions/leads";
-import { TERMS_CONSENT, parseServices, type Services } from "@leakbook/core";
+import {
+  BOT_STARTED_FIELD,
+  BOT_TRAP_FIELD,
+  TERMS_CONSENT,
+  parseServices,
+  type Services,
+} from "@leakbook/core";
 import { Banner } from "./doc-ui";
 import { HeardFromField } from "./heard-from-field";
 import { PasswordField } from "./password-field";
@@ -22,6 +28,31 @@ import { Button, buttonClass, FieldGroup, GroupedField } from "./ui";
 import { orOffline } from "@/lib/offline";
 
 /** The browser's time zone, so a new company's schedule shows local times. */
+/**
+ * Bot checks (owner, 2026-11-06; core bot-check.ts): a field people never see, which bots fill
+ * in, and when the form was opened, since a script sends it at once. Off screen rather than
+ * display:none, which some bots skip; out of the tab order and hidden from VoiceOver.
+ */
+function BotChecks() {
+  return (
+    <>
+      <input
+        type="hidden"
+        name={BOT_STARTED_FIELD}
+        ref={(el) => {
+          if (el && !el.value) el.value = String(Date.now());
+        }}
+      />
+      <div aria-hidden="true" className="absolute -left-[9999px] h-px w-px overflow-hidden">
+        <label>
+          Website
+          <input type="text" name={BOT_TRAP_FIELD} tabIndex={-1} autoComplete="off" />
+        </label>
+      </div>
+    </>
+  );
+}
+
 function TimezoneInput() {
   return (
     <input
@@ -245,6 +276,7 @@ export function TrialForm({
       company: String(f.get("company") ?? ""),
       phone: String(f.get("phone") ?? ""),
       services: String(f.get("services") ?? ""),
+      website: String(f.get(BOT_TRAP_FIELD) ?? ""),
     };
     const key = JSON.stringify(fields);
     if (!/^\S+@\S+\.\S+$/.test(fields.email) || key === sent.current) return;
@@ -255,6 +287,7 @@ export function TrialForm({
   return (
     <form data-no-discard action={action} onBlur={keep} className="space-y-4" noValidate>
       <TimezoneInput />
+      <BotChecks />
       <FieldGroup labelWidth="8.25rem">
         <GroupedField
           label="Your name"

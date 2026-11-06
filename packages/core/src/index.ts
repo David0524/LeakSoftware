@@ -31,6 +31,7 @@ export * from "./heard-from";
 export * from "./terms-consent";
 export * from "./getting-started";
 export * from "./leads";
+export * from "./bot-check";
 export * from "./import";
 export * from "./checklist-summary";
 export * from "./schedule-moves";

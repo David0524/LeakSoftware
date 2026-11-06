@@ -19,6 +19,7 @@ import {
 } from "./demos";
 import { ClosingClip } from "./closing-clip";
 import { Hero, PackageProvider, signUpHref, usePackage } from "./hero";
+import { StoreBadges } from "./store-badges";
 import { Reveal } from "./reveal";
 import { Pricing } from "./pricing";
 
@@ -223,6 +224,7 @@ function Body() {
               Sign In
             </ButtonLink>
           </div>
+          <StoreBadges className="mt-6 lg:justify-start" />
         </div>
       </section>
     </>

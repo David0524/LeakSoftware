@@ -1,6 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { botReason } from "@leakbook/core";
 import { getUser } from "@/lib/auth";
 import { adminClient } from "@/server/admin";
 import { isStaff, saveLead } from "@/server/leads";
@@ -16,8 +17,12 @@ export async function captureLead(fields: {
   company?: string;
   phone?: string;
   services?: string;
+  /** The form's hidden trap field (core bot-check.ts); filled in only by bots. */
+  website?: string;
 }): Promise<void> {
   if (typeof fields?.email !== "string") return;
+  // Bots aren't leads (owner, 2026-11-06).
+  if (fields.website || botReason({ name: fields.name, company: fields.company })) return;
   await saveLead({
     email: fields.email,
     name: String(fields.name ?? ""),
@@ -51,5 +56,21 @@ export async function saveLeadNotes(form: FormData): Promise<void> {
     })
     .eq("id", id);
   if (error) throw staffFailure(error.message, "lead notes");
+  revalidatePath("/admin/leads");
+}
+
+/** Staff: Archive takes a lead off the call list without a call; Unarchive puts it back. */
+export async function archiveLead(form: FormData): Promise<void> {
+  const admin = await staffOnly();
+  const id = String(form.get("id") ?? "");
+  const archive = form.get("archive") === "1";
+  const { error } = await admin
+    .from("signup_lead")
+    .update({
+      archived_at: archive ? new Date().toISOString() : null,
+      updated_at: new Date().toISOString(),
+    })
+    .eq("id", id);
+  if (error) throw staffFailure(error.message, "lead archive");
   revalidatePath("/admin/leads");
 }

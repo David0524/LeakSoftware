@@ -1,3 +1,4 @@
+import { BOT_MIN_FILL_MS } from "@leakbook/core";
 import { expect, test } from "@playwright/test";
 import { adminClient, signedEvent, signedInClient } from "./backend";
 import { RUN, closeWrapUpStep, finishChecklist, jobSection, wrapUpStep } from "./helpers";
@@ -46,6 +47,8 @@ test("a new shop signs up and runs the whole loop, then subscribes", async ({
     "href",
     "/privacy",
   );
+  // A person takes a few seconds; a form sent sooner is a bot's (core BOT_MIN_FILL_MS).
+  await page.waitForTimeout(BOT_MIN_FILL_MS);
   await page.getByRole("button", { name: "Start Free Trial" }).click();
 
   // Straight to the trial page (owner, 2026-10-24: no questionnaire first).

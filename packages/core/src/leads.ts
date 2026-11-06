@@ -12,6 +12,8 @@ export interface LeadRow {
   created_at: string;
   updated_at: string;
   contacted_at: string | null;
+  /** Off the call list without a call (owner, 2026-11-06); null while it's on. */
+  archived_at: string | null;
   user_id: string | null;
   email_confirmed_at: string | null;
   company_id: string | null;

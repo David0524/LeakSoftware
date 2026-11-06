@@ -1,3 +1,4 @@
+import { BOT_MIN_FILL_MS } from "@leakbook/core";
 import { expect, test } from "@playwright/test";
 import { adminClient } from "./backend";
 import { RUN } from "./helpers";
@@ -26,6 +27,8 @@ test("a new pool company goes straight from sign-up to its trial", async ({ page
   await page.getByLabel("Email").fill(`pool-owner-${RUN}@newshop.test`);
   await page.getByLabel("Mobile phone").fill("480-555-0142");
   await page.getByLabel("Password", { exact: true }).fill("Sundeck-pool-shop-1");
+  // A person takes a few seconds; a form sent sooner is a bot's (core BOT_MIN_FILL_MS).
+  await page.waitForTimeout(BOT_MIN_FILL_MS);
   await page.getByRole("button", { name: "Start Free Trial" }).click();
 
   await page.waitForURL((url) => url.pathname === "/welcome");

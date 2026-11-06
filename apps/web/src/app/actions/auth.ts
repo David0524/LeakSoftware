@@ -4,6 +4,11 @@ import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import { after } from "next/server";
 import {
+  BOT_NAME_MESSAGE,
+  BOT_STARTED_FIELD,
+  BOT_TRAP_FIELD,
+  botReason,
+  formBotReason,
   heardFromOther,
   isUsNumber,
   parseHeardFrom,
@@ -181,7 +186,16 @@ export async function startTrial(_: FormState, form: FormData): Promise<FormStat
     heard_from: heard.heard_from ?? "",
     heard_from_other: heard.heard_from_other ?? "",
   };
+  // Bots (owner, 2026-11-06; core bot-check.ts). A name that reads like spam or random letters
+  // is asked again; the form's hidden checks get the usual answer and nothing is made, so a
+  // script learns nothing.
+  if (!fields.name && !fields.company && botReason(values)) fields.name = BOT_NAME_MESSAGE;
   if (Object.keys(fields).length) return { fields, values: kept };
+  const bot = formBotReason(text(form, BOT_TRAP_FIELD), text(form, BOT_STARTED_FIELD));
+  if (bot) {
+    console.warn(`[sign-up] refused a bot (${bot})`);
+    return { message: checkEmail(values.email) };
+  }
   if (!(await attemptAllowed("sign_up", values.email, true)))
     return { error: tooManyAttempts("sign_up"), values: kept };
 

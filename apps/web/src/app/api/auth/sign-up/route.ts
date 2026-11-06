@@ -1,5 +1,11 @@
 import { createClient } from "@supabase/supabase-js";
-import { heardFromOther, parseHeardFrom, passwordProblem, tooManyAttempts } from "@leakbook/core";
+import {
+  botReason,
+  heardFromOther,
+  parseHeardFrom,
+  passwordProblem,
+  tooManyAttempts,
+} from "@leakbook/core";
 import { supabaseAnonKey, supabaseUrl } from "@/lib/supabase/config";
 import { createAccount } from "@/server/account-email";
 import { attemptAllowed } from "@/server/auth-limits";
@@ -23,6 +29,8 @@ export async function POST(request: Request) {
   const password = str("password");
   if (!name || !EMAIL_PATTERN.test(email) || email.length > 200)
     return Response.json({ error: "Enter your name and email." }, { status: 400 });
+  // Bots (owner, 2026-11-06; core bot-check.ts): a name like spam or random letters.
+  if (botReason({ name })) return Response.json({ error: "Enter your own name." }, { status: 400 });
   const weak = passwordProblem(password);
   if (weak) return Response.json({ error: weak }, { status: 400 });
   if (!(await attemptAllowed("sign_up", email, true)))

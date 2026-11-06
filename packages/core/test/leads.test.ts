@@ -12,6 +12,7 @@ const base: LeadRow = {
   created_at: "2026-10-16T12:00:00Z",
   updated_at: "2026-10-16T12:00:00Z",
   contacted_at: null,
+  archived_at: null,
   user_id: null,
   email_confirmed_at: null,
   company_id: null,

@@ -3,6 +3,7 @@
 import { createContext, useContext, useId, useState, type ReactNode } from "react";
 import type { PlanId } from "@leakbook/core";
 import { ButtonLink, cx, SEGMENT_TRACK, segmentClass } from "../ui";
+import { StoreBadges } from "./store-badges";
 import { KIDNEY, Phone, Pin, ScreenTitle, TabBar, Verdict } from "./device";
 import { useSteps } from "./motion";
 import { SIGNATURE_PATH } from "./signature-path";
@@ -88,6 +89,7 @@ export function Hero() {
           </ButtonLink>
         </div>
         <p className="mt-3 text-[0.9375rem] text-text-muted">30 days free. Cancel any time.</p>
+        <StoreBadges className="mt-5" />
 
         <figure className="relative mt-14">
           <PoolBackdrop />
