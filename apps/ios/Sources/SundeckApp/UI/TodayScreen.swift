@@ -824,20 +824,8 @@
 
         private func summary(done: Bool, expanded: Bool) -> some View {
             HStack(spacing: 8) {
-                ZStack {
-                    Circle().fill(done ? Color.pass : isNext ? Color.link : Color.bg)
-                    if done {
-                        Image(systemName: "checkmark")
-                            .font(.system(size: 14, weight: .bold))
-                            .foregroundStyle(Color.onStatus)
-                    } else {
-                        Text("\(number)")
-                            .font(.custom(BrandFonts.Weight.bold.rawValue, size: 17, relativeTo: .body))
-                            .foregroundStyle(isNext ? Color.bg : Color.text)
-                    }
-                }
-                .frame(width: 32, height: 32)
-                .accessibilityHidden(true)
+                // As on the Schedule (owner, 2026-11-06): the number, then a thin line.
+                StopNumberMark(number: number, done: done, current: isNext, stretch: false)
                 HStack(spacing: 8) {
                     Text(formatTime(job.scheduledStart, timeZone: day.ctx.timeZone))
                         .font(.custom(BrandFonts.Weight.bold.rawValue, size: 17, relativeTo: .body))

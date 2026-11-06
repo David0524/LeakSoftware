@@ -78,6 +78,7 @@ import { DriveChip } from "../../../../ui/DriveChip";
 import { driveChipMinutes, driveFromOffMap, driveHomeLine } from "../../../../lib/scheduleTile";
 import Svg, { Path } from "react-native-svg";
 import { unlessSwiping } from "../../../../ui/swipeQuiet";
+import { StopNumber } from "../../../../ui/StopNumber";
 import {
   cardShadow,
   color,
@@ -709,20 +710,8 @@ const Stop = memo(function Stop({
         }}
         style={({ pressed }) => [styles.stopTop, pressed && { opacity: 0.7 }]}
       >
-        <View
-          style={[
-            styles.number,
-            { backgroundColor: done ? color.pass : next ? color.link : color.bg },
-          ]}
-          accessibilityElementsHidden
-          importantForAccessibility="no"
-        >
-          {done ? (
-            <WebIcon name="check" size={16} color={color.onStatus} strokeWidth={3} />
-          ) : (
-            <Text style={[styles.numberText, { color: next ? color.bg : color.text }]}>{n}</Text>
-          )}
-        </View>
+        {/* As on the Schedule (owner, 2026-11-06): the number, then a thin line. */}
+        <StopNumber n={n} done={done} current={next} stretch={false} />
         <View style={[styles.summary, done && { opacity: 0.7 }]}>
           <Text style={[styles.time, tabular, { color: color.text }]}>
             {job.scheduled_start ? formatTime(job.scheduled_start, timeZone) : ""}
@@ -933,14 +922,6 @@ const styles = StyleSheet.create({
     gap: space["2"],
     paddingTop: space["2"],
   },
-  number: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  numberText: { fontFamily: font.displayBold, fontSize: 17, fontVariant: ["tabular-nums"] },
   time: { fontFamily: font.displayBold, fontSize: 17 },
   actions: { marginLeft: "auto", flexDirection: "row", gap: space["2"] },
   // Lined up with the time and name, under the stop's number.

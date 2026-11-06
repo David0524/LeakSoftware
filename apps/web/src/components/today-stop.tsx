@@ -13,6 +13,7 @@ import {
   useTodayReorder,
   type StopMoves,
 } from "./today-reorder";
+import { StopNumber } from "./stop-number";
 import { cx } from "./ui";
 
 /**
@@ -108,29 +109,7 @@ export function TodayStop({
             onClick={() => !editing && setOpen(!open)}
             className="flex min-h-14 w-full cursor-pointer items-center gap-2 px-3 py-2 text-left"
           >
-            <span
-              aria-hidden="true"
-              className={cx(
-                "grid size-8 shrink-0 place-items-center rounded-full font-display font-bold",
-                done ? "bg-status-pass text-on-status" : current ? "bg-link text-bg" : "bg-bg",
-              )}
-            >
-              {done ? (
-                <svg
-                  viewBox="0 0 24 24"
-                  className="size-4"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="3"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                >
-                  <path d="M5 12.5l4.5 4.5L19 7.5" />
-                </svg>
-              ) : (
-                number
-              )}
-            </span>
+            <StopNumber position={number} done={done} current={current} stretch={false} />
             <span
               className={cx(
                 "@container flex min-w-0 flex-1 flex-wrap items-center gap-x-2",

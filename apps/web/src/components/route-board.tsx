@@ -1,6 +1,7 @@
 "use client";
 
 import { PillRow } from "./pill-row";
+import { StopNumber } from "./stop-number";
 import { SamplePill } from "./sample-pill";
 import {
   DndContext,
@@ -1420,7 +1421,7 @@ function finished(status: JobStatus) {
   return !["unscheduled", "scheduled", "in_progress", "canceled"].includes(status);
 }
 
-/** The stop's place in the route, round, as on Today: a check once done, blue while on it. */
+/** The stop's place in the route, as on Today: a check once done, blue while on it. */
 function StopBadge({
   position,
   status,
@@ -1431,38 +1432,15 @@ function StopBadge({
   /** A week cell's tighter tile. */
   small?: boolean;
 }) {
-  const done = finished(status);
+  // It leads the tile (owner, 2026-10-21: "job order number is more important than expected
+  // arrival time").
   return (
-    // It leads the tile (owner, 2026-10-21: "job order number is more important than expected
-    // arrival time"): 32 pt, Barlow ExtraBold.
-    <span
-      aria-hidden="true"
-      className={cx(
-        "grid shrink-0 place-items-center rounded-full font-display font-extrabold tabular-nums",
-        small ? "size-7 text-[0.9375rem]" : "size-8 text-[1.0625rem]",
-        done
-          ? "bg-status-pass text-on-status"
-          : status === "in_progress"
-            ? "bg-link text-bg"
-            : "bg-bg",
-      )}
-    >
-      {done ? (
-        <svg
-          viewBox="0 0 24 24"
-          className={small ? "size-4" : "size-[1.125rem]"}
-          fill="none"
-          stroke="currentColor"
-          strokeWidth="3"
-          strokeLinecap="round"
-          strokeLinejoin="round"
-        >
-          <path d="M5 12.5l4.5 4.5L19 7.5" />
-        </svg>
-      ) : (
-        position
-      )}
-    </span>
+    <StopNumber
+      position={position}
+      done={finished(status)}
+      current={status === "in_progress"}
+      small={small}
+    />
   );
 }
 

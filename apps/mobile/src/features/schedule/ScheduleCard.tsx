@@ -7,7 +7,7 @@ import { Grip } from "../../ui/Grip";
 import { LockTag } from "../../ui/LockTag";
 import { NotOnMapTag } from "../../ui/NotOnMap";
 import { TechStripe } from "../../ui/TechDot";
-import { WebIcon } from "../../ui/WebIcon";
+import { StopNumber } from "../../ui/StopNumber";
 import { DriveChip } from "../../ui/DriveChip";
 import { driveChipMinutes, driveSpoken } from "../../lib/scheduleTile";
 import { useDragHover } from "./ScheduleDrag";
@@ -51,6 +51,7 @@ export function cardLabel(s: Stop, n: number | null): string {
     .join(", ");
 }
 
+/** The stop's number (StopNumber): a check once done, blue while it's being worked. */
 function Badge({
   n,
   status,
@@ -60,35 +61,10 @@ function Badge({
   n: number;
   status: JobStatus;
   done: boolean;
-  /** A stop tile's: 32 pt, Barlow ExtraBold (the order matters more than the time). */
+  /** A stop tile's: the order matters more than the time (owner, 2026-10-21). */
   big?: boolean;
 }) {
-  const going = status === "in_progress" && !done;
-  return (
-    <View
-      style={[
-        big ? styles.badgeBig : styles.badge,
-        { backgroundColor: done ? color.pass : going ? color.link : color.bg },
-      ]}
-      accessibilityElementsHidden
-      importantForAccessibility="no"
-    >
-      {done ? (
-        <WebIcon name="check" size={big ? 18 : 14} color={color.onStatus} strokeWidth={3} />
-      ) : (
-        <Text
-          style={[
-            big ? styles.badgeTextBig : styles.badgeText,
-            tabular,
-            { color: going ? color.onPrimary : color.text },
-          ]}
-          maxFontSizeMultiplier={1.6}
-        >
-          {n}
-        </Text>
-      )}
-    </View>
-  );
+  return <StopNumber n={n} done={done} current={status === "in_progress" && !done} small={!big} />;
 }
 
 export function ScheduleCardFace({
@@ -419,24 +395,6 @@ const styles = StyleSheet.create({
     paddingRight: 4,
     paddingVertical: 8,
   },
-  badge: {
-    minWidth: 28,
-    height: 28,
-    borderRadius: 14,
-    paddingHorizontal: 3,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  badgeText: { fontFamily: font.displayBold, fontSize: 15, lineHeight: 20 },
-  badgeBig: {
-    minWidth: 32,
-    height: 32,
-    borderRadius: 16,
-    paddingHorizontal: 3,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  badgeTextBig: { fontFamily: font.displayExtraBold, fontSize: 17, lineHeight: 22 },
   tile: {
     flexDirection: "row",
     alignItems: "center",

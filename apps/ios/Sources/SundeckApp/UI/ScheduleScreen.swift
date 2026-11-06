@@ -1711,11 +1711,14 @@
             HStack(spacing: 0) {
                 HStack(alignment: .center, spacing: 10) {
                     StopBadge(number: number, status: job.status)
+                        .frame(maxHeight: .infinity)
                     StopLines(
                         job: job, note: note, timeZone: timeZone, notOnMap: notOnMap, cleanings: cleanings,
                         drive: drive, driveHidden: driveHidden,
                         onOpen: { if opens { openRoute(.job(job.id)) } })
                 }
+                // The number's line runs the tile's height (the tallest of the two sides).
+                .fixedSize(horizontal: false, vertical: true)
                 .padding(EdgeInsets(top: 8, leading: 16, bottom: 8, trailing: 0))
                 .frame(maxWidth: .infinity, minHeight: 58, alignment: .leading)
                 .contentShape(Rectangle())
@@ -2466,32 +2469,14 @@
         }
     }
 
-    /// The stop's number in a 32 pt circle, in Barlow ExtraBold, leading each schedule tile (owner,
-    /// 2026-10-21: the order matters more than the arrival time): a green check once it's
-    /// finished, `link` while it's in progress, gray otherwise.
+    /// The stop's number leading each schedule tile (owner, 2026-10-21: the order matters more
+    /// than the arrival time), as `StopNumberMark`: green check once finished, blue in progress.
     struct StopBadge: View {
         var number: Int
         var status: JobStatus
-        @ScaledMetric(relativeTo: .body) private var size: CGFloat = 32
 
         var body: some View {
-            let finished = isFinished(status)
-            ZStack {
-                Circle().fill(finished ? Color.pass : status == .inProgress ? Color.link : Color.bg)
-                if finished {
-                    Image(systemName: "checkmark")
-                        .font(.system(size: 14, weight: .bold))
-                        .foregroundStyle(Color.onStatus)
-                } else {
-                    Text(verbatim: "\(number)")
-                        .font(.custom(BrandFonts.Weight.extraBold.rawValue, size: 18, relativeTo: .body))
-                        .monospacedDigit()
-                        .foregroundStyle(status == .inProgress ? Color.bg : Color.text)
-                        .minimumScaleFactor(0.6)
-                }
-            }
-            .frame(width: size, height: size)
-            .accessibilityHidden(true)
+            StopNumberMark(number: number, done: isFinished(status), current: status == .inProgress)
         }
     }
 
