@@ -10,6 +10,7 @@ import { getUser } from "@/lib/auth";
 import { sharePreview } from "@/lib/share-preview";
 
 export const metadata: Metadata = {
+  alternates: { canonical: "/sign-in" },
   title: "Sign In · Sundeck Pro",
   ...sharePreview(
     "Sign in to Sundeck Pro",

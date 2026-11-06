@@ -178,12 +178,12 @@ export function TermsBody({ inApp = false }: { inApp?: boolean }) {
         <p>
           <a className="text-link underline" href={`mailto:${SUPPORT_EMAIL}`}>
             {SUPPORT_EMAIL}
-          </a>
-          , by phone at{" "}
-          <a className="text-link underline" href={CONTACT_PHONE_URL}>
+          </a>{" "}
+          or{" "}
+          <a className="whitespace-nowrap text-link underline" href={CONTACT_PHONE_URL}>
             {CONTACT_PHONE}
           </a>
-          , or by mail to {COMPANY.legalName}, {COMPANY.mailingAddress}.
+          .
         </p>
       </section>
     </LegalPage>

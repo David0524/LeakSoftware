@@ -3,6 +3,7 @@ import { sharePreview } from "@/lib/share-preview";
 import { PrivacyBody } from "@/components/site-pages/privacy";
 
 export const metadata: Metadata = {
+  alternates: { canonical: "/privacy" },
   title: "Privacy Policy · Sundeck Pro",
   ...sharePreview(
     "Privacy Policy · Sundeck Pro",

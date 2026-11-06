@@ -3,6 +3,19 @@
 Owner, 2026-10-22: "a list of things you need from me. I'll knock them out later." Newest
 first. Tick an item off by deleting it (and tell Claude, so it can check the result).
 
+## From 2026-11-06: Google Search Console
+
+1. **Tell Google about the site** (free; makes it show up sooner and shows what people search
+   for). https://search.google.com/search-console › Add property › **Domain** ›
+   `sundeckpro.com`. Google gives a TXT record: add it where the domain's DNS is managed
+   (Vercel › Domains, or the registrar), then Verify. Then **Sitemaps** › enter `sitemap.xml` ›
+   Submit. Tell Claude "Search Console done".
+2. **Bing Webmaster Tools** (optional, also covers DuckDuckGo):
+   https://www.bing.com/webmasters › Import from Google Search Console.
+3. **Google Business Profile** (optional, if you want Sundeck Pro on Google Maps and in local
+   results): https://business.google.com with the phone (702) 785-1548, as a service-area
+   business so no street address is shown.
+
 ## From 2026-11-05: after Apple approved 1.0.0
 
 1. **Done (2026-11-05):** 1.0.0 released and 1.0.1 (build 1076) submitted for App Review, set

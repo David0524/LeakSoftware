@@ -20,11 +20,10 @@ export function PrivacyBody({ inApp = false }: { inApp?: boolean }) {
         <h2>Who we are</h2>
         <p>
           Sundeck Pro is made by {COMPANY.legalName}, a {COMPANY.state} limited liability company
-          (“Sundeck Pro”, “we”), at {COMPANY.mailingAddress}. Sundeck Pro is software for pool
-          service and pool leak detection shops: a website for the office and an app for iPhone and
-          Android. Shops use it to schedule and route their techs, run service visits and
-          inspections, send reports, quotes, invoices, and receipts, and text and call their
-          customers.
+          (“Sundeck Pro”, “we”). Sundeck Pro is software for pool service and pool leak detection
+          shops: a website for the office and an app for iPhone and Android. Shops use it to
+          schedule and route their techs, run service visits and inspections, send reports, quotes,
+          invoices, and receipts, and text and call their customers.
         </p>
         <p>
           This policy covers the people on a shop’s team (owners, admins, and techs), people who
@@ -251,11 +250,11 @@ export function PrivacyBody({ inApp = false }: { inApp?: boolean }) {
       <section>
         <h2>Contact</h2>
         <p>
-          Questions about privacy: <Mail />, by phone at{" "}
-          <a className="text-link underline" href={CONTACT_PHONE_URL}>
+          Questions about privacy: <Mail /> or{" "}
+          <a className="whitespace-nowrap text-link underline" href={CONTACT_PHONE_URL}>
             {CONTACT_PHONE}
           </a>
-          , or by mail to {COMPANY.legalName}, {COMPANY.mailingAddress}.
+          .
         </p>
       </section>
     </LegalPage>

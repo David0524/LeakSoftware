@@ -11,7 +11,7 @@ export const CONTACT_PHONE_URL = "tel:+17027851548";
 /**
  * The company behind Sundeck Pro (owner, 2026-10-24; docs/DECISIONS.md). The privacy policy,
  * the terms, the site's footer and the App Store copyright line (docs/release/APP_STORE.md)
- * all read it, so a change here (a new address, the year) is made once.
+ * all read it, so a change here (the name, the year) is made once.
  */
 export const COMPANY = {
   legalName: "Sundeck Pro, LLC",
@@ -19,7 +19,6 @@ export const COMPANY = {
   state: "Nevada",
   /** Where disputes under the terms are heard. */
   venue: "Clark County, Nevada",
-  mailingAddress: "8450 W Charleston Blvd, Las Vegas, NV 89117",
   copyrightYear: 2026,
 } as const;
 

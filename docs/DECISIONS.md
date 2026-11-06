@@ -2,6 +2,10 @@
 
 Newest first. Each entry: date, decision, reason.
 
+## 2026-11-06 (owner: "remove the mail address from the website" (the street address); "Please do anything else necessary to optimize our SEO", after a Lighthouse score of 100 in every category)
+- **No street address on the website.** The Terms' and Privacy Policy's Contact sections give the email and the phone only, and "Who we are" no longer names an address (`COMPANY.mailingAddress` is gone).
+- **Search engines:** `robots.txt` (`app/robots.ts`) lets them crawl the public pages and keeps out the office, the staff portal, sign-in steps, the API and every customer link (which also carry noindex); `sitemap.xml` (`app/sitemap.ts`) lists the home page, sign-up, security, privacy, terms, status and sign-in. Each public page has its own meta description (from `sharePreview`) and a canonical address (`/sign-up?from=card` counts as `/sign-up`). The home page's title is "Sundeck Pro: Pool Service and Leak Detection Software" (its link preview keeps "Find it. Fix it. Get paid."), it carries schema.org data (the company with its phone and email, the website, and the app with its price range from `PLANS`; `components/landing/structured-data.tsx`), and Safari on iPhone shows the App Store banner for the app. Owner step: Google Search Console (below, `docs/OWNER_TODO.md`).
+
 ## 2026-11-06 (owner: "our business phone number is (702) 785-1548. Add that to all contact us sections.")
 - **The business phone (702) 785-1548 sits beside the email everywhere we say how to reach us**, as a link that dials (`tel:+17027851548`): a **Call Us** row under Contact Us in More (website on phones, iPhone, Android) and in the account menu (website on computers); "Call Us: (702) 785-1548" in the public site's footer; "or call (702) 785-1548" after the home page's contact line; and "by phone at" in the Contact sections of the Terms and the Privacy Policy. One value per platform: `CONTACT_PHONE` (website, `lib/site.ts`; Android, More), `HelpMail.contactPhone` (iPhone). The iPhone app goes to 1.0.2 (1.0.1 is released, so its version can't take new builds).
 

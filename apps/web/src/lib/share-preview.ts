@@ -15,6 +15,8 @@ const VIDEO = "https://sundeckpro.com/og/sundeck-pro.mp4";
 
 export function sharePreview(title: string, description: string): Metadata {
   return {
+    // The search result's snippet too, so each page has its own instead of the site's default.
+    description,
     openGraph: {
       type: "website",
       siteName: "Sundeck Pro",
