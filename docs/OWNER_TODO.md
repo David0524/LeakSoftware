@@ -5,11 +5,9 @@ first. Tick an item off by deleting it (and tell Claude, so it can check the res
 
 ## From 2026-11-06: Google Search Console
 
-1. **Tell Google about the site** (free; makes it show up sooner and shows what people search
-   for). https://search.google.com/search-console › Add property › **Domain** ›
-   `sundeckpro.com`. Google gives a TXT record: add it where the domain's DNS is managed
-   (Vercel › Domains, or the registrar), then Verify. Then **Sitemaps** › enter `sitemap.xml` ›
-   Submit. Tell Claude "Search Console done".
+1. **Done before 2026-11-06** (the owner set up Search Console on their own). The sitemap only
+   exists since 2026-11-06 (`https://sundeckpro.com/sitemap.xml`; it was a 404 before): Search
+   Console › Sitemaps › enter `sitemap.xml` › Submit, if it isn't listed there yet.
 2. **Bing Webmaster Tools** (optional, also covers DuckDuckGo):
    https://www.bing.com/webmasters › Import from Google Search Console.
 3. **Google Business Profile** (optional, if you want Sundeck Pro on Google Maps and in local
