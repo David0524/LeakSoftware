@@ -55,8 +55,8 @@ npx eas-cli@latest build --profile production --platform android
 
 ### Updates to App Review
 
-1.0.0 (build 1057) was released on 2026-11-05; 1.0.1 (build 1076) was submitted the same day,
-set to release automatically after approval. Each update after it:
+1.0.0 (build 1057) was released on 2026-11-05; 1.0.1 (build 1076) was approved and went live the same
+day (12:41 PM ET), released automatically. Each update after it:
 
 1. Raise `CFBundleShortVersionString` in `apps/ios/Info.plist` and
    `apps/ios/LiveActivity-Info.plist` (the TestFlight workflow refuses a mismatch), and write
