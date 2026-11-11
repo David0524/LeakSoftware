@@ -24,6 +24,12 @@ appId: com.sundeckpro.app
 - extendedWaitUntil:
     notVisible: "Downloading your company.*"
     timeout: 600000
+# Start the app again on the downloaded shop, as a tech opening it in the morning.
+- stopApp
+- launchApp
+- extendedWaitUntil:
+    visible: "Today"
+    timeout: 60000
 - waitForAnimationToEnd:
     timeout: 15000
 
