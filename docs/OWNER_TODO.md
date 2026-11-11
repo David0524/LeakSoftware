@@ -37,9 +37,11 @@ first. Tick an item off by deleting it (and tell Claude, so it can check the res
       (the app is free, so nothing is paid, but Apple may ask). Tell Claude "Apple account is
       on the LLC"; Claude updates the App Store copyright and docs if anything changed.
 
-3. **Android:** the Google Play steps below are still open (the Android workflow found no
-   `EXPO_TOKEN` or `GOOGLE_SERVICES_JSON`, 2026-11-05). The D-U-N-S number from 2.1 is the one
-   step 1 asks for, so start at step 2 (the Play developer account).
+3. **Android:** the Play developer account (organization), the app, its store listing and
+   its App content forms are done (2026-11-11), and the first build (1.0.0, version code 2)
+   is made. Left: upload it to internal testing (`docs/play-store/CHROME_HANDOFF.md` Step D),
+   add Firebase's FCM V1 key in Expo (`docs/play-store/README.md` step 4.4 to 4.5), then the
+   Play service account (step 8).
 
 ## From 2026-10-22: Android on Google Play
 

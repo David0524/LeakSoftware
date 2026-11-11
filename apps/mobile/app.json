@@ -2,6 +2,7 @@
   "expo": {
     "name": "Sundeck Pro",
     "slug": "sundeckpro",
+    "owner": "sundeckpro",
     "scheme": "sundeckpro",
     "version": "1.0.0",
     "orientation": "portrait",
@@ -82,6 +83,11 @@
     ],
     "experiments": {
       "typedRoutes": true
+    },
+    "extra": {
+      "eas": {
+        "projectId": "7ba3de90-366d-459d-87fa-55d11714b064"
+      }
     }
   }
 }
