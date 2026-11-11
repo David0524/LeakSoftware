@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { Directory, File, Paths } from "expo-file-system";
 import {
   Image,
   LayoutAnimation,
@@ -87,6 +88,77 @@ function useToken(): string | null {
   return token;
 }
 
+/** A short, stable file name for a map address (FNV-1a), so each drawing is kept once. */
+function fileName(src: string): string {
+  let h = 0x811c9dc5;
+  for (let i = 0; i < src.length; i++) {
+    h ^= src.charCodeAt(i);
+    h = Math.imul(h, 0x01000193);
+  }
+  return `${(h >>> 0).toString(16)}-${src.length}.png`;
+}
+
+const DAY_MS = 24 * 60 * 60 * 1000;
+
+function mapFile(src: string): File {
+  return new File(new Directory(Paths.cache, "day-maps"), fileName(src));
+}
+
+/** Drops a kept map that wouldn't show, so the next try downloads it again. */
+function forgetMap(src: string) {
+  try {
+    const file = mapFile(src);
+    if (file.exists) file.delete();
+  } catch {
+    // Nothing kept.
+  }
+}
+
+/**
+ * The map image, downloaded by the app with its sign-in token and kept in the cache for a day
+ * (as the website's browser keeps it). Not Image's own `headers`: Android dropped them, so the
+ * server answered "Sign in again" and every Schedule map read "Map not available right now"
+ * (owner, 2026-11-11). Null while it downloads; `failed` when it can't be drawn.
+ */
+function useMapFile(
+  src: string | null,
+  token: string | null,
+  enabled = true,
+): { uri: string | null; failed: boolean } {
+  const [state, setState] = useState<{ src: string; uri: string | null; failed: boolean } | null>(
+    null,
+  );
+  useEffect(() => {
+    if (!src || !token || !enabled) return;
+    let gone = false;
+    void (async () => {
+      try {
+        const dir = new Directory(Paths.cache, "day-maps");
+        if (!dir.exists) dir.create({ intermediates: true, idempotent: true });
+        const file = mapFile(src);
+        const fresh =
+          file.exists && file.size > 0 && Date.now() - (file.modificationTime ?? 0) < DAY_MS;
+        if (!fresh) {
+          await File.downloadFileAsync(src, file, {
+            headers: { Authorization: `Bearer ${token}` },
+            idempotent: true,
+          });
+        }
+        if (!gone) setState({ src, uri: file.uri, failed: false });
+      } catch (e) {
+        console.warn("Day map download failed", e instanceof Error ? e.message : e);
+        forgetMap(src);
+        if (!gone) setState({ src, uri: null, failed: true });
+      }
+    })();
+    return () => {
+      gone = true;
+    };
+  }, [src, token, enabled]);
+  if (!src || !state || state.src !== src) return { uri: null, failed: false };
+  return { uri: state.uri, failed: state.failed };
+}
+
 /** The map image in a box of fixed shape, rounded like the cards; reports when it fails. */
 function MapImage({
   source,
@@ -94,22 +166,25 @@ function MapImage({
   ratio,
   onFail,
 }: {
-  source: ImageURISource;
+  /** Null while the map downloads: the box keeps its shape, empty. */
+  source: ImageURISource | null;
   alt: string;
   ratio: number;
   onFail: () => void;
 }) {
   return (
     <View style={[styles.box, { aspectRatio: ratio, backgroundColor: color.fill }]}>
-      <Image
-        source={source}
-        accessible
-        accessibilityRole="image"
-        accessibilityLabel={alt}
-        resizeMode="cover"
-        onError={onFail}
-        style={StyleSheet.absoluteFill}
-      />
+      {source ? (
+        <Image
+          source={source}
+          accessible
+          accessibilityRole="image"
+          accessibilityLabel={alt}
+          resizeMode="cover"
+          onError={onFail}
+          style={StyleSheet.absoluteFill}
+        />
+      ) : null}
       {/* A hairline inside the edge, so the map sits in the card rather than on it. */}
       <View
         pointerEvents="none"
@@ -166,7 +241,8 @@ export function DayMap({
   const src = pins
     ? mapUrl(API_URL, company, pins, { w: 360, h: 180 }, mapTheme(), techColor)
     : null;
-  const failed = !!src && failedSrc === src;
+  const file = useMapFile(src, token, open);
+  const failed = !!src && (failedSrc === src || file.failed);
   const shown = !!src && !!token && !failed;
   const note = missingNote(missing);
   const alt = mapAlt(tech, day, stops.length);
@@ -212,10 +288,13 @@ export function DayMap({
             style={({ pressed }) => pressed && { opacity: 0.85 }}
           >
             <MapImage
-              source={{ uri: src, headers: { Authorization: `Bearer ${token}` } }}
+              source={file.uri ? { uri: file.uri } : null}
               alt={alt}
               ratio={2}
-              onFail={() => setFailedSrc(src)}
+              onFail={() => {
+                forgetMap(src);
+                setFailedSrc(src);
+              }}
             />
           </Pressable>
           <Pressable
@@ -286,8 +365,10 @@ function EnlargeSheet({
   note: string | null;
   alt: string;
 }) {
-  const [failed, setFailed] = useState(false);
+  const [shownFailed, setFailed] = useState(false);
   const src = mapUrl(API_URL, company, pins, { w: 960, h: 640 }, mapTheme(), techColor);
+  const file = useMapFile(src, token, open);
+  const failed = shownFailed || file.failed;
   return (
     <ModalSheet visible={open} onClose={onClose} title={`${tech} · ${day}`} cancel="Close">
       <View style={{ gap: space["2"] }}>
@@ -297,10 +378,13 @@ function EnlargeSheet({
           </T>
         ) : (
           <MapImage
-            source={{ uri: src, headers: { Authorization: `Bearer ${token}` } }}
+            source={file.uri ? { uri: file.uri } : null}
             alt={alt}
             ratio={3 / 2}
-            onFail={() => setFailed(true)}
+            onFail={() => {
+              if (src) forgetMap(src);
+              setFailed(true);
+            }}
           />
         )}
         {note ? (

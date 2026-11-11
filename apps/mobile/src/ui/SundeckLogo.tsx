@@ -54,10 +54,14 @@ export function BarLogo({ y, height = 28 }: { y?: Animated.Value; height?: numbe
       style={styles.box}
       testID="bar-logo"
     >
-      <Art height={height} from={0} to={MARK_WIDTH} />
-      <Animated.View pointerEvents="none" style={[styles.wordmark, { opacity }]}>
-        <Art height={height} from={MARK_WIDTH} to={LOGO_SIZE.width} />
-      </Animated.View>
+      {/* The mark alone sets this box's width, so the wordmark starts where the mark ends
+          (left: 100% counts the box's padding on Android, which ran it into the pin). */}
+      <View style={styles.mark}>
+        <Art height={height} from={0} to={MARK_WIDTH} />
+        <Animated.View pointerEvents="none" style={[styles.wordmark, { opacity }]}>
+          <Art height={height} from={MARK_WIDTH} to={LOGO_SIZE.width} />
+        </Animated.View>
+      </View>
     </View>
   );
 }
@@ -65,6 +69,7 @@ export function BarLogo({ y, height = 28 }: { y?: Animated.Value; height?: numbe
 const styles = StyleSheet.create({
   // A little in from the bar's edge, like Back's chevron.
   box: { paddingLeft: 8, flexDirection: "row", alignItems: "center", overflow: "visible" },
+  mark: { flexDirection: "row", alignItems: "center", overflow: "visible" },
   // Right after the mark, outside the layout's width.
   wordmark: { position: "absolute", left: "100%", top: 0, bottom: 0, justifyContent: "center" },
 });
