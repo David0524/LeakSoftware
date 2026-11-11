@@ -10,8 +10,8 @@ Before you start, download the 10 images listed under "Files to upload" into one
 example `Downloads/sundeck-play`). The extension may not be able to choose files in the
 file picker; if so, it'll ask you to pick them.
 
-Where things stood on 2026-11-11: the D-U-N-S number is in hand. The Play developer account and
-the first Android build are still to do, because the Android workflow had no `EXPO_TOKEN` or
+Where things stood on 2026-11-11: the Play developer account (organization) is created. The
+first Android build is still to do, because the Android workflow had no `EXPO_TOKEN` or
 `GOOGLE_SERVICES_JSON` secret yet (`README.md` steps 3, 4 and 6). The extension can create the
 app and fill in every form now. Uploading the `.aab` waits for the first build (`README.md`
 step 7).
@@ -34,7 +34,7 @@ You're helping me publish my company's Android app, **Sundeck Pro** (package
 4. **Save** each form before you leave it. At the end, list what you finished, what's left, and
    any warnings in the Play Console dashboard, word for word.
 
-## Step A: developer account (skip if it already exists)
+## Step A: developer account (already created; skip unless it's missing)
 
 If https://play.google.com/console shows a developer account, go to Step B. Otherwise, at
 https://play.google.com/console/signup:
