@@ -1,7 +1,7 @@
 # The Android store screenshots (docs/play-store/listing.md), driven by Maestro on an emulator
 # in .github/workflows/android-screenshots.yml. Signs in as the demo owner, then opens each
 # screen by its sundeckpro:// link. Env: EMAIL, PASSWORD, LEAK_JOB, SENT_JOB, VISIT_JOB (from
-# targets.mjs) and OUT (the folder for the pictures).
+# targets.mjs). The pictures land in Maestro's output folder; run.sh copies them out.
 appId: com.sundeckpro.app
 ---
 - launchApp:
@@ -26,17 +26,17 @@ appId: com.sundeckpro.app
 - openLink: sundeckpro://
 - waitForAnimationToEnd:
     timeout: 15000
-- takeScreenshot: ${OUT}/1-today
+- takeScreenshot: 1-today
 
 - openLink: sundeckpro://schedule
 - waitForAnimationToEnd:
     timeout: 15000
-- takeScreenshot: ${OUT}/2-schedule
+- takeScreenshot: 2-schedule
 
 - openLink: sundeckpro://jobs
 - waitForAnimationToEnd:
     timeout: 15000
-- takeScreenshot: ${OUT}/3-jobs
+- takeScreenshot: 3-jobs
 
 - openLink: sundeckpro://jobs/${LEAK_JOB}?section=checklist
 - extendedWaitUntil:
@@ -44,7 +44,7 @@ appId: com.sundeckpro.app
     timeout: 30000
 - waitForAnimationToEnd:
     timeout: 15000
-- takeScreenshot: ${OUT}/4-leak-checklist
+- takeScreenshot: 4-leak-checklist
 
 - openLink: sundeckpro://jobs/${VISIT_JOB}?section=checklist
 - extendedWaitUntil:
@@ -52,7 +52,7 @@ appId: com.sundeckpro.app
     timeout: 30000
 - waitForAnimationToEnd:
     timeout: 15000
-- takeScreenshot: ${OUT}/5-service-checklist
+- takeScreenshot: 5-service-checklist
 
 - openLink: sundeckpro://jobs/${SENT_JOB}?section=wrapup
 - extendedWaitUntil:
@@ -60,14 +60,14 @@ appId: com.sundeckpro.app
     timeout: 30000
 - waitForAnimationToEnd:
     timeout: 15000
-- takeScreenshot: ${OUT}/6-wrap-up
+- takeScreenshot: 6-wrap-up
 
 - openLink: sundeckpro://jobs/${LEAK_JOB}/review
 - waitForAnimationToEnd:
     timeout: 15000
-- takeScreenshot: ${OUT}/7-review
+- takeScreenshot: 7-review
 
 - openLink: sundeckpro://invoices
 - waitForAnimationToEnd:
     timeout: 15000
-- takeScreenshot: ${OUT}/8-invoices
+- takeScreenshot: 8-invoices

@@ -21,6 +21,10 @@ demo network -e mobile show -e level 4 -e datatype none
 demo notifications -e visible false
 
 maestro test --format junit --output "$out/maestro.xml" --debug-output "$out/debug" \
-  -e OUT="$out" -e EMAIL="$EMAIL" -e PASSWORD="$PASSWORD" -e LEAK_JOB="$LEAK_JOB" \
+  --test-output-dir "$out/maestro" -e EMAIL="$EMAIL" -e PASSWORD="$PASSWORD" -e LEAK_JOB="$LEAK_JOB" \
   -e SENT_JOB="$SENT_JOB" -e VISIT_JOB="$VISIT_JOB" \
   apps/mobile/maestro/screenshots.yaml
+
+# takeScreenshot saves inside Maestro's output folder; gather the eight at the top of $out.
+find "$out/maestro" "$out/debug" -maxdepth 6 -name '[0-9]-*.png' -exec cp {} "$out/" \; 2>/dev/null || true
+ls -l "$out"
