@@ -30,6 +30,10 @@ appId: com.sundeckpro.app
 - extendedWaitUntil:
     visible: "Today"
     timeout: 60000
+# A tap on the empty bar puts the phone back in touch mode: the emulator's boot key press
+# leaves it in keyboard mode, which draws a grey focus box on the first control.
+- tapOn:
+    point: "60%,6%"
 - waitForAnimationToEnd:
     timeout: 15000
 
