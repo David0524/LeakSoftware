@@ -33,17 +33,39 @@ appId: com.sundeckpro.app
 - waitForAnimationToEnd:
     timeout: 15000
 
-- openLink: sundeckpro://
+- retry:
+    maxRetries: 3
+    commands:
+      - openLink: sundeckpro://
+      - extendedWaitUntil:
+          visible: "Today"
+          timeout: 15000
 - waitForAnimationToEnd:
     timeout: 15000
 - takeScreenshot: 1-today
 
-- openLink: sundeckpro://schedule
+- retry:
+    maxRetries: 3
+    commands:
+      - openLink: sundeckpro://schedule
+      - extendedWaitUntil:
+          visible: "Mon"
+          timeout: 15000
+# The day's map is drawn by the server: wait for its picture.
+- extendedWaitUntil:
+    visible: "Map of .*"
+    timeout: 60000
 - waitForAnimationToEnd:
     timeout: 15000
 - takeScreenshot: 2-schedule
 
-- openLink: sundeckpro://jobs
+- retry:
+    maxRetries: 3
+    commands:
+      - openLink: sundeckpro://jobs
+      - extendedWaitUntil:
+          visible: "Reports"
+          timeout: 15000
 - waitForAnimationToEnd:
     timeout: 15000
 - takeScreenshot: 3-jobs
@@ -86,7 +108,13 @@ appId: com.sundeckpro.app
 - waitForAnimationToEnd:
     timeout: 15000
 
-- openLink: sundeckpro://invoices
+- retry:
+    maxRetries: 3
+    commands:
+      - openLink: sundeckpro://invoices
+      - extendedWaitUntil:
+          visible: "Export Invoices"
+          timeout: 15000
 - waitForAnimationToEnd:
     timeout: 15000
 - takeScreenshot: 8-invoices
