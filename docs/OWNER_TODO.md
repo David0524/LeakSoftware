@@ -37,11 +37,10 @@ first. Tick an item off by deleting it (and tell Claude, so it can check the res
       (the app is free, so nothing is paid, but Apple may ask). Tell Claude "Apple account is
       on the LLC"; Claude updates the App Store copyright and docs if anything changed.
 
-3. **Android:** the Play developer account (organization), the app, its store listing and
-   its App content forms are done (2026-11-11), and the first build (1.0.0, version code 2)
-   is made. Left: upload it to internal testing (`docs/play-store/CHROME_HANDOFF.md` Step D),
-   add Firebase's FCM V1 key in Expo (`docs/play-store/README.md` step 4.4 to 4.5), then the
-   Play service account (step 8).
+3. **Android:** live on Play's internal testing (1.0.0, version code 2, 2026-11-10; the
+   "Sundeck team" tester list). Left: add Firebase's FCM V1 key in Expo
+   (`docs/play-store/README.md` step 4.4 to 4.5), the Play service account (step 8), real
+   Android store screenshots, then production (step 9).
 
 ## From 2026-10-22: Android on Google Play
 
