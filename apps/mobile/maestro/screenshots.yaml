@@ -20,6 +20,10 @@ appId: com.sundeckpro.app
 - extendedWaitUntil:
     visible: "Today"
     timeout: 120000
+# Wait for the whole shop to download (the banner goes, teammates' names arrive).
+- extendedWaitUntil:
+    notVisible: "Downloading your company.*"
+    timeout: 600000
 - waitForAnimationToEnd:
     timeout: 15000
 
@@ -42,6 +46,7 @@ appId: com.sundeckpro.app
 - extendedWaitUntil:
     visible: "Checklist"
     timeout: 30000
+- tapOn: "Checklist"
 - waitForAnimationToEnd:
     timeout: 15000
 - takeScreenshot: 4-leak-checklist
@@ -50,6 +55,7 @@ appId: com.sundeckpro.app
 - extendedWaitUntil:
     visible: "Checklist"
     timeout: 30000
+- tapOn: "Checklist"
 - waitForAnimationToEnd:
     timeout: 15000
 - takeScreenshot: 5-service-checklist
@@ -58,14 +64,21 @@ appId: com.sundeckpro.app
 - extendedWaitUntil:
     visible: "Wrap-Up"
     timeout: 30000
+# The job screen keeps the last section it showed, so pick Wrap-Up.
+- tapOn: "Wrap-Up"
 - waitForAnimationToEnd:
     timeout: 15000
 - takeScreenshot: 6-wrap-up
 
-- openLink: sundeckpro://jobs/${LEAK_JOB}/review
+# The finished job's Review and Sign: the report the customer reads.
+- openLink: sundeckpro://jobs/${SENT_JOB}/review
 - waitForAnimationToEnd:
     timeout: 15000
 - takeScreenshot: 7-review
+# Review and Sign is a sheet: close it so the next link shows.
+- tapOn: "Cancel"
+- waitForAnimationToEnd:
+    timeout: 15000
 
 - openLink: sundeckpro://invoices
 - waitForAnimationToEnd:
