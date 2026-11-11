@@ -9,6 +9,8 @@ ready in the repo:
 - `listing.md`, `data-safety.md`, `content-rating.md`, `app-access.md`: the store listing and
   the Play Console forms.
 - `graphics/` and `screenshots/`: the icon, the feature graphic, and 8 phone screenshots.
+- `CHROME_HANDOFF.md`: a prompt to paste into Claude in Chrome so it fills the Play Console
+  forms (steps 2, 5, 7 and 9) with you there to type passwords and confirm.
 
 These steps need you. Do them in order; each one says what to send back to Claude. Never paste
 a key or password into a chat, an issue, or a file in the repo: keys go only into GitHub
