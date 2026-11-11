@@ -184,8 +184,8 @@ Requires a Sundeck Pro shop account. Owners start a free 30-day trial at sundeck
 
 - App icon: `icon-512.png`. Feature graphic: `feature-graphic.png`.
 - Phone screenshots, in this order: `1-today.png`, `2-schedule.png`, `3-jobs.png`,
-  `4-leak-checklist.png`, `5-service-checklist.png`, `6-wrap-up-quote-invoice.png`,
-  `7-report.png`, `8-receipt.png`. They're in a folder I downloaded; if you can't choose files,
+  `4-leak-checklist.png`, `5-service-checklist.png`, `6-wrap-up.png`,
+  `7-review.png`, `8-invoices.png`. They're in a folder I downloaded; if you can't choose files,
   tell me which file goes where and I'll pick them.
 - No video. Save.
 
@@ -230,9 +230,9 @@ Download these from the public repository into one folder before you start:
 - https://raw.githubusercontent.com/David0524/LeakSoftware/claude/cool-keller-efjc00/docs/play-store/screenshots/3-jobs.png
 - https://raw.githubusercontent.com/David0524/LeakSoftware/claude/cool-keller-efjc00/docs/play-store/screenshots/4-leak-checklist.png
 - https://raw.githubusercontent.com/David0524/LeakSoftware/claude/cool-keller-efjc00/docs/play-store/screenshots/5-service-checklist.png
-- https://raw.githubusercontent.com/David0524/LeakSoftware/claude/cool-keller-efjc00/docs/play-store/screenshots/6-wrap-up-quote-invoice.png
-- https://raw.githubusercontent.com/David0524/LeakSoftware/claude/cool-keller-efjc00/docs/play-store/screenshots/7-report.png
-- https://raw.githubusercontent.com/David0524/LeakSoftware/claude/cool-keller-efjc00/docs/play-store/screenshots/8-receipt.png
+- https://raw.githubusercontent.com/David0524/LeakSoftware/claude/cool-keller-efjc00/docs/play-store/screenshots/6-wrap-up.png
+- https://raw.githubusercontent.com/David0524/LeakSoftware/claude/cool-keller-efjc00/docs/play-store/screenshots/7-review.png
+- https://raw.githubusercontent.com/David0524/LeakSoftware/claude/cool-keller-efjc00/docs/play-store/screenshots/8-invoices.png
 
 ## Calls made for you in this handoff (from `data-safety.md` "Owner to confirm")
 

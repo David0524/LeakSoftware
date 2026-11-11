@@ -64,30 +64,30 @@ All in `docs/play-store/graphics/` and `docs/play-store/screenshots/`.
 |---|---|---|
 | App icon | 512 × 512 PNG, full square (Play rounds it) | `graphics/icon-512.png` |
 | Feature graphic | 1024 × 500 PNG or JPEG | `graphics/feature-graphic.png` |
-| Phone screenshots | 2 to 8, 9:16, 1080 × 1920 | `screenshots/1-today.png` … `8-receipt.png` |
+| Phone screenshots | 2 to 8, 9:16, 1080 × 1920 | `screenshots/1-today.png` … `8-invoices.png` |
 
 The icon and feature graphic come from the generated logo and `brand/tokens.json`: edit
 `brand/scripts/build_play_graphics.mjs` and run
 `PW_CHROMIUM_PATH=/opt/pw-browsers/chromium node brand/scripts/build_play_graphics.mjs` (never
 edit the PNGs by hand).
 
-**The screenshots are captures of the phone website**, not of the Android app: no Android build
-exists yet. The Android app follows the mobile website's design and navigation
-(`docs/design/2026-10-19-native-apps-follow-web.md`), so they show the same screens, but they
-must be replaced by real Android captures once an emulator or device build exists, before the
-public (production) release. Taken at 412 × 732 CSS pixels and 2.625× (a Pixel-sized phone),
-resized to 1080 × 1920, signed in as the demo shop's tech and owner on the dev project; the
-names, addresses, and numbers are the demo shop's made-up data.
+**The screenshots are captures of the Android app** (2026-11-11), made by
+`.github/workflows/android-screenshots.yml`: the latest EAS Android build on a Pixel-sized
+emulator (1080 × 1920), signed in as the demo shop's owner on the dev project, each screen
+opened by its link (`apps/mobile/maestro/`). To retake them: `pnpm demo:reset -- --apply` (so
+the route is today's), then Actions › Android screenshots › Run workflow, and copy the
+`android-screenshots` artifact here. The names, addresses, and numbers are the demo shop's
+made-up data.
 
 | # | File | Shows |
 |---|---|---|
 | 1 | `1-today.png` | Today: the current stop card and the day's route |
-| 2 | `2-schedule.png` | Schedule: a tech's day with stops and drive times |
+| 2 | `2-schedule.png` | Schedule: the day's map and route for the team |
 | 3 | `3-jobs.png` | Jobs: the job list with statuses |
-| 4 | `4-leak-checklist.png` | A leak detection checklist with a leaking item |
-| 5 | `5-service-checklist.png` | A maintenance visit: chemical readings and the service checklist |
-| 6 | `6-wrap-up-quote-invoice.png` | Wrap-Up: report, quote, signature, and invoice for one job |
-| 7 | `7-report.png` | The customer's leak detection report (the shop's logo) |
-| 8 | `8-receipt.png` | The customer's paid invoice (receipt) |
+| 4 | `4-leak-checklist.png` | A leak detection checklist in progress |
+| 5 | `5-service-checklist.png` | A pool service visit: chemicals and the service checklist |
+| 6 | `6-wrap-up.png` | Wrap-Up: report sent, customer signature, and invoice for one job |
+| 7 | `7-review.png` | Review and Sign: the report the customer reads |
+| 8 | `8-invoices.png` | Invoices: paid invoices with amounts |
 
 The screenshots carry no text overlay.

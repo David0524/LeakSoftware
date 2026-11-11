@@ -86,7 +86,7 @@ https://play.google.com/console › **Create app**.
    - App category → Business; contact email `support@sundeckpro.com`.
    - Main store listing → `listing.md` (name, short and full description), the icon
      `graphics/icon-512.png`, the feature graphic `graphics/feature-graphic.png`, and the phone
-     screenshots `screenshots/1-today.png` to `8-receipt.png` in that order.
+     screenshots `screenshots/1-today.png` to `8-invoices.png` in that order.
 3. Send Claude: "Play app created", and anything a form asked that these files didn't cover.
 
 ## 6. GitHub secrets
