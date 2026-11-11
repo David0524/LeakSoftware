@@ -1,0 +1,73 @@
+# The Android store screenshots (docs/play-store/listing.md), driven by Maestro on an emulator
+# in .github/workflows/android-screenshots.yml. Signs in as the demo owner, then opens each
+# screen by its sundeckpro:// link. Env: EMAIL, PASSWORD, LEAK_JOB, SENT_JOB, VISIT_JOB (from
+# targets.mjs) and OUT (the folder for the pictures).
+appId: com.sundeckpro.app
+---
+- launchApp:
+    clearState: true
+    permissions:
+      all: allow
+- extendedWaitUntil:
+    visible: "name@example.com"
+    timeout: 90000
+- tapOn: "name@example.com"
+- inputText: ${EMAIL}
+- tapOn: "Required"
+- inputText: ${PASSWORD}
+- pressKey: Enter
+# The first sign-in downloads the shop to the phone.
+- extendedWaitUntil:
+    visible: "Today"
+    timeout: 120000
+- waitForAnimationToEnd:
+    timeout: 15000
+
+- openLink: sundeckpro://
+- waitForAnimationToEnd:
+    timeout: 15000
+- takeScreenshot: ${OUT}/1-today
+
+- openLink: sundeckpro://schedule
+- waitForAnimationToEnd:
+    timeout: 15000
+- takeScreenshot: ${OUT}/2-schedule
+
+- openLink: sundeckpro://jobs
+- waitForAnimationToEnd:
+    timeout: 15000
+- takeScreenshot: ${OUT}/3-jobs
+
+- openLink: sundeckpro://jobs/${LEAK_JOB}?section=checklist
+- extendedWaitUntil:
+    visible: "Checklist"
+    timeout: 30000
+- waitForAnimationToEnd:
+    timeout: 15000
+- takeScreenshot: ${OUT}/4-leak-checklist
+
+- openLink: sundeckpro://jobs/${VISIT_JOB}?section=checklist
+- extendedWaitUntil:
+    visible: "Checklist"
+    timeout: 30000
+- waitForAnimationToEnd:
+    timeout: 15000
+- takeScreenshot: ${OUT}/5-service-checklist
+
+- openLink: sundeckpro://jobs/${SENT_JOB}?section=wrapup
+- extendedWaitUntil:
+    visible: "Wrap-Up"
+    timeout: 30000
+- waitForAnimationToEnd:
+    timeout: 15000
+- takeScreenshot: ${OUT}/6-wrap-up
+
+- openLink: sundeckpro://jobs/${LEAK_JOB}/review
+- waitForAnimationToEnd:
+    timeout: 15000
+- takeScreenshot: ${OUT}/7-review
+
+- openLink: sundeckpro://invoices
+- waitForAnimationToEnd:
+    timeout: 15000
+- takeScreenshot: ${OUT}/8-invoices
