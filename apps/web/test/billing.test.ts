@@ -4,6 +4,7 @@ import { describe, expect, it } from "vitest";
 import {
   applyBillingEvent,
   subscriptionStatus,
+  pickTeamSize,
   syncSubscriptionPrice,
 } from "../src/server/billing";
 
@@ -101,23 +102,29 @@ describe("Sundeck Pro billing events", () => {
 });
 
 /** Answers the reads syncSubscriptionPrice makes: subscription, company, and member count. */
-function priceDb(services: string, people: number) {
+function priceDb(services: string, people: number, teamSize?: number) {
   const rows: Record<string, unknown> = {
     subscription: { stripe_subscription_id: "sub_1", plan: "standard", status: "trialing" },
-    company: { settings: { services } },
+    company: { settings: { services, ...(teamSize ? { team_size: teamSize } : {}) } },
   };
+  const saved: unknown[] = [];
   return {
+    saved,
     from(table: string) {
       const q = {
         select: () => q,
         eq: () => q,
+        update: (values: unknown) => {
+          saved.push(values);
+          return q;
+        },
         maybeSingle: async () => ({ data: rows[table], error: null }),
         single: async () => ({ data: rows[table], error: null }),
         then: (done: (v: unknown) => unknown) => done({ count: people, error: null }),
       };
       return q;
     },
-  } as unknown as SupabaseClient;
+  } as unknown as SupabaseClient & { saved: unknown[] };
 }
 
 function fakeStripe(
@@ -181,5 +188,22 @@ describe("Sundeck Pro price by package and people", () => {
     const { stripe, updates } = fakeStripe(7_900 + 4_900);
     expect(await syncSubscriptionPrice("co_1", stripe, priceDb("both", 2))).toBeNull();
     expect(updates).toHaveLength(0);
+  });
+});
+
+describe("the team size the owner picks (owner, 2026-11-12)", () => {
+  it("bills the picked size, or the active people when more", async () => {
+    const picked = fakeStripe(7_900);
+    expect(await syncSubscriptionPrice("co_1", picked.stripe, priceDb("pool", 1, 5))).toBe(14_900);
+    const grown = fakeStripe(14_900);
+    expect(await syncSubscriptionPrice("co_1", grown.stripe, priceDb("pool", 8, 5))).toBe(24_900);
+  });
+
+  it("saves a size from the active people up, and refuses fewer", async () => {
+    const db = priceDb("pool", 2);
+    expect(await pickTeamSize("co_1", 4, db)).toBeNull();
+    expect(db.saved).toEqual([{ settings: { services: "pool", team_size: 4 } }]);
+    expect(await pickTeamSize("co_1", 1, db)).toBe("Choose 2 to 50 people.");
+    expect(db.saved).toHaveLength(1);
   });
 });

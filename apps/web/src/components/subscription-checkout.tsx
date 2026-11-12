@@ -86,14 +86,29 @@ export function SubscriptionCheckout({
           <EmbeddedCheckout />
         </EmbeddedCheckoutProvider>
       ) : (
-        <div className="flex min-h-[22rem] flex-col items-center justify-center gap-3 p-6 text-text-muted">
-          <span
-            aria-hidden="true"
-            className="size-6 animate-spin rounded-full border-2 border-current border-t-transparent motion-reduce:animate-none"
-          />
-          <p role="status">Loading the secure card form…</p>
-        </div>
+        <Loading />
       )}
+    </div>
+  );
+}
+
+function Loading() {
+  return (
+    <div className="flex min-h-[22rem] flex-col items-center justify-center gap-3 p-6 text-text-muted">
+      <span
+        aria-hidden="true"
+        className="size-6 animate-spin rounded-full border-2 border-current border-t-transparent motion-reduce:animate-none"
+      />
+      <p role="status">Loading the secure card form…</p>
+    </div>
+  );
+}
+
+/** The card form's place while the team size settles, before it starts again. */
+export function CheckoutPlaceholder() {
+  return (
+    <div className="card min-h-[22rem] overflow-hidden p-0" aria-busy="true">
+      <Loading />
     </div>
   );
 }

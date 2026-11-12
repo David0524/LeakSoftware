@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
-import { billingSummary, formatCents } from "@leakbook/core";
-import { BillingButton } from "@/components/billing-buttons";
+import { billingSummary } from "@leakbook/core";
+import { BillingButton, BillingPlan } from "@/components/billing-buttons";
 import { Banner } from "@/components/doc-ui";
 import { SettingsSection } from "@/components/settings-forms";
 import { PageHeader } from "@/components/ui";
@@ -47,15 +47,6 @@ export default async function BillingPage({ searchParams }: PageProps<"/settings
             ) : (
               <>
                 <p className="text-xl font-semibold">{billingSummary(access)}</p>
-                {price ? (
-                  <p data-testid="billing-price">
-                    {price.name} · {price.people === 1 ? "1 person" : `${price.people} people`} ·{" "}
-                    <span className="font-semibold">{formatCents(price.cents)} a month</span>
-                    <span className="block text-[0.9375rem] text-text-muted">
-                      Adding or turning off a teammate changes the price on your next bill.
-                    </span>
-                  </p>
-                ) : null}
                 {price?.problem ? <Banner tone="warning">{price.problem}</Banner> : null}
                 {access.locked ? (
                   <Banner tone="error">
@@ -67,16 +58,19 @@ export default async function BillingPage({ searchParams }: PageProps<"/settings
                   <Banner tone="warning">
                     Subscriptions aren’t set up on this Sundeck Pro server yet.
                   </Banner>
+                ) : price ? (
+                  <BillingPlan
+                    name={price.name}
+                    services={price.services}
+                    billed={price.people}
+                    active={price.active}
+                    subscribed={access.subscribed}
+                    publishableKey={stripePublishableKey()}
+                  />
                 ) : access.subscribed ? (
                   <BillingButton kind="manage" />
                 ) : (
-                  <>
-                    <p className="text-text-muted">
-                      Billed monthly by your package and the people on your team. Any days left on
-                      your free trial carry over: you’re charged when the trial ends.
-                    </p>
-                    <BillingButton kind="subscribe" publishableKey={stripePublishableKey()} />
-                  </>
+                  <BillingButton kind="subscribe" publishableKey={stripePublishableKey()} />
                 )}
               </>
             )}

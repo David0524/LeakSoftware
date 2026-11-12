@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 import { Suspense } from "react";
-import { companyServices, mustFinishSetup } from "@leakbook/core";
+import { chosenTeamSize, companyServices, mustFinishSetup } from "@leakbook/core";
 import { TrialOffer } from "@/components/trial-offer";
 import { getOffice } from "@/lib/auth";
 import { getAccess, getCompany } from "@/lib/data";
@@ -41,10 +41,12 @@ async function WelcomeBody() {
       .eq("status", "active")
       .is("deleted_at", null),
   ]);
+  const people = Math.max(1, count ?? 1);
   return (
     <TrialOffer
       services={companyServices(company.settings)}
-      people={Math.max(1, count ?? 1)}
+      people={people}
+      teamSize={chosenTeamSize(company.settings) ?? people}
       trialEnds={(sub?.trial_ends_at as string | null) ?? null}
       billing={billingConfigured()}
       publishableKey={stripePublishableKey()}

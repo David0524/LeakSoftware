@@ -9,6 +9,7 @@ import { createClient } from "@/lib/supabase/server";
 import {
   BillingNotConfigured,
   finishOnboarding,
+  pickTeamSize,
   subscribeCheckout,
   type SubscribeStart,
 } from "@/server/billing";
@@ -18,15 +19,18 @@ import type { FormState, SubscribeState } from "./auth";
 // read-only until its card is in (or a demo code is used); then setup is done.
 
 /**
- * Owners: add the card. With the publishable key, Stripe's form is embedded on /welcome (owner,
- * 2026-10-24) and this returns its client secret; without it, Stripe's page. Either way Stripe
- * comes back to /welcome/done.
+ * Owners: add the card, priced for the team size picked on the page (owner, 2026-11-12). With
+ * the publishable key, Stripe's form is embedded on /welcome (owner, 2026-10-24) and this
+ * returns its client secret; without it, Stripe's page. Either way Stripe comes back to
+ * /welcome/done.
  */
-export async function startCheckout(): Promise<SubscribeState> {
+export async function startCheckout(teamSize: number): Promise<SubscribeState> {
   const office = await requireOwner();
   const company = await getCompany(office);
   let start: SubscribeStart;
   try {
+    const wrong = await pickTeamSize(company.id, teamSize);
+    if (wrong) return { error: wrong };
     start = await subscribeCheckout(
       { id: company.id, name: company.name },
       office.user.email ?? null,

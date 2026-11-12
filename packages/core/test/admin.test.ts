@@ -79,6 +79,12 @@ describe("prices and MRR", () => {
     );
   });
 
+  it("prices a shop for the team size its owner picked, or more people when active", () => {
+    expect(shopPriceCents(shop({ team_size: 7 }))).toBe(servicesPriceCents("pool", 7));
+    expect(shopPriceCents(shop({ people: 9, team_size: 7 }))).toBe(servicesPriceCents("pool", 9));
+    expect(shopPriceCents(shop({ team_size: null }))).toBe(servicesPriceCents("pool", 3));
+  });
+
   it("counts paying and past-due shops only", () => {
     const shops = [
       shop({ id: "a" }),

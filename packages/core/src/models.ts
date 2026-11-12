@@ -35,6 +35,8 @@ export interface CompanySettings {
   require_finish_photo?: boolean;
   /** Every checklist item answered before a job is completed (owners and admins, 2026-10-19). */
   require_checklist_to_finish?: boolean;
+  /** The people the shop is billed for at least (owner, 2026-11-12; plans.ts `chosenTeamSize`). */
+  team_size?: number;
 }
 
 /** Whether finishing a job needs a pool photo first (default off). */

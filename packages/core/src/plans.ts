@@ -138,3 +138,36 @@ export function servicesPriceLines(
   if (services === "both") lines.push({ label: "Leak Detection add-on", cents: BOTH_ADDON_CENTS });
   return lines;
 }
+
+// ---------------------------------------------------------------------------
+// The team size an owner picks (owner, 2026-11-12: "you can't adjust how many employees you
+// have and the pricing")
+// ---------------------------------------------------------------------------
+
+/** The most people the team size control goes to, as on the website's pricing. */
+export const TEAM_SIZE_MAX = 50;
+
+/** The team size the owner picked (company.settings.team_size), or null when none was. */
+export function chosenTeamSize(settings: unknown): number | null {
+  const v = (settings as { team_size?: unknown } | null)?.team_size;
+  return typeof v === "number" && Number.isInteger(v) && v >= 1 && v <= TEAM_SIZE_MAX ? v : null;
+}
+
+/**
+ * The people a shop is billed for: the team size the owner picked, or the active people when
+ * there are more of them (adding a teammate still moves the price up).
+ */
+export function billedTeamSize(activePeople: number, chosen: number | null): number {
+  return Math.max(people(activePeople), chosen ?? 1);
+}
+
+/**
+ * A team size from a form or a stepper, or null when it isn't a whole number from the active
+ * people (fewer can't be picked) to `TEAM_SIZE_MAX` (or the active people, when more).
+ */
+export function parseTeamSize(v: unknown, activePeople: number): number | null {
+  const n = typeof v === "number" ? v : Number(String(v ?? "").trim());
+  const fewest = people(activePeople);
+  if (!Number.isInteger(n) || n < fewest || n > Math.max(fewest, TEAM_SIZE_MAX)) return null;
+  return n;
+}

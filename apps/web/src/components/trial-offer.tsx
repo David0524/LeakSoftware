@@ -1,25 +1,28 @@
 "use client";
 
-import { useActionState, useState } from "react";
+import { useActionState, useCallback, useState } from "react";
 import {
   formatCents,
   planForServices,
   planTier,
   servicesPriceCents,
   servicesPriceLines,
+  TEAM_SIZE_MAX,
   TRIAL_OFFER,
   trialPackage,
   type Services,
 } from "@leakbook/core";
+import type { SubscribeState } from "@/app/actions/auth";
 import { redeemCode, startCheckout } from "@/app/actions/onboarding";
 import { Logo } from "./logo";
-import { SubscriptionCheckout } from "./subscription-checkout";
+import { CheckoutPlaceholder, SubscriptionCheckout } from "./subscription-checkout";
+import { TeamSizeStepper, useSettledTeamSize } from "./team-size";
 import { Button, cx } from "./ui";
 import { orOffline } from "@/lib/offline";
 
 // A new shop's trial page (/welcome), straight after sign-up (owner, 2026-10-24: the
-// questionnaire that came first is gone). The price for the shop's package and team, what's
-// included, then the card for the 30-day free trial, or a demo code (VIP26). With Stripe's
+// questionnaire that came first is gone). The price for the shop's package and team (the owner
+// picks how many people, owner 2026-11-12), what's included, then the card for the 30-day free trial, or a demo code (VIP26). With Stripe's
 // publishable key the card form is embedded beside the offer (owner, 2026-10-24); without it
 // the button opens Stripe's page. Copy: packages/core/src/trial-offer.ts.
 
@@ -30,13 +33,16 @@ const longDate = (iso: string) =>
 export function TrialOffer({
   services,
   people,
+  teamSize,
   trialEnds,
   billing,
   publishableKey = null,
 }: {
   services: Services;
-  /** Active people on the team: the price follows them. */
+  /** Active people on the team: the fewest the owner can pick. */
   people: number;
+  /** The team size to start from: the one picked before, or the active people. */
+  teamSize: number;
   trialEnds: string | null;
   /** Whether this server takes cards (Stripe billing); without it only a demo code gets in. */
   billing: boolean;
@@ -44,9 +50,16 @@ export function TrialOffer({
   publishableKey?: string | null;
 }) {
   const offer = TRIAL_OFFER[trialPackage(services)];
-  const [state, act, pending] = useActionState(orOffline(startCheckout), {});
-  const tier = planTier(planForServices(services), people);
-  const price = dollars(servicesPriceCents(services, people));
+  const [team, setTeam] = useState(Math.max(people, teamSize));
+  // The card form is started for the team size the owner settles on.
+  const settled = useSettledTeamSize(team);
+  const startEmbedded = useCallback(() => startCheckout(settled), [settled]);
+  const [state, act, pending] = useActionState(
+    orOffline((_: SubscribeState, form: FormData) => startCheckout(Number(form.get("team_size")))),
+    {},
+  );
+  const tier = planTier(planForServices(services), team);
+  const price = dollars(servicesPriceCents(services, team));
   // Every new shop comes to this payment page (owner, 2026-10-16). Without Stripe on the
   // server, cards can't be taken yet; a demo code (VIP26) still gets a shop in.
   const [showCode, setShowCode] = useState(!billing);
@@ -90,14 +103,27 @@ export function TrialOffer({
               <span className="font-sans text-lg font-normal text-text-muted"> / month</span>
             </p>
             <p className="mt-1 text-text-muted">
-              {tier.name}, for {people === 1 ? "1 person" : `${people} people`}. The price follows
-              the people on your team.
+              {tier.name}, for {team === 1 ? "1 person" : `${team} people`}.
+            </p>
+            <div className="mt-4 flex items-center justify-between gap-2">
+              <p id="trial-team-size">People on your team</p>
+              <TeamSizeStepper
+                value={team}
+                min={people}
+                max={Math.max(people, TEAM_SIZE_MAX)}
+                onChange={setTeam}
+                labelledBy="trial-team-size"
+                size="compact"
+              />
+            </div>
+            <p className="mt-1 text-[0.9375rem] text-text-muted">
+              Owners, office staff, and techs each count as one.
             </p>
             {/* Both: Pool Maintenance plus the leak detection add-on, spelled out (owner,
               2026-10-19). */}
             {services === "both" ? (
               <ul className="mt-3 space-y-1 text-[0.9375rem]" data-testid="onboarding-price-lines">
-                {servicesPriceLines(services, people).map((l) => (
+                {servicesPriceLines(services, team).map((l) => (
                   <li key={l.label} className="flex justify-between gap-3">
                     <span>{l.label}</span>
                     <span className="tabular-nums">{dollars(l.cents)}</span>
@@ -128,7 +154,15 @@ export function TrialOffer({
               30 days free
             </h2>
             <p className="mb-4 text-text-muted">Then {price} a month. Add a card to start.</p>
-            <SubscriptionCheckout publishableKey={publishableKey!} start={startCheckout} />
+            {settled === team ? (
+              <SubscriptionCheckout
+                key={settled}
+                publishableKey={publishableKey!}
+                start={startEmbedded}
+              />
+            ) : (
+              <CheckoutPlaceholder />
+            )}
             <p className="mt-3 text-center text-[0.9375rem] text-text-muted">{chargeNote}</p>
             {showCode ? <DemoCode /> : codeLink}
           </div>
@@ -144,6 +178,7 @@ export function TrialOffer({
             action={act}
             className="sticky bottom-0 -mx-4 mt-auto bg-bg/90 px-4 pt-6 pb-[max(1rem,env(safe-area-inset-bottom))] backdrop-blur sm:static sm:mx-0 sm:mt-8 sm:bg-transparent sm:p-0 sm:backdrop-blur-none"
           >
+            <input type="hidden" name="team_size" value={team} />
             <Button type="submit" disabled={pending || !billing} className="w-full">
               Start 30-Day Free Trial
             </Button>

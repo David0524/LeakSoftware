@@ -2,11 +2,11 @@ import type { Cents } from "./money";
 import { centsToDollars, toCsv } from "./invoice";
 import { companyServices, type Services } from "./models";
 import { heardFromText } from "./heard-from";
-import { servicesPriceCents } from "./plans";
+import { billedTeamSize, chosenTeamSize, servicesPriceCents } from "./plans";
 
 // The Admin portal's numbers (owner, 2026-10-22: "Analytics, customer data, finances"). Shops
 // come from public.admin_shops(), subscription history from public.admin_metrics(). Prices
-// are the same rule billing charges (plans.ts): a shop's package and its active people.
+// are the same rule billing charges (plans.ts): a shop's package and its team size (or active people, when more).
 
 /** One shop as admin_shops() returns it. */
 export interface AdminShop {
@@ -33,6 +33,8 @@ export interface AdminShop {
   stripe_subscription_id: string | null;
   locked: boolean;
   people: number;
+  /** The team size the owner picked (company.settings.team_size), if any. */
+  team_size?: number | null;
   owner_id: string | null;
   owner_name: string | null;
   owner_email: string | null;
@@ -81,9 +83,15 @@ export function shopStanding(
 
 const services = (v: string): Services => companyServices({ services: v });
 
-/** What the shop's package costs a month for its active people (whatever its standing). */
-export function shopPriceCents(s: Pick<AdminShop, "services" | "people">): Cents {
-  return servicesPriceCents(services(s.services), Math.max(1, s.people));
+/**
+ * What the shop's package costs a month for its team size or active people, whichever is more,
+ * as Stripe bills it (whatever its standing).
+ */
+export function shopPriceCents(s: Pick<AdminShop, "services" | "people" | "team_size">): Cents {
+  return servicesPriceCents(
+    services(s.services),
+    billedTeamSize(s.people, chosenTeamSize({ team_size: s.team_size })),
+  );
 }
 
 /** Monthly recurring revenue: the price of every shop Stripe bills (paying or past due). */

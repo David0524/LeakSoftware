@@ -107,7 +107,12 @@ select is((select count(*)::int from job where service_plan_id = (select id from
 insert into job (company_id, property_id, bill_to_customer_id, type, status, plan_date,
                  service_plan_id, assigned_user_id)
   select ca, prop_a, cust_a, 'maintenance', 'in_progress',
-         date_trunc('month', current_date)::date + 12, (select id from plan), tech_a from ids;
+         date_trunc('month', current_date)::date + 12, (select id from plan), tech_a from ids
+  on conflict do nothing;
+-- The plan may already have that visit (when today is near it), as above.
+update job set status = 'in_progress', assigned_user_id = (select tech_a from ids)
+  where service_plan_id = (select id from plan) and status not in ('in_progress', 'done')
+    and plan_date = date_trunc('month', current_date)::date + 12;
 update job set status = 'done' where service_plan_id = (select id from plan)
   and plan_date = date_trunc('month', current_date)::date + 12;
 select is((select count(*)::int from app.unbilled_visits((select ca from ids))), 0,

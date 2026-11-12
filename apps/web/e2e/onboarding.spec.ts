@@ -36,6 +36,16 @@ test("a new pool company goes straight from sign-up to its trial", async ({ page
     page.getByRole("heading", { name: "Your route, sorted with Sundeck Pro." }),
   ).toBeVisible();
   await expect(page.getByTestId("onboarding-price")).toContainText("$79");
+  // The owner picks how many people (owner, 2026-11-12), from the one active person up, and the
+  // price follows: 3 people is Pool Maintenance Team.
+  await expect(page.getByRole("button", { name: "Fewer people" })).toBeDisabled();
+  await page.getByRole("button", { name: "More people" }).click();
+  await page.getByRole("button", { name: "More people" }).click();
+  await expect(page.getByTestId("team-size")).toHaveText("3");
+  await expect(page.getByTestId("onboarding-price")).toContainText("$149");
+  await page.getByRole("button", { name: "Fewer people" }).click();
+  await page.getByRole("button", { name: "Fewer people" }).click();
+  await expect(page.getByTestId("onboarding-price")).toContainText("$79");
   await expect(page.getByText("Unlimited pools", { exact: false })).toBeVisible();
   // The office waits for the card: going elsewhere comes back here.
   await page.goto("/home");

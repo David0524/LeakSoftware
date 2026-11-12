@@ -1,5 +1,15 @@
 import { describe, expect, it } from "vitest";
-import { competitorPrices, extraUsers, monthlyPriceCents, planTier, PLANS } from "../src";
+import {
+  billedTeamSize,
+  chosenTeamSize,
+  competitorPrices,
+  extraUsers,
+  monthlyPriceCents,
+  parseTeamSize,
+  planTier,
+  PLANS,
+  TEAM_SIZE_MAX,
+} from "../src";
 
 describe("plan prices", () => {
   it("are flat tiers by team size", () => {
@@ -84,5 +94,35 @@ describe("Both (owner, 2026-10-19)", () => {
     expect(servicesPriceLines("leak", 1)).toEqual([
       { label: "Leak Detection · Solo", cents: 4_900 },
     ]);
+  });
+});
+
+describe("the team size an owner picks", () => {
+  it("is read from the shop's settings only when it's a whole number in range", () => {
+    expect(chosenTeamSize({ team_size: 5 })).toBe(5);
+    expect(chosenTeamSize({})).toBeNull();
+    expect(chosenTeamSize(null)).toBeNull();
+    expect(chosenTeamSize({ team_size: 0 })).toBeNull();
+    expect(chosenTeamSize({ team_size: 2.5 })).toBeNull();
+    expect(chosenTeamSize({ team_size: TEAM_SIZE_MAX + 1 })).toBeNull();
+    expect(chosenTeamSize({ team_size: "4" })).toBeNull();
+  });
+
+  it("bills the larger of the pick and the active people", () => {
+    expect(billedTeamSize(1, null)).toBe(1);
+    expect(billedTeamSize(1, 6)).toBe(6);
+    expect(billedTeamSize(8, 6)).toBe(8);
+    expect(billedTeamSize(0, null)).toBe(1);
+  });
+
+  it("can't be fewer than the active people or more than the max", () => {
+    expect(parseTeamSize("3", 1)).toBe(3);
+    expect(parseTeamSize(3, 3)).toBe(3);
+    expect(parseTeamSize(2, 3)).toBeNull();
+    expect(parseTeamSize(0, 1)).toBeNull();
+    expect(parseTeamSize(TEAM_SIZE_MAX + 1, 1)).toBeNull();
+    expect(parseTeamSize("two", 1)).toBeNull();
+    expect(parseTeamSize("", 1)).toBeNull();
+    expect(parseTeamSize(60, 60)).toBe(60);
   });
 });

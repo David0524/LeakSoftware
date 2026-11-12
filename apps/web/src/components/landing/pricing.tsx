@@ -11,8 +11,10 @@ import {
   planTier,
   PLANS,
   servicesPriceCents,
+  TEAM_SIZE_MAX,
   type PlanId,
 } from "@leakbook/core";
+import { TeamSizeStepper } from "../team-size";
 import { ButtonLink } from "../ui";
 import { PackageSwitch, signUpHref, usePackage } from "./hero";
 
@@ -64,37 +66,13 @@ export function Pricing() {
         <p id="team-size" className="font-medium">
           People on your team
         </p>
-        <div
-          className="flex items-center gap-1 rounded-full bg-fill p-1"
-          role="group"
-          aria-labelledby="team-size"
-        >
-          <button
-            type="button"
-            aria-label="Fewer people"
-            disabled={users <= 1}
-            onClick={() => setUsers((u) => Math.max(1, u - 1))}
-            className="grid size-11 place-items-center rounded-full bg-thumb text-xl font-semibold shadow-[0_2px_6px_rgb(0_0_0/0.1)] disabled:opacity-40"
-          >
-            −
-          </button>
-          <output
-            aria-live="polite"
-            className="w-24 text-center font-display text-2xl font-extrabold tabular-nums"
-            data-testid="team-size"
-          >
-            {users}
-          </output>
-          <button
-            type="button"
-            aria-label="More people"
-            disabled={users >= 50}
-            onClick={() => setUsers((u) => Math.min(50, u + 1))}
-            className="grid size-11 place-items-center rounded-full bg-thumb text-xl font-semibold shadow-[0_2px_6px_rgb(0_0_0/0.1)] disabled:opacity-40"
-          >
-            +
-          </button>
-        </div>
+        <TeamSizeStepper
+          value={users}
+          min={1}
+          max={TEAM_SIZE_MAX}
+          onChange={(n) => setUsers(() => n)}
+          labelledBy="team-size"
+        />
         <p className="text-[0.9375rem] text-text-muted">
           Owners, office staff, and techs each count as one.
         </p>

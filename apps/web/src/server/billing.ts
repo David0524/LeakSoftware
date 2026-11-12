@@ -2,11 +2,15 @@ import "server-only";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type Stripe from "stripe";
 import {
+  billedTeamSize,
   checkoutTrialEnd,
+  chosenTeamSize,
   companyServices,
+  parseTeamSize,
   PLANS,
   planForServices,
   servicesPriceCents,
+  TEAM_SIZE_MAX,
   type Services,
 } from "@leakbook/core";
 import { adminClient } from "./admin";
@@ -41,8 +45,8 @@ export interface SubscriptionRow {
   stripe_subscription_id: string | null;
 }
 
-/** Who is billed: the active members (turned-off teammates and pending invites don't count). */
-async function billedPeople(db: SupabaseClient, companyId: string): Promise<number> {
+/** The active members (turned-off teammates and pending invites don't count). */
+export async function activePeople(db: SupabaseClient, companyId: string): Promise<number> {
   const { count, error } = await db
     .from("membership")
     .select("id", { count: "exact", head: true })
@@ -56,16 +60,62 @@ async function billedPeople(db: SupabaseClient, companyId: string): Promise<numb
 async function shopPrice(
   db: SupabaseClient,
   companyId: string,
-): Promise<{ services: Services; people: number; cents: number; name: string }> {
+): Promise<{
+  services: Services;
+  people: number;
+  active: number;
+  cents: number;
+  name: string;
+}> {
   const { data, error } = await db.from("company").select("settings").eq("id", companyId).single();
   if (error) throw new Error(error.message);
   const services = companyServices(data.settings);
-  const people = await billedPeople(db, companyId);
+  // The team size the owner picked, or more when more people are active (owner, 2026-11-12).
+  const active = await activePeople(db, companyId);
+  const people = billedTeamSize(active, chosenTeamSize(data.settings));
   const name =
     services === "both"
       ? `Sundeck Pro ${PLANS.maintenance.name} + ${PLANS.leak.name}`
       : `Sundeck Pro ${planForServices(services).name}`;
-  return { services, people, cents: servicesPriceCents(services, people), name };
+  return { services, people, active, cents: servicesPriceCents(services, people), name };
+}
+
+/**
+ * Saves the team size the owner picked (owner, 2026-11-12: "you can't adjust how many employees
+ * you have and the pricing"). With the server key, since a shop without its card is read-only.
+ */
+export async function saveTeamSize(
+  db: SupabaseClient,
+  companyId: string,
+  teamSize: number,
+): Promise<void> {
+  const { data, error } = await db.from("company").select("settings").eq("id", companyId).single();
+  if (error) throw new Error(error.message);
+  const settings = { ...((data.settings as Record<string, unknown> | null) ?? {}) };
+  if (settings.team_size === teamSize) return;
+  settings.team_size = teamSize;
+  const { error: saveError } = await db.from("company").update({ settings }).eq("id", companyId);
+  if (saveError) throw new Error(saveError.message);
+}
+
+/**
+ * Checks and saves a team size the owner picked: an error to show when it's out of range
+ * (fewer than the active people, or past the most), else null.
+ */
+export async function pickTeamSize(
+  companyId: string,
+  picked: unknown,
+  db: SupabaseClient | null = adminClient(),
+): Promise<string | null> {
+  if (!db) throw new BillingNotConfigured();
+  const active = await activePeople(db, companyId);
+  const n = parseTeamSize(picked, active);
+  if (n === null)
+    return active >= TEAM_SIZE_MAX
+      ? `Your team has ${active} people; choose ${active}.`
+      : `Choose ${active} to ${TEAM_SIZE_MAX} people.`;
+  await saveTeamSize(db, companyId, n);
+  return null;
 }
 
 const monthly = { interval: "month" } as const;
@@ -325,7 +375,11 @@ export function logPriceSyncError(error: unknown): null {
  */
 export async function currentPrice(companyId: string): Promise<{
   name: string;
+  services: Services;
+  /** The people billed: the team size picked, or the active people when more. */
   people: number;
+  /** The active people: the fewest the owner can pick. */
+  active: number;
   cents: number;
   problem: string | null;
 } | null> {
@@ -341,7 +395,7 @@ export async function currentPrice(companyId: string): Promise<{
       ? `Stripe said: ${error instanceof Error ? error.message : String(error)}`
       : "The new price couldn’t be sent to Stripe. It’s tried again every day.";
   }
-  return { name: price.name, people: price.people, cents: price.cents, problem };
+  return { ...price, problem };
 }
 
 /** `syncSubscriptionPrice` for every subscribed shop (the daily cron). */
