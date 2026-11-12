@@ -50,7 +50,9 @@
       [
         "expo-audio",
         {
-          "microphonePermission": "Sundeck Pro uses the microphone to record voice notes and the sound on job videos."
+          "microphonePermission": "Sundeck Pro uses the microphone to record voice notes and the sound on job videos.",
+          "enableBackgroundPlayback": false,
+          "enableBackgroundRecording": false
         }
       ],
       [
