@@ -23,7 +23,19 @@ const cardFiles = [
   "./public/sundeck-mark.svg",
 ];
 
+// Sent on every page. No other site may frame ours (the customer pages have Pay and Approve
+// buttons, the office has a signed-in session), browsers keep the declared file types, and
+// the address of a customer link (its token is the key) never goes to another site.
+const securityHeaders = [
+  { key: "Content-Security-Policy", value: "frame-ancestors 'none'" },
+  { key: "X-Frame-Options", value: "DENY" },
+  { key: "X-Content-Type-Options", value: "nosniff" },
+  { key: "Referrer-Policy", value: "strict-origin-when-cross-origin" },
+  { key: "Strict-Transport-Security", value: "max-age=63072000; includeSubDomains" },
+];
+
 const nextConfig: NextConfig = {
+  headers: async () => [{ source: "/:path*", headers: securityHeaders }],
   transpilePackages: ["@leakbook/core", "@leakbook/tokens"],
   // Headless Chromium for report PDFs stays a plain Node dependency.
   serverExternalPackages: ["playwright-core", "@sparticuz/chromium"],

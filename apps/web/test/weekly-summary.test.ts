@@ -9,7 +9,7 @@ import {
   weeklySummaryNumbers,
   type WeeklySummaryData,
 } from "../src/lib/weekly-summary";
-import { runWeeklySummaries } from "../src/server/weekly-summary";
+import { logoUrl, runWeeklySummaries } from "../src/server/weekly-summary";
 
 // The weekly summary email (owner, 2026-10-22: "A short email: jobs done, money in, quotes
 // waiting").
@@ -297,5 +297,39 @@ describe("sending the weekly summaries (the daily cron)", () => {
       failed: 0,
       skipped: 0,
     });
+  });
+});
+
+// Security review, 2026-11-12: the logo path is a column the owner can write, and the email
+// signs it with the service role. Only a file in the shop's own folder gets a link.
+describe("weekly summary logo link", () => {
+  const signed: string[] = [];
+  const admin = {
+    storage: {
+      from: () => ({
+        createSignedUrl: async (path: string) => {
+          signed.push(path);
+          return { data: { signedUrl: `https://x.supabase.co/${path}?token=t` } };
+        },
+      }),
+    },
+  } as unknown as SupabaseClient;
+
+  beforeEach(() => {
+    signed.length = 0;
+  });
+
+  it("signs a logo in the shop's own folder", async () => {
+    expect(await logoUrl(admin, "c1", "c1/logo-1.png")).toBe(
+      "https://x.supabase.co/c1/logo-1.png?token=t",
+    );
+  });
+
+  it("never signs another shop's file", async () => {
+    expect(await logoUrl(admin, "c1", "c2/logo-1.png")).toBeNull();
+    expect(await logoUrl(admin, "c1", "c1/../c2/logo-1.png")).toBeNull();
+    expect(await logoUrl(admin, "c1", "c10/logo-1.png")).toBeNull();
+    expect(await logoUrl(admin, "c1", null)).toBeNull();
+    expect(signed).toEqual([]);
   });
 });
