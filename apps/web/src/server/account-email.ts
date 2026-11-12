@@ -4,6 +4,7 @@ import { siteOrigin } from "@/lib/origin";
 import {
   accountLink,
   confirmEmail,
+  resetLink,
   signInLinkEmail,
   type AccountEmail,
 } from "@/lib/password-reset-email";
@@ -62,8 +63,10 @@ export type NewAccount =
 /**
  * Makes an account. Where Supabase asks new accounts to confirm their email, the server makes
  * it (unconfirmed) and emails the confirmation link itself; Supabase checks the password rules
- * again. An address still waiting for its confirmation gets a new link and the password just
- * chosen. Elsewhere (local and test projects), Supabase's sign-up signs straight in through
+ * again. An address still waiting for its confirmation gets a new link that also asks for the
+ * password (security review, 2026-11-12): the password typed here is not kept, because anyone
+ * can type someone else's address, and the person who then confirmed from their own inbox
+ * would be left with an account a stranger knows the password of. Elsewhere (local and test projects), Supabase's sign-up signs straight in through
  * `client`, as before; it's also the fallback when this server can't send email.
  */
 export async function createAccount(
@@ -74,6 +77,18 @@ export async function createAccount(
   const email = input.email.trim().toLowerCase();
   const origin = await siteOrigin();
   if (db && emailConfigured() && (await confirmationRequired())) {
+    const { data: status } = await db.rpc("auth_email_status", { target_email: email });
+    if (status === "confirmed") return { kind: "error", error: ACCOUNT_EXISTS };
+    if (status === "unconfirmed") {
+      // Only the inbox's owner chooses the password: the link confirms the email and opens
+      // Choose a New Password, which replaces whatever password the account had.
+      const { data, error } = await db.auth.admin.generateLink({ type: "recovery", email });
+      const hashed = data?.properties?.hashed_token;
+      if (error || !hashed)
+        return { kind: "error", error: error?.message ?? "Couldn’t send the email. Try again." };
+      await send(email, confirmEmail(resetLink(origin, hashed)));
+      return { kind: "confirm", userId: data.user?.id ?? null };
+    }
     const { data, error } = await db.auth.admin.generateLink({
       type: "signup",
       email,
@@ -90,9 +105,6 @@ export async function createAccount(
       };
     const hashed = data.properties?.hashed_token;
     if (hashed) {
-      // An earlier, unconfirmed sign-up keeps its old password otherwise.
-      if (data.user && !data.user.email_confirmed_at)
-        await db.auth.admin.updateUserById(data.user.id, { password: input.password });
       await send(email, confirmEmail(accountLink(origin, hashed, "signup", input.next)));
       return { kind: "confirm", userId: data.user?.id ?? null };
     }

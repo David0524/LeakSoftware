@@ -59,20 +59,26 @@ export const openSupport = cache(async (user: Who): Promise<OpenSupport | null> 
 
 /**
  * For the proxy: whether this request changes something in a shop the person sees only
- * through a View Only session. Staff who are members of the shop keep their own rights.
+ * through a View Only session. Staff who are members of the shop keep their own rights, and
+ * so do staff working in another shop they belong to (`companyId`, the office's shop cookie).
+ * Any other cookie value doesn't count (security review, 2026-11-12): the office then falls
+ * back to the support shop, so a made-up value would have skipped this check.
  */
 export async function viewOnlyIn(user: Who, companyId: string | undefined): Promise<boolean> {
   const support = await openSupport(user);
   if (!support || support.access !== "view") return false;
-  if (companyId && companyId !== support.companyId) return false;
   const db = adminClient();
   if (!db) return true;
-  const { count } = await db
-    .from("membership")
-    .select("id", { count: "exact", head: true })
-    .eq("company_id", support.companyId)
-    .eq("user_id", user.id)
-    .eq("status", "active")
-    .is("deleted_at", null);
-  return !count;
+  const memberOf = async (company: string) => {
+    const { count } = await db
+      .from("membership")
+      .select("id", { count: "exact", head: true })
+      .eq("company_id", company)
+      .eq("user_id", user.id)
+      .eq("status", "active")
+      .is("deleted_at", null);
+    return Boolean(count);
+  };
+  if (companyId && companyId !== support.companyId && (await memberOf(companyId))) return false;
+  return !(await memberOf(support.companyId));
 }

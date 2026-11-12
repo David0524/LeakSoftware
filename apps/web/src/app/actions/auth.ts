@@ -357,6 +357,16 @@ export async function setNewPassword(_: FormState, form: FormData): Promise<Form
   const problem = newPasswordProblem(password, String(form.get("confirm") ?? ""));
   if (problem) return { fields: { password: problem } };
   const supabase = await createClient();
+  // With two-step on, the code comes first here too, not only on the page (security review,
+  // 2026-11-12): the email alone never changes the password.
+  if (user.aal !== "aal2") {
+    const { data } = await supabase
+      .from("profile")
+      .select("two_step")
+      .eq("id", user.id)
+      .maybeSingle();
+    if (data?.two_step) return { error: "Enter your two-step code first, then try again." };
+  }
   const { error } = await supabase.auth.updateUser({ password });
   if (error)
     return {
