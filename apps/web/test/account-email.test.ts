@@ -40,6 +40,7 @@ describe("confirmation emails", () => {
       vi.fn(async () => Response.json({ mailer_autoconfirm: false })),
     );
     expect(await confirmationRequired()).toBe(true);
+    rpc.mockResolvedValue({ data: "none" });
     generateLink.mockResolvedValue({
       data: {
         properties: { hashed_token: "pkce_abc" },
@@ -60,16 +61,43 @@ describe("confirmation emails", () => {
     expect(sent[0]!.text).toContain(
       "https://sundeckpro.test/auth/confirm?token_hash=pkce_abc&type=signup&next=%2Fsetup",
     );
-    // An earlier unconfirmed sign-up takes the password just chosen.
-    expect(updateUserById).toHaveBeenCalledWith("u1", { password: "Pool-Leak-42" });
+    expect(updateUserById).not.toHaveBeenCalled();
+  });
+
+  // Security review, 2026-11-12: anyone can type someone else's address. A second sign-up
+  // never sets the waiting account's password; the inbox's owner chooses it from the link.
+  it("never sets the password of an account still waiting to confirm", async () => {
+    rpc.mockResolvedValue({ data: "unconfirmed" });
+    generateLink.mockResolvedValue({
+      data: { properties: { hashed_token: "rec_1" }, user: { id: "u1" } },
+      error: null,
+    });
+    expect(await createAccount(client, input)).toEqual({ kind: "confirm", userId: "u1" });
+    expect(generateLink).toHaveBeenCalledTimes(1);
+    expect(generateLink).toHaveBeenCalledWith({ type: "recovery", email: "dana@bluewave.test" });
+    expect(updateUserById).not.toHaveBeenCalled();
+    expect(signUp).not.toHaveBeenCalled();
+    expect(sent).toHaveLength(1);
+    expect(sent[0]!.subject).toBe("Confirm your email for Sundeck Pro");
+    expect(sent[0]!.text).toContain(
+      "https://sundeckpro.test/auth/confirm?token_hash=rec_1&type=recovery&next=%2Freset-password",
+    );
   });
 
   it("says when the email already has an account", async () => {
+    rpc.mockResolvedValue({ data: "none" });
     generateLink.mockResolvedValue({ data: {}, error: { code: "email_exists", message: "x" } });
     expect(await createAccount(client, input)).toEqual({
       kind: "error",
       error: "An account with this email already exists. Sign in instead.",
     });
+    rpc.mockResolvedValue({ data: "confirmed" });
+    generateLink.mockClear();
+    expect(await createAccount(client, input)).toEqual({
+      kind: "error",
+      error: "An account with this email already exists. Sign in instead.",
+    });
+    expect(generateLink).not.toHaveBeenCalled();
     expect(sent).toHaveLength(0);
   });
 });

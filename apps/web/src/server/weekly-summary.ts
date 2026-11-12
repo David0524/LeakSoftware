@@ -32,9 +32,17 @@ function from(): string {
   return `"Sundeck Pro" <summary@${domain}>`;
 }
 
-/** The shop's logo for the email: a signed link that works for 30 days, or null. */
-async function logoUrl(admin: SupabaseClient, path: string | null): Promise<string | null> {
-  if (!path) return null;
+/**
+ * The shop's logo for the email: a signed link that works for 30 days, or null. The path is
+ * a column the owner can write, and this signs with the service role, so only a file in the
+ * shop's own folder is signed (never another shop's).
+ */
+export async function logoUrl(
+  admin: SupabaseClient,
+  companyId: string,
+  path: string | null,
+): Promise<string | null> {
+  if (!path || !path.startsWith(`${companyId}/`) || path.includes("..")) return null;
   try {
     const { data } = await admin.storage
       .from("company-assets")
@@ -73,7 +81,7 @@ export async function runWeeklySummaries(
       run.skipped += shop.recipients.length;
       continue;
     }
-    const logo = await logoUrl(admin, summary.company.logo_path);
+    const logo = await logoUrl(admin, shop.company_id, summary.company.logo_path);
     for (const r of shop.recipients) {
       const email = (token: string) =>
         weeklySummaryEmail({ data: summary, now: at, origin, token, logoUrl: logo, role: r.role });

@@ -33,6 +33,16 @@ export async function saveLead(input: LeadInput): Promise<void> {
   if (phone) row.phone = phone;
   if (services) row.services = services;
   if (input.userId) row.user_id = input.userId;
+  else {
+    // The sign-up form saves as it's typed, from anyone. Once the lead has an account, only
+    // that account's own sign-up changes it (security review, 2026-11-12).
+    const { data: saved } = await admin
+      .from("signup_lead")
+      .select("user_id")
+      .eq("email", email)
+      .maybeSingle();
+    if (saved?.user_id) return;
+  }
   await admin.from("signup_lead").upsert(row, { onConflict: "email" });
 }
 
