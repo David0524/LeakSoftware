@@ -47,8 +47,9 @@ first. Tick an item off by deleting it (and tell Claude, so it can check the res
    - Add Firebase's FCM V1 key in Expo (`docs/play-store/README.md` step 4.4 to 4.5) so
      Android push works.
    - The Play service account (step 8), so builds upload by themselves.
-   - Before February 2027: Play warns that code obfuscation is 1% (under its 25% threshold).
-     Claude turns on code shrinking for release builds when you say go.
+   - Play's code obfuscation warning (1%, under its 25% threshold, fix by February 2027) is
+     fixed from build 1.0.0 (5) on (R8, 2026-11-13; about 54% of class names obfuscated, and
+     the bundle carries Play's deobfuscation file). It clears with the next Android upload.
 
 ## From 2026-10-22: Android on Google Play
 
