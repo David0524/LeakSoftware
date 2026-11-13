@@ -37,6 +37,14 @@
           "backgroundColor": "#12263A"
         }
       ],
+      [
+        "expo-build-properties",
+        {
+          "android": {
+            "enableMinifyInReleaseBuilds": true
+          }
+        }
+      ],
       "expo-router",
       "expo-secure-store",
       "expo-font",
