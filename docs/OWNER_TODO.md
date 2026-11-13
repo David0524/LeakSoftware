@@ -37,10 +37,18 @@ first. Tick an item off by deleting it (and tell Claude, so it can check the res
       (the app is free, so nothing is paid, but Apple may ask). Tell Claude "Apple account is
       on the LLC"; Claude updates the App Store copyright and docs if anything changed.
 
-3. **Android:** live on Play's internal testing (1.0.0, version code 2, 2026-11-10; the
-   "Sundeck team" tester list). Left: add Firebase's FCM V1 key in Expo
-   (`docs/play-store/README.md` step 4.4 to 4.5), the Play service account (step 8), real
-   Android store screenshots, then production (step 9).
+3. **Android: in Google's review for production** (1.0.0, version code 4, United States;
+   checked in the Play Console 2026-11-13). Code 4 is also on internal testing. Play shows no
+   policy issues and no closed-test requirement. Left:
+   - Turn on review emails: Play Console › Settings › Email notifications › Publishing
+     updates › **App publishing updates** is off. Until then, check Publishing overview for
+     the result.
+   - Check the store listing's "Draft changes" marker.
+   - Add Firebase's FCM V1 key in Expo (`docs/play-store/README.md` step 4.4 to 4.5) so
+     Android push works.
+   - The Play service account (step 8), so builds upload by themselves.
+   - Before February 2027: Play warns that code obfuscation is 1% (under its 25% threshold).
+     Claude turns on code shrinking for release builds when you say go.
 
 ## From 2026-10-22: Android on Google Play
 
