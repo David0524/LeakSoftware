@@ -51,6 +51,18 @@ const nextConfig: NextConfig = {
     "/i/\\[token\\]/card.png": cardFiles,
     "/r/\\[token\\]/card.png": cardFiles,
   },
+  // Vercel runs glibc Linux, so sharp's musl build (about 19 MB) never loads there; pnpm installs
+  // both. Every deployment keeps every function, and storage is billed per GB-month (owner,
+  // 2026-11-13: Function Storage was half the Vercel bill).
+  outputFileTracingExcludes: {
+    "*": [
+      "../../node_modules/.pnpm/@img+sharp-libvips-linuxmusl*/**",
+      "../../node_modules/.pnpm/@img+sharp-linuxmusl*/**",
+    ],
+  },
+  // CI type-checks every commit before it can merge (Lint, typecheck, test, build), so Vercel's
+  // build skips the same check; build minutes are billed (owner, 2026-11-13).
+  typescript: { ignoreBuildErrors: process.env.VERCEL === "1" },
   cacheComponents: true,
   partialPrefetching: true,
   experimental: {

@@ -2,6 +2,12 @@
 
 Newest first. Each entry: date, decision, reason.
 
+## 2026-11-13 (owner: "Why am I spending so much money on Vercel?"; the bill was $25.75: Build CPU Minutes $13.50, Function Storage $11.43, running the site about $0.45; "Make the necessary changes")
+- **Vercel installs only the website and what it uses** (`vercel.json` `installCommand`: `pnpm install --frozen-lockfile --filter @leakbook/web...`), 486 packages instead of 1,029: no Expo, video tools, or Supabase CLI download on every build.
+- **Vercel's build skips the type check** (`typescript.ignoreBuildErrors` only when `VERCEL=1`). CI's Lint, typecheck, test, build job checks every commit before it merges. Local build: 63 s to 27 s.
+- **Functions leave out sharp's musl build** (`outputFileTracingExcludes`), which never loads on Vercel's Linux: about 19 MB off nearly every function, 2.5 GB to 2.0 GB of traced files per deployment.
+- **The rest is Vercel settings** (Standard build machine, deployment retention of 1 week for previews and 30 days for production): `docs/release/VERCEL_COST_HANDOFF.md`, for Claude in Chrome.
+
 ## 2026-11-12 (owner, from the Play Console check: "Foreground service permissions … Declaration overdue")
 - **The Android app no longer asks for foreground-service permissions.** They came from `expo-audio`, whose plugin turns background playback on by default and adds `FOREGROUND_SERVICE`, `FOREGROUND_SERVICE_MEDIA_PLAYBACK` and its playback service. The app plays and records voice notes only while it's open, so `enableBackgroundPlayback` and `enableBackgroundRecording` are off in `apps/mobile/app.json`; `npx expo config --type introspect` shows neither permission nor the service afterwards. The next Play build clears the overdue declaration once it replaces build 3; no declaration is filed.
 - **Production Android (and iPhone) builds wait for the production Supabase project.** `config/supabase-prod.json` doesn't exist yet, so the Android workflow's `production` backend can't run (`docs/release/PRODUCTION.md`).
