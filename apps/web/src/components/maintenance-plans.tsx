@@ -3,6 +3,10 @@
 import { useState } from "react";
 import {
   CLEANING_MONTHS,
+  INVOICE_DAYS,
+  PLAN_INVOICE_DAY_FOOTER,
+  ordinalDay,
+  planInvoiceDayLabel,
   cleaningCountdown,
   cleaningMonthsLabel,
   type CleaningKind,
@@ -20,7 +24,7 @@ import type { RepeatChoice } from "@/lib/plan-repeat";
 import { CleaningIcon } from "./icons";
 import { PlanRepeat } from "./plan-repeat";
 import { Segmented } from "./segmented";
-import { FieldError, SField, SSwitch, STextArea, SettingsForm } from "./settings-forms";
+import { FieldError, SField, SSelect, SSwitch, STextArea, SettingsForm } from "./settings-forms";
 import { SheetRow } from "./settings-list";
 import { Grouped, Row, Select } from "./ui";
 
@@ -51,6 +55,8 @@ interface Props {
   /** Visits done so far, by plan. */
   doneCounts: Record<string, number>;
   canEdit: boolean;
+  /** Settings › Payments › Invoice Day: a plan without its own day uses it. */
+  shopInvoiceDay: number;
 }
 
 export function MaintenancePlans(p: Props) {
@@ -162,6 +168,7 @@ function PlanForm({
   today,
   visitMinutes,
   cleaningTypes,
+  shopInvoiceDay,
 }: Props & { plan: (ServicePlan & { cleanings: PlanCleaning[] }) | null }) {
   const firstVisit = plan ? (upcomingVisitDates(plan, today, 1)[0] ?? today) : today;
   const [repeat, setRepeat] = useState<RepeatChoice | "0">(plan ? planRepeat(plan) : "weekly");
@@ -226,6 +233,16 @@ function PlanForm({
           inputMode="decimal"
           defaultValue={plan?.price_cents != null ? (plan.price_cents / 100).toFixed(2) : ""}
           hint="Billed once a month on the customer's invoice."
+        />
+        <SSelect
+          label="Invoice day"
+          name="invoice_day"
+          defaultValue={plan?.invoice_day ? String(plan.invoice_day) : ""}
+          options={[
+            { value: "", label: planInvoiceDayLabel(null, shopInvoiceDay) },
+            ...INVOICE_DAYS.map((d) => ({ value: String(d), label: ordinalDay(d) })),
+          ]}
+          hint={PLAN_INVOICE_DAY_FOOTER}
         />
         <SField
           label="Last visit (optional)"

@@ -1,6 +1,15 @@
 import type { Metadata } from "next";
-import { CARD_FEE_MAX_BPS, bpsToPercent, cardFeeBps } from "@leakbook/core";
-import { saveCardFee, savePayments } from "@/app/actions/settings";
+import {
+  CARD_FEE_MAX_BPS,
+  INVOICE_DAYS,
+  INVOICE_DAY_FOOTER,
+  bpsToPercent,
+  cardFeeBps,
+  offersPool,
+  ordinalDay,
+  shopInvoiceDay,
+} from "@leakbook/core";
+import { saveCardFee, saveInvoiceDay, savePayments } from "@/app/actions/settings";
 import { Banner } from "@/components/doc-ui";
 import {
   SField,
@@ -181,6 +190,23 @@ export default async function PaymentsSettingsPage({
             </SettingsFields>
           </SettingsForm>
         </SettingsSection>
+
+        {/* Pool care: when each customer's monthly invoice is drafted (owner, 2026-11-15). */}
+        {offersPool(company.settings) ? (
+          <SettingsSection title="Monthly invoices">
+            <SettingsForm action={saveInvoiceDay} full>
+              <SettingsFields labelWidth="10rem">
+                <SSelect
+                  label="Invoice Day"
+                  name="invoice_day"
+                  defaultValue={String(shopInvoiceDay(company.settings))}
+                  options={INVOICE_DAYS.map((d) => ({ value: String(d), label: ordinalDay(d) }))}
+                  hint={INVOICE_DAY_FOOTER}
+                />
+              </SettingsFields>
+            </SettingsForm>
+          </SettingsSection>
+        ) : null}
       </div>
     </>
   );

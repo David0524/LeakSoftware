@@ -5,6 +5,7 @@ import {
   maintenanceSettings,
   seesAllJobs,
   type CompanySettings,
+  shopInvoiceDay,
 } from "@leakbook/core";
 import { NewJobForm } from "@/components/new-job-form";
 import { Notice, PageHeader } from "@/components/ui";
@@ -80,6 +81,7 @@ export default async function NewJobPage() {
         canPlan={office.isManager}
         services={companyServices(company.settings)}
         visitMinutes={maintenanceSettings(company.settings).visitMinutes}
+        shopInvoiceDay={shopInvoiceDay(company.settings)}
         lockedTech={seesAllJobs(office.company.role, company.settings) ? undefined : office.user.id}
         fees={prices
           .filter((p) => p.active && !p.deleted_at && p.category === "Detection")

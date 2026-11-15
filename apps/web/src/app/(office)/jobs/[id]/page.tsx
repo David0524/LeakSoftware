@@ -104,6 +104,8 @@ import {
   getJob,
   getPaymentAccount,
   getPlanCleanings,
+  getVisitCharges,
+  getChargeItems,
   getQuotes,
   getReports,
   getSignatures,
@@ -122,6 +124,7 @@ import { QuotePanel } from "@/components/quote-panel";
 import { RemoveSignature } from "@/components/remove-signature";
 import { ReportPanel } from "@/components/report-panel";
 import { VisitReportPanel } from "@/components/visit-report-panel";
+import { VisitCharges } from "@/components/charges";
 import { VisitChemicals } from "@/components/visit-chemicals";
 import { JobSchedule } from "@/components/schedule-form";
 import { emailConfigured } from "@/server/email";
@@ -520,6 +523,13 @@ export default async function JobPage({ params, searchParams }: PageProps<"/jobs
                           <Cleanings detail={detail} tz={tz} />
                         </Suspense>
                       ) : null}
+                      {/* Parts and services added on the visit, billed monthly (owner,
+                          2026-11-15). */}
+                      {job.type === "maintenance" ? (
+                        <Suspense fallback={null}>
+                          <Charges detail={detail} tz={tz} />
+                        </Suspense>
+                      ) : null}
                       <h2 id="checklist" className="font-display text-2xl font-bold">
                         Checklist
                       </h2>
@@ -802,6 +812,41 @@ async function Cleanings({ detail, tz }: { detail: JobDetail; tz: string }) {
         );
       })}
     </Grouped>
+  );
+}
+
+/**
+ * A visit's Charges (owner, 2026-11-15: "a way to add extra charges ... like if they cleaned
+ * their filter or cleaned the salt cell, or replaced any parts"): billed on the monthly invoice.
+ */
+async function Charges({ detail, tz }: { detail: JobDetail; tz: string }) {
+  const office = await getOffice();
+  const job = detail.job;
+  const [{ charges, sent }, items] = await Promise.all([
+    getVisitCharges(office, job.id).catch(() => ({ charges: [], sent: null })),
+    getChargeItems(office).catch(() => []),
+  ]);
+  const day = job.plan_date ?? job.scheduled_start ?? job.completed_at ?? new Date().toISOString();
+  return (
+    <VisitCharges
+      jobId={job.id}
+      charges={charges}
+      items={items}
+      firstName={job.customer?.name?.split(" ")[0] ?? "the customer"}
+      month={monthName(day, tz)}
+      sentInvoice={
+        sent
+          ? {
+              number: sent.number,
+              sentOn: sent.sentAt
+                ? dateFormat("en-US", { month: "short", day: "numeric", timeZone: tz }).format(
+                    new Date(sent.sentAt),
+                  )
+                : "",
+            }
+          : null
+      }
+    />
   );
 }
 

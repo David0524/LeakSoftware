@@ -23,6 +23,8 @@ export interface ServicePlan {
   duration_minutes: number;
   /** The price per month (owner, 2026-10-18), billed on the month's invoice. */
   price_cents?: number | null;
+  /** The day of the next month the customer's invoice is drafted (1 to 28); none: the shop's. */
+  invoice_day?: number | null;
   ends_on?: string | null;
   paused: boolean;
   notes?: string | null;

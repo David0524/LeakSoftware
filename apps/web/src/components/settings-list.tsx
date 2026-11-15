@@ -121,6 +121,11 @@ export function SettingsAddButton({ label }: { label: string }) {
  * For pages that use SheetRow outside a SettingsListPage (a customer's page): shows what the
  * last sheet did once it has closed, above the page's content.
  */
+/** Shows a message in the nearest SheetNotices (what a sheet did, once it has closed). */
+export function useSheetNotice(): (message: string) => void {
+  return use(Notify);
+}
+
 export function SheetNotices({ children }: { children: ReactNode }) {
   const [notice, setNotice] = useState<string | null>(null);
   return (

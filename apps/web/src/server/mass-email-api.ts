@@ -14,12 +14,13 @@ export const ONLY_MANAGERS = "Only owners and admins can email customers.";
 export async function managerCall(
   request: Request,
   companyId: unknown,
+  onlyManagers = ONLY_MANAGERS,
 ): Promise<{ session: Session; companyId: string } | Response> {
   const session = await bearerSession(request);
   if (!session) return jsonError("Sign in again.", 401);
   const role = await memberRole(session, companyId);
   if (!role) return jsonError("You’re not on this shop’s team.", 403);
-  if (!isManager(role)) return jsonError(ONLY_MANAGERS, 403);
+  if (!isManager(role)) return jsonError(onlyManagers, 403);
   return { session, companyId: companyId as string };
 }
 

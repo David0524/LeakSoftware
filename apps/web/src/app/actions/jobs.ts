@@ -26,6 +26,7 @@ import {
   JOB_LOCKS,
   lockColumns,
   type JobLock,
+  parseInvoiceDay,
 } from "@leakbook/core";
 import { getOffice } from "@/lib/auth";
 import { getCompany, mayMakeJobs } from "@/lib/data";
@@ -393,6 +394,7 @@ export async function createJobAction(_: FormState, form: FormData): Promise<For
         visit_time: time || null,
         duration_minutes: minutes,
         price_cents: fee,
+        invoice_day: parseInvoiceDay(text(form, "invoice_day")),
         ends_on: ends || null,
         notes: text(form, "notes") || null,
       },

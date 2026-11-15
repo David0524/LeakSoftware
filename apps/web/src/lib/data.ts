@@ -21,9 +21,13 @@ import type {
   SeverityLevel,
   TestResult,
   TestType,
+  BillingMonth,
+  MonthBilling,
+  VisitCharge,
 } from "@leakbook/core";
 import {
   canMakeJobs,
+  chargeItems,
   checklistTally,
   countCustomers,
   customersAddedSince,
@@ -1558,4 +1562,86 @@ export async function visitCleanings(
     out.set(row.job_id, list);
   }
   return out;
+}
+
+// ---------------------------------------------------------------------------
+// Monthly billing (owner, 2026-11-15; docs/design/2026-11-15-monthly-billing.md)
+// ---------------------------------------------------------------------------
+
+/** Owners and admins: Invoices › Monthly Billing, newest month first. */
+export async function billingMonths(office: Office): Promise<BillingMonth[]> {
+  if (!office.isManager) return [];
+  const { data, error } = await (
+    await db()
+  ).rpc("billing_months", {
+    target_company: office.company.id,
+  });
+  if (error) return [];
+  return (data ?? []) as BillingMonth[];
+}
+
+/** A month's Monthly Billing page. */
+export async function getMonthBilling(office: Office, month: string): Promise<MonthBilling> {
+  const { data, error } = await (
+    await db()
+  ).rpc("month_billing", {
+    target_company: office.company.id,
+    month,
+  });
+  if (error) throw new Error(error.message);
+  return data as MonthBilling;
+}
+
+/** The price book items Add Charge offers: services and parts, not chemicals. */
+export async function getChargeItems(office: Office) {
+  const { data } = await (
+    await db()
+  )
+    .from("price_book_item")
+    .select("id, name, category, price_cents, chemical, sort_order, active, deleted_at")
+    .eq("company_id", office.company.id)
+    .is("deleted_at", null)
+    .order("sort_order")
+    .order("name");
+  return chargeItems(
+    (
+      (data ?? []) as {
+        id: string;
+        name: string;
+        category: string | null;
+        price_cents: number | null;
+        chemical: string | null;
+        active: boolean | null;
+      }[]
+    ).filter((i) => i.active !== false),
+  ).map(({ id, name, category, price_cents }) => ({ id, name, category, price_cents }));
+}
+
+/** A visit's charges, and the sent invoice they're on (if any). */
+export async function getVisitCharges(office: Office, jobId: string) {
+  const { data } = await (
+    await db()
+  )
+    .from("visit_charge")
+    .select(
+      "*, invoice:invoice!visit_charge_billed_invoice_id_company_id_fkey(status, number, sent_at)",
+    )
+    .eq("company_id", office.company.id)
+    .eq("job_id", jobId)
+    .is("deleted_at", null)
+    .order("added_at");
+  const rows = (data ?? []) as (VisitCharge & {
+    invoice: { status: string; number: number | null; sent_at: string | null } | null;
+  })[];
+  const sent = rows.find(
+    (r) => r.invoice && r.invoice.status !== "draft" && r.invoice.status !== "void",
+  )?.invoice;
+  return {
+    charges: rows.map((r) => {
+      const c: VisitCharge & { invoice?: unknown } = { ...r };
+      delete c.invoice;
+      return { ...c, quantity: Number(c.quantity) };
+    }),
+    sent: sent ? { number: sent.number, sentAt: sent.sent_at } : null,
+  };
 }

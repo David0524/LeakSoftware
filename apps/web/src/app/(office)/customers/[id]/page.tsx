@@ -5,6 +5,7 @@ import {
   mapStatus,
   offersLeak,
   offersPool,
+  shopInvoiceDay,
 } from "@leakbook/core";
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
@@ -284,6 +285,7 @@ export default async function CustomerPage({ params }: PageProps<"/customers/[id
                     visitMinutes={maintenanceSettings(company.settings).visitMinutes}
                     doneCounts={doneCounts}
                     canEdit={office.isManager}
+                    shopInvoiceDay={shopInvoiceDay(company.settings)}
                   />
                 ) : null}
                 <Grouped

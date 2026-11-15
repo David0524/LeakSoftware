@@ -106,6 +106,9 @@ begin
   -- A chemical added on the job (840_chemical_additions).
   insert into chemical_addition (company_id, job_id, property_id, name, unit, quantity, added_by)
     values (c, j, prop, 'Liquid chlorine', 'gal', 0.5, t);
+  -- A charge on the job (only maintenance visits bill them; 890_monthly_billing).
+  insert into visit_charge (company_id, job_id, name, unit_price_cents, added_by)
+    values (c, j, 'Replace skimmer basket', 2400, t);
   -- A repair on the job (on a leak detection job it doesn't change the price; 670_job_repairs).
   insert into job_repair (company_id, job_id, description, price_cents)
     values (c, j, 'Replace pump seal', 9500);

@@ -27,6 +27,7 @@ import {
   uploadRefusal,
   uploadRefusalMessage,
   priceBookCategory,
+  parseInvoiceDay,
 } from "@leakbook/core";
 import { OWNER_ONLY, requireManager, requireOwner } from "@/lib/auth";
 import { friendlyDbError, isWebUrl } from "@/lib/limits";
@@ -251,6 +252,27 @@ export async function saveCardFee(_: FormState, form: FormData): Promise<FormSta
   };
   const { error } = await supabase.from("company").update({ settings }).eq("id", office.company.id);
   if (error) return failed(error);
+  return done("/settings/payments");
+}
+
+/**
+ * Monthly Invoices › Invoice Day (owner, 2026-11-15): the day of the next month each customer's
+ * monthly invoice is drafted, 1 to 28.
+ */
+export async function saveInvoiceDay(_: FormState, form: FormData): Promise<FormState> {
+  const { office, supabase } = await owner();
+  const day = parseInvoiceDay(text(form, "invoice_day"));
+  if (day === null) return { fields: { invoice_day: "Pick a day from the 1st to the 28th." } };
+  const { data: company, error: readError } = await supabase
+    .from("company")
+    .select("settings")
+    .eq("id", office.company.id)
+    .single();
+  if (readError) return failed(readError);
+  const settings = { ...(company.settings as Record<string, unknown>), invoice_day: day };
+  const { error } = await supabase.from("company").update({ settings }).eq("id", office.company.id);
+  if (error) return failed(error);
+  revalidatePath("/invoices", "layout");
   return done("/settings/payments");
 }
 
