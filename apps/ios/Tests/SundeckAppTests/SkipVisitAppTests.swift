@@ -23,9 +23,10 @@ import Testing
         #expect(!jobHeaderActions(.inProgress, type: .maintenance).contains(.skipped))
         // A skipped visit is put back with Undo Skip, in view beside Reschedule; or called off.
         #expect(jobHeaderPhoneActions(.skipped, type: .maintenance) == [.scheduled])
-        #expect(jobHeaderPhoneActions(.skipped, type: .maintenance).map { jobActionLabel(from: .skipped, to: $0) } == [
-            "Undo Skip"
-        ])
+        #expect(
+            jobHeaderPhoneActions(.skipped, type: .maintenance).map { jobActionLabel(from: .skipped, to: $0) } == [
+                "Undo Skip"
+            ])
         #expect(jobMenuActions(.skipped, type: .maintenance).isEmpty)
         #expect(jobCanCancel(.skipped, type: .maintenance))
         #expect(!jobCanStart(.skipped, type: .maintenance))

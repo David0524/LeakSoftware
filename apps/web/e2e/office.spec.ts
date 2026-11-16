@@ -775,7 +775,7 @@ test("on a phone: a tech starts a job, fills the checklist, and records a test a
 // Owner, 2026-10-18: "a reports tab under JOBS - that just shows you reports".
 test("Jobs has a Reports tab listing the reports", async ({ page }) => {
   await signIn(page, OWNER, "/jobs");
-  const tabs = page.getByRole("navigation", { name: "Jobs and Reports" });
+  const tabs = page.getByRole("navigation", { name: "Jobs, Reports and Issues" });
   await tabs.getByRole("link", { name: "Reports" }).click();
   await expect(page.getByRole("heading", { level: 1, name: "Reports" })).toBeVisible();
   await expect(tabs.getByRole("link", { name: "Reports" })).toHaveAttribute("aria-current", "page");

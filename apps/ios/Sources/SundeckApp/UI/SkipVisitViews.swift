@@ -159,7 +159,8 @@
                     if let note = job.job["skip_note"]?.string, !note.isEmpty {
                         StackedRow(caption: "Note", value: note)
                     }
-                    ListRow("Skipped", value: skipSummary(SkipJob(status: "skipped"), by: by ?? "Sundeck Pro", when: when))
+                    ListRow(
+                        "Skipped", value: skipSummary(SkipJob(status: "skipped"), by: by ?? "Sundeck Pro", when: when))
                     ListRow("Photos", value: String(jobPhotoCount(sync.store, jobId: job.id)))
                     if let handled = state.skipHandledAt, !handled.isEmpty {
                         ListRow("Dismissed", value: (try? formatSchedule(handled, Date(), timeZone)) ?? "")
