@@ -22,8 +22,8 @@ export function Manual({ edition }: { edition: Edition }) {
       <style>{`@page { size: Letter; margin: 0.7in 0.75in 0.8in;
         @bottom-left { content: "Sundeck Pro · ${info.name} Manual"; font: 8.5pt system-ui, sans-serif; color: #5A6875; }
         @bottom-right { content: counter(page); font: 600 8.5pt system-ui, sans-serif; color: #5A6875; } }
-        @page cover { margin: 0; @bottom-left { content: none; } @bottom-right { content: none; } }
-        @page part { margin: 0; @bottom-left { content: none; } @bottom-right { content: none; } }`}</style>
+        @page cover { @bottom-left { content: none; } @bottom-right { content: none; } }
+        @page part { @bottom-left { content: none; } @bottom-right { content: none; } }`}</style>
       <div className="m-shell">
         <nav className="m-rail" aria-label="Chapters">
           <a href="#contents" className="font-semibold">

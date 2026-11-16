@@ -1107,13 +1107,14 @@
   .m-web-only {
     display: none !important;
   }
+  /* Every page keeps the same margins: Chromium lays all pages out at the first page's width. */
   .m-cover {
     page: cover;
     break-after: page;
     margin: 0;
-    border-radius: 0;
-    height: 11in;
-    padding: 1.1in 0.85in 0.85in;
+    border-radius: 18px;
+    height: 9.45in;
+    padding: 0.9in 0.6in 0.6in;
     display: flex;
     flex-direction: column;
   }
@@ -1166,9 +1167,9 @@
     break-before: page;
     break-after: page;
     margin: 0;
-    border-radius: 0;
-    height: 11in;
-    padding: 2.25in 0.85in 0.85in;
+    border-radius: 18px;
+    height: 9.45in;
+    padding: 2in 0.6in 0.6in;
   }
   .m-part-title {
     font-size: 54pt;
