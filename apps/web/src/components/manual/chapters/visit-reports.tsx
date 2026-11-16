@@ -1,5 +1,6 @@
 import type { ChapterDef } from "../types";
 import {
+  Browser,
   Flow,
   FromTheField,
   Meta,
@@ -18,10 +19,6 @@ import {
   Watch,
   WhyItMatters,
 } from "../kit";
-
-// WANT: visit-report — sundeckpro.com/r/<token> (a sent maintenance visit report, phone size)
-// WANT: month-report — sundeckpro.com/r/<token> (a monthly service report, phone size)
-// WANT: visit-done-details — sundeckpro.com/jobs/<id> (a done visit with the visit report bar)
 
 export const visitReports: ChapterDef = {
   id: "visit-reports",
@@ -178,6 +175,12 @@ export const visitReports: ChapterDef = {
             </li>
           </ul>
         </Spread>
+        <Browser
+          src="visit-details"
+          url="sundeckpro.com/jobs/5861"
+          alt="A done maintenance visit on a computer: the Details tab with Customer, Pool, Assigned To, On Site and Timeline, Reopen Visit, and a bar reading Ready to send with Send Visit Report."
+          caption="The same bar on the website: a done visit, Ready to send."
+        />
       </Section>
 
       <Section kicker="By hand" title="Send a visit report">

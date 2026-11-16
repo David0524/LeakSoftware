@@ -1,5 +1,6 @@
 import type { ChapterDef } from "../types";
 import {
+  Browser,
   BigFigure,
   Flow,
   FromTheField,
@@ -19,10 +20,6 @@ import {
   Watch,
   WhyItMatters,
 } from "../kit";
-
-// WANT: quote-page — sundeckpro.com/q/<token> (the customer's quote page with Accept This Quote, phone size)
-// WANT: repair-details — sundeckpro.com/jobs/<id> (a repair job's Details with the Repairs group)
-// WANT: repair-wrapup — sundeckpro.com/jobs/<id>?tab=wrap-up (a repair job's Wrap-Up with the invoice)
 
 export const repairOnSite: ChapterDef = {
   id: "repair-on-site",
@@ -252,6 +249,12 @@ export const repairOnSite: ChapterDef = {
             </Step>
           </Steps>
         </Spread>
+        <Browser
+          src="repair-wrapup"
+          url="sundeckpro.com/jobs/5298?tab=wrap-up"
+          alt="A paid repair job’s Wrap-Up on a computer, with its invoice open beside the list: Invoice #1113, Paid, $245.00, Balance due $0.00, a card payment received Nov 2, 2026, and Send Receipt."
+          caption="A repair job’s Wrap-Up on a computer: the invoice opens beside the list. This one is paid in full."
+        />
         <Note title="Separate from the monthly bill">
           A repair job has its own invoice. It doesn’t wait for the customer’s invoice day and
           doesn’t land on the monthly service invoice. Small parts swapped during a weekly visit (a

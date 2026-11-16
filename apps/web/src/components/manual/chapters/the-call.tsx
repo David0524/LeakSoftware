@@ -1,6 +1,3 @@
-// WANT: new-job — Jobs › New Job on the website, Leak selected (desktop)
-// WANT: customer — a customer page on the website (Maria Alvarez), desktop
-// WANT: messages-new — Messages › New Message on the website
 import type { ChapterDef } from "../types";
 import {
   Flow,
@@ -22,6 +19,7 @@ import {
   Watch,
   WhyItMatters,
   FromTheField,
+  Browser,
 } from "../kit";
 
 export const theCall: ChapterDef = {
@@ -140,6 +138,12 @@ export const theCall: ChapterDef = {
           </Steps>
         </Spread>
 
+        <Browser
+          src="jobs-new"
+          url="sundeckpro.com/jobs/new"
+          alt="The website’s New Job page: the note Accepted quotes make their own repair jobs, a Customer card with Who is it for? set to New or Existing and Name, Phone and Email boxes, an Address card with Street address, City, State and ZIP, and the start of the Visit section."
+          caption="New Job on a computer: who it’s for, where, then the visit."
+        />
         <Sub>Leak or Inspection</Sub>
         <Table
           head={["Job", "What it is", "What the tech gets"]}
@@ -257,6 +261,12 @@ export const theCall: ChapterDef = {
           access notes, and later the drawing of the pool itself. Draw Maria’s figure 8 once and
           it’s there for the repair, and for any call she makes in three years.
         </p>
+        <Browser
+          src="customer-leak"
+          url="sundeckpro.com/customers/…"
+          alt="A customer page on the website: the name, a Homeowner label, round call, message and email buttons, a Contact card, a Pool card with address, gallons, Access notes, Chemical and Get Directions, a Maintenance group with Add Maintenance Plan, and Leak Detection and Repairs listing Job #5983 with a Report sent label."
+          caption="The customer page on a computer: contact on the left, the pool and her jobs on the right."
+        />
         <Sub>Customer types</Sub>
         <p>
           Every customer has a <Ui>Type</Ui>, set under <Ui>Edit Contact Details</Ui>: Homeowner,
@@ -321,6 +331,12 @@ export const theCall: ChapterDef = {
             freeway.
           </p>
         </Spread>
+        <Browser
+          src="messages-new"
+          url="sundeckpro.com/messages/new"
+          alt="The website’s New Message page with only a note, Text and call customers from one company number the whole team shares, and a Set Up a Number link."
+          caption="Until the shop’s number is working, New Message on the website only offers Set Up a Number."
+        />
         <Watch title="Texting needs two things">
           A working company number (set up in <Ui>Phone and Texting</Ui>), and a signal. Sending a
           text is one of the few things the apps can’t do offline.

@@ -1,4 +1,4 @@
-import type { ReactNode } from "react";
+import type { CSSProperties, ReactNode } from "react";
 import { cx } from "@/components/ui";
 
 /**
@@ -343,7 +343,7 @@ export function Browser({
   if (phone) {
     return (
       <figure className="m-fig m-phone-fig m-phone-md">
-        <div className="m-phone">
+        <div className="m-phone m-phone-web">
           <div className="m-phone-screen">
             {/* eslint-disable-next-line @next/next/no-img-element -- static screenshot */}
             <img src={`/manual/web/${src}.webp`} alt={alt} loading="lazy" decoding="async" />
@@ -463,7 +463,15 @@ export function Table({
 /** A horizontal timeline of a process: each stage with a short line. */
 export function Flow({ stages }: { stages: { title: string; text: ReactNode }[] }) {
   return (
-    <ol className="m-flow">
+    <ol
+      className="m-flow"
+      // Even rows: up to four in a row, then two rows of equal length.
+      style={
+        {
+          "--m-flow-cols": stages.length <= 4 ? stages.length : Math.ceil(stages.length / 2),
+        } as CSSProperties
+      }
+    >
       {stages.map((s, i) => (
         <li key={s.title}>
           <span className="m-flow-n">{i + 1}</span>

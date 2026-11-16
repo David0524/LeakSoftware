@@ -17,6 +17,7 @@ import { tmpdir } from "node:os";
 const root = join(import.meta.dirname, "..");
 const require = createRequire(join(root, "apps/web/package.json"));
 const { chromium } = require("@playwright/test");
+const sharp = require("sharp");
 
 const args = process.argv.slice(2);
 const base = args.includes("--base") ? args[args.indexOf("--base") + 1] : "http://localhost:3000";
@@ -88,6 +89,16 @@ const browser = await chromium.launch(
 try {
   for (const e of EDITIONS) {
     const page = await browser.newPage({ viewport: { width: 1200, height: 900 } });
+    // Chromium stores WebP and PNG in a PDF losslessly, which makes the file huge; JPEG goes in
+    // as it is. So the screenshots are served to the printer as JPEG.
+    await page.route(/\/manual\/(ios|web)\/[^/]+\.webp$/, async (route) => {
+      const file = join(root, "apps/web/public", new URL(route.request().url()).pathname);
+      const body = await sharp(file)
+        .flatten({ background: "#ffffff" })
+        .jpeg({ quality: 82, mozjpeg: true })
+        .toBuffer();
+      await route.fulfill({ status: 200, contentType: "image/jpeg", body });
+    });
     await page.goto(`${base}/manual/${e.slug}`, { waitUntil: "networkidle" });
     await page.evaluate((t) => (document.title = t), e.title);
     await ready(page);
@@ -100,7 +111,7 @@ try {
     const headings = await page.evaluate(() =>
       [...document.querySelectorAll("[data-toc-page]")].map((el) => {
         const id = el.getAttribute("data-toc-page");
-        return { id, text: document.getElementById(id)?.textContent?.trim() ?? "" };
+        return { id, text: document.getElementById(`${id}-title`)?.textContent?.trim() ?? "" };
       }),
     );
     const numbers = Object.fromEntries(headings.map((h) => [h.id, pages[h.text]]));

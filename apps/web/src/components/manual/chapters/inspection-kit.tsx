@@ -1,6 +1,3 @@
-// WANT (website shots, once the catalog exists): settings-components — /settings/components (Leak
-// Inspections); settings-tests — /settings/tests; settings-severities — /settings/severities;
-// settings-price-book — /settings/price-book; settings-payments — Deposits, tax, and discounts.
 import type { ChapterDef } from "../types";
 import {
   FromTheField,
@@ -18,6 +15,7 @@ import {
   UseIt,
   Watch,
   WhyItMatters,
+  Browser,
 } from "../kit";
 
 export const inspectionKit: ChapterDef = {
@@ -135,6 +133,12 @@ export const inspectionKit: ChapterDef = {
           <Ui>Techs can record this test</Ui>. <Ui>Add Test Type</Ui> makes a new one, such as a
           hydrostatic check you run.
         </p>
+        <Browser
+          src="settings-tests"
+          url="sundeckpro.com/settings/tests"
+          alt="The website’s Test Types page: Pressure test and Bucket / evaporation test, each marked Calculates the result, then Dye test and Listening / electronic detection, and an Add Test Type button."
+          caption="Test Types: the four tests that come with the shop. Two of them calculate the result."
+        />
         <Tip title="Held and dropped come from the numbers">
           There’s no setting called “held”. A test row reads “Held at 20 PSI in 15 min” when nothing
           dropped and “Dropped 8 PSI in 15 min” when something did, from the readings alone.
@@ -150,6 +154,12 @@ export const inspectionKit: ChapterDef = {
           switch for whether techs can pick it. The colors are the ones a homeowner sees on the pool
           diagram.
         </p>
+        <Browser
+          src="settings-severities"
+          url="sundeckpro.com/settings/severities"
+          alt="The website’s Severities page: Minor, Moderate, Major and Critical, each with its pin color, the last three marked Always in the report summary, and an Add Severity button."
+          caption="Severities: the four that start the list, each with the color of its pin."
+        />
         <Sub>Exclusion reasons</Sub>
         <p>
           When a component isn’t checked, the report should say why.{" "}
@@ -198,7 +208,7 @@ export const inspectionKit: ChapterDef = {
         </Note>
       </Section>
 
-      <Scene time="11:30 p.m.">
+      <Scene time="10:15 p.m.">
         <p>
           The last page is the one with the numbers on it. Dana pulls up the invoices from March and
           April and types prices into the shop’s own list, one at a time.
@@ -215,6 +225,12 @@ export const inspectionKit: ChapterDef = {
           <Ui>Suggest for</Ui> (any finding, or one checklist component) and a <Ui>Description</Ui>{" "}
           that shows on quotes.
         </p>
+        <Browser
+          src="settings-price-book"
+          url="sundeckpro.com/settings/price-book"
+          alt="The website’s Price Book: a Charge for Chemicals switch, then groups for Detection (Leak detection - pool $375.00, Leak detection - pool and spa $450.00), Service, Inspection and Repair, with a price on each row and an Add Item button."
+          caption="The Price Book, grouped by category: Detection first, then Repair items for quotes."
+        />
         <Table
           head={["Item", "Starting price", "Why it’s there"]}
           rows={[

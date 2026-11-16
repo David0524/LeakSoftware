@@ -1,5 +1,6 @@
 import type { ChapterDef } from "../types";
 import {
+  Browser,
   FromTheField,
   Gallery,
   Meta,
@@ -18,8 +19,6 @@ import {
   Watch,
   WhyItMatters,
 } from "../kit";
-
-// WANT: today-desktop — sundeckpro.com/today on a computer (card, Team list, Today's Map)
 
 export const today: ChapterDef = {
   id: "today",
@@ -366,6 +365,12 @@ export const today: ChapterDef = {
             computer, Today adds a Team list (“4 of 11 stops”, “Last done: Jones at 10:42 AM”) and a
             map of the day’s stops.
           </p>
+          <Browser
+            src="today"
+            url="sundeckpro.com/today"
+            alt="Today on a computer: the title with the date and weather, pills for Me, Jake Turner, Luis Ramirez, Priya Shah and Tony Tech, Nothing on your route today with a Tomorrow card and See Tomorrow, and Today’s Map and Activity on the right."
+            caption="Today on a computer: a pill for each tech, and Today’s Map and Activity beside the day. Here it’s a Sunday, so the card points to tomorrow."
+          />
           {pool ? (
             <Scene time="Monday, 11:15 a.m.">
               <p>

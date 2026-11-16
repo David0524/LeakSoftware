@@ -22,13 +22,10 @@ import {
   WhyItMatters,
 } from "../kit";
 
-// WANT: invoices — /invoices (list with filter pills and Monthly Billing group)
-// WANT: customer-invoice — /i/<token> as the customer sees it
-
 export const gettingPaid: ChapterDef = {
   id: "getting-paid",
   title: "Getting paid",
-  moment: { pool: "Tuesday · 6:40 p.m.", leak: "Friday · 3:15 p.m." },
+  moment: { pool: "Tuesday · 6:40 p.m.", leak: "Tuesday · 3:15 p.m." },
   lede: {
     pool: "Customers pay by card or bank from the link in their invoice. A check handed to a tech at the gate is on the books before the truck leaves. Here’s how the money gets in, and how you know.",
     leak: "A homeowner pays the deposit when she accepts the quote and the balance when the repair is done. A check handed over on the deck goes on the books before the truck leaves. Here’s how the money gets in, and how you know.",
@@ -54,7 +51,7 @@ export const gettingPaid: ChapterDef = {
           </p>
         </Scene>
       ) : (
-        <Scene time="Friday, 3:15 p.m.">
+        <Scene time="Tuesday, 3:15 p.m.">
           <p>
             Jake finishes the skimmer repair at Maria’s. She comes out with a checkbook. “Do I make
             it out to Dana?” She’d have paid online, she says, but the check is already written.
@@ -109,7 +106,7 @@ export const gettingPaid: ChapterDef = {
         <Browser
           src="invoices"
           url="sundeckpro.com/invoices"
-          alt="The website’s Invoices page: monthly billing at the top, then filter pills and the list of invoices with customer, number, status and amount."
+          alt="The website’s Invoices page: 8 open · $1,485.00 owed, Export Invoices and Export Payments, a Monthly Billing row for November 2026, filter pills All, Unpaid, Overdue, Drafts, Paid and Void with counts, a search box and Sort, and a table of invoices with customer, status, total and balance."
           caption="On a computer: the same list, with room for the whole row."
         />
       </Section>
@@ -120,15 +117,9 @@ export const gettingPaid: ChapterDef = {
           shop’s colors, with your logo. A short line at the top says where things stand: “$180.00
           due on receipt.”, “$80.00 still due.” or “Paid in full. Thank you!”
         </p>
-        <Browser
-          src="customer-invoice"
-          url="sundeckpro.com/i/…"
-          alt="The customer’s invoice page: the shop’s name and logo, Invoice number, Billed to, Property, the line items, subtotal and total, the balance due and a Pay This Invoice button."
-          caption="The customer’s invoice page. Their balance and their button are the same thing."
-        />
         <p>
-          Below: <strong>Billed to</strong>, <strong>Property</strong>, the lines, then Subtotal,
-          Discount, Tax, Total and <strong>Balance due</strong>. After payment it becomes{" "}
+          The page shows <strong>Billed to</strong>, <strong>Property</strong>, the lines, then
+          Subtotal, Discount, Tax, Total and <strong>Balance due</strong>. After payment it becomes{" "}
           <em>Receipt #…</em> and the button reads <Ui>Paid in Full</Ui>. Customers can download a
           PDF. These pages are always light, whatever your appearance setting.
         </p>

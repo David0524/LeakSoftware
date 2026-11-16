@@ -1,5 +1,6 @@
 import type { ChapterDef } from "../types";
 import {
+  Browser,
   BigFigure,
   Flow,
   FromTheField,
@@ -21,9 +22,6 @@ import {
   Watch,
   WhyItMatters,
 } from "../kit";
-
-// WANT: visit-checklist-desktop — sundeckpro.com/jobs/<id>?tab=checklist (a maintenance visit on a computer)
-// WANT: chemicals — sundeckpro.com/chemicals (the standalone calculator with the What to Add bar)
 
 export const visit: ChapterDef = {
   id: "visit",
@@ -177,6 +175,12 @@ export const visit: ChapterDef = {
           the <Ui>Chemical</Ui> row opens that pool’s readings and log, where <Ui>Save Readings</Ui>{" "}
           adds a test to the pool’s history.
         </Tip>
+        <Browser
+          src="chemicals"
+          url="sundeckpro.com/chemicals"
+          alt="The Chemical page for one pool on a computer: Pool Gallons, a Readings table for Free Chlorine, pH, Alkalinity, Calcium, Stabilizer (CYA) and Salt, Chlorine and Acid choices, Save Readings, and What to Add."
+          caption="The same calculator on its own, opened for one pool: Save Readings adds the test to that pool’s log."
+        />
       </Section>
 
       <Section kicker="Step 3" title="Mark what you added">
@@ -299,6 +303,12 @@ export const visit: ChapterDef = {
             everything left in one tap. On the iPhone you can also swipe an item right for Done.
           </p>
         </Spread>
+        <Browser
+          src="visit-checklist"
+          url="sundeckpro.com/jobs/5861?tab=checklist"
+          alt="A maintenance visit’s Checklist tab on a computer: Add Charge, then Checklist, 7 to do, with the Service items, each with a Done, Needs Attention and Skipped control."
+          caption="On a computer the three answers are spelled out on each item."
+        />
 
         <Sub>Regular cleanings</Sub>
         <p>

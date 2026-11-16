@@ -1,7 +1,7 @@
 import type { ChapterDef, PerEdition } from "../types";
 import { pick } from "../types";
 import type { Edition } from "../kit";
-import { Note, Path, Section, Table, Tip } from "../kit";
+import { Browser, Note, Path, Section, Table, Tip } from "../kit";
 
 type Row = {
   name: string;
@@ -203,6 +203,12 @@ export const settingsRef: ChapterDef = {
           far right of the top bar.
         </p>
       </Note>
+      <Browser
+        src="settings"
+        url="sundeckpro.com/settings"
+        alt="The website’s Settings page: a sidebar and a list in three groups, Your shop (Company and Branding, Team, Import Customers, Scheduling and Routes, Phone and Texting), Money (Price Book, Payments and Deposits, Sundeck Pro Billing) and Checklists and reports."
+        caption="Settings on the website: the same groups as in the table below, with the gear at the far right of the top bar to open it."
+      />
 
       <Section kicker="Settings" title="Your shop">
         <Table head={["Setting", "What it does", "Who"]} rows={rowsFor(SHOP, edition)} />
@@ -221,6 +227,12 @@ export const settingsRef: ChapterDef = {
           On the phone, More holds the shop’s reference pages and your own account. The website has
           the same pages, plus the account menu in the top bar.
         </p>
+        <Browser
+          src="more"
+          url="sundeckpro.com/more"
+          alt="The website’s More page: Customers, Invoices, Activity, Dashboard, Chemicals and Settings; a Your Account group with My Profile, Notifications and Two-Step Sign-In; and an On This Device group with Appearance and Directions open in."
+          caption="The More page: the shop’s pages first, then Your Account, then settings for this device."
+        />
         <Table head={["Setting", "What it does", "Who"]} rows={rowsFor(MORE, edition)} />
       </Section>
 

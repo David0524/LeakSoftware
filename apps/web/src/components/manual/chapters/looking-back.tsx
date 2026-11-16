@@ -20,11 +20,6 @@ import {
   WhyItMatters,
 } from "../kit";
 
-// WANT: activity — /activity (desktop, grouped by day)
-// WANT: jobs — /jobs (desktop, status pills, Type and Sort)
-// WANT: jobs-reports — /jobs/reports (Sent / Drafts list)
-// WANT: customers — /customers (desktop, Show and Sort menus)
-
 export const lookingBack: ChapterDef = {
   id: "looking-back",
   title: "Looking back",
@@ -141,7 +136,7 @@ export const lookingBack: ChapterDef = {
         <Browser
           src="jobs"
           url="sundeckpro.com/jobs"
-          alt="The website’s Jobs list with status pills, a Type menu and a Sort menu above rows of jobs."
+          alt="The website’s Jobs list: a Jobs and Reports control, status pills from Open to All, a search box, Type and Sort menus, and a table with Job, Customer and address, Status, When and Tech."
           caption="On a computer, the search box takes a customer name or a job number."
         />
         <Tip title="Swipe and hold">
@@ -243,8 +238,8 @@ export const lookingBack: ChapterDef = {
         <Browser
           src="activity"
           url="sundeckpro.com/activity"
-          alt="The Activity page: events grouped under Today and Yesterday with a symbol, a title such as Payment received or Quote accepted, a line of detail and the time."
-          caption="Friday afternoon, in order: what came in, what went out."
+          alt="The Activity page: a Type menu set to All Types, then a Today group of rows reading Job completed with a customer, the tech’s name and the time."
+          caption="What happened, newest first. The Type menu narrows it to one kind."
         />
         <Note title="Online only">
           Activity and the Dashboard come from the office’s records, so they say “Activity shows

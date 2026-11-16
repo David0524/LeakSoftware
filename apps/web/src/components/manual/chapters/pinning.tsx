@@ -1,6 +1,3 @@
-// WANT: job-findings — a leak job's Findings tab on the website: Pool Diagram with a pin, Tests, Findings
-// WANT: job-pool-shape — Findings › Edit Pool Shape sheet on the website
-// WANT: job-photos — a leak job's Photos tab on the website with a marked-up photo
 import type { ChapterDef } from "../types";
 import {
   Gallery,
@@ -22,6 +19,7 @@ import {
   Watch,
   WhyItMatters,
   FromTheField,
+  Browser,
 } from "../kit";
 
 export const pinning: ChapterDef = {
@@ -329,6 +327,16 @@ export const pinning: ChapterDef = {
           alt="The Mark Up Diagram screen on a dark background: the figure-8 pool with pin 1 circled in red and a yellow arrow labeled Leak; below, Tool set to Pen with Arrow, Circle and Text, red, yellow and white colors, Undo and Clear All."
           caption="Mark Up Diagram: a red circle around the pin, a yellow arrow, a label."
         />
+        <p>
+          On a computer the same Findings tab puts the diagram on the left and the Tests and
+          Findings beside it.
+        </p>
+        <Browser
+          src="leak-findings"
+          url="sundeckpro.com/jobs/5983?tab=findings"
+          alt="A leak job’s Findings tab on a computer: the Pool Diagram with the skimmers, the house and the equipment pad, Edit Pool Shape and Mark Up buttons, a Tests card reading No tests recorded with Add Test, and a Findings card with 1 Skimmer seam leak, Moderate, Skimmer seam, Repaired, Seam at the skimmer throat, and Add Finding."
+          caption="Findings on the website: the diagram, Tests, and the numbered finding with its severity and status."
+        />
       </Section>
 
       <Scene time="11:05 a.m.">
@@ -383,6 +391,12 @@ export const pinning: ChapterDef = {
           </Tip>
         </Spread>
 
+        <Browser
+          src="leak-photos"
+          url="sundeckpro.com/jobs/5983?tab=photos"
+          alt="A leak job’s Photos tab on a computer: Photos and Recordings, an Attach to menu set to Whole job, buttons Add Photo, Library, Add Video and Voice Note, and the line No photos or recordings yet."
+          caption="Photos on the website: choose what the photo is for in Attach to, then add it."
+        />
         <Sub>Marking up a photo</Sub>
         <Gallery caption="Left: Mark Up on a photo, with Pen, Arrow, Circle and Text. Right: the saved photo, its caption, its time, and its upload status.">
           <Phone

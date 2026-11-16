@@ -1,5 +1,6 @@
 import type { ChapterDef } from "../types";
 import {
+  Browser,
   Flow,
   FromTheField,
   Gallery,
@@ -24,7 +25,7 @@ import {
 export const theFix: ChapterDef = {
   id: "the-fix",
   title: "The fix",
-  moment: "Friday · 7:05 a.m.",
+  moment: "Thursday · 7:05 a.m.",
   lede: "Maria said yes. Her accepted quote is already a repair job, waiting for a day. Follow it onto Jake’s route, through the repair, and back to the office as the last invoice, paid.",
   learn: [
     "Where an accepted quote’s repair job appears",
@@ -35,7 +36,7 @@ export const theFix: ChapterDef = {
   ],
   Body: () => (
     <>
-      <Scene time="Friday, 7:05 a.m.">
+      <Scene time="Thursday, 7:05 a.m.">
         <p>
           Dana opens <Ui>Schedule</Ui> with her coffee. The <Ui>Needs a Time</Ui> row has a 1 on it
           that wasn’t there yesterday morning: Maria Alvarez, Repair.
@@ -68,7 +69,7 @@ export const theFix: ChapterDef = {
             A repair job has four tabs, not five: <Ui>Details</Ui>, <Ui>Findings</Ui>,{" "}
             <Ui>Photos</Ui> and <Ui>Wrap-Up</Ui>. There’s no checklist, because the inspection
             already happened. The pool’s shape, its landmarks and its access notes come along from
-            the pool record, so Jake works from the same drawing Dana used on Thursday.
+            the pool record, so Jake works from the same drawing Dana used on Wednesday.
           </p>
           <Sub>Give it a day</Sub>
           <Steps>
@@ -113,8 +114,8 @@ export const theFix: ChapterDef = {
         <p>
           Jake pulls up to 1423 Palm Ct as the first stop of his day. The gate code is on the card,
           and so is the note about the dog. He has never been to this pool, and he doesn’t need to
-          call Dana: Maria’s customer page opens Thursday’s detection, where the diagram shows a red
-          pin on the skimmer and Dana’s photo shows the crack.
+          call Dana: Maria’s customer page opens Wednesday’s detection, where the diagram shows a
+          red pin on the skimmer and Dana’s photo shows the crack.
         </p>
         <p>
           He taps <Ui>Start</Ui> on Today’s card.
@@ -140,7 +141,7 @@ export const theFix: ChapterDef = {
         <p>
           On <Ui>Findings</Ui>, Jake taps <Ui>Add Test</Ui> and runs the same pressure test Dana
           ran: <Ui>Pressure test</Ui>, the skimmer line, 20 PSI, 15 minutes. This time the live line
-          reads “Held at 20 PSI in 15 min,” and the result suggests Pass. Thursday’s failure and
+          reads “Held at 20 PSI in 15 min,” and the result suggests Pass. Wednesday’s failure and
           Tuesday’s pass now sit in the same customer’s history.
         </p>
         <Sub>The second repair</Sub>
@@ -196,6 +197,12 @@ export const theFix: ChapterDef = {
           <Ui>Report</Ui>, <Ui>Customer signs</Ui>, <Ui>Invoice</Ui>. The blue button walks Jake
           through it.
         </p>
+        <Browser
+          src="repair-wrapup"
+          url="sundeckpro.com/jobs"
+          alt="A repair job’s Wrap-Up on a computer: “1 of 3 done”, Report Not written yet, Customer signs Write the report first, Invoice #1113 Paid $245.00, and a Write the Draft button; on the right, the paid invoice with Balance due $0.00, “$245.00 · Card · received”, and Send Receipt."
+          caption="A repair’s finish list has no quote rows. This one was paid by card before its report was written; the list shows what’s still open."
+        />
         <Flow
           stages={[
             {
@@ -204,7 +211,7 @@ export const theFix: ChapterDef = {
             },
             {
               title: "Review with Customer",
-              text: "Maria reads it on Jake’s phone and signs, as she did on Thursday.",
+              text: "Maria reads it on Jake’s phone and signs, as she did on Wednesday.",
             },
             {
               title: "Invoice",
@@ -336,14 +343,14 @@ export const theFix: ChapterDef = {
             },
           ]}
         />
-        <PullQuote>Thursday: dropped 8 PSI. Tuesday: held at 20. Both on the record.</PullQuote>
+        <PullQuote>Wednesday: dropped 8 PSI. Tuesday: held at 20. Both on the record.</PullQuote>
         <WhyItMatters
           figures={[
             { value: "1", label: "customer record from first call to paid" },
             { value: "0", label: "times anyone retyped the repair" },
           ]}
         >
-          The repair Maria agreed to on Thursday night is the repair Jake did and the repair she
+          The repair Maria agreed to on Wednesday night is the repair Jake did and the repair she
           paid for on Tuesday: the same lines, the same prices, the deposit already taken off. No
           one copied a quote into an invoice or remembered to knock off the deposit. When the books
           are done, every dollar on Maria’s pool points back to a finding, a photo and a signature.

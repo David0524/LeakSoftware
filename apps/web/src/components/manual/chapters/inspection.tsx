@@ -1,5 +1,3 @@
-// WANT: job-checklist — a leak job's Checklist tab on the website at desktop width (segmented
-//   Not Leaking | Leaking | Attention | N/A under each item)
 import type { ChapterDef } from "../types";
 import {
   Meta,
@@ -19,6 +17,7 @@ import {
   Watch,
   WhyItMatters,
   FromTheField,
+  Browser,
 } from "../kit";
 
 export const inspection: ChapterDef = {
@@ -233,6 +232,12 @@ export const inspection: ChapterDef = {
           and photos, tests and findings are added from their own tabs, with the item picked in the
           sheet.
         </Note>
+        <Browser
+          src="leak-checklist"
+          url="sundeckpro.com/jobs/5983?tab=checklist"
+          alt="A leak job’s Checklist tab on a computer: tabs for Details, Checklist, Findings, Photos and Wrap-Up; Checklist, 24 not leaking · 1 leaking, with groups Visual Leak Inspection, Plumbing Static Test (1 leaking), Bond Beam and Other; an Add an item menu and Type a New Item; and the Pool Diagram with Edit Pool Shape, Mark Up, Tests and Add Test."
+          caption="The website’s Checklist tab: each group shows All clear or its leaking count. Open a group to answer its items. The pool diagram stays beside it."
+        />
       </Section>
 
       <Section kicker="Pools are odd" title="Adding and removing items">

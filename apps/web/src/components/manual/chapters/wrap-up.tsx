@@ -1,5 +1,6 @@
 import type { ChapterDef } from "../types";
 import {
+  Browser,
   FromTheField,
   Meta,
   Note,
@@ -21,12 +22,10 @@ import {
   Gallery,
 } from "../kit";
 
-// WANT: job-wrap-up — /jobs/<id>?tab=wrap-up at desktop width, Report open in the side panel
-
 export const wrapUp: ChapterDef = {
   id: "wrap-up",
   title: "Wrap-Up",
-  moment: "Thursday · 11:15 a.m.",
+  moment: "Wednesday · 11:45 a.m.",
   lede: "The leak is found. Before Dana leaves the driveway, the job becomes a report Maria has read and signed, a quote for the fix, and an invoice for the detection. One tab holds all of it, in order.",
   learn: [
     "Read the finish list and know what’s left",
@@ -38,7 +37,7 @@ export const wrapUp: ChapterDef = {
   ],
   Body: () => (
     <>
-      <Scene time="Thursday, 11:15 a.m.">
+      <Scene time="Wednesday, 11:45 a.m.">
         <p>
           The skimmer line dropped 8 PSI in 15 minutes. Dana has the seam pinned on the diagram, two
           photos of the throat with a red circle on the crack, and a finding marked Major.
@@ -88,6 +87,12 @@ export const wrapUp: ChapterDef = {
           comes next. When everything is done, the button goes away. You can finish a whole job by
           pressing the blue button until there isn’t one.
         </p>
+        <Browser
+          src="leak-wrapup"
+          url="sundeckpro.com/jobs"
+          alt="A leak detection job’s Wrap-Up on a computer: “Ruth Duran · 2 of 3 done”, Report Sent · version 1, Customer signs Not signed: customer not present, Invoice Not started, a + New Quote link and a Send Invoice button; on the right, the Invoice panel with “Bills the detection fee of $375.00. You can add lines before sending.” and Create Invoice."
+          caption="On a computer the list stays on the left and the step you open sits beside it. Here the next step is the invoice."
+        />
       </Section>
 
       <Section kicker="Step 1" title="The report writes itself from the deck">

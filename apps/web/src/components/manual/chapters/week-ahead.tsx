@@ -23,9 +23,6 @@ import {
   PullQuote,
 } from "../kit";
 
-// WANT: schedule-week — /schedule?view=week (desktop, Everyone selected)
-// WANT: schedule-day — /schedule (desktop, with the route map)
-
 export const weekAhead: ChapterDef = {
   id: "week-ahead",
   title: { pool: "Sunday night: the week ahead", leak: "Booking it" },
@@ -114,6 +111,12 @@ export const weekAhead: ChapterDef = {
             answering “how booked are we the week of the 23rd?” in a glance.
           </p>
         </Spread>
+        <Browser
+          src="schedule-day"
+          url="sundeckpro.com/schedule"
+          alt="The website’s Schedule in Day view for Tuesday, Nov 10: a Day, Week, Month control, a week strip, Needs a Time with four jobs, and a column for each tech with a Maps button, a route map, numbered stops and the driving time."
+          caption="Day on a computer: Needs a Time on the left, then a column for each tech with their own route map."
+        />
         <Note title="Who sees what">
           Owners and admins see everyone and can plan. A tech sees their own work, and can move
           their own stops. <Ui>Needs a Time</Ui> and the planning buttons belong to the office.
@@ -133,8 +136,8 @@ export const weekAhead: ChapterDef = {
         <Browser
           src="schedule-week"
           url="sundeckpro.com/schedule?view=week"
-          alt="The website’s Schedule in Week view: a sidebar with Needs a Time and Customers to Add, and a row for each tech under each day."
-          caption="On a computer the sidebar keeps Needs a Time in view while you work on the week."
+          alt="The website’s Schedule in Week view: Needs a Time on the left, a Maps row with a pill for each tech and Optimize Week, a small route map with an Optimize button for each day, and a grid of each tech’s stops under each day."
+          caption="Week on a computer: Needs a Time stays on the left, a map for each day sits on top, each tech’s stops below."
         />
         <p>
           {edition === "pool"

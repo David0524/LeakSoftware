@@ -1,6 +1,3 @@
-// WANT (website shots, once the catalog exists): settings-import — /settings/import (file chosen and
-// the preview); customers-plan-filter — /customers?show=plan; customer-plan-form — a plan's
-// Regular Cleanings section.
 import type { ChapterDef } from "../types";
 import {
   BigFigure,
@@ -21,12 +18,13 @@ import {
   Watch,
   WhyItMatters,
   FromTheField,
+  Browser,
 } from "../kit";
 
 export const routeOver: ChapterDef = {
   id: "route-over",
   title: "Bringing the route over",
-  moment: "Sunday · 10:05 p.m.",
+  moment: "Saturday · 8:20 p.m.",
   lede: "Canyon State’s customers have lived in a spreadsheet for years. Dana moves them in one file, then gives each pool a day, a price and a plan.",
   learn: [
     "Import a customer list from a CSV file",
@@ -36,7 +34,7 @@ export const routeOver: ChapterDef = {
   ],
   Body: () => (
     <>
-      <Scene time="Sunday, 10:05 p.m.">
+      <Scene time="Saturday, 8:20 p.m.">
         <p>
           The spreadsheet has a tab for each tech and a column for each day. Luis’s route runs down
           the first one: names, streets, a gate code in the notes, and a price that’s been the same
@@ -94,6 +92,12 @@ export const routeOver: ChapterDef = {
             { title: "Preview", text: "Counts, and rows worth a look." },
             { title: "Import", text: "Customers, pools and plans appear on the schedule." },
           ]}
+        />
+        <Browser
+          src="settings-import"
+          url="sundeckpro.com/settings/import"
+          alt="The website’s Import Customers page: a note about exporting a CSV file from the software or spreadsheet you use now, a Choose CSV File button, and a Download a template link."
+          caption="Import Customers: choose the file, or download the template and fill it in."
         />
         <Note title="What it understands">
           Customer name (or First and Last name), company, email, phone, a full address or street,
@@ -165,7 +169,7 @@ export const routeOver: ChapterDef = {
         </Note>
       </Section>
 
-      <Scene time="10:40 p.m.">
+      <Scene time="8:55 p.m.">
         <p>
           Dana scrolls the imported list. Two hundred and some names, each with a pool, and none
           with a plan she trusts. The spreadsheet had a day and a price, and the import brought them
@@ -267,6 +271,12 @@ export const routeOver: ChapterDef = {
           a plan that hasn’t ended, and a paused plan still counts. <Ui>Sort</Ui> by name, newest,
           last visit or city.
         </p>
+        <Browser
+          src="customers-filter"
+          url="sundeckpro.com/customers"
+          alt="The Customers page with the Show menu open: All Customers (248), On a Plan (150), No Plan (98), Homeowners (236), Pool Companies (6), Builders (2), Insurers (0), Property Managers (4) and Other (0), beside the Sort menu set to Name A–Z."
+          caption="The Show menu counts everyone: On a Plan and No Plan sit right under All Customers."
+        />
         <BigFigure
           value="No Plan"
           label="The list of customers with a pool and no regular service. Every name on it is someone you could call."

@@ -1,6 +1,3 @@
-// WANT (website shots, once the catalog exists): sign-up — /sign-up; welcome — /welcome (team size and
-// card); settings-company — /settings/company (logo and colors); home-getting-started — the
-// Getting Started panel.
 import type { ChapterDef } from "../types";
 import {
   FromTheField,
@@ -19,12 +16,13 @@ import {
   Watch,
   WhyItMatters,
   UseIt,
+  Browser,
 } from "../kit";
 
 export const dayOne: ChapterDef = {
   id: "day-one",
   title: "Day one",
-  moment: { pool: "Sunday · 7:30 p.m.", leak: "Sunday · 7:30 p.m." },
+  moment: { pool: "Saturday · 7:30 p.m.", leak: "Sunday · 7:30 p.m." },
   lede: {
     pool: "Dana sets Canyon State up in one evening: an account, a company that looks like hers, and the apps on three phones. Here is what she does, in the order she does it.",
     leak: "Dana sets Canyon State up in one evening: an account, a company that looks like hers, a sample report in her own inbox, and the app on two phones. Here is what she does, in the order she does it.",
@@ -45,7 +43,7 @@ export const dayOne: ChapterDef = {
   },
   Body: ({ edition }) => (
     <>
-      <Scene time="Sunday, 7:30 p.m.">
+      <Scene time={edition === "pool" ? "Saturday, 7:30 p.m." : "Sunday, 7:30 p.m."}>
         <p>
           The kids are in bed. Dana puts her laptop on the kitchen table, opens a browser and types
           the address from the card in her truck.
@@ -99,6 +97,12 @@ export const dayOne: ChapterDef = {
             </p>
           </Step>
         </Steps>
+        <Browser
+          src="sign-up"
+          url="sundeckpro.com/sign-up"
+          alt="The website’s Start Your Free Trial page: a card with Your name, Company name, Email, Mobile phone and Password boxes, the password rules listed under the Password box, and the Your shop does choice (Pool Care, Leak Detection, Both) at the bottom."
+          caption="The sign-up form. The rules under Password tick off as she types."
+        />
         <Note title="The card, and what happens without it">
           Until a card is in, the shop is read-only. If you cancel before the trial ends, in{" "}
           <Path items={["Settings", "Sundeck Pro Billing"]} />, you are never charged. Billing is a

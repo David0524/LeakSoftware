@@ -22,13 +22,10 @@ import {
   BigFigure,
 } from "../kit";
 
-// WANT: messages — /messages (desktop, latest conversation open beside the list)
-// WANT: search-open — any page with Ctrl+K search open and results showing
-
 export const office: ChapterDef = {
   id: "office",
   title: "Meanwhile, at the office",
-  moment: { pool: "Monday · 10:20 a.m.", leak: "Wednesday · 11:10 a.m." },
+  moment: { pool: "Tuesday · 2:40 p.m.", leak: "Wednesday · 11:10 a.m." },
   lede: {
     pool: "While the trucks are out, the office is working too: texts from customers, a call that went to voicemail, a quote someone just accepted. Here’s the other half of the day.",
     leak: "While Jake is on a deck in Gilbert, the office is working too: a homeowner’s text, a voicemail, a quote that just got accepted. Here’s the other half of the day.",
@@ -43,13 +40,13 @@ export const office: ChapterDef = {
   Body: ({ edition }) => (
     <>
       {edition === "pool" ? (
-        <Scene time="Monday, 10:20 a.m.">
+        <Scene time="Tuesday, 2:40 p.m.">
           <p>
-            Priya is three pools into her Monday. Luis is in Chandler. Tony’s phone says he’s two
-            stops from lunch.
+            Priya is seven pools into her Tuesday. Luis is in Chandler. Tony’s phone says he’s two
+            stops from the end of his route.
           </p>
           <p>
-            Dana is at her desk with the website open. A customer texted at 10:05 to say the gate
+            Dana is at her desk with the website open. A customer texted at 1:15 to say the gate
             code changed. Another left a voicemail. A third wants to know if Thursday still works.
             None of them called Dana’s cell phone. They all reached the shop.
           </p>
@@ -101,12 +98,21 @@ export const office: ChapterDef = {
             waits.
           </Note>
         </Spread>
-        <Browser
-          src="messages"
-          url="sundeckpro.com/messages"
-          alt="The website’s Messages page: the inbox on the left and the latest conversation open on the right, with a panel showing the customer’s pools and latest jobs."
-          caption="On a computer, the conversation sits beside the list. A side panel shows the customer’s pools and latest jobs."
-        />
+        {edition === "leak" ? (
+          <Browser
+            src="messages-conversation"
+            url="sundeckpro.com/messages"
+            alt="The website’s Messages page: the inbox on the left, a conversation with Sam Sample open in the middle with Mark as Unread and a Customer Details link, a panel on the right with the customer’s contact and Pools, and a note at the bottom reading Texting is off until the company number is working."
+            caption="On a computer, the conversation sits beside the list. A side panel shows the customer and their pools."
+          />
+        ) : (
+          <Browser
+            src="messages"
+            url="sundeckpro.com/messages"
+            alt="The website’s Messages page: a Set Up a Number banner, one conversation in the list from Sam Sample, and the line Pick a conversation to read it and reply."
+            caption="The inbox on a computer. Until the number is set up, a banner offers Set Up a Number."
+          />
+        )}
 
         <Sub>A conversation</Sub>
         <Spread
@@ -184,6 +190,16 @@ export const office: ChapterDef = {
           Texting needs a connection. Offline, the apps say they can’t send, and nothing is queued,
           so you’ll never wonder whether it went.
         </Tip>
+        <p>
+          On the website, the number is set up in <Path items={["Settings", "Phone and Texting"]} />
+          .
+        </p>
+        <Browser
+          src="settings-phone"
+          url="sundeckpro.com/settings/phone"
+          alt="The website’s Phone and Texting settings: a Get a New Number card with an Area code box and Search, a Number box with Set Up My Number, and an On My Way group with Send from set to Sundeck Pro Messages or Tech’s Phone."
+          caption="Phone and Texting: pick a new number by area code, or register the one you have."
+        />
       </Section>
 
       <Section kicker="So you don’t have to look" title="Notifications">
@@ -260,10 +276,10 @@ export const office: ChapterDef = {
           types the last four digits of the number.
         </p>
         <Browser
-          src="search-open"
+          src="search"
           url="sundeckpro.com/dashboard"
-          alt="The website with the search box open: results grouped under Customers, Pools, Jobs, Quotes and Invoices, with See All links."
-          caption="One search over customers, pools, jobs, quotes and invoices. Up to five of each, then See All."
+          alt="The Dashboard behind the search box with pool typed in: a Cancel button, results grouped under Customers (Blue Wave Pools, Camelback Pool Care and more) with See All, then Jobs such as Job #6020 · Leak detection."
+          caption="Ctrl+K on any page: a few of each kind of result, with See All for the rest."
         />
         <Table
           head={["Search for", "Finds"]}

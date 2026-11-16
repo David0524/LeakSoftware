@@ -1,5 +1,3 @@
-// WANT: job-findings-add-test — a leak job's Findings tab › Add Test sheet on the website
-// WANT: settings-exclusion-reasons — Settings › Exclusion Reasons on the website
 import type { ChapterDef } from "../types";
 import {
   BigFigure,
@@ -21,6 +19,7 @@ import {
   Watch,
   WhyItMatters,
   FromTheField,
+  Browser,
 } from "../kit";
 
 export const pressure: ChapterDef = {
@@ -261,6 +260,12 @@ export const pressure: ChapterDef = {
           The website shows the saved reason under the item. Picking the reason is done on the
           item’s screen in the iPhone and Android apps.
         </Note>
+        <Browser
+          src="settings-exclusions"
+          url="sundeckpro.com/settings/exclusions"
+          alt="The website’s Exclusion Reasons page: No diver on site, Area not accessible, Customer declined, Equipment off or not working and Not part of this job, and an Add Reason button."
+          caption="Exclusion Reasons: the list techs pick from. Add Reason makes your own."
+        />
       </Section>
 
       <UseIt

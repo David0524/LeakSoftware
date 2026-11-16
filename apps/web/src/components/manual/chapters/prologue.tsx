@@ -71,7 +71,7 @@ export const prologue: ChapterDef = {
                     "Owner. Sets the shop up, plans the week, sends the bills.",
                     "Website on a computer, iPhone",
                   ],
-                  ["Priya", "Service tech, Tuesday through Friday route.", "iPhone"],
+                  ["Priya", "Service tech: ten pools a day, Monday to Friday.", "iPhone"],
                   ["Luis and Tony", "Service techs on their own routes.", "iPhone and Android"],
                   [
                     "The customers",

@@ -1,6 +1,3 @@
-// WANT (website shots, once the catalog exists): settings-components — /settings/components (Pool
-// Visits); settings-price-book — /settings/price-book; settings-reports — /settings/reports;
-// settings-payments-monthly — the Monthly invoices group of /settings/payments.
 import type { ChapterDef } from "../types";
 import {
   Gallery,
@@ -21,12 +18,13 @@ import {
   UseIt,
   Watch,
   WhyItMatters,
+  Browser,
 } from "../kit";
 
 export const serviceMenu: ChapterDef = {
   id: "service-menu",
   title: "Your service menu",
-  moment: "Sunday · 11:20 p.m.",
+  moment: "Saturday · 10:20 p.m.",
   lede: "What a tech checks, what gets added to the water, what it costs, and when the customer hears about it. Dana sets all four before the first visit, so nobody has to decide at the pool.",
   learn: [
     "Edit the checklist your techs walk through",
@@ -36,7 +34,7 @@ export const serviceMenu: ChapterDef = {
   ],
   Body: () => (
     <>
-      <Scene time="Sunday, 11:20 p.m.">
+      <Scene time="Saturday, 10:20 p.m.">
         <p>
           Priya texts a question from her couch: does the sheet say to check the pump basket or the
           skimmer basket first? Dana has answered it a dozen times. It was never written anywhere
@@ -85,6 +83,12 @@ export const serviceMenu: ChapterDef = {
           type takes <Ui>Monthly</Ui>, <Ui>2 Months</Ui>, <Ui>3 Months</Ui>, <Ui>6 Months</Ui> or{" "}
           <Ui>Yearly</Ui>.
         </p>
+        <Browser
+          src="settings-components"
+          url="sundeckpro.com/settings/components"
+          alt="The website’s Checklist Components page with the Pool Visits tab selected beside Leak Inspections and Pool Inspections, an Add Component button, and an Every Visit list: Skim surface, Brush walls, steps, and tile, Vacuum, Empty skimmer and pump baskets, Check filter pressure, Test and balance water, Equipment: leaks, noise, or drips."
+          caption="Checklist Components, Pool Visits tab: the Every Visit list, then On a Schedule items below. Changes apply to new visits only."
+        />
         <Tip title="One-offs stay on the visit">
           A tech who needs an item for just one pool can <Ui>Add an item</Ui> on the visit. It reads
           “This item is only on this job” and never touches the shop’s list.
@@ -186,7 +190,7 @@ export const serviceMenu: ChapterDef = {
         </p>
       </Section>
 
-      <Scene time="12:05 a.m.">
+      <Scene time="11:05 p.m.">
         <p>
           One setting left. Dana has watched a customer text “did anyone even come?” twice this
           year. She decides what proof goes out, and when.
@@ -237,6 +241,12 @@ export const serviceMenu: ChapterDef = {
           A tech can still send a single visit’s report by hand. The visit shows “Goes with the
           monthly invoice” until they do.
         </Note>
+        <Browser
+          src="settings-reports"
+          url="sundeckpro.com/settings/reports"
+          alt="The website’s Report Templates page: the Homeowner report row, a Visit Reports group with Send Visit Reports set to Each Visit, Monthly or Off, a Send Automatically switch, Save, a Require a Photo switch, and Saved Reports with Add Saved Report."
+          caption="Report Templates: Each Visit, Monthly or Off, and the Send Automatically switch."
+        />
       </Section>
 
       <Section kicker="Month’s end" title="Invoice settings, set once">

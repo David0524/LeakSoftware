@@ -103,7 +103,7 @@ export const FAQ_TOPICS: FaqTopic[] = [
       },
       {
         q: "Which phones does it run on?",
-        a: "The iPhone app is on the App Store and needs iOS 18 or later. An Android app is built to look and work the same way. Techs can also use the website in a phone’s browser, but it needs a connection and doesn’t work offline.",
+        a: "The iPhone app is on the App Store and needs iOS 18 or later. The Android app is on Google Play and looks and works the same way. Techs can also use the website in a phone’s browser, but it needs a connection and doesn’t work offline.",
         for: "both",
       },
       {

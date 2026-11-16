@@ -1,5 +1,6 @@
 import type { ChapterDef } from "../types";
 import {
+  Browser,
   Flow,
   FromTheField,
   Meta,
@@ -20,14 +21,10 @@ import {
   BigFigure,
 } from "../kit";
 
-// WANT: customer-report — /r/<token> at phone width (Maria's leak detection report, top of page)
-// WANT: customer-quote — /q/<token> at phone width (Repair Quote with Accept This Quote)
-// WANT: customer-invoice — /i/<token> at phone width (Invoice with Pay This Invoice)
-
 export const homeowner: ChapterDef = {
   id: "homeowner",
   title: "The homeowner’s evening",
-  moment: "Thursday · 7:30 p.m.",
+  moment: "Wednesday · 7:30 p.m.",
   lede: "Everything Dana sent this morning lands on Maria’s phone. Here is what she sees, page by page, and what comes back to the shop while Dana is making dinner.",
   learn: [
     "What the homeowner gets by email and text",
@@ -37,15 +34,15 @@ export const homeowner: ChapterDef = {
   ],
   Body: () => (
     <>
-      <Scene time="Thursday, 7:30 p.m.">
+      <Scene time="Wednesday, 7:30 p.m.">
         <p>
           The dishes are done. Maria sits at the kitchen table with her phone and finally opens the
           email she saw at lunch: “Your leak detection report from Canyon State.”
         </p>
         <p>
           Her husband was at work this morning. He wants to know what she agreed to, what it costs,
-          and whether the pool guy actually found anything or just “ran some tests.” She turns the
-          phone so he can see.
+          and whether the leak company actually found anything or just “ran some tests.” She turns
+          the phone so he can see.
         </p>
       </Scene>
 
@@ -73,8 +70,8 @@ export const homeowner: ChapterDef = {
         />
         <p>
           The email comes from your shop’s name, and a reply goes to your shop’s email. It says
-          “Your leak detection report for 1423 Palm Ct is ready,” with one button, and your phone
-          number under your name. The text is just as short.
+          “Your leak detection report for 1423 Palm Ct is ready,” with a link to view it, and your
+          phone number under your name. The text is just as short.
         </p>
         <p>
           A link in a text doesn’t arrive as a bare web address. It unfolds into a card with your
@@ -91,11 +88,11 @@ export const homeowner: ChapterDef = {
       <Section kicker="The report page" title="What Dana found, in her words and her numbers">
         <Spread
           figure={
-            <Phone
-              src="17-review-tests"
-              alt="A leak detection report for Maria Alvarez, 1423 Palm Ct, Mesa, AZ 85201: What We Found, Findings with 1. Skimmer seam leak, Next Steps, What we checked with 10 not leaking, 1 attention and 1 leaking, and Tests we ran with two pressure tests, one marked Fail."
-              caption="The same report Maria read on the patio. On the page, it opens under your logo and colors."
-              full
+            <Browser
+              phone
+              src="customer-report-phone"
+              alt="A customer’s leak detection report on a phone: the shop’s logo, name, phone and email on a navy band with a Download PDF button, Leak Detection Report and the date; then “We found a leak: Skimmer seam (Seam at the skimmer throat).”, “Inspected by Dana and Jake”, a Summary with tiles for 24 Items Pass, 0 Need Attention and 1 Leaking, and the property, pool, technicians and leak detection fee."
+              caption="The shop’s band, one plain line, three tiles. She knows the answer before she scrolls."
             />
           }
         >
@@ -125,6 +122,12 @@ export const homeowner: ChapterDef = {
             A <Ui>Download PDF</Ui> link sits at the top for the husband who wants to print it.
           </p>
         </Spread>
+        <Browser
+          src="customer-report"
+          url="sundeckpro.com/r/…"
+          alt="The same kind of report on a computer: the shop’s header band with its logo, the plain line about the skimmer seam leak, the Summary tiles, the details, What we found, What happens next and What we checked."
+          caption="On a computer the report reads like a printed document. The PDF matches it page for page."
+        />
         <FromTheField title="The report sells the repair">
           “Ran some tests” turns into every item on the checklist with its result, a pressure test
           with a start and an end reading, and a photo with a circle on it. The husband stops asking

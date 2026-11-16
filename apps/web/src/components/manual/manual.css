@@ -17,6 +17,7 @@
   font-size: 1.0625rem;
   line-height: 1.65;
   font-variant-numeric: tabular-nums;
+  overflow-wrap: break-word;
 }
 
 .manual p {
@@ -333,7 +334,6 @@
 .m-ui {
   font-weight: 650;
   color: var(--m-navy);
-  white-space: nowrap;
 }
 .m-path-sep {
   color: var(--m-muted);
@@ -656,6 +656,11 @@
 .m-phone-full .m-phone-screen {
   aspect-ratio: auto;
 }
+/* A website captured at phone size has no status bar: leave room for one under the island. */
+.m-phone-web .m-phone-screen {
+  padding-top: 13%;
+  background: #f2f2f7;
+}
 .m-phone-screen img {
   display: block;
   width: 100%;
@@ -810,13 +815,21 @@
   break-inside: avoid;
 }
 .m-gallery {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(12rem, 1fr));
-  gap: 1.5rem;
-  align-items: start;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 1.5rem 2.5rem;
+  align-items: flex-start;
+}
+.m-gallery > * {
+  flex: 0 1 15rem;
 }
 .m-gallery .m-phone-fig {
   margin: 0 auto;
+}
+.m-gallery .m-browser-fig {
+  flex-basis: 100%;
+  margin: 0;
 }
 .m-gallery-caption {
   margin-top: 1rem;
@@ -874,7 +887,7 @@
 }
 @media (min-width: 760px) {
   .m-flow {
-    grid-template-columns: repeat(auto-fit, minmax(9.5rem, 1fr));
+    grid-template-columns: repeat(var(--m-flow-cols, 3), minmax(0, 1fr));
   }
 }
 .m-flow li {
@@ -1075,6 +1088,11 @@
 /* ---------- Print (the PDF) ---------- */
 
 @media print {
+  /* The website's own bar and footer stay on the web. */
+  body:has(.manual) header.glass-bar,
+  body:has(.manual) footer {
+    display: none !important;
+  }
   .manual {
     font-size: 10.5pt;
     line-height: 1.5;
@@ -1119,8 +1137,25 @@
     break-after: page;
     padding-top: 0;
   }
+  .m-contents-title {
+    font-size: 26pt;
+  }
+  .m-contents-part {
+    margin-top: 0.7rem;
+    font-size: 8.5pt;
+  }
   .m-contents a {
-    padding: 0.32rem 0;
+    padding: 0.16rem 0;
+    grid-template-columns: 1.75rem minmax(0, 1fr) auto;
+  }
+  .m-contents-n {
+    font-size: 11pt;
+  }
+  .m-contents-name {
+    font-size: 10pt;
+  }
+  .m-contents-moment {
+    font-size: 9pt;
   }
   .m-contents-moment {
     display: inline;
@@ -1169,12 +1204,14 @@
     margin-top: 1.75rem;
   }
   .m-spread {
-    grid-template-columns: minmax(0, 1fr) 2.35in;
-    gap: 0.35in;
-    break-inside: avoid;
+    grid-template-columns: minmax(0, 1fr) 2.05in;
+    gap: 0.3in;
   }
   .m-spread-flip {
-    grid-template-columns: 2.35in minmax(0, 1fr);
+    grid-template-columns: 2.05in minmax(0, 1fr);
+  }
+  .m-spread-fig {
+    break-inside: avoid;
   }
   .m-spread-flip .m-spread-fig {
     order: -1;
@@ -1183,20 +1220,22 @@
     margin: 1rem auto;
   }
   .m-phone-md {
-    max-width: 2.35in;
+    max-width: 2.05in;
   }
   .m-phone-lg {
-    max-width: 2.7in;
+    max-width: 2.35in;
   }
   .m-phone-sm {
-    max-width: 2in;
+    max-width: 1.8in;
   }
   .m-phone-full .m-phone-screen {
-    max-height: 7.6in;
+    max-height: 6.4in;
   }
   .m-gallery {
-    grid-template-columns: repeat(3, 1fr);
-    gap: 0.25in;
+    gap: 0.25in 0.35in;
+  }
+  .m-gallery > * {
+    flex-basis: 2.1in;
   }
   .m-useit-grid {
     grid-template-columns: repeat(3, 1fr);
@@ -1207,7 +1246,7 @@
     box-shadow: 0 0 0 1px var(--m-line);
   }
   .m-flow {
-    grid-template-columns: repeat(auto-fit, minmax(1.3in, 1fr));
+    grid-template-columns: repeat(var(--m-flow-cols, 3), minmax(0, 1fr));
   }
   .m-why,
   .m-part,

@@ -1,5 +1,3 @@
-// WANT (website shots, once the catalog exists): settings-team — /settings/team (list, roles, What
-// techs can do); settings-team-invite — the Invite Someone sheet.
 import type { ChapterDef } from "../types";
 import {
   FromTheField,
@@ -19,12 +17,13 @@ import {
   UseIt,
   Watch,
   WhyItMatters,
+  Browser,
 } from "../kit";
 
 export const team: ChapterDef = {
   id: "team",
   title: "The team",
-  moment: { pool: "Sunday · 9:15 p.m.", leak: "Sunday · 9:15 p.m." },
+  moment: { pool: "Saturday · 9:15 p.m.", leak: "Sunday · 10:30 p.m." },
   lede: {
     pool: "Luis, Priya and Tony need a way in, and each needs the right amount of it. Dana invites them, gives them roles, and decides what a tech can see.",
     leak: "Jake needs a way in, with the right amount of it. Dana invites him, gives him a role, and decides what a tech can see.",
@@ -37,7 +36,7 @@ export const team: ChapterDef = {
   ],
   Body: ({ edition }) => (
     <>
-      <Scene time="Sunday, 9:15 p.m.">
+      <Scene time={edition === "pool" ? "Saturday, 9:15 p.m." : "Sunday, 10:30 p.m."}>
         <p>
           {edition === "pool"
             ? "The shop is set up. Dana has three names to add and a Monday morning to get them ready for. She opens Settings, then Team, and finds just one row: hers."
@@ -184,11 +183,23 @@ export const team: ChapterDef = {
           You can’t turn yourself off, and an admin can’t turn off an owner. Because the price
           follows the number of active people, turning someone off lowers it, prorated.
         </p>
+        <Browser
+          src="settings-team"
+          url="sundeckpro.com/settings/team"
+          alt="The website’s Team settings: an Active list with Dana Owner (you), Jake Turner, Luis Ramirez, Priya Shah and Tony Tech, each with a role and a switch at the end of the row, and a Turned Off list below."
+          caption="Team: the switch at the end of each row turns a person off. Turned-off people move to their own list."
+        />
         <Tip title="Two-step for everyone">
           Two-step sign-in is per person and optional; there is no shop-wide switch. Ask each person
           to turn it on in <Path items={["More", "Two-Step Sign-In"]} />. It matters most for owners
           and admins, whose accounts can see billing and every customer.
         </Tip>
+        <Browser
+          src="two-step"
+          url="sundeckpro.com/more/two-step"
+          alt="The website’s Two-Step Sign-In page: a short explanation of the 6-digit code from an authenticator app, and a Set Up Two-Step Sign-In button."
+          caption="Two-Step Sign-In: one button starts it, and each person does it for their own account."
+        />
       </Section>
 
       <Section kicker="Staying informed" title="Notifications, each person’s own">
@@ -200,6 +211,12 @@ export const team: ChapterDef = {
           <Ui>Start of the day</Ui>. Owners and admins also get a <Ui>Weekly summary</Ui> email on
           Monday morning, which is on for owners and off for admins.
         </p>
+        <Browser
+          src="notifications"
+          url="sundeckpro.com/more/notifications"
+          alt="The website’s Notifications page: switches for Customer texts, New and moved jobs, Accepted quotes, Payments, Signed reports, Opened reports, Live Activity and Start of the day, an Email group with Weekly summary, and a Save button."
+          caption="Notifications: one switch for each kind of ping, then Save."
+        />
         <UseIt
           items={[
             {

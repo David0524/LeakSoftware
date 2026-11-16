@@ -22,9 +22,6 @@ import {
   WhyItMatters,
 } from "../kit";
 
-// WANT: invoices-month — /invoices/month/2026-10 (To Send list, desktop)
-// WANT: settings-payments — /settings/payments (Monthly invoices: Invoice Day, Send Automatically)
-
 export const billingDay: ChapterDef = {
   id: "billing-day",
   title: "Billing day",
@@ -128,9 +125,9 @@ export const billingDay: ChapterDef = {
         </Spread>
         <Browser
           src="invoices-month"
-          url="sundeckpro.com/invoices/month/2026-10"
-          alt="The website’s October Billing page: the To Send list with a customer, their lines, how each invoice will go, and the total, and a Send button at the bottom."
-          caption="The same page on a computer."
+          url="sundeckpro.com/invoices/month/2026-11"
+          alt="The website’s November Billing page: a To Send 7 and Sent 8 control, then a To Send list with each customer, Pool service, their email address and the total."
+          caption="The same page on a computer: one row per customer, with the total on the right."
         />
       </Section>
 
@@ -172,6 +169,12 @@ export const billingDay: ChapterDef = {
             That opens the invoice itself.
           </Step>
         </Steps>
+        <Browser
+          src="invoice-detail"
+          url="sundeckpro.com/invoices/month/2026-11"
+          alt="A customer’s draft opened over the November Billing page: Hector Lambert, November · $145.00, Lines with Pool service, November $145.00 and a Remove button, Add Charge, an Open Invoice button and Done."
+          caption="A draft opened: the lines, Remove, Add Charge and Open Invoice."
+        />
         <Tip title="Fix a missing email now, not after you send">
           A row in amber says it can’t be sent: no email and no mobile number. Open the customer,
           add one, and the row turns normal. Until then, that invoice stays a draft and the others
