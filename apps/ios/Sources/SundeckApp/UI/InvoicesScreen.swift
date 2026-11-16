@@ -39,16 +39,20 @@
             let manager = isManagerRole(company?.role)
             let timeZone = company?.timeZone ?? "America/Phoenix"
             List {
+                // The subtitle and the export buttons are separate rows: in a List, a row holding
+                // both cut off the subtitle's first character (owner, 2026-11-16: "3 open" read
+                // "ɜ open"; the screenshot probe showed it only with buttons in the row).
                 Section {
-                    PageHeader {
-                        Text(invoicesSubtitle(list))
-                    } actions: {
-                        if manager {
-                            Button("Export Invoices") { export("invoices") }.buttonStyle(.secondary)
-                            Button("Export Payments") { export("payments") }.buttonStyle(.secondary)
+                    PageHeader(subtitle: invoicesSubtitle(list)).plainListRow()
+                    if manager {
+                        ViewThatFits(in: .horizontal) {
+                            HStack(spacing: 12) { exportButtons }
+                            VStack(alignment: .leading, spacing: 12) { exportButtons }
                         }
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .padding(.top, 12)
+                        .plainListRow()
                     }
-                    .plainListRow()
                 }
                 // Monthly Billing (owner, 2026-11-15; was Maintenance to bill): pool shops' months
                 // with drafts to send or customers not invoiced yet.
@@ -165,6 +169,11 @@
             }
             .task(id: "\(sync.revision)|\(company?.id ?? "")") { reload() }
             .task { await loadMonths() }
+        }
+
+        @ViewBuilder private var exportButtons: some View {
+            Button("Export Invoices") { export("invoices") }.buttonStyle(.secondary)
+            Button("Export Payments") { export("payments") }.buttonStyle(.secondary)
         }
 
         private func reload() {

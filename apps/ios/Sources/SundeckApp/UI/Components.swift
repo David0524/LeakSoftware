@@ -39,6 +39,9 @@
     ///     } actions: {
     ///         Button("Open Route in Maps") { … }.buttonStyle(.secondary)
     ///     }
+    ///
+    /// In a `List`, don't give it actions: a row with text and buttons cuts off the text's first
+    /// character. Put the buttons in a row of their own (Invoices does).
     struct PageHeader<Subtitle: View, Actions: View>: View {
         @ViewBuilder var subtitle: Subtitle
         @ViewBuilder var actions: Actions

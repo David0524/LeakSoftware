@@ -1232,52 +1232,6 @@
             try await snapshot("46-invoices", NavigationStack { InvoicesScreen() }.app(env))
         }
 
-        /// TEMPORARY probe (2026-11-16): which part of the Invoices header clips the subtitle's
-        /// first character ("3 open" showed as "ɜ open"). Removed once found.
-        @Test func headerClipProbe() async throws {
-            let env = try sampleEnvironment()
-            struct Probe: View {
-                var search: Bool
-                var actions: Bool
-                var late: Bool
-                @State private var text = "Nothing owed right now."
-                @State private var q = ""
-                var body: some View {
-                    let list = List {
-                        Section {
-                            if actions {
-                                PageHeader {
-                                    Text(late ? text : "3 open · $1,485.00 owed")
-                                } actions: {
-                                    Button("Export Invoices") {}.buttonStyle(.secondary)
-                                    Button("Export Payments") {}.buttonStyle(.secondary)
-                                }
-                                .plainListRow()
-                            } else {
-                                PageHeader { Text(late ? text : "3 open · $1,485.00 owed") }.plainListRow()
-                            }
-                        }
-                    }
-                    .groupedList()
-                    .navigationTitle("Invoices")
-                    .navigationBarTitleDisplayMode(.large)
-                    .task { if late { text = "3 open · $1,485.00 owed" } }
-                    return Group {
-                        if search { list.searchable(text: $q, prompt: "Search") } else { list }
-                    }
-                }
-            }
-            for (name, search, actions, late) in [
-                ("a-search-actions", true, true, false), ("b-actions", false, true, false),
-                ("c-search", true, false, false), ("d-search-actions-late", true, true, true),
-                ("e-actions-late", false, true, true),
-            ] {
-                try await snapshot(
-                    "99-probe-\(name)", height: 500,
-                    NavigationStack { Probe(search: search, actions: actions, late: late) }.app(env))
-            }
-        }
-
         /// Monthly Billing (owner, 2026-11-15): a month's drafts with Send All.
         @Test func monthBilling() async throws {
             let env = try sampleEnvironment()
