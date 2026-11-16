@@ -1,8 +1,13 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Linking, View } from "react-native";
 import {
+  AUTOPAY_RETRY_CHOICES,
+  AUTOPAY_RETRY_DAY_CHOICES,
+  AUTOPAY_TEXT,
   AUTO_SEND_FOOTER,
   AUTO_SEND_LABEL,
+  autopaySettings,
+  payOverTimeOn,
   INVOICE_DAYS,
   INVOICE_DAY_FOOTER,
   offersPool,
@@ -12,6 +17,7 @@ import {
   shopInvoiceDay,
 } from "@leakbook/core";
 import type { JsonValue } from "@leakbook/sync";
+import { payOverTimeStatusLine } from "../../data/autopay";
 import { formChanged } from "../../lib/discard";
 import { API_URL } from "../../lib/config";
 import { getServices } from "../../lib/services";
@@ -49,8 +55,128 @@ function PaymentsPage() {
           onPress={() => void Linking.openURL(url)}
         />
       ) : null}
+      <AutopaySettings />
       {offersPool(company.settings) ? <InvoiceDay /> : null}
     </Screen>
+  );
+}
+
+/** A grouped row with a label and a switch, as the website's SSwitch. */
+function SwitchRow({
+  label,
+  value,
+  onChange,
+}: {
+  label: string;
+  value: boolean;
+  onChange: (v: boolean) => void;
+}) {
+  return (
+    <Group>
+      <View
+        style={{
+          flexDirection: "row",
+          alignItems: "center",
+          minHeight: 44,
+          paddingHorizontal: space["4"],
+          paddingVertical: space["2"],
+          gap: space["3"],
+        }}
+      >
+        <T style={{ flex: 1 }}>{label}</T>
+        <SwitchControl value={value} label={label} onValueChange={onChange} />
+      </View>
+    </Group>
+  );
+}
+
+/**
+ * Autopay and Pay Over Time (docs/design/2026-11-16-autopay.md), as the website's: the shop
+ * offers autopay, how failed automatic payments are tried again, and Affirm and Klarna, with
+ * whether Stripe has them on (asked from the server).
+ */
+function AutopaySettings() {
+  const company = useCompany();
+  const settings0 = company.settings as unknown as Record<string, unknown>;
+  const a = autopaySettings(settings0);
+  const saved = {
+    on: a.on,
+    retries: String(a.retries),
+    days: String(a.retryDays),
+    later: payOverTimeOn(settings0),
+  };
+  const [f, setF] = useState(saved);
+  const [start, setStart] = useState(saved);
+  const [notice, setNotice] = useState<string | null>(null);
+  const [status, setStatus] = useState<string | null>(null);
+  useUnsavedChanges(formChanged(start, f));
+  useEffect(() => {
+    let live = true;
+    void payOverTimeStatusLine(company.id).then((line) => live && setStatus(line));
+    return () => {
+      live = false;
+    };
+  }, [company.id, start.later]);
+  const set = <K extends keyof typeof f>(k: K, v: (typeof f)[K]) => {
+    setNotice(null);
+    setF((old) => ({ ...old, [k]: v }));
+  };
+
+  function save() {
+    const settings = company.settings as unknown as Record<string, JsonValue>;
+    getServices().sync.write("company", company.id, company.id, {
+      settings: {
+        ...settings,
+        autopay: f.on,
+        autopay_retries: Number(f.retries),
+        autopay_retry_days: Number(f.days),
+        pay_over_time: f.later,
+      },
+    });
+    haptics.success();
+    setStart(f);
+    setNotice("Saved.");
+  }
+
+  return (
+    <Section title="Autopay and pay over time">
+      <View style={{ gap: space["4"] }}>
+        {notice ? <Notice tone="success">{notice}</Notice> : null}
+        <View style={{ gap: space["2"] }}>
+          <SwitchRow label={AUTOPAY_TEXT.shopSwitch} value={f.on} onChange={(v) => set("on", v)} />
+          <T variant="footnote" muted>
+            {AUTOPAY_TEXT.shopFooter}
+          </T>
+        </View>
+        <Select
+          label={AUTOPAY_TEXT.retries}
+          value={f.retries}
+          onChange={(v) => set("retries", v)}
+          options={AUTOPAY_RETRY_CHOICES.map((c) => ({ value: String(c.value), label: c.label }))}
+        />
+        <Select
+          label={AUTOPAY_TEXT.retryEvery}
+          value={f.days}
+          onChange={(v) => set("days", v)}
+          options={AUTOPAY_RETRY_DAY_CHOICES.map((c) => ({
+            value: String(c.value),
+            label: c.label,
+          }))}
+          hint={AUTOPAY_TEXT.retriesFooter}
+        />
+        <View style={{ gap: space["2"] }}>
+          <SwitchRow
+            label={AUTOPAY_TEXT.payOverTime}
+            value={f.later}
+            onChange={(v) => set("later", v)}
+          />
+          <T variant="footnote" muted>
+            {`${AUTOPAY_TEXT.payOverTimeFooter}${status ? ` ${status}` : ""}`}
+          </T>
+        </View>
+        <Button title="Save" wide kind="secondary" onPress={save} />
+      </View>
+    </Section>
   );
 }
 

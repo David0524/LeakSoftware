@@ -265,6 +265,34 @@ export async function saveCardFee(_: FormState, form: FormData): Promise<FormSta
 }
 
 /**
+ * Autopay and Pay Over Time (docs/design/2026-11-16-autopay.md): the shop offers autopay, how
+ * failed automatic payments are tried again, and whether Affirm and Klarna are offered.
+ */
+export async function saveAutopaySettings(_: FormState, form: FormData): Promise<FormState> {
+  const { office, supabase } = await owner();
+  const retries = int(form, "autopay_retries", 2);
+  const days = int(form, "autopay_retry_days", 3);
+  if (retries < 0 || retries > 3) return { fields: { autopay_retries: "Pick Off or 1 to 3." } };
+  if (days < 1 || days > 14) return { fields: { autopay_retry_days: "Pick how often." } };
+  const { data: company, error: readError } = await supabase
+    .from("company")
+    .select("settings")
+    .eq("id", office.company.id)
+    .single();
+  if (readError) return failed(readError);
+  const settings = {
+    ...(company.settings as Record<string, unknown>),
+    autopay: checked(form, "autopay"),
+    autopay_retries: retries,
+    autopay_retry_days: days,
+    pay_over_time: checked(form, "pay_over_time"),
+  };
+  const { error } = await supabase.from("company").update({ settings }).eq("id", office.company.id);
+  if (error) return failed(error);
+  return done("/settings/payments");
+}
+
+/**
  * Monthly Invoices › Invoice Day (owner, 2026-11-15): the day of the next month each customer's
  * monthly invoice is drafted, 1 to 28.
  */

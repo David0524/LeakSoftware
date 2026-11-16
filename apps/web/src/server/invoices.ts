@@ -81,7 +81,13 @@ export async function createInvoice(db: SupabaseClient, jobId: string): Promise<
 export async function sendInvoice(
   db: SupabaseClient,
   invoiceId: string,
-  opts: { channel: InvoiceChannel; to?: string | null; origin: string },
+  opts: {
+    channel: InvoiceChannel;
+    to?: string | null;
+    origin: string;
+    /** The saved method autopay charges right after (server/autopay.ts), for the email. */
+    autopay?: string | null;
+  },
 ): Promise<SendInvoiceResult> {
   const to = opts.to?.trim() || null;
   if (opts.channel === "email") {
@@ -149,7 +155,11 @@ export async function sendInvoice(
       const greeting = d.customer?.name ? `Hi ${d.customer.name},` : "Hello,";
       const what = `Invoice${d.number ? ` #${d.number}` : ""} for ${formatCents(d.total_cents)}`;
       const due =
-        d.balance_cents > 0 ? `Amount due: ${formatCents(d.balance_cents)}.` : "Nothing is due.";
+        d.balance_cents <= 0
+          ? "Nothing is due."
+          : opts.autopay
+            ? `Amount due: ${formatCents(d.balance_cents)}, paid automatically with your ${opts.autopay}; there’s nothing to do.`
+            : `Amount due: ${formatCents(d.balance_cents)}.`;
       try {
         const email = await sendEmail({
           companyId: inv?.company_id as string,

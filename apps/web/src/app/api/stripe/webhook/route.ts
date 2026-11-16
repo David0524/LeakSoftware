@@ -1,4 +1,5 @@
 import { siteOrigin } from "@/lib/origin";
+import { autopayEvents } from "@/server/autopay";
 import { sendReceipt } from "@/server/invoices";
 import { BadSignature, PaymentsNotConfigured, applyEvent, verifyEvent } from "@/server/stripe";
 
@@ -14,8 +15,12 @@ export async function POST(request: Request) {
   }
   try {
     const origin = await siteOrigin();
-    const outcome = await applyEvent(event, undefined, (invoiceId) =>
-      sendReceipt(invoiceId, origin),
+    const outcome = await applyEvent(
+      event,
+      undefined,
+      (invoiceId) => sendReceipt(invoiceId, origin),
+      // Saved cards and bank accounts, and autopay's bank charges settling.
+      autopayEvents(origin),
     );
     return Response.json({ received: true, outcome });
   } catch (e) {

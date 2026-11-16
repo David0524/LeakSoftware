@@ -1,4 +1,5 @@
 import { adminClient } from "@/server/admin";
+import { retryAutopay } from "@/server/autopay";
 import { syncAllSubscriptionPrices } from "@/server/billing";
 import { runFollowups } from "@/server/followups";
 import { siteOrigin } from "@/lib/origin";
@@ -34,6 +35,10 @@ export async function GET(request: Request) {
   // 2026-11-16), after the drafting above.
   const autoSent = await sendDueMonthlyInvoices(admin, await siteOrigin(), when).catch(
     (e: unknown) => (e instanceof Error ? e.message : String(e)),
+  );
+  // Autopay charges that failed are tried again on the shop's schedule (2026-11-16-autopay.md).
+  const autopayRetries = await retryAutopay(admin, await siteOrigin(), when).catch((e: unknown) =>
+    e instanceof Error ? e.message : String(e),
   );
   // Customer links past their 180 days are turned off, so the next send makes a new one.
   const links = await admin.rpc("expire_share_links");
@@ -74,6 +79,7 @@ export async function GET(request: Request) {
     maintenanceVisits: error ? error.message : visits,
     monthlyInvoices: billed.error ? billed.error.message : billed.data,
     monthlyInvoicesSent: autoSent,
+    autopayRetries,
     visitReports: due.error ? due.error.message : visitReports,
     monthReports: months.error ? months.error.message : monthReports,
     usagePruned: usage.error ? usage.error.message : usage.data,

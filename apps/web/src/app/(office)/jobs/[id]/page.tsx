@@ -5,6 +5,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { Suspense } from "react";
 import {
+  cardFeeBps,
   directionsHref,
   visitReportMode,
   JOB_TYPE_LABELS,
@@ -104,6 +105,7 @@ import {
   getVisitChemicals,
   getPoolHistory,
   getCompany,
+  getSavedMethod,
   getInvoices,
   getJob,
   getPaymentAccount,
@@ -1420,6 +1422,15 @@ async function Invoices({ detail, only }: { detail: JobDetail; only?: string }) 
             emailReady={emailConfigured()}
             isOwner={office.isManager}
             role={office.company.role}
+            autopay={
+              office.isManager && job.customer
+                ? {
+                    method: await getSavedMethod(office, job.customer.id),
+                    feeBps: cardFeeBps(company.settings),
+                    customer: job.customer.name,
+                  }
+                : null
+            }
           />
         </div>
       ) : job.type === "maintenance" ? (

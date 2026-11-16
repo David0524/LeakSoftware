@@ -335,6 +335,9 @@
                     ForEach(card.payments, id: \.self) { Text($0).textRole(.secondary).foregroundStyle(Color.text) }
                 }
             }
+            InvoiceAutopayRows(
+                invoiceId: card.invoice.id, customerId: job.customer?["id"]?.string, customerName: job.customerName,
+                balanceCents: max(card.invoice.invoice.totalCents - card.invoice.invoice.amountPaidCents, 0))
             if let link = card.link {
                 CopyBox(label: "Customer link", text: link.absoluteString, monospaced: true)
             }

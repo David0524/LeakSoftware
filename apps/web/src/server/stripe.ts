@@ -2,7 +2,16 @@ import "server-only";
 import { notifyPaid } from "./notify-events";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import Stripe from "stripe";
-import { CARD_FEE_MAX_BPS, bpsToPercent, cardFeeBps, cardFeeCents } from "@leakbook/core";
+import {
+  CARD_FEE_MAX_BPS,
+  autopaySettings,
+  bpsToPercent,
+  cardFeeBps,
+  cardFeeCents,
+  payOverTimeMethods,
+  payOverTimeOn,
+  type PayLaterMethod,
+} from "@leakbook/core";
 import { adminClient } from "./admin";
 import { applyBillingEvent, finishOnboarding } from "./billing";
 
@@ -180,31 +189,188 @@ export type CheckoutStart =
 
 const PAYMENT_METHODS = ["card", "link", "us_bank_account"] as const;
 
-/** How the customer chose to pay when the shop passes on the card fee. */
-export type PayMethod = "card" | "bank";
+/**
+ * How the customer chose to pay when the shop passes on the card fee: card, bank, or (Pay Over
+ * Time) Affirm or Klarna, which carry no fee.
+ */
+export type PayMethod = "card" | "bank" | "later";
+
+// ---------------------------------------------------------------------------
+// Pay Over Time (docs/design/2026-11-16-autopay.md): Affirm and Klarna, only once Stripe has
+// them on for the shop's account. Sending a method that isn't active makes Checkout fail, so
+// the account's capabilities are read first, and kept for ten minutes.
+// ---------------------------------------------------------------------------
+
+export interface PayLaterActive {
+  affirm: boolean;
+  klarna: boolean;
+}
+
+const LATER_TTL_MS = 10 * 60 * 1000;
+const laterCache = new Map<string, { at: number; active: PayLaterActive }>();
+
+/** Which of Affirm and Klarna are active on the shop's account. Never throws. */
+export async function payLaterActive(stripe: Stripe, account: string): Promise<PayLaterActive> {
+  const hit = laterCache.get(account);
+  if (hit && Date.now() - hit.at < LATER_TTL_MS) return hit.active;
+  try {
+    const a = await stripe.accounts.retrieve(account);
+    const caps = (a.capabilities ?? {}) as Record<string, string | undefined>;
+    const active = {
+      affirm: caps.affirm_payments === "active",
+      klarna: caps.klarna_payments === "active",
+    };
+    laterCache.set(account, { at: Date.now(), active });
+    return active;
+  } catch {
+    // Not kept: the next page or payment asks Stripe again.
+    return { affirm: false, klarna: false };
+  }
+}
+
+/** For tests: forget what Stripe said. */
+export function forgetPayLater(): void {
+  laterCache.clear();
+}
+
+/** Affirm and Klarna for this amount: the shop offers them and Stripe has them on. */
+async function payLaterFor(
+  stripe: Stripe,
+  settings: unknown,
+  account: string,
+  amountCents: number,
+): Promise<PayLaterMethod[]> {
+  if (!payOverTimeOn(settings)) return [];
+  if (payOverTimeMethods(amountCents, { affirm: true, klarna: true }).length === 0) return [];
+  return payOverTimeMethods(amountCents, await payLaterActive(stripe, account));
+}
+
+/**
+ * What a customer's quote or invoice page offers: Affirm and Klarna for the amount, or none.
+ * Never throws; none when payments aren't set up.
+ */
+export async function payLaterOffer(
+  table: "quote" | "invoice",
+  id: string,
+  amountCents: number,
+): Promise<PayLaterMethod[]> {
+  const db = adminClient();
+  const stripe = stripeClient();
+  if (!db || !stripe) return [];
+  try {
+    const { data } = await db
+      .from(table)
+      .select(`company_id, company:company!${table}_company_id_fkey(settings)`)
+      .eq("id", id)
+      .maybeSingle();
+    if (!data) return [];
+    const { data: account } = await db
+      .from("stripe_account")
+      .select("stripe_account_id, charges_enabled")
+      .eq("company_id", data.company_id)
+      .maybeSingle();
+    if (!account?.charges_enabled) return [];
+    const settings = (data.company as { settings?: unknown } | null)?.settings;
+    return await payLaterFor(stripe, settings, account.stripe_account_id as string, amountCents);
+  } catch {
+    return [];
+  }
+}
+
+/**
+ * Settings › Payments and Deposits: which of Affirm and Klarna the shop's Stripe account has
+ * on, or null when it can't take payments yet. Never throws.
+ */
+export async function payLaterStatusFor(companyId: string): Promise<PayLaterActive | null> {
+  const db = adminClient();
+  const stripe = stripeClient();
+  if (!db || !stripe) return null;
+  const { data: account } = await db
+    .from("stripe_account")
+    .select("stripe_account_id, charges_enabled")
+    .eq("company_id", companyId)
+    .maybeSingle();
+  if (!account?.charges_enabled) return null;
+  return payLaterActive(stripe, account.stripe_account_id as string);
+}
 
 /**
  * The card fee (owner, 2026-10-19: "Pass on credit card fee to customer"). With the shop's fee
- * on, the customer picks card or bank first: card adds the fee as its own line, and bank has
- * none. With it off, one Checkout offers every method, as before.
+ * on, the customer picks card, bank or Pay Over Time first: card adds the fee as its own line,
+ * and the others have none. With it off, one Checkout offers every method, as before, plus
+ * Affirm and Klarna when they qualify. Saving for autopay offers card and bank only (Affirm,
+ * Klarna and Link can't be charged later).
  */
-async function feeTerms(
+async function payTerms(
+  stripe: Stripe,
   db: SupabaseClient,
   companyId: string,
+  account: string,
   amountCents: number,
   method: PayMethod | null,
+  save = false,
 ): Promise<{
   methods: Stripe.Checkout.SessionCreateParams.PaymentMethodType[];
   feeCents: number;
   bps: number;
+  settings: unknown;
 }> {
   const { data } = await db.from("company").select("settings").eq("id", companyId).single();
-  const bps = cardFeeBps(data?.settings);
-  if (bps === 0) return { methods: [...PAYMENT_METHODS], feeCents: 0, bps };
-  if (method === "bank") return { methods: ["us_bank_account"], feeCents: 0, bps };
+  const settings = data?.settings;
+  const bps = cardFeeBps(settings);
+  if (method === "later") {
+    const later = await payLaterFor(stripe, settings, account, amountCents);
+    if (later.length === 0)
+      throw new CheckoutRefused("Paying over time isn’t available for this amount.");
+    return { methods: later, feeCents: 0, bps, settings };
+  }
+  if (save) {
+    if (bps === 0) return { methods: ["card", "us_bank_account"], feeCents: 0, bps, settings };
+    if (method === "bank") return { methods: ["us_bank_account"], feeCents: 0, bps, settings };
+    if (method === "card")
+      return { methods: ["card"], feeCents: cardFeeCents(amountCents, bps), bps, settings };
+    throw new CheckoutRefused("Choose card or bank account.");
+  }
+  if (bps === 0) {
+    const later = await payLaterFor(stripe, settings, account, amountCents);
+    return { methods: [...PAYMENT_METHODS, ...later], feeCents: 0, bps, settings };
+  }
+  if (method === "bank") return { methods: ["us_bank_account"], feeCents: 0, bps, settings };
   if (method === "card")
-    return { methods: ["card", "link"], feeCents: cardFeeCents(amountCents, bps), bps };
+    return { methods: ["card", "link"], feeCents: cardFeeCents(amountCents, bps), bps, settings };
   throw new CheckoutRefused("Choose card or bank account.");
+}
+
+/**
+ * The customer's Stripe Customer on the shop's account, made the first time (saving a card for
+ * autopay needs one).
+ */
+export async function stripeCustomerFor(
+  stripe: Stripe,
+  db: SupabaseClient,
+  account: string,
+  customer: { id: string; name: string | null; email: string | null },
+  companyId: string,
+): Promise<string> {
+  const existing = await rpc<string | null>(db, "stripe_customer_for", {
+    target_customer: customer.id,
+    account,
+  });
+  if (existing) return existing;
+  const made = await stripe.customers.create(
+    {
+      name: customer.name ?? undefined,
+      email: customer.email ?? undefined,
+      metadata: { customer_id: customer.id, company_id: companyId },
+    },
+    { stripeAccount: account, idempotencyKey: `customer-${customer.id}-${account}` },
+  );
+  await rpc(db, "stripe_save_customer", {
+    target_customer: customer.id,
+    account,
+    stripe_customer: made.id,
+  });
+  return made.id;
 }
 
 /** The shop's card fee for a customer's quote or invoice page (0 when off or unknown). */
@@ -229,33 +395,44 @@ const feeLine = (feeCents: number, bps: number) => ({
   },
 });
 
-async function startCheckout(
+export async function startCheckout(
   stripe: Stripe,
   account: string,
   pagePath: string,
   key: string | null,
   params: Pick<
     Stripe.Checkout.SessionCreateParams,
-    "line_items" | "customer_email" | "metadata" | "payment_intent_data"
-  > & { methods?: Stripe.Checkout.SessionCreateParams.PaymentMethodType[] },
+    | "line_items"
+    | "customer_email"
+    | "customer"
+    | "metadata"
+    | "payment_intent_data"
+    | "setup_intent_data"
+  > & {
+    methods?: Stripe.Checkout.SessionCreateParams.PaymentMethodType[];
+    /** "setup" saves a card or bank account without paying (Request Card on File). */
+    mode?: "payment" | "setup";
+    /** What the page is told on the way back: ?paid=1, or ?saved=1 after saving. */
+    back?: string;
+  },
 ): Promise<CheckoutStart> {
-  const { methods, ...rest } = params;
+  const { methods, mode = "payment", back = "paid=1", ...rest } = params;
   const base = {
-    mode: "payment" as const,
+    mode,
     payment_method_types: methods ?? [...PAYMENT_METHODS],
     ...rest,
   };
   if (key) {
     // After paying, Stripe sends the customer back to the same page, as the hosted flow does.
     const session = await stripe.checkout.sessions.create(
-      { ...base, ui_mode: "embedded_page", return_url: `${pagePath}?paid=1` },
+      { ...base, ui_mode: "embedded_page", return_url: `${pagePath}?${back}` },
       { stripeAccount: account },
     );
     if (!session.client_secret) throw new Error("Stripe did not return a checkout session.");
     return { kind: "embedded", clientSecret: session.client_secret, account, publishableKey: key };
   }
   const session = await stripe.checkout.sessions.create(
-    { ...base, success_url: `${pagePath}?paid=1`, cancel_url: pagePath },
+    { ...base, success_url: `${pagePath}?${back}`, cancel_url: pagePath },
     { stripeAccount: account },
   );
   if (!session.url) throw new Error("Stripe did not return a checkout page.");
@@ -296,7 +473,14 @@ export async function depositCheckout(
   if (q.deposit_cents <= 0) throw new CheckoutRefused("This quote has no deposit to pay.");
   if (!q.stripe_account_id || !q.charges_enabled)
     throw new CheckoutRefused(`${q.company_name} can’t take online payments yet.`);
-  const fee = await feeTerms(d.db, q.company_id, q.deposit_cents, method);
+  const fee = await payTerms(
+    d.stripe,
+    d.db,
+    q.company_id,
+    q.stripe_account_id,
+    q.deposit_cents,
+    method,
+  );
   const metadata = {
     kind: "quote_deposit",
     quote_id: q.quote_id,
@@ -349,6 +533,8 @@ export async function invoiceCheckout(
   db?: SupabaseClient | null,
   key: string | null = publishableKey(),
   method: PayMethod | null = null,
+  /** Save for Autopay: the card or bank account is kept for the shop to charge later. */
+  save = false,
 ): Promise<CheckoutStart> {
   const d = deps(stripe, db);
   const i = await rpc<InvoiceCheckoutDetails | null>(d.db, "invoice_checkout_details", {
@@ -363,12 +549,42 @@ export async function invoiceCheckout(
   if (i.payment_pending) throw new CheckoutRefused("A payment is already processing.");
   if (!i.stripe_account_id || !i.charges_enabled)
     throw new CheckoutRefused(`${i.company_name} can’t take online payments yet.`);
-  const fee = await feeTerms(d.db, i.company_id, i.balance_cents, method);
+  const saving = save && method !== "later";
+  const fee = await payTerms(
+    d.stripe,
+    d.db,
+    i.company_id,
+    i.stripe_account_id,
+    i.balance_cents,
+    method,
+    saving,
+  );
+  // Save for Autopay: a Stripe Customer on the shop's account pays, and the method is kept for
+  // later (the webhook saves its summary and turns autopay on).
+  let customer: string | undefined;
+  if (saving) {
+    if (!autopaySettings(fee.settings).on)
+      throw new CheckoutRefused(`${i.company_name} doesn’t offer autopay.`);
+    const a = await rpc<{ customer: { id: string; name: string; email: string | null } | null }>(
+      d.db,
+      "autopay_details",
+      { target_invoice: i.invoice_id },
+    );
+    if (!a?.customer) throw new CheckoutRefused("This invoice has no customer to save a card for.");
+    customer = await stripeCustomerFor(
+      d.stripe,
+      d.db,
+      i.stripe_account_id,
+      a.customer,
+      i.company_id,
+    );
+  }
   const metadata = {
     kind: "invoice_payment",
     invoice_id: i.invoice_id,
     company_id: i.company_id,
     ...(fee.feeCents ? { card_fee_cents: String(fee.feeCents) } : {}),
+    ...(customer ? { save_for_autopay: "1" } : {}),
   };
   return startCheckout(d.stripe, i.stripe_account_id, `${origin}/i/${token}`, key, {
     methods: fee.methods,
@@ -385,9 +601,63 @@ export async function invoiceCheckout(
       },
       ...(fee.feeCents ? [feeLine(fee.feeCents, fee.bps)] : []),
     ],
-    customer_email: i.customer_email ?? undefined,
+    ...(customer ? { customer } : { customer_email: i.customer_email ?? undefined }),
     metadata,
-    payment_intent_data: { metadata },
+    payment_intent_data: customer ? { metadata, setup_future_usage: "off_session" } : { metadata },
+  });
+}
+
+// ---------------------------------------------------------------------------
+// Request Card on File (customers, from /card/<token>): save without paying
+// ---------------------------------------------------------------------------
+
+interface CardRequestDetails {
+  company_id: string;
+  customer_id: string;
+  customer_name: string;
+  customer_email: string | null;
+  company: { name: string };
+  stripe_account_id: string | null;
+  charges_enabled: boolean;
+}
+
+/**
+ * A Checkout Session in setup mode on the shop's account: the customer saves a card or US bank
+ * account for autopay and pays nothing now. The webhook saves its summary and turns autopay on.
+ */
+export async function cardSetupCheckout(
+  token: string,
+  origin: string,
+  stripe?: Stripe | null,
+  db?: SupabaseClient | null,
+  key: string | null = publishableKey(),
+): Promise<CheckoutStart> {
+  const d = deps(stripe, db);
+  const r = await rpc<CardRequestDetails | null>(d.db, "card_request_details", {
+    link_token: token,
+  });
+  if (!r) throw new CheckoutRefused("This link is no longer valid. Ask for a new one.");
+  if (!r.stripe_account_id || !r.charges_enabled)
+    throw new CheckoutRefused(`${r.company.name} can’t take online payments yet.`);
+  const customer = await stripeCustomerFor(
+    d.stripe,
+    d.db,
+    r.stripe_account_id,
+    { id: r.customer_id, name: r.customer_name, email: r.customer_email },
+    r.company_id,
+  );
+  const metadata = {
+    kind: "save_payment_method",
+    customer_id: r.customer_id,
+    company_id: r.company_id,
+  };
+  return startCheckout(d.stripe, r.stripe_account_id, `${origin}/card/${token}`, key, {
+    mode: "setup",
+    back: "saved=1",
+    methods: ["card", "us_bank_account"],
+    customer,
+    metadata,
+    setup_intent_data: { metadata },
   });
 }
 
@@ -443,6 +713,11 @@ export async function applyEvent(
   db?: SupabaseClient | null,
   /** Called once when a payment makes an invoice paid in full (the receipt email). */
   onInvoicePaid?: (invoiceId: string) => Promise<unknown>,
+  /**
+   * Autopay's part of an event (server/autopay.ts): saving a card or bank account, and bank
+   * charges settling. True when it applied something.
+   */
+  extra?: (event: Stripe.Event, db: SupabaseClient) => Promise<boolean>,
 ): Promise<WebhookOutcome> {
   const d = db === undefined ? adminClient() : db;
   if (!d) throw new PaymentsNotConfigured();
@@ -513,6 +788,7 @@ export async function applyEvent(
       break;
     }
   }
+  if (extra && (await extra(event, d))) outcome = "applied";
   await rpc(d, "stripe_claim_event", { event_id: event.id, event_type: event.type });
   return outcome;
 }

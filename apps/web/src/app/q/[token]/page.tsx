@@ -1,12 +1,20 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { Suspense } from "react";
-import { cardFeeChoice, formatCents, lineTotal, textOnBrand, dateFormat } from "@leakbook/core";
+import {
+  cardFeeChoice,
+  formatCents,
+  lineTotal,
+  payOverTimeButton,
+  payOverTimeLine,
+  textOnBrand,
+  dateFormat,
+} from "@leakbook/core";
 import { tokens } from "@leakbook/tokens";
 import { AcceptForm, PayDepositForm } from "@/components/quote-actions";
 import { cx } from "@/components/ui";
 import { publicClient } from "@/server/reports";
-import { cardFeeFor, paymentsConfigured } from "@/server/stripe";
+import { cardFeeFor, payLaterOffer, paymentsConfigured } from "@/server/stripe";
 import { ContactLine } from "@/components/contact-line";
 import {
   Banner,
@@ -98,6 +106,11 @@ async function QuotePage({ params, searchParams }: PageProps<"/q/[token]">) {
   if (!q) notFound();
   // The shop passes the card fee on: card or bank, chosen before paying (owner, 2026-10-19).
   const feeBps = paymentsConfigured() && q.can_pay ? await cardFeeFor("quote", q.quote_id) : 0;
+  // Pay Over Time (docs/design/2026-11-16-autopay.md): Affirm or Klarna for the deposit.
+  const laterLine =
+    paymentsConfigured() && q.can_pay && q.deposit_cents > 0
+      ? payOverTimeLine(await payLaterOffer("quote", q.quote_id, q.deposit_cents))
+      : null;
 
   const c = q.company;
   const tz = c.timezone;
@@ -273,6 +286,11 @@ async function QuotePage({ params, searchParams }: PageProps<"/q/[token]">) {
                 demo={!paymentsConfigured()}
                 print={isPrint}
                 cardFee={feeBps ? cardFeeChoice(q.deposit_cents, feeBps, " Deposit") : null}
+                later={
+                  laterLine
+                    ? { line: laterLine, button: payOverTimeButton(q.deposit_cents, " Deposit") }
+                    : null
+                }
               />
             ) : q.deposit_cents > 0 ? (
               <p>

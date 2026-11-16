@@ -68,7 +68,7 @@ export async function payDeposit(_: PayState, form: FormData): Promise<PayState>
       undefined,
       undefined,
       undefined,
-      method === "card" || method === "bank" ? method : null,
+      method === "card" || method === "bank" || method === "later" ? method : null,
     );
   } catch (e) {
     if (e instanceof CheckoutRefused || e instanceof PaymentsNotConfigured)

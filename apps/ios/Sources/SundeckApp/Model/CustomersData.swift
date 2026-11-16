@@ -266,6 +266,8 @@ public struct CustomerDetail: Equatable, Sendable {
     public var notes: String?
     public var remindersOn: Bool
     public var pools: [CustomerPool]
+    /// Charged automatically with a saved card (server-written; 2026-11-16-autopay.md).
+    public var autopay = false
 
     /// "Homeowner · Blue Wave Pools".
     public var subtitle: String { [customerKindLabel(kind), companyName].compactMap { $0 }.joined(separator: " · ") }
@@ -324,7 +326,7 @@ public func customerDetail(
         id: c.id, row: c, name: c["name"]?.string ?? "Customer", kind: c["kind"]?.string ?? "homeowner",
         companyName: trimmed(c["company_name"]), phone: trimmed(c["phone"]), email: trimmed(c["email"]),
         otherEmails: c["cc_emails"]?.array?.compactMap(\.string) ?? [], notes: trimmed(c["notes"]),
-        remindersOn: c["marketing_opt_out"]?.bool != true, pools: pools)
+        remindersOn: c["marketing_opt_out"]?.bool != true, pools: pools, autopay: c["autopay"]?.bool == true)
 }
 
 /// Edits to a customer and their pools, through the sync layer (row + outbox).

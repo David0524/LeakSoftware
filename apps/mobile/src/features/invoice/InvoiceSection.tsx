@@ -45,6 +45,7 @@ import { useDraft } from "../../ui/useDraft";
 import { useLine } from "../../data/texting";
 import { RecordPayment, SendReceiptSheet } from "./Receipt";
 import { shareLink } from "../../lib/shareLink";
+import { InvoiceAutopay } from "../autopay/AutopayGroup";
 
 const INVOICEABLE = ["in_progress", "report_sent", "quote_sent", "quote_accepted", "invoiced"];
 
@@ -253,6 +254,12 @@ function InvoiceCard({ invoice, customer }: { invoice: JobInvoice; customer?: Cu
               ))}
             </View>
           ) : null}
+          <InvoiceAutopay
+            invoice={invoice}
+            customer={customer}
+            balanceCents={balance}
+            canCharge={manager}
+          />
           {link && invoice.status !== "void" ? (
             <LinkRow url={link} message={invoiceShareText(company.name, link)} />
           ) : null}

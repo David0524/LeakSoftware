@@ -44,6 +44,7 @@ import { monthlyBilling } from "./cases/monthly-billing";
 import { chemistryTrends } from "./cases/chemistry-trends";
 import { skipVisit } from "./cases/skip-visit";
 import { feedback } from "./cases/feedback";
+import { autopay } from "./cases/autopay";
 
 /** One fixture file per entry: apps/ios/Tests/Fixtures/<name>.json. */
 export const modules: Record<string, ModuleCases> = {
@@ -79,6 +80,7 @@ export const modules: Record<string, ModuleCases> = {
   "signed-out": signedOut,
   "heard-from": heardFrom,
   "pool-equipment": poolEquipment,
+  autopay,
   "terms-consent": termsConsent,
   "setup-gate": setupGate,
   password,

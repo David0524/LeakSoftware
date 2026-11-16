@@ -17,6 +17,7 @@ export default function robots(): MetadataRoute.Robots {
         "/auth/",
         "/in-app/",
         "/invite/",
+        "/card/",
         "/i/",
         "/f/",
         "/q/",
