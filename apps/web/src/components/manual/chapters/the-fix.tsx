@@ -320,7 +320,9 @@ export const theFix: ChapterDef = {
           And if your shop has a review link set in{" "}
           <Path items={["Settings", "Company and Branding"]} />, Sundeck Pro asks Maria for a review
           once, by email, soon after the job is paid: while the pool is holding water and she still
-          remembers who fixed it.
+          remembers who fixed it. With Ask How We Did First on, the email asks for a thumbs up or
+          down first. A thumbs up leads to the review; a thumbs down stays with you, under Customer
+          Feedback.
         </p>
         <UseIt
           items={[

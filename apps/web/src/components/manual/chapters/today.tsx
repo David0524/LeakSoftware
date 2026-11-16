@@ -266,7 +266,7 @@ export const today: ChapterDef = {
                 ? [
                     {
                       who: "Locked gate",
-                      text: "The Hendersons’ side gate is padlocked. Do Later, carry on, and come back after lunch when they’re home.",
+                      text: "The Hendersons’ side gate is padlocked. Do Later, carry on, and come back after lunch when they’re home. If nobody will be home today, Skip Visit instead, with Locked Gate as the reason.",
                     },
                     {
                       who: "Customer request",
