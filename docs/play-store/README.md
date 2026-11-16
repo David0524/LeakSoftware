@@ -156,3 +156,19 @@ fails, send Claude the run's link.
   Google reviews it (usually 1 to 7 days for a new app). Before this step the screenshots must
   be real Android captures (`listing.md`).
 - Send Claude: "Android is live" (or the rejection email, word for word, if Google refuses it).
+
+## 10. Updates
+
+Each update: Actions › Android › Run workflow (with "Upload to Google Play" off until the
+service account in step 8 exists), download the `.aab` from the run's summary, then Test and
+release › **Internal testing › Create new release** › upload it › release notes ›
+**Start rollout**, and promote the same release to Production when it's tested.
+
+**1.0.1** (2026-11-16) release notes, en-US (500 characters):
+
+```text
+Monthly Billing: review every pool customer's monthly invoice in one place and send them all at once.
+Charges on visits: add a part or service, like a skimmer basket or filter cleaning, right on the visit.
+Invoice day: choose the day each customer's monthly invoice is made.
+Invoices can also send themselves on the invoice day (Settings › Payments).
+```

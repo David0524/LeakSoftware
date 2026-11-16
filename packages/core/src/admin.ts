@@ -50,6 +50,8 @@ export interface AdminShop {
   /** "How did you hear about us?" at sign-up (heard-from.ts); null when not answered. */
   heard_from: string | null;
   heard_from_other: string | null;
+  /** Sundeck Pro's own shop (demo, App Review, tests): left out of the portal's counts and money. */
+  internal?: boolean;
 }
 
 /**

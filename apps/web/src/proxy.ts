@@ -66,7 +66,7 @@ export async function proxy(request: NextRequest) {
   if (
     !["GET", "HEAD", "OPTIONS"].includes(request.method) &&
     (request.headers.has("next-action") || path.startsWith("/api/")) &&
-    !path.startsWith("/admin") &&
+    !path.startsWith("/k4cs4uxrntb27z") &&
     !path.startsWith("/api/admin/")
   ) {
     const token = request.headers.get("authorization")?.match(/^Bearer\s+(.+)$/i)?.[1];

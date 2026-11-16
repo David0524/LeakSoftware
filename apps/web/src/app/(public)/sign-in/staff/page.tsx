@@ -27,8 +27,8 @@ export default function StaffSignInPage() {
 
 async function StaffSignInBody() {
   const user = await getUser();
-  if (!user) redirect("/sign-in?next=/admin");
-  if (isStaff(user)) redirect("/admin");
+  if (!user) redirect("/sign-in?next=/k4cs4uxrntb27z");
+  if (isStaff(user)) redirect("/k4cs4uxrntb27z");
   return (
     <div className="space-y-4">
       <p>
@@ -42,7 +42,7 @@ async function StaffSignInBody() {
         </Banner>
       )}
       <form action="/auth/sign-out" method="post">
-        <input type="hidden" name="next" value="/sign-in?next=/admin" />
+        <input type="hidden" name="next" value="/sign-in?next=/k4cs4uxrntb27z" />
         <Button type="submit" className="w-full">
           Sign Out and Switch
         </Button>

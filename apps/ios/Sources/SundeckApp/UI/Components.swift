@@ -39,6 +39,9 @@
     ///     } actions: {
     ///         Button("Open Route in Maps") { … }.buttonStyle(.secondary)
     ///     }
+    ///
+    /// In a `List`, don't give it actions: a row with text and buttons cuts off the text's first
+    /// character. Put the buttons in a row of their own (Invoices does).
     struct PageHeader<Subtitle: View, Actions: View>: View {
         @ViewBuilder var subtitle: Subtitle
         @ViewBuilder var actions: Actions
@@ -50,8 +53,14 @@
                     .foregroundStyle(Color.textMuted)
                 // No actions, no row: an empty one still took the 12 pt gap above it (owner,
                 // 2026-10-22: "On the tech's page there is empty space").
+                // Side by side when they fit, else one above the other: a row wider than the
+                // screen stretched the header past both edges and cut off the subtitle's first
+                // character (owner, 2026-11-16: Invoices' "3 open" read "ɜ open").
                 if Actions.self != EmptyView.self {
-                    HStack(spacing: 12) { actions }
+                    ViewThatFits(in: .horizontal) {
+                        HStack(spacing: 12) { actions }
+                        VStack(alignment: .leading, spacing: 12) { actions }
+                    }
                 }
             }
             .frame(maxWidth: .infinity, alignment: .leading)

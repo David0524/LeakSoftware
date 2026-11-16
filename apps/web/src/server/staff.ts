@@ -1,7 +1,7 @@
 import "server-only";
 import { redirect } from "next/navigation";
 import { cache } from "react";
-import type { AdminShop, SubscriptionEvent } from "@leakbook/core";
+import type { AdminShop, CompanyCost, SubscriptionEvent } from "@leakbook/core";
 import { getUser } from "@/lib/auth";
 import { adminClient } from "./admin";
 import { isStaff } from "./leads";
@@ -21,7 +21,7 @@ export interface Staff {
  * Signed-out visitors go to sign-in; other accounts to a page that says so and offers a switch.
  */
 export const staffGate = cache(
-  async (next = "/admin"): Promise<{ staff: Staff } | { needsTwoStep: true }> => {
+  async (next = "/k4cs4uxrntb27z"): Promise<{ staff: Staff } | { needsTwoStep: true }> => {
     const user = await getUser();
     if (!user) redirect(`/sign-in?next=${encodeURIComponent(next)}`);
     if (!isStaff(user)) redirect("/sign-in/staff");
@@ -63,7 +63,12 @@ export type StaffActionKind =
   | "two_step_off"
   | "password_reset"
   | "note"
-  | "export";
+  | "export"
+  | "internal_on"
+  | "internal_off"
+  | "cost_add"
+  | "cost_change"
+  | "cost_delete";
 
 /** Writes the staff log (public.staff_action), which no one can change afterwards. */
 export async function logStaffAction(
@@ -98,7 +103,18 @@ export async function logStaffAction(
 // Reads
 // ---------------------------------------------------------------------------
 
-export const loadShops = cache(() => rpc<AdminShop[]>("admin_shops"));
+const loadAllShops = cache(() => rpc<AdminShop[]>("admin_shops"));
+
+/**
+ * The shops the portal counts: every shop but Sundeck Pro's own (owner, 2026-11-16: "show 0
+ * users"; "Do not include this on our finances"). Ours are under Shops › Internal.
+ */
+export const loadShops = cache(async () => (await loadAllShops()).filter((s) => !s.internal));
+
+/** Sundeck Pro's own shops (demo, App Review, tests), left out of every count. */
+export const loadInternalShops = cache(async () =>
+  (await loadAllShops()).filter((s) => s.internal),
+);
 
 export interface TeamMember {
   user_id: string;
@@ -197,10 +213,14 @@ export interface PersonRow {
   two_step: boolean;
   shops: { company_id: string; company_name: string; role: string; status: string }[];
   apps: string[];
+  /** Ours (marked, or only in internal shops): left out of the counts. */
+  internal: boolean;
 }
 
-export function loadPeople(search: string) {
-  return rpc<PersonRow[]>("admin_people", { search: search.slice(0, 100) || null });
+/** Everyone the portal counts, or with `internal`, Sundeck Pro's own accounts. */
+export async function loadPeople(search: string, internal = false) {
+  const rows = await rpc<PersonRow[]>("admin_people", { search: search.slice(0, 100) || null });
+  return rows.filter((p) => Boolean(p.internal) === internal);
 }
 
 export interface PersonDetail extends Omit<PersonRow, "apps"> {
@@ -223,11 +243,18 @@ export interface PersonDetail extends Omit<PersonRow, "apps"> {
     revoked_at: string | null;
   }[];
   lead: { created_at: string; contacted_at: string | null; notes: string | null } | null;
+  /** Marked internal themselves (not only through their shops). */
+  marked_internal: boolean;
 }
 
 export async function loadPerson(id: string): Promise<PersonDetail | null> {
   if (!/^[0-9a-f-]{36}$/i.test(id)) return null;
-  return rpc<PersonDetail | null>("admin_person", { target: id });
+  const [person, mark] = await Promise.all([
+    rpc<Omit<PersonDetail, "marked_internal"> | null>("admin_person", { target: id }),
+    db().from("admin_internal").select("id").eq("user_ref", id).maybeSingle(),
+  ]);
+  if (mark.error) throw staffFailure(mark.error.message, "internal mark");
+  return person ? { ...person, marked_internal: Boolean(mark.data) } : null;
 }
 
 export interface Metrics {
@@ -251,6 +278,19 @@ export interface Metrics {
   leads_to_call: number;
   subscription_events: SubscriptionEvent[];
 }
+
+/** What Sundeck Pro pays for (services and expenses), for Finances › Company. */
+export const loadCosts = cache(async () => {
+  const { data, error } = await db()
+    .from("company_cost")
+    .select(
+      "id, name, category, amount_cents, repeats, spent_on, ended_on, paid_by, note, created_by, created_at",
+    )
+    .order("spent_on", { ascending: false })
+    .limit(2000);
+  if (error) throw staffFailure(error.message, "company costs");
+  return data as CompanyCost[];
+});
 
 export const loadMetrics = cache(() => rpc<Metrics>("admin_metrics"));
 

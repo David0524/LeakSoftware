@@ -26,7 +26,7 @@ export const FEATURE_REQUEST_THANKS = "Thanks! We read every request.";
 
 /**
  * Request a Feature (owner, 2026-10-19), from the website and the apps: saved to Sundeck
- * Pro's list (/admin/requests) and emailed to the office. Either is enough.
+ * Pro's list (/k4cs4uxrntb27z/requests) and emailed to the office. Either is enough.
  */
 export async function recordFeatureRequest(
   input: FeatureRequestInput,

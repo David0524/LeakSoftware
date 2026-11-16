@@ -7,31 +7,31 @@ import { cx } from "@/components/ui";
 const SECTIONS: { title?: string; links: { href: string; label: string }[] }[] = [
   {
     links: [
-      { href: "/admin", label: "Overview" },
-      { href: "/admin/shops", label: "Shops" },
-      { href: "/admin/people", label: "People" },
-      { href: "/admin/usage", label: "Usage" },
-      { href: "/admin/finances", label: "Finances" },
+      { href: "/k4cs4uxrntb27z", label: "Overview" },
+      { href: "/k4cs4uxrntb27z/shops", label: "Shops" },
+      { href: "/k4cs4uxrntb27z/people", label: "People" },
+      { href: "/k4cs4uxrntb27z/usage", label: "Usage" },
+      { href: "/k4cs4uxrntb27z/finances", label: "Finances" },
     ],
   },
   {
     title: "Help",
     links: [
-      { href: "/admin/support", label: "Support" },
-      { href: "/admin/health", label: "Health" },
+      { href: "/k4cs4uxrntb27z/support", label: "Support" },
+      { href: "/k4cs4uxrntb27z/health", label: "Health" },
     ],
   },
   {
     title: "Growth",
     links: [
-      { href: "/admin/leads", label: "Leads" },
-      { href: "/admin/requests", label: "Feature Requests" },
-      { href: "/admin/import", label: "Import for a Shop" },
+      { href: "/k4cs4uxrntb27z/leads", label: "Leads" },
+      { href: "/k4cs4uxrntb27z/requests", label: "Feature Requests" },
+      { href: "/k4cs4uxrntb27z/import", label: "Import for a Shop" },
     ],
   },
   {
     title: "Records",
-    links: [{ href: "/admin/activity", label: "Activity Log" }],
+    links: [{ href: "/k4cs4uxrntb27z/activity", label: "Activity Log" }],
   },
 ];
 
@@ -44,7 +44,9 @@ export function CurrentSidebar() {
 export function AdminSidebar({ path }: { path: string | null }) {
   const current = (href: string) =>
     path !== null &&
-    (href === "/admin" ? path === "/admin" : path === href || path.startsWith(`${href}/`));
+    (href === "/k4cs4uxrntb27z"
+      ? path === "/k4cs4uxrntb27z"
+      : path === href || path.startsWith(`${href}/`));
   return (
     <nav aria-label="Admin" className="flex flex-col gap-5">
       {SECTIONS.map((s, i) => (

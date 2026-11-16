@@ -11,6 +11,7 @@ import {
   shopStanding,
 } from "@leakbook/core";
 import { DemoToggle, ExtendTrial, OpenShop, ShopNoteForm } from "@/components/admin/actions";
+import { InternalToggle } from "@/components/admin/costs";
 import {
   Facts,
   fmtBytes,
@@ -61,7 +62,10 @@ const LIMITED = [
 ] as const;
 
 /** One shop, for helping it: who, what it pays, its team, how it uses Sundeck Pro, support. */
-export default function ShopPage({ params, searchParams }: PageProps<"/admin/shops/[id]">) {
+export default function ShopPage({
+  params,
+  searchParams,
+}: PageProps<"/k4cs4uxrntb27z/shops/[id]">) {
   return (
     <Suspense fallback={<div className="h-96" aria-label="Loading" />}>
       <Shop params={params} searchParams={searchParams} />
@@ -72,10 +76,10 @@ export default function ShopPage({ params, searchParams }: PageProps<"/admin/sho
 async function Shop({
   params,
   searchParams,
-}: Pick<PageProps<"/admin/shops/[id]">, "params" | "searchParams">) {
+}: Pick<PageProps<"/k4cs4uxrntb27z/shops/[id]">, "params" | "searchParams">) {
   const { id } = await params;
   const days = usagePeriod((await searchParams).days);
-  const gate = await staffGate(`/admin/shops/${id}`);
+  const gate = await staffGate(`/k4cs4uxrntb27z/shops/${id}`);
   if ("needsTwoStep" in gate) return <TwoStepNeeded title="Shop" />;
   const [d, origin, usage] = await Promise.all([
     loadShop(id),
@@ -102,13 +106,14 @@ async function Shop({
     <>
       <PageHeader
         title={s.name}
-        back={{ href: "/admin/shops", label: "Shops" }}
+        back={{ href: "/k4cs4uxrntb27z/shops", label: "Shops" }}
         subtitle={
           <span className="flex flex-wrap items-center gap-2">
             <StandingPill standing={standing} />
             {s.locked ? (
               <Pill className="bg-status-warning/14 text-status-warning">Read-Only</Pill>
             ) : null}
+            {s.internal ? <Pill className="bg-text/[0.08] text-text-muted">Internal</Pill> : null}
             <span>
               {servicesLabel(s.services)} · {s.people} {s.people === 1 ? "person" : "people"} ·{" "}
               {formatCents(shopPriceCents(s))} a month · Signed up {fmtDate(s.created_at)}
@@ -119,6 +124,7 @@ async function Shop({
           <>
             {standing !== "demo" && !stripeBills ? <ExtendTrial companyId={s.id} /> : null}
             {!stripeBills ? <DemoToggle companyId={s.id} demo={standing === "demo"} /> : null}
+            <InternalToggle kind="shop" id={s.id} internal={Boolean(s.internal)} />
             <OpenShop companyId={s.id} name={s.name} />
           </>
         }
@@ -158,7 +164,7 @@ async function Shop({
                     <span>
                       {s.owner_id ? (
                         <Link
-                          href={`/admin/people/${s.owner_id}`}
+                          href={`/k4cs4uxrntb27z/people/${s.owner_id}`}
                           className="text-link hover:underline"
                         >
                           {s.owner_name ?? s.owner_email}
@@ -418,7 +424,7 @@ async function Shop({
             </h2>
             <p className="text-text-muted">How this shop’s people use Sundeck Pro.</p>
           </div>
-          <PeriodControl days={days} href={(n) => `/admin/shops/${s.id}?days=${n}`} />
+          <PeriodControl days={days} href={(n) => `/k4cs4uxrntb27z/shops/${s.id}?days=${n}`} />
         </div>
         <UsageSummary u={usage} />
         <UsageDetail u={usage} />
@@ -432,7 +438,10 @@ function MemberRow({ m }: { m: TeamMember }) {
   return (
     <tr className={m.status === "disabled" ? "text-text-muted" : undefined}>
       <td>
-        <Link href={`/admin/people/${m.user_id}`} className="font-medium text-link hover:underline">
+        <Link
+          href={`/k4cs4uxrntb27z/people/${m.user_id}`}
+          className="font-medium text-link hover:underline"
+        >
           {m.name ?? m.email}
         </Link>
         <span className="block text-[0.8125rem] text-text-muted">{m.email}</span>

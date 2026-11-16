@@ -17,7 +17,7 @@ export const metadata: Metadata = { title: "Usage" };
  * How people use Sundeck Pro (owner, 2026-10-22: "track screen time, how users use the app";
  * per person, kept in our own database): screen time, screens, features, app versions, errors.
  */
-export default function UsagePage({ searchParams }: PageProps<"/admin/usage">) {
+export default function UsagePage({ searchParams }: PageProps<"/k4cs4uxrntb27z/usage">) {
   return (
     <Suspense fallback={<div className="h-96" aria-label="Loading" />}>
       <UsageBody searchParams={searchParams} />
@@ -28,9 +28,9 @@ export default function UsagePage({ searchParams }: PageProps<"/admin/usage">) {
 async function UsageBody({
   searchParams,
 }: {
-  searchParams: PageProps<"/admin/usage">["searchParams"];
+  searchParams: PageProps<"/k4cs4uxrntb27z/usage">["searchParams"];
 }) {
-  const gate = await staffGate("/admin/usage");
+  const gate = await staffGate("/k4cs4uxrntb27z/usage");
   if ("needsTwoStep" in gate) return <TwoStepNeeded title="Usage" />;
   const days = usagePeriod((await searchParams).days);
   const u = await loadUsage(days);
@@ -39,7 +39,7 @@ async function UsageBody({
       <PageHeader
         title="Usage"
         subtitle="Screen time counts only while Sundeck Pro is in front and in use: on the website, until 5 minutes without a touch."
-        actions={<PeriodControl days={days} href={(d) => `/admin/usage?days=${d}`} />}
+        actions={<PeriodControl days={days} href={(d) => `/k4cs4uxrntb27z/usage?days=${d}`} />}
       />
       <UsageSummary u={u} />
       <UsageDetail u={u} />

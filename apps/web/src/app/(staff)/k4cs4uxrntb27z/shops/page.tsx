@@ -24,7 +24,7 @@ import {
   TwoStepNeeded,
 } from "@/components/admin/kit";
 import { Empty, PageHeader, pillClass } from "@/components/ui";
-import { loadShops, staffGate } from "@/server/staff";
+import { loadInternalShops, loadShops, staffGate } from "@/server/staff";
 
 export const metadata: Metadata = { title: "Shops" };
 
@@ -40,7 +40,7 @@ const FILTERS: (Standing | "all")[] = [
 const SORTS: ShopSort[] = ["name", "standing", "people", "price", "created", "active", "jobs"];
 
 /** Every shop: search, filter by standing, sort by any column, export (owner, 2026-10-22). */
-export default function ShopsPage({ searchParams }: PageProps<"/admin/shops">) {
+export default function ShopsPage({ searchParams }: PageProps<"/k4cs4uxrntb27z/shops">) {
   return (
     <Suspense fallback={<div className="h-96" aria-label="Loading" />}>
       <Shops searchParams={searchParams} />
@@ -51,13 +51,16 @@ export default function ShopsPage({ searchParams }: PageProps<"/admin/shops">) {
 async function Shops({
   searchParams,
 }: {
-  searchParams: PageProps<"/admin/shops">["searchParams"];
+  searchParams: PageProps<"/k4cs4uxrntb27z/shops">["searchParams"];
 }) {
-  const gate = await staffGate("/admin/shops");
+  const gate = await staffGate("/k4cs4uxrntb27z/shops");
   if ("needsTwoStep" in gate) return <TwoStepNeeded title="Shops" />;
   const params = await searchParams;
   const one = (v: string | string[] | undefined) => (Array.isArray(v) ? v[0] : v) ?? "";
   const q = one(params.q);
+  // Internal: Sundeck Pro's own shops (demo, App Review, tests), left out of every other list
+  // and count (owner, 2026-11-16).
+  const internal = one(params.show) === "internal";
   const show = FILTERS.includes(one(params.show) as Standing)
     ? (one(params.show) as Standing)
     : "all";
@@ -66,29 +69,31 @@ async function Shops({
     : "created";
   const desc = one(params.dir) ? one(params.dir) === "desc" : sort !== "name";
 
-  const all = await loadShops();
-  const found = searchShops(all, q);
-  const counts = new Map<string, number>([["all", found.length]]);
-  for (const s of found) {
+  const [counted, ours] = await Promise.all([loadShops(), loadInternalShops()]);
+  const internalFound = searchShops(ours, q);
+  const countedFound = searchShops(counted, q);
+  const found = internal ? internalFound : countedFound;
+  const counts = new Map<string, number>([["all", countedFound.length]]);
+  for (const s of countedFound) {
     const st = shopStanding(s);
     counts.set(st, (counts.get(st) ?? 0) + 1);
   }
-  const sources = heardFromCounts(found);
+  const sources = internal ? [] : heardFromCounts(found);
   const rows = sortShops(
-    show === "all" ? found : found.filter((s) => shopStanding(s) === show),
+    show === "all" || internal ? found : found.filter((s) => shopStanding(s) === show),
     sort,
     desc,
   );
   const href = (over: Record<string, string>) => {
     const p = new URLSearchParams({
       ...(q ? { q } : {}),
-      ...(show !== "all" ? { show } : {}),
+      ...(internal ? { show: "internal" } : show !== "all" ? { show } : {}),
       sort,
       dir: desc ? "desc" : "asc",
       ...over,
     });
     for (const [k, v] of [...p]) if (!v) p.delete(k);
-    return `/admin/shops?${p}`;
+    return `/k4cs4uxrntb27z/shops?${p}`;
   };
   const sortHref = (column: string, d: boolean) => href({ sort: column, dir: d ? "desc" : "asc" });
 
@@ -96,10 +101,10 @@ async function Shops({
     <>
       <PageHeader
         title="Shops"
-        subtitle="Every shop on Sundeck Pro. Prices are each package's for its active people."
+        subtitle="Every shop on Sundeck Pro. Prices are each package's for its active people. Our own shops are under Internal."
         actions={
           <a
-            href={`/admin/shops/export${q || show !== "all" ? `?${new URLSearchParams({ q, show })}` : ""}`}
+            href={`/k4cs4uxrntb27z/shops/export${q || show !== "all" ? `?${new URLSearchParams({ q, show })}` : ""}`}
             className="min-h-11 content-center px-3 text-link"
           >
             Export CSV
@@ -108,10 +113,10 @@ async function Shops({
       />
       <div className="mb-4 flex flex-wrap items-center gap-4">
         <SearchForm
-          action="/admin/shops"
+          action="/k4cs4uxrntb27z/shops"
           value={q}
           placeholder="Search shops, owners, emails, phones"
-          hidden={show !== "all" ? { show } : {}}
+          hidden={internal ? { show: "internal" } : show !== "all" ? { show } : {}}
         />
       </div>
       <nav aria-label="Show" className="mb-5 flex flex-wrap gap-2">
@@ -119,12 +124,19 @@ async function Shops({
           <Link
             key={f}
             href={href({ show: f === "all" ? "" : f })}
-            aria-current={f === show ? "page" : undefined}
-            className={pillClass(f === show)}
+            aria-current={!internal && f === show ? "page" : undefined}
+            className={pillClass(!internal && f === show)}
           >
             {f === "all" ? "All" : STANDING_LABELS[f]} ({counts.get(f) ?? 0})
           </Link>
         ))}
+        <Link
+          href={href({ show: "internal" })}
+          aria-current={internal ? "page" : undefined}
+          className={pillClass(internal)}
+        >
+          Internal ({internalFound.length})
+        </Link>
       </nav>
       {sources.length ? (
         // Where shops heard of Sundeck Pro (owner, 2026-10-24), for the shops searched for.
@@ -201,7 +213,7 @@ async function Shops({
                 <tr key={s.id} data-testid="shop-row">
                   <td>
                     <Link
-                      href={`/admin/shops/${s.id}`}
+                      href={`/k4cs4uxrntb27z/shops/${s.id}`}
                       className="font-semibold text-link hover:underline"
                     >
                       {s.name}

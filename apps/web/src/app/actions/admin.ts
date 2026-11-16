@@ -1,6 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { COST_CATEGORIES, PAYERS, parseDollars, REPEATS } from "@leakbook/core";
 import { cookies } from "next/headers";
 import { redirect, unstable_rethrow } from "next/navigation";
 import { ACTIVE_COMPANY_COOKIE } from "@/lib/auth";
@@ -114,7 +115,7 @@ async function extendTrialAction(form: FormData): Promise<AdminState> {
     reason,
     details: { days, ends_at: data },
   });
-  revalidatePath(`/admin/shops/${companyId}`);
+  revalidatePath(`/k4cs4uxrntb27z/shops/${companyId}`);
   return { message: `Trial extended by ${days} days.` };
 }
 
@@ -137,7 +138,7 @@ async function setDemoAction(form: FormData): Promise<AdminState> {
     companyName: await shopName(db, companyId),
     reason,
   });
-  revalidatePath(`/admin/shops/${companyId}`);
+  revalidatePath(`/k4cs4uxrntb27z/shops/${companyId}`);
   return {
     message: demo ? "This is a demo shop now." : "Demo ended. The shop has a week of trial.",
   };
@@ -161,7 +162,7 @@ async function addShopNoteAction(form: FormData): Promise<AdminState> {
     companyId,
     companyName: await shopName(db, companyId),
   });
-  revalidatePath(`/admin/shops/${companyId}`);
+  revalidatePath(`/k4cs4uxrntb27z/shops/${companyId}`);
   return { message: "Note saved." };
 }
 
@@ -196,7 +197,7 @@ async function turnOffTwoStepAction(form: FormData): Promise<AdminState> {
     reason,
     details: { factors_removed: factors.factors.length },
   });
-  revalidatePath(`/admin/people/${userId}`);
+  revalidatePath(`/k4cs4uxrntb27z/people/${userId}`);
   return {
     message: "Two-step is off. They sign in with their password and can turn it on again.",
   };
@@ -221,6 +222,118 @@ async function staffPasswordResetAction(form: FormData): Promise<AdminState> {
   if (outcome === "too_many")
     return { error: "This address already got 3 reset emails this hour. Try again later." };
   await logStaffAction(staff, "password_reset", { targetUser: userId, targetEmail: email });
-  revalidatePath(`/admin/people/${userId}`);
+  revalidatePath(`/k4cs4uxrntb27z/people/${userId}`);
   return { message: `Reset link sent to ${email}. It works for an hour.` };
+}
+
+/**
+ * Leave Out of Counts / Count Again (owner, 2026-11-16: "Do not include this on our
+ * finances"): Sundeck Pro's own shops and accounts keep working but the portal doesn't count
+ * them.
+ */
+export async function setInternal(_: AdminState, form: FormData): Promise<AdminState> {
+  return guarded("setInternal", () => setInternalAction(form));
+}
+
+async function setInternalAction(form: FormData): Promise<AdminState> {
+  const { staff, db } = await requireStaff();
+  const kind = form.get("kind") === "person" ? "person" : "shop";
+  const id = text(form, "id", 40);
+  const on = form.get("internal") === "1";
+  if (!/^[0-9a-f-]{36}$/i.test(id)) return { error: "No such shop or person." };
+  const column = kind === "shop" ? "company_ref" : "user_ref";
+  const { error } = on
+    ? await db
+        .from("admin_internal")
+        .upsert(
+          { [column]: id, staff_email: staff.email },
+          { onConflict: column, ignoreDuplicates: true },
+        )
+    : await db.from("admin_internal").delete().eq(column, id);
+  if (error) return refused(error, "set internal");
+  if (kind === "shop") {
+    await logStaffAction(staff, on ? "internal_on" : "internal_off", {
+      companyId: id,
+      companyName: await shopName(db, id),
+    });
+  } else {
+    const { data } = await db.auth.admin.getUserById(id);
+    await logStaffAction(staff, on ? "internal_on" : "internal_off", {
+      targetUser: id,
+      targetEmail: data.user?.email ?? null,
+    });
+  }
+  revalidatePath(`/k4cs4uxrntb27z/${kind === "shop" ? "shops" : "people"}/${id}`);
+  return {
+    message: on ? "Left out of the counts. It still works as usual." : "Counted again.",
+  };
+}
+
+/** Add or change a company cost: a service we pay for or a one-time expense, and who paid. */
+export async function saveCost(_: AdminState, form: FormData): Promise<AdminState> {
+  return guarded("saveCost", () => saveCostAction(form));
+}
+
+async function saveCostAction(form: FormData): Promise<AdminState> {
+  const { staff, db } = await requireStaff();
+  const id = text(form, "id", 40);
+  const name = text(form, "name", 120);
+  const repeats = text(form, "repeats", 10);
+  const paid = text(form, "paid_by", 10);
+  const category = text(form, "category", 20);
+  const amountText = text(form, "amount", 20);
+  const spentOn = text(form, "spent_on", 10);
+  const endedOn = text(form, "ended_on", 10);
+  const note = text(form, "note", 1000);
+  if (!name) return { error: "Say what it’s for." };
+  if (!(REPEATS as readonly string[]).includes(repeats)) return { error: "Choose how often." };
+  if (!(PAYERS as readonly string[]).includes(paid)) return { error: "Choose who paid." };
+  const amount = amountText ? parseDollars(amountText) : null;
+  if (amountText && amount === null) return { error: "Enter the amount in dollars, like 25.00." };
+  if (amount === null && repeats === "once") return { error: "Enter the amount." };
+  if (amount !== null && (amount < 0 || amount > 100_000_000))
+    return { error: "Enter an amount from $0 to $1,000,000." };
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(spentOn)) return { error: "Choose the date." };
+  if (endedOn && (!/^\d{4}-\d{2}-\d{2}$/.test(endedOn) || endedOn < spentOn))
+    return { error: "The end date is before it started." };
+  const row = {
+    name,
+    repeats,
+    paid_by: paid,
+    category: (COST_CATEGORIES as readonly string[]).includes(category) ? category : "other",
+    amount_cents: amount,
+    spent_on: spentOn,
+    ended_on: repeats === "once" ? null : endedOn || null,
+    note: note || null,
+    updated_at: new Date().toISOString(),
+  };
+  const { error } = id
+    ? await db.from("company_cost").update(row).eq("id", id)
+    : await db.from("company_cost").insert({ ...row, created_by: staff.email });
+  if (error) return refused(error, "save cost");
+  await logStaffAction(staff, id ? "cost_change" : "cost_add", {
+    details: { name, amount_cents: amount, repeats, paid_by: paid },
+  });
+  revalidatePath("/k4cs4uxrntb27z/finances");
+  return { message: id ? "Saved." : "Added." };
+}
+
+export async function deleteCost(_: AdminState, form: FormData): Promise<AdminState> {
+  return guarded("deleteCost", () => deleteCostAction(form));
+}
+
+async function deleteCostAction(form: FormData): Promise<AdminState> {
+  const { staff, db } = await requireStaff();
+  const id = text(form, "id", 40);
+  const { data, error } = await db
+    .from("company_cost")
+    .delete()
+    .eq("id", id)
+    .select("name, amount_cents, paid_by")
+    .maybeSingle();
+  if (error) return refused(error, "delete cost");
+  if (!data) return { error: "It was already deleted." };
+  await logStaffAction(staff, "cost_delete", { details: data });
+  revalidatePath("/k4cs4uxrntb27z/finances");
+  return { message: "Deleted." };
 }
