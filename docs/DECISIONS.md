@@ -2,6 +2,12 @@
 
 Newest first. Each entry: date, decision, reason.
 
+## 2026-11-16 (owner: "I want to build a full manual for our website and app … separate manuals for the maintenance shops and leak detection shops … This should be a PDF. I also want it to be local on the web page as its own page"; "almost be told as a story … a process, rather than just a list of features"; "include a FAQs section on the website and in this manual")
+- **Two manuals, each a page of the website and a PDF:** `/manual/pool-care` ("A month on the route") and `/manual/leak-detection` ("From drip to paid"), with `/manual` to choose. The page is the source; `scripts/build-manuals.mjs` prints it to `public/manual/*.pdf` with the print styles, so the two never drift. Plan: `docs/plans/2026-11-16-manuals.md`.
+- **Told as a story:** each follows Canyon State (the demo shop the screenshots show) through its real process in order; chapters open on a moment, then teach what that moment needs. Shared chapters are written once with per-shop differences. Selling by showing: no sales lines.
+- **Screens:** iPhone screens from CI's simulator screenshots; website screens of the demo shop on sundeckpro.com.
+- **FAQ:** one question list (`src/lib/faq.ts`) feeds a new `/faq` page (All, Pool Care, Leak Detection; FAQPage structured data) and each manual's FAQ chapter. The home page's "Good to know" links to it and to the shop's manual; the footer links Manuals and FAQ. The home page's monthly billing answer now says invoices are drafted on each customer's invoice day and can send themselves.
+
 ## 2026-11-16 (owner: "Submit 1.0.3 to the App Store")
 - **iPhone 1.0.3 (build 1083) is submitted for App Review** through the App Store workflow, with What's New for monthly billing (`docs/release/APP_STORE.md` § 1.9). The workflow made the version as a manual release, so it goes live when the owner releases it after approval.
 
