@@ -20,7 +20,7 @@ export default function SupportPage() {
 }
 
 async function Support() {
-  const gate = await staffGate("/admin/support");
+  const gate = await staffGate("/k4cs4uxrntb27z/support");
   if ("needsTwoStep" in gate) return <TwoStepNeeded title="Support" />;
   const sessions = await loadSupportSessions();
   const now = new Date().getTime();
@@ -33,7 +33,7 @@ async function Support() {
         subtitle={
           <>
             Help a shop in its own office. Find it in{" "}
-            <Link href="/admin/shops" className="text-link underline">
+            <Link href="/k4cs4uxrntb27z/shops" className="text-link underline">
               Shops
             </Link>{" "}
             and choose Open Shop: View Only, or Can Make Changes, for up to 2 hours. Staff see what

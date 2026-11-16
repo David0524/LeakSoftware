@@ -29,7 +29,7 @@ export default function HealthPage() {
 }
 
 async function HealthBody() {
-  const gate = await staffGate("/admin/health");
+  const gate = await staffGate("/k4cs4uxrntb27z/health");
   if ("needsTwoStep" in gate) return <TwoStepNeeded title="Health" />;
   const [h, status] = await Promise.all([loadHealth(), checkHealth()]);
   const usage = h.usage_today
@@ -60,9 +60,9 @@ async function HealthBody() {
           label="Read-Only Shops"
           value={h.locked_shops}
           detail="Trial over or unpaid"
-          href="/admin/shops?show=trial_ended"
+          href="/k4cs4uxrntb27z/shops?show=trial_ended"
         />
-        <Stat label="Support Sessions Open" value={h.support_open} href="/admin/support" />
+        <Stat label="Support Sessions Open" value={h.support_open} href="/k4cs4uxrntb27z/support" />
       </div>
       <div className="mt-6 grid grid-cols-2 gap-6">
         <Panel title="Services">
@@ -123,7 +123,7 @@ async function HealthBody() {
                   <tr key={f.company_id}>
                     <td>
                       <Link
-                        href={`/admin/shops/${f.company_id}`}
+                        href={`/k4cs4uxrntb27z/shops/${f.company_id}`}
                         className="font-medium text-link hover:underline"
                       >
                         {f.name}
@@ -152,7 +152,7 @@ async function HealthBody() {
                   <tr key={`${u.company_id}-${u.kind}`}>
                     <td>
                       <Link
-                        href={`/admin/shops/${u.company_id}`}
+                        href={`/k4cs4uxrntb27z/shops/${u.company_id}`}
                         className="text-link hover:underline"
                       >
                         {u.name}

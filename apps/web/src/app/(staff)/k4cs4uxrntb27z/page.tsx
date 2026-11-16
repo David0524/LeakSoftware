@@ -34,7 +34,7 @@ export default function OverviewPage() {
 }
 
 async function Overview() {
-  const gate = await staffGate("/admin");
+  const gate = await staffGate("/k4cs4uxrntb27z");
   if ("needsTwoStep" in gate) return <TwoStepNeeded title="Overview" />;
   const [shops, m] = await Promise.all([loadShops(), loadMetrics()]);
   const now = new Date();
@@ -57,23 +57,23 @@ async function Overview() {
 
       <h2 className="sr-only">Shops</h2>
       <div className="grid grid-cols-6 gap-4">
-        <Stat label="Shops" value={shops.length} href="/admin/shops" />
-        <Stat label="Paying" value={count("paying")} href="/admin/shops?show=paying" />
-        <Stat label="In Trial" value={count("trial")} href="/admin/shops?show=trial" />
+        <Stat label="Shops" value={shops.length} href="/k4cs4uxrntb27z/shops" />
+        <Stat label="Paying" value={count("paying")} href="/k4cs4uxrntb27z/shops?show=paying" />
+        <Stat label="In Trial" value={count("trial")} href="/k4cs4uxrntb27z/shops?show=trial" />
         <Stat
           label="Past Due"
           value={count("past_due")}
-          href="/admin/shops?show=past_due"
+          href="/k4cs4uxrntb27z/shops?show=past_due"
           tone={count("past_due") ? "fail" : undefined}
         />
         <Stat
           label="Trial Ended"
           value={count("trial_ended")}
           detail="Unpaid, read-only"
-          href="/admin/shops?show=trial_ended"
+          href="/k4cs4uxrntb27z/shops?show=trial_ended"
           tone={count("trial_ended") ? "warning" : undefined}
         />
-        <Stat label="Demo" value={count("demo")} href="/admin/shops?show=demo" />
+        <Stat label="Demo" value={count("demo")} href="/k4cs4uxrntb27z/shops?show=demo" />
       </div>
 
       <div className="mt-4 grid grid-cols-4 gap-4">
@@ -81,7 +81,7 @@ async function Overview() {
           label="Monthly Revenue (MRR)"
           value={formatCents(mrr)}
           detail={`${mrr >= monthAgo ? "+" : "−"}${formatCents(Math.abs(mrr - monthAgo))} since last month`}
-          href="/admin/finances"
+          href="/k4cs4uxrntb27z/finances"
         />
         <Stat label="Yearly Run Rate (ARR)" value={formatCents(mrr * 12)} detail="MRR × 12" />
         <Stat
@@ -93,7 +93,7 @@ async function Overview() {
           label="Collected by Shops"
           value={formatCents(volume(thisMonth))}
           detail={`This month · ${formatCents(volume(lastMonth))} last month`}
-          href="/admin/finances"
+          href="/k4cs4uxrntb27z/finances"
         />
       </div>
 
@@ -102,7 +102,7 @@ async function Overview() {
           label="People Active"
           value={m.people_active_7d}
           detail={`Last 7 days · ${m.people_active_30d} in 30 days · ${m.people_total} accounts`}
-          href="/admin/people"
+          href="/k4cs4uxrntb27z/people"
         />
         <Stat
           label="Shops Working"
@@ -114,9 +114,9 @@ async function Overview() {
           value={m.shops_never_worked}
           detail="Signed up 3+ days ago"
           tone={m.shops_never_worked ? "warning" : undefined}
-          href="/admin/shops?sort=jobs&dir=asc"
+          href="/k4cs4uxrntb27z/shops?sort=jobs&dir=asc"
         />
-        <Stat label="Leads to Call" value={m.leads_to_call} href="/admin/leads" />
+        <Stat label="Leads to Call" value={m.leads_to_call} href="/k4cs4uxrntb27z/leads" />
       </div>
 
       <div className="mt-6 grid grid-cols-2 gap-6">
@@ -152,7 +152,7 @@ async function Overview() {
               {pastDue.map((s) => (
                 <li key={s.id}>
                   <Link
-                    href={`/admin/shops/${s.id}`}
+                    href={`/k4cs4uxrntb27z/shops/${s.id}`}
                     className="flex min-h-11 items-center justify-between gap-3 py-2 hover:text-link"
                   >
                     <span className="font-medium">{s.name}</span>
@@ -165,7 +165,7 @@ async function Overview() {
               {ending.map((s) => (
                 <li key={s.id}>
                   <Link
-                    href={`/admin/shops/${s.id}`}
+                    href={`/k4cs4uxrntb27z/shops/${s.id}`}
                     className="flex min-h-11 items-center justify-between gap-3 py-2 hover:text-link"
                   >
                     <span className="font-medium">{s.name}</span>

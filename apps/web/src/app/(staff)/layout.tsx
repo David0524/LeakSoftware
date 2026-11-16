@@ -37,7 +37,7 @@ export default function StaffLayout({ children }: LayoutProps<"/">) {
       <div className="flex min-h-dvh flex-1 max-lg:hidden">
         <aside className="sticky top-0 flex h-dvh w-60 shrink-0 flex-col gap-6 overflow-y-auto border-r border-border bg-surface px-3 py-4">
           <Link
-            href="/admin"
+            href="/k4cs4uxrntb27z"
             aria-label="Sundeck Pro Admin, Overview"
             className="flex min-h-11 items-center gap-2 px-3"
           >

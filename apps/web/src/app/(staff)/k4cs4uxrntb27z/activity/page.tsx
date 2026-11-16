@@ -17,6 +17,11 @@ const ACTION: Record<StaffActionKind, string> = {
   password_reset: "Sent password reset",
   note: "Wrote a note",
   export: "Exported a list",
+  internal_on: "Marked internal",
+  internal_off: "Counted again",
+  cost_add: "Added a cost",
+  cost_change: "Changed a cost",
+  cost_delete: "Deleted a cost",
 };
 
 function detail(details: Record<string, unknown>): string {
@@ -29,7 +34,7 @@ function detail(details: Record<string, unknown>): string {
 }
 
 /** Everything staff did, newest first. Nothing in it can be changed (owner, 2026-10-22). */
-export default function ActivityLogPage({ searchParams }: PageProps<"/admin/activity">) {
+export default function ActivityLogPage({ searchParams }: PageProps<"/k4cs4uxrntb27z/activity">) {
   return (
     <Suspense fallback={<div className="h-96" aria-label="Loading" />}>
       <ActivityLog searchParams={searchParams} />
@@ -40,9 +45,9 @@ export default function ActivityLogPage({ searchParams }: PageProps<"/admin/acti
 async function ActivityLog({
   searchParams,
 }: {
-  searchParams: PageProps<"/admin/activity">["searchParams"];
+  searchParams: PageProps<"/k4cs4uxrntb27z/activity">["searchParams"];
 }) {
-  const gate = await staffGate("/admin/activity");
+  const gate = await staffGate("/k4cs4uxrntb27z/activity");
   if ("needsTwoStep" in gate) return <TwoStepNeeded title="Activity Log" />;
   const raw = (await searchParams).staff;
   const staffEmail = (Array.isArray(raw) ? raw[0] : raw) ?? "";
@@ -55,7 +60,7 @@ async function ActivityLog({
           staffEmail ? (
             <>
               What {staffEmail} did.{" "}
-              <Link href="/admin/activity" className="text-link underline">
+              <Link href="/k4cs4uxrntb27z/activity" className="text-link underline">
                 Show Everyone
               </Link>
             </>
@@ -94,7 +99,7 @@ async function ActivityLog({
                   <td className="whitespace-nowrap">{fmtTime(r.created_at)}</td>
                   <td>
                     <Link
-                      href={`/admin/activity?staff=${encodeURIComponent(r.staff_email)}`}
+                      href={`/k4cs4uxrntb27z/activity?staff=${encodeURIComponent(r.staff_email)}`}
                       className="hover:text-link"
                     >
                       {r.staff_email}
@@ -111,7 +116,7 @@ async function ActivityLog({
                   <td>
                     {r.company_ref ? (
                       <Link
-                        href={`/admin/shops/${r.company_ref}`}
+                        href={`/k4cs4uxrntb27z/shops/${r.company_ref}`}
                         className="text-link hover:underline"
                       >
                         {r.company_name ?? "Shop"}
@@ -121,7 +126,7 @@ async function ActivityLog({
                     )}
                     {r.target_user ? (
                       <Link
-                        href={`/admin/people/${r.target_user}`}
+                        href={`/k4cs4uxrntb27z/people/${r.target_user}`}
                         className="block text-link hover:underline"
                       >
                         {r.target_email ?? "Person"}

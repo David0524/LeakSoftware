@@ -33,7 +33,7 @@ export default function RequestsPage() {
 
 async function Requests() {
   const user = await getUser();
-  if (!user) redirect("/sign-in?next=/admin/requests");
+  if (!user) redirect("/sign-in?next=/k4cs4uxrntb27z/requests");
   if (!isStaff(user)) redirect("/sign-in/staff");
   if (user.aal !== "aal2")
     return (
