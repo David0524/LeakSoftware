@@ -5,11 +5,10 @@ first. Tick an item off by deleting it (and tell Claude, so it can check the res
 
 ## From 2026-11-16: autopay
 
-1. **Stripe › Developers › Webhooks › the endpoint that listens to Connected accounts** (it
-   points at `https://sundeckpro.com/api/stripe/webhook`): add the events `payment_intent.succeeded` and
-   `payment_intent.payment_failed` beside the ones already there. Without them, a customer's
-   autopay from a bank account never shows as paid (cards still work). Tell Claude when done.
-   Or hand it to Claude in Chrome: `docs/release/STRIPE_AUTOPAY_HANDOFF.md`.
+1. **Done (2026-11-16, Claude in Chrome):** the sandbox's Connected accounts webhook ("Sundeck
+   Pro Customers") now sends `payment_intent.succeeded` and `payment_intent.payment_failed`, so
+   bank autopay settles. The site runs on the sandbox until live mode; live mode's webhooks are
+   set up at launch with the list in `docs/release/LAUNCH.md` (Stripe keys row).
 2. Nothing to do for Pay Over Time: each shop turns on Affirm or Klarna in its own Stripe
    dashboard, and Settings › Payments says how.
 
