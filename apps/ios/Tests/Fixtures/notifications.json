@@ -28,6 +28,10 @@
           "label": "Opened reports"
         },
         {
+          "key": "issue",
+          "label": "Reported issues"
+        },
+        {
           "key": "live",
           "label": "Live Activity",
           "hint": "Your current stop on the Lock Screen during the workday."
@@ -94,6 +98,13 @@
     {
       "args": [
         null,
+        "issue"
+      ],
+      "result": true
+    },
+    {
+      "args": [
+        null,
         "live"
       ],
       "result": true
@@ -150,6 +161,13 @@
     {
       "args": [
         {},
+        "issue"
+      ],
+      "result": true
+    },
+    {
+      "args": [
+        {},
         "live"
       ],
       "result": true
@@ -220,6 +238,15 @@
         {
           "text": false
         },
+        "issue"
+      ],
+      "result": true
+    },
+    {
+      "args": [
+        {
+          "text": false
+        },
         "live"
       ],
       "result": true
@@ -299,6 +326,16 @@
           "text": true,
           "job": false
         },
+        "issue"
+      ],
+      "result": true
+    },
+    {
+      "args": [
+        {
+          "text": true,
+          "job": false
+        },
         "live"
       ],
       "result": true
@@ -372,6 +409,15 @@
         {
           "payment": "false"
         },
+        "issue"
+      ],
+      "result": true
+    },
+    {
+      "args": [
+        {
+          "payment": "false"
+        },
         "live"
       ],
       "result": true
@@ -444,6 +490,15 @@
         {
           "quote": 0
         },
+        "issue"
+      ],
+      "result": true
+    },
+    {
+      "args": [
+        {
+          "quote": 0
+        },
         "live"
       ],
       "result": true
@@ -502,6 +557,13 @@
     {
       "args": [
         "x",
+        "issue"
+      ],
+      "result": true
+    },
+    {
+      "args": [
+        "x",
         "live"
       ],
       "result": true
@@ -564,6 +626,15 @@
           false
         ],
         "opened"
+      ],
+      "result": true
+    },
+    {
+      "args": [
+        [
+          false
+        ],
+        "issue"
       ],
       "result": true
     },

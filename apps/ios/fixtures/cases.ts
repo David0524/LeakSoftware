@@ -39,6 +39,7 @@ import { prefill } from "./cases/prefill";
 import { removal } from "./cases/removal";
 import { drafts } from "./cases/drafts";
 import { poolEquipment } from "./cases/pool-equipment";
+import { serviceIssues } from "./cases/service-issues";
 import { friendlyErrorCases } from "./cases/friendly-error";
 import { monthlyBilling } from "./cases/monthly-billing";
 
@@ -75,6 +76,7 @@ export const modules: Record<string, ModuleCases> = {
   "signed-out": signedOut,
   "heard-from": heardFrom,
   "pool-equipment": poolEquipment,
+  "service-issues": serviceIssues,
   "terms-consent": termsConsent,
   "setup-gate": setupGate,
   password,

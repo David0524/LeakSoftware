@@ -49,6 +49,7 @@ describe("notifications", () => {
       "payment",
       "report",
       "opened",
+      "issue",
       "live",
       "day",
     ]);

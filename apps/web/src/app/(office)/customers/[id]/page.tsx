@@ -40,6 +40,8 @@ import {
 import { SheetNotices, SheetRow } from "@/components/settings-list";
 import { ContactButtons } from "@/components/contact-buttons";
 import { Empty, Grouped, PageHeader, Row } from "@/components/ui";
+import { CustomerIssues } from "@/components/issues";
+import { customerIssues } from "@/lib/issues";
 import { Draft } from "@/components/draft-keeper";
 import { LiveStatusBadge } from "@/components/instant";
 import { getOffice } from "@/lib/auth";
@@ -69,7 +71,7 @@ export default async function CustomerPage({ params }: PageProps<"/customers/[id
   if (!isUuid(id)) notFound();
   const office = await getOffice();
   // All three at once: each used to wait for the one before.
-  const [data, team, company, line, componentTypes, priceBook] = await Promise.all([
+  const [data, team, company, line, componentTypes, priceBook, issues] = await Promise.all([
     getCustomer(office, id),
     getTeam(office),
     getCompany(office),
@@ -79,6 +81,7 @@ export default async function CustomerPage({ params }: PageProps<"/customers/[id
       office,
       "price_book_item",
     ),
+    customerIssues(office, id),
   ]);
   if (!data) notFound();
   // Checklist items done on a schedule, for a plan's Regular Cleanings (owner, 2026-10-18),
@@ -226,6 +229,8 @@ export default async function CustomerPage({ params }: PageProps<"/customers/[id
         </Grouped>
 
         <div className="space-y-8 lg:col-span-2">
+          {/* Problems techs reported on visits (docs/design/2026-11-16-service-issues.md). */}
+          <CustomerIssues issues={issues} timeZone={office.company.timezone} />
           {properties.length === 0 ? <Empty>No pools.</Empty> : null}
           {properties.map((p, i) => {
             const address = formatAddress(p);

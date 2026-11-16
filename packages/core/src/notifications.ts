@@ -8,7 +8,7 @@ import { cleaningDueSpoken, cleaningShortLabel, type CleaningKind } from "./main
 import { routingSettings, weekday, workDay, zonedMinutesToIso } from "./route-plan";
 
 export type NotificationKind =
-  "text" | "job" | "quote" | "payment" | "report" | "opened" | "live" | "day";
+  "text" | "job" | "quote" | "payment" | "report" | "opened" | "issue" | "live" | "day";
 
 /** Each kind a person can turn off in More › Notifications or Settings › Notifications. */
 export const NOTIFICATION_KINDS: { key: NotificationKind; label: string; hint?: string }[] = [
@@ -20,6 +20,9 @@ export const NOTIFICATION_KINDS: { key: NotificationKind; label: string; hint?: 
   // Owner, 2026-10-22: "Techs never hear the outcome." The first time a customer opens a
   // report's link (not visit reports), to the job's techs and the owners and admins.
   { key: "opened", label: "Opened reports" },
+  // A tech reported an issue on a visit (docs/design/2026-11-16-service-issues.md): to the
+  // owners and admins, who resolve it or make a job of it.
+  { key: "issue", label: "Reported issues" },
   // Owner, 2026-10-20: "Add a Live Activities toggle in the notifications setting." The stop
   // you're on, on the Lock Screen during the workday (iPhone's Live Activity, Android's ongoing
   // notification).
@@ -96,6 +99,13 @@ export function reportNotification(customer: string): NotificationText {
 /** The customer opened a report's link for the first time: "Rebecca Soto opened the report." */
 export function reportOpenedNotification(customer: string): NotificationText {
   return { title: "Report opened", body: `${customer} opened the report.` };
+}
+
+/** A tech reported an issue: "Issue reported" · "Rebecca Soto: Cracked skimmer throat". */
+export function issueNotification(customer: string, description: string): NotificationText {
+  const text = description.trim().replace(/\s+/g, " ");
+  const what = text.length > 150 ? `${text.slice(0, 149)}…` : text;
+  return { title: "Issue reported", body: `${customer}: ${what}` };
 }
 
 // ---------------------------------------------------------------------------

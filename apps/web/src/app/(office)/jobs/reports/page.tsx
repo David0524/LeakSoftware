@@ -24,6 +24,7 @@ import { ReportActions } from "@/components/list-actions";
 import { SortMenu } from "@/components/sort-menu";
 import { getOffice } from "@/lib/auth";
 import { getCompany, listReports } from "@/lib/data";
+import { openIssues } from "@/lib/issues";
 import { siteOrigin } from "@/lib/origin";
 import { emailConfigured } from "@/server/email";
 
@@ -60,9 +61,10 @@ export default async function ReportsPage({ searchParams }: PageProps<"/jobs/rep
   const company = await getCompany(office);
   const types = jobTypeFilters(companyServices(company.settings));
   const type = jobTypeFilter(typeParam, companyServices(company.settings));
-  const [found, origin] = await Promise.all([
+  const [found, origin, issues] = await Promise.all([
     listReports(office, filter.key, { limit, search, sort, type }),
     siteOrigin(),
+    openIssues(office),
   ]);
   const more = found.length > limit;
   const reports = more ? found.slice(0, limit) : found;
@@ -95,7 +97,7 @@ export default async function ReportsPage({ searchParams }: PageProps<"/jobs/rep
         title="Reports"
         subtitle={<span className="hidden sm:inline">{office.company.name}</span>}
       />
-      <JobsTabs current="reports" />
+      <JobsTabs current="reports" openIssues={issues} />
       <PillRow
         label="Filter reports"
         className="-mx-4 -mt-1.5 mb-3.5 flex gap-2 overflow-x-auto px-4 whitespace-nowrap sm:mx-0 sm:px-0"
