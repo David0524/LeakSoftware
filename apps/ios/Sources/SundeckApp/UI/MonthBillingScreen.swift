@@ -49,11 +49,16 @@
 
         enum Tab: Hashable { case send, sent }
 
-        /// `open`: a draft to open at once (a monthly draft tapped on Invoices).
-        init(month: String, open: String? = nil) {
+        /// `open`: a draft to open at once (a monthly draft tapped on Invoices). `sample`: the
+        /// month as given, not read from the server (the screenshot run, which has no server).
+        init(month: String, open: String? = nil, sample: MonthBilling? = nil) {
             self.month = month
             _open = State(initialValue: open)
+            _server = State(initialValue: sample)
+            self.sample = sample != nil
         }
+
+        private let sample: Bool
 
         @State private var server: MonthBilling?
         @State private var loadError: String?
@@ -252,6 +257,7 @@
         // MARK: Server
 
         private func load() async {
+            guard !sample else { return }
             guard let company = session.company, isManagerRole(company.role) else { return }
             do {
                 server = try await MonthlyBillingServer.month(
