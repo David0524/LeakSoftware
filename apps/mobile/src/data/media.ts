@@ -17,6 +17,8 @@ export interface MediaTarget {
   findingId?: string | null;
   componentId?: string | null;
   testResultId?: string | null;
+  /** An issue reported on the job (docs/design/2026-11-16-service-issues.md). */
+  serviceIssueId?: string | null;
 }
 
 /** Captures for a job, newest first. With a target, only those attached to it. */
@@ -25,6 +27,7 @@ export function useJobMedia(companyId: string, jobId: string, target?: Omit<Medi
   const findingId = target?.findingId;
   const componentId = target?.componentId;
   const testResultId = target?.testResultId;
+  const serviceIssueId = target?.serviceIssueId;
   return useMemo(
     () =>
       all
@@ -33,12 +36,15 @@ export function useJobMedia(companyId: string, jobId: string, target?: Omit<Medi
             m.job_id === jobId &&
             (!findingId || m.finding_id === findingId) &&
             (!componentId || m.job_component_id === componentId) &&
-            (!testResultId || m.test_result_id === testResultId),
+            (!testResultId || m.test_result_id === testResultId) &&
+            (!serviceIssueId ||
+              (m as Media & { service_issue_id?: string | null }).service_issue_id ===
+                serviceIssueId),
         )
         .sort((a, b) =>
           (b.captured_at ?? b.created_at).localeCompare(a.captured_at ?? a.created_at),
         ),
-    [all, jobId, findingId, componentId, testResultId],
+    [all, jobId, findingId, componentId, testResultId, serviceIssueId],
   );
 }
 
@@ -114,6 +120,7 @@ export async function saveCapture(
       finding_id: target.findingId ?? null,
       job_component_id: target.componentId ?? null,
       test_result_id: target.testResultId ?? null,
+      ...(target.serviceIssueId ? { service_issue_id: target.serviceIssueId } : {}),
       kind: captured.kind,
       mime_type: captured.mime,
       size_bytes: stored.sizeBytes,

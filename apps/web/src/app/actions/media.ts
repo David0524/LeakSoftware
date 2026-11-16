@@ -110,7 +110,8 @@ export async function finishUpload(m: UploadedMedia): Promise<Result<null>> {
   if (!KINDS.includes(m.kind)) return { ok: false, error: "Not a photo or recording." };
   if (m.path !== mediaStoragePath(office.company.id, m.jobId, m.id, m.mime))
     return { ok: false, error: "Upload not found." };
-  // "finding:<id>" or "component:<id>"; anything else attaches to the whole job.
+  // "finding:<id>", "component:<id>" or "issue:<id>" (an issue reported on the job); anything
+  // else attaches to the whole job.
   const [target, targetId] = m.attachTo.split(":");
   const { error } = await db.from("media").insert({
     id: m.id,
@@ -118,6 +119,7 @@ export async function finishUpload(m: UploadedMedia): Promise<Result<null>> {
     job_id: m.jobId,
     finding_id: target === "finding" ? targetId : null,
     job_component_id: target === "component" ? targetId : null,
+    ...(target === "issue" ? { service_issue_id: targetId } : {}),
     kind: m.kind,
     storage_path: m.path,
     upload_state: "uploaded",

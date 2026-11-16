@@ -1,0 +1,716 @@
+{
+  "ISSUE_TEXT": [
+    {
+      "args": [],
+      "result": {
+        "report": "Report an Issue",
+        "sheetTitle": "Report an Issue",
+        "whatsWrong": "What’s wrong?",
+        "placeholder": "Leaking pump seal, cracked skimmer, heater won’t light…",
+        "suggestedWork": "Suggested Work",
+        "submit": "Report",
+        "reported": "Issue reported. The office will see it.",
+        "addPhotosFirst": "Say what’s wrong first, then add photos.",
+        "segment": "Issues",
+        "makeQuote": "Make Quote",
+        "makeDetection": "Make Leak Detection Job",
+        "resolve": "Resolve",
+        "resolveTitle": "Resolve Issue",
+        "resolveNote": "Note (optional)",
+        "resolveNotePlaceholder": "Fixed on the visit, customer declined…",
+        "reopen": "Reopen",
+        "openJob": "Open Job",
+        "onlyManagers": "Owners and admins resolve issues and make jobs from them."
+      }
+    }
+  ],
+  "ISSUE_STATUS_LABELS": [
+    {
+      "args": [],
+      "result": {
+        "open": "Open",
+        "resolved": "Resolved",
+        "converted": "Job made"
+      }
+    }
+  ],
+  "ISSUE_WORK_LABELS": [
+    {
+      "args": [],
+      "result": {
+        "repair": "Repair",
+        "detection": "Leak Detection"
+      }
+    }
+  ],
+  "ISSUE_FILTERS": [
+    {
+      "args": [],
+      "result": [
+        {
+          "key": "open",
+          "label": "Open"
+        },
+        {
+          "key": "resolved",
+          "label": "Done"
+        },
+        {
+          "key": "all",
+          "label": "All"
+        }
+      ]
+    }
+  ],
+  "issueWorkOptions": [
+    {
+      "args": [
+        "pool"
+      ],
+      "result": [
+        {
+          "value": null,
+          "label": "Not Sure"
+        },
+        {
+          "value": "repair",
+          "label": "Repair"
+        }
+      ]
+    },
+    {
+      "args": [
+        "leak"
+      ],
+      "result": [
+        {
+          "value": null,
+          "label": "Not Sure"
+        },
+        {
+          "value": "repair",
+          "label": "Repair"
+        },
+        {
+          "value": "detection",
+          "label": "Leak Detection"
+        }
+      ]
+    },
+    {
+      "args": [
+        "both"
+      ],
+      "result": [
+        {
+          "value": null,
+          "label": "Not Sure"
+        },
+        {
+          "value": "repair",
+          "label": "Repair"
+        },
+        {
+          "value": "detection",
+          "label": "Leak Detection"
+        }
+      ]
+    }
+  ],
+  "issueDescriptionError": [
+    {
+      "args": [
+        ""
+      ],
+      "result": "Say what’s wrong."
+    },
+    {
+      "args": [
+        "  \n "
+      ],
+      "result": "Say what’s wrong."
+    },
+    {
+      "args": [
+        "Pump leaking"
+      ],
+      "result": null
+    },
+    {
+      "args": [
+        "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+      ],
+      "result": null
+    },
+    {
+      "args": [
+        "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+      ],
+      "result": "Keep it under 2,000 characters."
+    },
+    {
+      "args": [
+        " é  é  é  é  é  é  é  é  é  é  é  é  é  é  é  é  é  é  é  é  é  é  é  é  é  é  é  é  é  é  é  é  é  é  é  é  é  é  é  é  é  é  é  é  é  é  é  é  é  é  é  é  é  é  é  é  é  é  é  é  é  é  é  é  é  é  é  é  é  é  é  é  é  é  é  é  é  é  é  é  é  é  é  é  é  é  é  é  é  é  é  é  é  é  é  é  é  é  é  é  é  é  é  é  é  é  é  é  é  é  é  é  é  é  é  é  é  é  é  é  é  é  é  é  é  é  é  é  é  é  é  é  é  é  é  é  é  é  é  é  é  é  é  é  é  é  é  é  é  é  é  é  é  é  é  é  é  é  é  é  é  é  é  é  é  é  é  é  é  é  é  é  é  é  é  é  é  é  é  é  é  é  é  é  é  é  é  é  é  é  é  é  é  é  é  é  é  é  é  é  é  é  é  é  é  é  é  é  é  é  é  é  é  é  é  é  é  é  é  é  é  é  é  é  é  é  é  é  é  é  é  é  é  é  é  é  é  é  é  é  é  é  é  é  é  é  é  é  é  é  é  é  é  é  é  é  é  é  é  é  é  é  é  é  é  é  é  é  é  é  é  é  é  é  é  é  é  é  é  é  é  é  é  é  é  é  é  é  é  é  é  é  é  é  é  é  é  é  é  é  é  é  é  é  é  é  é  é  é  é  é  é  é  é  é  é  é  é  é  é  é  é  é  é  é  é  é  é  é  é  é  é  é  é  é  é  é  é  é  é  é  é  é  é  é  é  é  é  é  é  é  é  é  é  é  é  é  é  é  é  é  é  é  é  é  é  é  é  é  é  é  é  é  é  é  é  é  é  é  é  é  é  é  é  é  é  é  é  é  é  é  é  é  é  é  é  é  é  é  é  é  é  é  é  é  é  é  é  é  é  é  é  é  é  é  é  é  é  é  é  é  é  é  é  é  é  é  é  é  é  é  é  é  é  é  é  é  é  é  é  é  é  é  é  é  é  é  é  é  é  é  é  é  é  é  é  é  é  é  é  é  é  é  é  é  é  é  é  é  é  é  é  é  é  é  é  é  é  é  é  é  é  é  é  é  é  é  é  é  é  é  é  é  é  é  é  é  é  é  é  é  é  é  é  é  é  é  é  é  é  é  é  é  é  é  é  é  é  é  é  é  é  é  é  é  é  é  é  é  é  é  é  é  é  é  é  é  é  é  é  é  é  é  é  é  é  é  é  é  é  é  é  é  é  é  é  é  é  é  é  é  é  é  é  é  é  é  é  é  é  é  é  é  é  é  é  é  é  é  é  é  é  é  é  é  é  é  é  é  é  é  é  é  é  é  é  é  é  é  é  é  é  é  é  é  é  é  é  é  é  é  é  é  é  é  é  é  é  é  é  é  é  é  é  é  é  é  é  é  é  é  é  é  é  é  é  é  é  é  é  é  é  é  é  é  é  é  é  é  é  é  é  é  é  é  é  é  é  é  é  é  é  é  é  é  é  é  é  é  é  é  é  é  é  é  é  é  é  é  é  é  é  é  é  é  é  é  é  é  é  é  é  é  é  é  é  é  é  é  é "
+      ],
+      "result": "Keep it under 2,000 characters."
+    }
+  ],
+  "issueNoteError": [
+    {
+      "args": [
+        ""
+      ],
+      "result": null
+    },
+    {
+      "args": [
+        "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+      ],
+      "result": null
+    },
+    {
+      "args": [
+        "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+      ],
+      "result": "Keep the note under 1,000 characters."
+    }
+  ],
+  "issueActions": [
+    {
+      "args": [
+        "open",
+        "owner",
+        "pool"
+      ],
+      "result": [
+        "make_quote",
+        "resolve"
+      ]
+    },
+    {
+      "args": [
+        "open",
+        "owner",
+        "both"
+      ],
+      "result": [
+        "make_quote",
+        "make_detection",
+        "resolve"
+      ]
+    },
+    {
+      "args": [
+        "open",
+        "admin",
+        "pool"
+      ],
+      "result": [
+        "make_quote",
+        "resolve"
+      ]
+    },
+    {
+      "args": [
+        "open",
+        "admin",
+        "both"
+      ],
+      "result": [
+        "make_quote",
+        "make_detection",
+        "resolve"
+      ]
+    },
+    {
+      "args": [
+        "open",
+        "tech",
+        "pool"
+      ],
+      "result": []
+    },
+    {
+      "args": [
+        "open",
+        "tech",
+        "both"
+      ],
+      "result": []
+    },
+    {
+      "args": [
+        "open",
+        null,
+        "pool"
+      ],
+      "result": []
+    },
+    {
+      "args": [
+        "open",
+        null,
+        "both"
+      ],
+      "result": []
+    },
+    {
+      "args": [
+        "resolved",
+        "owner",
+        "pool"
+      ],
+      "result": [
+        "reopen"
+      ]
+    },
+    {
+      "args": [
+        "resolved",
+        "owner",
+        "both"
+      ],
+      "result": [
+        "reopen"
+      ]
+    },
+    {
+      "args": [
+        "resolved",
+        "admin",
+        "pool"
+      ],
+      "result": [
+        "reopen"
+      ]
+    },
+    {
+      "args": [
+        "resolved",
+        "admin",
+        "both"
+      ],
+      "result": [
+        "reopen"
+      ]
+    },
+    {
+      "args": [
+        "resolved",
+        "tech",
+        "pool"
+      ],
+      "result": []
+    },
+    {
+      "args": [
+        "resolved",
+        "tech",
+        "both"
+      ],
+      "result": []
+    },
+    {
+      "args": [
+        "resolved",
+        null,
+        "pool"
+      ],
+      "result": []
+    },
+    {
+      "args": [
+        "resolved",
+        null,
+        "both"
+      ],
+      "result": []
+    },
+    {
+      "args": [
+        "converted",
+        "owner",
+        "pool"
+      ],
+      "result": [
+        "open_job"
+      ]
+    },
+    {
+      "args": [
+        "converted",
+        "owner",
+        "both"
+      ],
+      "result": [
+        "open_job"
+      ]
+    },
+    {
+      "args": [
+        "converted",
+        "admin",
+        "pool"
+      ],
+      "result": [
+        "open_job"
+      ]
+    },
+    {
+      "args": [
+        "converted",
+        "admin",
+        "both"
+      ],
+      "result": [
+        "open_job"
+      ]
+    },
+    {
+      "args": [
+        "converted",
+        "tech",
+        "pool"
+      ],
+      "result": [
+        "open_job"
+      ]
+    },
+    {
+      "args": [
+        "converted",
+        "tech",
+        "both"
+      ],
+      "result": [
+        "open_job"
+      ]
+    },
+    {
+      "args": [
+        "converted",
+        null,
+        "pool"
+      ],
+      "result": [
+        "open_job"
+      ]
+    },
+    {
+      "args": [
+        "converted",
+        null,
+        "both"
+      ],
+      "result": [
+        "open_job"
+      ]
+    }
+  ],
+  "issueList": [
+    {
+      "args": [
+        "open",
+        "owner",
+        "owner"
+      ],
+      "result": [
+        "f",
+        "c",
+        "a"
+      ]
+    },
+    {
+      "args": [
+        "open",
+        "admin",
+        "admin"
+      ],
+      "result": [
+        "f",
+        "c",
+        "a"
+      ]
+    },
+    {
+      "args": [
+        "open",
+        "tech",
+        "tech"
+      ],
+      "result": [
+        "a"
+      ]
+    },
+    {
+      "args": [
+        "open",
+        "tech",
+        null
+      ],
+      "result": [
+        "a"
+      ]
+    },
+    {
+      "args": [
+        "resolved",
+        "owner",
+        "owner"
+      ],
+      "result": [
+        "b",
+        "d"
+      ]
+    },
+    {
+      "args": [
+        "resolved",
+        "admin",
+        "admin"
+      ],
+      "result": [
+        "b",
+        "d"
+      ]
+    },
+    {
+      "args": [
+        "resolved",
+        "tech",
+        "tech"
+      ],
+      "result": [
+        "b"
+      ]
+    },
+    {
+      "args": [
+        "resolved",
+        "tech",
+        null
+      ],
+      "result": [
+        "b"
+      ]
+    },
+    {
+      "args": [
+        "all",
+        "owner",
+        "owner"
+      ],
+      "result": [
+        "f",
+        "c",
+        "b",
+        "a",
+        "d"
+      ]
+    },
+    {
+      "args": [
+        "all",
+        "admin",
+        "admin"
+      ],
+      "result": [
+        "f",
+        "c",
+        "b",
+        "a",
+        "d"
+      ]
+    },
+    {
+      "args": [
+        "all",
+        "tech",
+        "tech"
+      ],
+      "result": [
+        "b",
+        "a"
+      ]
+    },
+    {
+      "args": [
+        "all",
+        "tech",
+        null
+      ],
+      "result": [
+        "b",
+        "a"
+      ]
+    }
+  ],
+  "openIssueCount": [
+    {
+      "args": [
+        "owner",
+        "owner"
+      ],
+      "result": 3
+    },
+    {
+      "args": [
+        "admin",
+        "admin"
+      ],
+      "result": 3
+    },
+    {
+      "args": [
+        "tech",
+        "tech"
+      ],
+      "result": 1
+    },
+    {
+      "args": [
+        "tech",
+        null
+      ],
+      "result": 1
+    }
+  ],
+  "issuesSegmentLabel": [
+    {
+      "args": [
+        0
+      ],
+      "result": "Issues"
+    },
+    {
+      "args": [
+        1
+      ],
+      "result": "Issues (1)"
+    },
+    {
+      "args": [
+        12
+      ],
+      "result": "Issues (12)"
+    }
+  ],
+  "issuesEmpty": [
+    {
+      "args": [
+        "open",
+        true
+      ],
+      "result": "No open issues. Techs report them from a visit with Report an Issue."
+    },
+    {
+      "args": [
+        "open",
+        false
+      ],
+      "result": "No open issues you reported. Report one from a visit with Report an Issue."
+    },
+    {
+      "args": [
+        "resolved",
+        true
+      ],
+      "result": "No resolved issues yet."
+    },
+    {
+      "args": [
+        "resolved",
+        false
+      ],
+      "result": "No resolved issues yet."
+    },
+    {
+      "args": [
+        "all",
+        true
+      ],
+      "result": "No issues yet."
+    },
+    {
+      "args": [
+        "all",
+        false
+      ],
+      "result": "No issues yet."
+    }
+  ],
+  "issueDetailLine": [
+    {
+      "args": [
+        "repair",
+        "Sam Ortiz",
+        "Nov 16"
+      ],
+      "result": "Repair · Sam Ortiz · Nov 16"
+    },
+    {
+      "args": [
+        "detection",
+        null,
+        "Nov 16"
+      ],
+      "result": "Leak Detection · Nov 16"
+    },
+    {
+      "args": [
+        null,
+        "Sam Ortiz",
+        "Today"
+      ],
+      "result": "Sam Ortiz · Today"
+    },
+    {
+      "args": [
+        null,
+        null,
+        "Nov 16"
+      ],
+      "result": "Nov 16"
+    }
+  ],
+  "issueTitle": [
+    {
+      "args": [
+        "  Cracked skimmer throat  "
+      ],
+      "result": "Cracked skimmer throat"
+    },
+    {
+      "args": [
+        "Pump leaking\r\nat the seal"
+      ],
+      "result": "Pump leaking"
+    },
+    {
+      "args": [
+        "First line\nsecond line"
+      ],
+      "result": "First line"
+    },
+    {
+      "args": [
+        "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+      ],
+      "result": "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx…"
+    },
+    {
+      "args": [
+        "The heater makes a loud bang when it lights and then shuts off",
+        20
+      ],
+      "result": "The heater makes a…"
+    },
+    {
+      "args": [
+        "word word word word",
+        10
+      ],
+      "result": "word word…"
+    }
+  ]
+}

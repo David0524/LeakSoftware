@@ -9,12 +9,18 @@ public struct MediaTarget: Hashable, Sendable {
     public var findingId: String?
     public var componentId: String?
     public var testResultId: String?
+    /// An issue reported on the job (docs/design/2026-11-16-service-issues.md).
+    public var serviceIssueId: String?
 
-    public init(jobId: String, findingId: String? = nil, componentId: String? = nil, testResultId: String? = nil) {
+    public init(
+        jobId: String, findingId: String? = nil, componentId: String? = nil, testResultId: String? = nil,
+        serviceIssueId: String? = nil
+    ) {
         self.jobId = jobId
         self.findingId = findingId
         self.componentId = componentId
         self.testResultId = testResultId
+        self.serviceIssueId = serviceIssueId
     }
 }
 
@@ -26,6 +32,7 @@ public func jobMedia(_ store: LocalStore, _ target: MediaTarget) -> [Media] {
             (target.findingId == nil || $0.findingId == target.findingId)
                 && (target.componentId == nil || $0.jobComponentId == target.componentId)
                 && (target.testResultId == nil || $0.testResultId == target.testResultId)
+                && (target.serviceIssueId == nil || $0.serviceIssueId == target.serviceIssueId)
         }
         .sorted { ($0.capturedAt ?? $0.createdAt ?? "") > ($1.capturedAt ?? $1.createdAt ?? "") }
 }
@@ -53,25 +60,26 @@ public enum MediaWrites {
         let id = uuidv7()
         let stored = try files.store(id, captured)
         func number(_ value: Double?) -> JSONValue { value.map(JSONValue.number) ?? .null }
+        var row: Row = [
+            "job_id": .string(target.jobId),
+            "finding_id": target.findingId.map(JSONValue.string) ?? .null,
+            "job_component_id": target.componentId.map(JSONValue.string) ?? .null,
+            "test_result_id": target.testResultId.map(JSONValue.string) ?? .null,
+            "kind": .string(captured.kind.rawValue),
+            "mime_type": .string(captured.mime),
+            "size_bytes": .number(Double(stored.sizeBytes)),
+            "sha256": .string(stored.sha256),
+            "width": number(captured.width),
+            "height": number(captured.height),
+            "duration_ms": number(captured.durationMs),
+            "captured_at": .string(captured.capturedAt),
+            "latitude": number(place?.latitude),
+            "longitude": number(place?.longitude),
+            "upload_state": "pending",
+        ]
+        if let issue = target.serviceIssueId { row["service_issue_id"] = .string(issue) }
         try sync.addMedia(
-            id, companyId: companyId,
-            [
-                "job_id": .string(target.jobId),
-                "finding_id": target.findingId.map(JSONValue.string) ?? .null,
-                "job_component_id": target.componentId.map(JSONValue.string) ?? .null,
-                "test_result_id": target.testResultId.map(JSONValue.string) ?? .null,
-                "kind": .string(captured.kind.rawValue),
-                "mime_type": .string(captured.mime),
-                "size_bytes": .number(Double(stored.sizeBytes)),
-                "sha256": .string(stored.sha256),
-                "width": number(captured.width),
-                "height": number(captured.height),
-                "duration_ms": number(captured.durationMs),
-                "captured_at": .string(captured.capturedAt),
-                "latitude": number(place?.latitude),
-                "longitude": number(place?.longitude),
-                "upload_state": "pending",
-            ],
+            id, companyId: companyId, row,
             file: UploadJob(
                 mediaId: id, companyId: companyId, localPath: stored.relativePath,
                 storagePath: try mediaStoragePath(companyId, target.jobId, id, captured.mime),

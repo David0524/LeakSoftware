@@ -32,6 +32,7 @@ import {
 import { LiveStatusBadge } from "@/components/instant";
 import { getOffice } from "@/lib/auth";
 import { OPEN_STATUSES, getCompany, listJobs, mayMakeJobs, type JobRow } from "@/lib/data";
+import { openIssues } from "@/lib/issues";
 import { getLine } from "@/lib/messages";
 import { completeSendPrompt } from "@/lib/next-step";
 import { JobActions, type JobRowData } from "@/components/list-actions";
@@ -78,9 +79,10 @@ export default async function JobsPage({ searchParams }: PageProps<"/jobs">) {
   // address. It narrows the status filter and the search, as Sort orders them.
   const types = jobTypeFilters(companyServices(company.settings));
   const type = jobTypeFilter(typeParam, companyServices(company.settings));
-  const [found, line] = await Promise.all([
+  const [found, line, issues] = await Promise.all([
     listJobs(office, filter.statuses, { limit, search, sort, type }),
     lineLoad,
+    openIssues(office),
   ]);
   const reportMode = visitReportMode(company.settings);
   // A row's swipe actions and menu (gestures.md section 12), from what its page offers.
@@ -132,7 +134,7 @@ export default async function JobsPage({ searchParams }: PageProps<"/jobs">) {
       {/* Phones: one search across the shop under the title (owner, 2026-10-20); it takes the
           list's place while in use. Wider screens search jobs here. Sort stays on both. */}
       <PhoneSearch userId={office.user.id}>
-        <JobsTabs current="jobs" />
+        <JobsTabs current="jobs" openIssues={issues} />
         <PillRow
           label="Filter jobs by status"
           className="-mx-4 -mt-1.5 mb-3.5 flex gap-2 overflow-x-auto px-4 whitespace-nowrap sm:mx-0 sm:flex-wrap sm:px-0"

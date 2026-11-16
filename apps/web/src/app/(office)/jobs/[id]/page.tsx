@@ -6,6 +6,7 @@ import { notFound } from "next/navigation";
 import { Suspense } from "react";
 import {
   cardFeeBps,
+  companyServices,
   directionsHref,
   visitReportMode,
   JOB_TYPE_LABELS,
@@ -141,6 +142,8 @@ import { SheetRow } from "@/components/settings-list";
 import { SkipVisit, SkippedActions } from "@/components/skip-visit";
 import { SampleJob } from "@/components/sample-job";
 import { JobRepairs } from "@/components/job-repairs";
+import { JobIssues } from "@/components/issues";
+import { jobIssues } from "@/lib/issues";
 import { WrapUpList } from "@/components/wrap-up";
 import { wrapUpInput } from "@/lib/wrap-up";
 
@@ -159,10 +162,11 @@ export default async function JobPage({ params, searchParams }: PageProps<"/jobs
   quiet(getQuotes(office, id));
   quiet(listConfig(office, "price_book_item"));
   if (office.isManager) quiet(getPaymentAccount(office));
-  const [detail, company, line] = await Promise.all([
+  const [detail, company, line, issues] = await Promise.all([
     getJob(office, id),
     getCompany(office),
     getLine(office),
+    jobIssues(office, id),
   ]);
   if (!detail) notFound();
   const { job } = detail;
@@ -485,6 +489,14 @@ export default async function JobPage({ params, searchParams }: PageProps<"/jobs
                         ))}
                       </Grouped>
                     ) : null}
+
+                    {/* Report an Issue (docs/design/2026-11-16-service-issues.md). */}
+                    <JobIssues
+                      jobId={job.id}
+                      issues={issues}
+                      services={companyServices(company.settings)}
+                      timeZone={tz}
+                    />
                   </div>
 
                   <section aria-labelledby="on-site">

@@ -51,6 +51,7 @@ describe("notifications", () => {
       "opened",
       "skip",
       "feedback",
+      "issue",
       "live",
       "day",
       "chemistry",

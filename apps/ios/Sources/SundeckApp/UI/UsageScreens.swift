@@ -31,6 +31,7 @@
             case .signature: "/jobs/:id/signature"
             case .review: "/jobs/:id/review"
             case .newJob: "/jobs/new"
+            case .issue: "/jobs/issues/:id"
             }
         }
     }

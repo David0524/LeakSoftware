@@ -62,7 +62,8 @@ export function useAttachedTo(media: Media | undefined): string {
   return (
     (media.finding_id && insp.findings.find((f) => f.id === media.finding_id)?.title) ||
     (media.job_component_id && insp.componentById.get(media.job_component_id)?.label) ||
-    (media.test_result_id ? "Test" : "Job")
+    (media.test_result_id ? "Test" : null) ||
+    ((media as Media & { service_issue_id?: string | null }).service_issue_id ? "Issue" : "Job")
   );
 }
 
@@ -606,7 +607,8 @@ export function AudioRow({ uri, durationMs }: { uri: string; durationMs: number 
 const PER_ROW = 4;
 
 /** Small thumbnails for the sheets and the checklist item: four to a row. */
-function Thumbs({ media }: { media: Media[] }) {
+/** Captures as thumbnails in rows of four (also an issue's photos on its page). */
+export function Thumbs({ media }: { media: Media[] }) {
   const [width, setWidth] = useState(0);
   // Touch and hold a thumbnail for Mark Up and Delete (gestures spec section 12).
   const hold = useRowMenu();

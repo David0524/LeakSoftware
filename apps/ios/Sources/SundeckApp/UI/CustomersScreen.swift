@@ -255,6 +255,8 @@
                 }
                 // Autopay (docs/design/2026-11-16-autopay.md): owners and admins.
                 if manager { AutopayGroup(customer: c) }
+                // Problems techs reported on visits (docs/design/2026-11-16-service-issues.md).
+                CustomerIssuesGroup(customerId: c.id)
                 if c.pools.isEmpty { EmptyState(text: "No pools.") }
                 ForEach(Array(c.pools.enumerated()), id: \.element.id) { index, pool in
                     poolGroups(pool, customer: c, title: c.pools.count > 1 ? "Pool \(index + 1)" : "Pool")

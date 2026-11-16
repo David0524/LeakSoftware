@@ -16,6 +16,7 @@ export type NotificationKind =
   | "opened"
   | "skip"
   | "feedback"
+  | "issue"
   | "live"
   | "day"
   | "chemistry";
@@ -42,6 +43,13 @@ export const NOTIFICATION_KINDS: { key: NotificationKind; label: string; hint?: 
     key: "feedback",
     label: "Customer complaints",
     hint: "Owners and admins: a customer gave a thumbs down.",
+  },
+  // A tech reported an issue on a visit (docs/design/2026-11-16-service-issues.md): to the
+  // owners and admins, who resolve it or make a job of it.
+  {
+    key: "issue",
+    label: "Reported issues",
+    hint: "Owners and admins: a problem a tech reported on a visit.",
   },
   // Owner, 2026-10-20: "Add a Live Activities toggle in the notifications setting." The stop
   // you're on, on the Lock Screen during the workday (iPhone's Live Activity, Android's ongoing
@@ -126,6 +134,13 @@ export function reportNotification(customer: string): NotificationText {
 /** The customer opened a report's link for the first time: "Rebecca Soto opened the report." */
 export function reportOpenedNotification(customer: string): NotificationText {
   return { title: "Report opened", body: `${customer} opened the report.` };
+}
+
+/** A tech reported an issue: "Issue reported" · "Rebecca Soto: Cracked skimmer throat". */
+export function issueNotification(customer: string, description: string): NotificationText {
+  const text = description.trim().replace(/\s+/g, " ");
+  const what = text.length > 150 ? `${text.slice(0, 149)}…` : text;
+  return { title: "Issue reported", body: `${customer}: ${what}` };
 }
 
 // ---------------------------------------------------------------------------
