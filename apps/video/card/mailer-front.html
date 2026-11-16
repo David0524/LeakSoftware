@@ -35,6 +35,31 @@
         left: 78px;
         top: 1100px;
       }
+      /* The offer: 3 months free (owner, 2026-11-16; create_company gives the mailer's shops
+         3 months) and free setup help. */
+      .offer {
+        left: 75px;
+        top: 1262px;
+        width: 800px;
+        border-radius: 32px;
+        padding: 26px 34px 26px 26px;
+        display: flex;
+        align-items: center;
+        gap: 24px;
+      }
+      .offer .t {
+        font-family: Barlow;
+        font-weight: 800;
+        font-size: 60px;
+        line-height: 1;
+      }
+      .offer .d {
+        font-size: 32px;
+        line-height: 1.3;
+        font-weight: 500;
+        color: rgba(255, 255, 255, 0.88);
+        margin-top: 8px;
+      }
       /* Sign up, as on the card's foot, with the mailer's own QR (?from=mailer). */
       .foot {
         top: 1505px;
@@ -66,16 +91,36 @@
         <img src="../../web/public/badges/app-store.svg" alt="Download on the App Store" />
         <img src="../../web/public/badges/google-play.png" alt="Get it on Google Play" />
       </div>
+      <div class="abs offer glass dark">
+        <div class="tile" style="background: var(--pass)">
+          <svg
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="#fff"
+            stroke-width="2.8"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          >
+            <path d="M5 12.5l4.5 4.5L19 7.5" />
+          </svg>
+        </div>
+        <div>
+          <div class="t">3 months free</div>
+          <div class="d">Plus free setup help: we'll move your customers over for you.</div>
+        </div>
+      </div>
       <div class="abs foot glass white">
         <div class="qr"><img src="qr-mailer.svg" /></div>
         <div class="cta">
-          <div class="btn">Start Your Free Trial</div>
+          <div class="btn">Start Your 3-Month Free Trial</div>
           <div class="row">
             <div class="url">sundeckpro.com</div>
             <div class="price">Starting at $49/mo</div>
           </div>
         </div>
-        <div class="contact">office@sundeckpro.com<br /><span>Call</span> (702) 785-1548</div>
+        <div class="contact">
+          <span>Free setup help:</span> (702) 785-1548<br />office@sundeckpro.com
+        </div>
       </div>
     </div>
   </body>

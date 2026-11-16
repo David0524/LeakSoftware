@@ -15,6 +15,18 @@ select results_eq($$ select heard_from, heard_from_other from subscription
                      where company_id = (select id from made where label = 'card') $$,
   $$ values ('card'::text, null::text) $$, 'the answer is kept with the new shop');
 
+-- The mailer's shops get 3 months free; everyone else 30 days (owner, 2026-11-16).
+select tests.authenticate_as(tests.create_user('mailer@heard.local'));
+insert into made select 'mailer', create_company('Mailer Pools', null, 'pool', 'mailer');
+reset role;
+select results_eq($$ select heard_from, trial_ends_at::date from subscription
+                     where company_id = (select id from made where label = 'mailer') $$,
+  $$ values ('mailer'::text, (now() + interval '3 months')::date) $$,
+  'a shop from the mailer gets a 3-month trial');
+select results_eq($$ select trial_ends_at::date from subscription
+                     where company_id = (select id from made where label = 'card') $$,
+  $$ values ((now() + interval '30 days')::date) $$, 'others keep 30 days');
+
 -- Other, with its text cleaned up and cut to 100 characters.
 select tests.authenticate_as(tests.create_user('other@heard.local'));
 insert into made select 'other', create_company('Other Pools', null, 'pool', ' Other ',
