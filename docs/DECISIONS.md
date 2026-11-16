@@ -2,6 +2,11 @@
 
 Newest first. Each entry: date, decision, reason.
 
+## 2026-11-16 (owner: "chlorine or salt pool, spa or no spa, pool gallons, gate code, does it have heater, solar heater … Keep access notes (gate code, pets, etc) separate from the pool notes")
+- **A pool records its sanitizer (Chlorine, Salt, Bromine, Other), heater (None, Gas, Heat pump, Electric, Other) and whether it has a solar heater**, beside the pool type, gallons and spa it already had. Empty pickers read "Not sure". Solar is its own switch because a pool can have a gas heater and solar panels too. Reason: Nick keeps paper notes on who has a solar heater, since those need draining before a freeze (`20261022004300_pool_equipment.sql`).
+- **Pool notes** (property.notes, which Today already showed) get their own box in Pool Details, apart from Access notes ("Gate code, pets, where to park."). The customer's page shows both.
+- **The line under the pool's address** on the customer's and job's pages names them: "Gunite / plaster · Pool and spa · 20,000 gallons · Salt · Gas heater · Solar heater" (core `poolSummary`). On all four platforms.
+
 ## 2026-11-16 (owner: "Run CI locally, then merge")
 - **While GitHub Actions starts no jobs, CI runs in the session before a merge:** `pnpm format:check`, `pnpm lint`, `pnpm typecheck`, `pnpm test`, `pnpm test:db`, and the website's build and Playwright tests against the dev project. Swift (`swift format lint`, `swift test`) and the iPhone build can't run in a cloud session; say so when a change touches them, and let CI run them once Actions works again.
 

@@ -329,6 +329,8 @@ export interface Customer extends Base {
 }
 
 export type PoolType = "gunite_plaster" | "vinyl" | "fiberglass" | "other";
+export type Sanitizer = "chlorine" | "salt" | "bromine" | "other";
+export type Heater = "none" | "gas" | "heat_pump" | "electric" | "other";
 
 export interface Property extends Base {
   customer_id: string;
@@ -344,7 +346,14 @@ export interface Property extends Base {
   approx_gallons?: number | null;
   /** Mirror and spa placement (owner, 2026-10-19); read with parseDiagramLayout. */
   diagram_layout?: unknown;
+  /** Chlorine, salt, bromine or other; empty is "Not sure" (owner, 2026-11-16). */
+  sanitizer?: Sanitizer | null;
+  /** The pool's heater, if any; empty is "Not sure". */
+  heater?: Heater | null;
+  /** A solar heater, apart from the heater: drained before a freeze. */
+  has_solar_heater?: boolean;
   access_notes?: string | null;
+  /** Pool notes: equipment and quirks, kept apart from access notes. */
   notes?: string | null;
   latitude?: number | null;
   longitude?: number | null;

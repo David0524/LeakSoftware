@@ -9,7 +9,7 @@ import {
   visitReportMode,
   JOB_TYPE_LABELS,
   MEDIA_KIND_LABELS,
-  POOL_TYPE_LABELS,
+  poolSummary,
   SIGNATURE_PURPOSE_LABELS,
   checklistTally,
   checklistTallyText,
@@ -335,17 +335,7 @@ export default async function JobPage({ params, searchParams }: PageProps<"/jobs
                               ) : null}
                             </>
                           }
-                          detail={[
-                            job.property.pool_type
-                              ? POOL_TYPE_LABELS[job.property.pool_type]
-                              : null,
-                            job.property.has_spa ? "Pool and spa" : "Pool",
-                            job.property.approx_gallons
-                              ? `${job.property.approx_gallons.toLocaleString("en-US")} gallons`
-                              : null,
-                          ]
-                            .filter(Boolean)
-                            .join(" · ")}
+                          detail={poolSummary(job.property)}
                           accessory={
                             <a
                               href={directionsHref({

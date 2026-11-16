@@ -239,9 +239,11 @@ public struct CustomerPool: Identifiable, Equatable, Sendable {
     public var id: String
     public var row: Row
     public var address: String
-    /// "Gunite / plaster · Pool and spa · 20,000 gallons".
+    /// "Gunite / plaster · Pool and spa · 20,000 gallons · Salt · Gas heater · Solar heater".
     public var detail: String
     public var accessNotes: String?
+    /// Pool notes (property.notes), kept apart from access notes (owner, 2026-11-16).
+    public var poolNotes: String?
     /// The Chemical row's line: "Last: FC 3 · pH 7.6 · Mon, Oct 19, 8:15 AM", or nil before any
     /// reading is submitted.
     public var chemicalLine: String?
@@ -308,12 +310,9 @@ public func customerDetail(
                 }
             return CustomerPool(
                 id: p.id, row: p, address: address,
-                detail: [
-                    decoded?.poolType?.label, p["has_spa"]?.bool == true ? "Pool and spa" : "Pool",
-                    poolGallonsLabel(p["approx_gallons"]),
-                ]
-                .compactMap { $0 }.joined(separator: " · "),
+                detail: poolSummary(row: p),
                 accessNotes: trimmed(p["access_notes"]),
+                poolNotes: trimmed(p["notes"]),
                 chemicalLine: latestChemicalLine(
                     store, companyId: companyId, propertyId: p.id, now: now, timeZone: timeZone),
                 jobs: poolJobs,
@@ -356,6 +355,12 @@ public enum CustomerWrites {
 }
 
 // MARK: - Gallons (owner, 2026-10-19)
+
+/// A property row's summary line (core `poolSummary`): "Gunite / plaster · Pool and spa · 20,000
+/// gallons · Salt · Gas heater · Solar heater".
+public func poolSummary(row: Row) -> String {
+    poolSummary((try? JSONValue.object(row).decode(PoolSummaryInput.self)) ?? PoolSummaryInput())
+}
 
 /// "20,000 gallons" for a pool row's detail line (a plain number, no size remarks), or nil when
 /// the pool's gallons aren't set.

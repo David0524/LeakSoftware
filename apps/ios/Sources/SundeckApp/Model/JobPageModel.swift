@@ -189,7 +189,7 @@ public struct JobDetails: Equatable, Sendable {
     public var email: String?
     /// The Pool group, when the job has a property.
     public var address: String?
-    /// "Gunite / plaster · Pool and spa · 20,000 gallons".
+    /// "Gunite / plaster · Pool and spa · 20,000 gallons · Salt · Gas heater" (core `poolSummary`).
     public var poolDetail: String?
     public var accessNotes: String?
     /// "Tony Tech", or "Nobody yet".
@@ -222,13 +222,9 @@ public struct JobDetails: Equatable, Sendable {
         customerName = job.customer?["name"]?.string
         phone = job.customer?["phone"]?.string.flatMap { $0.isEmpty ? nil : $0 }
         email = job.customer?["email"]?.string.flatMap { $0.isEmpty ? nil : $0 }
-        if let property = job.decodedProperty {
+        if job.decodedProperty != nil {
             address = job.address
-            poolDetail = [
-                property.poolType?.label, property.hasSpa ? "Pool and spa" : "Pool",
-                poolGallonsLabel(job.property?["approx_gallons"]),
-            ]
-            .compactMap { $0 }.joined(separator: " · ")
+            poolDetail = job.property.map { poolSummary(row: $0) }
             accessNotes = job.property?["access_notes"]?.string.flatMap { $0.isEmpty ? nil : $0 }
         }
         let assigned = job.job["assigned_user_id"]?.string
