@@ -326,6 +326,8 @@ export interface Customer extends Base {
   marketing_opt_out?: boolean;
   phone?: string | null;
   notes?: string | null;
+  /** Charged automatically with a saved card (server-written; 2026-11-16-autopay.md). */
+  autopay?: boolean;
 }
 
 export type PoolType = "gunite_plaster" | "vinyl" | "fiberglass" | "other";

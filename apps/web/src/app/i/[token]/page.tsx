@@ -3,8 +3,12 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { Suspense } from "react";
 import {
+  autopayConsent,
   cardFeeChoice,
+  customerAutopayLine,
   formatCents,
+  payOverTimeButton,
+  payOverTimeLine,
   formatQuantity,
   invoiceSummary,
   monthName,
@@ -18,7 +22,7 @@ import { tokens } from "@leakbook/tokens";
 import { PayInvoiceForm } from "@/components/invoice-actions";
 import { cx } from "@/components/ui";
 import { publicClient } from "@/server/reports";
-import { cardFeeFor, paymentsConfigured } from "@/server/stripe";
+import { cardFeeFor, payLaterOffer, paymentsConfigured } from "@/server/stripe";
 import { ContactLine } from "@/components/contact-line";
 import {
   Banner,
@@ -122,6 +126,30 @@ async function InvoicePage({ params, searchParams }: PageProps<"/i/[token]">) {
   const report = monthReport as { token: string; month: string; visits: number } | null;
   // The shop passes the card fee on: card or bank, chosen before paying (owner, 2026-10-19).
   const feeBps = paymentsConfigured() && i.can_pay ? await cardFeeFor("invoice", i.invoice_id) : 0;
+  // Autopay and Pay Over Time (docs/design/2026-11-16-autopay.md).
+  const { data: autopayData } = await db.rpc("invoice_autopay_for_token", { link_token: token });
+  const autopay = autopayData as {
+    status: string | null;
+    method: string | null;
+    customer_autopay: boolean;
+    customer_id: string | null;
+    shop_autopay: boolean;
+  } | null;
+  const autopayLine = autopay
+    ? customerAutopayLine({ autopay_status: autopay.status, autopay_method: autopay.method })
+    : null;
+  const open = i.status === "sent" || i.status === "partially_paid";
+  const laterLine =
+    paymentsConfigured() && i.can_pay && open && i.balance_cents > 0
+      ? payOverTimeLine(await payLaterOffer("invoice", i.invoice_id, i.balance_cents))
+      : null;
+  // Save for Autopay: the shop offers it and this customer doesn't pay automatically yet.
+  const offerSave =
+    paymentsConfigured() &&
+    i.can_pay &&
+    !!autopay?.customer_id &&
+    autopay.shop_autopay &&
+    !autopay.customer_autopay;
 
   const c = i.company;
   const tz = c.timezone;
@@ -358,6 +386,14 @@ async function InvoicePage({ params, searchParams }: PageProps<"/i/[token]">) {
               {formatCents(i.balance_cents)}.
             </p>
           ) : null}
+          {autopayLine ? (
+            <p
+              className={cx("mb-4", autopay?.status === "failed" && "font-medium text-status-fail")}
+              data-testid="autopay-line"
+            >
+              {autopayLine}
+            </p>
+          ) : null}
           {isReceipt ? (
             <p>Paid{i.paid_at ? ` on ${date(i.paid_at, tz)}` : ""}. Thank you for your business!</p>
           ) : processing ? (
@@ -375,6 +411,10 @@ async function InvoicePage({ params, searchParams }: PageProps<"/i/[token]">) {
               amount={formatCents(i.balance_cents)}
               demo={!paymentsConfigured()}
               cardFee={feeBps ? cardFeeChoice(i.balance_cents, feeBps) : null}
+              later={
+                laterLine ? { line: laterLine, button: payOverTimeButton(i.balance_cents) } : null
+              }
+              save={offerSave ? { consent: autopayConsent(c.name, feeBps) } : null}
             />
           ) : (
             <p>

@@ -77,3 +77,4 @@ export * from "./price-book";
 export * from "./drafts";
 export * from "./next-day";
 export * from "./monthly-billing";
+export * from "./autopay";

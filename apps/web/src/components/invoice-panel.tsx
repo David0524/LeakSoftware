@@ -14,6 +14,7 @@ import {
   invoiceBalance,
   invoiceTotals,
   lineTotal,
+  type SavedMethod,
 } from "@leakbook/core";
 import {
   addInvoiceLine,
@@ -27,6 +28,7 @@ import type { InvoiceRow } from "@/lib/data";
 import { CopyLink, SField, STextArea, SettingsForm } from "./settings-forms";
 import { Button, Checkbox, Field, Notice } from "./ui";
 import { Draft } from "./draft-keeper";
+import { InvoiceAutopay } from "./autopay";
 import { orOffline } from "@/lib/offline";
 import {
   RecordPaymentFields,
@@ -117,6 +119,7 @@ export function InvoicePanel({
   emailReady,
   isOwner,
   role,
+  autopay = null,
 }: {
   invoice: InvoiceRow;
   jobId: string;
@@ -131,6 +134,11 @@ export function InvoicePanel({
   isOwner: boolean;
   /** The person's role: anyone on the team records payments (owner, 2026-10-22). */
   role: string;
+  /**
+   * Autopay (docs/design/2026-11-16-autopay.md): the customer's saved method, the shop's card
+   * fee, and the customer's name, for Charge Card on File (owners and admins).
+   */
+  autopay?: { method: SavedMethod | null; feeBps: number; customer: string } | null;
 }) {
   const [sendState, sendAction, sending] = useActionState(orOffline(sendInvoiceAction), {});
   const draft = invoice.status === "draft";
@@ -292,6 +300,15 @@ export function InvoicePanel({
               ))}
             </ul>
           ) : null}
+          <InvoiceAutopay
+            invoice={invoice}
+            jobId={jobId}
+            method={autopay?.method ?? null}
+            balanceCents={balance}
+            feeBps={autopay?.feeBps ?? 0}
+            customer={autopay?.customer ?? "The customer"}
+            canCharge={isOwner && !!autopay}
+          />
           {link && invoice.status !== "void" ? <CopyLink url={link} label="Customer link" /> : null}
           <InvoiceReceipts
             invoice={invoice}

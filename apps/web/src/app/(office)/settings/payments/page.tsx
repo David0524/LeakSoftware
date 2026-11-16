@@ -1,7 +1,13 @@
 import type { Metadata } from "next";
 import {
+  AUTOPAY_RETRY_CHOICES,
+  AUTOPAY_RETRY_DAY_CHOICES,
+  AUTOPAY_TEXT,
   AUTO_SEND_FOOTER,
   AUTO_SEND_LABEL,
+  autopaySettings,
+  payOverTimeOn,
+  payOverTimeStatus,
   CARD_FEE_MAX_BPS,
   INVOICE_DAYS,
   INVOICE_DAY_FOOTER,
@@ -12,7 +18,12 @@ import {
   sendsMonthlyInvoices,
   shopInvoiceDay,
 } from "@leakbook/core";
-import { saveCardFee, saveInvoiceDay, savePayments } from "@/app/actions/settings";
+import {
+  saveAutopaySettings,
+  saveCardFee,
+  saveInvoiceDay,
+  savePayments,
+} from "@/app/actions/settings";
 import { Banner } from "@/components/doc-ui";
 import {
   SField,
@@ -27,7 +38,7 @@ import { OWNER_ONLY, getOffice } from "@/lib/auth";
 import { getCompany, getPaymentAccount } from "@/lib/data";
 import { siteOrigin } from "@/lib/origin";
 import { PaymentsSetupButton } from "@/components/payments-setup";
-import { paymentsConfigured, refreshAccount } from "@/server/stripe";
+import { payLaterStatusFor, paymentsConfigured, refreshAccount } from "@/server/stripe";
 
 export const metadata: Metadata = { title: "Payments and Deposits · Sundeck Pro" };
 
@@ -56,6 +67,15 @@ export default async function PaymentsSettingsPage({
   const company = await getCompany(office);
   const s = company.settings as Settings;
   const deposit = s.deposit ?? {};
+  // Autopay and Pay Over Time (docs/design/2026-11-16-autopay.md).
+  const autopay = autopaySettings(company.settings);
+  const laterOn = payOverTimeOn(company.settings);
+  const laterStatus = payOverTimeStatus(
+    laterOn,
+    laterOn && paymentsConfigured() && account?.charges_enabled
+      ? await payLaterStatusFor(office.company.id)
+      : null,
+  );
   // One filled button per page: while Stripe setup is pending, that is the main action.
   const setupPending = paymentsConfigured() && !account?.charges_enabled && office.isOwner;
 
@@ -139,6 +159,44 @@ export default async function PaymentsSettingsPage({
               <Banner tone="info">{OWNER_ONLY}</Banner>
             </div>
           )}
+        </SettingsSection>
+
+        <SettingsSection title="Autopay and pay over time">
+          <SettingsForm action={saveAutopaySettings} full>
+            <SSwitch
+              label={AUTOPAY_TEXT.shopSwitch}
+              name="autopay"
+              defaultChecked={autopay.on}
+              hint={AUTOPAY_TEXT.shopFooter}
+            />
+            <SettingsFields labelWidth="12rem">
+              <SSelect
+                label={AUTOPAY_TEXT.retries}
+                name="autopay_retries"
+                defaultValue={String(autopay.retries)}
+                options={AUTOPAY_RETRY_CHOICES.map((c) => ({
+                  value: String(c.value),
+                  label: c.label,
+                }))}
+              />
+              <SSelect
+                label={AUTOPAY_TEXT.retryEvery}
+                name="autopay_retry_days"
+                defaultValue={String(autopay.retryDays)}
+                options={AUTOPAY_RETRY_DAY_CHOICES.map((c) => ({
+                  value: String(c.value),
+                  label: c.label,
+                }))}
+                hint={AUTOPAY_TEXT.retriesFooter}
+              />
+            </SettingsFields>
+            <SSwitch
+              label={AUTOPAY_TEXT.payOverTime}
+              name="pay_over_time"
+              defaultChecked={laterOn}
+              hint={`${AUTOPAY_TEXT.payOverTimeFooter} ${laterStatus}`}
+            />
+          </SettingsForm>
         </SettingsSection>
 
         <SettingsSection title="Deposits, tax, and discounts">

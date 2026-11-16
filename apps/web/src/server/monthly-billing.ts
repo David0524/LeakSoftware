@@ -9,7 +9,7 @@ import {
   type SendAllResult,
 } from "@leakbook/core";
 import { Refusal, dbFailure } from "./failures";
-import { sendInvoice } from "./invoices";
+import { sendInvoiceWithAutopay as sendInvoice } from "./autopay";
 import { activeLine, sendCompanyText } from "./texting";
 
 // Monthly Billing (owner, 2026-11-15; docs/design/2026-11-15-monthly-billing.md): a month's

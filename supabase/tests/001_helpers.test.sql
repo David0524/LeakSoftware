@@ -130,6 +130,12 @@ begin
   insert into call_log (company_id, conversation_id, direction, status)
     values (c, conv, 'in', 'missed');
   insert into stripe_account (company_id, stripe_account_id) values (c, 'acct_' || label);
+  -- The customer's saved card (server only; owners and admins read it; 894_autopay).
+  insert into customer_payment_method (company_id, customer_id, kind, brand, last4, exp_month,
+                                       exp_year, stripe_account_id, stripe_customer_id,
+                                       stripe_payment_method_id)
+    values (c, cust, 'card', 'visa', '4242', 4, 2030, 'acct_' || label, 'cus_' || label,
+            'pm_' || label);
   insert into subscription (company_id) values (c);
   insert into invite (company_id, email, role) values (c, 'new-' || label || '@test.local', 'tech');
   insert into audit_log (company_id, table_name, row_id, field) values (c, 'job', j, 'status');

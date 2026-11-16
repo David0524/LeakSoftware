@@ -253,6 +253,8 @@
                     if let notes = c.notes { ListRow("Notes", detail: notes) }
                     ActionRow("Edit Contact Details") { editingContact = true }
                 }
+                // Autopay (docs/design/2026-11-16-autopay.md): owners and admins.
+                if manager { AutopayGroup(customer: c) }
                 if c.pools.isEmpty { EmptyState(text: "No pools.") }
                 ForEach(Array(c.pools.enumerated()), id: \.element.id) { index, pool in
                     poolGroups(pool, customer: c, title: c.pools.count > 1 ? "Pool \(index + 1)" : "Pool")

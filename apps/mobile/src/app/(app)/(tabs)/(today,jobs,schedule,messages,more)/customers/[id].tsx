@@ -26,6 +26,7 @@ import { Alert, Linking, StyleSheet, Text, View } from "react-native";
 import { latestByPool, useChemicalLog } from "../../../../../data/chemicals";
 import { KIND_LABELS, useCustomerData } from "../../../../../data/customers";
 import { MaintenancePlans } from "../../../../../features/maintenance/MaintenancePlans";
+import { AutopayGroup } from "../../../../../features/autopay/AutopayGroup";
 import { useRememberOpened } from "../../../../../features/search/useRememberOpened";
 import { useTeam } from "../../../../../data/schedule";
 import { useLine } from "../../../../../data/texting";
@@ -189,6 +190,9 @@ export default function CustomerPage() {
             />
           </Group>
         </Section>
+
+        {/* Autopay (docs/design/2026-11-16-autopay.md): owners and admins. */}
+        {manager ? <AutopayGroup customer={customer} /> : null}
 
         {pools.length === 0 ? <T muted>No pools.</T> : null}
         {pools.map((p, i) => {

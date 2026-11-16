@@ -25,6 +25,7 @@ import type {
   InvoiceLine,
   MonthBilling,
   VisitCharge,
+  SavedMethod,
 } from "@leakbook/core";
 import {
   canMakeJobs,
@@ -762,6 +763,25 @@ export async function getCustomer(office: Office, id: string) {
   return { customer: customer as Customer, properties, plans, jobs: await attach(office, jobs) };
 }
 
+/**
+ * The customer's saved card or bank account (docs/design/2026-11-16-autopay.md), or null.
+ * Owners and admins read it; for anyone else row security returns none.
+ */
+export async function getSavedMethod(
+  office: Office,
+  customerId: string,
+): Promise<(SavedMethod & { id: string }) | null> {
+  const supabase = await db();
+  const { data } = await supabase
+    .from("customer_payment_method")
+    .select("id, kind, brand, last4, exp_month, exp_year, bank_name")
+    .eq("company_id", office.company.id)
+    .eq("customer_id", customerId)
+    .is("deleted_at", null)
+    .maybeSingle();
+  return (data as (SavedMethod & { id: string }) | null) ?? null;
+}
+
 // ---------------------------------------------------------------------------
 // Settings
 // ---------------------------------------------------------------------------
@@ -1025,13 +1045,18 @@ export interface InvoiceRow {
   notes: string | null;
   sent_at: string | null;
   paid_at: string | null;
+  /** The latest automatic charge (docs/design/2026-11-16-autopay.md). */
+  autopay_status: string | null;
+  autopay_method: string | null;
+  autopay_failure: string | null;
+  autopay_next_try: string | null;
   lines: InvoiceLineRow[];
   payments: QuoteRow["payments"];
   token: string | null;
 }
 
 const INVOICE_COLUMNS =
-  "id, job_id, number, status, subtotal_cents, discount_cents, tax_cents, credit_cents, total_cents, amount_paid_cents, due_date, notes, sent_at, paid_at";
+  "id, job_id, number, status, subtotal_cents, discount_cents, tax_cents, credit_cents, total_cents, amount_paid_cents, due_date, notes, sent_at, paid_at, autopay_status, autopay_method, autopay_failure, autopay_next_try";
 
 /** A job's invoices, newest first, with lines, payments, and the customer link. */
 export const getInvoices = cache(async function getInvoices(

@@ -1,6 +1,7 @@
 import "server-only";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import {
+  autopayFailedNotification,
   formatAddress,
   formatSchedule,
   jobNotification,
@@ -211,3 +212,70 @@ export const notifyReportSigned = quietly(notifyReportSignedUnsafe);
 export const notifyJobChanged = quietly(notifyJobChangedUnsafe);
 export const notifyPaid = quietly(notifyPaidUnsafe);
 export const notifyReportOpened = quietly(notifyReportOpenedUnsafe);
+
+/**
+ * An autopay or Charge Card on File payment succeeded (docs/design/2026-11-16-autopay.md): told
+ * as notifyPaid tells a Checkout payment, claimed on the payment's Activity row so the charge's
+ * answer and Stripe's event notify once.
+ */
+async function notifyPaidIntentUnsafe(db: SupabaseClient, intentId: string) {
+  const { data, error } = await db.rpc("claim_intent_notification", { intent_id: intentId });
+  if (error || !data) return;
+  const p = data as {
+    company_id: string;
+    job_id: string | null;
+    invoice_id: string | null;
+    invoice_number: number | null;
+    amount_cents: number;
+    customer_name: string | null;
+  };
+  await notify(db, {
+    userIds: [
+      ...(p.job_id ? await jobTechs(db, p.job_id) : []),
+      ...(await shopManagers(db, p.company_id)),
+    ],
+    kind: "payment",
+    text: paymentNotification(
+      p.customer_name?.trim() || "A customer",
+      p.amount_cents,
+      p.invoice_number ? `invoice ${p.invoice_number}` : "invoice",
+    ),
+    data: {
+      ...(p.job_id ? { job: p.job_id } : {}),
+      ...(p.invoice_id ? { invoice: p.invoice_id } : {}),
+    },
+  });
+}
+
+/** An automatic payment didn't go through: the owners and admins. */
+async function notifyAutopayFailedUnsafe(
+  db: SupabaseClient,
+  input: {
+    companyId: string;
+    invoiceId: string;
+    customer: string | null;
+    amountCents: number;
+    number: number | null;
+    reason: string | null;
+  },
+) {
+  const { data: inv } = await db
+    .from("invoice")
+    .select("job_id")
+    .eq("id", input.invoiceId)
+    .maybeSingle();
+  await notify(db, {
+    userIds: await shopManagers(db, input.companyId),
+    kind: "payment",
+    text: autopayFailedNotification(
+      input.customer?.trim() || "A customer",
+      input.amountCents,
+      input.number,
+      input.reason,
+    ),
+    data: { invoice: input.invoiceId, ...(inv?.job_id ? { job: inv.job_id } : {}) },
+  });
+}
+
+export const notifyPaidIntent = quietly(notifyPaidIntentUnsafe);
+export const notifyAutopayFailed = quietly(notifyAutopayFailedUnsafe);

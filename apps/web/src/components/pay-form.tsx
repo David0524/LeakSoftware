@@ -22,6 +22,8 @@ export function PayForm({
   demo = false,
   print = false,
   cardFee = null,
+  later = null,
+  save = null,
 }: {
   token: string;
   label: string;
@@ -35,9 +37,17 @@ export function PayForm({
   demo?: boolean;
   /** The page is being printed (?print=1): keep the look the PDF has always had. */
   print?: boolean;
+  /**
+   * Pay Over Time (docs/design/2026-11-16-autopay.md): Affirm or Klarna qualify for this amount
+   * and the shop's Stripe account has them on. With the card fee on, its own button (no fee).
+   */
+  later?: { line: string; button: string } | null;
+  /** Save for Autopay on an invoice: a switch, with what the customer agrees to under it. */
+  save?: { consent: string } | null;
 }) {
   const [state, action, pending] = useActionState(orOffline(pay), {});
   const [preview, setPreview] = useState(false);
+  const [saving, setSaving] = useState(false);
   const checkout = state.checkout;
   // One Stripe.js instance per checkout, on the shop's account (direct charges).
   const stripe = useMemo(
@@ -91,6 +101,25 @@ export function PayForm({
     );
   }
 
+  const saveChoice =
+    save && !print ? (
+      <div className="space-y-2">
+        <label className="flex min-h-11 items-center justify-between gap-3 rounded-xl bg-surface px-4 py-2 sm:bg-bg">
+          <span className="font-medium">Save for Autopay</span>
+          <input
+            type="checkbox"
+            role="switch"
+            name="save"
+            checked={saving}
+            onChange={(e) => setSaving(e.target.checked)}
+            className="ios-switch"
+            data-testid="save-for-autopay"
+          />
+        </label>
+        <p className={note}>{save.consent}</p>
+      </div>
+    ) : null;
+
   if (cardFee)
     return (
       <form action={action} className="space-y-3">
@@ -100,6 +129,7 @@ export function PayForm({
             {state.error}
           </Banner>
         ) : null}
+        {saveChoice}
         <Button type="submit" name="method" value="bank" disabled={pending} className={button}>
           {pending ? "Opening secure payment…" : cardFee.bankLabel}
         </Button>
@@ -113,7 +143,22 @@ export function PayForm({
         >
           {cardFee.cardLabel}
         </Button>
-        <p className={note}>{cardFee.note}</p>
+        {later && !saving ? (
+          <Button
+            type="submit"
+            name="method"
+            value="later"
+            kind="secondary"
+            disabled={pending}
+            className={button}
+          >
+            {later.button}
+          </Button>
+        ) : null}
+        <p className={note}>
+          {cardFee.note}
+          {later && !saving ? ` ${later.line} has no card fee.` : ""}
+        </p>
       </form>
     );
 
@@ -125,12 +170,15 @@ export function PayForm({
           {state.error}
         </Banner>
       ) : null}
+      {saveChoice}
       <Button type="submit" disabled={pending} className={button}>
         {pending ? "Opening secure payment…" : label}
       </Button>
       <p className={note}>
-        Card, Apple Pay, Google Pay, Link, or bank account, through Stripe. Bank payments take a few
-        business days to clear.
+        {saving
+          ? "Card or bank account, through Stripe. Bank payments take a few business days to clear."
+          : "Card, Apple Pay, Google Pay, Link, or bank account, through Stripe. Bank payments take a few business days to clear."}
+        {later && !saving ? ` ${later.line}.` : ""}
       </p>
     </form>
   );
