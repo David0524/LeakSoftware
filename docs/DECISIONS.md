@@ -2,6 +2,9 @@
 
 Newest first. Each entry: date, decision, reason.
 
+## 2026-11-16 (owner: "Run CI locally, then merge")
+- **While GitHub Actions starts no jobs, CI runs in the session before a merge:** `pnpm format:check`, `pnpm lint`, `pnpm typecheck`, `pnpm test`, `pnpm test:db`, and the website's build and Playwright tests against the dev project. Swift (`swift format lint`, `swift test`) and the iPhone build can't run in a cloud session; say so when a change touches them, and let CI run them once Actions works again.
+
 ## 2026-11-16 (owner: "Make the 6x9 mailer version with its own tracking. Include Apple and Android logos. Also include our new business phone number.")
 - **A 6 x 9 mailer for mailing to pool companies** (`apps/video/card/mailer-front.html`, `mailer-back.html`; `node card/mailer.mjs` then `python3 card/mailer_finish.py` make `out/mailer-print.pdf`, two pages at 600 per inch with a 0.125 in bleed, the file a print-and-mail service takes). It goes as a postcard on thick coated stock, not laminated: a laminated card pays the USPS surcharge for stiff mail and needs an envelope. The front is the laminate card's headline and hero (framed from `front.html#hero`, so the two stay one drawing) with the store badges and a sign-up bar; the back has eight features, the badges, and the QR, price, phone and email on its left half. Its right 4.5 in is left white for the mail service's address, postage and barcode.
 - **Its own tracking: "Mailer"** (`?from=mailer`, the mailer's QR) joins "How did you hear about us?" after Laminate Card, on all four platforms (core `heard-from.ts`, which the website and Android read; the iPhone's `HeardFrom.swift`, fixture-checked). Staff see mailer sign-ups apart from card sign-ups on Admin › Shops.
