@@ -74,9 +74,15 @@ export const cheatSheet: ChapterDef = {
           rows={[
             ["See the next stop", <>On Today, the blue card is the stop you’re on.</>],
             [
-              "Skip a locked gate for now",
+              "Come back to a stop later today",
               <>
                 On the Today card, tap <Ui>Do Later</Ui>.
+              </>,
+            ],
+            [
+              "Skip a visit you can’t do",
+              <>
+                On the visit, tap <Ui>Skip Visit</Ui> and choose a reason, such as Locked Gate.
               </>,
             ],
             [
@@ -129,6 +135,12 @@ export const cheatSheet: ChapterDef = {
               </>,
             ],
             [
+              "Tell the office about a problem",
+              <>
+                On the visit’s Details, tap <Ui>Report an Issue</Ui>.
+              </>,
+            ],
+            [
               "Log the chemicals you added",
               <>
                 On the Chemicals card, tap <Ui>Mark All Added</Ui>, or use <Ui>Also Added</Ui>.
@@ -138,6 +150,12 @@ export const cheatSheet: ChapterDef = {
               "Send invoices by themselves",
               <>
                 Settings › Payments and Deposits › <Ui>Send Automatically</Ui>.
+              </>,
+            ],
+            [
+              "Get paid without chasing",
+              <>
+                Customer page › Autopay › <Ui>Request Card on File</Ui>.
               </>,
             ],
           ]}
@@ -236,6 +254,12 @@ export const cheatSheet: ChapterDef = {
               "Pin a problem to the pool",
               <>
                 Findings › <Ui>Add Finding</Ui>, then tap the diagram.
+              </>,
+            ],
+            [
+              "Tell the office about something else you saw",
+              <>
+                On the job’s Details, tap <Ui>Report an Issue</Ui>.
               </>,
             ],
             [

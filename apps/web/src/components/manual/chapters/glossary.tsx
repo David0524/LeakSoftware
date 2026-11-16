@@ -11,6 +11,36 @@ type Entry = {
 const TERMS: Entry[] = [
   // Both shops
   {
+    term: "Autopay",
+    meaning:
+      "A customer’s saved card or bank account, charged by itself. Monthly maintenance invoices are charged as they’re sent; any other invoice waits for Charge Card on File.",
+    for: "both",
+  },
+  {
+    term: "Card on file",
+    meaning:
+      "A card or bank account the customer saved with Stripe, from their invoice (Save for Autopay) or a Request Card on File link. Sundeck Pro keeps only the brand, last four digits and expiry.",
+    for: "both",
+  },
+  {
+    term: "Customer Feedback",
+    meaning:
+      "The thumbs up or down a customer gives on a report or review email. A thumbs down asks what went wrong and stays private with the shop, on the Dashboard.",
+    for: "both",
+  },
+  {
+    term: "Issue",
+    meaning:
+      "A problem a tech reported from a job for the office: a note, photos and suggested work. The office resolves it or makes a quote or job from it, under Jobs › Issues.",
+    for: "both",
+  },
+  {
+    term: "Pay over time",
+    meaning:
+      "Affirm or Klarna on an invoice or quote of $50 or more, once Stripe has approved them for the shop. The shop is paid in full; the customer pays Affirm or Klarna back.",
+    for: "both",
+  },
+  {
     term: "Checklist",
     meaning:
       "The list of items a tech works through on a visit or an inspection. The shop edits its own list under Settings › Checklist Components.",
@@ -119,6 +149,24 @@ const TERMS: Entry[] = [
   },
 
   // Pool care
+  {
+    term: "Out of Range",
+    meaning:
+      "A reading far outside its range, such as free chlorine at 1 when the aim is 3 to 6. Chemical › Out of Range lists the last 30 days, and owners and admins get a notification.",
+    for: "pool",
+  },
+  {
+    term: "Skipped",
+    meaning:
+      "A visit that couldn’t happen, with a reason (Locked Gate, Dog in Yard). It isn’t done and isn’t billed; the office reschedules or dismisses it.",
+    for: "pool",
+  },
+  {
+    term: "Trends",
+    meaning:
+      "Charts of each reading on a pool’s Chemical page over 90 days, 6 months or a year, with the range shaded, and the chemical cost by month.",
+    for: "pool",
+  },
   {
     term: "Alkalinity",
     meaning: "The water’s buffer against pH swings, in ppm. Range 80 to 120; aim 100.",

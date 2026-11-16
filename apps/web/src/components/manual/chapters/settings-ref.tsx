@@ -15,8 +15,8 @@ const SHOP: Row[] = [
   {
     name: "Company and Branding",
     what: {
-      pool: "Your name, address, time zone and phone; the logo and colors on every document; the Pool Care, Leak Detection or Both choice; reminder and review settings; and the next job number.",
-      leak: "Your name, address, time zone and phone; the logo and colors on every document; the Pool Care, Leak Detection or Both choice; reminder and review settings; the report disclaimer; and the next job number.",
+      pool: "Your name, address, time zone and phone; the logo and colors on every document; the Pool Care, Leak Detection or Both choice; reminders by Email, Text or Both, and reviews with Ask How We Did First; and the next job number.",
+      leak: "Your name, address, time zone and phone; the logo and colors on every document; the Pool Care, Leak Detection or Both choice; reminders by Email, Text or Both, and reviews with Ask How We Did First; the report disclaimer; and the next job number.",
     },
     who: "Owner and admin",
   },
@@ -36,7 +36,7 @@ const SHOP: Row[] = [
   {
     name: "Scheduling and Routes",
     what: {
-      pool: "Your working day and working days, job length, maintenance visit length, how far ahead maintenance is booked, the arrival window customers are told, the shop’s location, drive times, and Regular cleanings.",
+      pool: "Your working day and working days, job length, maintenance visit length, how far ahead maintenance is booked, the arrival window customers are told, the shop’s location, drive times, Regular cleanings, and Skip Unfinished Visits at Day’s End.",
       leak: "Your working day and working days, usual job length, the arrival window customers are told, the shop’s location, and drive times.",
     },
     who: "Owner and admin",
@@ -60,8 +60,8 @@ const MONEY: Row[] = [
   {
     name: "Payments and Deposits (website)",
     what: {
-      pool: "Stripe connection, deposits on quotes, sales tax, the card fee, and monthly invoices: the invoice day and Send Automatically.",
-      leak: "Stripe connection, deposits on quotes, sales tax, and the card fee.",
+      pool: "Stripe connection, deposits on quotes, sales tax, the card fee, Autopay with Retry Failed Payments, Offer Pay Over Time (Affirm and Klarna), and monthly invoices: the invoice day and Send Automatically.",
+      leak: "Stripe connection, deposits on quotes, sales tax, the card fee, Autopay with Retry Failed Payments, and Offer Pay Over Time (Affirm and Klarna).",
     },
     who: "Owner and admin. Only the owner connects Stripe and sets the card fee.",
   },
@@ -100,6 +100,12 @@ const CHECKS: Row[] = [
     only: "leak",
   },
   {
+    name: "Skip Reasons",
+    what: "The reasons a tech picks from when a visit can’t happen: Locked Gate, Dog in Yard, Weather and the rest. Add, rename or remove them.",
+    who: "Owner and admin",
+    only: "pool",
+  },
+  {
     name: "Report Templates",
     what: {
       pool: "Visit reports: Each Visit, Monthly or Off, with automatic sending and the photo rule.",
@@ -113,8 +119,8 @@ const MORE: Row[] = [
   {
     name: "Dashboard",
     what: {
-      pool: "The shop’s numbers: customers, plans, money collected and owed, and charts.",
-      leak: "The shop’s numbers: customers, money collected and owed, quotes accepted, and charts.",
+      pool: "The shop’s numbers: customers, plans, money collected and owed, and charts, with Customer Feedback: the complaints customers sent with a thumbs down.",
+      leak: "The shop’s numbers: customers, money collected and owed, quotes accepted, and charts, with Customer Feedback: the complaints customers sent with a thumbs down.",
     },
     who: "Owner and admin",
   },
@@ -135,7 +141,7 @@ const MORE: Row[] = [
   },
   {
     name: "Chemicals",
-    what: "The chemical calculator: enter readings and see what to add. It works with no signal.",
+    what: "The chemical calculator: enter readings and see what to add. It works with no signal. Out of Range lists readings far outside their range in the last 30 days.",
     who: "Everyone",
     only: "pool",
   },
@@ -146,7 +152,10 @@ const MORE: Row[] = [
   },
   {
     name: "Notifications",
-    what: "Which alerts reach your phone: customer texts, jobs, quotes, payments, reports, Live Activity and the start of the day. Owners and admins also choose a weekly email.",
+    what: {
+      pool: "Which alerts reach your phone: customer texts, jobs, quotes, payments, reports, Live Activity and the start of the day. Owners and admins also get skipped visits, reported issues, customer complaints and out-of-range readings, and choose a weekly email.",
+      leak: "Which alerts reach your phone: customer texts, jobs, quotes, payments, reports, Live Activity and the start of the day. Owners and admins also get reported issues and customer complaints, and choose a weekly email.",
+    },
     who: "Everyone",
   },
   {
