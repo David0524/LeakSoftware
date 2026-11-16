@@ -13,7 +13,8 @@ import { join } from "node:path";
 
 const root = join(import.meta.dirname, "..");
 const sb = join(root, "supabase");
-const TEST_DB = "leakbook_test";
+// TEST_DB_NAME lets several worktrees run at once against one local Postgres.
+const TEST_DB = process.env.TEST_DB_NAME || "leakbook_test";
 
 function run(cmd, args, opts = {}) {
   const r = spawnSync(cmd, args, { stdio: "inherit", cwd: root, ...opts });
