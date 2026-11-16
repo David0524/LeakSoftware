@@ -4,17 +4,19 @@ Paste everything below the line into Claude in Chrome, signed in to Chrome with 
 account that owns the Play developer account. It only looks: it changes nothing. When it
 finishes, paste its report back to Claude Code.
 
-Why (2026-11-13): the owner expected a Google review email and hasn't had one. The repository's
-records say: 1.0.0 (version code 2) has been on internal testing since 2026-11-10; a newer build
-(made 2026-11-12, without the background-audio permissions) wasn't uploaded to Play; and there's
-no record of a production release being sent for review. This check finds out what Play
-actually shows.
+Why (2026-11-16): the owner wants to know where the Google Play review stands. The repository's
+records say: 1.0.0 (version code 4) was sent for production review (United States) and is also
+on internal testing, checked 2026-11-13; review emails were off. Version 1.0.1 (code 6, monthly
+billing) is built but deliberately **not** uploaded: the owner uploads it after 1.0.0 is
+approved. The Play service account for automatic uploads isn't set up yet. This check finds out
+what Play shows now.
 
 ---
 
 You're checking the status of my company's Android app, **Sundeck Pro** (package
-`com.sundeckpro.app`), in the Google Play Console (https://play.google.com/console). I want to
-know whether it has been sent to Google for review, and if not, what is still missing.
+`com.sundeckpro.app`), in the Google Play Console (https://play.google.com/console). Version
+1.0.0 was sent to Google for production review around 2026-11-13. I want to know whether it's
+approved, still in review, or rejected, and anything Google is asking for.
 
 ## Rules
 
@@ -43,6 +45,8 @@ know whether it has been sent to Google for review, and if not, what is still mi
   publish", and whether Managed publishing is on or off.
 - If there's a **Send for review** button or "x changes ready to send", say so (but don't press
   it).
+- If the review is finished: the date and the outcome, word for word. If it was rejected, copy
+  the whole reason and the policy it names.
 
 **3. Dashboard** (in Sundeck Pro)
 - List every task under "Set up your app", "Release your app" (or "Test and release"), and any
@@ -55,8 +59,8 @@ know whether it has been sent to Google for review, and if not, what is still mi
 - **Testing › Internal testing**: releases, version codes, status, and the tester list name.
 - **Testing › Closed testing** and **Open testing**: any tracks or releases?
 - **App bundle explorer** (or Latest releases and bundles): list every uploaded version code
-  with its upload date. I expect version code 2 from 2026-11-10; tell me if there's anything
-  newer.
+  with its upload date. I expect codes up to 4, the newest from about 2026-11-13. Code 6
+  (1.0.1) should **not** be there yet; tell me if it is, or if there's anything else newer.
 
 **5. Policy and programs › App content**
 For each item, give its status (completed, action needed, not started) and copy any warning:
@@ -71,10 +75,16 @@ content, Data safety, Government apps, Financial features, Health, News apps, an
   graphic show? Any warnings?
 - **Store settings**: category and contact email.
 
-**7. Inbox and policy status**
+**7. API access** (Settings › **API access**, or Users and permissions)
+- Is any Google Cloud project linked? Is any service account listed (an email ending in
+  `iam.gserviceaccount.com`), and what permissions does it have? I expect none yet.
+
+**8. Inbox and policy status**
 - The Play Console **Inbox** (bell or envelope icon): copy any message from the last 30 days.
 - **Policy and programs › Policy status**: any issues, rejections, or "app not compliant"
   notices? Copy them.
+- **Android vitals** or **Pre-launch report** for code 4: any crashes, ANRs, or warnings
+  (for example the code obfuscation warning, which should clear with the next upload).
 
 ## Report back in this form
 
@@ -82,7 +92,8 @@ content, Data safety, Government apps, Financial features, Health, News apps, an
 ACCOUNT: type / verified? / contact email / review emails on?
 APP STATUS (Home): ...
 PUBLISHING OVERVIEW: in review: ... / not sent: ... / managed publishing: on|off
-PRODUCTION: none | release <name>, code <n>, status <...>
+PRODUCTION: none | release <name>, code <n>, status <in review | approved | rejected | available>, date
+REVIEW OUTCOME: (if finished) exact wording, and any rejection reason and policy
 INTERNAL TESTING: code <n>, status <...>, testers <list>
 CLOSED/OPEN TESTING: ...
 BUNDLES UPLOADED: code <n> (<date>), ...
@@ -91,6 +102,8 @@ CLOSED TEST REQUIRED: yes/no (exact wording)
 APP CONTENT: <item>: <status> (warning text) ...
 DATA SAFETY has App interactions / Diagnostics: yes/no, yes/no
 STORE LISTING: ...
+SERVICE ACCOUNTS / API ACCESS: none | <email>: <permissions>
+PRE-LAUNCH / VITALS WARNINGS: ...
 INBOX / POLICY MESSAGES: ...
 ANYTHING ELSE THAT LOOKS WRONG: ...
 ```
