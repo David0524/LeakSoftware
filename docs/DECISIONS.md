@@ -2,6 +2,9 @@
 
 Newest first. Each entry: date, decision, reason.
 
+## 2026-11-16 (owner: "we just got approved for Google Play Store. Add this link the Google Play button on the website")
+- **The website's Google Play badge links to the listing** (`play.google.com/store/apps/details?id=com.sundeckpro.app`), on the home page's hero and closing band, alt text "Get it on Google Play". The home page's structured data names it beside the App Store (`sameAs`, `installUrl`).
+
 ## 2026-11-16 (owner: "Submit 1.0.3 to the App Store")
 - **iPhone 1.0.3 (build 1083) is submitted for App Review** through the App Store workflow, with What's New for monthly billing (`docs/release/APP_STORE.md` § 1.9). The workflow made the version as a manual release, so it goes live when the owner releases it after approval.
 
