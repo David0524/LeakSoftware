@@ -1632,6 +1632,29 @@
   .m-part + .m-chapter {
     break-before: auto;
   }
+  .m-scene,
+  .m-step,
+  .m-legend,
+  .m-learn,
+  .m-faq-item {
+    break-inside: avoid;
+  }
+  .m-kicker,
+  .m-h3,
+  .m-h4,
+  .m-meta,
+  .m-aside-label,
+  .m-aside-title,
+  .m-faq-group-title {
+    break-after: avoid;
+  }
+  /* Set by scripts/build-manuals.mjs on a section that would start at the foot of a page. */
+  .m-break {
+    break-before: page;
+  }
+  .m-section.m-break {
+    margin-top: 0;
+  }
   .m-opener-number {
     font-size: 86pt;
   }
@@ -1717,6 +1740,11 @@
   }
   .m-browser {
     box-shadow: 0 0 0 1px rgb(18 38 58 / 0.15);
+  }
+  /* A tall screen shows its top on one page instead of splitting from its frame. */
+  .m-browser-screen {
+    max-height: 7in;
+    overflow: hidden;
   }
   .m-phone {
     box-shadow: 0 0 0 1px #3a434e;

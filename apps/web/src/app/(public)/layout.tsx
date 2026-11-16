@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { Logo } from "@/components/logo";
 import { LightOnly } from "@/components/light-only";
+import { HelpMenu } from "@/components/help-menu";
 import { buttonClass, cx } from "@/components/ui";
 import { CONTACT_EMAIL, CONTACT_PHONE, CONTACT_PHONE_URL, COPYRIGHT } from "@/lib/site";
 
@@ -30,6 +31,7 @@ export default function PublicLayout({ children }: LayoutProps<"/">) {
             >
               Pricing
             </Link>
+            <HelpMenu />
             <Link href="/sign-in" className="min-h-11 content-center px-3 font-medium text-link">
               Sign In
             </Link>
