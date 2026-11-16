@@ -2,6 +2,8 @@
 and sun glints sparkling on the surface. Deterministic (fixed seed), so a re-render matches.
 
     python3 card/background.py out.png WIDTH HEIGHT   (also out-top.png and out-bottom.png)
+    python3 card/background.py out.png WIDTH HEIGHT SCALE   (another shape, at SCALE pixels a
+        design unit, with the card's density of light; the 9 x 6 mailer: 5550 3750 2)
 """
 
 import sys
@@ -12,6 +14,11 @@ from PIL import Image, ImageFilter
 out, W, H = sys.argv[1], int(sys.argv[2]), int(sys.argv[3])
 rng = np.random.default_rng(7)
 s = W / 1875  # design units: the card with bleed is 1875 x 2500
+# Another shape keeps the card's glints per area (the card itself keeps its 5600 exactly).
+area = 1.0
+if len(sys.argv) > 4:
+    s = float(sys.argv[4])
+    area = (W / s) * (H / s) / (1875 * 2500)
 
 y, x = np.mgrid[0:H, 0:W].astype(np.float32)
 u, v = x / W, y / H
@@ -46,7 +53,7 @@ acc = np.asarray(base).astype(np.float32) / 255
 # Glitter: sun glints, many tiny and a few with four-point star flares, densest in the glow band.
 glint = np.zeros((H, W), np.float32)
 # The same glints at every resolution (the look approved at 3750 x 5000).
-n = 5600
+n = round(5600 * area)
 gx = rng.uniform(0, W, n)
 gy = rng.uniform(0, H, n)
 keep = rng.uniform(0, 1, n) < (0.25 + 0.75 * np.exp(-(((gy / H) - 0.45) / 0.33) ** 2))
@@ -81,7 +88,7 @@ acc = acc + (np.clip(glint, 0, 1.5)[..., None] * 0.85 + halo[..., None] * 1.6) *
 
 # Soft bokeh: a few out-of-focus disks of light.
 bok = np.zeros((H, W), np.float32)
-for _ in range(28):
+for _ in range(round(28 * area)):
     cx, cy = rng.uniform(0, W), rng.uniform(0.1 * H, 0.8 * H)
     r = rng.uniform(10, 34) * s
     d = np.sqrt((x - cx) ** 2 + (y - cy) ** 2)
