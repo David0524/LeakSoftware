@@ -9,6 +9,7 @@ first. Tick an item off by deleting it (and tell Claude, so it can check the res
    points at `https://sundeckpro.com/api/stripe/webhook`): add the events `payment_intent.succeeded` and
    `payment_intent.payment_failed` beside the ones already there. Without them, a customer's
    autopay from a bank account never shows as paid (cards still work). Tell Claude when done.
+   Or hand it to Claude in Chrome: `docs/release/STRIPE_AUTOPAY_HANDOFF.md`.
 2. Nothing to do for Pay Over Time: each shop turns on Affirm or Klarna in its own Stripe
    dashboard, and Settings › Payments says how.
 
