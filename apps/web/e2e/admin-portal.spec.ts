@@ -88,6 +88,7 @@ test("staff sign in with two-step, see the business, and open a shop View Only",
   await page.getByTestId("shop-row").getByRole("link", { name: "Demo Leak Co." }).click();
   await expect(page.getByRole("heading", { level: 1, name: "Demo Leak Co." })).toBeVisible();
   await expect(page.getByRole("heading", { name: "Team" })).toBeVisible();
+  const shopPage = page.url();
 
   // Finances and People load.
   await page
@@ -99,12 +100,13 @@ test("staff sign in with two-step, see the business, and open a shop View Only",
   await expect(page.getByTestId("service-row").filter({ hasText: "Supabase" })).toBeVisible();
   await page.getByRole("button", { name: "Add Expense" }).first().click();
   const expense = page.getByRole("dialog", { name: "Add Expense" });
-  await expense.getByLabel("What").fill("e2e business cards");
+  const cards = `e2e business cards ${Date.now()}`;
+  await expense.getByLabel("What").fill(cards);
   await expense.getByLabel("Amount").fill("45.50");
   await expense.getByRole("radio", { name: "Cole" }).click();
   await expense.getByRole("button", { name: "Add Expense" }).click();
   await expect(expense).toBeHidden();
-  const row = page.getByTestId("expense-row").filter({ hasText: "e2e business cards" });
+  const row = page.getByTestId("expense-row").filter({ hasText: cards });
   await expect(row).toContainText("Cole");
   await expect(row).toContainText("$45.50");
   await page.getByRole("link", { name: "Subscriptions" }).click();
@@ -115,10 +117,7 @@ test("staff sign in with two-step, see the business, and open a shop View Only",
     .click();
   await expect(page.getByRole("heading", { level: 1, name: "People" })).toBeVisible();
   await expect(page.getByTestId("person-row").first()).toBeVisible();
-  // Back to the shop's page: People, Subscriptions, Finances.
-  await page.goBack();
-  await page.goBack();
-  await page.goBack();
+  await page.goto(shopPage);
   await expect(page.getByRole("heading", { level: 1, name: "Demo Leak Co." })).toBeVisible();
 
   // Open Shop, View Only, with a reason.
