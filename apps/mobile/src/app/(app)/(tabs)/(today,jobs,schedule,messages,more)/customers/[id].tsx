@@ -5,7 +5,7 @@ import {
   CUSTOMER_EMAILS_LABEL,
   CUSTOMER_EMAILS_OFF_LABEL,
   JOB_TYPE_LABELS,
-  POOL_TYPE_LABELS,
+  poolSummary,
   formatAddress,
   mapStatus,
   formatPhone,
@@ -17,7 +17,6 @@ import {
   propertyLocation,
   readingSummary,
   splitEmails,
-  type PoolType,
   type Property,
   friendlyError,
 } from "@leakbook/core";
@@ -223,20 +222,13 @@ export default function CustomerPage() {
                       <T variant="bodyEmphasis">{address}</T>
                     </AddressLine>
                     <T variant="secondary" muted>
-                      {[
-                        p.pool_type ? POOL_TYPE_LABELS[p.pool_type as PoolType] : null,
-                        p.has_spa ? "Pool and spa" : "Pool",
-                        p.approx_gallons
-                          ? `${p.approx_gallons.toLocaleString("en-US")} gallons`
-                          : null,
-                      ]
-                        .filter(Boolean)
-                        .join(" · ")}
+                      {poolSummary(p as Property)}
                     </T>
                   </ListRow>
                   {p.access_notes ? (
                     <ListRow title="Access notes" subtitle={p.access_notes} />
                   ) : null}
+                  {p.notes ? <ListRow title="Pool notes" subtitle={p.notes} /> : null}
                   {offersPool(company.settings) ? (
                     <ListRow
                       title="Chemical"

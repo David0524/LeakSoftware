@@ -38,6 +38,7 @@ import { endOfDayCases } from "./cases/end-of-day";
 import { prefill } from "./cases/prefill";
 import { removal } from "./cases/removal";
 import { drafts } from "./cases/drafts";
+import { poolEquipment } from "./cases/pool-equipment";
 import { friendlyErrorCases } from "./cases/friendly-error";
 import { monthlyBilling } from "./cases/monthly-billing";
 
@@ -73,6 +74,7 @@ export const modules: Record<string, ModuleCases> = {
   receipts,
   "signed-out": signedOut,
   "heard-from": heardFrom,
+  "pool-equipment": poolEquipment,
   "terms-consent": termsConsent,
   "setup-gate": setupGate,
   password,

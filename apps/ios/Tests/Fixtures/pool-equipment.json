@@ -1,0 +1,91 @@
+{
+  "SANITIZER_LABELS": [
+    {
+      "args": [],
+      "result": {
+        "chlorine": "Chlorine",
+        "salt": "Salt",
+        "bromine": "Bromine",
+        "other": "Other"
+      }
+    }
+  ],
+  "HEATER_LABELS": [
+    {
+      "args": [],
+      "result": {
+        "none": "None",
+        "gas": "Gas",
+        "heat_pump": "Heat pump",
+        "electric": "Electric",
+        "other": "Other"
+      }
+    }
+  ],
+  "poolSummary": [
+    {
+      "args": [
+        {
+          "pool_type": "gunite_plaster",
+          "has_spa": true,
+          "approx_gallons": 20000,
+          "sanitizer": "salt",
+          "heater": "gas",
+          "has_solar_heater": true
+        }
+      ],
+      "result": "Gunite / plaster · Pool and spa · 20,000 gallons · Salt · Gas heater · Solar heater"
+    },
+    {
+      "args": [
+        {
+          "has_spa": false
+        }
+      ],
+      "result": "Pool"
+    },
+    {
+      "args": [
+        {
+          "has_spa": false,
+          "approx_gallons": 12500.4,
+          "sanitizer": "chlorine",
+          "heater": "heat_pump"
+        }
+      ],
+      "result": "Pool · 12,500 gallons · Chlorine · Heat pump"
+    },
+    {
+      "args": [
+        {
+          "pool_type": "vinyl",
+          "has_spa": false,
+          "sanitizer": "other",
+          "heater": "none"
+        }
+      ],
+      "result": "Vinyl · Pool · Other sanitizer · No heater"
+    },
+    {
+      "args": [
+        {
+          "has_spa": true,
+          "sanitizer": "bromine",
+          "heater": "electric",
+          "has_solar_heater": false
+        }
+      ],
+      "result": "Pool and spa · Bromine · Electric heater"
+    },
+    {
+      "args": [
+        {
+          "has_spa": false,
+          "heater": "other",
+          "has_solar_heater": true
+        }
+      ],
+      "result": "Pool · Other heater · Solar heater"
+    }
+  ]
+}

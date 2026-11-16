@@ -1,4 +1,12 @@
-import { POOL_TYPE_LABELS, type PoolType, type Property } from "@leakbook/core";
+import {
+  HEATER_LABELS,
+  POOL_TYPE_LABELS,
+  SANITIZER_LABELS,
+  type Heater,
+  type PoolType,
+  type Property,
+  type Sanitizer,
+} from "@leakbook/core";
 import { saveAccessNotes, savePool } from "@/app/actions/jobs";
 import { AddressField } from "./address-field";
 import { Draft } from "./draft-keeper";
@@ -12,7 +20,8 @@ import {
 } from "./settings-forms";
 
 /**
- * A pool's details (address, type, gallons, spa, access notes) as the edit sheet's form, on the
+ * A pool's details (address; type, gallons, sanitizer, heater, spa, solar heater; access notes;
+ * pool notes, kept apart from access notes, owner 2026-11-16) as the edit sheet's form, on the
  * customer's page and the job's (owner, 2026-10-20: the job's address "should open up the
  * screen to edit it").
  */
@@ -22,6 +31,20 @@ export function PoolDetailsForm({ pool: p }: { pool: Property }) {
     ...(Object.keys(POOL_TYPE_LABELS) as PoolType[]).map((k) => ({
       value: k,
       label: POOL_TYPE_LABELS[k],
+    })),
+  ];
+  const sanitizerOptions = [
+    { value: "", label: "Not sure" },
+    ...(Object.keys(SANITIZER_LABELS) as Sanitizer[]).map((k) => ({
+      value: k,
+      label: SANITIZER_LABELS[k],
+    })),
+  ];
+  const heaterOptions = [
+    { value: "", label: "Not sure" },
+    ...(Object.keys(HEATER_LABELS) as Heater[]).map((k) => ({
+      value: k,
+      label: HEATER_LABELS[k],
     })),
   ];
   return (
@@ -74,12 +97,41 @@ export function PoolDetailsForm({ pool: p }: { pool: Property }) {
             placeholder="20,000"
             autoComplete="off"
           />
+          <SSelect
+            label="Sanitizer"
+            name="sanitizer"
+            defaultValue={p.sanitizer ?? ""}
+            options={sanitizerOptions}
+          />
+          <SSelect
+            label="Heater"
+            name="heater"
+            defaultValue={p.heater ?? ""}
+            options={heaterOptions}
+          />
           <SSwitch name="has_spa" label="Has a spa" defaultChecked={p.has_spa} />
+          <SSwitch
+            name="has_solar_heater"
+            label="Has a solar heater"
+            defaultChecked={Boolean(p.has_solar_heater)}
+          />
+        </SettingsFields>
+        <SettingsFields labelWidth="6.5rem">
           <STextArea
             label="Access notes"
             name="access_notes"
             defaultValue={p.access_notes ?? ""}
-            hint="Gate code, dog, where to park."
+            hint="Gate code, pets, where to park."
+            maxLength={2000}
+          />
+        </SettingsFields>
+        <SettingsFields labelWidth="6.5rem">
+          <STextArea
+            label="Pool notes"
+            name="notes"
+            defaultValue={p.notes ?? ""}
+            hint="Equipment, quirks, draining the solar for winter."
+            maxLength={2000}
           />
         </SettingsFields>
       </SettingsForm>
@@ -98,7 +150,7 @@ export function AccessNotesForm({ pool: p }: { pool: Pick<Property, "id" | "acce
             label="Access notes"
             name="access_notes"
             defaultValue={p.access_notes ?? ""}
-            hint="Gate code, dog, where to park."
+            hint="Gate code, pets, where to park."
             maxLength={2000}
           />
         </SettingsFields>

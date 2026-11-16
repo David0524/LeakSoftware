@@ -8,7 +8,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import {
   MAPS_LABELS,
   JOB_TYPE_LABELS,
-  POOL_TYPE_LABELS,
+  poolSummary,
   intakeQuestionsFor,
   formatAddress,
   mapStatus,
@@ -916,15 +916,7 @@ function Details({
                     <T variant="bodyEmphasis">{address}</T>
                   </AddressLine>
                   <T variant="secondary" muted>
-                    {[
-                      property.pool_type ? POOL_TYPE_LABELS[property.pool_type] : null,
-                      property.has_spa ? "Pool and spa" : "Pool",
-                      property.approx_gallons
-                        ? `${property.approx_gallons.toLocaleString("en-US")} gallons`
-                        : null,
-                    ]
-                      .filter(Boolean)
-                      .join(" · ")}
+                    {poolSummary(property)}
                   </T>
                 </ListRow>
               </View>

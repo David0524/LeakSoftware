@@ -14,7 +14,7 @@ import { routingConfigured } from "@/server/routing";
 import { isUuid } from "@/lib/uuid";
 import {
   JOB_TYPE_LABELS,
-  POOL_TYPE_LABELS,
+  poolSummary,
   directionsHref,
   formatAddress,
   formatSchedule,
@@ -244,20 +244,18 @@ export default async function CustomerPage({ params }: PageProps<"/customers/[id
                         ) : null}
                       </>
                     }
-                    detail={[
-                      p.pool_type ? POOL_TYPE_LABELS[p.pool_type] : null,
-                      p.has_spa ? "Pool and spa" : "Pool",
-                      p.approx_gallons
-                        ? `${p.approx_gallons.toLocaleString("en-US")} gallons`
-                        : null,
-                    ]
-                      .filter(Boolean)
-                      .join(" · ")}
+                    detail={poolSummary(p)}
                     value={<span className="text-link">Edit</span>}
                   >
                     <PoolDetailsForm pool={p} />
                   </SheetRow>
                   {p.access_notes ? <Row label="Access notes" detail={p.access_notes} /> : null}
+                  {p.notes ? (
+                    <Row
+                      label="Pool notes"
+                      detail={<span className="whitespace-pre-line">{p.notes}</span>}
+                    />
+                  ) : null}
                   {offersPool(company.settings) ? (
                     <Row
                       href={`/chemicals?property=${p.id}`}
