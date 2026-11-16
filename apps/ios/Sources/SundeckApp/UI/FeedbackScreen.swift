@@ -183,7 +183,9 @@
                         }
                     }
                     if let id = row.jobId {
-                        Button { openRoute(.job(id)) } label: {
+                        Button {
+                            openRoute(.job(id))
+                        } label: {
                             ListRow("Job", value: row.jobNumber.map { "#\($0)" } ?? "Open", chevron: true)
                         }
                         .buttonStyle(.row)
@@ -201,13 +203,21 @@
                 }
                 if let error { Notice(kind: .error, text: error) }
                 if row.isOpen {
-                    Button { Task { await save() } } label: { saveLabel }
-                        .buttonStyle(.primary(fullWidth: true, size: .field))
-                        .disabled(saving)
+                    Button {
+                        Task { await save() }
+                    } label: {
+                        saveLabel
+                    }
+                    .buttonStyle(.primary(fullWidth: true, size: .field))
+                    .disabled(saving)
                 } else {
-                    Button { Task { await save() } } label: { saveLabel }
-                        .buttonStyle(.secondary)
-                        .disabled(saving)
+                    Button {
+                        Task { await save() }
+                    } label: {
+                        saveLabel
+                    }
+                    .buttonStyle(.secondary)
+                    .disabled(saving)
                 }
             }
             .navigationTitle(nonEmpty(row.customerName) ?? "A customer")

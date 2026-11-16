@@ -35,9 +35,12 @@ import Testing
             skipNotification(customer: try c.arg(0), reason: try c.arg(1), by: try c.arg(2, as: String?.self))
         }
         checkRule(module, "autoSkipNotification") { c in autoSkipNotification(try c.arg(0)) }
+        // The TypeScript rule reads only the reason, so its cases carry no status.
         checkRule(module, "skipSummary") { c in
-            skipSummary(
-                try c.arg(0), by: try c.arg(1, as: String?.self), when: try c.arg(2, as: String?.self))
+            let job = try c.arg(0, as: [String: String?].self)
+            return skipSummary(
+                SkipJob(status: "skipped", skipReason: job["skip_reason"] ?? nil, skippedAt: job["skipped_at"] ?? nil),
+                by: try c.arg(1, as: String?.self), when: try c.arg(2, as: String?.self))
         }
     }
 

@@ -63,6 +63,8 @@
             case .myPhone: "/more/my-phone"
             case .myProfile: "/more/my-profile"
             case .notifications: "/more/notifications"
+            case .feedback: "/feedback"
+            case .complaint: "/feedback/:id"
             }
         }
     }

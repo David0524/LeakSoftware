@@ -8,7 +8,11 @@ import { OWNER, signIn } from "./helpers";
 async function setServices(page: Page, label: "Pool Care" | "Leak Detection" | "Both") {
   await page.goto("/settings/company");
   const card = page.locator("form").filter({ has: page.getByText("Your shop does") });
-  await card.getByRole("radio", { name: label }).click();
+  // Send Reminders By has a "Both" too (2026-11-16): pick from Your Shop Does.
+  await card
+    .getByRole("radiogroup", { name: "Your shop does" })
+    .getByRole("radio", { name: label })
+    .click();
   await card.getByRole("button", { name: "Save" }).click();
   await expect(card.getByText("Saved.")).toBeVisible();
 }
