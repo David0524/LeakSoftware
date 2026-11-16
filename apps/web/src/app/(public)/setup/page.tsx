@@ -44,11 +44,23 @@ async function SetupBody() {
   // The answers from sign-up come along (the email confirmation came in between).
   const heardFrom = parseHeardFrom(user.user_metadata?.heard_from);
   return (
-    <SetupForm
-      suggested={String(user.user_metadata?.company_name ?? "")}
-      services={parseServices(user.user_metadata?.services) ?? "pool"}
-      heardFrom={heardFrom}
-      heardFromOther={heardFromOther(heardFrom, user.user_metadata?.heard_from_other)}
-    />
+    <>
+      <SetupForm
+        suggested={String(user.user_metadata?.company_name ?? "")}
+        services={parseServices(user.user_metadata?.services) ?? "pool"}
+        heardFrom={heardFrom}
+        heardFromOther={heardFromOther(heardFrom, user.user_metadata?.heard_from_other)}
+      />
+      {/* Who is signed in, and a way out (owner, 2026-11-16: Sign In on the home page opened this
+          page for an account with no company, with no way back to the sign-in form). As on
+          both apps' setup screens. */}
+      <p className="mt-6 text-center text-[0.9375rem] text-text-muted">Signed in as {user.email}</p>
+      <form action="/auth/sign-out" method="post" className="mt-1">
+        <input type="hidden" name="next" value="/sign-in" />
+        <button type="submit" className="mx-auto block min-h-11 px-3 text-link">
+          Sign Out
+        </button>
+      </form>
+    </>
   );
 }
