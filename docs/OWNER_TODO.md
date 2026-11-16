@@ -3,6 +3,13 @@
 Owner, 2026-10-22: "a list of things you need from me. I'll knock them out later." Newest
 first. Tick an item off by deleting it (and tell Claude, so it can check the result).
 
+## From 2026-11-16: Stripe live mode
+
+1. **Switch the site to live mode** with Claude in Chrome: `docs/release/STRIPE_LIVE_HANDOFF.md`
+   (Stripe and Vercel open in two tabs; you copy the four secret values into Vercel yourself in
+   its Step 5). Paste its report back to Claude Code, which then clears the demo shop's sandbox
+   Stripe account and checks the site.
+
 ## From 2026-11-16: autopay
 
 1. **Done (2026-11-16, Claude in Chrome):** the sandbox's Connected accounts webhook ("Sundeck

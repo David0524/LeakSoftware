@@ -2,6 +2,11 @@
 
 Newest first. Each entry: date, decision, reason.
 
+## 2026-11-16 (owner: "Switch the site to live mode")
+- **Live mode is set up from the dashboards, not the code.** Prices come from `packages/core/src/plans.ts` (no price IDs) and the apps hold no Stripe keys, so no code or app build changes. Steps in `docs/release/STRIPE_LIVE_HANDOFF.md`: check live activation and Connect, the customer portal, payment methods and the `sundeckpro.com` domain, two live webhooks (the sandbox's twelve events), the four Vercel variables on **Production only** (Preview and Development stay on the sandbox, so test deployments never move real money), a production redeploy, and a test event to each webhook (200 means the signing secret matches).
+- **Secrets stay with the owner:** Claude in Chrome stops before any key or signing secret, and the owner copies the four values into Vercel.
+- **The demo shop's sandbox Stripe account is cleared from the database after the switch** (no real shop has one; the dev project holds no subscriptions or saved cards from Stripe), so the demo connects again in live mode if ever needed.
+
 ## 2026-11-16 (owner, after a review of a competitor's feature list: "Install all of these"; "This is your codebase. All decisions are yours")
 Built in parallel by five helpers, merged and checked here. Designs, wording and defaults in `docs/design/2026-11-16-{autopay,skip-visit,service-issues,feedback-and-text-reminders,chemistry-trends}.md`. On all four platforms (Swift not compiled in the session; CI checks it once Actions runs).
 - **The owner hands product calls to Claude.** Claude decides and logs them here instead of asking; the owner can still overrule any of them.
