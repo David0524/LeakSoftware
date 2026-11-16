@@ -103,7 +103,9 @@ export function jobReschedulable(job: { type: string; status: string }): boolean
     job.type === "repair" ||
     job.status === "unscheduled" ||
     job.status === "scheduled" ||
-    job.status === "in_progress"
+    job.status === "in_progress" ||
+    // A skipped visit is rescheduled from the same place (skip-visit.ts).
+    job.status === "skipped"
   );
 }
 
@@ -402,6 +404,13 @@ export interface Job extends Base {
   arrive_at?: string | null;
   /** When the stop was finished (set by the server, or the phone's time; owner, 2026-10-22). */
   stop_done_at?: string | null;
+  /** Skipped visits (owner, 2026-11-16; skip-visit.ts): why, who and when, and Dismiss. */
+  skip_reason?: string | null;
+  skip_note?: string | null;
+  skipped_at?: string | null;
+  skipped_by?: string | null;
+  skip_handled_at?: string | null;
+  skip_handled_by?: string | null;
   /** The shop's sample job (set by the server; owner, 2026-10-22). Never counted. */
   sample?: boolean;
   created_at?: string;

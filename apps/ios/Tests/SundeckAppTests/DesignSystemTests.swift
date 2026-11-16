@@ -42,7 +42,7 @@ import Testing
         let expected: [JobStatus: Tone] = [
             .unscheduled: .excluded, .scheduled: .text, .inProgress: .info, .reportSent: .info,
             .quoteSent: .info, .quoteAccepted: .warning, .invoiced: .warning, .paid: .pass, .done: .pass,
-            .canceled: .excluded,
+            .canceled: .excluded, .skipped: .warning,
         ]
         for status in JobStatus.allCases { #expect(status.tone == expected[status], "\(status)") }
         #expect(Tone.text.role == Tokens.Role.text)

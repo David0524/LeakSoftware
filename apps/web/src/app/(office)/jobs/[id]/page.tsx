@@ -16,6 +16,9 @@ import {
   inspectionTallyText,
   checklistReady,
   jobReschedulable,
+  pickableSkipReasons,
+  skipActions,
+  skipSummary,
   mapStatus,
   inspectionProgress,
   intakeQuestionsFor,
@@ -39,6 +42,7 @@ import {
   suggestItems,
   timeline,
   type CompanySettings,
+  type SkipReason,
   type PriceBookItem,
   type Media,
   seesAllJobs,
@@ -132,6 +136,7 @@ import { routingConfigured } from "@/server/routing";
 import { NotOnMapRow, NotOnMapTag } from "@/components/not-on-map";
 import { AccessNotesForm, PoolDetailsForm } from "@/components/pool-details";
 import { SheetRow } from "@/components/settings-list";
+import { SkipVisit, SkippedActions } from "@/components/skip-visit";
 import { SampleJob } from "@/components/sample-job";
 import { JobRepairs } from "@/components/job-repairs";
 import { WrapUpList } from "@/components/wrap-up";
@@ -161,6 +166,15 @@ export default async function JobPage({ params, searchParams }: PageProps<"/jobs
   const { job } = detail;
   const wrap = jobHasWrapUp(job.type) && !job.sample ? await wrapUpOf(office, detail) : null;
   const visit = job.type === "maintenance" ? await visitReportOf(office, detail) : null;
+  // Skip Visit's reasons (Settings › Skip Reasons) and who skipped this one.
+  const skipReasons =
+    job.type === "maintenance"
+      ? pickableSkipReasons(await listConfig<SkipReason>(office, "skip_reason"))
+      : [];
+  const skippedBy =
+    job.status === "skipped" && job.skipped_by
+      ? ((await getTeam(office)).find((t) => t.user_id === job.skipped_by)?.name ?? "Teammate")
+      : null;
   // The sample job opens to its finished report (owner, 2026-10-22: first win).
   if (job.sample) return <SampleJob office={office} job={job} />;
   const tz = office.company.timezone;
@@ -255,6 +269,17 @@ export default async function JobPage({ params, searchParams }: PageProps<"/jobs
         navAction={<JobMoreMenu jobId={job.id} status={job.status} jobType={job.type} />}
       />
 
+      {job.type === "maintenance" ? (
+        <SkipVisit
+          jobId={job.id}
+          reasons={skipReasons}
+          customer={job.customer?.name ?? null}
+          phone={job.customer?.phone ?? null}
+          tech={office.user.name ?? "your technician"}
+          shop={office.company.name}
+        />
+      ) : null}
+
       <JobSections
         initial={typeof tab === "string" ? tab : undefined}
         // The widest screens show the pool diagram and findings beside the checklist (owner,
@@ -280,6 +305,47 @@ export default async function JobPage({ params, searchParams }: PageProps<"/jobs
             label: "Details",
             content: (
               <>
+                {/* A skipped visit: why, who and when, and what the office does next. */}
+                {job.status === "skipped" ? (
+                  <div className="mb-6 max-w-2xl space-y-3">
+                    <Grouped title="Skipped">
+                      <Row label="Reason" value={job.skip_reason ?? "No reason"} />
+                      {job.skip_note ? (
+                        <Row>
+                          <span className="min-w-0 flex-1">
+                            <span className="block text-[0.9375rem] text-text-muted">Note</span>
+                            <span className="block whitespace-pre-line">{job.skip_note}</span>
+                          </span>
+                        </Row>
+                      ) : null}
+                      <Row
+                        label="Skipped"
+                        value={skipSummary(
+                          {},
+                          skippedBy ?? "Sundeck Pro",
+                          job.skipped_at ? formatSchedule(job.skipped_at, new Date(), tz) : null,
+                        )}
+                      />
+                      <Row
+                        label="Photos"
+                        value={String(detail.media.filter((m) => m.kind === "photo").length)}
+                        href={`/jobs/${job.id}?tab=photos`}
+                      />
+                      {job.skip_handled_at ? (
+                        <Row
+                          label="Dismissed"
+                          value={formatSchedule(job.skip_handled_at, new Date(), tz)}
+                        />
+                      ) : null}
+                    </Grouped>
+                    <SkippedActions
+                      jobId={job.id}
+                      reschedule={skipActions(job, office.isManager).reschedule}
+                      dismiss={skipActions(job, office.isManager).dismiss}
+                    />
+                  </div>
+                ) : null}
+
                 {/* iOS Settings-style groups: customer, pool, and who's on it (two columns
                     on wide screens), then the On Site form. */}
                 <div className="grid grid-cols-[minmax(0,1fr)] items-start gap-x-6 gap-y-6 lg:grid-cols-2">

@@ -1416,9 +1416,12 @@ export function Grip(
   );
 }
 
-/** Done for the day: the report, quote, or invoice is under way or finished. */
+/**
+ * Done for the day: the report, quote, or invoice is under way or finished. A skipped visit
+ * isn't: it waits for the office, with its Skipped badge.
+ */
 function finished(status: JobStatus) {
-  return !["unscheduled", "scheduled", "in_progress", "canceled"].includes(status);
+  return !["unscheduled", "scheduled", "in_progress", "canceled", "skipped"].includes(status);
 }
 
 /** The stop's place in the route, as on Today: a check once done, blue while on it. */

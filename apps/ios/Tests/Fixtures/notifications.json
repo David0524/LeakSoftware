@@ -28,6 +28,11 @@
           "label": "Opened reports"
         },
         {
+          "key": "skip",
+          "label": "Skipped visits",
+          "hint": "Owners and admins: a maintenance visit that was skipped."
+        },
+        {
           "key": "live",
           "label": "Live Activity",
           "hint": "Your current stop on the Lock Screen during the workday."
@@ -99,6 +104,13 @@
     {
       "args": [
         null,
+        "skip"
+      ],
+      "result": true
+    },
+    {
+      "args": [
+        null,
         "live"
       ],
       "result": true
@@ -156,6 +168,13 @@
       "args": [
         {},
         "opened"
+      ],
+      "result": true
+    },
+    {
+      "args": [
+        {},
+        "skip"
       ],
       "result": true
     },
@@ -239,6 +258,15 @@
         {
           "text": false
         },
+        "skip"
+      ],
+      "result": true
+    },
+    {
+      "args": [
+        {
+          "text": false
+        },
         "live"
       ],
       "result": true
@@ -327,6 +355,16 @@
           "text": true,
           "job": false
         },
+        "skip"
+      ],
+      "result": true
+    },
+    {
+      "args": [
+        {
+          "text": true,
+          "job": false
+        },
         "live"
       ],
       "result": true
@@ -410,6 +448,15 @@
         {
           "payment": "false"
         },
+        "skip"
+      ],
+      "result": true
+    },
+    {
+      "args": [
+        {
+          "payment": "false"
+        },
         "live"
       ],
       "result": true
@@ -491,6 +538,15 @@
         {
           "quote": 0
         },
+        "skip"
+      ],
+      "result": true
+    },
+    {
+      "args": [
+        {
+          "quote": 0
+        },
         "live"
       ],
       "result": true
@@ -558,6 +614,13 @@
     {
       "args": [
         "x",
+        "skip"
+      ],
+      "result": true
+    },
+    {
+      "args": [
+        "x",
         "live"
       ],
       "result": true
@@ -627,6 +690,15 @@
           false
         ],
         "opened"
+      ],
+      "result": true
+    },
+    {
+      "args": [
+        [
+          false
+        ],
+        "skip"
       ],
       "result": true
     },

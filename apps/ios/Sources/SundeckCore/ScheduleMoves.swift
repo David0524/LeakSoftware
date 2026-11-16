@@ -568,7 +568,7 @@ public func moveJobChange<J: PlanJobFields>(_ ctx: PlanContext, _ input: MoveInp
         return .fail("You can schedule only your own jobs. Ask an owner to move it to someone else.")
     }
     if let tech, tech == job.secondTechId { return .fail("This tech is already the second tech on this job.") }
-    let status: JobStatus = canUnschedule(job.status) ? .scheduled : job.status
+    let status = statusAfterMove(job.status)
     let from: (tech: String?, date: String)? =
         present(job.scheduledStart) ? (job.assignedUserId, try dateIn(job.scheduledStart!, ctx.timeZone)) : nil
     let leaving = { (stayed: Bool) -> [JobChange] in

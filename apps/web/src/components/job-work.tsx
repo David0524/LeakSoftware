@@ -62,6 +62,7 @@ import {
 import { InspectionChecklist } from "./inspection-checklist";
 import { showPhotos } from "./job-tab";
 import { useNextStep } from "./next-step-events";
+import { requestSkipVisit } from "./skip-events";
 import { DiagramShapes } from "./pool-diagram";
 import { Segmented } from "./segmented";
 import { ShapePicker } from "./shape-picker";
@@ -167,7 +168,8 @@ export function JobStatusActions({
   // Steps back are in the ••• menu (JobMoreMenu), so the buttons in view move the job forward
   // (owner, 2026-10-29). Cancel Job keeps its own place at the end of Details.
   const next = userTransitions(shown, jobType).filter(
-    (to) => (to === "canceled") === cancel && !isBackwardMove(shown, to),
+    // Skip Visit sits with Cancel Job, at the end of Details, away from the main steps.
+    (to) => (to === "canceled" || to === "skipped") === cancel && !isBackwardMove(shown, to),
   );
   if (next.length === 0) return null;
   const move = (to: JobStatus) =>
@@ -190,7 +192,7 @@ export function JobStatusActions({
             kind={
               to === "in_progress" && (shown === "scheduled" || shown === "unscheduled")
                 ? "primary"
-                : to === "canceled"
+                : to === "canceled" || to === "skipped"
                   ? "danger"
                   : "secondary"
             }
@@ -201,6 +203,8 @@ export function JobStatusActions({
                 : undefined
             }
             onClick={async () => {
+              // Skip Visit asks why first, in its own sheet (skip-visit.tsx).
+              if (to === "skipped") return requestSkipVisit();
               if (
                 to === "canceled" &&
                 !(await confirm({
@@ -244,8 +248,10 @@ export function JobMoreMenu({
   const setStatus = useSetJobStatus();
   const button = useRef<HTMLButtonElement>(null);
   const [at, setAt] = useState<{ x: number; y: number } | null>(null);
-  const back = userTransitions(shown, jobType).filter((to) => isBackwardMove(shown, to));
-  if (back.length === 0) return null;
+  const moves = userTransitions(shown, jobType);
+  const back = moves.filter((to) => isBackwardMove(shown, to));
+  const skip = moves.includes("skipped");
+  if (back.length === 0 && !skip) return null;
   return (
     <div className={className}>
       <button
@@ -270,11 +276,23 @@ export function JobMoreMenu({
       {at ? (
         <ContextMenu
           title="Job"
-          entries={back.map((to) => ({
-            label: jobActionLabel(shown, to),
-            onSelect: () =>
-              void call(changeJobStatus, { job: jobId, to }, () => setStatus(jobId, to)),
-          }))}
+          entries={[
+            ...back.map((to) => ({
+              label: jobActionLabel(shown, to),
+              onSelect: () =>
+                void call(changeJobStatus, { job: jobId, to }, () => setStatus(jobId, to)),
+            })),
+            // Destructive, so last (context-menus.md); it opens the Skip Visit sheet.
+            ...(skip
+              ? [
+                  {
+                    label: jobActionLabel(shown, "skipped"),
+                    onSelect: requestSkipVisit,
+                    destructive: true,
+                  },
+                ]
+              : []),
+          ]}
           at={at}
           onClose={(refocus) => {
             setAt(null);

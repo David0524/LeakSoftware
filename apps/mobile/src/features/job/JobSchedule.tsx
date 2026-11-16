@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Alert, StyleSheet, View } from "react-native";
 import {
   JOB_LOCKS,
@@ -41,6 +41,7 @@ import { WebIcon } from "../../ui/WebIcon";
 import { MoveSheet, SuggestSheet, type MoveTarget } from "../schedule/MoveSheet";
 import { jobDateError } from "../../lib/limits";
 import { usePlanMove } from "../schedule/planMove";
+import { onRescheduleRequest } from "../../lib/rescheduleRequest";
 
 /**
  * The Schedule group shows until a job's work is done (owner, 2026-10-20: "You should be able
@@ -228,6 +229,14 @@ export function JobSchedule({ jobId }: { jobId: string }) {
   const { ctx, jobs, team, drive, seesAll, me, moveTo } = mover;
   const tz = ctx.timeZone;
   const job = jobs.find((j) => j.id === jobId);
+  // Reschedule on a skipped visit's card opens the Move sheet (skip-visit.ts).
+  const reschedule = useRef<() => void>(() => {});
+  useEffect(() => {
+    reschedule.current = () => {
+      if (job) mover.open(job);
+    };
+  });
+  useEffect(() => onRescheduleRequest((id) => id === jobId && reschedule.current()), [jobId]);
   if (!job) return null;
 
   const lock = jobLock(job);
@@ -299,7 +308,7 @@ export function JobSchedule({ jobId }: { jobId: string }) {
           accessibilityRole="button"
           onPress={() => mover.open(job)}
         />
-        {job.status === "scheduled" || job.status === "unscheduled" ? (
+        {job.status === "scheduled" || job.status === "unscheduled" || job.status === "skipped" ? (
           <ListRow
             title="Suggest Times"
             tone="link"

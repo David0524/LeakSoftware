@@ -64,7 +64,11 @@ function Badge({
   /** A stop tile's: the order matters more than the time (owner, 2026-10-21). */
   big?: boolean;
 }) {
-  return <StopNumber n={n} done={done} current={status === "in_progress" && !done} small={!big} />;
+  // A skipped stop is off the list but wasn't done: its number stays, with the Skipped chip.
+  const checked = done && status !== "skipped";
+  return (
+    <StopNumber n={n} done={checked} current={status === "in_progress" && !done} small={!big} />
+  );
 }
 
 export function ScheduleCardFace({

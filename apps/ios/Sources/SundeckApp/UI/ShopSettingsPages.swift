@@ -428,6 +428,14 @@
                                 label: "Schedule maintenance ahead (weeks)", text: $form.weeksAhead,
                                 keyboard: .numberPad, labelWidth: 220)
                         }
+                        // Skip Unfinished Visits at Day's End (owner, 2026-11-16): off by default.
+                        Grouped(label: "Missed visits", footer: skipUnfinishedHint) {
+                            SwitchRow(
+                                skipUnfinishedLabel,
+                                isOn: Binding(
+                                    get: { skipsUnfinishedVisits(company?.settings) },
+                                    set: { setSkipUnfinished($0) }))
+                        }
                     }
                     VStack(alignment: .leading, spacing: 8) {
                         SectionLabel("Working days")
@@ -497,6 +505,17 @@
                     savedForm = form
                     loaded = true
                 }
+            }
+        }
+
+        /// Skip Unfinished Visits at Day's End saves when flipped, through the sync layer.
+        private func setSkipUnfinished(_ on: Bool) {
+            guard let company = session.company else { return }
+            do {
+                try SkipUnfinishedWrites.set(sync, company: company, on: on)
+                session.reloadCompanies()
+            } catch {
+                result = (userMessage(error), true)
             }
         }
 

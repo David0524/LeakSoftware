@@ -9,6 +9,7 @@ import { dateFormat } from "./intl";
 import {
   canMoveJob,
   canUnschedule,
+  statusAfterMove,
   jobLock,
   jobMinutes,
   localMinutes,
@@ -597,7 +598,7 @@ export function moveJobChange(ctx: PlanContext, input: MoveInput, drive: DriveFn
     return fail("You can schedule only your own jobs. Ask an owner to move it to someone else.");
   if (tech && tech === job.second_tech_id)
     return fail("This tech is already the second tech on this job.");
-  const status = canUnschedule(job.status) ? "scheduled" : job.status;
+  const status = statusAfterMove(job.status);
   const from = job.scheduled_start
     ? {
         tech: job.assigned_user_id ?? null,

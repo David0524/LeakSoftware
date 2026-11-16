@@ -1,0 +1,2962 @@
+{
+  "SKIP_TEXTS": [
+    {
+      "args": [],
+      "result": {
+        "SKIP_VISIT_LABEL": "Skip Visit",
+        "SKIP_UNDO_LABEL": "Undo Skip",
+        "SKIP_DISMISS_LABEL": "Dismiss",
+        "SKIP_RESCHEDULE_LABEL": "Reschedule",
+        "SKIP_TEXT_LABEL": "Text the Customer",
+        "SKIP_NOTE_MAX": 1000,
+        "NOT_DONE_REASON": "Not Done",
+        "SKIP_BANNER": "Visit skipped",
+        "SKIP_REASON_REQUIRED": "Pick a reason for skipping this visit.",
+        "SKIP_UNFINISHED_LABEL": "Skip Unfinished Visits at Day’s End",
+        "SKIP_UNFINISHED_HINT": "At the end of each day, visits that were never started are skipped as Not Done, so you can reschedule or dismiss them."
+      }
+    }
+  ],
+  "pickableSkipReasons": [
+    {
+      "args": [
+        []
+      ],
+      "result": []
+    },
+    {
+      "args": [
+        [
+          {
+            "id": "a",
+            "label": "Weather",
+            "sort_order": 40,
+            "active": true
+          },
+          {
+            "id": "b",
+            "label": "Locked Gate",
+            "sort_order": 10,
+            "active": true
+          },
+          {
+            "id": "c",
+            "label": "Not Done",
+            "sort_order": 900,
+            "active": true,
+            "system": true
+          },
+          {
+            "id": "d",
+            "label": "Old",
+            "sort_order": 20,
+            "active": true,
+            "deleted_at": "2026-11-01T00:00:00Z"
+          },
+          {
+            "id": "e",
+            "label": "Off",
+            "sort_order": 30,
+            "active": false
+          },
+          {
+            "id": "f",
+            "label": "Dog in Yard",
+            "sort_order": 10,
+            "active": true
+          }
+        ]
+      ],
+      "result": [
+        {
+          "id": "f",
+          "label": "Dog in Yard",
+          "sort_order": 10,
+          "active": true
+        },
+        {
+          "id": "b",
+          "label": "Locked Gate",
+          "sort_order": 10,
+          "active": true
+        },
+        {
+          "id": "a",
+          "label": "Weather",
+          "sort_order": 40,
+          "active": true
+        }
+      ]
+    }
+  ],
+  "canSkipVisit": [
+    {
+      "args": [
+        {
+          "type": "maintenance",
+          "status": "unscheduled"
+        }
+      ],
+      "result": true
+    },
+    {
+      "args": [
+        {
+          "type": "maintenance",
+          "status": "scheduled"
+        }
+      ],
+      "result": true
+    },
+    {
+      "args": [
+        {
+          "type": "maintenance",
+          "status": "in_progress"
+        }
+      ],
+      "result": true
+    },
+    {
+      "args": [
+        {
+          "type": "maintenance",
+          "status": "report_sent"
+        }
+      ],
+      "result": false
+    },
+    {
+      "args": [
+        {
+          "type": "maintenance",
+          "status": "quote_sent"
+        }
+      ],
+      "result": false
+    },
+    {
+      "args": [
+        {
+          "type": "maintenance",
+          "status": "quote_accepted"
+        }
+      ],
+      "result": false
+    },
+    {
+      "args": [
+        {
+          "type": "maintenance",
+          "status": "invoiced"
+        }
+      ],
+      "result": false
+    },
+    {
+      "args": [
+        {
+          "type": "maintenance",
+          "status": "paid"
+        }
+      ],
+      "result": false
+    },
+    {
+      "args": [
+        {
+          "type": "maintenance",
+          "status": "canceled"
+        }
+      ],
+      "result": false
+    },
+    {
+      "args": [
+        {
+          "type": "maintenance",
+          "status": "done"
+        }
+      ],
+      "result": false
+    },
+    {
+      "args": [
+        {
+          "type": "maintenance",
+          "status": "skipped"
+        }
+      ],
+      "result": false
+    },
+    {
+      "args": [
+        {
+          "type": "detection",
+          "status": "unscheduled"
+        }
+      ],
+      "result": false
+    },
+    {
+      "args": [
+        {
+          "type": "detection",
+          "status": "scheduled"
+        }
+      ],
+      "result": false
+    },
+    {
+      "args": [
+        {
+          "type": "detection",
+          "status": "in_progress"
+        }
+      ],
+      "result": false
+    },
+    {
+      "args": [
+        {
+          "type": "detection",
+          "status": "report_sent"
+        }
+      ],
+      "result": false
+    },
+    {
+      "args": [
+        {
+          "type": "detection",
+          "status": "quote_sent"
+        }
+      ],
+      "result": false
+    },
+    {
+      "args": [
+        {
+          "type": "detection",
+          "status": "quote_accepted"
+        }
+      ],
+      "result": false
+    },
+    {
+      "args": [
+        {
+          "type": "detection",
+          "status": "invoiced"
+        }
+      ],
+      "result": false
+    },
+    {
+      "args": [
+        {
+          "type": "detection",
+          "status": "paid"
+        }
+      ],
+      "result": false
+    },
+    {
+      "args": [
+        {
+          "type": "detection",
+          "status": "canceled"
+        }
+      ],
+      "result": false
+    },
+    {
+      "args": [
+        {
+          "type": "detection",
+          "status": "done"
+        }
+      ],
+      "result": false
+    },
+    {
+      "args": [
+        {
+          "type": "detection",
+          "status": "skipped"
+        }
+      ],
+      "result": false
+    },
+    {
+      "args": [
+        {
+          "type": "repair",
+          "status": "unscheduled"
+        }
+      ],
+      "result": false
+    },
+    {
+      "args": [
+        {
+          "type": "repair",
+          "status": "scheduled"
+        }
+      ],
+      "result": false
+    },
+    {
+      "args": [
+        {
+          "type": "repair",
+          "status": "in_progress"
+        }
+      ],
+      "result": false
+    },
+    {
+      "args": [
+        {
+          "type": "repair",
+          "status": "report_sent"
+        }
+      ],
+      "result": false
+    },
+    {
+      "args": [
+        {
+          "type": "repair",
+          "status": "quote_sent"
+        }
+      ],
+      "result": false
+    },
+    {
+      "args": [
+        {
+          "type": "repair",
+          "status": "quote_accepted"
+        }
+      ],
+      "result": false
+    },
+    {
+      "args": [
+        {
+          "type": "repair",
+          "status": "invoiced"
+        }
+      ],
+      "result": false
+    },
+    {
+      "args": [
+        {
+          "type": "repair",
+          "status": "paid"
+        }
+      ],
+      "result": false
+    },
+    {
+      "args": [
+        {
+          "type": "repair",
+          "status": "canceled"
+        }
+      ],
+      "result": false
+    },
+    {
+      "args": [
+        {
+          "type": "repair",
+          "status": "done"
+        }
+      ],
+      "result": false
+    },
+    {
+      "args": [
+        {
+          "type": "repair",
+          "status": "skipped"
+        }
+      ],
+      "result": false
+    },
+    {
+      "args": [
+        {
+          "type": "inspection",
+          "status": "unscheduled"
+        }
+      ],
+      "result": false
+    },
+    {
+      "args": [
+        {
+          "type": "inspection",
+          "status": "scheduled"
+        }
+      ],
+      "result": false
+    },
+    {
+      "args": [
+        {
+          "type": "inspection",
+          "status": "in_progress"
+        }
+      ],
+      "result": false
+    },
+    {
+      "args": [
+        {
+          "type": "inspection",
+          "status": "report_sent"
+        }
+      ],
+      "result": false
+    },
+    {
+      "args": [
+        {
+          "type": "inspection",
+          "status": "quote_sent"
+        }
+      ],
+      "result": false
+    },
+    {
+      "args": [
+        {
+          "type": "inspection",
+          "status": "quote_accepted"
+        }
+      ],
+      "result": false
+    },
+    {
+      "args": [
+        {
+          "type": "inspection",
+          "status": "invoiced"
+        }
+      ],
+      "result": false
+    },
+    {
+      "args": [
+        {
+          "type": "inspection",
+          "status": "paid"
+        }
+      ],
+      "result": false
+    },
+    {
+      "args": [
+        {
+          "type": "inspection",
+          "status": "canceled"
+        }
+      ],
+      "result": false
+    },
+    {
+      "args": [
+        {
+          "type": "inspection",
+          "status": "done"
+        }
+      ],
+      "result": false
+    },
+    {
+      "args": [
+        {
+          "type": "inspection",
+          "status": "skipped"
+        }
+      ],
+      "result": false
+    },
+    {
+      "args": [
+        {
+          "status": "scheduled"
+        }
+      ],
+      "result": false
+    },
+    {
+      "args": [
+        {
+          "type": "maintenance",
+          "status": "skipped",
+          "skip_handled_at": "2026-11-16T16:00:00Z"
+        }
+      ],
+      "result": false
+    },
+    {
+      "args": [
+        {
+          "type": "maintenance",
+          "status": "skipped",
+          "skip_handled_at": null
+        }
+      ],
+      "result": false
+    }
+  ],
+  "skipValues": [
+    {
+      "args": [
+        " Dog in Yard ",
+        "  Two big dogs ",
+        "2026-11-16T15:05:00Z"
+      ],
+      "result": {
+        "status": "skipped",
+        "skip_reason": "Dog in Yard",
+        "skip_note": "Two big dogs",
+        "skipped_at": "2026-11-16T15:05:00Z"
+      }
+    },
+    {
+      "args": [
+        "Weather",
+        "   ",
+        "2026-11-16T15:05:00Z"
+      ],
+      "result": {
+        "status": "skipped",
+        "skip_reason": "Weather",
+        "skip_note": null,
+        "skipped_at": "2026-11-16T15:05:00Z"
+      }
+    },
+    {
+      "args": [
+        "Weather",
+        null,
+        "2026-11-16T15:05:00Z"
+      ],
+      "result": {
+        "status": "skipped",
+        "skip_reason": "Weather",
+        "skip_note": null,
+        "skipped_at": "2026-11-16T15:05:00Z"
+      }
+    },
+    {
+      "args": [
+        "Weather",
+        "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "2026-11-16T15:05:00Z"
+      ],
+      "result": {
+        "status": "skipped",
+        "skip_reason": "Weather",
+        "skip_note": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "skipped_at": "2026-11-16T15:05:00Z"
+      }
+    }
+  ],
+  "skipNeedsOffice": [
+    {
+      "args": [
+        {
+          "type": "maintenance",
+          "status": "unscheduled"
+        }
+      ],
+      "result": false
+    },
+    {
+      "args": [
+        {
+          "type": "maintenance",
+          "status": "scheduled"
+        }
+      ],
+      "result": false
+    },
+    {
+      "args": [
+        {
+          "type": "maintenance",
+          "status": "in_progress"
+        }
+      ],
+      "result": false
+    },
+    {
+      "args": [
+        {
+          "type": "maintenance",
+          "status": "report_sent"
+        }
+      ],
+      "result": false
+    },
+    {
+      "args": [
+        {
+          "type": "maintenance",
+          "status": "quote_sent"
+        }
+      ],
+      "result": false
+    },
+    {
+      "args": [
+        {
+          "type": "maintenance",
+          "status": "quote_accepted"
+        }
+      ],
+      "result": false
+    },
+    {
+      "args": [
+        {
+          "type": "maintenance",
+          "status": "invoiced"
+        }
+      ],
+      "result": false
+    },
+    {
+      "args": [
+        {
+          "type": "maintenance",
+          "status": "paid"
+        }
+      ],
+      "result": false
+    },
+    {
+      "args": [
+        {
+          "type": "maintenance",
+          "status": "canceled"
+        }
+      ],
+      "result": false
+    },
+    {
+      "args": [
+        {
+          "type": "maintenance",
+          "status": "done"
+        }
+      ],
+      "result": false
+    },
+    {
+      "args": [
+        {
+          "type": "maintenance",
+          "status": "skipped"
+        }
+      ],
+      "result": true
+    },
+    {
+      "args": [
+        {
+          "type": "detection",
+          "status": "unscheduled"
+        }
+      ],
+      "result": false
+    },
+    {
+      "args": [
+        {
+          "type": "detection",
+          "status": "scheduled"
+        }
+      ],
+      "result": false
+    },
+    {
+      "args": [
+        {
+          "type": "detection",
+          "status": "in_progress"
+        }
+      ],
+      "result": false
+    },
+    {
+      "args": [
+        {
+          "type": "detection",
+          "status": "report_sent"
+        }
+      ],
+      "result": false
+    },
+    {
+      "args": [
+        {
+          "type": "detection",
+          "status": "quote_sent"
+        }
+      ],
+      "result": false
+    },
+    {
+      "args": [
+        {
+          "type": "detection",
+          "status": "quote_accepted"
+        }
+      ],
+      "result": false
+    },
+    {
+      "args": [
+        {
+          "type": "detection",
+          "status": "invoiced"
+        }
+      ],
+      "result": false
+    },
+    {
+      "args": [
+        {
+          "type": "detection",
+          "status": "paid"
+        }
+      ],
+      "result": false
+    },
+    {
+      "args": [
+        {
+          "type": "detection",
+          "status": "canceled"
+        }
+      ],
+      "result": false
+    },
+    {
+      "args": [
+        {
+          "type": "detection",
+          "status": "done"
+        }
+      ],
+      "result": false
+    },
+    {
+      "args": [
+        {
+          "type": "detection",
+          "status": "skipped"
+        }
+      ],
+      "result": true
+    },
+    {
+      "args": [
+        {
+          "type": "repair",
+          "status": "unscheduled"
+        }
+      ],
+      "result": false
+    },
+    {
+      "args": [
+        {
+          "type": "repair",
+          "status": "scheduled"
+        }
+      ],
+      "result": false
+    },
+    {
+      "args": [
+        {
+          "type": "repair",
+          "status": "in_progress"
+        }
+      ],
+      "result": false
+    },
+    {
+      "args": [
+        {
+          "type": "repair",
+          "status": "report_sent"
+        }
+      ],
+      "result": false
+    },
+    {
+      "args": [
+        {
+          "type": "repair",
+          "status": "quote_sent"
+        }
+      ],
+      "result": false
+    },
+    {
+      "args": [
+        {
+          "type": "repair",
+          "status": "quote_accepted"
+        }
+      ],
+      "result": false
+    },
+    {
+      "args": [
+        {
+          "type": "repair",
+          "status": "invoiced"
+        }
+      ],
+      "result": false
+    },
+    {
+      "args": [
+        {
+          "type": "repair",
+          "status": "paid"
+        }
+      ],
+      "result": false
+    },
+    {
+      "args": [
+        {
+          "type": "repair",
+          "status": "canceled"
+        }
+      ],
+      "result": false
+    },
+    {
+      "args": [
+        {
+          "type": "repair",
+          "status": "done"
+        }
+      ],
+      "result": false
+    },
+    {
+      "args": [
+        {
+          "type": "repair",
+          "status": "skipped"
+        }
+      ],
+      "result": true
+    },
+    {
+      "args": [
+        {
+          "type": "inspection",
+          "status": "unscheduled"
+        }
+      ],
+      "result": false
+    },
+    {
+      "args": [
+        {
+          "type": "inspection",
+          "status": "scheduled"
+        }
+      ],
+      "result": false
+    },
+    {
+      "args": [
+        {
+          "type": "inspection",
+          "status": "in_progress"
+        }
+      ],
+      "result": false
+    },
+    {
+      "args": [
+        {
+          "type": "inspection",
+          "status": "report_sent"
+        }
+      ],
+      "result": false
+    },
+    {
+      "args": [
+        {
+          "type": "inspection",
+          "status": "quote_sent"
+        }
+      ],
+      "result": false
+    },
+    {
+      "args": [
+        {
+          "type": "inspection",
+          "status": "quote_accepted"
+        }
+      ],
+      "result": false
+    },
+    {
+      "args": [
+        {
+          "type": "inspection",
+          "status": "invoiced"
+        }
+      ],
+      "result": false
+    },
+    {
+      "args": [
+        {
+          "type": "inspection",
+          "status": "paid"
+        }
+      ],
+      "result": false
+    },
+    {
+      "args": [
+        {
+          "type": "inspection",
+          "status": "canceled"
+        }
+      ],
+      "result": false
+    },
+    {
+      "args": [
+        {
+          "type": "inspection",
+          "status": "done"
+        }
+      ],
+      "result": false
+    },
+    {
+      "args": [
+        {
+          "type": "inspection",
+          "status": "skipped"
+        }
+      ],
+      "result": true
+    },
+    {
+      "args": [
+        {
+          "status": "scheduled"
+        }
+      ],
+      "result": false
+    },
+    {
+      "args": [
+        {
+          "type": "maintenance",
+          "status": "skipped",
+          "skip_handled_at": "2026-11-16T16:00:00Z"
+        }
+      ],
+      "result": false
+    },
+    {
+      "args": [
+        {
+          "type": "maintenance",
+          "status": "skipped",
+          "skip_handled_at": null
+        }
+      ],
+      "result": true
+    }
+  ],
+  "skipBadge": [
+    {
+      "args": [
+        {
+          "type": "maintenance",
+          "status": "unscheduled"
+        }
+      ],
+      "result": null
+    },
+    {
+      "args": [
+        {
+          "type": "maintenance",
+          "status": "scheduled"
+        }
+      ],
+      "result": null
+    },
+    {
+      "args": [
+        {
+          "type": "maintenance",
+          "status": "in_progress"
+        }
+      ],
+      "result": null
+    },
+    {
+      "args": [
+        {
+          "type": "maintenance",
+          "status": "report_sent"
+        }
+      ],
+      "result": null
+    },
+    {
+      "args": [
+        {
+          "type": "maintenance",
+          "status": "quote_sent"
+        }
+      ],
+      "result": null
+    },
+    {
+      "args": [
+        {
+          "type": "maintenance",
+          "status": "quote_accepted"
+        }
+      ],
+      "result": null
+    },
+    {
+      "args": [
+        {
+          "type": "maintenance",
+          "status": "invoiced"
+        }
+      ],
+      "result": null
+    },
+    {
+      "args": [
+        {
+          "type": "maintenance",
+          "status": "paid"
+        }
+      ],
+      "result": null
+    },
+    {
+      "args": [
+        {
+          "type": "maintenance",
+          "status": "canceled"
+        }
+      ],
+      "result": null
+    },
+    {
+      "args": [
+        {
+          "type": "maintenance",
+          "status": "done"
+        }
+      ],
+      "result": null
+    },
+    {
+      "args": [
+        {
+          "type": "maintenance",
+          "status": "skipped"
+        }
+      ],
+      "result": "Skipped"
+    },
+    {
+      "args": [
+        {
+          "type": "detection",
+          "status": "unscheduled"
+        }
+      ],
+      "result": null
+    },
+    {
+      "args": [
+        {
+          "type": "detection",
+          "status": "scheduled"
+        }
+      ],
+      "result": null
+    },
+    {
+      "args": [
+        {
+          "type": "detection",
+          "status": "in_progress"
+        }
+      ],
+      "result": null
+    },
+    {
+      "args": [
+        {
+          "type": "detection",
+          "status": "report_sent"
+        }
+      ],
+      "result": null
+    },
+    {
+      "args": [
+        {
+          "type": "detection",
+          "status": "quote_sent"
+        }
+      ],
+      "result": null
+    },
+    {
+      "args": [
+        {
+          "type": "detection",
+          "status": "quote_accepted"
+        }
+      ],
+      "result": null
+    },
+    {
+      "args": [
+        {
+          "type": "detection",
+          "status": "invoiced"
+        }
+      ],
+      "result": null
+    },
+    {
+      "args": [
+        {
+          "type": "detection",
+          "status": "paid"
+        }
+      ],
+      "result": null
+    },
+    {
+      "args": [
+        {
+          "type": "detection",
+          "status": "canceled"
+        }
+      ],
+      "result": null
+    },
+    {
+      "args": [
+        {
+          "type": "detection",
+          "status": "done"
+        }
+      ],
+      "result": null
+    },
+    {
+      "args": [
+        {
+          "type": "detection",
+          "status": "skipped"
+        }
+      ],
+      "result": "Skipped"
+    },
+    {
+      "args": [
+        {
+          "type": "repair",
+          "status": "unscheduled"
+        }
+      ],
+      "result": null
+    },
+    {
+      "args": [
+        {
+          "type": "repair",
+          "status": "scheduled"
+        }
+      ],
+      "result": null
+    },
+    {
+      "args": [
+        {
+          "type": "repair",
+          "status": "in_progress"
+        }
+      ],
+      "result": null
+    },
+    {
+      "args": [
+        {
+          "type": "repair",
+          "status": "report_sent"
+        }
+      ],
+      "result": null
+    },
+    {
+      "args": [
+        {
+          "type": "repair",
+          "status": "quote_sent"
+        }
+      ],
+      "result": null
+    },
+    {
+      "args": [
+        {
+          "type": "repair",
+          "status": "quote_accepted"
+        }
+      ],
+      "result": null
+    },
+    {
+      "args": [
+        {
+          "type": "repair",
+          "status": "invoiced"
+        }
+      ],
+      "result": null
+    },
+    {
+      "args": [
+        {
+          "type": "repair",
+          "status": "paid"
+        }
+      ],
+      "result": null
+    },
+    {
+      "args": [
+        {
+          "type": "repair",
+          "status": "canceled"
+        }
+      ],
+      "result": null
+    },
+    {
+      "args": [
+        {
+          "type": "repair",
+          "status": "done"
+        }
+      ],
+      "result": null
+    },
+    {
+      "args": [
+        {
+          "type": "repair",
+          "status": "skipped"
+        }
+      ],
+      "result": "Skipped"
+    },
+    {
+      "args": [
+        {
+          "type": "inspection",
+          "status": "unscheduled"
+        }
+      ],
+      "result": null
+    },
+    {
+      "args": [
+        {
+          "type": "inspection",
+          "status": "scheduled"
+        }
+      ],
+      "result": null
+    },
+    {
+      "args": [
+        {
+          "type": "inspection",
+          "status": "in_progress"
+        }
+      ],
+      "result": null
+    },
+    {
+      "args": [
+        {
+          "type": "inspection",
+          "status": "report_sent"
+        }
+      ],
+      "result": null
+    },
+    {
+      "args": [
+        {
+          "type": "inspection",
+          "status": "quote_sent"
+        }
+      ],
+      "result": null
+    },
+    {
+      "args": [
+        {
+          "type": "inspection",
+          "status": "quote_accepted"
+        }
+      ],
+      "result": null
+    },
+    {
+      "args": [
+        {
+          "type": "inspection",
+          "status": "invoiced"
+        }
+      ],
+      "result": null
+    },
+    {
+      "args": [
+        {
+          "type": "inspection",
+          "status": "paid"
+        }
+      ],
+      "result": null
+    },
+    {
+      "args": [
+        {
+          "type": "inspection",
+          "status": "canceled"
+        }
+      ],
+      "result": null
+    },
+    {
+      "args": [
+        {
+          "type": "inspection",
+          "status": "done"
+        }
+      ],
+      "result": null
+    },
+    {
+      "args": [
+        {
+          "type": "inspection",
+          "status": "skipped"
+        }
+      ],
+      "result": "Skipped"
+    },
+    {
+      "args": [
+        {
+          "status": "scheduled"
+        }
+      ],
+      "result": null
+    },
+    {
+      "args": [
+        {
+          "type": "maintenance",
+          "status": "skipped",
+          "skip_handled_at": "2026-11-16T16:00:00Z"
+        }
+      ],
+      "result": "Skipped"
+    },
+    {
+      "args": [
+        {
+          "type": "maintenance",
+          "status": "skipped",
+          "skip_handled_at": null
+        }
+      ],
+      "result": "Skipped"
+    }
+  ],
+  "skipActions": [
+    {
+      "args": [
+        {
+          "type": "maintenance",
+          "status": "unscheduled"
+        },
+        true
+      ],
+      "result": {
+        "reschedule": false,
+        "dismiss": false,
+        "undo": false
+      }
+    },
+    {
+      "args": [
+        {
+          "type": "maintenance",
+          "status": "unscheduled"
+        },
+        false
+      ],
+      "result": {
+        "reschedule": false,
+        "dismiss": false,
+        "undo": false
+      }
+    },
+    {
+      "args": [
+        {
+          "type": "maintenance",
+          "status": "scheduled"
+        },
+        true
+      ],
+      "result": {
+        "reschedule": false,
+        "dismiss": false,
+        "undo": false
+      }
+    },
+    {
+      "args": [
+        {
+          "type": "maintenance",
+          "status": "scheduled"
+        },
+        false
+      ],
+      "result": {
+        "reschedule": false,
+        "dismiss": false,
+        "undo": false
+      }
+    },
+    {
+      "args": [
+        {
+          "type": "maintenance",
+          "status": "in_progress"
+        },
+        true
+      ],
+      "result": {
+        "reschedule": false,
+        "dismiss": false,
+        "undo": false
+      }
+    },
+    {
+      "args": [
+        {
+          "type": "maintenance",
+          "status": "in_progress"
+        },
+        false
+      ],
+      "result": {
+        "reschedule": false,
+        "dismiss": false,
+        "undo": false
+      }
+    },
+    {
+      "args": [
+        {
+          "type": "maintenance",
+          "status": "report_sent"
+        },
+        true
+      ],
+      "result": {
+        "reschedule": false,
+        "dismiss": false,
+        "undo": false
+      }
+    },
+    {
+      "args": [
+        {
+          "type": "maintenance",
+          "status": "report_sent"
+        },
+        false
+      ],
+      "result": {
+        "reschedule": false,
+        "dismiss": false,
+        "undo": false
+      }
+    },
+    {
+      "args": [
+        {
+          "type": "maintenance",
+          "status": "quote_sent"
+        },
+        true
+      ],
+      "result": {
+        "reschedule": false,
+        "dismiss": false,
+        "undo": false
+      }
+    },
+    {
+      "args": [
+        {
+          "type": "maintenance",
+          "status": "quote_sent"
+        },
+        false
+      ],
+      "result": {
+        "reschedule": false,
+        "dismiss": false,
+        "undo": false
+      }
+    },
+    {
+      "args": [
+        {
+          "type": "maintenance",
+          "status": "quote_accepted"
+        },
+        true
+      ],
+      "result": {
+        "reschedule": false,
+        "dismiss": false,
+        "undo": false
+      }
+    },
+    {
+      "args": [
+        {
+          "type": "maintenance",
+          "status": "quote_accepted"
+        },
+        false
+      ],
+      "result": {
+        "reschedule": false,
+        "dismiss": false,
+        "undo": false
+      }
+    },
+    {
+      "args": [
+        {
+          "type": "maintenance",
+          "status": "invoiced"
+        },
+        true
+      ],
+      "result": {
+        "reschedule": false,
+        "dismiss": false,
+        "undo": false
+      }
+    },
+    {
+      "args": [
+        {
+          "type": "maintenance",
+          "status": "invoiced"
+        },
+        false
+      ],
+      "result": {
+        "reschedule": false,
+        "dismiss": false,
+        "undo": false
+      }
+    },
+    {
+      "args": [
+        {
+          "type": "maintenance",
+          "status": "paid"
+        },
+        true
+      ],
+      "result": {
+        "reschedule": false,
+        "dismiss": false,
+        "undo": false
+      }
+    },
+    {
+      "args": [
+        {
+          "type": "maintenance",
+          "status": "paid"
+        },
+        false
+      ],
+      "result": {
+        "reschedule": false,
+        "dismiss": false,
+        "undo": false
+      }
+    },
+    {
+      "args": [
+        {
+          "type": "maintenance",
+          "status": "canceled"
+        },
+        true
+      ],
+      "result": {
+        "reschedule": false,
+        "dismiss": false,
+        "undo": false
+      }
+    },
+    {
+      "args": [
+        {
+          "type": "maintenance",
+          "status": "canceled"
+        },
+        false
+      ],
+      "result": {
+        "reschedule": false,
+        "dismiss": false,
+        "undo": false
+      }
+    },
+    {
+      "args": [
+        {
+          "type": "maintenance",
+          "status": "done"
+        },
+        true
+      ],
+      "result": {
+        "reschedule": false,
+        "dismiss": false,
+        "undo": false
+      }
+    },
+    {
+      "args": [
+        {
+          "type": "maintenance",
+          "status": "done"
+        },
+        false
+      ],
+      "result": {
+        "reschedule": false,
+        "dismiss": false,
+        "undo": false
+      }
+    },
+    {
+      "args": [
+        {
+          "type": "maintenance",
+          "status": "skipped"
+        },
+        true
+      ],
+      "result": {
+        "reschedule": true,
+        "dismiss": true,
+        "undo": true
+      }
+    },
+    {
+      "args": [
+        {
+          "type": "maintenance",
+          "status": "skipped"
+        },
+        false
+      ],
+      "result": {
+        "reschedule": false,
+        "dismiss": false,
+        "undo": true
+      }
+    },
+    {
+      "args": [
+        {
+          "type": "detection",
+          "status": "unscheduled"
+        },
+        true
+      ],
+      "result": {
+        "reschedule": false,
+        "dismiss": false,
+        "undo": false
+      }
+    },
+    {
+      "args": [
+        {
+          "type": "detection",
+          "status": "unscheduled"
+        },
+        false
+      ],
+      "result": {
+        "reschedule": false,
+        "dismiss": false,
+        "undo": false
+      }
+    },
+    {
+      "args": [
+        {
+          "type": "detection",
+          "status": "scheduled"
+        },
+        true
+      ],
+      "result": {
+        "reschedule": false,
+        "dismiss": false,
+        "undo": false
+      }
+    },
+    {
+      "args": [
+        {
+          "type": "detection",
+          "status": "scheduled"
+        },
+        false
+      ],
+      "result": {
+        "reschedule": false,
+        "dismiss": false,
+        "undo": false
+      }
+    },
+    {
+      "args": [
+        {
+          "type": "detection",
+          "status": "in_progress"
+        },
+        true
+      ],
+      "result": {
+        "reschedule": false,
+        "dismiss": false,
+        "undo": false
+      }
+    },
+    {
+      "args": [
+        {
+          "type": "detection",
+          "status": "in_progress"
+        },
+        false
+      ],
+      "result": {
+        "reschedule": false,
+        "dismiss": false,
+        "undo": false
+      }
+    },
+    {
+      "args": [
+        {
+          "type": "detection",
+          "status": "report_sent"
+        },
+        true
+      ],
+      "result": {
+        "reschedule": false,
+        "dismiss": false,
+        "undo": false
+      }
+    },
+    {
+      "args": [
+        {
+          "type": "detection",
+          "status": "report_sent"
+        },
+        false
+      ],
+      "result": {
+        "reschedule": false,
+        "dismiss": false,
+        "undo": false
+      }
+    },
+    {
+      "args": [
+        {
+          "type": "detection",
+          "status": "quote_sent"
+        },
+        true
+      ],
+      "result": {
+        "reschedule": false,
+        "dismiss": false,
+        "undo": false
+      }
+    },
+    {
+      "args": [
+        {
+          "type": "detection",
+          "status": "quote_sent"
+        },
+        false
+      ],
+      "result": {
+        "reschedule": false,
+        "dismiss": false,
+        "undo": false
+      }
+    },
+    {
+      "args": [
+        {
+          "type": "detection",
+          "status": "quote_accepted"
+        },
+        true
+      ],
+      "result": {
+        "reschedule": false,
+        "dismiss": false,
+        "undo": false
+      }
+    },
+    {
+      "args": [
+        {
+          "type": "detection",
+          "status": "quote_accepted"
+        },
+        false
+      ],
+      "result": {
+        "reschedule": false,
+        "dismiss": false,
+        "undo": false
+      }
+    },
+    {
+      "args": [
+        {
+          "type": "detection",
+          "status": "invoiced"
+        },
+        true
+      ],
+      "result": {
+        "reschedule": false,
+        "dismiss": false,
+        "undo": false
+      }
+    },
+    {
+      "args": [
+        {
+          "type": "detection",
+          "status": "invoiced"
+        },
+        false
+      ],
+      "result": {
+        "reschedule": false,
+        "dismiss": false,
+        "undo": false
+      }
+    },
+    {
+      "args": [
+        {
+          "type": "detection",
+          "status": "paid"
+        },
+        true
+      ],
+      "result": {
+        "reschedule": false,
+        "dismiss": false,
+        "undo": false
+      }
+    },
+    {
+      "args": [
+        {
+          "type": "detection",
+          "status": "paid"
+        },
+        false
+      ],
+      "result": {
+        "reschedule": false,
+        "dismiss": false,
+        "undo": false
+      }
+    },
+    {
+      "args": [
+        {
+          "type": "detection",
+          "status": "canceled"
+        },
+        true
+      ],
+      "result": {
+        "reschedule": false,
+        "dismiss": false,
+        "undo": false
+      }
+    },
+    {
+      "args": [
+        {
+          "type": "detection",
+          "status": "canceled"
+        },
+        false
+      ],
+      "result": {
+        "reschedule": false,
+        "dismiss": false,
+        "undo": false
+      }
+    },
+    {
+      "args": [
+        {
+          "type": "detection",
+          "status": "done"
+        },
+        true
+      ],
+      "result": {
+        "reschedule": false,
+        "dismiss": false,
+        "undo": false
+      }
+    },
+    {
+      "args": [
+        {
+          "type": "detection",
+          "status": "done"
+        },
+        false
+      ],
+      "result": {
+        "reschedule": false,
+        "dismiss": false,
+        "undo": false
+      }
+    },
+    {
+      "args": [
+        {
+          "type": "detection",
+          "status": "skipped"
+        },
+        true
+      ],
+      "result": {
+        "reschedule": true,
+        "dismiss": true,
+        "undo": true
+      }
+    },
+    {
+      "args": [
+        {
+          "type": "detection",
+          "status": "skipped"
+        },
+        false
+      ],
+      "result": {
+        "reschedule": false,
+        "dismiss": false,
+        "undo": true
+      }
+    },
+    {
+      "args": [
+        {
+          "type": "repair",
+          "status": "unscheduled"
+        },
+        true
+      ],
+      "result": {
+        "reschedule": false,
+        "dismiss": false,
+        "undo": false
+      }
+    },
+    {
+      "args": [
+        {
+          "type": "repair",
+          "status": "unscheduled"
+        },
+        false
+      ],
+      "result": {
+        "reschedule": false,
+        "dismiss": false,
+        "undo": false
+      }
+    },
+    {
+      "args": [
+        {
+          "type": "repair",
+          "status": "scheduled"
+        },
+        true
+      ],
+      "result": {
+        "reschedule": false,
+        "dismiss": false,
+        "undo": false
+      }
+    },
+    {
+      "args": [
+        {
+          "type": "repair",
+          "status": "scheduled"
+        },
+        false
+      ],
+      "result": {
+        "reschedule": false,
+        "dismiss": false,
+        "undo": false
+      }
+    },
+    {
+      "args": [
+        {
+          "type": "repair",
+          "status": "in_progress"
+        },
+        true
+      ],
+      "result": {
+        "reschedule": false,
+        "dismiss": false,
+        "undo": false
+      }
+    },
+    {
+      "args": [
+        {
+          "type": "repair",
+          "status": "in_progress"
+        },
+        false
+      ],
+      "result": {
+        "reschedule": false,
+        "dismiss": false,
+        "undo": false
+      }
+    },
+    {
+      "args": [
+        {
+          "type": "repair",
+          "status": "report_sent"
+        },
+        true
+      ],
+      "result": {
+        "reschedule": false,
+        "dismiss": false,
+        "undo": false
+      }
+    },
+    {
+      "args": [
+        {
+          "type": "repair",
+          "status": "report_sent"
+        },
+        false
+      ],
+      "result": {
+        "reschedule": false,
+        "dismiss": false,
+        "undo": false
+      }
+    },
+    {
+      "args": [
+        {
+          "type": "repair",
+          "status": "quote_sent"
+        },
+        true
+      ],
+      "result": {
+        "reschedule": false,
+        "dismiss": false,
+        "undo": false
+      }
+    },
+    {
+      "args": [
+        {
+          "type": "repair",
+          "status": "quote_sent"
+        },
+        false
+      ],
+      "result": {
+        "reschedule": false,
+        "dismiss": false,
+        "undo": false
+      }
+    },
+    {
+      "args": [
+        {
+          "type": "repair",
+          "status": "quote_accepted"
+        },
+        true
+      ],
+      "result": {
+        "reschedule": false,
+        "dismiss": false,
+        "undo": false
+      }
+    },
+    {
+      "args": [
+        {
+          "type": "repair",
+          "status": "quote_accepted"
+        },
+        false
+      ],
+      "result": {
+        "reschedule": false,
+        "dismiss": false,
+        "undo": false
+      }
+    },
+    {
+      "args": [
+        {
+          "type": "repair",
+          "status": "invoiced"
+        },
+        true
+      ],
+      "result": {
+        "reschedule": false,
+        "dismiss": false,
+        "undo": false
+      }
+    },
+    {
+      "args": [
+        {
+          "type": "repair",
+          "status": "invoiced"
+        },
+        false
+      ],
+      "result": {
+        "reschedule": false,
+        "dismiss": false,
+        "undo": false
+      }
+    },
+    {
+      "args": [
+        {
+          "type": "repair",
+          "status": "paid"
+        },
+        true
+      ],
+      "result": {
+        "reschedule": false,
+        "dismiss": false,
+        "undo": false
+      }
+    },
+    {
+      "args": [
+        {
+          "type": "repair",
+          "status": "paid"
+        },
+        false
+      ],
+      "result": {
+        "reschedule": false,
+        "dismiss": false,
+        "undo": false
+      }
+    },
+    {
+      "args": [
+        {
+          "type": "repair",
+          "status": "canceled"
+        },
+        true
+      ],
+      "result": {
+        "reschedule": false,
+        "dismiss": false,
+        "undo": false
+      }
+    },
+    {
+      "args": [
+        {
+          "type": "repair",
+          "status": "canceled"
+        },
+        false
+      ],
+      "result": {
+        "reschedule": false,
+        "dismiss": false,
+        "undo": false
+      }
+    },
+    {
+      "args": [
+        {
+          "type": "repair",
+          "status": "done"
+        },
+        true
+      ],
+      "result": {
+        "reschedule": false,
+        "dismiss": false,
+        "undo": false
+      }
+    },
+    {
+      "args": [
+        {
+          "type": "repair",
+          "status": "done"
+        },
+        false
+      ],
+      "result": {
+        "reschedule": false,
+        "dismiss": false,
+        "undo": false
+      }
+    },
+    {
+      "args": [
+        {
+          "type": "repair",
+          "status": "skipped"
+        },
+        true
+      ],
+      "result": {
+        "reschedule": true,
+        "dismiss": true,
+        "undo": true
+      }
+    },
+    {
+      "args": [
+        {
+          "type": "repair",
+          "status": "skipped"
+        },
+        false
+      ],
+      "result": {
+        "reschedule": false,
+        "dismiss": false,
+        "undo": true
+      }
+    },
+    {
+      "args": [
+        {
+          "type": "inspection",
+          "status": "unscheduled"
+        },
+        true
+      ],
+      "result": {
+        "reschedule": false,
+        "dismiss": false,
+        "undo": false
+      }
+    },
+    {
+      "args": [
+        {
+          "type": "inspection",
+          "status": "unscheduled"
+        },
+        false
+      ],
+      "result": {
+        "reschedule": false,
+        "dismiss": false,
+        "undo": false
+      }
+    },
+    {
+      "args": [
+        {
+          "type": "inspection",
+          "status": "scheduled"
+        },
+        true
+      ],
+      "result": {
+        "reschedule": false,
+        "dismiss": false,
+        "undo": false
+      }
+    },
+    {
+      "args": [
+        {
+          "type": "inspection",
+          "status": "scheduled"
+        },
+        false
+      ],
+      "result": {
+        "reschedule": false,
+        "dismiss": false,
+        "undo": false
+      }
+    },
+    {
+      "args": [
+        {
+          "type": "inspection",
+          "status": "in_progress"
+        },
+        true
+      ],
+      "result": {
+        "reschedule": false,
+        "dismiss": false,
+        "undo": false
+      }
+    },
+    {
+      "args": [
+        {
+          "type": "inspection",
+          "status": "in_progress"
+        },
+        false
+      ],
+      "result": {
+        "reschedule": false,
+        "dismiss": false,
+        "undo": false
+      }
+    },
+    {
+      "args": [
+        {
+          "type": "inspection",
+          "status": "report_sent"
+        },
+        true
+      ],
+      "result": {
+        "reschedule": false,
+        "dismiss": false,
+        "undo": false
+      }
+    },
+    {
+      "args": [
+        {
+          "type": "inspection",
+          "status": "report_sent"
+        },
+        false
+      ],
+      "result": {
+        "reschedule": false,
+        "dismiss": false,
+        "undo": false
+      }
+    },
+    {
+      "args": [
+        {
+          "type": "inspection",
+          "status": "quote_sent"
+        },
+        true
+      ],
+      "result": {
+        "reschedule": false,
+        "dismiss": false,
+        "undo": false
+      }
+    },
+    {
+      "args": [
+        {
+          "type": "inspection",
+          "status": "quote_sent"
+        },
+        false
+      ],
+      "result": {
+        "reschedule": false,
+        "dismiss": false,
+        "undo": false
+      }
+    },
+    {
+      "args": [
+        {
+          "type": "inspection",
+          "status": "quote_accepted"
+        },
+        true
+      ],
+      "result": {
+        "reschedule": false,
+        "dismiss": false,
+        "undo": false
+      }
+    },
+    {
+      "args": [
+        {
+          "type": "inspection",
+          "status": "quote_accepted"
+        },
+        false
+      ],
+      "result": {
+        "reschedule": false,
+        "dismiss": false,
+        "undo": false
+      }
+    },
+    {
+      "args": [
+        {
+          "type": "inspection",
+          "status": "invoiced"
+        },
+        true
+      ],
+      "result": {
+        "reschedule": false,
+        "dismiss": false,
+        "undo": false
+      }
+    },
+    {
+      "args": [
+        {
+          "type": "inspection",
+          "status": "invoiced"
+        },
+        false
+      ],
+      "result": {
+        "reschedule": false,
+        "dismiss": false,
+        "undo": false
+      }
+    },
+    {
+      "args": [
+        {
+          "type": "inspection",
+          "status": "paid"
+        },
+        true
+      ],
+      "result": {
+        "reschedule": false,
+        "dismiss": false,
+        "undo": false
+      }
+    },
+    {
+      "args": [
+        {
+          "type": "inspection",
+          "status": "paid"
+        },
+        false
+      ],
+      "result": {
+        "reschedule": false,
+        "dismiss": false,
+        "undo": false
+      }
+    },
+    {
+      "args": [
+        {
+          "type": "inspection",
+          "status": "canceled"
+        },
+        true
+      ],
+      "result": {
+        "reschedule": false,
+        "dismiss": false,
+        "undo": false
+      }
+    },
+    {
+      "args": [
+        {
+          "type": "inspection",
+          "status": "canceled"
+        },
+        false
+      ],
+      "result": {
+        "reschedule": false,
+        "dismiss": false,
+        "undo": false
+      }
+    },
+    {
+      "args": [
+        {
+          "type": "inspection",
+          "status": "done"
+        },
+        true
+      ],
+      "result": {
+        "reschedule": false,
+        "dismiss": false,
+        "undo": false
+      }
+    },
+    {
+      "args": [
+        {
+          "type": "inspection",
+          "status": "done"
+        },
+        false
+      ],
+      "result": {
+        "reschedule": false,
+        "dismiss": false,
+        "undo": false
+      }
+    },
+    {
+      "args": [
+        {
+          "type": "inspection",
+          "status": "skipped"
+        },
+        true
+      ],
+      "result": {
+        "reschedule": true,
+        "dismiss": true,
+        "undo": true
+      }
+    },
+    {
+      "args": [
+        {
+          "type": "inspection",
+          "status": "skipped"
+        },
+        false
+      ],
+      "result": {
+        "reschedule": false,
+        "dismiss": false,
+        "undo": true
+      }
+    },
+    {
+      "args": [
+        {
+          "status": "scheduled"
+        },
+        true
+      ],
+      "result": {
+        "reschedule": false,
+        "dismiss": false,
+        "undo": false
+      }
+    },
+    {
+      "args": [
+        {
+          "status": "scheduled"
+        },
+        false
+      ],
+      "result": {
+        "reschedule": false,
+        "dismiss": false,
+        "undo": false
+      }
+    },
+    {
+      "args": [
+        {
+          "type": "maintenance",
+          "status": "skipped",
+          "skip_handled_at": "2026-11-16T16:00:00Z"
+        },
+        true
+      ],
+      "result": {
+        "reschedule": true,
+        "dismiss": false,
+        "undo": true
+      }
+    },
+    {
+      "args": [
+        {
+          "type": "maintenance",
+          "status": "skipped",
+          "skip_handled_at": "2026-11-16T16:00:00Z"
+        },
+        false
+      ],
+      "result": {
+        "reschedule": false,
+        "dismiss": false,
+        "undo": true
+      }
+    },
+    {
+      "args": [
+        {
+          "type": "maintenance",
+          "status": "skipped",
+          "skip_handled_at": null
+        },
+        true
+      ],
+      "result": {
+        "reschedule": true,
+        "dismiss": true,
+        "undo": true
+      }
+    },
+    {
+      "args": [
+        {
+          "type": "maintenance",
+          "status": "skipped",
+          "skip_handled_at": null
+        },
+        false
+      ],
+      "result": {
+        "reschedule": false,
+        "dismiss": false,
+        "undo": true
+      }
+    }
+  ],
+  "skipCustomerText": [
+    {
+      "args": [
+        "Rebecca Soto",
+        "Alex Kim",
+        "Blue Pools.",
+        "Dog in Yard"
+      ],
+      "result": "Hi Rebecca, this is Alex from Blue Pools. We had to skip today’s pool service (dog in yard). We’ll be in touch to reschedule."
+    },
+    {
+      "args": [
+        null,
+        "Alex",
+        "Blue",
+        "Weather"
+      ],
+      "result": "Hi, this is Alex from Blue. We had to skip today’s pool service (weather). We’ll be in touch to reschedule."
+    },
+    {
+      "args": [
+        "",
+        "Alex",
+        "Blue",
+        "  Pool Covered or Closed "
+      ],
+      "result": "Hi, this is Alex from Blue. We had to skip today’s pool service (pool covered or closed). We’ll be in touch to reschedule."
+    }
+  ],
+  "skipNotification": [
+    {
+      "args": [
+        "Soto",
+        "Locked Gate",
+        "Alex"
+      ],
+      "result": {
+        "title": "Visit skipped",
+        "body": "Soto: Locked Gate, skipped by Alex."
+      }
+    },
+    {
+      "args": [
+        "Soto",
+        "Weather",
+        null
+      ],
+      "result": {
+        "title": "Visit skipped",
+        "body": "Soto: Weather."
+      }
+    }
+  ],
+  "autoSkipNotification": [
+    {
+      "args": [
+        1
+      ],
+      "result": {
+        "title": "A visit wasn’t done",
+        "body": "It was skipped at the end of the day. Reschedule or dismiss it in Jobs › Skipped."
+      }
+    },
+    {
+      "args": [
+        3
+      ],
+      "result": {
+        "title": "3 visits weren’t done",
+        "body": "They were skipped at the end of the day. Reschedule or dismiss them in Jobs › Skipped."
+      }
+    }
+  ],
+  "skipsUnfinishedVisits": [
+    {
+      "args": [
+        {}
+      ],
+      "result": false
+    },
+    {
+      "args": [
+        null
+      ],
+      "result": false
+    },
+    {
+      "args": [
+        {
+          "skip_unfinished_visits": false
+        }
+      ],
+      "result": false
+    },
+    {
+      "args": [
+        {
+          "skip_unfinished_visits": true
+        }
+      ],
+      "result": true
+    }
+  ],
+  "skipSummary": [
+    {
+      "args": [
+        {
+          "skip_reason": "Dog in Yard",
+          "skipped_at": "x"
+        },
+        "Alex",
+        "Nov 16, 9:05 AM"
+      ],
+      "result": "Dog in Yard · Alex, Nov 16, 9:05 AM"
+    },
+    {
+      "args": [
+        {
+          "skip_reason": "Not Done"
+        },
+        null,
+        "Nov 16"
+      ],
+      "result": "Not Done · Nov 16"
+    },
+    {
+      "args": [
+        {
+          "skip_reason": "Weather"
+        },
+        null,
+        null
+      ],
+      "result": "Weather"
+    },
+    {
+      "args": [
+        {},
+        "Alex",
+        null
+      ],
+      "result": "Alex"
+    }
+  ],
+  "statusAfterMove": [
+    {
+      "args": [
+        "unscheduled"
+      ],
+      "result": "scheduled"
+    },
+    {
+      "args": [
+        "scheduled"
+      ],
+      "result": "scheduled"
+    },
+    {
+      "args": [
+        "in_progress"
+      ],
+      "result": "in_progress"
+    },
+    {
+      "args": [
+        "report_sent"
+      ],
+      "result": "report_sent"
+    },
+    {
+      "args": [
+        "quote_sent"
+      ],
+      "result": "quote_sent"
+    },
+    {
+      "args": [
+        "quote_accepted"
+      ],
+      "result": "quote_accepted"
+    },
+    {
+      "args": [
+        "invoiced"
+      ],
+      "result": "invoiced"
+    },
+    {
+      "args": [
+        "paid"
+      ],
+      "result": "paid"
+    },
+    {
+      "args": [
+        "canceled"
+      ],
+      "result": "canceled"
+    },
+    {
+      "args": [
+        "done"
+      ],
+      "result": "done"
+    },
+    {
+      "args": [
+        "skipped"
+      ],
+      "result": "scheduled"
+    },
+    {
+      "args": [
+        "bogus"
+      ],
+      "result": "bogus"
+    }
+  ]
+}

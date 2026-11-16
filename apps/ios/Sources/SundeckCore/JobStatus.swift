@@ -10,13 +10,15 @@ public enum JobStatus: String, Codable, CaseIterable, Sendable {
     case paid
     case canceled
     case done
+    case skipped
 
     public var transitions: [JobStatus] {
         switch self {
-        case .unscheduled: [.scheduled, .inProgress, .canceled]
+        // Skipped: a maintenance visit that couldn't be done (20261022004500_skip_visit.sql).
+        case .unscheduled: [.scheduled, .inProgress, .canceled, .skipped]
         // Complete Job straight from Scheduled (owner, 2026-10-19), for a visit done in one go.
-        case .scheduled: [.unscheduled, .inProgress, .canceled, .done]
-        case .inProgress: [.scheduled, .reportSent, .invoiced, .canceled, .done]
+        case .scheduled: [.unscheduled, .inProgress, .canceled, .done, .skipped]
+        case .inProgress: [.scheduled, .reportSent, .invoiced, .canceled, .done, .skipped]
         case .reportSent: [.inProgress, .quoteSent, .invoiced, .canceled]
         case .quoteSent: [.reportSent, .quoteAccepted, .invoiced, .canceled]
         case .quoteAccepted: [.invoiced, .canceled]
@@ -25,6 +27,8 @@ public enum JobStatus: String, Codable, CaseIterable, Sendable {
         case .canceled: [.unscheduled]
         // Maintenance visits (20261012002400_maintenance.sql).
         case .done: [.inProgress, .invoiced]
+        // Back on (Undo Skip, or a new day), off the calendar, or called off.
+        case .skipped: [.scheduled, .unscheduled, .inProgress, .canceled]
         }
     }
 
@@ -44,6 +48,7 @@ public enum JobStatus: String, Codable, CaseIterable, Sendable {
         case .paid: "Paid"
         case .canceled: "Canceled"
         case .done: "Done"
+        case .skipped: "Skipped"
         }
     }
 }
@@ -52,7 +57,9 @@ public enum JobStatus: String, Codable, CaseIterable, Sendable {
 /// a job off the calendar; Reopen Job brings back a canceled job or puts one whose report went out
 /// back in progress (2026-10-29); Reopen Visit puts a finished visit back in progress.
 public func jobActionLabel(from: JobStatus, to: JobStatus) -> String {
-    switch to {
+    if to == .skipped { return "Skip Visit" }
+    if from == .skipped && to == .scheduled { return "Undo Skip" }
+    return switch to {
     case .unscheduled: from == .canceled ? "Reopen Job" : "Unschedule"
     case .inProgress: from == .done ? "Reopen Visit" : from == .reportSent ? "Reopen Job" : "Start Job"
     case .scheduled: "Move Back to Scheduled"
@@ -65,16 +72,21 @@ public func jobActionLabel(from: JobStatus, to: JobStatus) -> String {
 /// A step back (owner, 2026-10-29): Move Back to Scheduled and Unschedule sit in the job page's ••• menu,
 /// so the buttons in view are forward steps. Reopen Job on a canceled job is forward. Port of core's.
 public func isBackwardMove(from: JobStatus, to: JobStatus) -> Bool {
-    to == .scheduled || (to == .unscheduled && from != .canceled)
+    // Undo Skip is the way out of a skip, in view beside Reschedule.
+    if from == .skipped && to == .scheduled { return false }
+    return to == .scheduled || (to == .unscheduled && from != .canceled)
 }
 
 /// Next statuses a person (not the server) can pick. Done is how a maintenance visit ends;
 /// leak detection and repairs end with a report or invoice.
 public func userTransitions(from: JobStatus, type: String? = nil) -> [JobStatus] {
+    // A skipped visit is put back with Undo Skip (Scheduled) or a new day (Reschedule), or called
+    // off: not started or unscheduled by a status button.
+    if from == .skipped { return from.transitions.filter { $0 == .scheduled || $0 == .canceled } }
     // An unscheduled job is scheduled with a day (the Schedule's Move…), never by a status
     // button (2026-10-21).
-    from.transitions.filter {
+    return from.transitions.filter {
         !JobStatus.serverStatuses.contains($0) && ($0 != .done || type == "maintenance")
-            && !(from == .unscheduled && $0 == .scheduled)
+            && ($0 != .skipped || type == "maintenance") && !(from == .unscheduled && $0 == .scheduled)
     }
 }

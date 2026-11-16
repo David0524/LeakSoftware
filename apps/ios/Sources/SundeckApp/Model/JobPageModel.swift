@@ -79,7 +79,8 @@ public func jobHeaderTime(_ job: JobView, now: Date, timeZone: String) -> String
 
 /// The header's status buttons: every next step but Cancel, which sits at the end of Details.
 public func jobHeaderActions(_ status: JobStatus, type: JobType) -> [JobStatus] {
-    userTransitions(from: status, type: type.rawValue).filter { $0 != .canceled }
+    // Skip Visit asks why in its own sheet: it's in the ••• menu and at the end of Details.
+    userTransitions(from: status, type: type.rawValue).filter { $0 != .canceled && $0 != .skipped }
 }
 
 /// The header's status buttons on a phone (owner, 2026-10-20): Start Job moves to the Next Step
