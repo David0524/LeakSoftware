@@ -5,6 +5,7 @@ import { Chapter, ChapterOpener } from "./kit";
 import { chaptersOf, EDITIONS, type EditionInfo } from "./editions";
 import type { Edition } from "./kit";
 import { pick } from "./types";
+import { ManualMotion } from "./motion";
 
 const UPDATED = "November 2026";
 
@@ -18,6 +19,7 @@ export function Manual({ edition }: { edition: Edition }) {
   const other = EDITIONS[edition === "pool" ? "leak" : "pool"];
   return (
     <div className="manual">
+      <ManualMotion />
       {/* The PDF's running footer names the edition (margin boxes can't read the page). */}
       <style>{`@page { size: Letter; margin: 0.7in 0.75in 0.8in;
         @bottom-left { content: "Sundeck Pro · ${info.name} Manual"; font: 8.5pt system-ui, sans-serif; color: #5A6875; }
@@ -113,8 +115,19 @@ function Cover({
     <header className="m-cover">
       <p className="m-cover-kicker">Sundeck Pro Manual · {info.name}</p>
       <h1 className="m-cover-title">
-        {info.story}
-        <span className="m-cover-dot" aria-hidden="true" />
+        {info.story.split(" ").map((word, i, words) => (
+          <Fragment key={i}>
+            <span className="m-word" style={{ animationDelay: `${120 + i * 70}ms` }}>
+              {word}
+            </span>
+            {i < words.length - 1 ? " " : null}
+          </Fragment>
+        ))}
+        <span
+          className="m-cover-dot"
+          aria-hidden="true"
+          style={{ animationDelay: `${260 + info.story.split(" ").length * 70}ms` }}
+        />
       </h1>
       <p className="m-cover-sub">{info.promise}</p>
       <div className="m-cover-actions">
@@ -139,6 +152,7 @@ function Cover({
         {/* eslint-disable-next-line @next/next/no-img-element -- static SVG, printed */}
         <img src="/sundeck-logo-reverse.svg" alt="Sundeck Pro" width={205} height={48} />
       </div>
+      <Sea />
       <p className="m-cover-meta">
         For the website, the iPhone app and the Android app · Updated {UPDATED} · sundeckpro.com
       </p>
@@ -181,5 +195,26 @@ function Contents({ info }: { info: EditionInfo }) {
         </Fragment>
       ))}
     </section>
+  );
+}
+
+/** Two slow swells along the bottom of the cover, drawn twice side by side so they loop. */
+function Sea() {
+  const wave = (y: number, amp: number) => {
+    let d = `M0 ${y}`;
+    for (let x = 0; x < 2400; x += 300) {
+      d += ` C${x + 100} ${y - amp} ${x + 200} ${y + amp} ${x + 300} ${y}`;
+    }
+    return `${d} V200 H0 Z`;
+  };
+  return (
+    <div className="m-sea" aria-hidden="true">
+      <svg className="m-sea-back" viewBox="0 0 2400 200" preserveAspectRatio="none">
+        <path d={wave(90, 26)} />
+      </svg>
+      <svg className="m-sea-front" viewBox="0 0 2400 200" preserveAspectRatio="none">
+        <path d={wave(120, 18)} />
+      </svg>
+    </div>
   );
 }

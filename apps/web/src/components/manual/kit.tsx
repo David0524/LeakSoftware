@@ -33,7 +33,8 @@ export function ChapterOpener({
   return (
     <header className="m-opener">
       <p className="m-opener-number" aria-hidden="true">
-        {number}
+        <span className="m-num-line">{number}</span>
+        <span className="m-num-fill">{number}</span>
       </p>
       <p className="m-eyebrow">
         {/^\d+$/.test(number) ? `Chapter ${number}` : number}
