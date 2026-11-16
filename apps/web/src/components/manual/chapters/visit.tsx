@@ -229,6 +229,14 @@ export const visit: ChapterDef = {
           <Ui>Customer Supplied</Ui> and the chemical is still recorded and still on the report,
           marked “Supplied by you,” but it’s never billed.
         </Note>
+        <Note title="A dose that looks big">
+          When you type an amount yourself, Sundeck Pro checks it against the usual dose for one
+          10,000-gallon pool. Above it, a yellow note appears as you type, in both{" "}
+          <Ui>Add Chemical</Ui> and <Ui>Added Chemical</Ui>: “That’s more than the usual 1 gal per
+          10,000 gal at once. Check the amount.” It never stops you from adding or saving. The check
+          needs the pool’s gallons, so a pool with no gallons gets no warning. One-tap suggestions
+          aren’t checked, because the calculator already works from the gallons.
+        </Note>
       </Section>
 
       <Section kicker="Prices, or not" title="Charge for Chemicals">
@@ -442,6 +450,52 @@ export const visit: ChapterDef = {
         </p>
       </Section>
 
+      <Section kicker="Something for the office" title="Report an Issue">
+        <p>
+          Sometimes the problem is bigger than this visit, and you don’t want to fix it or quote it
+          on the spot: a leaking pump, a cracked skimmer, a heater that’s failing. Report it
+          instead, and the office takes it from there.
+        </p>
+        <Steps>
+          <Step
+            title={
+              <>
+                On the visit’s <Ui>Details</Ui>, under <Ui>Issues</Ui>, tap <Ui>Report an Issue</Ui>
+                .
+              </>
+            }
+          >
+            A sheet opens. Say what’s wrong first, then add photos or a video.
+          </Step>
+          <Step
+            title={
+              <>
+                Choose <Ui>Suggested Work</Ui>: <Ui>Not Sure</Ui> or <Ui>Repair</Ui>.
+              </>
+            }
+          >
+            Pick the one closest to what you see. The office can change it later.
+          </Step>
+          <Step
+            title={
+              <>
+                Tap <Ui>Report</Ui>.
+              </>
+            }
+          >
+            “Issue reported. The office will see it.” It works with no signal, and it goes to the
+            office when the phone syncs. Owners and admins get a notification, Reported issues, with
+            the customer and what’s wrong.
+          </Step>
+        </Steps>
+        <p>
+          In the office, the issue is on the Jobs page under <Ui>Issues</Ui>, with a count of the
+          open ones. An owner or admin can tap <Ui>Make Quote</Ui>, which makes an unscheduled
+          repair job for that pool, with your note and the photos already on it, and opens it so the
+          quote can be built. Or they can <Ui>Resolve</Ui> it, with a note, when no work is needed.
+        </p>
+      </Section>
+
       <Section kicker="Step 8" title="Complete Job">
         <p>
           <Ui>Complete Job</Ui> is in the visit’s header, at the end of the Checklist, and on
@@ -472,6 +526,47 @@ export const visit: ChapterDef = {
           in Today. It puts the visit back In progress so you can fix it. Once the month’s invoice
           has been sent, that visit’s charges and chemicals are locked: they’ve been billed.
         </Watch>
+      </Section>
+
+      <Section kicker="When the visit can’t happen" title="Skip Visit">
+        <p>
+          Some visits can’t be done. The gate is locked, the dog is loose, the pool is covered.
+          Don’t leave the stop sitting on your list. Skip it with a reason, and the office knows
+          why.
+        </p>
+        <Steps>
+          <Step
+            title={
+              <>
+                Tap <Ui>Skip Visit</Ui>.
+              </>
+            }
+          >
+            It’s at the end of the visit’s <Ui>Details</Ui>, and in the ••• menu.
+          </Step>
+          <Step title="Choose a reason.">
+            It’s required. Pick from your shop’s list, such as Locked Gate, Dog in Yard or Weather.
+          </Step>
+          <Step title="Add a note and a photo if you like, then tap Skip.">
+            Both are optional. The visit becomes Skipped: not done, not billed, and off your list.
+          </Step>
+        </Steps>
+        <p>
+          A banner says “Visit skipped” with <Ui>Undo</Ui> for five seconds. <Ui>Undo Skip</Ui>{" "}
+          stays on the visit if you change your mind later. <Ui>Text the Customer</Ui> offers a
+          short text that names the reason. On a phone it opens your own Messages with the text
+          ready to send.
+        </p>
+        <p>
+          The office sees the skip on the Jobs page under <Ui>Skipped</Ui>, and on Today and
+          Schedule. Owners and admins get a Skipped visits notification, and can <Ui>Reschedule</Ui>{" "}
+          the visit or <Ui>Dismiss</Ui> it once it’s handled.
+        </p>
+        <Note title="Visits never started by day’s end">
+          In Settings › Scheduling, <Ui>Skip Unfinished Visits at Day’s End</Ui> is off to start.
+          On, a visit from the last three days that was never started is skipped by the system, with
+          the reason Not Done, and the office gets one message for the day: “3 visits weren’t done.”
+        </Note>
       </Section>
 
       <BigFigure

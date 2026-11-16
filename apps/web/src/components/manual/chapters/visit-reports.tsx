@@ -93,6 +93,32 @@ export const visitReports: ChapterDef = {
         </p>
       </Section>
 
+      <Section kicker="After the visit" title="How did we do?">
+        <p>
+          Under a sent visit report, the customer sees <Ui>How did we do?</Ui> with a thumbs up and
+          a thumbs down. It’s on the web page only; the PDF doesn’t carry it. It shows while{" "}
+          <Ui>Ask How We Did First</Ui> is on (Settings › Company and Branding › Reminders and
+          Reviews, on to start).
+        </p>
+        <Table
+          head={["They tap", "What happens"]}
+          rows={[
+            [
+              <Ui key="up">Thumbs up</Ui>,
+              "“Thank you! We’re glad you’re happy.” Then Leave a Google Review, if your shop has a review link.",
+            ],
+            [
+              <Ui key="down">Thumbs down</Ui>,
+              "A box, What went wrong?, and Send. What they type goes to you privately as a complaint, and the page says “Thank you for telling us.” They aren’t asked for a review while the complaint is open.",
+            ],
+          ]}
+        />
+        <p>
+          Complaints appear in Customer Feedback in the office (see Office). Each one also sends
+          owners and admins a Customer complaint notification, once.
+        </p>
+      </Section>
+
       <Section kicker="The owner’s choice" title="Each visit, once a month, or not at all">
         <p>
           When reports go out is set once for the whole shop, in{" "}

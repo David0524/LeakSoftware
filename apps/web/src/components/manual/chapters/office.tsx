@@ -237,9 +237,41 @@ export const office: ChapterDef = {
           also have a <Ui>Weekly summary</Ui> under <Ui>Email</Ui> (on for owners to start): on
           Monday morning, last week’s jobs and money and the quotes still waiting.
         </p>
+        <p>
+          Four switches are newer. <Ui>Reported issues</Ui> and <Ui>Customer complaints</Ui> are for
+          both kinds of shop.
+          {edition === "pool"
+            ? " Skipped visits and Out-of-range readings are for pool care."
+            : null}{" "}
+          Owners and admins get these, and techs don’t.
+        </p>
         <Note title="If nothing arrives">
           The phone itself has to allow notifications for Sundeck Pro. If it doesn’t, the page shows
           a notice with an <Ui>Open Settings</Ui> row that takes you there.
+        </Note>
+      </Section>
+
+      <Section kicker="What customers tell you" title="Customer Feedback">
+        <Meta who={["Owner", "Admin"]} where={["Website", "iPhone", "Android"]} />
+        <p>
+          When a customer answers <Ui>How did we do?</Ui> on a report, it lands here. Open the{" "}
+          <Ui>Customer Feedback</Ui> card on the Dashboard. The list has three segments,{" "}
+          <Ui>Open</Ui>, <Ui>Closed</Ui> and <Ui>Thumbs Up</Ui>, with open complaints first and the
+          count of them above the list.
+        </p>
+        <p>
+          Tap a complaint to read what the customer said, and open their customer or job from it.
+          Write a note if you like, then tap <Ui>Close</Ui>. <Ui>Reopen</Ui> brings it back. A
+          thumbs up is closed already and stays in Thumbs Up.
+        </p>
+        <p>
+          The customer’s page has a <Ui>Feedback</Ui> section with their latest five answers, and{" "}
+          <Ui>See All Feedback</Ui> for the rest. It appears once they’ve said anything.
+        </p>
+        <Note title="A complaint stays with you">
+          A thumbs-down goes only to your shop. Nothing is posted anywhere on the customer’s behalf.
+          Once a complaint is open, the review request for that customer is held back until it’s
+          closed.
         </Note>
       </Section>
 

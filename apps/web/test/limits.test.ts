@@ -100,6 +100,8 @@ describe("malformed links", () => {
       `/jobs/${id}`,
       "/jobs/new",
       "/jobs/reports",
+      "/jobs/issues",
+      `/jobs/issues/${id}`,
       "/q/88f473afec9be82464d213d698ca7bdc",
       "/i/88f473afec9be82464d213d698ca7bdc/pdf",
       "/customers",

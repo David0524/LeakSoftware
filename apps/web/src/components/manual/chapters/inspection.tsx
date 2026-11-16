@@ -304,6 +304,52 @@ export const inspection: ChapterDef = {
         </Tip>
       </Section>
 
+      <Section kicker="Not this leak" title="Something else you saw">
+        <p>
+          Sometimes the walk-around turns up something that isn’t this leak: a cracked tile at the
+          spa, a light that’s shorting, a heater that’s failing. You don’t want to quote it on the
+          spot, and you don’t want to forget it. Report an Issue saves it on the job.
+        </p>
+        <Steps>
+          <Step
+            title={
+              <>
+                On <Ui>Details</Ui>, under <Ui>Issues</Ui>, tap <Ui>Report an Issue</Ui>.
+              </>
+            }
+          >
+            Say what’s wrong first, then add photos or a video. It saves with no signal.
+          </Step>
+          <Step
+            title={
+              <>
+                Choose <Ui>Suggested Work</Ui>: <Ui>Not Sure</Ui>, <Ui>Repair</Ui> or{" "}
+                <Ui>Leak Detection</Ui>.
+              </>
+            }
+          >
+            Leak Detection is for another leak that needs its own detection. Repair is work to
+            quote.
+          </Step>
+          <Step
+            title={
+              <>
+                Tap <Ui>Report</Ui>.
+              </>
+            }
+          >
+            “Issue reported. The office will see it.” Owners and admins get a Reported issues
+            notification.
+          </Step>
+        </Steps>
+        <p>
+          In the office, an owner or admin on the Jobs page, under <Ui>Issues</Ui>, can tap{" "}
+          <Ui>Make Leak Detection Job</Ui>. That makes a detection job for the pool with its
+          checklist, and opens it. <Ui>Make Quote</Ui> does the same for repair work, with your note
+          and the photos, and opens it at Wrap-Up. Or they <Ui>Resolve</Ui> it with a note.
+        </p>
+      </Section>
+
       <Section kicker="Where it ends up" title="From walk-around to report">
         <p>
           Nothing on the checklist is typed twice. When Dana writes the report at Wrap-Up, the draft

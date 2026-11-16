@@ -60,7 +60,7 @@ export function friendlyDbError(message: string, notFound = "That wasn’t found
 }
 
 /** The pages under /jobs/ that aren't a job id. */
-const JOB_PAGES = new Set(["new", "reports"]);
+const JOB_PAGES = new Set(["new", "reports", "issues"]);
 
 /** Customer links carry a share link's token: 16 random bytes as hex. */
 const SHARE_TOKEN = /^[0-9a-f]{32}$/;

@@ -102,7 +102,9 @@ export const gettingPaid: ChapterDef = {
         <Tip title="Reminders go out on their own">
           Unpaid invoices get a reminder by default at 7, 14 and 30 days. Set the days in{" "}
           <Path items={["Settings", "Company and Branding"]} />, or send one yourself from the
-          swipe.
+          swipe. Under <Ui>Send Reminders By</Ui> you choose <Ui>Email</Ui>, <Ui>Text</Ui> or{" "}
+          <Ui>Both</Ui>. A text comes from your company number, and only to a mobile number that
+          hasn’t replied STOP.
         </Tip>
         <Browser
           src="invoices"
@@ -146,6 +148,15 @@ export const gettingPaid: ChapterDef = {
         <p>
           The money goes straight to your own Stripe account. Sundeck Pro never holds it. A bank
           payment “is processing” and usually clears in about four business days.
+        </p>
+        <p>
+          <strong>Pay over time.</strong> When Stripe has approved Affirm or Klarna for your
+          account, and the amount qualifies (Affirm from $50 to $30,000, Klarna from $50 to
+          $10,000), the pay button on an invoice or quote is joined by{" "}
+          <Ui>Pay over time with Affirm or Klarna</Ui>. Those payments are recorded as card
+          payments. Under <Path items={["Settings", "Payments and Deposits"]} /> the switch{" "}
+          <Ui>Offer Pay Over Time</Ui> is on to start, and its status shows underneath. Until Stripe
+          approves them, nothing is offered.
         </p>
       </Section>
 
@@ -289,6 +300,51 @@ export const gettingPaid: ChapterDef = {
           Receipts need a connection. Offline, the app says so and doesn’t queue it; use{" "}
           <Ui>Send Receipt</Ui> on the invoice when you’re back in range.
         </Note>
+      </Section>
+
+      <Section kicker="Next time" title="Cards on file">
+        <Meta who={["Owner", "Admin"]} where={["Website", "iPhone", "Android"]} />
+        <p>
+          A customer can save a card or bank account with Stripe, so the next payment takes one tap
+          or none. Sundeck Pro keeps only the brand, the last four digits and the expiry date. There
+          are two ways to get one saved:
+        </p>
+        <Steps>
+          <Step
+            title={
+              <>
+                Ask for it: <Ui>Request Card on File</Ui>.
+              </>
+            }
+          >
+            On the customer’s page, in the <Ui>Autopay</Ui> group, tap it. The customer gets a link
+            by email, or by text from your company number when you have one. The link opens
+            Automatic Payments: <Ui>Save Card or Bank Account</Ui>, and a line saying what they
+            agree to. Nothing is charged. The link is good for 30 days.
+          </Step>
+          <Step
+            title={
+              <>
+                Or they tick <Ui>Save for Autopay</Ui>.
+              </>
+            }
+          >
+            On their invoice, above the Pay button, a switch saves the card or bank account and
+            turns autopay on, once they agree to the words under it.
+          </Step>
+        </Steps>
+        <p>
+          With a card on file, tap <Ui>Charge Card on File</Ui> on any invoice to charge it now.
+          Sundeck Pro asks first, with the amount and, for a card, the fee: “Jane Smith is charged
+          $168.92 now. That includes the 3% card fee ($4.92).” Then <Ui>Cancel</Ui> or{" "}
+          <Ui>Charge</Ui>.
+        </p>
+        {edition === "pool" ? (
+          <p>
+            For monthly maintenance invoices it works differently: once autopay is on, the invoice
+            is charged as soon as it’s sent. The chapter on billing day covers that.
+          </p>
+        ) : null}
       </Section>
 
       <Section kicker="When it’s wrong" title="Voiding an invoice">

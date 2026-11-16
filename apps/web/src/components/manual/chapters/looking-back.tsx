@@ -230,6 +230,35 @@ export const lookingBack: ChapterDef = {
         </Steps>
       </Section>
 
+      {edition === "pool" ? (
+        <Section kicker="Chemistry over time" title="Trends and Out of Range">
+          <Meta who={["Owner", "Admin", "Tech"]} where={["Website", "iPhone", "Android"]} />
+          <p>
+            Every pool keeps its readings. Open the pool’s <Ui>Chemical</Ui> screen from the
+            customer’s page, and scroll under the calculator to <Ui>Trends</Ui>. Choose 90 Days, 6
+            Months or 1 Year. Each reading you’ve taken, such as free chlorine, pH, alkalinity,
+            calcium, stabilizer and salt, gets a card with its latest value, a line over time, and
+            the pool’s range shaded green behind it. A point outside the range is red.
+          </p>
+          <p>
+            If your shop charges for chemicals, a <Ui>Chemical Cost</Ui> card shows a bar for each
+            month and the period’s total.
+          </p>
+          <p>
+            <Path items={["More", "Chemicals"]} /> has a <Ui>Calculator</Ui> and{" "}
+            <Ui>Out of Range</Ui> control. Out of Range lists the last 30 days of readings outside
+            their range, newest first. Tap one to open that pool’s Chemical screen.
+          </p>
+          <Note title="Out-of-range readings">
+            A reading well past its range sends owners and admins a push, Out-of-range readings. It
+            takes a clear miss: free chlorine more than 1 ppm past its edge, pH more than 0.2,
+            alkalinity more than 20, calcium more than 50, stabilizer more than 10, salt more than
+            300. A hair outside the range only shows as Low or High. The push comes up to about 80
+            minutes after the tech stops typing, not instantly.
+          </Note>
+        </Section>
+      ) : null}
+
       <Section kicker="What happened, and when" title="Activity, one more time">
         <p>
           The Dashboard tells you how things stand. <Ui>Activity</Ui> tells you what happened,{" "}

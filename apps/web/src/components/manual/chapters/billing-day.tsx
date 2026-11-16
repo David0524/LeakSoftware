@@ -263,6 +263,37 @@ export const billingDay: ChapterDef = {
         </Note>
       </Section>
 
+      <Section kicker="Customers who pay themselves" title="Autopay on monthly invoices">
+        <Meta who={["Owner", "Admin"]} where={["Website", "iPhone", "Android"]} />
+        <p>
+          A customer who has saved a card or bank account, and agreed to autopay, doesn’t wait for
+          the invoice to be paid. When the monthly invoice is sent, Sundeck Pro charges the saved
+          card or bank account right away. The email says so: “Amount due: $164.00, paid
+          automatically with your Visa •••• 4242; there’s nothing to do.” Card payments carry the
+          card fee, as on any Checkout. Bank accounts have none.
+        </p>
+        <p>
+          Autopay is on for the shop from the start, and does nothing until a customer saves a card.
+          Only monthly maintenance invoices are charged this way. Nothing else is charged on its
+          own.
+        </p>
+        <Sub>When a payment fails</Sub>
+        <p>
+          The customer gets their normal pay link by email, the first time only. You get a
+          notification on the first failure and again if the last try fails. In{" "}
+          <Path items={["Settings", "Payments and Deposits"]} /> you set{" "}
+          <Ui>Retry Failed Payments</Ui> (Off, or 1 to 3 more tries, 2 to start) and{" "}
+          <Ui>Try Again</Ui> (every 1, 2, 3, 5 or 7 days, 3 to start). A retry only runs while the
+          invoice is still owed and the customer still has autopay and a card.
+        </p>
+        <Note title="Turning it off">
+          A customer’s page has an <Ui>Autopay</Ui> group with the status and the card, such as
+          “Visa •••• 4242, Expires 04/30”. <Ui>Turn Off Autopay</Ui> stops the charges and keeps the
+          card for <Ui>Charge Card on File</Ui>. <Ui>Remove Card</Ui> deletes it. Customers can’t
+          turn autopay off themselves, so they ask the shop.
+        </Note>
+      </Section>
+
       <UseIt
         items={[
           {

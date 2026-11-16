@@ -158,6 +158,11 @@ export const FAQ_TOPICS: FaqTopic[] = [
         for: "pool",
       },
       {
+        q: "What happens when a tech can’t get into a yard?",
+        a: "The tech taps Skip Visit and picks a reason, such as Locked Gate or Dog in Yard, and can add a note and a photo. The visit is marked Skipped: it isn’t done and isn’t billed, and it comes off the tech’s list. You’re told, and you can Reschedule it or Dismiss it once it’s handled. The tech can also send the customer a short text that names the reason. Settings › Scheduling can skip any visit from the last three days that was never started, at the end of the day.",
+        for: "pool",
+      },
+      {
         q: "Can a tech bill a part or a repair on the spot?",
         a: "Yes. On a visit’s checklist, Add Charge picks an item from your price book or types a custom one, and it becomes its own line on the month’s invoice. A bigger repair can be quoted from the visit.",
         for: "pool",
@@ -235,8 +240,13 @@ export const FAQ_TOPICS: FaqTopic[] = [
         for: "both",
       },
       {
+        q: "How do I keep bad reviews off Google?",
+        a: "You can’t control what people post on Google, and Sundeck Pro doesn’t try to. What it does is ask first. With Ask How We Did First on (on to start, in Settings › Company and Branding › Reminders and Reviews), the review email asks “How did we do?” with two links. A customer who picks “Something went wrong” writes what happened, and that goes to you privately as a complaint. Customers with an open complaint aren’t sent review requests, and customers who are happy get the Leave a Google Review link.",
+        for: "both",
+      },
+      {
         q: "Do customers get payment reminders?",
-        a: "Yes, by email. By default a quote gets a reminder 3 and 7 days after sending, and an invoice 7, 14 and 30 days after. They stop when the quote is accepted or the invoice is paid, and you can change the days or clear them in Settings › Company and Branding.",
+        a: "Yes, by email, by text, or both. Choose Email, Text or Both under Send Reminders By in Settings › Company and Branding › Reminders and Reviews. By default a quote gets a reminder 3 and 7 days after sending, and an invoice 7, 14 and 30 days after. They stop when the quote is accepted or the invoice is paid, and you can change the days or clear them. A text goes only to a mobile number that hasn’t replied STOP.",
         for: "both",
       },
     ],
@@ -279,6 +289,26 @@ export const FAQ_TOPICS: FaqTopic[] = [
         q: "How do I get paid for a leak job?",
         a: "The detection fee goes on one invoice per job, and a repair job copies the accepted quote and credits the deposit already paid. Send it by email, and customers pay from the link. A partly paid invoice shows what’s still due.",
         for: "leak",
+      },
+      {
+        q: "Can customers pay automatically?",
+        a: "Yes, if they agree. On their invoice they tick Save for Autopay, and their card or bank account is saved with Stripe. From then on each monthly maintenance invoice is charged as soon as it’s sent, and the customer gets a receipt. Nothing else is charged on its own. Customers can’t turn it off themselves: they ask you, and you tap Turn Off Autopay on their page.",
+        for: "pool",
+      },
+      {
+        q: "How do I get a card on file from a customer?",
+        a: "On the customer’s page, in the Autopay group, tap Request Card on File. The customer gets a link by email, or by text from your company number when you have one. It opens a page to save a card or bank account, and nothing is charged. Then tap Charge Card on File on any invoice to charge it now, after a confirmation that shows the amount and any card fee.",
+        for: "both",
+      },
+      {
+        q: "Can customers pay over time?",
+        a: "Yes, with Affirm or Klarna, once Stripe has approved them for your account and the amount qualifies (Affirm from $50 to $30,000, Klarna from $50 to $10,000). The option sits under the pay button on invoices and quotes. Turn it off in Settings › Payments and Deposits with Offer Pay Over Time.",
+        for: "both",
+      },
+      {
+        q: "What happens when an automatic payment fails?",
+        a: "The customer gets their normal pay link by email, the first time only, and you get a notification on the first failure and if the last try fails. By default Sundeck Pro tries two more times, three days apart, while the invoice is still owed. You can change the number of tries and the gap, or turn retries off, in Settings › Payments and Deposits.",
+        for: "pool",
       },
     ],
   },

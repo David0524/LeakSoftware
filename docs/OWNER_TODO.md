@@ -3,6 +3,15 @@
 Owner, 2026-10-22: "a list of things you need from me. I'll knock them out later." Newest
 first. Tick an item off by deleting it (and tell Claude, so it can check the result).
 
+## From 2026-11-16: autopay
+
+1. **Stripe › Developers › Webhooks › the endpoint that listens to Connected accounts** (it
+   points at `https://sundeckpro.com/api/stripe/webhook`): add the events `payment_intent.succeeded` and
+   `payment_intent.payment_failed` beside the ones already there. Without them, a customer's
+   autopay from a bank account never shows as paid (cards still work). Tell Claude when done.
+2. Nothing to do for Pay Over Time: each shop turns on Affirm or Klarna in its own Stripe
+   dashboard, and Settings › Payments says how.
+
 ## From 2026-11-06: Google Search Console
 
 1. **Done before 2026-11-06** (the owner set up Search Console on their own). The sitemap only

@@ -202,6 +202,35 @@ export const repairOnSite: ChapterDef = {
         </Tip>
       </Section>
 
+      <Section kicker="From a visit’s report" title="An issue, made into a quote">
+        <p>
+          A tech who reports an issue on a visit (see At the pool) leaves it waiting for the office.
+          On the Jobs page, open <Ui>Issues</Ui>, then the issue. Owners and admins see what the
+          tech wrote, the photos, and the customer and pool it belongs to.
+        </p>
+        <Steps>
+          <Step
+            title={
+              <>
+                Tap <Ui>Make Quote</Ui>.
+              </>
+            }
+          >
+            Sundeck Pro makes a repair job for that pool and customer, unscheduled and unassigned.
+            The tech’s description becomes its notes, and the photos are already on it.
+          </Step>
+          <Step title="Build the quote at Wrap-Up.">
+            The job opens there, so the repair can be priced and sent the same way as any other
+            quote.
+          </Step>
+        </Steps>
+        <p>
+          The issue then says <Ui>Job made</Ui> and links to the job. If the repair isn’t needed,
+          tap <Ui>Resolve</Ui> and add a note instead. Only owners and admins make jobs or resolve
+          issues.
+        </p>
+      </Section>
+
       <Section kicker="Thursday" title="The repair, and the bill">
         <Spread
           flip

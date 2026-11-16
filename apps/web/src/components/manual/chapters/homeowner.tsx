@@ -129,6 +129,12 @@ export const homeowner: ChapterDef = {
           alt="The same kind of report on a computer: the shop’s header band with its logo, the plain line about the skimmer seam leak, the Summary tiles, the details, What we found, What happens next and What we checked."
           caption="On a computer the report reads like a printed document. The PDF matches it page for page."
         />
+        <Tip title="Asked how it went">
+          Under the report, Maria sees <Ui>How did we do?</Ui> with a thumbs up or down. A thumbs up
+          leads to Leave a Google Review, if the shop has a review link. A thumbs down opens a box,
+          What went wrong?, and what she writes goes to Dana privately as a complaint. No review is
+          asked for while it’s open.
+        </Tip>
         <FromTheField title="The report sells the repair">
           “Ran some tests” turns into every item on the checklist with its result, a pressure test
           with a start and an end reading, and a photo with a circle on it. The husband stops asking
@@ -206,12 +212,15 @@ export const homeowner: ChapterDef = {
         <p>
           She pays by card. The page turns into a receipt: the heading reads “Receipt” in place of
           “Invoice,” and the line reads “Paid in full. Thank you!” Stripe emails her a receipt on
-          its own. Partial payments work too; the page then says how much is still due.
+          its own. Partial payments work too; the page then says how much is still due. If the shop
+          offers Affirm or Klarna, <Ui>Pay over time with Affirm or Klarna</Ui> sits under the
+          button too.
         </p>
         <Tip title="Reminders you don’t have to send">
           If she hadn’t paid, a polite reminder would go out 7, 14 and 30 days after sending, and
           quote reminders at 3 and 7 days. They stop the moment she pays or accepts. Change the days
-          in Settings › Company and Branding.
+          in Settings › Company and Branding, and choose Email, Text or Both under Send Reminders
+          By.
         </Tip>
       </Section>
 
