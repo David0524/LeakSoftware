@@ -2,6 +2,9 @@
 
 Newest first. Each entry: date, decision, reason.
 
+## 2026-11-16 (owner: "Submit 1.0.3 to the App Store")
+- **iPhone 1.0.3 (build 1083) is submitted for App Review** through the App Store workflow, with What's New for monthly billing (`docs/release/APP_STORE.md` § 1.9). The workflow made the version as a manual release, so it goes live when the owner releases it after approval.
+
 ## 2026-11-16 (owner: "Add auto-send on the invoice day too")
 - **Send Automatically** (Settings › Payments › Monthly Invoices, off by default; website and Android natively, the iPhone's Payments page is the website's): the daily run sends each customer's monthly draft on their invoice day, by email or a text from the shop's number, as the shop (`20261022004000_auto_send_invoices.sql`; `send_invoice` now allows the server, as `invoice_mail_details` already did). Only drafts whose invoice day is on or after the day it was switched on go by themselves, so switching it on never sends a backlog. Each draft is tried once; one that can't go stays in To Send with "Didn't go on its invoice day: …".
 - **The iPhone app goes to 1.0.3:** App Store Connect refused build 1081 because 1.0.2 is approved and its version takes no new builds.
