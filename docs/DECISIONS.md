@@ -2,6 +2,9 @@
 
 Newest first. Each entry: date, decision, reason.
 
+## 2026-11-16 (owner: "we just got approved for Google Play Store. Add this link the Google Play button on the website")
+- **The website's Google Play badge links to the listing** (`play.google.com/store/apps/details?id=com.sundeckpro.app`), on the home page's hero and closing band, alt text "Get it on Google Play". The home page's structured data names it beside the App Store (`sameAs`, `installUrl`).
+
 ## 2026-11-16 (owner: "I want to build a full manual for our website and app … separate manuals for the maintenance shops and leak detection shops … This should be a PDF. I also want it to be local on the web page as its own page"; "almost be told as a story … a process, rather than just a list of features"; "include a FAQs section on the website and in this manual")
 - **Two manuals, each a page of the website and a PDF:** `/manual/pool-care` ("A month on the route") and `/manual/leak-detection` ("From drip to paid"), with `/manual` to choose. The page is the source; `scripts/build-manuals.mjs` prints it to `public/manual/*.pdf` with the print styles, so the two never drift. Plan: `docs/plans/2026-11-16-manuals.md`.
 - **Told as a story:** each follows Canyon State (the demo shop the screenshots show) through its real process in order; chapters open on a moment, then teach what that moment needs. Shared chapters are written once with per-shop differences. Selling by showing: no sales lines.

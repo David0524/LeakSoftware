@@ -4,8 +4,11 @@ import { COMPANY, CONTACT_EMAIL, CONTACT_PHONE_URL } from "@/lib/site";
 const PHONE = CONTACT_PHONE_URL.replace("tel:", "");
 
 const SITE = "https://sundeckpro.com";
-/** The iPhone app on the App Store (approved 2026-11-05). Android joins `sameAs` once it's on Play. */
+/** The iPhone app on the App Store (approved 2026-11-05). */
 export const APP_STORE_URL = "https://apps.apple.com/us/app/sundeck-pro/id6824555420";
+/** The Android app on Google Play (approved 2026-11-16). */
+export const GOOGLE_PLAY_URL =
+  "https://play.google.com/store/apps/details?id=com.sundeckpro.app&hl=en_US";
 
 const prices = Object.values(PLANS).flatMap((p) => p.tiers.map((t) => t.priceCents / 100));
 
@@ -26,7 +29,7 @@ export const STRUCTURED_DATA = {
       logo: `${SITE}/icons/icon-512.png`,
       email: CONTACT_EMAIL,
       telephone: PHONE,
-      sameAs: [APP_STORE_URL],
+      sameAs: [APP_STORE_URL, GOOGLE_PLAY_URL],
       contactPoint: {
         "@type": "ContactPoint",
         contactType: "customer support",
@@ -52,7 +55,7 @@ export const STRUCTURED_DATA = {
       applicationCategory: "BusinessApplication",
       operatingSystem: "iOS, Android, Web",
       image: `${SITE}/og/sundeck-pro.jpg`,
-      installUrl: APP_STORE_URL,
+      installUrl: [APP_STORE_URL, GOOGLE_PLAY_URL],
       publisher: { "@id": `${SITE}/#organization` },
       offers: {
         "@type": "AggregateOffer",
