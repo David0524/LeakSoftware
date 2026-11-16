@@ -7,6 +7,10 @@ export default function sitemap(): MetadataRoute.Sitemap {
   return [
     { url: `${SITE}/`, changeFrequency: "weekly", priority: 1 },
     { url: `${SITE}/sign-up`, changeFrequency: "monthly", priority: 0.8 },
+    { url: `${SITE}/manual`, changeFrequency: "monthly", priority: 0.6 },
+    { url: `${SITE}/manual/pool-care`, changeFrequency: "monthly", priority: 0.6 },
+    { url: `${SITE}/manual/leak-detection`, changeFrequency: "monthly", priority: 0.6 },
+    { url: `${SITE}/faq`, changeFrequency: "monthly", priority: 0.6 },
     { url: `${SITE}/security`, changeFrequency: "monthly", priority: 0.5 },
     { url: `${SITE}/privacy`, changeFrequency: "yearly", priority: 0.3 },
     { url: `${SITE}/terms`, changeFrequency: "yearly", priority: 0.3 },

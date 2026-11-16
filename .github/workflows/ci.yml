@@ -136,6 +136,14 @@ jobs:
           node-version: 22
           cache: pnpm
       - run: pnpm install --frozen-lockfile
+      # Supabase's containers and the Swift packages (Sentry's frameworks alone are 800 MB) fill
+      # the runner's disk (2026-11-16: "No space left on device"). Drop toolchains this job never
+      # uses first.
+      - name: Free disk space
+        run: |
+          sudo rm -rf /usr/share/dotnet /usr/local/lib/android /opt/ghc /usr/local/.ghcup \
+            /opt/hostedtoolcache/CodeQL /usr/local/share/boost
+          df -h /
       # Swift, so test:db also runs the iPhone app's sync engine against the database.
       - run: sudo SETUP_IOS_SWIFT_ONLY=1 bash scripts/setup-ios.sh
       - run: pnpm test:db
