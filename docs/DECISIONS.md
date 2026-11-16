@@ -2,6 +2,9 @@
 
 Newest first. Each entry: date, decision, reason.
 
+## 2026-11-16 (Play Console check by Claude in Chrome)
+- **Android 1.0.0 (code 4) is live on Google Play** in the United States, published 2026-11-15 12:52 PM after review; no policy issues. 1.0.1 (code 6) goes up next, by hand, until the Play service account exists.
+
 ## 2026-11-16 (owner: "Build a new Android release for the Play Store")
 - **Android 1.0.1** (app.json `version`; EAS counts the version code) carries monthly billing, Send Automatically, and the Add Charge fix. Built with "Upload to Google Play" off, as before, since the Play service account isn't set up; the owner uploads the bundle by hand (`docs/play-store/README.md` § 10, with its release notes). 1.0.0 (code 4) stays in Google's production review.
 

@@ -37,19 +37,22 @@ first. Tick an item off by deleting it (and tell Claude, so it can check the res
       (the app is free, so nothing is paid, but Apple may ask). Tell Claude "Apple account is
       on the LLC"; Claude updates the App Store copyright and docs if anything changed.
 
-3. **Android: in Google's review for production** (1.0.0, version code 4, United States;
-   checked in the Play Console 2026-11-13). Code 4 is also on internal testing. Play shows no
-   policy issues and no closed-test requirement. Left:
-   - Turn on review emails: Play Console › Settings › Email notifications › Publishing
-     updates › **App publishing updates** is off. Until then, check Publishing overview for
-     the result.
-   - Check the store listing's "Draft changes" marker.
+3. **Android 1.0.0 is live on Google Play** (version code 4, United States only; approved
+   and published 2026-11-15, checked in the Play Console 2026-11-16). No policy issues; review
+   emails are on, to office@sundeckpro.com. Left:
+   - **Upload 1.0.1 (code 6, monthly billing)** by hand: the `.aab` from the Android workflow
+     run of 2026-11-16, then Internal testing › Create new release, and promote to Production
+     (`docs/play-store/README.md` § 10, with its release notes).
+   - The Play service account (`docs/play-store/SERVICE_ACCOUNT_HANDOFF.md`), so builds upload
+     by themselves. Play has no API access page any more; the invite under Users and
+     permissions is what grants it.
    - Add Firebase's FCM V1 key in Expo (`docs/play-store/README.md` step 4.4 to 4.5) so
      Android push works.
-   - The Play service account (step 8), so builds upload by themselves.
-   - Play's code obfuscation warning (1%, under its 25% threshold, fix by February 2027) is
-     fixed from build 1.0.0 (5) on (R8, 2026-11-13; about 54% of class names obfuscated, and
-     the bundle carries Play's deobfuscation file). It clears with the next Android upload.
+   - More countries, if wanted: Production › Countries / regions (only the United States now).
+   - Play's code obfuscation warning (1%, fix by February 2027) clears with 1.0.1, which is
+     built with R8. Play's edge-to-edge warning (APIs deprecated in Android 15, from React
+     Native's status bar and Material's bottom sheets) is a separate change for Claude; it
+     doesn't block publishing.
 
 ## From 2026-10-22: Android on Google Play
 
