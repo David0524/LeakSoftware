@@ -24,7 +24,10 @@ export function Segmented<T extends string>({
   fit = false,
   description,
   segmentClassName,
+  hideLabel = false,
 }: {
+  /** The label for screen readers only, when the choices speak for themselves (iOS). */
+  hideLabel?: boolean;
   label: string;
   name: string;
   value: T;
@@ -97,7 +100,7 @@ export function Segmented<T extends string>({
   }
   return (
     <div className="space-y-1">
-      <p className="font-medium" id={labelId}>
+      <p className={hideLabel ? "sr-only" : "font-medium"} id={labelId}>
         {label}
       </p>
       {description ? (

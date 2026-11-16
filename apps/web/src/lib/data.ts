@@ -22,12 +22,14 @@ import type {
   TestResult,
   TestType,
   BillingMonth,
+  InvoiceLine,
   MonthBilling,
   VisitCharge,
 } from "@leakbook/core";
 import {
   canMakeJobs,
   chargeItems,
+  invoiceTotals,
   checklistTally,
   countCustomers,
   customersAddedSince,
@@ -1104,6 +1106,36 @@ export interface InvoiceListRow {
 }
 
 /** Every invoice in the company, newest first, with its job number and customer. */
+/** Drafts' totals from their lines, discount and the shop's tax rate. */
+async function draftTotals(office: Office, ids: string[]): Promise<Map<string, number>> {
+  if (ids.length === 0) return new Map();
+  const supabase = await db();
+  const [lines, drafts, company] = await Promise.all([
+    supabase
+      .from("invoice_line_item")
+      .select("invoice_id, kind, quantity, unit_price_cents, taxable, deleted_at")
+      .in("invoice_id", ids)
+      .is("deleted_at", null),
+    supabase.from("invoice").select("id, discount_cents").in("id", ids),
+    supabase.from("company").select("settings").eq("id", office.company.id).single(),
+  ]);
+  const rate = Number(
+    ((company.data?.settings ?? {}) as { tax_rate_bps?: number }).tax_rate_bps ?? 0,
+  );
+  const byInvoice = new Map<string, InvoiceLine[]>();
+  for (const l of (lines.data ?? []) as (InvoiceLine & { invoice_id: string })[])
+    byInvoice.set(l.invoice_id, [
+      ...(byInvoice.get(l.invoice_id) ?? []),
+      { ...l, quantity: Number(l.quantity) },
+    ]);
+  return new Map(
+    ((drafts.data ?? []) as { id: string; discount_cents: number | null }[]).map((d) => [
+      d.id,
+      invoiceTotals(byInvoice.get(d.id) ?? [], d.discount_cents ?? 0, rate).total_cents,
+    ]),
+  );
+}
+
 export async function listInvoices(office: Office): Promise<InvoiceListRow[]> {
   const supabase = await db();
   const invoices = must(
@@ -1143,8 +1175,15 @@ export async function listInvoices(office: Office): Promise<InvoiceListRow[]> {
   const rows = await attach(office, jobs);
   const byId = new Map(rows.map((j) => [j.id, j]));
   const tokenOf = new Map(links.map((l) => [l.invoice_id, l.token]));
+  // A draft's total is only stored when it's sent: work it out from its lines, as the
+  // database does (core invoiceTotals), so a draft never reads $0.00 (owner, 2026-11-15).
+  const draftTotal = await draftTotals(
+    office,
+    invoices.filter((i) => i.status === "draft").map((i) => i.id),
+  );
   return invoices.map((i) => ({
     ...i,
+    total_cents: draftTotal.get(i.id) ?? i.total_cents,
     jobNumber: byId.get(i.job_id)?.number ?? null,
     customer: byId.get(i.job_id)?.customer?.name ?? null,
     customerEmail: byId.get(i.job_id)?.customer?.email ?? null,

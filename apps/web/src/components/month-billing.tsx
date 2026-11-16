@@ -103,6 +103,7 @@ export function MonthBillingView({
 
         <Segmented
           label="Show"
+          hideLabel
           name="month-tab"
           value={tab}
           onChange={setTab}
@@ -206,7 +207,12 @@ export function MonthBillingView({
           </Grouped>
         )}
       </div>
-      <Sheet open={!!current} onClose={() => setOpen(null)} title={current?.customer ?? ""}>
+      <Sheet
+        open={!!current}
+        onClose={() => setOpen(null)}
+        title={current?.customer ?? ""}
+        doneOnly
+      >
         {current ? <CustomerSheet invoice={current} month={billing.month} items={items} /> : null}
       </Sheet>
       {confirmDialog}

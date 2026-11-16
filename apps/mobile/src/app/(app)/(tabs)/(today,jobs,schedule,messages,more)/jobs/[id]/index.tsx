@@ -122,6 +122,7 @@ import { ChecklistTab } from "../../../../../../features/inspection/ChecklistTab
 import { DiagramPanel } from "../../../../../../features/inspection/DiagramPanel";
 import { VisitChemicals } from "../../../../../../features/chemicals/VisitChemicals";
 import { VisitCleanings } from "../../../../../../features/maintenance/Cleanings";
+import { VisitCharges } from "../../../../../../features/charges/Charges";
 import { VisitReport } from "../../../../../../features/maintenance/VisitReport";
 import { useReportPhotoBlock } from "../../../../../../features/maintenance/ReportPhoto";
 import { queueAutoVisitReport } from "../../../../../../lib/visitReports";
@@ -601,6 +602,10 @@ export default function JobDetail() {
                 ) : null}
                 {/* Its filter and salt cell cleanings (owner, 2026-10-19), as the website. */}
                 {maintenance ? <VisitCleanings job={job} /> : null}
+                {/* Parts and services added on the visit, billed monthly (owner, 2026-11-15). */}
+                {maintenance ? (
+                  <VisitCharges job={job} customerName={customer?.name ?? null} />
+                ) : null}
                 <View style={styles.heading}>
                   <T variant="sectionHeading">Checklist</T>
                   <T muted>

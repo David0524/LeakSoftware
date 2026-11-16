@@ -18,6 +18,7 @@ export const NATIVE_PAGES = [
   "team",
   "scheduling",
   "phone",
+  "payments",
   "reports",
   "price-book",
   "components",

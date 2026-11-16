@@ -36,6 +36,8 @@ import {
   toggleChoice,
   isManagerRole,
   maintenanceSettings,
+  PLAN_INVOICE_DAY_FOOTER,
+  shopInvoiceDay,
   clockToMinutes,
   minutesLabel,
   usualVisit,
@@ -50,6 +52,7 @@ import { useTeam } from "../../../../../data/schedule";
 import {
   checkPlan,
   firstVisitHint,
+  invoiceDayOptions,
   isNetworkError,
   type PlanErrors,
 } from "../../../../../features/maintenance/plan";
@@ -133,6 +136,7 @@ function NewJobForm() {
     tech: "",
     price: "",
     notes: "",
+    invoiceDay: "",
   });
   const [planErrors, setPlanErrors] = useState<PlanErrors>({});
   const [starting, setStarting] = useState(false);
@@ -293,6 +297,7 @@ function NewJobForm() {
     Boolean(gallonsTyped?.text) ||
     repeat !== "0" ||
     planForm.price.trim() ||
+    planForm.invoiceDay ||
     planForm.notes.trim() ||
     Object.keys(answers).length > 0 ||
     Object.values(form).some((v) => v.trim()),
@@ -876,6 +881,17 @@ function NewJobForm() {
               keyboardType="decimal-pad"
               hint="Billed monthly with the customer's other visits."
               error={planErrors.price}
+            />
+            {/* When the customer's monthly invoice is drafted (owner, 2026-11-15: "set the
+                invoice date when setting up a new recurring job"). */}
+            <Select
+              label="Invoice day"
+              value={planForm.invoiceDay}
+              onChange={setPlan("invoiceDay")}
+              options={invoiceDayOptions(
+                shopInvoiceDay(company.settings as unknown as Record<string, unknown>),
+              )}
+              hint={PLAN_INVOICE_DAY_FOOTER}
             />
           </>
         ) : (

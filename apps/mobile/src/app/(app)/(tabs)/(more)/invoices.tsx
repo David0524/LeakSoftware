@@ -1,8 +1,10 @@
-import { router, useLocalSearchParams } from "expo-router";
+import { router, useFocusEffect, useLocalSearchParams } from "expo-router";
 import {
   INVOICE_FILTERS,
   INVOICE_SORTS,
   INVOICE_STATUS_LABELS,
+  billingMonthDetail,
+  billingMonthName,
   dateFormat,
   filterInvoices,
   formatCents,
@@ -13,8 +15,10 @@ import {
   latestReceiptPayment,
   receiptSummary,
   friendlyError,
+  offersPool,
+  type BillingMonth,
 } from "@leakbook/core";
-import { useMemo, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 import { Alert, Animated, Pressable, RefreshControl, StyleSheet, Text, View } from "react-native";
 import { useRows, useSyncRefresh } from "../../../../data/hooks";
 import {
@@ -28,6 +32,7 @@ import {
 import { voidInvoice } from "../../../../features/invoice/InvoiceSection";
 import { RecordPayment, SendReceiptSheet } from "../../../../features/invoice/Receipt";
 import { useLine } from "../../../../data/texting";
+import { loadBillingMonths } from "../../../../data/monthlyBilling";
 import { API_URL } from "../../../../lib/config";
 import { invoiceRowActions, menuTitle, type InvoiceActionId } from "../../../../lib/rowActions";
 import { confirmDestructive } from "../../../../ui/confirm";
@@ -41,7 +46,10 @@ import {
   Button,
   Empty,
   FilterPills,
+  Group,
+  ListRow,
   SearchField,
+  Section,
   T,
   useScreenChrome,
 } from "../../../../ui/components";
@@ -81,6 +89,31 @@ export default function Invoices() {
     summary: string;
   } | null>(null);
   const line = useLine(company.id);
+  // Monthly Billing (owner, 2026-11-15; was Maintenance to Bill): owners and admins of pool
+  // care shops. From the server each time Invoices shows; offline it's left out.
+  const billing = manager && offersPool(company.settings);
+  const [months, setMonths] = useState<BillingMonth[]>([]);
+  useFocusEffect(
+    useCallback(() => {
+      if (!billing) return;
+      let live = true;
+      loadBillingMonths(company.id)
+        .then((m) => {
+          if (live) setMonths(m);
+        })
+        .catch(() => undefined);
+      return () => {
+        live = false;
+      };
+    }, [billing, company.id]),
+  );
+  // A monthly draft opens on its month's page, with the rest to send (owner, 2026-11-15).
+  const openInvoice = (i: InvoiceListRow) =>
+    router.push(
+      billing && i.period_month && i.status === "draft"
+        ? `/billing/${i.period_month.slice(0, 10)}?invoice=${i.id}`
+        : `/jobs/${i.job_id}?section=wrapup`,
+    );
   const open = invoices.filter((i) => i.status === "sent" || i.status === "partially_paid");
   const owed = open.reduce((sum, i) => sum + invoiceBalance(i), 0);
   const tz = company.timezone;
@@ -175,7 +208,7 @@ export default function Invoices() {
     });
     const name = `Invoice #${i.number ?? ""}`;
     const run = (id: InvoiceActionId) => {
-      if (id === "open") router.push(`/jobs/${i.job_id}?section=wrapup`);
+      if (id === "open") openInvoice(i);
       if (id === "share" && link) void shareLink(invoiceShareText(company.name, link));
       if (id === "record") setPaying(i);
       if (id === "receipt") {
@@ -219,6 +252,23 @@ export default function Invoices() {
         ListHeaderComponent={
           <View style={styles.top}>
             {header}
+            {billing && months.length ? (
+              <Section
+                title="Monthly Billing"
+                footer="Each customer’s month is drafted on their invoice day. Review the drafts, add any charges, then send them all at once."
+              >
+                <Group>
+                  {months.map((m) => (
+                    <ListRow
+                      key={m.month}
+                      title={billingMonthName(m.month)}
+                      subtitle={billingMonthDetail(m)}
+                      onPress={() => router.push(`/billing/${m.month.slice(0, 10)}`)}
+                    />
+                  ))}
+                </Group>
+              </Section>
+            ) : null}
             {invoices.length ? (
               <View style={styles.tools}>
                 <FilterPills
@@ -288,7 +338,7 @@ export default function Invoices() {
           <FlatGroupedRow
             first={index === 0}
             last={index === shown.length - 1}
-            onPress={() => router.push(`/jobs/${i.job_id}?section=wrapup`)}
+            onPress={() => openInvoice(i)}
             gestures={gesturesFor(i)}
             value={
               <T variant="bodyEmphasis" style={tabular}>

@@ -147,7 +147,7 @@ describe("monthly billing", () => {
         () => "Nov 15",
       ),
     ).toBe(
-      "3 customers have visits not on an invoice yet. 2 are billed on their invoice day, Nov 15.",
+      "3 customers have visits not on an invoice yet. 2 are billed on their invoice day, Nov 15. Create Invoices drafts them now.",
     );
   });
 });

@@ -99,6 +99,7 @@ function AddChargeForm({
     <div>
       <Segmented
         label="Charge from"
+        hideLabel
         name="charge-mode"
         value={mode}
         options={[

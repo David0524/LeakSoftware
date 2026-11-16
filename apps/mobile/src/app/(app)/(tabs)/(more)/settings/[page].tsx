@@ -1,5 +1,6 @@
 import { useLocalSearchParams } from "expo-router";
 import { CompanySettings } from "../../../../../features/settings/Company";
+import { PaymentsSettings } from "../../../../../features/settings/Payments";
 import { PhoneSettings } from "../../../../../features/settings/Phone";
 import { ReportTemplates } from "../../../../../features/settings/ReportTemplates";
 import { SchedulingSettings } from "../../../../../features/settings/Scheduling";
@@ -10,7 +11,10 @@ import { ExclusionReasons, Severities } from "../../../../../features/settings/S
 import { Team } from "../../../../../features/settings/Team";
 import { TestTypes } from "../../../../../features/settings/TestTypes";
 
-/** One settings page (spec 5.12): in the app, except Payments and Import (the website). */
+/**
+ * One settings page (spec 5.12): in the app, except Import (the website). Payments sends Stripe
+ * setup to the website and keeps Monthly Invoices › Invoice Day here (owner, 2026-11-15).
+ */
 export default function SettingsPage() {
   const { page } = useLocalSearchParams<{ page: string }>();
   switch (page) {
@@ -34,6 +38,8 @@ export default function SettingsPage() {
       return <ReportTemplates />;
     case "phone":
       return <PhoneSettings />;
+    case "payments":
+      return <PaymentsSettings />;
     default:
       return <WebsitePage page={page} />;
   }

@@ -240,13 +240,18 @@ export function notInvoicedText(
     b.not_invoiced === 1
       ? "1 customer has visits not on an invoice yet."
       : `${b.not_invoiced} customers have visits not on an invoice yet.`;
-  const waits = b.waiting
-    .map(
-      (w) =>
-        `${w.customers === 1 ? "1 is" : `${w.customers} are`} billed on their invoice day, ${formatDate(w.date)}.`,
-    )
-    .join(" ");
-  return waits ? `${head} ${waits}` : head;
+  const waiting = b.waiting.reduce((n, w) => n + w.customers, 0);
+  const waits =
+    b.waiting.length === 1 && waiting === b.not_invoiced
+      ? `${b.not_invoiced === 1 ? "It’s" : "They’re"} billed on their invoice day, ${formatDate(b.waiting[0]!.date)}.`
+      : b.waiting
+          .map(
+            (w) =>
+              `${w.customers === 1 ? "1 is" : `${w.customers} are`} billed on their invoice day, ${formatDate(w.date)}.`,
+          )
+          .join(" ");
+  const now = waiting ? " Create Invoices drafts them now." : "";
+  return waits ? `${head} ${waits}${now}` : head;
 }
 
 /** Send All's button: "Send 38 Invoices". */
