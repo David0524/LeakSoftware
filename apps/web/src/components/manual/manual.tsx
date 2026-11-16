@@ -6,6 +6,7 @@ import { chaptersOf, EDITIONS, type EditionInfo } from "./editions";
 import type { Edition } from "./kit";
 import { pick } from "./types";
 import { ManualMotion } from "./motion";
+import { ManualNav, ScreenZoom } from "./manual-nav";
 import { HowToIndex } from "./howto-index";
 import { howToFor } from "./howto";
 
@@ -22,6 +23,16 @@ export function Manual({ edition }: { edition: Edition }) {
   return (
     <div className="manual">
       <ManualMotion />
+      <ManualNav
+        chapters={all.map((c) => ({
+          id: c.def.id,
+          number: c.number,
+          title: pick(c.def.title, edition),
+          subtitle: pick(c.def.subtitle, edition),
+          part: c.part.label ? `${c.part.label} · ${c.part.title}` : c.part.title,
+        }))}
+      />
+      <ScreenZoom />
       {/* The PDF's running footer names the edition (margin boxes can't read the page). */}
       <style>{`@page { size: Letter; margin: 0.7in 0.75in 0.8in;
         @bottom-left { content: "Sundeck Pro · ${info.name} Manual"; font: 8.5pt system-ui, sans-serif; color: #5A6875; }
