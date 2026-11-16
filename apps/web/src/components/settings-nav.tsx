@@ -25,6 +25,7 @@ const ICONS: Record<string, ReactNode> = {
   "/settings/tests": <path d="M12 3s6 6.5 6 11a6 6 0 0 1-12 0c0-4.5 6-11 6-11z" />,
   "/settings/severities": <path d="M12 4 2.5 20h19zM12 10v4M12 17h.01" />,
   "/settings/exclusions": <path d="M12 21a9 9 0 1 0 0-18 9 9 0 0 0 0 18zM5.6 5.6l12.8 12.8" />,
+  "/settings/skip-reasons": <path d="M5 4l10 8-10 8zM19 4v16" />,
   "/settings/reports": <path d="M14 3H6v18h12V7zM14 3v4h4M9 12h6M9 16h6" />,
 };
 

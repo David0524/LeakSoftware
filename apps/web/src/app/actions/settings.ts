@@ -535,6 +535,7 @@ const ARCHIVABLE = new Set([
   "component_type",
   "test_type",
   "exclusion_reason",
+  "skip_reason",
   "severity_level",
   "saved_report",
   "team_profile",
@@ -823,6 +824,43 @@ export async function saveExclusionReason(_: FormState, form: FormData): Promise
   });
   if (error) return failed(error);
   return done("/settings/exclusions", id ? "Saved." : "Added.");
+}
+
+/** Settings › Skip Reasons (owner, 2026-11-16): the reasons a tech picks when skipping a visit. */
+export async function saveSkipReason(_: FormState, form: FormData): Promise<FormState> {
+  const { office, supabase } = await owner();
+  const id = text(form, "id");
+  const label = text(form, "label");
+  if (!label) return { fields: { label: "Enter a reason." } };
+  const { error } = await upsert(supabase, "skip_reason", office.company.id, id, {
+    label,
+    sort_order: int(form, "sort_order"),
+    active: id ? checked(form, "active") : true,
+  });
+  if (error) return failed(error);
+  return done("/settings/skip-reasons", id ? "Saved." : "Added.");
+}
+
+/**
+ * Settings › Scheduling › Skip Unfinished Visits at Day's End (owner, 2026-11-16): off by
+ * default; on, the daily run skips visits that were never started as Not Done.
+ */
+export async function saveSkipUnfinished(_: FormState, form: FormData): Promise<FormState> {
+  const office = await requireManager();
+  const supabase = await createClient();
+  const { data: company } = await supabase
+    .from("company")
+    .select("settings")
+    .eq("id", office.company.id)
+    .single();
+  const settings = {
+    ...((company?.settings ?? {}) as Record<string, unknown>),
+    skip_unfinished_visits: checked(form, "skip_unfinished_visits"),
+  };
+  const { error } = await supabase.from("company").update({ settings }).eq("id", office.company.id);
+  if (error) return failed(error);
+  revalidatePath("/", "layout");
+  return { message: "Saved." };
 }
 
 export async function saveSeverity(_: FormState, form: FormData): Promise<FormState> {

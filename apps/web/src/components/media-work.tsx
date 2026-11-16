@@ -179,6 +179,21 @@ async function uploadMedia(
   if (!done.ok) throw new Error(done.error);
 }
 
+/** Photos for the whole visit (Skip Visit's photo; owner, 2026-11-16). */
+export async function uploadJobPhotos(jobId: string, files: File[]) {
+  for (const file of files) {
+    const photo = await preparePhoto(file);
+    await uploadMedia(
+      jobId,
+      "photo",
+      photo.blob,
+      baseMime(photo.mime),
+      { width: photo.width, height: photo.height, durationMs: null },
+      "",
+    );
+  }
+}
+
 /** Photos for one checklist item (a pool inspection question's camera button). */
 export async function uploadItemPhotos(jobId: string, componentId: string, files: File[]) {
   for (const file of files) {

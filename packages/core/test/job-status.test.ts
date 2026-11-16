@@ -6,6 +6,7 @@ import {
   JOB_STATUS_TRANSITIONS,
   JOB_STATUSES,
   jobActionLabel,
+  isBackwardMove,
   jobFeeLabel,
   userTransitions,
 } from "../src";
@@ -66,8 +67,33 @@ describe("job status machine", () => {
       "scheduled",
       "canceled",
       "done",
+      "skipped",
     ]);
     expect(userTransitions("done", "maintenance")).toEqual(["in_progress"]);
+  });
+
+  it("offers Skip Visit only for maintenance visits that aren't done", () => {
+    for (const from of ["unscheduled", "scheduled", "in_progress"] as const) {
+      expect(userTransitions(from, "maintenance")).toContain("skipped");
+      expect(userTransitions(from, "detection")).not.toContain("skipped");
+      expect(userTransitions(from, "repair")).not.toContain("skipped");
+    }
+    expect(userTransitions("done", "maintenance")).not.toContain("skipped");
+    expect(userTransitions("invoiced", "maintenance")).not.toContain("skipped");
+  });
+
+  it("puts a skipped visit back with Undo Skip, or calls it off", () => {
+    expect(userTransitions("skipped", "maintenance")).toEqual(["scheduled", "canceled"]);
+    expect(isBackwardMove("skipped", "scheduled")).toBe(false);
+    expect(isBackwardMove("in_progress", "scheduled")).toBe(true);
+    // The database also lets it be put on a time, or started.
+    expect(JOB_STATUS_TRANSITIONS.skipped).toEqual([
+      "scheduled",
+      "unscheduled",
+      "in_progress",
+      "canceled",
+    ]);
+    expect(JOB_SERVER_STATUSES).not.toContain("skipped");
   });
 });
 
@@ -82,6 +108,9 @@ describe("jobActionLabel", () => {
     expect(jobActionLabel("in_progress", "done")).toBe("Complete Job");
     expect(jobActionLabel("scheduled", "done")).toBe("Complete Job");
     expect(jobActionLabel("in_progress", "report_sent")).toBe("Report sent");
+    expect(jobActionLabel("scheduled", "skipped")).toBe("Skip Visit");
+    expect(jobActionLabel("skipped", "scheduled")).toBe("Undo Skip");
+    expect(jobActionLabel("skipped", "canceled")).toBe("Cancel Job");
   });
 });
 

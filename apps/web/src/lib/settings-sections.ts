@@ -1,4 +1,4 @@
-import { offersLeak } from "@leakbook/core";
+import { offersLeak, offersPool } from "@leakbook/core";
 
 /** Settings pages, in the order shown in the settings sidebar. */
 const SETTINGS_SECTIONS = [
@@ -14,6 +14,7 @@ const SETTINGS_SECTIONS = [
   { href: "/settings/tests", label: "Test Types" },
   { href: "/settings/severities", label: "Severities" },
   { href: "/settings/exclusions", label: "Exclusion Reasons" },
+  { href: "/settings/skip-reasons", label: "Skip Reasons" },
   { href: "/settings/reports", label: "Report Templates" },
 ];
 
@@ -23,11 +24,16 @@ const SETTINGS_SECTIONS = [
  */
 const LEAK_ONLY = ["/settings/tests", "/settings/severities", "/settings/exclusions"];
 
+/** Pool care's settings: hidden for leak detection shops (Skip Reasons are for visits). */
+const POOL_ONLY = ["/settings/skip-reasons"];
+
 /** The settings pages this shop uses. */
 export function settingsSections(settings: unknown) {
-  return offersLeak(settings)
-    ? SETTINGS_SECTIONS
-    : SETTINGS_SECTIONS.filter((s) => !LEAK_ONLY.includes(s.href));
+  return SETTINGS_SECTIONS.filter(
+    (s) =>
+      (offersLeak(settings) || !LEAK_ONLY.includes(s.href)) &&
+      (offersPool(settings) || !POOL_ONLY.includes(s.href)),
+  );
 }
 
 /**
@@ -58,6 +64,7 @@ export function settingsGroups(settings: unknown) {
         "/settings/tests",
         "/settings/severities",
         "/settings/exclusions",
+        "/settings/skip-reasons",
         "/settings/reports",
       ],
     },

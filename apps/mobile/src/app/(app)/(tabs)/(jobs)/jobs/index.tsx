@@ -97,6 +97,7 @@ const FILTERS: { value: string; label: string; statuses: JobStatus[] | null }[] 
   },
   { value: "paid", label: "Paid", statuses: ["paid"] },
   { value: "done", label: "Done", statuses: ["done"] },
+  { value: "skipped", label: "Skipped", statuses: ["skipped"] },
   { value: "canceled", label: "Canceled", statuses: ["canceled"] },
   { value: "all", label: "All", statuses: null },
 ];

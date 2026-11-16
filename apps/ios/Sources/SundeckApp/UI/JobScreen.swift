@@ -43,6 +43,8 @@
         /// A done maintenance visit's Visit Report sheet (owner, 2026-10-22: "the visit report is
         /// really buried"), and its report page.
         @State private var visitSheet = false
+        /// Skip Visit's sheet (owner, 2026-11-16).
+        @State private var skipping = false
         @State private var visitPage: BrowsedPage?
         @Environment(\.openEditor) private var openEditor
         @Environment(\.openRoute) private var openRoute
@@ -88,11 +90,16 @@
             .toolbar {
                 if let job, job.job["sample"]?.bool != true {
                     let back = jobMenuActions(job.status, type: job.type)
-                    if !back.isEmpty {
+                    let canSkip = jobCanSkip(job.status, type: job.type)
+                    if !back.isEmpty || canSkip {
                         ToolbarItem(placement: .topBarTrailing) {
                             Menu {
                                 ForEach(back, id: \.self) { to in
                                     Button(jobActionLabel(from: job.status, to: to)) { changeStatus(to) }
+                                }
+                                // Destructive, so last; it opens the Skip Visit sheet.
+                                if canSkip {
+                                    Button(skipVisitLabel, role: .destructive) { skipping = true }
                                 }
                             } label: {
                                 Label("More Job Actions", systemImage: "ellipsis.circle")
@@ -113,6 +120,9 @@
             .sensoryFeedback(.success, trigger: changes)
             .haptic(.jobCompleted, trigger: completed)
             .removalBanner()
+            .sheet(isPresented: $skipping) {
+                if let job { SkipVisitSheet(job: job).environment(session).environment(sync).environment(app) }
+            }
             .alert(
                 "Couldn’t Save", isPresented: Binding(get: { saveError != nil }, set: { if !$0 { saveError = nil } })
             ) {

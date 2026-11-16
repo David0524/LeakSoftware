@@ -26,6 +26,12 @@ export function onRemoved(listener: Listener): () => void {
   return () => void listeners.delete(listener);
 }
 
+/** Say something was done that can be taken back (Visit skipped), with Undo for five seconds. */
+export function announceUndoable(message: string, undo: () => void) {
+  const note = removalNote({ message, undo });
+  for (const l of listeners) l(note);
+}
+
 /** Say a removal happened, with Undo. */
 export function announceRemoved(removal: Removal) {
   const note = removalNote(removal);

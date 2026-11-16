@@ -86,7 +86,7 @@ public func jobWhen(_ view: JobView, now: Date, timeZone: String) -> String {
 
 /// The status filter pills on Jobs, in the website's order.
 public enum JobFilter: String, CaseIterable, Hashable, Sendable {
-    case open, unscheduled, scheduled, inProgress, followUp, paid, done, canceled, all
+    case open, unscheduled, scheduled, inProgress, followUp, paid, done, skipped, canceled, all
 
     public var title: String {
         switch self {
@@ -97,6 +97,7 @@ public enum JobFilter: String, CaseIterable, Hashable, Sendable {
         case .followUp: "Waiting on Customer"
         case .paid: "Paid"
         case .done: "Done"
+        case .skipped: "Skipped"
         case .canceled: "Canceled"
         case .all: "All"
         }
@@ -112,6 +113,7 @@ public enum JobFilter: String, CaseIterable, Hashable, Sendable {
         case .followUp: [.reportSent, .quoteSent, .quoteAccepted, .invoiced]
         case .paid: [.paid]
         case .done: [.done]
+        case .skipped: [.skipped]
         case .canceled: [.canceled]
         case .all: nil
         }

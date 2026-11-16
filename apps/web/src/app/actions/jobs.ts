@@ -90,7 +90,8 @@ export async function scheduleJob(_: FormState, form: FormData): Promise<FormSta
       scheduled_end: end,
       // The lock picker (owner, 2026-10-20): day, time, both, or none.
       ...lockColumns(lock),
-      ...(status === "unscheduled" ? { status: "scheduled" } : {}),
+      // A skipped visit given a new day is back on the schedule (skip-visit.ts).
+      ...(status === "unscheduled" || status === "skipped" ? { status: "scheduled" } : {}),
     })
     .eq("id", id)
     .eq("company_id", office.company.id)

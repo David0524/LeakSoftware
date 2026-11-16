@@ -1,4 +1,4 @@
-import { offersPool } from "@leakbook/core";
+import { offersPool, skipsUnfinishedVisits } from "@leakbook/core";
 import type { Metadata } from "next";
 import Link from "next/link";
 import {
@@ -16,6 +16,7 @@ import {
   SchedulingForm,
 } from "@/components/scheduling-settings";
 import { SettingsSection } from "@/components/settings-forms";
+import { SkipUnfinishedSwitch } from "@/components/skip-unfinished";
 import { PageHeader } from "@/components/ui";
 import { getOffice } from "@/lib/auth";
 import { getCompany, listConfig, type ComponentType } from "@/lib/data";
@@ -76,6 +77,12 @@ export default async function SchedulingSettingsPage() {
                 months: cleaningDefaultMonths(company.settings, t.key),
               }))}
             />
+          </SettingsSection>
+        ) : null}
+
+        {offersPool(company.settings) ? (
+          <SettingsSection title="Missed visits">
+            <SkipUnfinishedSwitch initial={skipsUnfinishedVisits(company.settings)} />
           </SettingsSection>
         ) : null}
 

@@ -220,7 +220,8 @@
       ],
       "result": [
         "in_progress",
-        "canceled"
+        "canceled",
+        "skipped"
       ]
     },
     {
@@ -242,7 +243,8 @@
         "unscheduled",
         "in_progress",
         "canceled",
-        "done"
+        "done",
+        "skipped"
       ]
     },
     {
@@ -262,7 +264,8 @@
       "result": [
         "scheduled",
         "canceled",
-        "done"
+        "done",
+        "skipped"
       ]
     },
     {
@@ -381,6 +384,25 @@
       "result": [
         "in_progress"
       ]
+    },
+    {
+      "args": [
+        "skipped"
+      ],
+      "result": [
+        "scheduled",
+        "canceled"
+      ]
+    },
+    {
+      "args": [
+        "skipped",
+        "maintenance"
+      ],
+      "result": [
+        "scheduled",
+        "canceled"
+      ]
     }
   ],
   "JOB_STATUS_LABELS": [
@@ -396,7 +418,8 @@
         "invoiced": "Invoiced",
         "paid": "Paid",
         "canceled": "Canceled",
-        "done": "Done"
+        "done": "Done",
+        "skipped": "Skipped"
       }
     }
   ],
@@ -473,6 +496,13 @@
     },
     {
       "args": [
+        "unscheduled",
+        "skipped"
+      ],
+      "result": "Skip Visit"
+    },
+    {
+      "args": [
         "scheduled",
         "unscheduled"
       ],
@@ -543,6 +573,13 @@
     },
     {
       "args": [
+        "scheduled",
+        "skipped"
+      ],
+      "result": "Skip Visit"
+    },
+    {
+      "args": [
         "in_progress",
         "unscheduled"
       ],
@@ -610,6 +647,13 @@
         "done"
       ],
       "result": "Complete Job"
+    },
+    {
+      "args": [
+        "in_progress",
+        "skipped"
+      ],
+      "result": "Skip Visit"
     },
     {
       "args": [
@@ -683,6 +727,13 @@
     },
     {
       "args": [
+        "report_sent",
+        "skipped"
+      ],
+      "result": "Skip Visit"
+    },
+    {
+      "args": [
         "quote_sent",
         "unscheduled"
       ],
@@ -753,6 +804,13 @@
     },
     {
       "args": [
+        "quote_sent",
+        "skipped"
+      ],
+      "result": "Skip Visit"
+    },
+    {
+      "args": [
         "quote_accepted",
         "unscheduled"
       ],
@@ -823,6 +881,13 @@
     },
     {
       "args": [
+        "quote_accepted",
+        "skipped"
+      ],
+      "result": "Skip Visit"
+    },
+    {
+      "args": [
         "invoiced",
         "unscheduled"
       ],
@@ -893,6 +958,13 @@
     },
     {
       "args": [
+        "invoiced",
+        "skipped"
+      ],
+      "result": "Skip Visit"
+    },
+    {
+      "args": [
         "paid",
         "unscheduled"
       ],
@@ -960,6 +1032,13 @@
         "done"
       ],
       "result": "Complete Job"
+    },
+    {
+      "args": [
+        "paid",
+        "skipped"
+      ],
+      "result": "Skip Visit"
     },
     {
       "args": [
@@ -1030,6 +1109,13 @@
         "done"
       ],
       "result": "Complete Job"
+    },
+    {
+      "args": [
+        "canceled",
+        "skipped"
+      ],
+      "result": "Skip Visit"
     },
     {
       "args": [
@@ -1100,6 +1186,90 @@
         "done"
       ],
       "result": "Complete Job"
+    },
+    {
+      "args": [
+        "done",
+        "skipped"
+      ],
+      "result": "Skip Visit"
+    },
+    {
+      "args": [
+        "skipped",
+        "unscheduled"
+      ],
+      "result": "Unschedule"
+    },
+    {
+      "args": [
+        "skipped",
+        "scheduled"
+      ],
+      "result": "Undo Skip"
+    },
+    {
+      "args": [
+        "skipped",
+        "in_progress"
+      ],
+      "result": "Start Job"
+    },
+    {
+      "args": [
+        "skipped",
+        "report_sent"
+      ],
+      "result": "Report sent"
+    },
+    {
+      "args": [
+        "skipped",
+        "quote_sent"
+      ],
+      "result": "Quote sent"
+    },
+    {
+      "args": [
+        "skipped",
+        "quote_accepted"
+      ],
+      "result": "Quote accepted"
+    },
+    {
+      "args": [
+        "skipped",
+        "invoiced"
+      ],
+      "result": "Invoiced"
+    },
+    {
+      "args": [
+        "skipped",
+        "paid"
+      ],
+      "result": "Paid"
+    },
+    {
+      "args": [
+        "skipped",
+        "canceled"
+      ],
+      "result": "Cancel Job"
+    },
+    {
+      "args": [
+        "skipped",
+        "done"
+      ],
+      "result": "Complete Job"
+    },
+    {
+      "args": [
+        "skipped",
+        "skipped"
+      ],
+      "result": "Skip Visit"
     }
   ],
   "isBackwardMove": [
@@ -1175,6 +1345,13 @@
     },
     {
       "args": [
+        "unscheduled",
+        "skipped"
+      ],
+      "result": false
+    },
+    {
+      "args": [
         "scheduled",
         "unscheduled"
       ],
@@ -1245,6 +1422,13 @@
     },
     {
       "args": [
+        "scheduled",
+        "skipped"
+      ],
+      "result": false
+    },
+    {
+      "args": [
         "in_progress",
         "unscheduled"
       ],
@@ -1315,6 +1499,13 @@
     },
     {
       "args": [
+        "in_progress",
+        "skipped"
+      ],
+      "result": false
+    },
+    {
+      "args": [
         "report_sent",
         "unscheduled"
       ],
@@ -1385,6 +1576,13 @@
     },
     {
       "args": [
+        "report_sent",
+        "skipped"
+      ],
+      "result": false
+    },
+    {
+      "args": [
         "quote_sent",
         "unscheduled"
       ],
@@ -1455,6 +1653,13 @@
     },
     {
       "args": [
+        "quote_sent",
+        "skipped"
+      ],
+      "result": false
+    },
+    {
+      "args": [
         "quote_accepted",
         "unscheduled"
       ],
@@ -1525,6 +1730,13 @@
     },
     {
       "args": [
+        "quote_accepted",
+        "skipped"
+      ],
+      "result": false
+    },
+    {
+      "args": [
         "invoiced",
         "unscheduled"
       ],
@@ -1595,6 +1807,13 @@
     },
     {
       "args": [
+        "invoiced",
+        "skipped"
+      ],
+      "result": false
+    },
+    {
+      "args": [
         "paid",
         "unscheduled"
       ],
@@ -1665,6 +1884,13 @@
     },
     {
       "args": [
+        "paid",
+        "skipped"
+      ],
+      "result": false
+    },
+    {
+      "args": [
         "canceled",
         "unscheduled"
       ],
@@ -1735,6 +1961,13 @@
     },
     {
       "args": [
+        "canceled",
+        "skipped"
+      ],
+      "result": false
+    },
+    {
+      "args": [
         "done",
         "unscheduled"
       ],
@@ -1800,6 +2033,90 @@
       "args": [
         "done",
         "done"
+      ],
+      "result": false
+    },
+    {
+      "args": [
+        "done",
+        "skipped"
+      ],
+      "result": false
+    },
+    {
+      "args": [
+        "skipped",
+        "unscheduled"
+      ],
+      "result": true
+    },
+    {
+      "args": [
+        "skipped",
+        "scheduled"
+      ],
+      "result": false
+    },
+    {
+      "args": [
+        "skipped",
+        "in_progress"
+      ],
+      "result": false
+    },
+    {
+      "args": [
+        "skipped",
+        "report_sent"
+      ],
+      "result": false
+    },
+    {
+      "args": [
+        "skipped",
+        "quote_sent"
+      ],
+      "result": false
+    },
+    {
+      "args": [
+        "skipped",
+        "quote_accepted"
+      ],
+      "result": false
+    },
+    {
+      "args": [
+        "skipped",
+        "invoiced"
+      ],
+      "result": false
+    },
+    {
+      "args": [
+        "skipped",
+        "paid"
+      ],
+      "result": false
+    },
+    {
+      "args": [
+        "skipped",
+        "canceled"
+      ],
+      "result": false
+    },
+    {
+      "args": [
+        "skipped",
+        "done"
+      ],
+      "result": false
+    },
+    {
+      "args": [
+        "skipped",
+        "skipped"
       ],
       "result": false
     }
@@ -3361,6 +3678,15 @@
       "args": [
         {
           "type": "maintenance",
+          "status": "skipped"
+        }
+      ],
+      "result": true
+    },
+    {
+      "args": [
+        {
+          "type": "maintenance",
           "status": "bogus"
         }
       ],
@@ -3460,6 +3786,15 @@
       "args": [
         {
           "type": "detection",
+          "status": "skipped"
+        }
+      ],
+      "result": true
+    },
+    {
+      "args": [
+        {
+          "type": "detection",
           "status": "bogus"
         }
       ],
@@ -3559,6 +3894,15 @@
       "args": [
         {
           "type": "repair",
+          "status": "skipped"
+        }
+      ],
+      "result": true
+    },
+    {
+      "args": [
+        {
+          "type": "repair",
           "status": "bogus"
         }
       ],
@@ -3653,6 +3997,15 @@
         }
       ],
       "result": false
+    },
+    {
+      "args": [
+        {
+          "type": "inspection",
+          "status": "skipped"
+        }
+      ],
+      "result": true
     },
     {
       "args": [

@@ -71,8 +71,10 @@ import Testing
     @Test func settingsGroupsHideLeakPagesForPoolShops() {
         let pool = settingsGroups(.pool)
         #expect(pool.map(\.title) == ["Your shop", "Money", "Checklists and reports"])
-        #expect(pool[2].pages == [.components, .reports])
+        // Skip Reasons are for pool care visits (owner, 2026-11-16).
+        #expect(pool[2].pages == [.components, .skipReasons, .reports])
         #expect(settingsGroups(.leak)[2].pages == [.components, .tests, .severities, .exclusions, .reports])
+        #expect(settingsGroups(.both)[2].pages.contains(.skipReasons))
         #expect(SettingsPage.priceBook.detail(.pool) == "Services, chemicals, and repairs for quotes")
     }
 

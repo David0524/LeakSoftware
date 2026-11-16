@@ -3,6 +3,7 @@ import { syncAllSubscriptionPrices } from "@/server/billing";
 import { runFollowups } from "@/server/followups";
 import { siteOrigin } from "@/lib/origin";
 import { sendDueMonthlyInvoices } from "@/server/monthly-billing";
+import { runSkipVisits } from "@/server/skip-visits";
 import { sendMonthReport, sendVisitReport } from "@/server/visit-reports";
 
 export const maxDuration = 300;
@@ -21,6 +22,10 @@ export async function GET(request: Request) {
   const at = new URL(request.url).searchParams.get("at");
   const when = at && !Number.isNaN(Date.parse(at)) ? new Date(at) : new Date();
   const followups = await runFollowups(admin, await siteOrigin(), when);
+  // Skip Unfinished Visits at Day's End (owner, 2026-11-16), and the push for any skip not told.
+  const skips = await runSkipVisits(admin, when).catch((e: unknown) => ({
+    error: e instanceof Error ? e.message : String(e),
+  }));
   // Maintenance plans keep their visits made a few weeks ahead (20261012002400).
   const { data: visits, error } = await admin.rpc("extend_service_plans");
   // Last month's finished visits become one draft invoice per customer (20261012002900).
@@ -63,6 +68,7 @@ export async function GET(request: Request) {
   // The weekly summary has its own hourly run, /api/cron/weekly (7 AM Monday, shop time).
   return Response.json({
     followups,
+    skippedVisits: skips,
     subscriptionPrices: prices,
     expiredLinks: links.error ? links.error.message : links.data,
     maintenanceVisits: error ? error.message : visits,

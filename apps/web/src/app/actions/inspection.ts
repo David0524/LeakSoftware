@@ -72,7 +72,7 @@ export async function changeJobStatus(_: FormState, form: FormData): Promise<For
   const to = text(form, "to") as JobStatus;
   const { data: job } = await db
     .from("job")
-    .select("status, started_at, type")
+    .select("status, started_at, type, scheduled_start")
     .eq("id", jobId)
     .eq("company_id", office.company.id)
     .single();
@@ -86,7 +86,11 @@ export async function changeJobStatus(_: FormState, form: FormData): Promise<For
       return { error: friendlyError(e) };
     }
   }
-  const values: Record<string, string> = { status: to };
+  // Skipping needs its reason: Skip Visit (actions/skip.ts) is the way in.
+  if (to === "skipped") return { error: "Pick a reason to skip this visit." };
+  // Undo Skip puts a visit back where it was: on its time, or waiting for one.
+  const back = job.status === "skipped" && to === "scheduled" && !job.scheduled_start;
+  const values: Record<string, string> = { status: back ? "unscheduled" : to };
   if (to === "in_progress" && !job.started_at) values.started_at = new Date().toISOString();
   const { error } = await db.from("job").update(values).eq("id", jobId);
   if (error) return { error: friendlyDbError(error.message) };

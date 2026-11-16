@@ -7,7 +7,11 @@ import { SchedulingSettings } from "../../../../../features/settings/Scheduling"
 import { ChecklistComponents } from "../../../../../features/settings/Components";
 import { PriceBook } from "../../../../../features/settings/PriceBook";
 import { WebsitePage } from "../../../../../features/settings/SettingsIndex";
-import { ExclusionReasons, Severities } from "../../../../../features/settings/SimpleLists";
+import {
+  ExclusionReasons,
+  Severities,
+  SkipReasons,
+} from "../../../../../features/settings/SimpleLists";
 import { Team } from "../../../../../features/settings/Team";
 import { TestTypes } from "../../../../../features/settings/TestTypes";
 
@@ -28,6 +32,8 @@ export default function SettingsPage() {
       return <Severities />;
     case "exclusions":
       return <ExclusionReasons />;
+    case "skip-reasons":
+      return <SkipReasons />;
     case "team":
       return <Team />;
     case "company":

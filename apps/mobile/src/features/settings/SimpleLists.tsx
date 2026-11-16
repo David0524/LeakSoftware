@@ -1,6 +1,11 @@
 import { useState } from "react";
 import { StyleSheet, View } from "react-native";
-import { isHexColor, type ExclusionReason, type SeverityLevel } from "@leakbook/core";
+import {
+  isHexColor,
+  type ExclusionReason,
+  type SeverityLevel,
+  type SkipReason,
+} from "@leakbook/core";
 import { confirmDestructive } from "../../ui/confirm";
 import { removeConfig, saveConfig, toInt, useConfig } from "../../data/config";
 import { useCompany } from "../../state/session";
@@ -125,6 +130,127 @@ function ReasonForm({ reason, onDone }: { reason?: ExclusionReason; onDone: (m: 
                 confirm: "Remove this reason?",
                 onConfirm: () => {
                   removeConfig("exclusion_reason", company.id, reason.id);
+                  onDone("Removed.");
+                },
+              }
+            : undefined
+        }
+      />
+    </>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Settings › Skip Reasons (owner, 2026-11-16): the reasons a tech picks when skipping a visit.
+// 'Not Done', the day-end skip's own reason, isn't listed.
+
+export function SkipReasons() {
+  return (
+    <ManagersOnly title="Skip Reasons">
+      <SkipReasonsPage />
+    </ManagersOnly>
+  );
+}
+
+function SkipReasonsPage() {
+  const company = useCompany();
+  const reasons = useConfig<SkipReason>("skip_reason", company.id).filter((r) => !r.system);
+  const sheet = useEditSheet<SkipReason>();
+  const menu = useRowMenu();
+  return (
+    <>
+      <SettingsList
+        title="Skip Reasons"
+        addLabel="Add Reason"
+        onAdd={() => sheet.open("new")}
+        notice={sheet.notice}
+      >
+        <Group>
+          {reasons.map((r) => (
+            <ListRow
+              key={r.id}
+              title={r.label}
+              detail={r.active ? undefined : "Off"}
+              onPress={() => sheet.open(r)}
+              editMenu={{ menu, title: r.label }}
+              deleteLabel="Remove"
+              onDelete={() =>
+                confirmDestructive({
+                  title: "Remove this reason?",
+                  confirm: "Remove",
+                  onConfirm: () => removeConfig("skip_reason", company.id, r.id),
+                })
+              }
+            />
+          ))}
+        </Group>
+      </SettingsList>
+      {menu.element}
+      <EditSheet
+        open={sheet.editing != null}
+        title={sheet.editing === "new" ? "Add Reason" : (sheet.editing?.label ?? "")}
+        onClose={sheet.close}
+      >
+        <SkipReasonForm
+          reason={sheet.editing === "new" ? undefined : (sheet.editing ?? undefined)}
+          onDone={sheet.done}
+        />
+      </EditSheet>
+    </>
+  );
+}
+
+function SkipReasonForm({ reason, onDone }: { reason?: SkipReason; onDone: (m: string) => void }) {
+  const company = useCompany();
+  const [label, setLabel] = useState(reason?.label ?? "");
+  const [order, setOrder] = useState(String(reason?.sort_order ?? 0));
+  const [active, setActive] = useState(reason?.active ?? true);
+  const [error, setError] = useState<string | undefined>();
+  const entries = { label, order, active };
+  const [startEntries] = useState(entries);
+  useUnsavedChanges(formChanged(startEntries, entries));
+  function save() {
+    if (!label.trim()) {
+      setError("Enter a reason.");
+      return;
+    }
+    saveConfig("skip_reason", company.id, reason?.id ?? null, {
+      label: label.trim(),
+      sort_order: toInt(order),
+      active: reason ? active : true,
+    });
+    haptics.success();
+    onDone(reason ? "Saved." : "Added.");
+  }
+  return (
+    <>
+      <FieldGroup labelWidth={reason ? 80 : 112}>
+        <FieldRow
+          label={reason ? "Reason" : "New reason"}
+          value={label}
+          onChangeText={setLabel}
+          placeholder={reason ? undefined : "Gate code changed"}
+          error={error}
+        />
+        {reason ? (
+          <FieldRow label="Order" value={order} onChangeText={setOrder} keyboardType="number-pad" />
+        ) : null}
+      </FieldGroup>
+      {reason ? (
+        <Group>
+          <Toggle inList label="Offered" value={active} onChange={setActive} />
+        </Group>
+      ) : null}
+      <FormActions
+        submit={reason ? "Save" : "Add Reason"}
+        onSubmit={save}
+        remove={
+          reason
+            ? {
+                label: "Remove",
+                confirm: "Remove this reason?",
+                onConfirm: () => {
+                  removeConfig("skip_reason", company.id, reason.id);
                   onDone("Removed.");
                 },
               }

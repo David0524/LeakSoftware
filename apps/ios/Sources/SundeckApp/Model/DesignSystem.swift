@@ -266,7 +266,7 @@ extension JobStatus {
         case .unscheduled, .canceled: .excluded
         case .scheduled: .text
         case .inProgress, .reportSent, .quoteSent: .info
-        case .quoteAccepted, .invoiced: .warning
+        case .quoteAccepted, .invoiced, .skipped: .warning
         case .paid, .done: .pass
         }
     }
