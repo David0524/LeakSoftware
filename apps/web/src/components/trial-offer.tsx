@@ -9,6 +9,7 @@ import {
   servicesPriceLines,
   TEAM_SIZE_MAX,
   TRIAL_OFFER,
+  trialTerms,
   trialPackage,
   type Services,
 } from "@leakbook/core";
@@ -22,7 +23,7 @@ import { orOffline } from "@/lib/offline";
 
 // A new shop's trial page (/welcome), straight after sign-up (owner, 2026-10-24: the
 // questionnaire that came first is gone). The price for the shop's package and team (the owner
-// picks how many people, owner 2026-11-12), what's included, then the card for the 30-day free trial, or a demo code (VIP26). With Stripe's
+// picks how many people, owner 2026-11-12), what's included, then the card for the free trial (30 days; 3 months from the mailer), or a demo code (VIP26). With Stripe's
 // publishable key the card form is embedded beside the offer (owner, 2026-10-24); without it
 // the button opens Stripe's page. Copy: packages/core/src/trial-offer.ts.
 
@@ -35,6 +36,7 @@ export function TrialOffer({
   people,
   teamSize,
   trialEnds,
+  heardFrom = null,
   billing,
   publishableKey = null,
 }: {
@@ -44,12 +46,15 @@ export function TrialOffer({
   /** The team size to start from: the one picked before, or the active people. */
   teamSize: number;
   trialEnds: string | null;
+  /** The shop's answer to "How did you hear about us?": the mailer's shops get 3 months. */
+  heardFrom?: string | null;
   /** Whether this server takes cards (Stripe billing); without it only a demo code gets in. */
   billing: boolean;
   /** Stripe's publishable key: with it (and billing), the card form is on this page. */
   publishableKey?: string | null;
 }) {
   const offer = TRIAL_OFFER[trialPackage(services)];
+  const terms = trialTerms(heardFrom);
   const [team, setTeam] = useState(Math.max(people, teamSize));
   // The card form is started for the team size the owner settles on.
   const settled = useSettledTeamSize(team);
@@ -64,7 +69,7 @@ export function TrialOffer({
   // server, cards can't be taken yet; a demo code (VIP26) still gets a shop in.
   const [showCode, setShowCode] = useState(!billing);
   const embedded = billing && Boolean(publishableKey);
-  const chargeNote = `You won’t be charged until ${trialEnds ? longDate(trialEnds) : "30 days from today"}; cancel before then in Settings › Sundeck Pro Billing and you never will be.`;
+  const chargeNote = `You won’t be charged until ${trialEnds ? longDate(trialEnds) : terms.fromToday}; cancel before then in Settings › Sundeck Pro Billing and you never will be.`;
   const codeLink =
     billing && !showCode ? (
       <button
@@ -151,7 +156,7 @@ export function TrialOffer({
         {embedded ? (
           <div className="mt-6 lg:mt-0" data-testid="trial-checkout">
             <h2 className="mb-1 font-display text-[1.75rem] leading-tight font-extrabold">
-              30 days free
+              {terms.heading}
             </h2>
             <p className="mb-4 text-text-muted">Then {price} a month. Add a card to start.</p>
             {settled === team ? (
@@ -180,7 +185,7 @@ export function TrialOffer({
           >
             <input type="hidden" name="team_size" value={team} />
             <Button type="submit" disabled={pending || !billing} className="w-full">
-              Start 30-Day Free Trial
+              {terms.button}
             </Button>
             <p className="mt-3 text-center text-[0.9375rem] text-text-muted">
               {billing

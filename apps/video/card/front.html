@@ -4,7 +4,25 @@
     <meta charset="utf-8" />
     <title>Sundeck Pro card, front</title>
     <link rel="stylesheet" href="card.css" />
+    <script>
+      // The 6 x 9 mailer (mailer-front.html) frames this card's hero: front.html#hero shows only
+      // the browser, the phones and the callouts, on nothing.
+      if (location.hash === "#hero") document.documentElement.classList.add("hero");
+    </script>
     <style>
+      .hero,
+      .hero body {
+        background: transparent;
+      }
+      .hero .water,
+      .hero .logo,
+      .hero h1,
+      .hero .sub,
+      .hero .svc,
+      .hero .features,
+      .hero .foot {
+        display: none;
+      }
       /* Header */
       .logo {
         left: 75px;
@@ -1368,9 +1386,7 @@
             <div class="price">Starting at $49/mo</div>
           </div>
         </div>
-        <div class="contact">
-          office@sundeckpro.com<br /><span>Call or text</span> (561) 307-7770
-        </div>
+        <div class="contact">office@sundeckpro.com<br /><span>Call</span> (702) 785-1548</div>
       </div>
     </div>
   </body>

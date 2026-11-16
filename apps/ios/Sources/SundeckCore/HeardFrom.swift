@@ -23,7 +23,7 @@ public let heardFromOptions: [HeardFromOption] = [
     ("customer_referral", "Customer Referral"), ("pool_supplier", "Pool Supplier"), ("route_broker", "Route Broker"),
     ("social_media", "Social Media"), ("industry_group", "Industry Group or Forum"),
     ("trade_show", "Trade Show or Event"), ("advertisement", "Advertisement"), ("card", "Laminate Card"),
-    ("other", "Other"),
+    ("mailer", "Mailer"), ("other", "Other"),
 ].map { HeardFromOption(key: $0.0, label: $0.1) }
 
 /// A known option's key (any case, spaces around ignored), else nil.

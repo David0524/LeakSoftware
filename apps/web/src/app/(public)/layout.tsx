@@ -46,6 +46,8 @@ export default function PublicLayout({ children }: LayoutProps<"/">) {
         <p>Sundeck Pro · Field app and office for pool service and leak detection shops</p>
         <nav aria-label="About Sundeck Pro" className="flex flex-wrap justify-center gap-x-1">
           {[
+            { href: "/manual", label: "Manuals" },
+            { href: "/faq", label: "FAQ" },
             { href: "/privacy", label: "Privacy" },
             { href: "/terms", label: "Terms" },
             { href: "/security", label: "Security" },

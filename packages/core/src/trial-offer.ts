@@ -37,3 +37,32 @@ export const TRIAL_OFFER: Record<TrialPackage, TrialOffer> = {
     ],
   },
 };
+
+/** The free trial's length in words, for the trial page. */
+export interface TrialTerms {
+  /** The button: "Start 30-Day Free Trial". */
+  button: string;
+  /** Above the card: "30 days free". */
+  heading: string;
+  /** When there's no date yet: "30 days from today". */
+  fromToday: string;
+}
+
+/**
+ * A new shop's trial: 3 months for shops from the 6 x 9 mailer (owner, 2026-11-16), whose
+ * answer to "How did you hear about us?" is Mailer; 30 days for everyone else. The database's
+ * create_company sets the same end date.
+ */
+export function trialTerms(heardFrom: string | null | undefined): TrialTerms {
+  return heardFrom === "mailer"
+    ? {
+        button: "Start 3-Month Free Trial",
+        heading: "3 months free",
+        fromToday: "3 months from today",
+      }
+    : {
+        button: "Start 30-Day Free Trial",
+        heading: "30 days free",
+        fromToday: "30 days from today",
+      };
+}
