@@ -1,9 +1,11 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
+import { Suspense } from "react";
 import { autopayConsent, cardFeeBps, textOnBrand } from "@leakbook/core";
 import { tokens } from "@leakbook/tokens";
 import { ContactLine } from "@/components/contact-line";
 import { Banner, DOC_PAGE } from "@/components/doc-ui";
+import { DocSkeleton } from "@/components/page-skeleton";
 import { SaveCardForm } from "@/components/save-card";
 import { adminClient } from "@/server/admin";
 import { paymentsConfigured } from "@/server/stripe";
@@ -30,7 +32,17 @@ interface CardRequest {
  * account with the shop for automatic payments, without paying anything now. No sign-in, only
  * the link the office sent (30 days).
  */
-export default async function SaveCardPage({ params, searchParams }: PageProps<"/card/[token]">) {
+export default function SaveCardPage({ params, searchParams }: PageProps<"/card/[token]">) {
+  return (
+    <main className={DOC_PAGE}>
+      <Suspense fallback={<DocSkeleton label="your payment details" />}>
+        <SaveCard params={params} searchParams={searchParams} />
+      </Suspense>
+    </main>
+  );
+}
+
+async function SaveCard({ params, searchParams }: PageProps<"/card/[token]">) {
   const { token } = await params;
   const { saved: justSaved } = await searchParams;
   const db = adminClient();
@@ -46,7 +58,7 @@ export default async function SaveCardPage({ params, searchParams }: PageProps<"
   const first = r.customer_name.split(" ")[0] || r.customer_name;
 
   return (
-    <main className={DOC_PAGE}>
+    <>
       <article className="mx-auto max-w-xl p-4 sm:p-8">
         <header
           className="-mx-4 flex flex-wrap items-center gap-3 px-5 py-5 max-sm:-mt-4 sm:mx-0 sm:rounded-lg"
@@ -104,6 +116,6 @@ export default async function SaveCardPage({ params, searchParams }: PageProps<"
           Powered by Sundeck Pro
         </footer>
       </article>
-    </main>
+    </>
   );
 }
