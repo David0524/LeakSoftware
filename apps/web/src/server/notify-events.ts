@@ -2,6 +2,7 @@ import "server-only";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import {
   formatAddress,
+  feedbackNotification,
   formatSchedule,
   jobNotification,
   paymentNotification,
@@ -194,6 +195,22 @@ async function notifyReportOpenedUnsafe(db: SupabaseClient, token: string) {
   });
 }
 
+/**
+ * A customer gave a thumbs down (owner's competitor notes, 2026-11-16): the owners and admins
+ * hear "Rebecca Soto: The pool is still green." The complaint is in Customer Feedback.
+ */
+async function notifyFeedbackUnsafe(
+  db: SupabaseClient,
+  input: { companyId: string; jobId: string; customer: string; comment: string },
+) {
+  await notify(db, {
+    userIds: await shopManagers(db, input.companyId),
+    kind: "feedback",
+    text: feedbackNotification(input.customer, input.comment),
+    data: { job: input.jobId },
+  });
+}
+
 /** Each runs after what caused it already worked: an error in one is swallowed. */
 const quietly =
   <A extends unknown[]>(f: (...args: A) => Promise<unknown>) =>
@@ -211,3 +228,4 @@ export const notifyReportSigned = quietly(notifyReportSignedUnsafe);
 export const notifyJobChanged = quietly(notifyJobChangedUnsafe);
 export const notifyPaid = quietly(notifyPaidUnsafe);
 export const notifyReportOpened = quietly(notifyReportOpenedUnsafe);
+export const notifyFeedback = quietly(notifyFeedbackUnsafe);

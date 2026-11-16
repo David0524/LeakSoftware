@@ -24,6 +24,8 @@
         @State private var data: DashboardData?
         /// The customer trackers' numbers, from the phone's rows (they work offline).
         @State private var counts: CustomerCounts?
+        /// Open complaints (owner's competitor notes, 2026-11-16); nil until the server says.
+        @State private var openComplaints: Int?
         @State private var loading = false
         @State private var step = 0
         @State private var failed: String?
@@ -72,6 +74,9 @@
             .task(id: session.company?.id) {
                 await load()
                 await loadActivity()
+                if let company = session.company, !preview {
+                    openComplaints = await FeedbackServer.openCount(app.client, company: company.id)
+                }
             }
             .task(id: "\(sync.revision)|\(session.company?.id ?? "")") {
                 guard let company = session.company else { return }
@@ -145,6 +150,17 @@
                         } else {
                             Color.clear.gridCellUnsizedAxes([.horizontal, .vertical])
                         }
+                    }
+                }
+                if let openComplaints {
+                    GridRow {
+                        NavigationLink(value: MoreRoute.feedback) {
+                            StatCard(
+                                label: FeedbackText.title, value: formatCount(openComplaints),
+                                note: "open complaints", chevron: true)
+                        }
+                        .buttonStyle(.plain)
+                        Color.clear.gridCellUnsizedAxes([.horizontal, .vertical])
                     }
                 }
                 GridRow {

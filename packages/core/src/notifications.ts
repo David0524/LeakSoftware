@@ -8,7 +8,7 @@ import { cleaningDueSpoken, cleaningShortLabel, type CleaningKind } from "./main
 import { routingSettings, weekday, workDay, zonedMinutesToIso } from "./route-plan";
 
 export type NotificationKind =
-  "text" | "job" | "quote" | "payment" | "report" | "opened" | "live" | "day";
+  "text" | "job" | "quote" | "payment" | "report" | "opened" | "feedback" | "live" | "day";
 
 /** Each kind a person can turn off in More › Notifications or Settings › Notifications. */
 export const NOTIFICATION_KINDS: { key: NotificationKind; label: string; hint?: string }[] = [
@@ -20,6 +20,13 @@ export const NOTIFICATION_KINDS: { key: NotificationKind; label: string; hint?: 
   // Owner, 2026-10-22: "Techs never hear the outcome." The first time a customer opens a
   // report's link (not visit reports), to the job's techs and the owners and admins.
   { key: "opened", label: "Opened reports" },
+  // Owner's competitor notes, 2026-11-16: a customer's thumbs down is a private complaint; the
+  // owners and admins hear about it.
+  {
+    key: "feedback",
+    label: "Customer complaints",
+    hint: "Owners and admins: a customer gave a thumbs down.",
+  },
   // Owner, 2026-10-20: "Add a Live Activities toggle in the notifications setting." The stop
   // you're on, on the Lock Screen during the workday (iPhone's Live Activity, Android's ongoing
   // notification).

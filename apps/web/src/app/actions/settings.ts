@@ -141,8 +141,17 @@ export async function saveCompanySettings(_: FormState, form: FormData): Promise
     timezone,
     settings: {
       ...current,
-      reminders: { quote_days: quoteDays, invoice_days: invoiceDays },
+      reminders: {
+        quote_days: quoteDays,
+        invoice_days: invoiceDays,
+        // Email, text or both (owner's competitor notes, 2026-11-16); email as before.
+        channel: ["text", "both"].includes(text(form, "reminder_channel"))
+          ? text(form, "reminder_channel")
+          : "email",
+      },
       review_requests: checked(form, "review_requests"),
+      // "How did we do?" before the review link; on unless the shop turns it off.
+      ask_feedback_first: checked(form, "ask_feedback_first"),
       ...(servicesChanged ? { services } : {}),
     },
     brand_primary: primary.toUpperCase(),

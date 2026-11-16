@@ -121,6 +121,13 @@ import Testing
         #expect(settings["reminders"]?["quote_days"] == [3, 7])
         #expect(settings["review_requests"] == false)
         #expect(FollowupsForm(settings).quoteDays == "3, 7")
+        // Reminders go by email until the shop says text or both; asking how we did first is on.
+        #expect(followups.channel == .email && followups.askFirst)
+        followups.channel = .both
+        followups.askFirst = false
+        let texting = followups.settings(nil)
+        #expect(texting["reminders"]?["channel"] == "both" && texting["ask_feedback_first"] == false)
+        #expect(FollowupsForm(texting).channel == .both && !FollowupsForm(texting).askFirst)
         followups.invoiceDays = "0"
         #expect(followups.errors == ["invoice_days": "Enter days after sending, like 7, 14, 30."])
 

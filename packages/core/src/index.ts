@@ -14,6 +14,7 @@ export * from "./report";
 export * from "./signature";
 export * from "./quote";
 export * from "./invoice";
+export * from "./feedback";
 export * from "./followups";
 export * from "./dashboard";
 export * from "./billing";

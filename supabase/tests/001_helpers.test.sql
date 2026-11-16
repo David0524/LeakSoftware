@@ -141,6 +141,11 @@ begin
     values (c, 'Fall opening', 'Hi {first name}', o, 1) returning id into ec;
   insert into email_campaign_recipient (company_id, campaign_id, customer_id, email)
     values (c, ec, cust, 'c@example.com');
+  -- A closed complaint from the customer (server writes it; owners and admins read it). Closed,
+  -- so it holds back no review request in the follow-up tests.
+  insert into customer_feedback (company_id, customer_id, job_id, rating, comment, status,
+                                 closed_at)
+    values (c, cust, j, 'down', 'The tech was late.', 'closed', now());
   -- A leg of a route that follows the roads (server only; members read it).
   insert into route_leg (company_id, provider, from_key, to_key, polyline)
     values (c, 'apple', '33.4152,-111.8315', '33.4100,-111.9030', '_p~iF~ps|U_ulLnnqC');
