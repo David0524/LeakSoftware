@@ -2,6 +2,10 @@
 
 Newest first. Each entry: date, decision, reason.
 
+## 2026-11-16 (owner: "1.03 was approved. Do 1.04"; the repository is public again so Actions runs)
+- **iPhone 1.0.4** carries everything since 1.0.3: pool equipment and pool notes, Skip Visit, Report an Issue, chemistry trends, autopay and Pay Over Time, Ask How We Did First. What's New in `docs/release/APP_STORE.md` § 1.9. Backend stays the dev project. Released by hand after approval, as before.
+- **The repository is public again** (owner), so GitHub Actions runs. The Admin portal's address and the decisions log are visible in it.
+
 ## 2026-11-16 (owner, after a review of a competitor's feature list: "Install all of these"; "This is your codebase. All decisions are yours")
 Built in parallel by five helpers, merged and checked here. Designs, wording and defaults in `docs/design/2026-11-16-{autopay,skip-visit,service-issues,feedback-and-text-reminders,chemistry-trends}.md`. On all four platforms (Swift not compiled in the session; CI checks it once Actions runs).
 - **The owner hands product calls to Claude.** Claude decides and logs them here instead of asking; the owner can still overrule any of them.
