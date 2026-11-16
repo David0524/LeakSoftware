@@ -1,7 +1,6 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import { cx } from "@/components/ui";
 
@@ -21,19 +20,20 @@ const ITEMS = [
  * click outside, or Escape.
  */
 export function HelpMenu() {
-  const path = usePathname();
-  const [openOn, setOpenOn] = useState<string | null>(null);
-  const open = openOn === path;
+  // The page's address is read in the browser only: the public pages are built ahead of time,
+  // where reading it (usePathname) would block prerendering.
+  const [path, setPath] = useState("");
+  const [open, setOpen] = useState(false);
   const box = useRef<HTMLDivElement>(null);
   const active = path.startsWith("/manual") || path === "/faq";
 
   useEffect(() => {
     if (!open) return;
     const away = (e: PointerEvent) => {
-      if (!box.current?.contains(e.target as Node)) setOpenOn(null);
+      if (!box.current?.contains(e.target as Node)) setOpen(false);
     };
     const escape = (e: KeyboardEvent) => {
-      if (e.key === "Escape") setOpenOn(null);
+      if (e.key === "Escape") setOpen(false);
     };
     document.addEventListener("pointerdown", away);
     document.addEventListener("keydown", escape);
@@ -50,10 +50,13 @@ export function HelpMenu() {
         aria-haspopup="true"
         aria-expanded={open}
         aria-controls="help-menu"
-        onClick={() => setOpenOn(open ? null : path)}
+        onClick={() => {
+          setPath(window.location.pathname);
+          setOpen((o) => !o);
+        }}
         className={cx(
           "inline-flex min-h-11 items-center gap-1 px-3 font-medium",
-          active && "text-link",
+          open && active && "text-link",
         )}
       >
         Help
@@ -81,7 +84,7 @@ export function HelpMenu() {
               <Link
                 href={i.href}
                 aria-current={path === i.href ? "page" : undefined}
-                onClick={() => setOpenOn(null)}
+                onClick={() => setOpen(false)}
                 className={cx(
                   "flex min-h-11 flex-col justify-center px-4 py-2",
                   path === i.href ? "text-link" : "hover:bg-text/[0.05]",
