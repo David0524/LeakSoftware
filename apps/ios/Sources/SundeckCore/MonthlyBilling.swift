@@ -178,10 +178,11 @@ public struct ChargeItem: Codable, Equatable, Sendable, Identifiable {
 }
 
 /// The price book items Add Charge offers: services and parts, not chemicals (those are added
-/// under Chemicals), in the book's order.
+/// under Chemicals) or detection and inspection fees (jobs of their own), in the book's order.
 public func chargeItems(_ items: [ChargeItem]) -> [ChargeItem] {
     items.filter {
-        ($0.deletedAt?.isEmpty ?? true) && ($0.chemical?.isEmpty ?? true) && $0.category != "Chemicals"
+        ($0.deletedAt?.isEmpty ?? true) && ($0.chemical?.isEmpty ?? true)
+            && !["Chemicals", "Detection", "Inspection"].contains($0.category ?? "")
     }
 }
 

@@ -64,11 +64,13 @@ describe("charges", () => {
     expect(chargeDetail({ quantity: 1, unit_price_cents: 2400 })).toBe("1 × $24.00");
     expect(chargeDetail({ quantity: 2.5, unit_price_cents: 800 })).toBe("2.5 × $8.00");
   });
-  it("offers services and parts, not chemicals", () => {
+  it("offers services and parts, not chemicals or detection and inspection fees", () => {
     const items = [
       { name: "Replace skimmer basket", category: "Repair" },
       { name: "Liquid chlorine", category: "Chemicals", chemical: "liquid_chlorine" },
       { name: "Old", category: "Service", deleted_at: "2026-01-01" },
+      { name: "Leak detection - pool", category: "Detection" },
+      { name: "Pool inspection", category: "Inspection" },
     ];
     expect(chargeItems(items).map((i) => i.name)).toEqual(["Replace skimmer basket"]);
   });

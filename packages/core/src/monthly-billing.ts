@@ -102,13 +102,21 @@ export function chargeDetail(c: { quantity: number; unit_price_cents: Cents }): 
 
 /**
  * The price book items Add Charge offers: services and parts, not chemicals (those are added
- * under Chemicals), in the book's order.
+ * under Chemicals) or detection and inspection fees, in the book's order.
  */
 export function chargeItems<
   T extends { category?: string | null; chemical?: string | null; deleted_at?: string | null },
 >(items: T[]): T[] {
-  return items.filter((i) => !i.deleted_at && !i.chemical && i.category !== "Chemicals");
+  return items.filter(
+    (i) => !i.deleted_at && !i.chemical && !NOT_CHARGES.includes(i.category ?? ""),
+  );
 }
+
+/**
+ * Price book categories Add Charge leaves out: chemicals (added under Chemicals), and leak
+ * detection and inspection fees, which are jobs of their own, not charges on a visit.
+ */
+const NOT_CHARGES = ["Chemicals", "Detection", "Inspection"];
 
 /** The Charges footer: where they're billed, or that they're on a sent invoice. */
 export function chargesFooter(opts: {

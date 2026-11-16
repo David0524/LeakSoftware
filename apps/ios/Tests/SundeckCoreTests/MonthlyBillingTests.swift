@@ -24,6 +24,8 @@ import Testing
         ChargeItem(id: "filter", name: "Clean filter", category: "Service"),
         ChargeItem(id: "cl", name: "Liquid chlorine", category: "Chemicals", chemical: "liquid_chlorine"),
         ChargeItem(id: "enzyme", name: "Enzyme", category: "Chemicals"),
+        ChargeItem(id: "detect", name: "Leak detection", category: "Detection"),
+        ChargeItem(id: "inspect", name: "Pool inspection", category: "Inspection"),
         ChargeItem(id: "tabs", name: "Tabs", chemical: "tabs"),
         ChargeItem(id: "gone", name: "Old part", category: "Parts", deletedAt: "2026-10-01T00:00:00Z"),
         ChargeItem(id: "blank", name: "Uncategorized", chemical: "", deletedAt: ""),

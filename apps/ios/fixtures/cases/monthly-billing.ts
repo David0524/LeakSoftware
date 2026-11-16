@@ -48,6 +48,14 @@ const items = [
     deleted_at: null,
   },
   { id: "enzyme", name: "Enzyme", category: "Chemicals", chemical: null, deleted_at: null },
+  { id: "detect", name: "Leak detection", category: "Detection", chemical: null, deleted_at: null },
+  {
+    id: "inspect",
+    name: "Pool inspection",
+    category: "Inspection",
+    chemical: null,
+    deleted_at: null,
+  },
   { id: "tabs", name: "Tabs", category: null, chemical: "tabs", deleted_at: null },
   {
     id: "gone",
