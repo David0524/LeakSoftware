@@ -40,9 +40,10 @@ first. Tick an item off by deleting it (and tell Claude, so it can check the res
 3. **Android 1.0.0 is live on Google Play** (version code 4, United States only; approved
    and published 2026-11-15, checked in the Play Console 2026-11-16). No policy issues; review
    emails are on, to office@sundeckpro.com. Left:
-   - **Upload 1.0.1 (code 6, monthly billing)** by hand: the `.aab` from the Android workflow
-     run of 2026-11-16, then Internal testing › Create new release, and promote to Production
-     (`docs/play-store/README.md` § 10, with its release notes).
+   - **1.0.1 (code 6, monthly billing) is in Google's review** for production (uploaded and
+     sent 2026-11-16, full rollout; also on internal testing). Watch office@sundeckpro.com.
+   - Play Console's info banner: "You have not yet managed your catalog access preferences"
+     (included in catalog access exports by default). Choose when convenient.
    - The Play service account (`docs/play-store/SERVICE_ACCOUNT_HANDOFF.md`), so builds upload
      by themselves. Play has no API access page any more; the invite under Users and
      permissions is what grants it.

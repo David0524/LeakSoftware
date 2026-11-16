@@ -2,6 +2,11 @@
 
 Newest first. Each entry: date, decision, reason.
 
+## 2026-11-16 (owner: "The number 3 here is cut off"; "Swap the new build into 1.0.3")
+- **iPhone Invoices' subtitle and Export buttons are separate list rows.** A screenshot probe showed a `List` row holding text and buttons cuts off the text's first character ("3 open" read "ɜ open"); the shared `PageHeader` says not to give it actions in a list.
+- **1.0.3 was taken back from App Review and resubmitted with build 1085** (the fix), with the App Store workflow's new `resubmit` action. Still a manual release.
+- **Android 1.0.1 (code 6) is in Google's production review** (owner, through Claude in Chrome with `docs/play-store/CHROME_RELEASE_1.0.1.md`); no errors or warnings on the release.
+
 ## 2026-11-16 (Play Console check by Claude in Chrome)
 - **Android 1.0.0 (code 4) is live on Google Play** in the United States, published 2026-11-15 12:52 PM after review; no policy issues. 1.0.1 (code 6) goes up next, by hand, until the Play service account exists.
 
