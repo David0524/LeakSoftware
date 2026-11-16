@@ -5,10 +5,23 @@ first. Tick an item off by deleting it (and tell Claude, so it can check the res
 
 ## From 2026-11-16: Stripe live mode
 
-1. **Switch the site to live mode** with Claude in Chrome: `docs/release/STRIPE_LIVE_HANDOFF.md`
-   (Stripe and Vercel open in two tabs; you copy the four secret values into Vercel yourself in
-   its Step 5). Paste its report back to Claude Code, which then clears the demo shop's sandbox
-   Stripe account and checks the site.
+**Done (2026-11-16):** sundeckpro.com runs on Stripe live mode (live keys and both live webhooks;
+report in `docs/DECISIONS.md`). Left for you, in Stripe live mode:
+
+1. **Add a payout bank account** (Settings › Payouts). Without one, Sundeck Pro's subscription
+   money stays in Stripe.
+2. **Check the legal business name.** Stripe shows "SUNDECK PRO COLE IZHAKY MBR % COLE IZHAKY
+   MBR", which looks like the IRS name plus its "care of" line. It must match the EIN letter
+   (CP 575) exactly; if the letter says "Sundeck Pro LLC", fix it under Settings › Business ›
+   Account details. Customers never see it (their statements say SUNDECK PRO).
+3. **Read and accept the two Connect acknowledgements** (Connect › Settings: negative balance
+   liability, ongoing seller compliance). Stripe marks them optional; they're legal terms, so
+   they're yours to read.
+4. **Wait out Stripe's account review** (2 to 3 days from 2026-11-16).
+5. **First live events:** the signing secrets are confirmed when Stripe shows a 200 under each
+   webhook's Event deliveries. The first will come when a shop taps Set Up Payments (Sundeck
+   Pro Customers, `account.updated`) and when a shop subscribes (Sundeck Pro). Cole's Pool
+   Cleaning can do both; tell Claude and it will check them.
 
 ## From 2026-11-16: autopay
 
