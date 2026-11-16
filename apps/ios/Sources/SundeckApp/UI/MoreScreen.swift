@@ -27,6 +27,9 @@
         case jobs(JobFilter)
         /// Invoices on one filter (the dashboard's Owed to you).
         case invoicesFiltered(InvoiceFilter)
+        /// A month's Monthly Billing ("2026-10-01"; owner, 2026-11-15), optionally with a
+        /// customer's draft open.
+        case billingMonth(String, open: String? = nil)
     }
 
     /// The screens the More tab pushes.
@@ -55,6 +58,7 @@
             case .activity: ActivityScreen()
             case .jobs(let filter): JobsView(filter: filter)
             case .invoicesFiltered(let filter): InvoicesScreen(filter: filter)
+            case .billingMonth(let month, let open): MonthBillingScreen(month: month, open: open)
             }
         }
     }

@@ -51,6 +51,7 @@
             case .customers, .customersFiltered: "/customers"
             case .customer: "/customers/:id"
             case .invoices, .invoicesFiltered: "/invoices"
+            case .billingMonth: "/invoices/month/:month"
             case .chemicals: "/chemicals"
             case .settings: "/settings"
             case .settingsPage(let page): "/settings/\(usageCaseName(page))"

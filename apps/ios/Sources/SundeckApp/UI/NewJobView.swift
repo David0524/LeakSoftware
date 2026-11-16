@@ -269,7 +269,12 @@
                     if let error = form.errors["tech"] { FieldHint(text: error, error: true) }
                 }
                 // A plan's monthly price is part of starting it, so it stays in view.
-                if form.isPlan { feeField }
+                if form.isPlan {
+                    feeField
+                    // When the customer's monthly invoice is drafted (owner, 2026-11-15: "set the
+                    // invoice date when setting up a new recurring job").
+                    PlanInvoiceDayField(day: $form.plan.invoiceDay, shopDay: shopInvoiceDay(form.company.settings))
+                }
             }
         }
 

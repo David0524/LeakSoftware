@@ -56,6 +56,8 @@
                         if !cleanings.isEmpty {
                             VisitCleaningsBox(cleanings: cleanings).padding(.bottom, 24)
                         }
+                        // Parts and services added on the visit, billed monthly (owner, 2026-11-15).
+                        VisitChargesBox(job: job).padding(.bottom, 24)
                     }
                     HStack(alignment: .firstTextBaseline) {
                         SectionHeading("Checklist").frame(maxWidth: .infinity, alignment: .leading)

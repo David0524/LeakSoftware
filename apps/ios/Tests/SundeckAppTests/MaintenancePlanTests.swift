@@ -104,6 +104,7 @@ extension NewJobFormTests {
         f.plan.endsOn = "2027-06-30"
         f.techId = Self.teammate
         f.fee = "180"
+        f.plan.invoiceDay = 15
         f.notes = "Dog in the yard"
         f.gallons = "18000"
         let rpc = PlanRPC(reply: .success(["plan": "p1", "customer": "c9", "property": "pr9"]))
@@ -129,7 +130,7 @@ extension NewJobFormTests {
             args["plan"] == [
                 "assigned_user_id": .string(Self.teammate), "starts_on": "2027-01-19", "interval_weeks": 2,
                 "weekdays": nil, "monthly": false, "visit_time": "10:00", "duration_minutes": 45, "price_cents": 18000,
-                "ends_on": "2027-06-30", "notes": "Dog in the yard",
+                "ends_on": "2027-06-30", "notes": "Dog in the yard", "invoice_day": 15,
             ])
         // Nothing is written on the phone: the rows come back by sync.
         #expect(try list("customer").isEmpty)
@@ -217,18 +218,22 @@ extension NewJobFormTests {
                 == .success([
                     "assigned_user_id": nil, "starts_on": "2026-10-19", "interval_weeks": 1, "weekdays": [1, 5],
                     "monthly": false, "visit_time": "07:30", "duration_minutes": 30, "price_cents": 123450,
-                    "ends_on": nil, "notes": nil,
+                    "ends_on": nil, "notes": nil, "invoice_day": nil,
                 ]))
+
+        // Its own invoice day (owner, 2026-11-15); nil is the shop's.
+        d.invoiceDay = 15
+        #expect(try d.check().get()["invoice_day"] == 15)
 
         // An existing plan's values come back into the form.
         let plan = ServicePlan(
             assignedUserId: "u1", startsOn: "2026-10-20", intervalWeeks: 2, visitTime: "10:00:00", durationMinutes: 45,
-            priceCents: 18000, endsOn: "2027-01-01", notes: "Gate")
+            priceCents: 18000, endsOn: "2027-01-01", notes: "Gate", invoiceDay: 20)
         #expect(
             PlanDraft(plan)
                 == PlanDraft(
                     repeats: .biweekly, startsOn: "2026-10-20", time: "10:00", minutes: "45", price: "180.00",
-                    endsOn: "2027-01-01", tech: "u1", notes: "Gate"))
+                    endsOn: "2027-01-01", tech: "u1", notes: "Gate", invoiceDay: 20))
     }
 
     @Test func customerPageListsAndEditsPlans() throws {

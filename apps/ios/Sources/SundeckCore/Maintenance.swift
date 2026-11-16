@@ -26,6 +26,9 @@ public struct ServicePlan: Codable, Equatable, Sendable {
     public var endsOn: String?
     public var paused: Bool
     public var notes: String?
+    /// The day of the next month the customer's invoice is drafted (1 to 28); nil: the shop's
+    /// (owner, 2026-11-15).
+    public var invoiceDay: Int?
 
     enum CodingKeys: String, CodingKey {
         case id, weekdays, monthly, paused, notes
@@ -38,13 +41,14 @@ public struct ServicePlan: Codable, Equatable, Sendable {
         case durationMinutes = "duration_minutes"
         case priceCents = "price_cents"
         case endsOn = "ends_on"
+        case invoiceDay = "invoice_day"
     }
 
     public init(
         id: String? = nil, customerId: String? = nil, propertyId: String? = nil, assignedUserId: String? = nil,
         startsOn: String, intervalWeeks: Int = 1, weekdays: [Int]? = nil, monthly: Bool = false,
         visitTime: String? = nil, durationMinutes: Int = 30, priceCents: Cents? = nil, endsOn: String? = nil,
-        paused: Bool = false, notes: String? = nil
+        paused: Bool = false, notes: String? = nil, invoiceDay: Int? = nil
     ) {
         self.id = id
         self.customerId = customerId
@@ -60,6 +64,7 @@ public struct ServicePlan: Codable, Equatable, Sendable {
         self.endsOn = endsOn
         self.paused = paused
         self.notes = notes
+        self.invoiceDay = invoiceDay
     }
 
     public init(from decoder: any Decoder) throws {
@@ -78,6 +83,7 @@ public struct ServicePlan: Codable, Equatable, Sendable {
         endsOn = try c.decodeIfPresent(String.self, forKey: .endsOn)
         paused = try c.decodeIfPresent(Bool.self, forKey: .paused) ?? false
         notes = try c.decodeIfPresent(String.self, forKey: .notes)
+        invoiceDay = try? c.decodeIfPresent(Int.self, forKey: .invoiceDay)
     }
 }
 

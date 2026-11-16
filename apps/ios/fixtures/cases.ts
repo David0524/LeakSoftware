@@ -39,6 +39,7 @@ import { prefill } from "./cases/prefill";
 import { removal } from "./cases/removal";
 import { drafts } from "./cases/drafts";
 import { friendlyErrorCases } from "./cases/friendly-error";
+import { monthlyBilling } from "./cases/monthly-billing";
 
 /** One fixture file per entry: apps/ios/Tests/Fixtures/<name>.json. */
 export const modules: Record<string, ModuleCases> = {
@@ -82,4 +83,5 @@ export const modules: Record<string, ModuleCases> = {
   removal,
   drafts,
   "friendly-error": friendlyErrorCases,
+  "monthly-billing": monthlyBilling,
 };
