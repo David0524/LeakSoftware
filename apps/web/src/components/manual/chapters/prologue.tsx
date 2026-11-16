@@ -125,7 +125,7 @@ export const prologue: ChapterDef = {
           figure={
             <Phone
               src="30-today"
-              alt="The iPhone app's Today screen: the next stop in a blue card, then the day's stops in order."
+              alt="The iPhone app’s Today screen: the next stop in a blue card, then the day’s stops in order."
               caption="The field: Today on the iPhone."
             />
           }
@@ -151,7 +151,7 @@ export const prologue: ChapterDef = {
         <Browser
           src="dashboard"
           url="sundeckpro.com/dashboard"
-          alt="The website's Dashboard: tiles for customers, plans, money collected and owed, and charts."
+          alt="The website’s Dashboard: tiles for customers, plans, money collected and owed, and charts."
           caption="The office: the Dashboard on the website."
         />
       </Section>

@@ -86,7 +86,7 @@ export const visit: ChapterDef = {
           figure={
             <Phone
               src="47-checklist-chemical"
-              alt="The Chemicals card opened on a visit: Add today's readings, a Gallons field, and rows for Free chlorine, pH, Alkalinity, Calcium, Stabilizer and Salt, each with a Reading box and an Aim For box, then Add Chemical, the chlorine and acid choices, and Notes."
+              alt="The Chemicals card opened on a visit: Add today’s readings, a Gallons field, and rows for Free chlorine, pH, Alkalinity, Calcium, Stabilizer and Salt, each with a Reading box and an Aim For box, then Add Chemical, the chlorine and acid choices, and Notes."
               caption="Before the test: one row per reading, each with Reading and Aim For."
             />
           }
@@ -235,7 +235,7 @@ export const visit: ChapterDef = {
           figure={
             <Phone
               src="47-chemicals"
-              alt="A visit's Chemicals card after treatment: 3 added, Liquid chlorine and Muriatic acid ticked Added, Stabilizer Low with a suggestion of 1 1/2 lb not yet added, Also added: 3 tabs Chlorine tabs, Water balance +0.3 · Balanced, Chemicals today $15.25, Billed on Sam's November invoice."
+              alt="A visit’s Chemicals card after treatment: 3 added, Liquid chlorine and Muriatic acid ticked Added, Stabilizer Low with a suggestion of 1 1/2 lb not yet added, Also added: 3 tabs Chlorine tabs, Water balance +0.3 · Balanced, Chemicals today $15.25, Billed on Sam’s November invoice."
               caption="With Charge for Chemicals on: each chemical’s price, the day’s total, and where it will be billed."
             />
           }
@@ -275,7 +275,7 @@ export const visit: ChapterDef = {
             <Phone
               src="30-checklist-cleanings"
               full
-              alt="A maintenance visit's Checklist tab: the Chemicals card closed, Regular Cleanings with Clean filter Today, Replace filter In 6 weeks · Filter 7 months old, and Clean salt cell Today; Charges with Add Charge; then the Checklist with Skim surface, Clean filter and Clean salt cell, each with check, exclamation and skip buttons, and Mark 3 Remaining Done."
+              alt="A maintenance visit’s Checklist tab: the Chemicals card closed, Regular Cleanings with Clean filter Today, Replace filter In 6 weeks · Filter 7 months old, and Clean salt cell Today; Charges with Add Charge; then the Checklist with Skim surface, Clean filter and Clean salt cell, each with check, exclamation and skip buttons, and Mark 3 Remaining Done."
               caption="Cleanings that are due join the checklist on their own. Each item has three answers."
             />
           }

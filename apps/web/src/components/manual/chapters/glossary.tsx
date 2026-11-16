@@ -304,8 +304,8 @@ const TERMS: Entry[] = [
   {
     term: "Wrap-Up",
     meaning:
-      "The job’s finish list: Report, Quote, Customer signs and Invoice. Customer signs unlocks once the report has a draft.",
-    for: "leak",
+      "The last tab of a leak detection or repair job: its finish list, from the report and the customer’s signature to the quote and the invoice. Maintenance visits have none; they’re billed monthly.",
+    for: "both",
   },
 ];
 

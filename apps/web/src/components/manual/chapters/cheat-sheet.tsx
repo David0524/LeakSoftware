@@ -26,8 +26,8 @@ export const cheatSheet: ChapterDef = {
               title: "Before the first stop",
               text: (
                 <>
-                  On <Ui>Today</Ui>, read the card, then tap <Ui>Start</Ui> as you pull out.{" "}
-                  <Ui>Message</Ui> sends your On My Way text.
+                  On <Ui>Today</Ui>, read the card. <Ui>Message</Ui> sends your On My Way text as
+                  you pull out; tap <Ui>Start</Ui> when you get there.
                 </>
               ),
             },
@@ -75,7 +75,7 @@ export const cheatSheet: ChapterDef = {
             [
               "Skip a locked gate for now",
               <>
-                Open the stop on Today, then tap <Ui>Do Later</Ui>.
+                On the Today card, tap <Ui>Do Later</Ui>.
               </>,
             ],
             [

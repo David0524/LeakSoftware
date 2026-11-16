@@ -51,7 +51,7 @@ export const dayOne: ChapterDef = {
         <p>
           {edition === "pool"
             ? "Monday morning, three techs will start their routes. She has until then to get the shop into the system, and she wants to do it once, properly, instead of fixing it in pieces all month."
-            : "Tomorrow she has a detection in Mesa and Jake is riding along. She wants the shop set up before then, so the first report that goes out already looks like Canyon State."}
+            : "Tomorrow she has a detection in Gilbert and Jake is riding along. She wants the shop set up before then, so the first report that goes out already looks like Canyon State."}
         </p>
       </Scene>
 
@@ -245,7 +245,7 @@ export const dayOne: ChapterDef = {
                   },
                   {
                     who: "Book your first leak job",
-                    text: "Inspect it on the phone. Chapter 4.",
+                    text: "Book it while the caller is on the phone. Chapter 4.",
                   },
                   {
                     who: "Send your first report",
@@ -276,7 +276,7 @@ export const dayOne: ChapterDef = {
         <Gallery caption="Left: signing up inside the app, which is for people joining a team. Right: the code screen, for anyone with two-step sign-in on.">
           <Phone
             src="01-sign-up"
-            alt="The app's Create an Account screen: Name, Email, Password with a strength checklist, How did you hear about us, and a Create Account button."
+            alt="The app’s Create an Account screen: Name, Email, Password with a strength checklist, How did you hear about us, and a Create Account button."
             caption="Create an Account"
           />
           <Phone

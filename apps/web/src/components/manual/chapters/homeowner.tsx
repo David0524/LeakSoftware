@@ -98,8 +98,8 @@ export const homeowner: ChapterDef = {
         >
           <p>
             The page opens with Canyon State’s header and one plain line: there’s a leak, and where.
-            Under it, “Inspected by Dana.” Then three tiles that tell the story before a word is
-            read: how many items passed, how many need attention, how many are leaking.
+            Under it, “Inspected by Dana and Jake.” Then three tiles that tell the story before a
+            word is read: how many items passed, how many need attention, how many are leaking.
           </p>
           <p>Then, in order:</p>
           <Table
@@ -306,9 +306,9 @@ export const homeowner: ChapterDef = {
         Maria never saw a carbon copy, a PDF from a template site or a payment app with someone
         else’s name on it. She saw Canyon State: its logo on the report, the quote and the bill, the
         same colors on each, her own pool drawn on the page, and a button that took her money the
-        way every other company she pays does. The shop that arrived in a pickup this morning
-        looked, by dinner, like the most organized contractor she has ever hired. Dana did nothing
-        tonight to make that happen.
+        way every other company she pays does. By dinner, the shop that arrived in a pickup this
+        morning had put what it found, what the fix costs and what she owes in front of her, under
+        one name. Dana did nothing tonight to make that happen.
       </WhyItMatters>
     </>
   ),

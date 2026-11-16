@@ -162,7 +162,7 @@ export const repairOnSite: ChapterDef = {
           figure={
             <Phone
               src="08-repair-job-called"
-              alt="A repair job before it's scheduled: Unscheduled · Repair, the pool's address, a Repairs group with Pump motor $450.00 and Add Additional Repair, Schedule Job and Suggest Times buttons, and Start Job at the bottom."
+              alt="A repair job before it’s scheduled: Unscheduled · Repair, the pool’s address, a Repairs group with Pump motor $450.00 and Add Additional Repair, Schedule Job and Suggest Times buttons, and Start Job at the bottom."
               caption="The repair job the accepted quote made: unscheduled, with the work already on it."
             />
           }
@@ -220,7 +220,8 @@ export const repairOnSite: ChapterDef = {
           <p>
             The paperwork lives on the repair job’s <Ui>Wrap-Up</Ui>: a short list of what’s left to
             finish, each step with its state in words, and one button at the bottom for the next
-            one.
+            one. Creating and sending the invoice is for owners and admins; a tech can record a
+            check or cash once it’s sent.
           </p>
           <Steps>
             <Step

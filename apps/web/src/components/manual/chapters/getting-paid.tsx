@@ -25,7 +25,7 @@ import {
 export const gettingPaid: ChapterDef = {
   id: "getting-paid",
   title: "Getting paid",
-  moment: { pool: "Tuesday · 6:40 p.m.", leak: "Tuesday · 3:15 p.m." },
+  moment: { pool: "Tuesday · 6:40 p.m.", leak: "Tuesday · 10:40 a.m." },
   lede: {
     pool: "Customers pay by card or bank from the link in their invoice. A check handed to a tech at the gate is on the books before the truck leaves. Here’s how the money gets in, and how you know.",
     leak: "A homeowner pays the deposit when she accepts the quote and the balance when the repair is done. A check handed over on the deck goes on the books before the truck leaves. Here’s how the money gets in, and how you know.",
@@ -51,7 +51,7 @@ export const gettingPaid: ChapterDef = {
           </p>
         </Scene>
       ) : (
-        <Scene time="Tuesday, 3:15 p.m.">
+        <Scene time="Tuesday, 10:40 a.m.">
           <p>
             Jake finishes the skimmer repair at Maria’s. She comes out with a checkbook. “Do I make
             it out to Dana?” She’d have paid online, she says, but the check is already written.

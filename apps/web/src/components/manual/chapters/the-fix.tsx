@@ -113,9 +113,9 @@ export const theFix: ChapterDef = {
       <Scene time="Tuesday, 8:20 a.m.">
         <p>
           Jake pulls up to 1423 Palm Ct as the first stop of his day. The gate code is on the card,
-          and so is the note about the dog. He has never been to this pool, and he doesn’t need to
-          call Dana: Maria’s customer page opens Wednesday’s detection, where the diagram shows a
-          red pin on the skimmer and Dana’s photo shows the crack.
+          and so is the note about the dog. He was here last Wednesday, but he doesn’t need to
+          remember it or call Dana: Maria’s customer page opens Wednesday’s detection, where the
+          diagram shows a red pin on the skimmer and the marked-up photo shows the crack.
         </p>
         <p>
           He taps <Ui>Start</Ui> on Today’s card.
@@ -139,10 +139,10 @@ export const theFix: ChapterDef = {
         </p>
         <Sub>The test that proves it</Sub>
         <p>
-          On <Ui>Findings</Ui>, Jake taps <Ui>Add Test</Ui> and runs the same pressure test Dana
-          ran: <Ui>Pressure test</Ui>, the skimmer line, 20 PSI, 15 minutes. This time the live line
-          reads “Held at 20 PSI in 15 min,” and the result suggests Pass. Wednesday’s failure and
-          Tuesday’s pass now sit in the same customer’s history.
+          On <Ui>Findings</Ui>, Jake taps <Ui>Add Test</Ui> and runs the same pressure test he ran
+          last week: <Ui>Pressure test</Ui>, the skimmer line, 20 PSI, 15 minutes. This time the
+          live line reads “Held at 20 PSI in 15 min,” and the result suggests Pass. Wednesday’s
+          failure and Tuesday’s pass now sit in the same customer’s history.
         </p>
         <Sub>The second repair</Sub>
         <Spread

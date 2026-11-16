@@ -34,8 +34,9 @@ export const inspectionKit: ChapterDef = {
       <Scene time="Sunday, 9:40 p.m.">
         <p>
           Dana has done this inspection a thousand times, and every time she’s done it from memory:
-          skimmer, returns, main drain, light niche, then the equipment pad. Tomorrow Jake will run
-          one of his own, and she wants him to walk the same path she does.
+          skimmer, returns, main drain, light niche, then the equipment pad. Tomorrow Jake rides
+          along, and soon he’ll run detections of his own. She wants him to walk the same path she
+          does.
         </p>
         <p>
           She opens Settings. Under <Ui>Checklists and reports</Ui> is the whole kit, five pages she
@@ -80,9 +81,8 @@ export const inspectionKit: ChapterDef = {
           <p>
             Each component has a <Ui>Name</Ui>, a <Ui>Section</Ui> (Visual, Plumbing, Bond beam or
             Other), what it <Ui>Applies to</Ui>, a <Ui>Starting count</Ui>, an <Ui>Order</Ui>, and
-            its <Ui>Inspection methods</Ui>, a comma list such as “Pressure test, Dye test, Visual”.
-            <Ui> Techs can add more than one</Ui> is for items that repeat, like returns or
-            skimmers.
+            its <Ui>Inspection methods</Ui>, a comma list such as “Pressure test, Dye test, Visual”.{" "}
+            <Ui>Techs can add more than one</Ui> is for items that repeat, like returns or skimmers.
           </p>
         </Spread>
         <p>
@@ -187,7 +187,7 @@ export const inspectionKit: ChapterDef = {
           figure={
             <Phone
               src="69-saved-report-new"
-              alt="The Add Saved Report sheet: Name, Summary, What we found, What happens next, each with the hint to leave empty to keep the draft's own text."
+              alt="The Add Saved Report sheet: Name, Summary, What we found, What happens next, each with the hint to leave empty to keep the draft’s own text."
               caption="A saved report: your own wording, section by section."
             />
           }
@@ -245,9 +245,9 @@ export const inspectionKit: ChapterDef = {
           ]}
         />
         <p>
-          These are starting values; change every one. <Ui>Suggest for</Ui> is what lets a finding
-          offer its own repair: a skimmer finding suggests the skimmer repair as a pill, and a tap
-          puts it on the quote.
+          These are starting values; change every one. Dana’s fee for a pool with a spa is $649.{" "}
+          <Ui>Suggest for</Ui> is what lets a finding offer its own repair: a skimmer finding
+          suggests the skimmer repair as a pill, and a tap puts it on the quote.
         </p>
         <Sub>Deposits and tax</Sub>
         <p>
@@ -267,7 +267,7 @@ export const inspectionKit: ChapterDef = {
           items={[
             {
               who: "A deposit on every repair",
-              text: "A percentage of the quote, so the customer who accepts has put money behind the job before anyone orders parts.",
+              text: "Half the quote, 50%, so the customer who accepts has put money behind the job before anyone orders parts.",
             },
             {
               who: "A discount ceiling for techs",

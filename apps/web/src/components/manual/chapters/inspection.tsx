@@ -82,7 +82,7 @@ export const inspection: ChapterDef = {
         </p>
         <Note title="Your list, not ours">
           These are the starting items. You change them for your shop in{" "}
-          <Path items={["Settings", "Checklist Components"]} /> (chapter 2), and the changes apply
+          <Path items={["Settings", "Checklist Components"]} /> (Chapter 2), and the changes apply
           to new jobs. A job that’s already started keeps the list it began with.
         </Note>
       </Section>
@@ -148,7 +148,7 @@ export const inspection: ChapterDef = {
         <Watch title="Only mark what you checked">
           “Not leaking” goes in the report under the shop’s name. If a section has an item you
           didn’t get to, answer the ones you did one by one, and give the others an <Ui>N/A</Ui>{" "}
-          with a reason (chapter 8). That line is what protects you when a leak shows up next
+          with a reason (Chapter 8). That line is what protects you when a leak shows up next
           spring.
         </Watch>
       </Section>

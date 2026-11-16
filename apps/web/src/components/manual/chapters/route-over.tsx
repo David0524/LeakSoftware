@@ -174,7 +174,7 @@ export const routeOver: ChapterDef = {
           Dana scrolls the imported list. Two hundred and some names, each with a pool, and none
           with a plan she trusts. The spreadsheet had a day and a price, and the import brought them
           over, but she wants to see each one with her own eyes, and she wants to add a customer she
-          signed on Saturday.
+          signed this morning.
         </p>
       </Scene>
 
@@ -233,7 +233,7 @@ export const routeOver: ChapterDef = {
         <Phone
           src="49-customer-plans"
           size="sm"
-          alt="A customer's Maintenance group showing one plan: Every Monday, 10 AM, 45 min, $180 a month, the tech, the next dates and zero done."
+          alt="A customer’s Maintenance group showing one plan: Every Monday, 10 AM, 45 min, $180 a month, the tech, the next dates and zero done."
           caption="The plan as it shows on the customer."
         />
         <UseIt
@@ -244,7 +244,7 @@ export const routeOver: ChapterDef = {
               text: "Mondays at 10 a.m., 45 minutes, Tony. First visit set; the next dates fill the schedule.",
             },
             {
-              who: "A bi-weekly pool, quieter yard",
+              who: "A biweekly pool, quieter yard",
               text: "Biweekly on Tuesdays. The price is still per month, so one number covers the whole plan.",
             },
             {

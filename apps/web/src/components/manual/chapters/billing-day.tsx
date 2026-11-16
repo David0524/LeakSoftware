@@ -205,8 +205,8 @@ export const billingDay: ChapterDef = {
         </p>
         <Watch title="Sending can’t be undone">
           Once an invoice is sent, the customer has it, and it’s locked. Read the lines first. A
-          sent invoice can still be voided by the owner, if nothing has been paid on it (see
-          “Getting paid”).
+          sent invoice can still be voided by the owner, if nothing has been paid on it (see Chapter
+          12).
         </Watch>
         <Sub>The service report goes with it</Sub>
         <p>
@@ -224,7 +224,7 @@ export const billingDay: ChapterDef = {
           up or edited, <Ui>Invoice day</Ui> sits under the price: <Ui>Shop Default (1st)</Ui>, or
           any day from the 1st to the 28th. It’s “the day of the next month this customer’s monthly
           invoice is drafted.” The shop’s own default lives in{" "}
-          <Path items={["Settings", "Payments", "Monthly invoices", "Invoice Day"]} />.
+          <Path items={["Settings", "Payments and Deposits", "Monthly invoices", "Invoice Day"]} />.
         </p>
         <Spread
           flip
@@ -251,7 +251,7 @@ export const billingDay: ChapterDef = {
           src="settings-payments"
           url="sundeckpro.com/settings/payments"
           alt="The website’s Payments and Deposits settings with the Monthly invoices group: Invoice Day and the Send Automatically switch."
-          caption="Settings › Payments: the two settings that decide when invoices go."
+          caption="Settings › Payments and Deposits: the two settings that decide when invoices go."
         />
         <Note title="What automatic does and doesn’t do">
           Only drafts whose invoice day is on or after the day you switch it on go by themselves.

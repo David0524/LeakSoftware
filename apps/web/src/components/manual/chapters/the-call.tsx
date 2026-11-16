@@ -225,13 +225,14 @@ export const theCall: ChapterDef = {
       <Scene time="4:14 p.m.">
         <p>
           Maria’s job takes Dana about as long as the call. Gunite, pool and spa, roughly 20,000
-          gallons. Access notes: <em>Gate code 4417. Dog in the side yard.</em> Wednesday at 9:00,
-          Dana as the tech, Jake as the second tech. In <Ui>What they said</Ui> she types “Inch a
-          day, tops off every other day since June.”
+          gallons. Access notes: <em>Gate code 4417. Dog in the side yard.</em> Jake as the second
+          tech, and a $649 detection fee. In <Ui>What they said</Ui> she types “Inch a day, tops off
+          every other day since June.” Maria can do any time Wednesday, so Dana leaves <Ui>When</Ui>{" "}
+          on <Ui>Not Yet</Ui> and will find the slot once she’s off the phone.
         </p>
         <p>
-          She taps <Ui>Create Job</Ui>. It becomes job #1042, and it’s on Jake’s phone before she’s
-          pulled out of the parking lot.
+          She taps <Ui>Create Job</Ui>. It becomes job #1042, waiting in <Ui>Needs a Time</Ui> for
+          the next chapter.
         </p>
       </Scene>
 
@@ -244,7 +245,7 @@ export const theCall: ChapterDef = {
           <Phone
             src="45-customer"
             size="sm"
-            alt="Maria Alvarez's customer page: Homeowner, round call, message and email buttons, a Contact card, a Pool card with the address and 'Gunite / plaster · Pool and spa · 20,000 gallons', and Leak detection and repairs listing Job #1042 In progress."
+            alt="Maria Alvarez’s customer page: Homeowner, round call, message and email buttons, a Contact card, a Pool card with the address and “Gunite / plaster · Pool and spa · 20,000 gallons”, and Leak detection and repairs listing Job #1042 In progress."
             caption="The customer page."
           />
           <Phone
@@ -326,9 +327,9 @@ export const theCall: ChapterDef = {
             <Step title="Type the text and tap Send." />
           </Steps>
           <p>
-            Dana sends Maria a line: Canyon State tomorrow at 9:00, she and Jake, about two hours,
-            please keep the dog inside. Maria answers with a thumbs-up before Dana reaches the
-            freeway.
+            Once the job has its time, Dana sends Maria a line: Canyon State tomorrow at 9:00, she
+            and Jake, about two hours, please keep the dog inside. Maria answers with a thumbs-up
+            before Dana reaches the freeway.
           </p>
         </Spread>
         <Browser

@@ -186,7 +186,7 @@ export const team: ChapterDef = {
         <Browser
           src="settings-team"
           url="sundeckpro.com/settings/team"
-          alt="The website’s Team settings: an Active list with Dana Owner (you), Jake Turner, Luis Ramirez, Priya Shah and Tony Tech, each with a role and a switch at the end of the row, and a Turned Off list below."
+          alt="The website’s Team settings: an Active list with Dana Owner (you), Jake Turner, Luis Ramirez, Priya Shah and Tony Tech, each with a role and a switch at the end of the row."
           caption="Team: the switch at the end of each row turns a person off. Turned-off people move to their own list."
         />
         <Tip title="Two-step for everyone">
@@ -225,7 +225,7 @@ export const team: ChapterDef = {
             },
             {
               who: edition === "pool" ? "Priya, on her route" : "Jake, on the deck",
-              text: "Keeps New and moved jobs on, so a change to tomorrow’s stops reaches her tonight.",
+              text: `Keeps New and moved jobs on, so a change to tomorrow’s stops reaches ${edition === "pool" ? "her" : "him"} tonight.`,
             },
           ]}
         />

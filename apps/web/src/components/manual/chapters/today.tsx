@@ -179,9 +179,9 @@ export const today: ChapterDef = {
         ) : (
           <FromTheField title="9:05 a.m., in the Alvarez driveway">
             Dana sent On My Way from the last light before the freeway. Maria Alvarez texted back
-            “gate’s open, I’m at work,” and the reply landed in the shop’s Messages, where Jake saw
-            it too. Dana tapped <Ui>Start</Ui> on the way to the backyard and was on the checklist
-            before she reached the equipment pad.
+            “Dog’s inside, side gate’s open,” and the reply landed in the shop’s Messages, where
+            Jake saw it too. Dana tapped <Ui>Start</Ui> on the way to the backyard and was on the
+            checklist before she reached the equipment pad.
           </FromTheField>
         )}
 
@@ -201,8 +201,8 @@ export const today: ChapterDef = {
               </p>
               <p>
                 The stop’s segment fills, a check flashes, and the card slides on to the next stop.
-                A banner at the top says “Sam Sample done” with <Ui>Undo</Ui>. If you’re past the
-                banner, open the finished stop and tap <Ui>Reopen Visit</Ui>.
+                A banner at the top says “Grace Holloway done” with <Ui>Undo</Ui>. If you’re past
+                the banner, open the finished stop and tap <Ui>Reopen Visit</Ui>.
               </p>
               <Watch title="Your shop’s rules come along">
                 If the owner turned on <Ui>Finish the checklist first</Ui> or{" "}
@@ -380,11 +380,11 @@ export const today: ChapterDef = {
               </p>
             </Scene>
           ) : (
-            <Scene time="Wednesday, 11:40 a.m.">
+            <Scene time="Wednesday, 2:40 p.m.">
               <p>
-                Jake is at the shop with a callback. He taps Dana’s name on Today: she’s on stop
-                two, the spa line, In progress. He books the callback for tomorrow instead of
-                calling her mid-test.
+                Jake is back at the shop with a callback to book. He taps Dana’s name on Today:
+                she’s on stop two, the spa line, In progress. He books the callback for tomorrow
+                instead of calling her mid-test.
               </p>
             </Scene>
           )}
@@ -408,7 +408,7 @@ export const today: ChapterDef = {
               <strong>
                 {pool
                   ? "Today: 10 pools · 6 reports sent · 1 quote accepted"
-                  : "Today: 3 pools · 2 reports sent · 1 quote accepted"}
+                  : "Today: 3 pools · 3 reports sent"}
               </strong>
             </p>
             <p>

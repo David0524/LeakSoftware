@@ -25,7 +25,7 @@ import {
 export const office: ChapterDef = {
   id: "office",
   title: "Meanwhile, at the office",
-  moment: { pool: "Tuesday · 2:40 p.m.", leak: "Wednesday · 11:10 a.m." },
+  moment: { pool: "Tuesday · 2:40 p.m.", leak: "Thursday · 11:10 a.m." },
   lede: {
     pool: "While the trucks are out, the office is working too: texts from customers, a call that went to voicemail, a quote someone just accepted. Here’s the other half of the day.",
     leak: "While Jake is on a deck in Gilbert, the office is working too: a homeowner’s text, a voicemail, a quote that just got accepted. Here’s the other half of the day.",
@@ -52,7 +52,7 @@ export const office: ChapterDef = {
           </p>
         </Scene>
       ) : (
-        <Scene time="Wednesday, 11:10 a.m.">
+        <Scene time="Thursday, 11:10 a.m.">
           <p>
             Jake is on a deck in Gilbert with a pressure gauge and a hose. Dana is at the shop with
             the website open and a short list.
@@ -70,8 +70,9 @@ export const office: ChapterDef = {
         <p>
           The <Ui>Messages</Ui> tab is a shared inbox of texts and calls on the shop’s{" "}
           <strong>company number</strong>. The line under the title says what it is: “Your company
-          number: (480) 555-0100”. Customers text that number, not anyone’s personal phone. Dana,
-          Jake and the techs see the same thread, so a customer never has to say it twice.
+          number: (480) 555-0100”. Customers text that number, not anyone’s personal phone.{" "}
+          {edition === "pool" ? "Dana, Priya, Luis and Tony" : "Dana and Jake"} see the same thread,
+          so a customer never has to say it twice.
         </p>
         <Spread
           figure={
@@ -231,9 +232,9 @@ export const office: ChapterDef = {
           ]}
         />
         <p>
-          Techs get what’s about their own jobs. Owners and admins get the shop. Owners also have a{" "}
-          <Ui>Weekly summary</Ui> under <Ui>Email</Ui>: on Monday morning, last week’s jobs and
-          money and the quotes still waiting.
+          Techs get what’s about their own jobs. Owners and admins get the shop. Owners and admins
+          also have a <Ui>Weekly summary</Ui> under <Ui>Email</Ui> (on for owners to start): on
+          Monday morning, last week’s jobs and money and the quotes still waiting.
         </p>
         <Note title="If nothing arrives">
           The phone itself has to allow notifications for Sundeck Pro. If it doesn’t, the page shows
@@ -308,8 +309,8 @@ export const office: ChapterDef = {
           go looking. Owners and admins can always add a job; a tech can only if the owner allows
           it.{" "}
           {edition === "pool"
-            ? "What goes in the form is covered in the chapter on bringing the route over."
-            : "What goes in the form is covered in “We’re losing an inch a day”."}
+            ? "What goes in the form is covered in Chapter 2, Bringing the route over."
+            : "What goes in the form is covered in Chapter 4, “We’re losing an inch a day.”"}
         </p>
       </Section>
 
@@ -317,7 +318,7 @@ export const office: ChapterDef = {
         <Meta who={["Owner", "Admin"]} where={["Website", "iPhone", "Android"]} />
         <p>
           {edition === "pool"
-            ? "In September, Dana wants to tell every customer in Mesa that fall openings are booking. She could text two hundred people. Or she could do this."
+            ? "In November, Dana wants to tell every customer in Mesa that there’s no service on Thanksgiving Day and their visit moves to Friday. She could text two hundred people. Or she could do this."
             : "In October, Dana wants to tell last year’s customers that she now has openings for pre-winter pressure checks. She could call forty of them. Or she could do this."}
         </p>
         <Spread

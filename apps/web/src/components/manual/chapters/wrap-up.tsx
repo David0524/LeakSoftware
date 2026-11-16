@@ -25,7 +25,7 @@ import {
 export const wrapUp: ChapterDef = {
   id: "wrap-up",
   title: "Wrap-Up",
-  moment: "Wednesday · 11:45 a.m.",
+  moment: "Wednesday · 11:20 a.m.",
   lede: "The leak is found. Before Dana leaves the driveway, the job becomes a report Maria has read and signed, a quote for the fix, and an invoice for the detection. One tab holds all of it, in order.",
   learn: [
     "Read the finish list and know what’s left",
@@ -37,7 +37,7 @@ export const wrapUp: ChapterDef = {
   ],
   Body: () => (
     <>
-      <Scene time="Wednesday, 11:45 a.m.">
+      <Scene time="Wednesday, 11:20 a.m.">
         <p>
           The skimmer line dropped 8 PSI in 15 minutes. Dana has the seam pinned on the diagram, two
           photos of the throat with a red circle on the crack, and a finding marked Major.
@@ -141,10 +141,8 @@ export const wrapUp: ChapterDef = {
           </p>
         </Spread>
         <Tip title="Your own words, saved">
-          If you write the same “No leak found” report every week, save it once. In{" "}
-          <Path items={["Settings", "Report Templates", "Add Saved Report"]} />, give it a name and
-          your text for any of the three sections. On a draft, <Ui>Use Saved Report</Ui> drops it in
-          word for word. A section you leave empty keeps the draft’s own text.
+          If you write the same “No leak found” report every week, save it once as a saved report
+          (Chapter 2). On a draft, <Ui>Use Saved Report</Ui> drops it in word for word.
         </Tip>
         <Watch title="Writing it again starts over">
           <Ui>Write the Draft Again</Ui> replaces the text, your edits included. The app asks first.
@@ -172,9 +170,9 @@ export const wrapUp: ChapterDef = {
         <p>
           <Ui>Go to Checklist</Ui> takes her straight there. The rest of the plumbing section held,
           so under it she taps <Ui>Mark N Remaining Not Leaking</Ui> (the button counts them for
-          her), and the light niche she couldn’t get to gets <Ui>N/A</Ui> with the reason “Area not
-          accessible.” Thirty seconds, and the report now says what was checked and what wasn’t, and
-          why.
+          her), and the Autofill EQ line, buried under the deck, gets <Ui>N/A</Ui> with the reason
+          “Area not accessible.” Thirty seconds, and the report now says what was checked and what
+          wasn’t, and why.
         </p>
         <Note title="Why the app insists">
           A report that leaves items blank can’t tell anyone later whether they were checked. That’s
@@ -435,9 +433,9 @@ export const wrapUp: ChapterDef = {
         </p>
       </Section>
 
-      <Scene time="11:40 a.m.">
+      <Scene time="11:45 a.m.">
         <p>
-          Twenty-five minutes after the gauge dropped, Dana backs out of the driveway. Maria has a
+          Two and a half hours after the gate code, Dana backs out of the driveway. Maria has a
           signed report in her inbox, a quote in her texts and a bill for the detection. The job on
           Dana’s screen reads “All done.”
         </p>
@@ -466,10 +464,10 @@ export const wrapUp: ChapterDef = {
           ]}
         >
           Leaks come back, and memories change. Two summers from now a homeowner may say nobody
-          mentioned the light niche. You open version 1: the niche marked N/A, “Area not
-          accessible,” her signature under it, the date, and photos with their time stamps. You
-          don’t have to argue that the report wasn’t edited afterward, because it can’t have been.
-          That’s the difference between a shop’s word and a shop’s record.
+          mentioned the cleaner line. You open version 1: the cleaner lines marked N/A, “Customer
+          declined,” her signature under it, the date, and photos with their time stamps. You don’t
+          have to argue that the report wasn’t edited afterward, because it can’t have been. That’s
+          the difference between a shop’s word and a shop’s record.
         </WhyItMatters>
       </Section>
     </>

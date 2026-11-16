@@ -112,7 +112,10 @@ const CHECKS: Row[] = [
 const MORE: Row[] = [
   {
     name: "Dashboard",
-    what: "The shop’s numbers: customers, plans, money collected and owed, and charts.",
+    what: {
+      pool: "The shop’s numbers: customers, plans, money collected and owed, and charts.",
+      leak: "The shop’s numbers: customers, money collected and owed, quotes accepted, and charts.",
+    },
     who: "Owner and admin",
   },
   {

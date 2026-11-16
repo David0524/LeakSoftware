@@ -92,9 +92,9 @@ export const lookingBack: ChapterDef = {
           that status. Under them, <strong>By Month</strong> lists quotes sent and accepted,
           invoiced, collected and still owed for each month.
         </p>
-        <Note title="Two things to know">
-          The sample job isn’t counted. And the Dashboard shows the office’s totals, so it needs a
-          connection.
+        <Note title={edition === "leak" ? "Two things to know" : "Good to know"}>
+          {edition === "leak" ? "The sample job isn’t counted. " : ""}The Dashboard shows the
+          office’s totals, so it needs a connection.
         </Note>
       </Section>
 
@@ -150,7 +150,7 @@ export const lookingBack: ChapterDef = {
           <Ui>All</Ui>, <Ui>Sent</Ui> or <Ui>Drafts</Ui>. Each row says its kind, a{" "}
           {edition === "pool"
             ? "Visit report or Monthly service report"
-            : "Homeowner report, Pool company report or Pool inspection report"}
+            : "Homeowner report or Pool inspection report"}
           , and “Sent Oct 22” or “Draft”. The menu has <Ui>Open</Ui>, <Ui>Copy Customer Link</Ui>{" "}
           and <Ui>Resend</Ui>.
         </p>
@@ -205,7 +205,7 @@ export const lookingBack: ChapterDef = {
           On Monday morning, owners can get an email: last week’s jobs and money, and the quotes
           still waiting. Turn it on or off in <Path items={["More", "Notifications"]} />, under{" "}
           <Ui>Email</Ui> › <Ui>Weekly summary</Ui>. It’s on by default for owners and off for
-          admins. Every one has a link to turn it off in one tap.
+          admins. Each email has a link to turn it off in one tap.
         </p>
         <Steps>
           <Step

@@ -51,7 +51,7 @@ export const weekAhead: ChapterDef = {
       {edition === "pool" ? (
         <Scene time="Sunday, 8:15 p.m.">
           <p>
-            The kids are in bed. Dana opens the laptop at the kitchen table and goes to{" "}
+            The dishes are done. Dana opens the laptop at the kitchen table and goes to{" "}
             <Ui>Schedule</Ui>. The week is already on the screen: three techs, five days, a few
             hundred stops in colored rows.
           </p>
@@ -69,9 +69,9 @@ export const weekAhead: ChapterDef = {
             on anyone’s route.
           </p>
           <p>
-            She opens <Ui>Schedule</Ui>. Wednesday is full. Thursday has a gap in the morning. Maria
-            said she’ll be home all day, so the question is only where the detection fits with the
-            least driving.
+            She opens <Ui>Schedule</Ui>. Maria can do Wednesday and will be home all day. Dana’s
+            Wednesday already has a detection and a spa line test, both in the afternoon, so the
+            question is only where Maria fits with the least driving.
           </p>
         </Scene>
       )}
@@ -322,7 +322,7 @@ export const weekAhead: ChapterDef = {
         <p>
           {edition === "pool"
             ? "Dana can see Tony’s Wednesday zigzags: Gilbert, Mesa, back to Gilbert. One tap fixes it."
-            : "Dana has Thursday’s stops in the order the jobs came in. Optimize puts them in the order that drives least."}
+            : "Dana has Wednesday’s stops in the order the jobs came in. Optimize puts them in the order that drives least."}
         </p>
         <Sub>One day</Sub>
         <p>
@@ -396,10 +396,10 @@ export const weekAhead: ChapterDef = {
           <Section kicker="Sunday, 9:05 p.m." title="Putting the week together">
             <Scene time="9:05 p.m.">
               <p>
-                Dana tips Customers to Add: the Friday signup goes onto Thursday with Luis, where a
-                street of three other customers already waits. She drags a repair job from Needs a
-                Time onto Wednesday afternoon. Then one tap on <Ui>Optimize Week</Ui>: “Moved 9
-                jobs.” She scrolls the week once. Nobody has more than ten.
+                Dana starts with Customers to Add: the Friday signup goes onto Thursday with Luis,
+                where a street of three other customers already waits. She drags a repair job from
+                Needs a Time onto Wednesday afternoon. Then one tap on <Ui>Optimize Week</Ui>:
+                “Moved 9 jobs.” She scrolls the week once. Nobody has more than ten.
               </p>
               <p>She closes the laptop. Monday’s problem is no longer a problem.</p>
             </Scene>
@@ -433,13 +433,14 @@ export const weekAhead: ChapterDef = {
                   </>
                 }
               >
-                Thursday 8:00 a.m. is listed as <Ui>First stop</Ui>. A 1:30 p.m. slot is listed as{" "}
-                <Ui>Adds no driving</Ui>, because Dana’s other Thursday stop is a few minutes down
-                the road.
+                Wednesday 9:00 a.m. is listed as <Ui>First stop</Ui>. A 1:30 p.m. slot is listed as{" "}
+                <Ui>Adds no driving</Ui>, because Dana’s spa line test is a few minutes down the
+                road.
               </Step>
               <Step title="Pick the time.">
-                The job lands on Dana’s Thursday route, with a drive chip on the tile, such as “22
-                min”.
+                Dana takes 9:00, so the long job gets the cool of the morning. It lands on Dana’s
+                Wednesday route, with Jake on it as second tech and a drive chip on the tile, such
+                as “22 min”.
               </Step>
               <Step title="Look at the day.">
                 The Map section shows the route and the total, such as “3 stops · 1 hr 45 min
@@ -450,7 +451,7 @@ export const weekAhead: ChapterDef = {
               If Maria wants an exact hour and Dana tells her yes, set <Ui>Lock Time</Ui> on the
               job. Optimize and Optimize Week will plan around it from then on.
             </Tip>
-            <Gallery caption="Left to right: the month at a glance, the day’s route, the settings that shape drive times.">
+            <Gallery caption="Left: the month at a glance. Right: the settings that shape drive times.">
               <Phone
                 src="33-schedule-month"
                 alt="The Schedule tab in Month view: a November calendar with today outlined and its job count."
@@ -520,7 +521,7 @@ export const weekAhead: ChapterDef = {
       <WhyItMatters>
         {edition === "pool"
           ? "The routes are decided once, in one place, and the techs open the same plan in the morning. Dana didn’t text anyone a schedule, and no customer lost their day by accident."
-          : "From Maria’s call to a time on the route, nobody was phoned and nothing was written twice. The job on Maria’s schedule is the same job on Dana’s phone Thursday morning."}
+          : "From Maria’s call to a time on the route, nobody was phoned and nothing was written twice. The job on Maria’s schedule is the same job on Dana’s phone Wednesday morning."}
       </WhyItMatters>
       {edition === "leak" ? null : (
         <PullQuote>Build the week once. Let the trucks follow it.</PullQuote>
