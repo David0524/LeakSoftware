@@ -28,6 +28,9 @@ export function OutOfRangeList() {
             accessibilityLabel={`${r.pool}, ${r.label} ${r.valueText}, ${r.direction}, aim for ${r.range}`}
           >
             <T>{r.pool}</T>
+            <T style={[tabular, { color: color.fail }]}>
+              {`${r.label} ${r.valueText} · ${r.direction === "low" ? "Low" : "High"}`}
+            </T>
             <T variant="secondary" muted>
               {[
                 `Aim for ${r.range}`,
@@ -36,9 +39,6 @@ export function OutOfRangeList() {
               ]
                 .filter(Boolean)
                 .join(" · ")}
-            </T>
-            <T style={[tabular, { color: color.fail }]}>
-              {`${r.label} ${r.valueText} · ${r.direction === "low" ? "Low" : "High"}`}
             </T>
           </ListRow>
         ))}

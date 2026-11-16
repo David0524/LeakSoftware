@@ -117,6 +117,8 @@ export default async function ChemicalsPage({ searchParams }: PageProps<"/chemic
           )}
         </Grouped>
       ) : null}
+      {/* Room to scroll the log clear of the calculator's docked bar on phones. */}
+      {pool ? <div aria-hidden="true" className="h-20 lg:hidden" /> : null}
     </>
   );
 }
@@ -157,7 +159,14 @@ async function OutOfRange({ office }: { office: Awaited<ReturnType<typeof getOff
               <Row
                 key={r.id}
                 href={`/chemicals?property=${r.propertyId}`}
-                label={name}
+                label={
+                  <>
+                    <span className="block">{name}</span>
+                    <span className="block text-status-fail tabular-nums">
+                      {r.label} {r.valueText} · {r.direction === "low" ? "Low" : "High"}
+                    </span>
+                  </>
+                }
                 detail={[
                   `Aim for ${r.range}`,
                   formatSchedule(r.recordedAt, new Date(), tz),
@@ -165,11 +174,6 @@ async function OutOfRange({ office }: { office: Awaited<ReturnType<typeof getOff
                 ]
                   .filter(Boolean)
                   .join(" · ")}
-                value={
-                  <span className="text-status-fail tabular-nums">
-                    {r.label} {r.valueText} · {r.direction === "low" ? "Low" : "High"}
-                  </span>
-                }
               />
             );
           })}

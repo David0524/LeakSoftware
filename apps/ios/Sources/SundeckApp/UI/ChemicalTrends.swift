@@ -145,8 +145,21 @@
                         Button {
                             openRoute(.more(.chemicals(ChemicalTarget(propertyId: e.propertyId))))
                         } label: {
-                            ListRow(e.pool, detail: e.detail, value: e.value, chevron: true)
-                                .monospacedDigit()
+                            // The pool, then the reading in red, then the range, date and tech (as
+                            // on the website): a value on the right squeezes the pool's name.
+                            HStack(spacing: CGFloat(Spacing.rowItems)) {
+                                VStack(alignment: .leading, spacing: 2) {
+                                    Text(e.pool).textRole(.body).foregroundStyle(Color.text)
+                                    Text(e.value).textRole(.body).monospacedDigit().foregroundStyle(Color.fail)
+                                    Text(e.detail).textRole(.secondary).foregroundStyle(Color.textMuted)
+                                }
+                                Spacer(minLength: 0)
+                                Chevron()
+                            }
+                            .padding(.horizontal, CGFloat(Spacing.rowHorizontal))
+                            .padding(.vertical, CGFloat(Spacing.rowVertical))
+                            .frame(maxWidth: .infinity, minHeight: minTarget, alignment: .leading)
+                            .contentShape(Rectangle())
                         }
                         .buttonStyle(.row)
                         .accessibilityElement(children: .ignore)
