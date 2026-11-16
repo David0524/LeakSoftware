@@ -25,7 +25,7 @@ export default function StaffTwoStepPage() {
 
 async function StaffTwoStep() {
   const user = await getUser();
-  if (!user) redirect("/sign-in?next=/admin/two-step");
+  if (!user) redirect("/sign-in?next=/k4cs4uxrntb27z/two-step");
   if (!isStaff(user)) redirect("/sign-in/staff");
   const { data } = await (
     await createClient()
@@ -44,7 +44,7 @@ async function StaffTwoStep() {
       <div className="card max-w-md space-y-4 p-5">
         <TwoStepSettings on={on} />
         {on && user.aal === "aal2" ? (
-          <Link href="/admin" className={buttonClass("primary", "w-full")}>
+          <Link href="/k4cs4uxrntb27z" className={buttonClass("primary", "w-full")}>
             Open the Admin Portal
           </Link>
         ) : null}

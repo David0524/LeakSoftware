@@ -18,7 +18,7 @@ export const metadata: Metadata = {
  * Staff: import a shop's customers during the setup call (owner, 2026-10-16), so the shop's
  * file comes straight into Sundeck Pro instead of by email.
  */
-export default function StaffImportPage({ searchParams }: PageProps<"/admin/import">) {
+export default function StaffImportPage({ searchParams }: PageProps<"/k4cs4uxrntb27z/import">) {
   return (
     <Suspense fallback={<div className="h-64" aria-label="Loading" />}>
       <StaffImport searchParams={searchParams} />
@@ -29,12 +29,12 @@ export default function StaffImportPage({ searchParams }: PageProps<"/admin/impo
 async function StaffImport({
   searchParams,
 }: {
-  searchParams: PageProps<"/admin/import">["searchParams"];
+  searchParams: PageProps<"/k4cs4uxrntb27z/import">["searchParams"];
 }) {
   const user = await getUser();
-  if (!user) redirect("/sign-in?next=/admin/leads");
+  if (!user) redirect("/sign-in?next=/k4cs4uxrntb27z/leads");
   if (!isStaff(user)) redirect("/sign-in/staff");
-  const back = { href: "/admin/leads", label: "Leads" };
+  const back = { href: "/k4cs4uxrntb27z/leads", label: "Leads" };
   if (user.aal !== "aal2")
     return (
       <>
@@ -54,7 +54,7 @@ async function StaffImport({
         <PageHeader back={back} title="Import for a Shop" />
         <Empty>
           Open a shop from{" "}
-          <Link href="/admin/leads?show=all" className="text-link underline">
+          <Link href="/k4cs4uxrntb27z/leads?show=all" className="text-link underline">
             Leads
           </Link>
           .

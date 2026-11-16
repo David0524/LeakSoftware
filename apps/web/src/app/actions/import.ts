@@ -18,7 +18,7 @@ import { isStaff } from "@/server/leads";
 
 import { friendlyError } from "@leakbook/core";
 // Import Customers (owner, 2026-10-16). Owners import into their own shop; Sundeck Pro staff
-// (SUNDECK_STAFF_EMAILS, after two-step sign-in) import for a shop from /admin/import.
+// (SUNDECK_STAFF_EMAILS, after two-step sign-in) import for a shop from /k4cs4uxrntb27z/import.
 
 const width = (mapping: unknown) => Math.min(60, Array.isArray(mapping) ? mapping.length : 0);
 

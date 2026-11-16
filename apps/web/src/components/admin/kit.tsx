@@ -26,6 +26,16 @@ export function fmtDate(iso: string | null | undefined): string {
   return iso ? dateFmt.format(new Date(iso)) : "—";
 }
 
+/** A calendar day (YYYY-MM-DD), as written: no time zone shift. */
+export function fmtDay(day: string | null | undefined): string {
+  return day ? dateFmt.format(new Date(`${day.slice(0, 10)}T12:00:00Z`)) : "—";
+}
+
+/** Today in the portal's time zone, as YYYY-MM-DD. */
+export function todayDay(now = new Date()): string {
+  return new Intl.DateTimeFormat("en-CA", { timeZone: TZ }).format(now);
+}
+
 export function fmtTime(iso: string | null | undefined): string {
   return iso ? timeFmt.format(new Date(iso)) : "—";
 }
@@ -325,7 +335,7 @@ export function TwoStepNeeded({ title }: { title: string }) {
       <PageHeader title={title} />
       <Empty>
         The admin portal shows shops’ and people’s details, so it needs two-step sign-in.{" "}
-        <Link href="/admin/two-step" className="text-link underline">
+        <Link href="/k4cs4uxrntb27z/two-step" className="text-link underline">
           Set Up Two-Step Sign-In
         </Link>
         , then sign in again if it asks.
@@ -402,7 +412,7 @@ export function SupportTable({
                 <td>
                   {r.company_ref ? (
                     <Link
-                      href={`/admin/shops/${r.company_ref}`}
+                      href={`/k4cs4uxrntb27z/shops/${r.company_ref}`}
                       className="text-link hover:underline"
                     >
                       {r.company_name ?? "Shop"}

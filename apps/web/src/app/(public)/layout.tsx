@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { Logo } from "@/components/logo";
 import { LightOnly } from "@/components/light-only";
-import { buttonClass, cx } from "@/components/ui";
+import { buttonClass } from "@/components/ui";
 import { CONTACT_EMAIL, CONTACT_PHONE, CONTACT_PHONE_URL, COPYRIGHT } from "@/lib/site";
 
 export default function PublicLayout({ children }: LayoutProps<"/">) {
@@ -52,18 +52,8 @@ export default function PublicLayout({ children }: LayoutProps<"/">) {
             { href: "/status", label: "Status" },
             { href: `mailto:${CONTACT_EMAIL}`, label: `Contact Us: ${CONTACT_EMAIL}` },
             { href: CONTACT_PHONE_URL, label: `Call Us: ${CONTACT_PHONE}` },
-            // Sundeck Pro staff (owner, 2026-10-22); others land in their own office. Computers
-            // only, like the portal itself, and just "Admin" (owner, 2026-10-24).
-            { href: "/sign-in?next=/admin", label: "Admin", computerOnly: true },
           ].map((l) => (
-            <a
-              key={l.href}
-              href={l.href}
-              className={cx(
-                "min-h-11 content-center px-3 text-link",
-                "computerOnly" in l && "max-sm:hidden",
-              )}
-            >
+            <a key={l.href} href={l.href} className="min-h-11 content-center px-3 text-link">
               {l.label}
             </a>
           ))}

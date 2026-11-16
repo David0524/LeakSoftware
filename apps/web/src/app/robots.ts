@@ -2,8 +2,10 @@ import type { MetadataRoute } from "next";
 
 /**
  * What search engines may crawl (owner, 2026-11-06: "optimize our SEO"): the public pages. The
- * office, staff portal, sign-in flows, API, and every customer link (reports, quotes, invoices,
- * sign-offs, unsubscribes) stay out; customer pages also carry noindex themselves.
+ * office, sign-in flows, API, and every customer link (reports, quotes, invoices,
+ * sign-offs, unsubscribes) stay out; customer pages also carry noindex themselves. The staff portal
+ * isn't listed, so robots.txt doesn't give its address away (owner, 2026-11-16); its pages are
+ * noindex.
  */
 export default function robots(): MetadataRoute.Robots {
   return {
@@ -13,7 +15,6 @@ export default function robots(): MetadataRoute.Robots {
       disallow: [
         "/api/",
         "/auth/",
-        "/admin",
         "/in-app/",
         "/invite/",
         "/i/",

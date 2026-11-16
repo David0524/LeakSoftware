@@ -22,7 +22,7 @@ export async function SupportBanner() {
           Ends <LocalTime iso={s.endsAt} />
         </p>
         <Link
-          href={`/admin/shops/${s.companyId}`}
+          href={`/k4cs4uxrntb27z/shops/${s.companyId}`}
           className="min-h-11 content-center px-2 text-[0.9375rem] underline"
         >
           Admin

@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { Suspense } from "react";
 import { fmtDate, relDays, SearchForm, TABLE, TwoStepNeeded } from "@/components/admin/kit";
-import { Empty, PageHeader } from "@/components/ui";
+import { Empty, PageHeader, pillClass } from "@/components/ui";
 import { loadPeople, staffGate } from "@/server/staff";
 
 export const metadata: Metadata = { title: "People" };
@@ -10,7 +10,7 @@ export const metadata: Metadata = { title: "People" };
 const ROLE: Record<string, string> = { owner: "Owner", admin: "Admin", tech: "Tech" };
 
 /** Every account across shops (owner, 2026-10-22: "customer data"). Newest first, 300 at most. */
-export default function PeoplePage({ searchParams }: PageProps<"/admin/people">) {
+export default function PeoplePage({ searchParams }: PageProps<"/k4cs4uxrntb27z/people">) {
   return (
     <Suspense fallback={<div className="h-96" aria-label="Loading" />}>
       <People searchParams={searchParams} />
@@ -21,13 +21,22 @@ export default function PeoplePage({ searchParams }: PageProps<"/admin/people">)
 async function People({
   searchParams,
 }: {
-  searchParams: PageProps<"/admin/people">["searchParams"];
+  searchParams: PageProps<"/k4cs4uxrntb27z/people">["searchParams"];
 }) {
-  const gate = await staffGate("/admin/people");
+  const gate = await staffGate("/k4cs4uxrntb27z/people");
   if ("needsTwoStep" in gate) return <TwoStepNeeded title="People" />;
-  const raw = (await searchParams).q;
-  const q = (Array.isArray(raw) ? raw[0] : raw) ?? "";
-  const people = await loadPeople(q);
+  const params = await searchParams;
+  const one = (v: string | string[] | undefined) => (Array.isArray(v) ? v[0] : v) ?? "";
+  const q = one(params.q);
+  // Sundeck Pro's own accounts (staff logins, the demo and App Review shops' people) are left
+  // out of Everyone and every count (owner, 2026-11-16).
+  const internal = one(params.show) === "internal";
+  const [counted, ours] = await Promise.all([loadPeople(q), loadPeople(q, true)]);
+  const people = internal ? ours : counted;
+  const href = (show: string) => {
+    const p = new URLSearchParams({ ...(q ? { q } : {}), ...(show ? { show } : {}) });
+    return `/k4cs4uxrntb27z/people${p.size ? `?${p}` : ""}`;
+  };
   return (
     <>
       <PageHeader
@@ -35,10 +44,39 @@ async function People({
         subtitle="Everyone with a Sundeck Pro account, newest first. Search finds older ones."
       />
       <div className="mb-5">
-        <SearchForm action="/admin/people" value={q} placeholder="Search names, emails, phones" />
+        <SearchForm
+          action="/k4cs4uxrntb27z/people"
+          value={q}
+          placeholder="Search names, emails, phones"
+          hidden={internal ? { show: "internal" } : {}}
+        />
       </div>
+      <nav aria-label="Show" className="mb-5 flex flex-wrap gap-2">
+        <Link
+          href={href("")}
+          aria-current={internal ? undefined : "page"}
+          className={pillClass(!internal)}
+        >
+          Everyone ({counted.length})
+        </Link>
+        <Link
+          href={href("internal")}
+          aria-current={internal ? "page" : undefined}
+          className={pillClass(internal)}
+        >
+          Internal ({ours.length})
+        </Link>
+      </nav>
+      {internal ? (
+        <p className="mb-4 text-[0.9375rem] text-text-muted">
+          Our own accounts: staff logins and the people in internal shops. They can sign in as
+          usual, but aren’t counted anywhere in the portal.
+        </p>
+      ) : null}
       {people.length === 0 ? (
-        <Empty>{q ? `No one matches “${q}”.` : "No accounts yet."}</Empty>
+        <Empty>
+          {q ? `No one matches “${q}”.` : internal ? "No internal accounts." : "No accounts yet."}
+        </Empty>
       ) : (
         <div className="card overflow-x-auto p-0">
           <table className={TABLE}>
@@ -69,7 +107,7 @@ async function People({
                 <tr key={p.id} data-testid="person-row">
                   <td>
                     <Link
-                      href={`/admin/people/${p.id}`}
+                      href={`/k4cs4uxrntb27z/people/${p.id}`}
                       className="font-semibold text-link hover:underline"
                     >
                       {p.name ?? p.email}
@@ -83,7 +121,7 @@ async function People({
                       p.shops.map((s) => (
                         <span key={s.company_id} className="block">
                           <Link
-                            href={`/admin/shops/${s.company_id}`}
+                            href={`/k4cs4uxrntb27z/shops/${s.company_id}`}
                             className="text-link hover:underline"
                           >
                             {s.company_name}

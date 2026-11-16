@@ -316,7 +316,7 @@ export function UsagePeople({ u, showShops = true }: { u: Usage; showShops?: boo
               <tr key={p.user_id} data-testid="usage-person">
                 <td>
                   <Link
-                    href={`/admin/people/${p.user_id}`}
+                    href={`/k4cs4uxrntb27z/people/${p.user_id}`}
                     className="font-medium text-link hover:underline"
                   >
                     {p.name ?? p.email}

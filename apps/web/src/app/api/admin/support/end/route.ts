@@ -30,6 +30,9 @@ export async function POST(request: Request) {
   const jar = await cookies();
   if (companyId && jar.get(ACTIVE_COMPANY_COOKIE)?.value === companyId)
     jar.delete(ACTIVE_COMPANY_COOKIE);
-  const back = new URL(companyId ? `/admin/shops/${companyId}` : "/admin/support", request.url);
+  const back = new URL(
+    companyId ? `/k4cs4uxrntb27z/shops/${companyId}` : "/k4cs4uxrntb27z/support",
+    request.url,
+  );
   return NextResponse.redirect(back, 303);
 }

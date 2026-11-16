@@ -4,6 +4,7 @@ import { notFound } from "next/navigation";
 import { Suspense } from "react";
 import { formatPhone } from "@leakbook/core";
 import { SendPasswordReset, TwoStepOff } from "@/components/admin/actions";
+import { InternalToggle } from "@/components/admin/costs";
 import {
   Facts,
   fmtDate,
@@ -30,7 +31,10 @@ export const metadata: Metadata = { title: "Person" };
 const ROLE: Record<string, string> = { owner: "Owner", admin: "Admin", tech: "Tech" };
 
 /** One account: their shops, devices, invites, and the help staff can give them. */
-export default function PersonPage({ params, searchParams }: PageProps<"/admin/people/[id]">) {
+export default function PersonPage({
+  params,
+  searchParams,
+}: PageProps<"/k4cs4uxrntb27z/people/[id]">) {
   return (
     <Suspense fallback={<div className="h-96" aria-label="Loading" />}>
       <Person params={params} searchParams={searchParams} />
@@ -41,10 +45,10 @@ export default function PersonPage({ params, searchParams }: PageProps<"/admin/p
 async function Person({
   params,
   searchParams,
-}: Pick<PageProps<"/admin/people/[id]">, "params" | "searchParams">) {
+}: Pick<PageProps<"/k4cs4uxrntb27z/people/[id]">, "params" | "searchParams">) {
   const { id } = await params;
   const days = usagePeriod((await searchParams).days);
-  const gate = await staffGate(`/admin/people/${id}`);
+  const gate = await staffGate(`/k4cs4uxrntb27z/people/${id}`);
   if ("needsTwoStep" in gate) return <TwoStepNeeded title="Person" />;
   const [p, origin, usage] = await Promise.all([
     loadPerson(id),
@@ -61,10 +65,14 @@ async function Person({
     <>
       <PageHeader
         title={p.name ?? p.email}
-        back={{ href: "/admin/people", label: "People" }}
-        subtitle={`${p.email} · signed up ${fmtDate(p.created_at)}`}
+        back={{ href: "/k4cs4uxrntb27z/people", label: "People" }}
+        subtitle={`${p.email} · signed up ${fmtDate(p.created_at)}${p.internal ? " · Internal: not counted" : ""}`}
         actions={
           <>
+            {/* Internal through their shops alone: changed on the shop, not here. */}
+            {p.marked_internal || !p.internal ? (
+              <InternalToggle kind="person" id={p.id} internal={p.marked_internal} />
+            ) : null}
             <SendPasswordReset userId={p.id} />
             {p.two_step ? <TwoStepOff userId={p.id} email={p.email} /> : null}
           </>
@@ -151,7 +159,7 @@ async function Person({
                   <tr key={s.company_id}>
                     <td>
                       <Link
-                        href={`/admin/shops/${s.company_id}`}
+                        href={`/k4cs4uxrntb27z/shops/${s.company_id}`}
                         className="font-medium text-link hover:underline"
                       >
                         {s.company_name}
@@ -212,7 +220,7 @@ async function Person({
             </h2>
             <p className="text-text-muted">Screen time, screens and what they did.</p>
           </div>
-          <PeriodControl days={days} href={(d) => `/admin/people/${p.id}?days=${d}`} />
+          <PeriodControl days={days} href={(d) => `/k4cs4uxrntb27z/people/${p.id}?days=${d}`} />
         </div>
         <UsageSummary u={usage} person />
         <UsageDetail u={usage} />

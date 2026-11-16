@@ -36,7 +36,7 @@ type View = keyof typeof VIEWS;
  * Leads (owner, 2026-10-16: "If someone puts their name/email in and doesn't pay, I want that
  * information, so we can call them"). Staff only, after two-step sign-in.
  */
-export default function LeadsPage({ searchParams }: PageProps<"/admin/leads">) {
+export default function LeadsPage({ searchParams }: PageProps<"/k4cs4uxrntb27z/leads">) {
   return (
     <Suspense fallback={<div className="h-64" aria-label="Loading" />}>
       <Leads searchParams={searchParams} />
@@ -47,10 +47,10 @@ export default function LeadsPage({ searchParams }: PageProps<"/admin/leads">) {
 async function Leads({
   searchParams,
 }: {
-  searchParams: PageProps<"/admin/leads">["searchParams"];
+  searchParams: PageProps<"/k4cs4uxrntb27z/leads">["searchParams"];
 }) {
   const user = await getUser();
-  if (!user) redirect("/sign-in?next=/admin/leads");
+  if (!user) redirect("/sign-in?next=/k4cs4uxrntb27z/leads");
   if (!isStaff(user)) redirect("/sign-in/staff");
   if (user.aal !== "aal2")
     return (
@@ -91,7 +91,7 @@ async function Leads({
         title="Leads"
         subtitle="Everyone who started signing up. Call the ones who didn’t pay."
         actions={
-          <a href="/admin/leads/export" className="min-h-11 content-center px-3 text-link">
+          <a href="/k4cs4uxrntb27z/leads/export" className="min-h-11 content-center px-3 text-link">
             Export CSV
           </a>
         }
@@ -100,7 +100,7 @@ async function Leads({
         {(Object.keys(VIEWS) as View[]).map((v) => (
           <Link
             key={v}
-            href={`/admin/leads?show=${v}`}
+            href={`/k4cs4uxrntb27z/leads?show=${v}`}
             aria-current={v === view ? "page" : undefined}
             className={segmentClass(v === view)}
           >
@@ -214,7 +214,7 @@ async function Leads({
                   </Button>
                   {l.company_id ? (
                     <Link
-                      href={`/admin/import?company=${l.company_id}`}
+                      href={`/k4cs4uxrntb27z/import?company=${l.company_id}`}
                       className="min-h-11 content-center px-2 text-link"
                     >
                       Import Customers
