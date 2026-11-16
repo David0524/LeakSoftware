@@ -23,6 +23,7 @@ import {
 export const today: ChapterDef = {
   id: "today",
   title: { pool: "The route in your pocket", leak: "On the road" },
+  subtitle: "the Today screen",
   moment: { pool: "Monday · 6:52 a.m.", leak: "Wednesday · 7:15 a.m." },
   lede: {
     pool: "Today is the first screen a tech sees and the one they’ll use most: one card for the stop you’re on, one main button for this moment, and the rest of the route underneath.",

@@ -23,6 +23,7 @@ import {
 export const inspection: ChapterDef = {
   id: "inspection",
   title: "On the deck",
+  subtitle: "the inspection checklist",
   moment: "Wednesday · 9:10 a.m.",
   lede: "A good detection starts with a walk-around: every fitting, every line, every seam, in the same order every time. The checklist keeps that order, takes one tap per item, and turns the walk into the part of the report that proves what you checked.",
   learn: [

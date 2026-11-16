@@ -25,6 +25,7 @@ import {
 export const office: ChapterDef = {
   id: "office",
   title: "Meanwhile, at the office",
+  subtitle: "Messages, notifications, search and Email Customers",
   moment: { pool: "Tuesday · 2:40 p.m.", leak: "Thursday · 11:10 a.m." },
   lede: {
     pool: "While the trucks are out, the office is working too: texts from customers, a call that went to voicemail, a quote someone just accepted. Here’s the other half of the day.",

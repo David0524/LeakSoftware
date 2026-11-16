@@ -25,6 +25,7 @@ import {
 export const pressure: ChapterDef = {
   id: "pressure",
   title: "Under pressure",
+  subtitle: "tests and exclusions",
   moment: "Wednesday · 10:05 a.m.",
   lede: "Seeing a crack isn’t proof that it leaks. A line that held or dropped, a bucket that lost more than the pool, dye that pulled in: those are. Each test you record is a line of evidence with numbers on it, and every one goes in the report.",
   learn: [

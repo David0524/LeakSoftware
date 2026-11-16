@@ -4,6 +4,7 @@ import { Flow, Table, Tip, Ui } from "../kit";
 export const cheatSheet: ChapterDef = {
   id: "cheat-sheet",
   title: { pool: "A day on one page", leak: "A job on one page" },
+  subtitle: { pool: "the whole process at a glance", leak: "the whole process at a glance" },
   lede: {
     pool: "The whole working day in six stages, and the button you need at each one.",
     leak: "A leak from the first call to the paid invoice in seven stages, and the button you need at each one.",

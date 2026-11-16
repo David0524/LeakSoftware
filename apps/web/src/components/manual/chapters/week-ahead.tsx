@@ -26,6 +26,7 @@ import {
 export const weekAhead: ChapterDef = {
   id: "week-ahead",
   title: { pool: "Sunday night: the week ahead", leak: "Booking it" },
+  subtitle: { pool: "the Schedule, routes and Optimize", leak: "Needs a Time and the Schedule" },
   moment: { pool: "Sunday · 8:15 p.m.", leak: "Tuesday · 4:40 p.m." },
   lede: {
     pool: "The week is built on Sunday night, in one sitting, on one screen. See every route, fix what’s lopsided, and let the trucks leave Monday with the stops in a sensible order.",

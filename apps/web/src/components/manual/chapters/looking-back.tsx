@@ -23,6 +23,7 @@ import {
 export const lookingBack: ChapterDef = {
   id: "looking-back",
   title: "Looking back",
+  subtitle: "the Dashboard, Activity, Jobs and Reports",
   moment: "Friday · 4:30 p.m.",
   lede: {
     pool: "At the end of the week, Dana wants to know what got done, who owes what, and what’s waiting on a customer. Four screens answer that, and none of them needs a spreadsheet.",

@@ -6,6 +6,8 @@ import { chaptersOf, EDITIONS, type EditionInfo } from "./editions";
 import type { Edition } from "./kit";
 import { pick } from "./types";
 import { ManualMotion } from "./motion";
+import { HowToIndex } from "./howto-index";
+import { howToFor } from "./howto";
 
 const UPDATED = "November 2026";
 
@@ -31,6 +33,9 @@ export function Manual({ edition }: { edition: Edition }) {
           <a href="#contents" className="font-semibold">
             Contents
           </a>
+          <a href="#how-do-i" className="font-semibold">
+            How do I…?
+          </a>
           {info.parts.map((part) => (
             <Fragment key={part.title}>
               <p className="m-rail-part">
@@ -41,7 +46,10 @@ export function Manual({ edition }: { edition: Edition }) {
                 .map((c) => (
                   <a key={c.def.id} href={`#${c.def.id}`}>
                     <span className="m-rail-n">{c.number}</span>
-                    <span>{pick(c.def.title, edition)}</span>
+                    <span>
+                      {pick(c.def.title, edition)}
+                      <span className="m-sub"> · {pick(c.def.subtitle, edition)}</span>
+                    </span>
                   </a>
                 ))}
             </Fragment>
@@ -50,6 +58,7 @@ export function Manual({ edition }: { edition: Edition }) {
         <main className="m-main">
           <Cover info={info} otherName={other.name} otherSlug={other.slug} />
           <Contents info={info} />
+          <HowToIndex groups={howToFor(edition)} />
           {info.parts.map((part) => {
             const chapters = all.filter((c) => c.part === part);
             return (
@@ -65,7 +74,10 @@ export function Manual({ edition }: { edition: Edition }) {
                       {chapters.map((c) => (
                         <li key={c.def.id}>
                           <span>{c.number}</span>
-                          <span>{pick(c.def.title, edition)}</span>
+                          <span>
+                            {pick(c.def.title, edition)}
+                            <span className="m-part-sub"> · {pick(c.def.subtitle, edition)}</span>
+                          </span>
                           {c.def.moment ? <em>{pick(c.def.moment, edition)}</em> : null}
                         </li>
                       ))}
@@ -181,6 +193,7 @@ function Contents({ info }: { info: EditionInfo }) {
                     <span className="m-contents-n">{c.number}</span>
                     <span className="m-contents-name">
                       {pick(c.def.title, info.edition)}
+                      <span className="m-sub"> · {pick(c.def.subtitle, info.edition)}</span>
                       {c.def.moment ? (
                         <span className="m-contents-moment">
                           {pick(c.def.moment, info.edition)}

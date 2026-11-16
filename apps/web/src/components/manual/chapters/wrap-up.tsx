@@ -25,6 +25,7 @@ import {
 export const wrapUp: ChapterDef = {
   id: "wrap-up",
   title: "Wrap-Up",
+  subtitle: "the report, signature, quote and invoice",
   moment: "Wednesday · 11:20 a.m.",
   lede: "The leak is found. Before Dana leaves the driveway, the job becomes a report Maria has read and signed, a quote for the fix, and an invoice for the detection. One tab holds all of it, in order.",
   learn: [

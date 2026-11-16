@@ -25,6 +25,7 @@ import {
 export const pinning: ChapterDef = {
   id: "pinning",
   title: "Pinning it",
+  subtitle: "the pool diagram, findings and photos",
   moment: "Wednesday · 10:50 a.m.",
   lede: "You know where the leak is. Now the homeowner, the repair tech and anyone who reads the report later need to know too: a drawing of her pool, a numbered pin on the spot, a finding that says how bad it is, and photos with an arrow on the crack.",
   learn: [

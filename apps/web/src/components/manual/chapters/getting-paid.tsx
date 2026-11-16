@@ -25,6 +25,7 @@ import {
 export const gettingPaid: ChapterDef = {
   id: "getting-paid",
   title: "Getting paid",
+  subtitle: "invoices, payments and receipts",
   moment: { pool: "Tuesday · 6:40 p.m.", leak: "Tuesday · 10:40 a.m." },
   lede: {
     pool: "Customers pay by card or bank from the link in their invoice. A check handed to a tech at the gate is on the books before the truck leaves. Here’s how the money gets in, and how you know.",

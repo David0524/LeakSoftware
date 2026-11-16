@@ -25,6 +25,7 @@ import {
 export const theCall: ChapterDef = {
   id: "the-call",
   title: "“We’re losing an inch a day”",
+  subtitle: "customers, pools and New Job",
   moment: "Tuesday · 4:10 p.m.",
   lede: "A homeowner calls with a pool that won’t stay full. Before Dana hangs up, the customer, the pool and the job are in Sundeck Pro, and the tech who goes out will know everything the caller said.",
   learn: [

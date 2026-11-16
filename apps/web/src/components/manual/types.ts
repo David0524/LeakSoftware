@@ -18,6 +18,8 @@ export function pick<T>(value: PerEdition<T>, edition: Edition): T {
 export type ChapterDef = {
   id: string;
   title: PerEdition<string>;
+  /** What the chapter covers, in plain words: "the Today screen". */
+  subtitle: PerEdition<string>;
   /** The story's moment: "Monday · 6:52 a.m." */
   moment?: PerEdition<string>;
   lede: PerEdition<ReactNode>;

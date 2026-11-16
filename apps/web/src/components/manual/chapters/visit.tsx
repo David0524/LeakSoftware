@@ -26,6 +26,7 @@ import {
 export const visit: ChapterDef = {
   id: "visit",
   title: "At the pool",
+  subtitle: "the maintenance visit: readings, chemicals, checklist, photo",
   moment: "Monday · 1:30 p.m.",
   lede: "A maintenance visit, start to finish, in the order a tech does it: the water test, what to add, the checklist, the photo, anything to bill, and Complete Job. Everything typed here becomes the customer’s report and the month’s invoice.",
   learn: [

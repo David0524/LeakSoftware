@@ -24,6 +24,7 @@ import {
 export const homeowner: ChapterDef = {
   id: "homeowner",
   title: "The homeowner’s evening",
+  subtitle: "the customer’s report, quote and invoice pages",
   moment: "Wednesday · 7:30 p.m.",
   lede: "Everything Dana sent this morning lands on Maria’s phone. Here is what she sees, page by page, and what comes back to the shop while Dana is making dinner.",
   learn: [

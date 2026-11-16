@@ -77,6 +77,19 @@ export function Scene({ time, children }: { time?: string; children: ReactNode }
   );
 }
 
+/** A section's anchor, from its title: "Pin the leak" → "s-pin-the-leak". */
+export function sectionId(title: string) {
+  return (
+    "s-" +
+    title
+      .toLowerCase()
+      .normalize("NFKD")
+      .replace(/[’'“”"]/g, "")
+      .replace(/[^a-z0-9]+/g, "-")
+      .replace(/^-|-$/g, "")
+  );
+}
+
 /** A section heading inside a chapter. */
 export function Section({
   title,
@@ -90,7 +103,9 @@ export function Section({
   return (
     <section className="m-section">
       {kicker ? <p className="m-kicker">{kicker}</p> : null}
-      <h3 className="m-h3">{title}</h3>
+      <h3 id={sectionId(title)} className="m-h3">
+        {title}
+      </h3>
       {children}
     </section>
   );

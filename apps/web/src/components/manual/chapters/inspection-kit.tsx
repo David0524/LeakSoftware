@@ -21,6 +21,7 @@ import {
 export const inspectionKit: ChapterDef = {
   id: "inspection-kit",
   title: "Your inspection kit",
+  subtitle: "checklist components, tests, severities and the price book",
   moment: "Sunday · 9:40 p.m.",
   lede: "Before the first detection, Dana teaches Sundeck Pro how Canyon State works: the items on the checklist, the tests in the truck, how bad “bad” is, and what the shop charges to fix it.",
   learn: [

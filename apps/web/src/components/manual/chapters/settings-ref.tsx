@@ -195,6 +195,7 @@ function rowsFor(list: Row[], edition: Edition) {
 export const settingsRef: ChapterDef = {
   id: "settings-ref",
   title: "Settings reference",
+  subtitle: "every setting, one line each",
   lede: "Every page in Settings and More, what each one does, and who can use it.",
   Body: ({ edition }) => (
     <>

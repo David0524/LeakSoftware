@@ -24,6 +24,7 @@ import {
 export const repairOnSite: ChapterDef = {
   id: "repair-on-site",
   title: "“The pump’s making a noise”",
+  subtitle: "quotes and repair jobs",
   moment: "Tuesday · 10:20 a.m.",
   lede: "A weekly visit is where most repairs are found. Here is one from the noise at the equipment pad to the paid invoice: a quote priced on the spot, approved from the customer’s phone, scheduled, done, and billed.",
   learn: [

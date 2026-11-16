@@ -7,6 +7,7 @@ import { CONTACT_EMAIL, CONTACT_PHONE } from "@/lib/site";
 export const faq: ChapterDef = {
   id: "faq",
   title: "Questions shops ask",
+  subtitle: "answers in a few sentences",
   lede: "The questions owners and techs ask us most, answered in a sentence or three. The same answers are on sundeckpro.com/faq.",
   Body: ({ edition }) => (
     <>

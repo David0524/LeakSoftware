@@ -23,6 +23,7 @@ import {
 export const visitReports: ChapterDef = {
   id: "visit-reports",
   title: "The report on the doorstep",
+  subtitle: "visit reports and what the customer sees",
   moment: "Monday · 2:01 p.m.",
   lede: "The customer wasn’t home. The report tells them what happened anyway: the water test, what went in the pool, what was done, and a photo of the result, from the shop, with your logo on it.",
   learn: [

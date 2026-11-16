@@ -23,6 +23,7 @@ import {
 export const team: ChapterDef = {
   id: "team",
   title: "The team",
+  subtitle: "invites, roles and permissions",
   moment: { pool: "Saturday · 9:15 p.m.", leak: "Sunday · 10:30 p.m." },
   lede: {
     pool: "Luis, Priya and Tony need a way in, and each needs the right amount of it. Dana invites them, gives them roles, and decides what a tech can see.",

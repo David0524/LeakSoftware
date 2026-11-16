@@ -312,6 +312,7 @@ const TERMS: Entry[] = [
 export const glossary: ChapterDef = {
   id: "glossary",
   title: "Glossary",
+  subtitle: "the words in the app and on the job",
   lede: "The words you’ll see on the screens and hear on the truck, in one place.",
   Body: ({ edition }) => {
     const shown = TERMS.filter((t) => t.for === "both" || t.for === edition).sort((a, b) =>

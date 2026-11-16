@@ -25,6 +25,7 @@ import {
 export const billingDay: ChapterDef = {
   id: "billing-day",
   title: "Billing day",
+  subtitle: "Monthly Billing",
   moment: "Sunday · November 1 · 7:30 a.m.",
   lede: "A month of visits becomes one invoice per customer, drafted for you, checked in one sitting and sent in one tap. No spreadsheet, no “did I bill the Ochoas for the filter clean?”",
   learn: [

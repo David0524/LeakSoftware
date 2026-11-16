@@ -81,6 +81,13 @@
 .m-rail a:hover {
   color: var(--m-link);
 }
+.m-sub {
+  font-weight: 400;
+  color: var(--m-muted);
+}
+.m-part-sub {
+  color: #aebdcb;
+}
 .m-rail-n {
   min-width: 1.4rem;
   color: var(--m-muted);
@@ -1132,6 +1139,74 @@
   color: var(--m-muted);
 }
 
+/* How do I…? */
+.m-howto {
+  padding-top: 3.5rem;
+  scroll-margin-top: 4rem;
+}
+.m-howto-lede {
+  margin-top: 0.4rem !important;
+  color: var(--m-muted);
+}
+.m-howto-search {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  max-width: 30rem;
+  margin-top: 1.25rem;
+  padding: 0 1rem;
+  min-height: 2.9rem;
+  border-radius: 999px;
+  background: var(--color-fill);
+  color: var(--m-muted);
+}
+.m-howto-search input {
+  flex: 1;
+  min-width: 0;
+  border: 0;
+  background: transparent;
+  font: inherit;
+  color: var(--color-text);
+  outline: none;
+}
+.m-howto-search:focus-within {
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--color-focus) 45%, transparent);
+}
+.m-howto-groups {
+  display: grid;
+  gap: 0 2.5rem;
+  margin-top: 0.5rem;
+}
+@media (min-width: 760px) {
+  .m-howto-groups {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+.m-howto-group {
+  break-inside: avoid;
+}
+.m-howto ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+.m-howto li a {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 0.5rem 0;
+  border-bottom: 1px solid var(--m-line);
+  color: var(--color-text);
+  text-decoration: none;
+}
+.m-howto li a:hover {
+  color: var(--m-link);
+}
+.m-howto-empty {
+  margin-top: 1rem !important;
+  color: var(--m-muted);
+}
+
 /* FAQ */
 .m-faq-group {
   margin-top: 2.25rem;
@@ -1497,6 +1572,22 @@
   .m-contents {
     break-after: page;
     padding-top: 0;
+  }
+  .m-howto {
+    break-after: page;
+    padding-top: 0;
+    font-size: 9.5pt;
+  }
+  .m-howto-groups {
+    display: block;
+    columns: 2;
+    column-gap: 0.4in;
+  }
+  .m-howto li a {
+    padding: 0.14rem 0;
+  }
+  .m-howto .m-contents-part {
+    margin-top: 0.6rem;
   }
   .m-contents-title {
     font-size: 26pt;

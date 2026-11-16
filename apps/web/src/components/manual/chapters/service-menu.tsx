@@ -24,6 +24,7 @@ import {
 export const serviceMenu: ChapterDef = {
   id: "service-menu",
   title: "Your service menu",
+  subtitle: "checklist, chemicals, price book and report timing",
   moment: "Saturday · 10:20 p.m.",
   lede: "What a tech checks, what gets added to the water, what it costs, and when the customer hears about it. Dana sets all four before the first visit, so nobody has to decide at the pool.",
   learn: [

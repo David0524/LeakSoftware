@@ -111,7 +111,9 @@ try {
     const headings = await page.evaluate(() =>
       [...document.querySelectorAll("[data-toc-page]")].map((el) => {
         const id = el.getAttribute("data-toc-page");
-        return { id, text: document.getElementById(`${id}-title`)?.textContent?.trim() ?? "" };
+        // A chapter's title, or a section's heading (the "How do I…?" index links to both).
+        const target = document.getElementById(`${id}-title`) ?? document.getElementById(id);
+        return { id, text: target?.textContent?.trim() ?? "" };
       }),
     );
     const numbers = Object.fromEntries(headings.map((h) => [h.id, pages[h.text]]));

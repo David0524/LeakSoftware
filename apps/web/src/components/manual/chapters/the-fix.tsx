@@ -25,6 +25,7 @@ import {
 export const theFix: ChapterDef = {
   id: "the-fix",
   title: "The fix",
+  subtitle: "the repair job and the final invoice",
   moment: "Thursday · 7:05 a.m.",
   lede: "Maria said yes. Her accepted quote is already a repair job, waiting for a day. Follow it onto Jake’s route, through the repair, and back to the office as the last invoice, paid.",
   learn: [

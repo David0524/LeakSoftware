@@ -24,6 +24,7 @@ import {
 export const routeOver: ChapterDef = {
   id: "route-over",
   title: "Bringing the route over",
+  subtitle: "importing customers, pools and plans",
   moment: "Saturday · 8:20 p.m.",
   lede: "Canyon State’s customers have lived in a spreadsheet for years. Dana moves them in one file, then gives each pool a day, a price and a plan.",
   learn: [

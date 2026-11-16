@@ -20,6 +20,7 @@ import {
 export const prologue: ChapterDef = {
   id: "prologue",
   title: "Meet the shop",
+  subtitle: "the people, the apps and this manual",
   moment: { pool: "Phoenix · the first of the month", leak: "Phoenix · a Tuesday in July" },
   lede: {
     pool: "This manual follows one pool service shop through a month of real work. You’ll meet the people, see the screens they use, and learn each part of Sundeck Pro at the moment the shop needs it.",

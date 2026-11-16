@@ -22,6 +22,7 @@ import {
 export const dayOne: ChapterDef = {
   id: "day-one",
   title: "Day one",
+  subtitle: "sign-up, your company and the apps",
   moment: { pool: "Saturday · 7:30 p.m.", leak: "Sunday · 7:30 p.m." },
   lede: {
     pool: "Dana sets Canyon State up in one evening: an account, a company that looks like hers, and the apps on three phones. Here is what she does, in the order she does it.",
