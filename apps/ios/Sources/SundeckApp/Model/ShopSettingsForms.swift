@@ -89,6 +89,10 @@ public struct FollowupsForm: Equatable, Sendable {
     public var quoteDays: String
     public var invoiceDays: String
     public var reviewRequests: Bool
+    /// How reminders go: email, text or both (owner's competitor notes, 2026-11-16).
+    public var channel: ReminderChannel
+    /// "Ask How We Did First": the review request asks "How did we do?" before the review link.
+    public var askFirst: Bool
 
     public init(_ settings: JSONValue?) {
         let days = { (k: String, d: [Int]) -> String in
@@ -100,6 +104,8 @@ public struct FollowupsForm: Equatable, Sendable {
         quoteDays = days("quote_days", [3, 7])
         invoiceDays = days("invoice_days", [7, 14, 30])
         reviewRequests = settings?["review_requests"]?.bool ?? true
+        channel = reminderChannel(settings)
+        askFirst = askFeedbackFirst(settings)
     }
 
     public var errors: [String: String] {
@@ -114,13 +120,17 @@ public struct FollowupsForm: Equatable, Sendable {
         return merged(
             current,
             [
-                "reminders": ["quote_days": list(quoteDays), "invoice_days": list(invoiceDays)],
+                "reminders": [
+                    "quote_days": list(quoteDays), "invoice_days": list(invoiceDays),
+                    "channel": .string(channel.rawValue),
+                ],
                 "review_requests": .bool(reviewRequests),
+                "ask_feedback_first": .bool(askFirst),
             ])
     }
 
     public static let note =
-        "Emails sent once a day, in the morning. They stop when a quote is accepted or an invoice is paid, and customers can turn them off from any of them."
+        "Sent once a day, in the morning. They stop when a quote is accepted or an invoice is paid, and customers can turn them off from any of them."
 }
 
 // MARK: - Branding

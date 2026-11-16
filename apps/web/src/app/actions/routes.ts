@@ -7,6 +7,7 @@ import {
   addDays,
   canMoveJob,
   canUnschedule,
+  statusAfterMove,
   formatAddress,
   isDateString,
   jobLock,
@@ -294,7 +295,7 @@ export async function moveJob(input: MoveInput): Promise<RouteResult> {
       error: "This job has started, so it stays on the schedule. Drag it to another day instead.",
     };
   // A started or finished job keeps its status when it moves; others become scheduled.
-  const status = canUnschedule(job.status) ? "scheduled" : job.status;
+  const status = statusAfterMove(job.status);
   const ctx = await routeContext(office);
   if (date && date < ctx.today) return { error: "Pick today or a later day." };
   if (!ctx.seesAll && tech !== office.user.id && date)

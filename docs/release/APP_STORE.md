@@ -120,13 +120,16 @@ https://sundeckpro.com/
 
 ### 1.9 What's New in This Version (4,000)
 
-1.0.0 (the first release) had none. This is **1.0.2**'s; the App Store workflow's `submit`
+1.0.0 (the first release) had none. This is **1.0.3**'s; the App Store workflow's `submit`
 sends it, so replace it for each update (raise `CFBundleShortVersionString` in
 `apps/ios/Info.plist` and `apps/ios/LiveActivity-Info.plist` together).
 
 <!-- field:whats-new limit:4000 -->
 ```text
-- Call Us: our phone number is now in More, under Contact Us.
+- Monthly Billing: review every customer's monthly invoice in one place, then send them all at once with Send All.
+- Charges on visits: add a part or service, like a new skimmer basket or a filter cleaning, right on the visit. It goes on the customer's monthly invoice.
+- Invoice day: choose the day each customer's monthly invoice is made, for the shop or for each plan.
+- Invoices can also send themselves on the invoice day (turn on Send Automatically in Payments settings).
 ```
 
 ### 1.10 Build

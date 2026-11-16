@@ -2,18 +2,22 @@ import { RememberRecent } from "@/components/remember-recent";
 import {
   CUSTOMER_EMAILS_LABEL,
   CUSTOMER_EMAILS_OFF_LABEL,
+  FEEDBACK_WORDS,
+  autopaySettings,
   mapStatus,
   offersLeak,
   offersPool,
+  shopInvoiceDay,
 } from "@leakbook/core";
 import type { Metadata } from "next";
+import Link from "next/link";
 import { notFound } from "next/navigation";
 import { NotOnMapTag } from "@/components/not-on-map";
 import { routingConfigured } from "@/server/routing";
 import { isUuid } from "@/lib/uuid";
 import {
   JOB_TYPE_LABELS,
-  POOL_TYPE_LABELS,
+  poolSummary,
   directionsHref,
   formatAddress,
   formatSchedule,
@@ -27,6 +31,7 @@ import {
 import { saveCustomer } from "@/app/actions/jobs";
 import { PoolDetailsForm } from "@/components/pool-details";
 import { DeleteCustomerForm } from "@/components/delete-customer";
+import { AutopayGroup } from "@/components/autopay";
 import { MaintenancePlans, type CleaningType } from "@/components/maintenance-plans";
 import {
   SField,
@@ -39,6 +44,8 @@ import {
 import { SheetNotices, SheetRow } from "@/components/settings-list";
 import { ContactButtons } from "@/components/contact-buttons";
 import { Empty, Grouped, PageHeader, Row } from "@/components/ui";
+import { CustomerIssues } from "@/components/issues";
+import { customerIssues } from "@/lib/issues";
 import { Draft } from "@/components/draft-keeper";
 import { LiveStatusBadge } from "@/components/instant";
 import { getOffice } from "@/lib/auth";
@@ -46,11 +53,14 @@ import {
   getChemicalReadings,
   getCompany,
   getCustomer,
+  getSavedMethod,
   getTeam,
   listConfig,
   type ComponentType,
 } from "@/lib/data";
+import { feedbackList } from "@/lib/feedback";
 import { getLine } from "@/lib/messages";
+import { FeedbackRowItem } from "@/components/feedback-rows";
 
 export const metadata: Metadata = { title: "Customer · Sundeck Pro" };
 
@@ -68,17 +78,24 @@ export default async function CustomerPage({ params }: PageProps<"/customers/[id
   if (!isUuid(id)) notFound();
   const office = await getOffice();
   // All three at once: each used to wait for the one before.
-  const [data, team, company, line, componentTypes, priceBook] = await Promise.all([
-    getCustomer(office, id),
-    getTeam(office),
-    getCompany(office),
-    getLine(office),
-    listConfig<ComponentType>(office, "component_type"),
-    listConfig<{ component_type_key: string | null; price_cents: number }>(
-      office,
-      "price_book_item",
-    ),
-  ]);
+  const [data, team, company, line, componentTypes, priceBook, feedback, savedMethod, issues] =
+    await Promise.all([
+      getCustomer(office, id),
+      getTeam(office),
+      getCompany(office),
+      getLine(office),
+      listConfig<ComponentType>(office, "component_type"),
+      listConfig<{ component_type_key: string | null; price_cents: number }>(
+        office,
+        "price_book_item",
+      ),
+      // Owners and admins see what this customer told the shop (owner's competitor notes,
+      // 2026-11-16).
+      office.isManager ? feedbackList(office.company.id, id) : Promise.resolve(null),
+      // Autopay (docs/design/2026-11-16-autopay.md): owners and admins only.
+      office.isManager ? getSavedMethod(office, id) : null,
+      customerIssues(office, id),
+    ]);
   if (!data) notFound();
   // Checklist items done on a schedule, for a plan's Regular Cleanings (owner, 2026-10-18),
   // plus any a plan still uses after the item was changed.
@@ -152,79 +169,99 @@ export default async function CustomerPage({ params }: PageProps<"/customers/[id
         />
       </div>
       <div className="grid items-start gap-8 lg:grid-cols-3">
-        <Grouped title="Contact">
-          <Row label="Phone" value={customer.phone ?? "None"} />
-          <Row
-            label="Email"
-            value={<span className="break-all">{customer.email ?? "None"}</span>}
-          />
-          {cc.length ? (
-            <Row label="Other emails" detail={<span className="break-all">{cc.join(", ")}</span>} />
-          ) : null}
-          <Row label={CUSTOMER_EMAILS_LABEL} value={customer.marketing_opt_out ? "Off" : "On"} />
-          {customer.notes ? (
+        <div className="space-y-8">
+          <Grouped title="Contact">
+            <Row label="Phone" value={customer.phone ?? "None"} />
             <Row
-              label="Notes"
-              detail={<span className="whitespace-pre-line">{customer.notes}</span>}
+              label="Email"
+              value={<span className="break-all">{customer.email ?? "None"}</span>}
+            />
+            {cc.length ? (
+              <Row
+                label="Other emails"
+                detail={<span className="break-all">{cc.join(", ")}</span>}
+              />
+            ) : null}
+            <Row label={CUSTOMER_EMAILS_LABEL} value={customer.marketing_opt_out ? "Off" : "On"} />
+            {customer.notes ? (
+              <Row
+                label="Notes"
+                detail={<span className="whitespace-pre-line">{customer.notes}</span>}
+              />
+            ) : null}
+            <SheetRow
+              title="Contact Details"
+              label={<span className="text-link">Edit Contact Details</span>}
+            >
+              <Draft form="customer" id={customer.id}>
+                <SettingsForm action={saveCustomer} primary full>
+                  <input type="hidden" name="customer" value={customer.id} />
+                  <SettingsFields labelWidth="6.5rem">
+                    <SField label="Name" name="name" defaultValue={customer.name} required />
+                    <SSelect
+                      label="Type"
+                      name="kind"
+                      defaultValue={customer.kind}
+                      options={kindOptions}
+                    />
+                    <SField
+                      label="Company"
+                      name="company_name"
+                      defaultValue={customer.company_name ?? ""}
+                      placeholder="Optional"
+                    />
+                    <SField
+                      label="Phone"
+                      name="phone"
+                      type="tel"
+                      defaultValue={customer.phone ?? ""}
+                      autoComplete="off"
+                    />
+                    <SField
+                      label="Email"
+                      name="email"
+                      type="email"
+                      defaultValue={customer.email ?? ""}
+                      autoComplete="off"
+                    />
+                  </SettingsFields>
+                  <SettingsFields>
+                    <SField
+                      label="Other emails"
+                      name="cc_emails"
+                      defaultValue={cc.join(" ")}
+                      hint="They get reports too. Separate with spaces."
+                      stacked
+                    />
+                    <STextArea label="Notes" name="notes" defaultValue={customer.notes ?? ""} />
+                    <SSwitch
+                      name="no_followups"
+                      label={CUSTOMER_EMAILS_OFF_LABEL}
+                      defaultChecked={customer.marketing_opt_out ?? false}
+                    />
+                  </SettingsFields>
+                </SettingsForm>
+              </Draft>
+            </SheetRow>
+          </Grouped>
+          {office.isManager ? (
+            <AutopayGroup
+              customerId={customer.id}
+              autopay={Boolean(customer.autopay)}
+              method={savedMethod}
+              shopOn={autopaySettings(company.settings).on}
+              email={customer.email ?? null}
+              phone={customer.phone ?? null}
+              texting={line?.status === "active"}
+              canEdit={office.isManager}
+              today={today}
             />
           ) : null}
-          <SheetRow
-            title="Contact Details"
-            label={<span className="text-link">Edit Contact Details</span>}
-          >
-            <Draft form="customer" id={customer.id}>
-              <SettingsForm action={saveCustomer} primary full>
-                <input type="hidden" name="customer" value={customer.id} />
-                <SettingsFields labelWidth="6.5rem">
-                  <SField label="Name" name="name" defaultValue={customer.name} required />
-                  <SSelect
-                    label="Type"
-                    name="kind"
-                    defaultValue={customer.kind}
-                    options={kindOptions}
-                  />
-                  <SField
-                    label="Company"
-                    name="company_name"
-                    defaultValue={customer.company_name ?? ""}
-                    placeholder="Optional"
-                  />
-                  <SField
-                    label="Phone"
-                    name="phone"
-                    type="tel"
-                    defaultValue={customer.phone ?? ""}
-                    autoComplete="off"
-                  />
-                  <SField
-                    label="Email"
-                    name="email"
-                    type="email"
-                    defaultValue={customer.email ?? ""}
-                    autoComplete="off"
-                  />
-                </SettingsFields>
-                <SettingsFields>
-                  <SField
-                    label="Other emails"
-                    name="cc_emails"
-                    defaultValue={cc.join(" ")}
-                    hint="They get reports too. Separate with spaces."
-                    stacked
-                  />
-                  <STextArea label="Notes" name="notes" defaultValue={customer.notes ?? ""} />
-                  <SSwitch
-                    name="no_followups"
-                    label={CUSTOMER_EMAILS_OFF_LABEL}
-                    defaultChecked={customer.marketing_opt_out ?? false}
-                  />
-                </SettingsFields>
-              </SettingsForm>
-            </Draft>
-          </SheetRow>
-        </Grouped>
+        </div>
 
         <div className="space-y-8 lg:col-span-2">
+          {/* Problems techs reported on visits (docs/design/2026-11-16-service-issues.md). */}
+          <CustomerIssues issues={issues} timeZone={office.company.timezone} />
           {properties.length === 0 ? <Empty>No pools.</Empty> : null}
           {properties.map((p, i) => {
             const address = formatAddress(p);
@@ -243,20 +280,18 @@ export default async function CustomerPage({ params }: PageProps<"/customers/[id
                         ) : null}
                       </>
                     }
-                    detail={[
-                      p.pool_type ? POOL_TYPE_LABELS[p.pool_type] : null,
-                      p.has_spa ? "Pool and spa" : "Pool",
-                      p.approx_gallons
-                        ? `${p.approx_gallons.toLocaleString("en-US")} gallons`
-                        : null,
-                    ]
-                      .filter(Boolean)
-                      .join(" · ")}
+                    detail={poolSummary(p)}
                     value={<span className="text-link">Edit</span>}
                   >
                     <PoolDetailsForm pool={p} />
                   </SheetRow>
                   {p.access_notes ? <Row label="Access notes" detail={p.access_notes} /> : null}
+                  {p.notes ? (
+                    <Row
+                      label="Pool notes"
+                      detail={<span className="whitespace-pre-line">{p.notes}</span>}
+                    />
+                  ) : null}
                   {offersPool(company.settings) ? (
                     <Row
                       href={`/chemicals?property=${p.id}`}
@@ -284,6 +319,7 @@ export default async function CustomerPage({ params }: PageProps<"/customers/[id
                     visitMinutes={maintenanceSettings(company.settings).visitMinutes}
                     doneCounts={doneCounts}
                     canEdit={office.isManager}
+                    shopInvoiceDay={shopInvoiceDay(company.settings)}
                   />
                 ) : null}
                 <Grouped
@@ -324,6 +360,28 @@ export default async function CustomerPage({ params }: PageProps<"/customers/[id
           })}
         </div>
       </div>
+      {feedback && feedback.rows.length > 0 ? (
+        <section className="mt-10 max-w-xl" aria-label={FEEDBACK_WORDS.customerSection}>
+          <Grouped
+            title={FEEDBACK_WORDS.customerSection}
+            footer={
+              <Link href="/feedback" className="text-link underline-offset-4 hover:underline">
+                {FEEDBACK_WORDS.seeAll}
+              </Link>
+            }
+          >
+            {feedback.rows.slice(0, 5).map((r) => (
+              <FeedbackRowItem
+                key={r.id}
+                row={r}
+                timeZone={office.company.timezone}
+                now={now}
+                showCustomer={false}
+              />
+            ))}
+          </Grouped>
+        </section>
+      ) : null}
       {office.isManager ? (
         <section className="mt-10 max-w-xl" aria-labelledby="delete-customer">
           <h2 id="delete-customer" className="sr-only">

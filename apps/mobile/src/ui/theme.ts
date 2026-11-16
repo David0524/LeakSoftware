@@ -319,6 +319,8 @@ export function jobStatusColor(status: JobStatus): string {
     case "paid":
     case "done":
       return color.pass;
+    case "skipped":
+      return color.warning;
   }
 }
 
@@ -334,6 +336,7 @@ export const JOB_STATUS_COLOR: Record<JobStatus, string> = {
   paid: tokens.color.status.pass,
   canceled: tokens.color.status.excluded,
   done: tokens.color.status.pass,
+  skipped: tokens.color.status.warning,
 };
 
 /** Status pills on the Quote tab. */

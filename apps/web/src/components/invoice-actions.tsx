@@ -8,11 +8,15 @@ export function PayInvoiceForm({
   amount,
   demo,
   cardFee,
+  later,
+  save,
 }: {
   token: string;
   amount: string;
   demo?: boolean;
   cardFee?: { bankLabel: string; cardLabel: string; note: string } | null;
+  later?: { line: string; button: string } | null;
+  save?: { consent: string } | null;
 }) {
   return (
     <PayForm
@@ -21,6 +25,8 @@ export function PayInvoiceForm({
       action={payInvoice}
       demo={demo}
       cardFee={cardFee}
+      later={later}
+      save={save}
     />
   );
 }

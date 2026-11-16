@@ -49,8 +49,12 @@ describe("notifications", () => {
       "payment",
       "report",
       "opened",
+      "skip",
+      "feedback",
+      "issue",
       "live",
       "day",
+      "chemistry",
     ]);
     expect(notificationOn({}, "text")).toBe(true);
     expect(notificationOn(null, "job")).toBe(true);

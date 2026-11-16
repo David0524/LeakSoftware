@@ -1,0 +1,1440 @@
+{
+  "text": [
+    {
+      "args": [],
+      "result": {
+        "INVOICE_DAYS": [
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+          7,
+          8,
+          9,
+          10,
+          11,
+          12,
+          13,
+          14,
+          15,
+          16,
+          17,
+          18,
+          19,
+          20,
+          21,
+          22,
+          23,
+          24,
+          25,
+          26,
+          27,
+          28
+        ],
+        "INVOICE_DAY_FOOTER": "Each customer’s invoice for the month is drafted on this day of the next month, ready to review and send. A plan can use its own day.",
+        "PLAN_INVOICE_DAY_FOOTER": "The day of the next month this customer’s monthly invoice is drafted.",
+        "CHARGE_LOCKED": "This charge is on a sent invoice. Change the invoice instead.",
+        "NO_WAY_TO_SEND": "No email or mobile number",
+        "SEND_ALL_FOOTER": "Each goes by email, or by text from your shop’s number when there’s no email. Customers without either stay here.",
+        "AUTO_SEND_ON_FOOTER": "These also go by themselves on each customer’s invoice day. Send All sends them now."
+      }
+    }
+  ],
+  "ordinalDay": [
+    {
+      "args": [
+        1
+      ],
+      "result": "1st"
+    },
+    {
+      "args": [
+        2
+      ],
+      "result": "2nd"
+    },
+    {
+      "args": [
+        3
+      ],
+      "result": "3rd"
+    },
+    {
+      "args": [
+        4
+      ],
+      "result": "4th"
+    },
+    {
+      "args": [
+        11
+      ],
+      "result": "11th"
+    },
+    {
+      "args": [
+        12
+      ],
+      "result": "12th"
+    },
+    {
+      "args": [
+        13
+      ],
+      "result": "13th"
+    },
+    {
+      "args": [
+        21
+      ],
+      "result": "21st"
+    },
+    {
+      "args": [
+        22
+      ],
+      "result": "22nd"
+    },
+    {
+      "args": [
+        23
+      ],
+      "result": "23rd"
+    },
+    {
+      "args": [
+        28
+      ],
+      "result": "28th"
+    }
+  ],
+  "shopInvoiceDay": [
+    {
+      "args": [
+        null
+      ],
+      "result": 1
+    },
+    {
+      "args": [
+        {}
+      ],
+      "result": 1
+    },
+    {
+      "args": [
+        {
+          "invoice_day": 15
+        }
+      ],
+      "result": 15
+    },
+    {
+      "args": [
+        {
+          "invoice_day": "20"
+        }
+      ],
+      "result": 20
+    },
+    {
+      "args": [
+        {
+          "invoice_day": 29
+        }
+      ],
+      "result": 1
+    },
+    {
+      "args": [
+        {
+          "invoice_day": 0
+        }
+      ],
+      "result": 1
+    },
+    {
+      "args": [
+        {
+          "invoice_day": 1.5
+        }
+      ],
+      "result": 1
+    },
+    {
+      "args": [
+        {
+          "invoice_day": "x"
+        }
+      ],
+      "result": 1
+    }
+  ],
+  "parseInvoiceDay": [
+    {
+      "args": [
+        null
+      ],
+      "result": null
+    },
+    {
+      "args": [
+        ""
+      ],
+      "result": null
+    },
+    {
+      "args": [
+        "1"
+      ],
+      "result": 1
+    },
+    {
+      "args": [
+        "28"
+      ],
+      "result": 28
+    },
+    {
+      "args": [
+        "29"
+      ],
+      "result": null
+    },
+    {
+      "args": [
+        "0"
+      ],
+      "result": null
+    },
+    {
+      "args": [
+        "2.5"
+      ],
+      "result": null
+    },
+    {
+      "args": [
+        15
+      ],
+      "result": 15
+    },
+    {
+      "args": [
+        "abc"
+      ],
+      "result": null
+    }
+  ],
+  "planInvoiceDayLabel": [
+    {
+      "args": [
+        null,
+        1
+      ],
+      "result": "Shop Default (1st)"
+    },
+    {
+      "args": [
+        null,
+        15
+      ],
+      "result": "Shop Default (15th)"
+    },
+    {
+      "args": [
+        3,
+        1
+      ],
+      "result": "3rd"
+    },
+    {
+      "args": [
+        22,
+        15
+      ],
+      "result": "22nd"
+    }
+  ],
+  "chargeCents": [
+    {
+      "args": [
+        1,
+        2400
+      ],
+      "result": 2400
+    },
+    {
+      "args": [
+        2.5,
+        800
+      ],
+      "result": 2000
+    },
+    {
+      "args": [
+        0.33,
+        1999
+      ],
+      "result": 660
+    },
+    {
+      "args": [
+        3,
+        0
+      ],
+      "result": 0
+    },
+    {
+      "args": [
+        1.15,
+        1000
+      ],
+      "result": 1150
+    }
+  ],
+  "chargeDetail": [
+    {
+      "args": [
+        1,
+        2400
+      ],
+      "result": "1 × $24.00"
+    },
+    {
+      "args": [
+        2.5,
+        800
+      ],
+      "result": "2.5 × $8.00"
+    },
+    {
+      "args": [
+        2.25,
+        1000
+      ],
+      "result": "2.25 × $10.00"
+    },
+    {
+      "args": [
+        1.1,
+        65000
+      ],
+      "result": "1.1 × $650.00"
+    },
+    {
+      "args": [
+        10,
+        123456
+      ],
+      "result": "10 × $1,234.56"
+    }
+  ],
+  "chargeItems": [
+    {
+      "args": [],
+      "result": [
+        "pump",
+        "basket",
+        "filter",
+        "blank"
+      ]
+    }
+  ],
+  "chargesFooter": [
+    {
+      "args": [
+        "Jane",
+        "October",
+        null
+      ],
+      "result": "Billed on Jane’s October invoice."
+    },
+    {
+      "args": [
+        "Jane",
+        "October",
+        {
+          "number": 1042,
+          "sentOn": "Nov 1"
+        }
+      ],
+      "result": "On invoice #1042, sent Nov 1."
+    },
+    {
+      "args": [
+        "the customer",
+        "November",
+        {
+          "number": null,
+          "sentOn": "Dec 1"
+        }
+      ],
+      "result": "On invoice, sent Dec 1."
+    }
+  ],
+  "billingMonthName": [
+    {
+      "args": [
+        "2026-10-01",
+        true
+      ],
+      "result": "October 2026"
+    },
+    {
+      "args": [
+        "2026-10-01",
+        false
+      ],
+      "result": "October"
+    },
+    {
+      "args": [
+        "2027-01-01",
+        true
+      ],
+      "result": "January 2027"
+    },
+    {
+      "args": [
+        "2026-12-01",
+        false
+      ],
+      "result": "December"
+    }
+  ],
+  "billingMonthDetail": [
+    {
+      "args": [
+        {
+          "month": "2026-10-01",
+          "drafts": 38,
+          "draft_total_cents": 591200,
+          "sent": 2,
+          "not_invoiced": 3,
+          "current": false
+        }
+      ],
+      "result": "38 to send · $5,912.00 · 3 customers not invoiced yet"
+    },
+    {
+      "args": [
+        {
+          "month": "2026-11-01",
+          "drafts": 0,
+          "draft_total_cents": 0,
+          "sent": 0,
+          "not_invoiced": 1,
+          "current": true
+        }
+      ],
+      "result": "1 customer not invoiced yet · so far"
+    },
+    {
+      "args": [
+        {
+          "month": "2026-09-01",
+          "drafts": 1,
+          "draft_total_cents": 4500,
+          "sent": 0,
+          "not_invoiced": 0,
+          "current": false
+        }
+      ],
+      "result": "1 to send · $45.00"
+    },
+    {
+      "args": [
+        {
+          "month": "2026-08-01",
+          "drafts": 0,
+          "draft_total_cents": 0,
+          "sent": 5,
+          "not_invoiced": 0,
+          "current": false
+        }
+      ],
+      "result": ""
+    }
+  ],
+  "sendRoute": [
+    {
+      "args": [
+        "jane@example.com",
+        "(555) 123-4567",
+        true
+      ],
+      "result": {
+        "channel": "email",
+        "to": "jane@example.com"
+      }
+    },
+    {
+      "args": [
+        " jane@example.com ",
+        null,
+        false
+      ],
+      "result": {
+        "channel": "email",
+        "to": "jane@example.com"
+      }
+    },
+    {
+      "args": [
+        "not an email",
+        "(555) 123-4567",
+        true
+      ],
+      "result": {
+        "channel": "text",
+        "to": "(555) 123-4567"
+      }
+    },
+    {
+      "args": [
+        null,
+        "(555) 123-4567",
+        false
+      ],
+      "result": {
+        "channel": "none"
+      }
+    },
+    {
+      "args": [
+        null,
+        "555-1234",
+        true
+      ],
+      "result": {
+        "channel": "none"
+      }
+    },
+    {
+      "args": [
+        "",
+        "  +1 702 785 1548 ",
+        true
+      ],
+      "result": {
+        "channel": "text",
+        "to": "+1 702 785 1548"
+      }
+    },
+    {
+      "args": [
+        null,
+        null,
+        true
+      ],
+      "result": {
+        "channel": "none"
+      }
+    }
+  ],
+  "sendRouteLabel": [
+    {
+      "args": [
+        "jane@example.com",
+        "(555) 123-4567",
+        true
+      ],
+      "result": "jane@example.com"
+    },
+    {
+      "args": [
+        " jane@example.com ",
+        null,
+        false
+      ],
+      "result": "jane@example.com"
+    },
+    {
+      "args": [
+        "not an email",
+        "(555) 123-4567",
+        true
+      ],
+      "result": "Text (555) 123-4567"
+    },
+    {
+      "args": [
+        null,
+        "(555) 123-4567",
+        false
+      ],
+      "result": "No email or mobile number"
+    },
+    {
+      "args": [
+        null,
+        "555-1234",
+        true
+      ],
+      "result": "No email or mobile number"
+    },
+    {
+      "args": [
+        "",
+        "  +1 702 785 1548 ",
+        true
+      ],
+      "result": "Text +1 702 785 1548"
+    },
+    {
+      "args": [
+        null,
+        null,
+        true
+      ],
+      "result": "No email or mobile number"
+    }
+  ],
+  "linesSummary": [
+    {
+      "args": [
+        [
+          {
+            "id": "a1",
+            "description": "Pool service, October",
+            "quantity": 1,
+            "unit_price_cents": 2400,
+            "unit": null,
+            "kind": "item",
+            "taxable": true
+          },
+          {
+            "id": "a2",
+            "description": "Replace skimmer basket, Oct 14",
+            "quantity": 1,
+            "unit_price_cents": 2400,
+            "unit": null,
+            "kind": "item",
+            "taxable": true
+          }
+        ],
+        null
+      ],
+      "result": "Pool service · Replace skimmer basket"
+    },
+    {
+      "args": [
+        [],
+        null
+      ],
+      "result": "No lines yet"
+    },
+    {
+      "args": [
+        [
+          {
+            "id": "1",
+            "description": "Pool service, October",
+            "quantity": 1,
+            "unit_price_cents": 2400,
+            "unit": null,
+            "kind": "item",
+            "taxable": true
+          },
+          {
+            "id": "2",
+            "description": "Deposit",
+            "quantity": 1,
+            "unit_price_cents": 2400,
+            "unit": null,
+            "kind": "deposit_credit",
+            "taxable": true
+          },
+          {
+            "id": "3",
+            "description": "Replace skimmer basket, Oct 14",
+            "quantity": 1,
+            "unit_price_cents": 2400,
+            "unit": null,
+            "kind": "item",
+            "taxable": true
+          },
+          {
+            "id": "4",
+            "description": "Clean filter, Oct 21",
+            "quantity": 1,
+            "unit_price_cents": 2400,
+            "unit": null,
+            "kind": "item",
+            "taxable": true
+          },
+          {
+            "id": "5",
+            "description": "Salt, 40 lb bag, Oct 2",
+            "quantity": 1,
+            "unit_price_cents": 2400,
+            "unit": null,
+            "kind": "item",
+            "taxable": true
+          }
+        ],
+        null
+      ],
+      "result": "Pool service · Replace skimmer basket · 2 more"
+    },
+    {
+      "args": [
+        [
+          {
+            "id": "1",
+            "description": "Clean filter, Oct 21",
+            "quantity": 1,
+            "unit_price_cents": 2400,
+            "unit": null,
+            "kind": "item",
+            "taxable": true
+          },
+          {
+            "id": "2",
+            "description": "Light, bulb, Oct 3",
+            "quantity": 1,
+            "unit_price_cents": 2400,
+            "unit": null,
+            "kind": "item",
+            "taxable": true
+          }
+        ],
+        1
+      ],
+      "result": "Clean filter · 1 more"
+    },
+    {
+      "args": [
+        [
+          {
+            "id": "1",
+            "description": "Deposit",
+            "quantity": 1,
+            "unit_price_cents": 2400,
+            "unit": null,
+            "kind": "deposit_credit",
+            "taxable": true
+          }
+        ],
+        null
+      ],
+      "result": "No lines yet"
+    }
+  ],
+  "monthBillingSubtitle": [
+    {
+      "args": [
+        {
+          "month": "2026-10-01",
+          "invoices": [
+            {
+              "id": "a",
+              "number": null,
+              "status": "draft",
+              "job_id": "job-a",
+              "customer_id": "cus-a",
+              "customer": "Customer a",
+              "email": "jane@example.com",
+              "phone": null,
+              "total_cents": 16400,
+              "amount_paid_cents": 0,
+              "sent_at": null,
+              "due_date": null,
+              "lines": [
+                {
+                  "id": "a1",
+                  "description": "Pool service, October",
+                  "quantity": 1,
+                  "unit_price_cents": 2400,
+                  "unit": null,
+                  "kind": "item",
+                  "taxable": true
+                },
+                {
+                  "id": "a2",
+                  "description": "Replace skimmer basket, Oct 14",
+                  "quantity": 1,
+                  "unit_price_cents": 2400,
+                  "unit": null,
+                  "kind": "item",
+                  "taxable": true
+                }
+              ]
+            },
+            {
+              "id": "b",
+              "number": null,
+              "status": "draft",
+              "job_id": "job-b",
+              "customer_id": "cus-b",
+              "customer": "Customer b",
+              "email": null,
+              "phone": "(555) 123-4567",
+              "total_cents": 12000,
+              "amount_paid_cents": 0,
+              "sent_at": null,
+              "due_date": null,
+              "lines": [
+                {
+                  "id": "b1",
+                  "description": "Pool service, October",
+                  "quantity": 1,
+                  "unit_price_cents": 2400,
+                  "unit": null,
+                  "kind": "item",
+                  "taxable": true
+                }
+              ]
+            },
+            {
+              "id": "c",
+              "number": 1042,
+              "status": "sent",
+              "job_id": "job-c",
+              "customer_id": "cus-c",
+              "customer": "Customer c",
+              "email": "c@example.com",
+              "phone": null,
+              "total_cents": 9900,
+              "amount_paid_cents": 0,
+              "sent_at": "2026-11-01T16:00:00Z",
+              "due_date": null,
+              "lines": []
+            }
+          ],
+          "not_invoiced": 3,
+          "waiting": [
+            {
+              "date": "2026-11-15",
+              "customers": 2
+            }
+          ]
+        }
+      ],
+      "result": "2 to send · $284.00"
+    },
+    {
+      "args": [
+        {
+          "month": "2026-09-01",
+          "invoices": [
+            {
+              "id": "d",
+              "number": 1042,
+              "status": "paid",
+              "job_id": "job-d",
+              "customer_id": "cus-d",
+              "customer": "Customer d",
+              "email": "d@example.com",
+              "phone": null,
+              "total_cents": 5000,
+              "amount_paid_cents": 0,
+              "sent_at": "2026-11-01T16:00:00Z",
+              "due_date": null,
+              "lines": []
+            }
+          ],
+          "not_invoiced": 1,
+          "waiting": []
+        }
+      ],
+      "result": "All sent"
+    },
+    {
+      "args": [
+        {
+          "month": "2026-11-01",
+          "invoices": [],
+          "not_invoiced": 0,
+          "waiting": []
+        }
+      ],
+      "result": "Nothing to send yet"
+    }
+  ],
+  "notInvoicedText": [
+    {
+      "args": [
+        {
+          "month": "2026-10-01",
+          "invoices": [
+            {
+              "id": "a",
+              "number": null,
+              "status": "draft",
+              "job_id": "job-a",
+              "customer_id": "cus-a",
+              "customer": "Customer a",
+              "email": "jane@example.com",
+              "phone": null,
+              "total_cents": 16400,
+              "amount_paid_cents": 0,
+              "sent_at": null,
+              "due_date": null,
+              "lines": [
+                {
+                  "id": "a1",
+                  "description": "Pool service, October",
+                  "quantity": 1,
+                  "unit_price_cents": 2400,
+                  "unit": null,
+                  "kind": "item",
+                  "taxable": true
+                },
+                {
+                  "id": "a2",
+                  "description": "Replace skimmer basket, Oct 14",
+                  "quantity": 1,
+                  "unit_price_cents": 2400,
+                  "unit": null,
+                  "kind": "item",
+                  "taxable": true
+                }
+              ]
+            },
+            {
+              "id": "b",
+              "number": null,
+              "status": "draft",
+              "job_id": "job-b",
+              "customer_id": "cus-b",
+              "customer": "Customer b",
+              "email": null,
+              "phone": "(555) 123-4567",
+              "total_cents": 12000,
+              "amount_paid_cents": 0,
+              "sent_at": null,
+              "due_date": null,
+              "lines": [
+                {
+                  "id": "b1",
+                  "description": "Pool service, October",
+                  "quantity": 1,
+                  "unit_price_cents": 2400,
+                  "unit": null,
+                  "kind": "item",
+                  "taxable": true
+                }
+              ]
+            },
+            {
+              "id": "c",
+              "number": 1042,
+              "status": "sent",
+              "job_id": "job-c",
+              "customer_id": "cus-c",
+              "customer": "Customer c",
+              "email": "c@example.com",
+              "phone": null,
+              "total_cents": 9900,
+              "amount_paid_cents": 0,
+              "sent_at": "2026-11-01T16:00:00Z",
+              "due_date": null,
+              "lines": []
+            }
+          ],
+          "not_invoiced": 3,
+          "waiting": [
+            {
+              "date": "2026-11-15",
+              "customers": 2
+            }
+          ]
+        }
+      ],
+      "result": "3 customers have visits not on an invoice yet. 2 are billed on their invoice day, [2026-11-15]. Create Invoices drafts them now."
+    },
+    {
+      "args": [
+        {
+          "month": "2026-09-01",
+          "invoices": [
+            {
+              "id": "d",
+              "number": 1042,
+              "status": "paid",
+              "job_id": "job-d",
+              "customer_id": "cus-d",
+              "customer": "Customer d",
+              "email": "d@example.com",
+              "phone": null,
+              "total_cents": 5000,
+              "amount_paid_cents": 0,
+              "sent_at": "2026-11-01T16:00:00Z",
+              "due_date": null,
+              "lines": []
+            }
+          ],
+          "not_invoiced": 1,
+          "waiting": []
+        }
+      ],
+      "result": "1 customer has visits not on an invoice yet."
+    },
+    {
+      "args": [
+        {
+          "month": "2026-11-01",
+          "invoices": [],
+          "not_invoiced": 0,
+          "waiting": []
+        }
+      ],
+      "result": null
+    },
+    {
+      "args": [
+        {
+          "month": "2026-10-01",
+          "invoices": [
+            {
+              "id": "a",
+              "number": null,
+              "status": "draft",
+              "job_id": "job-a",
+              "customer_id": "cus-a",
+              "customer": "Customer a",
+              "email": "jane@example.com",
+              "phone": null,
+              "total_cents": 16400,
+              "amount_paid_cents": 0,
+              "sent_at": null,
+              "due_date": null,
+              "lines": [
+                {
+                  "id": "a1",
+                  "description": "Pool service, October",
+                  "quantity": 1,
+                  "unit_price_cents": 2400,
+                  "unit": null,
+                  "kind": "item",
+                  "taxable": true
+                },
+                {
+                  "id": "a2",
+                  "description": "Replace skimmer basket, Oct 14",
+                  "quantity": 1,
+                  "unit_price_cents": 2400,
+                  "unit": null,
+                  "kind": "item",
+                  "taxable": true
+                }
+              ]
+            },
+            {
+              "id": "b",
+              "number": null,
+              "status": "draft",
+              "job_id": "job-b",
+              "customer_id": "cus-b",
+              "customer": "Customer b",
+              "email": null,
+              "phone": "(555) 123-4567",
+              "total_cents": 12000,
+              "amount_paid_cents": 0,
+              "sent_at": null,
+              "due_date": null,
+              "lines": [
+                {
+                  "id": "b1",
+                  "description": "Pool service, October",
+                  "quantity": 1,
+                  "unit_price_cents": 2400,
+                  "unit": null,
+                  "kind": "item",
+                  "taxable": true
+                }
+              ]
+            },
+            {
+              "id": "c",
+              "number": 1042,
+              "status": "sent",
+              "job_id": "job-c",
+              "customer_id": "cus-c",
+              "customer": "Customer c",
+              "email": "c@example.com",
+              "phone": null,
+              "total_cents": 9900,
+              "amount_paid_cents": 0,
+              "sent_at": "2026-11-01T16:00:00Z",
+              "due_date": null,
+              "lines": []
+            }
+          ],
+          "not_invoiced": 2,
+          "waiting": [
+            {
+              "date": "2026-11-15",
+              "customers": 2
+            }
+          ]
+        }
+      ],
+      "result": "2 customers have visits not on an invoice yet. They’re billed on their invoice day, [2026-11-15]. Create Invoices drafts them now."
+    },
+    {
+      "args": [
+        {
+          "month": "2026-10-01",
+          "invoices": [
+            {
+              "id": "a",
+              "number": null,
+              "status": "draft",
+              "job_id": "job-a",
+              "customer_id": "cus-a",
+              "customer": "Customer a",
+              "email": "jane@example.com",
+              "phone": null,
+              "total_cents": 16400,
+              "amount_paid_cents": 0,
+              "sent_at": null,
+              "due_date": null,
+              "lines": [
+                {
+                  "id": "a1",
+                  "description": "Pool service, October",
+                  "quantity": 1,
+                  "unit_price_cents": 2400,
+                  "unit": null,
+                  "kind": "item",
+                  "taxable": true
+                },
+                {
+                  "id": "a2",
+                  "description": "Replace skimmer basket, Oct 14",
+                  "quantity": 1,
+                  "unit_price_cents": 2400,
+                  "unit": null,
+                  "kind": "item",
+                  "taxable": true
+                }
+              ]
+            },
+            {
+              "id": "b",
+              "number": null,
+              "status": "draft",
+              "job_id": "job-b",
+              "customer_id": "cus-b",
+              "customer": "Customer b",
+              "email": null,
+              "phone": "(555) 123-4567",
+              "total_cents": 12000,
+              "amount_paid_cents": 0,
+              "sent_at": null,
+              "due_date": null,
+              "lines": [
+                {
+                  "id": "b1",
+                  "description": "Pool service, October",
+                  "quantity": 1,
+                  "unit_price_cents": 2400,
+                  "unit": null,
+                  "kind": "item",
+                  "taxable": true
+                }
+              ]
+            },
+            {
+              "id": "c",
+              "number": 1042,
+              "status": "sent",
+              "job_id": "job-c",
+              "customer_id": "cus-c",
+              "customer": "Customer c",
+              "email": "c@example.com",
+              "phone": null,
+              "total_cents": 9900,
+              "amount_paid_cents": 0,
+              "sent_at": "2026-11-01T16:00:00Z",
+              "due_date": null,
+              "lines": []
+            }
+          ],
+          "not_invoiced": 1,
+          "waiting": [
+            {
+              "date": "2026-11-15",
+              "customers": 1
+            }
+          ]
+        }
+      ],
+      "result": "1 customer has visits not on an invoice yet. It’s billed on their invoice day, [2026-11-15]. Create Invoices drafts them now."
+    },
+    {
+      "args": [
+        {
+          "month": "2026-10-01",
+          "invoices": [
+            {
+              "id": "a",
+              "number": null,
+              "status": "draft",
+              "job_id": "job-a",
+              "customer_id": "cus-a",
+              "customer": "Customer a",
+              "email": "jane@example.com",
+              "phone": null,
+              "total_cents": 16400,
+              "amount_paid_cents": 0,
+              "sent_at": null,
+              "due_date": null,
+              "lines": [
+                {
+                  "id": "a1",
+                  "description": "Pool service, October",
+                  "quantity": 1,
+                  "unit_price_cents": 2400,
+                  "unit": null,
+                  "kind": "item",
+                  "taxable": true
+                },
+                {
+                  "id": "a2",
+                  "description": "Replace skimmer basket, Oct 14",
+                  "quantity": 1,
+                  "unit_price_cents": 2400,
+                  "unit": null,
+                  "kind": "item",
+                  "taxable": true
+                }
+              ]
+            },
+            {
+              "id": "b",
+              "number": null,
+              "status": "draft",
+              "job_id": "job-b",
+              "customer_id": "cus-b",
+              "customer": "Customer b",
+              "email": null,
+              "phone": "(555) 123-4567",
+              "total_cents": 12000,
+              "amount_paid_cents": 0,
+              "sent_at": null,
+              "due_date": null,
+              "lines": [
+                {
+                  "id": "b1",
+                  "description": "Pool service, October",
+                  "quantity": 1,
+                  "unit_price_cents": 2400,
+                  "unit": null,
+                  "kind": "item",
+                  "taxable": true
+                }
+              ]
+            },
+            {
+              "id": "c",
+              "number": 1042,
+              "status": "sent",
+              "job_id": "job-c",
+              "customer_id": "cus-c",
+              "customer": "Customer c",
+              "email": "c@example.com",
+              "phone": null,
+              "total_cents": 9900,
+              "amount_paid_cents": 0,
+              "sent_at": "2026-11-01T16:00:00Z",
+              "due_date": null,
+              "lines": []
+            }
+          ],
+          "not_invoiced": 1,
+          "waiting": [
+            {
+              "date": "2026-11-15",
+              "customers": 1
+            },
+            {
+              "date": "2026-11-20",
+              "customers": 3
+            }
+          ]
+        }
+      ],
+      "result": "1 customer has visits not on an invoice yet. 1 is billed on their invoice day, [2026-11-15]. 3 are billed on their invoice day, [2026-11-20]. Create Invoices drafts them now."
+    }
+  ],
+  "sendAllLabel": [
+    {
+      "args": [
+        38
+      ],
+      "result": "Send 38 Invoices"
+    },
+    {
+      "args": [
+        1
+      ],
+      "result": "Send 1 Invoice"
+    },
+    {
+      "args": [
+        0
+      ],
+      "result": "Send 0 Invoices"
+    }
+  ],
+  "sendAllConfirm": [
+    {
+      "args": [
+        [
+          [
+            "jane@example.com",
+            "(555) 123-4567",
+            true
+          ],
+          [
+            " jane@example.com ",
+            null,
+            false
+          ],
+          [
+            "not an email",
+            "(555) 123-4567",
+            true
+          ],
+          [
+            null,
+            "(555) 123-4567",
+            false
+          ],
+          [
+            null,
+            "555-1234",
+            true
+          ],
+          [
+            "",
+            "  +1 702 785 1548 ",
+            true
+          ],
+          [
+            null,
+            null,
+            true
+          ]
+        ],
+        "October"
+      ],
+      "result": {
+        "title": "Send 4 invoices?",
+        "message": "Each customer gets their October invoice now: 2 by email, 2 by text. 3 without an email or mobile number stay drafts."
+      }
+    },
+    {
+      "args": [
+        [
+          [
+            "jane@example.com",
+            "(555) 123-4567",
+            true
+          ]
+        ],
+        "November"
+      ],
+      "result": {
+        "title": "Send 1 invoice?",
+        "message": "Each customer gets their November invoice now: 1 by email."
+      }
+    },
+    {
+      "args": [
+        [
+          [
+            null,
+            "(555) 123-4567",
+            false
+          ],
+          [
+            null,
+            "(555) 123-4567",
+            false
+          ]
+        ],
+        "October"
+      ],
+      "result": {
+        "title": "Send 0 invoices?",
+        "message": "Each customer gets their October invoice now: . 2 without an email or mobile number stay drafts."
+      }
+    },
+    {
+      "args": [
+        [
+          [
+            "jane@example.com",
+            "(555) 123-4567",
+            true
+          ],
+          [
+            "",
+            "  +1 702 785 1548 ",
+            true
+          ],
+          [
+            null,
+            null,
+            true
+          ],
+          [
+            null,
+            null,
+            true
+          ]
+        ],
+        "October"
+      ],
+      "result": {
+        "title": "Send 2 invoices?",
+        "message": "Each customer gets their October invoice now: 1 by email, 1 by text. 2 without an email or mobile number stay drafts."
+      }
+    }
+  ],
+  "sendAllResult": [
+    {
+      "args": [
+        38,
+        0
+      ],
+      "result": "Sent 38 invoices."
+    },
+    {
+      "args": [
+        36,
+        2
+      ],
+      "result": "Sent 36 invoices. 2 didn’t go."
+    },
+    {
+      "args": [
+        1,
+        0
+      ],
+      "result": "Sent 1 invoice."
+    },
+    {
+      "args": [
+        0,
+        1
+      ],
+      "result": "Sent 0 invoices. 1 didn’t go."
+    }
+  ],
+  "autoSendFailed": [
+    {
+      "args": [
+        "No email or mobile number"
+      ],
+      "result": "Didn’t go on its invoice day: No email or mobile number"
+    }
+  ]
+}

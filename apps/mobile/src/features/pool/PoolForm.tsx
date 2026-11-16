@@ -1,4 +1,12 @@
-import { POOL_TYPE_LABELS, type PoolType, type Property } from "@leakbook/core";
+import {
+  HEATER_LABELS,
+  POOL_TYPE_LABELS,
+  SANITIZER_LABELS,
+  type Heater,
+  type PoolType,
+  type Property,
+  type Sanitizer,
+} from "@leakbook/core";
 import { useState } from "react";
 import { useAddressSuggestions } from "../address/AddressSuggestions";
 import { locateAfterSync } from "../../lib/locate";
@@ -14,7 +22,8 @@ import { useDraft } from "../../ui/useDraft";
 
 /**
  * A pool's details (the website's pool-details.tsx): the street with address suggestions, unit,
- * city, state, ZIP, pool type, gallons, spa and access notes. Saved through sync; a new address
+ * city, state, ZIP; pool type, gallons, sanitizer, heater, spa and solar heater; access notes; and
+ * pool notes, kept apart from access notes (owner, 2026-11-16). Saved through sync; a new address
  * drops the old map location and looks the new one up once it's up. Used by the customer page
  * and the job page's Pool group (owner, 2026-10-20).
  */
@@ -29,7 +38,11 @@ export function PoolForm({ pool, onSaved }: { pool: Property; onSaved: () => voi
     pool_type: (pool.pool_type ?? "") as string,
     has_spa: Boolean(pool.has_spa),
     approx_gallons: pool.approx_gallons ? pool.approx_gallons.toLocaleString("en-US") : "",
+    sanitizer: (pool.sanitizer ?? "") as string,
+    heater: (pool.heater ?? "") as string,
+    has_solar_heater: Boolean(pool.has_solar_heater),
     access_notes: pool.access_notes ?? "",
+    notes: pool.notes ?? "",
   });
   // Unsaved entries ask before closing (owner, 2026-10-20: "Discard changes?" everywhere).
   const [startF] = useState(f);
@@ -45,6 +58,7 @@ export function PoolForm({ pool, onSaved }: { pool: Property; onSaved: () => voi
       postal_code: f.postal_code,
       approx_gallons: f.approx_gallons,
       access_notes: f.access_notes,
+      notes: f.notes,
     },
     restore: (c) => setF((old) => ({ ...old, ...c })),
   });
@@ -93,7 +107,11 @@ export function PoolForm({ pool, onSaved }: { pool: Property; onSaved: () => voi
       pool_type: f.pool_type || null,
       has_spa: f.has_spa,
       approx_gallons: gallons,
+      sanitizer: f.sanitizer || null,
+      heater: f.heater || null,
+      has_solar_heater: f.has_solar_heater,
       access_notes: f.access_notes.trim() || null,
+      notes: f.notes.trim() || null,
       ...(moved
         ? { latitude: null, longitude: null, geocoded_address: null, location_source: null }
         : {}),
@@ -149,7 +167,7 @@ export function PoolForm({ pool, onSaved }: { pool: Property; onSaved: () => voi
           })),
         ]}
       />
-      <FieldGroup footer="Gate code, dog, where to park.">
+      <FieldGroup>
         <FieldRow
           label="Gallons"
           value={f.approx_gallons}
@@ -158,18 +176,55 @@ export function PoolForm({ pool, onSaved }: { pool: Property; onSaved: () => voi
           placeholder="20,000"
           error={gallonsError}
         />
+      </FieldGroup>
+      <Select
+        label="Sanitizer"
+        value={f.sanitizer}
+        onChange={set("sanitizer")}
+        options={[
+          { value: "", label: "Not sure" },
+          ...(Object.keys(SANITIZER_LABELS) as Sanitizer[]).map((k) => ({
+            value: k,
+            label: SANITIZER_LABELS[k],
+          })),
+        ]}
+      />
+      <Select
+        label="Heater"
+        value={f.heater}
+        onChange={set("heater")}
+        options={[
+          { value: "", label: "Not sure" },
+          ...(Object.keys(HEATER_LABELS) as Heater[]).map((k) => ({
+            value: k,
+            label: HEATER_LABELS[k],
+          })),
+        ]}
+      />
+      <FieldGroup>
         <Toggle
           inList
           label="Has a spa"
           value={f.has_spa}
           onChange={(v) => setF({ ...f, has_spa: v })}
         />
+        <Toggle
+          inList
+          label="Has a solar heater"
+          value={f.has_solar_heater}
+          onChange={(v) => setF({ ...f, has_solar_heater: v })}
+        />
+      </FieldGroup>
+      <FieldGroup footer="Gate code, pets, where to park.">
         <FieldRow
           label="Access notes"
           value={f.access_notes}
           onChangeText={set("access_notes")}
           multiline
         />
+      </FieldGroup>
+      <FieldGroup footer="Equipment, quirks, draining the solar for winter.">
+        <FieldRow label="Pool notes" value={f.notes} onChangeText={set("notes")} multiline />
       </FieldGroup>
       <Button title="Save" wide onPress={save} />
     </>

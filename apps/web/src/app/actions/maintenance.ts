@@ -1,7 +1,13 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { CLEANING_MONTHS, isDateString, parseDollars, uuidv7 } from "@leakbook/core";
+import {
+  CLEANING_MONTHS,
+  isDateString,
+  parseDollars,
+  parseInvoiceDay,
+  uuidv7,
+} from "@leakbook/core";
 import { requireManager } from "@/lib/auth";
 import { parsePlanRepeat } from "@/lib/plan-repeat";
 import { createClient } from "@/lib/supabase/server";
@@ -94,6 +100,8 @@ export async function savePlan(_: FormState, form: FormData): Promise<FormState>
     visit_time: time || null,
     duration_minutes: minutes,
     price_cents: price,
+    // The day of the next month the customer's invoice is drafted; none: the shop's.
+    invoice_day: parseInvoiceDay(text(form, "invoice_day")),
     ends_on: ends || null,
     notes: text(form, "notes") || null,
   };

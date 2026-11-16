@@ -8,6 +8,7 @@ import {
   acceptanceRate,
   customersAddedNote,
   dashboardTotals,
+  FEEDBACK_TITLE,
   formatCents,
   formatCount,
   monthLabel,
@@ -18,6 +19,7 @@ import {
 import { Card, Empty, Grouped, PageHeader, Row } from "@/components/ui";
 import { getOffice } from "@/lib/auth";
 import { customerCounts, getCompany } from "@/lib/data";
+import { feedbackOpenCount } from "@/lib/feedback";
 import { createClient } from "@/lib/supabase/server";
 import { Suspense, cache } from "react";
 import { GettingStarted } from "@/components/getting-started";
@@ -41,13 +43,14 @@ const WAITING: string[] = ["report_sent", "quote_sent", "quote_accepted", "invoi
 export default async function DashboardPage() {
   const office = await getOffice();
   if (!office.isManager) redirect("/jobs");
-  const [{ data, error }, counts, company] = await Promise.all([
+  const [{ data, error }, counts, company, openComplaints] = await Promise.all([
     (await createClient()).rpc("owner_dashboard", {
       target_company: office.company.id,
       months: MONTHS,
     }),
     customerCounts(office),
     getCompany(office),
+    feedbackOpenCount(office.company.id),
   ]);
   if (error || !data) {
     return (
@@ -102,6 +105,16 @@ export default async function DashboardPage() {
               />
             ) : null}
           </>
+        ) : null}
+        {/* Customer feedback (owner's competitor notes, 2026-11-16): thumbs-down complaints
+            waiting to be closed. */}
+        {openComplaints != null ? (
+          <Stat
+            label={FEEDBACK_TITLE}
+            value={formatCount(openComplaints)}
+            note="open complaints"
+            href="/feedback"
+          />
         ) : null}
         <Stat
           label="Collected"

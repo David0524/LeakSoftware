@@ -20,6 +20,8 @@ public struct InvoiceRecord: Decodable, Equatable, Sendable, Identifiable {
     public var sentAt: String?
     public var paidAt: String?
     public var voidedAt: String?
+    /// A monthly invoice's month ("2026-10-01"; owner, 2026-11-15); nil for a job's own.
+    public var periodMonth: String?
 
     enum CodingKeys: String, CodingKey {
         case id, number, status, notes
@@ -35,6 +37,7 @@ public struct InvoiceRecord: Decodable, Equatable, Sendable, Identifiable {
         case sentAt = "sent_at"
         case paidAt = "paid_at"
         case voidedAt = "voided_at"
+        case periodMonth = "period_month"
     }
 
     /// What's still owed.

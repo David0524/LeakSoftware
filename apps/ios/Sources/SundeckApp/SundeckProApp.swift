@@ -196,6 +196,10 @@
                 }
                 if reportSends.pending.count < before { session.sync.syncSoon(2) }  // bring the report down
             }
+            // Issues reported on this phone reach the owners and admins once they synced (2026-11-16).
+            if let company = session.company, let user = session.user, session.sync.status.pending == 0 {
+                await flushIssueNotices(session.sync, api, companyId: company.id, userId: user.id)
+            }
             let waiting = locate.pending.count
             if waiting > 0, session.sync.status.pending == 0 {
                 await locate.flush(api)

@@ -20,6 +20,7 @@
         @State private var notes = ""
         @State private var loaded: String?
         @State private var confirmCancel = false
+        @State private var skipping = false
         @State private var saveError: String?
         @State private var saves = 0
         @State private var confirmLink: CustomerLinkRow?
@@ -51,6 +52,8 @@
             let links = customerLinks(sync.store, jobId: job.id, now: Date(), timeZone: timeZone)
                 .filter { !turnedOff.contains($0.id) }
             VStack(alignment: .leading, spacing: CGFloat(Spacing.betweenBlocks)) {
+                // A skipped visit: why, who and when, and what the office does next.
+                if job.status == .skipped { SkippedCard(job: job, isManager: isManagerRole(company?.role)) }
                 customer(details)
                 if let company { messages(details, company: company, timeZone: timeZone) }
                 if !links.isEmpty { linksGroup(links) }
@@ -75,6 +78,8 @@
                         }
                     }
                 }
+                // Report an Issue (docs/design/2026-11-16-service-issues.md).
+                JobIssuesGroup(job: job)
                 onSite(details)
                 if JobScheduleGroup.shows(job) { JobScheduleGroup(job: job) }
                 if isManagerRole(company?.role) { JobTimeline(jobId: job.id) }
@@ -86,6 +91,12 @@
                     VisitReportSection(job: job).padding(.top, 8)
                 }
                 if !jobHasWrapUp(job.type.rawValue) { QuoteSection(job: job).padding(.top, 8) }
+                if jobCanSkip(job.status, type: job.type) {
+                    // Destructive actions sit apart, at the end of Details.
+                    Button(skipVisitLabel, role: .destructive) { skipping = true }
+                        .buttonStyle(.danger)
+                        .padding(.top, 8)
+                }
                 if jobCanCancel(job.status, type: job.type) {
                     Button("Cancel Job", role: .destructive) { confirmCancel = true }
                         .buttonStyle(.danger)
@@ -122,6 +133,9 @@
                         saves += 1
                     }
                 }
+            }
+            .sheet(isPresented: $skipping) {
+                SkipVisitSheet(job: job).environment(session).environment(sync).environment(app)
             }
             .confirmationDialog("Cancel this job?", isPresented: $confirmCancel, titleVisibility: .visible) {
                 Button("Cancel Job", role: .destructive) { save(jobStatusValues(.canceled, job: job.job)) }

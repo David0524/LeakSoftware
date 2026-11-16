@@ -13,6 +13,7 @@ public enum SettingsPage: String, CaseIterable, Hashable, Sendable {
     case scheduling, phone
     case priceBook = "price-book"
     case payments, components, tests, severities, exclusions, reports
+    case skipReasons = "skip-reasons"
 
     public var title: String {
         switch self {
@@ -27,6 +28,7 @@ public enum SettingsPage: String, CaseIterable, Hashable, Sendable {
         case .tests: "Test Types"
         case .severities: "Severities"
         case .exclusions: "Exclusion Reasons"
+        case .skipReasons: "Skip Reasons"
         case .reports: "Report Templates"
         }
     }
@@ -46,6 +48,7 @@ public enum SettingsPage: String, CaseIterable, Hashable, Sendable {
         case .tests: "Tests techs record on the phone"
         case .severities: "How serious a finding is"
         case .exclusions: "Why a component wasn’t inspected"
+        case .skipReasons: "Why a visit was skipped"
         case .reports: "Which reports techs can send"
         }
     }
@@ -56,7 +59,8 @@ public enum SettingsPage: String, CaseIterable, Hashable, Sendable {
     /// Built in the app; the rest open the website (spec 10.4).
     public var isNative: Bool {
         switch self {
-        case .team, .priceBook, .components, .tests, .severities, .exclusions, .company, .scheduling, .phone, .reports:
+        case .team, .priceBook, .components, .tests, .severities, .exclusions, .skipReasons, .company, .scheduling,
+            .phone, .reports:
             true
         default: false
         }
@@ -68,11 +72,15 @@ public enum SettingsPage: String, CaseIterable, Hashable, Sendable {
 /// Billing is left out of the apps (decision 12).
 public func settingsGroups(_ services: Services) -> [(title: String, pages: [SettingsPage])] {
     let leakOnly: Set<SettingsPage> = [.tests, .severities, .exclusions]
-    let keep = { (pages: [SettingsPage]) in pages.filter { services != .pool || !leakOnly.contains($0) } }
+    // Skip Reasons are for pool care visits (owner, 2026-11-16).
+    let poolOnly: Set<SettingsPage> = [.skipReasons]
+    let keep = { (pages: [SettingsPage]) in
+        pages.filter { (services != .pool || !leakOnly.contains($0)) && (services != .leak || !poolOnly.contains($0)) }
+    }
     return [
         ("Your shop", keep([.company, .team, .importCustomers, .scheduling, .phone])),
         ("Money", keep([.priceBook, .payments])),
-        ("Checklists and reports", keep([.components, .tests, .severities, .exclusions, .reports])),
+        ("Checklists and reports", keep([.components, .tests, .severities, .exclusions, .skipReasons, .reports])),
     ]
 }
 
@@ -274,6 +282,13 @@ public func severityItems(_ store: LocalStore, companyId: String) -> [ConfigItem
             detail: r["must_mention"]?.bool == true ? "Always in the report summary" : nil,
             color: r["color"]?.string)
     }
+}
+
+/// The reasons a tech picks when skipping a visit; 'Not Done', the day-end skip's own, isn't listed.
+public func skipReasonItems(_ store: LocalStore, companyId: String) -> [ConfigItem] {
+    configRows(store, "skip_reason", companyId)
+        .filter { $0["system"]?.bool != true }
+        .map { r in item(r, name: r["label"]?.string ?? "Reason") }
 }
 
 public func exclusionItems(_ store: LocalStore, companyId: String) -> [ConfigItem] {
@@ -556,12 +571,13 @@ public enum ConfigWrites {
             table = "severity_level"
             values["must_mention"] = .bool(form.mustMention)
         case .exclusions: table = "exclusion_reason"
+        case .skipReasons: table = "skip_reason"
         default: return
         }
-        values[page == .exclusions ? "label" : "name"] = name
+        values[page == .exclusions || page == .skipReasons ? "label" : "name"] = name
         if let id {
             try sync.write(table, id: id, companyId: companyId, values)
-        } else if page == .exclusions {
+        } else if page == .exclusions || page == .skipReasons {
             _ = try sync.insert(table, companyId: companyId, values)
         }
     }
@@ -575,6 +591,7 @@ public enum ConfigWrites {
             case .tests: "test_type"
             case .severities: "severity_level"
             case .exclusions: "exclusion_reason"
+            case .skipReasons: "skip_reason"
             default: ""
             }
         if !table.isEmpty { try sync.softDelete(table, id) }

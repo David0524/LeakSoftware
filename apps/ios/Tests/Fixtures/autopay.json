@@ -1,0 +1,502 @@
+{
+  "AUTOPAY_TEXT": [
+    {
+      "args": [],
+      "result": {
+        "group": "Autopay",
+        "shopSwitch": "Autopay",
+        "shopFooter": "Customers can save a card or bank account and have their monthly maintenance invoices paid the day they’re sent. Other invoices are charged only when you tap Charge Card on File.",
+        "retries": "Retry Failed Payments",
+        "retryEvery": "Try Again",
+        "retriesFooter": "When an automatic payment fails, the customer gets an email with their pay link and owners and admins are notified. The card is tried again on this schedule.",
+        "payOverTime": "Offer Pay Over Time",
+        "payOverTimeFooter": "Customers can pay quote deposits and invoices of $50 or more with Affirm or Klarna. You’re paid in full; they pay Affirm or Klarna back over time.",
+        "status": "Status",
+        "on": "On",
+        "off": "Off",
+        "turnOff": "Turn Off Autopay",
+        "turnOn": "Turn On Autopay",
+        "request": "Request Card on File",
+        "remove": "Remove Card",
+        "charge": "Charge Card on File",
+        "noMethod": "No card or bank account on file",
+        "saveForAutopay": "Save for Autopay",
+        "requestTitle": "Request Card on File",
+        "removeTitle": "Remove the saved card?",
+        "removeMessage": "The customer’s card or bank account is removed and autopay turns off. Payments already made aren’t changed.",
+        "turnOffTitle": "Turn off autopay?",
+        "turnOffMessage": "Invoices are no longer charged automatically. The card stays saved for Charge Card on File."
+      }
+    }
+  ],
+  "savedMethodLabel": [
+    {
+      "args": [
+        {
+          "kind": "card",
+          "brand": "visa",
+          "last4": "4242",
+          "exp_month": 4,
+          "exp_year": 2030
+        }
+      ],
+      "result": "Visa •••• 4242"
+    },
+    {
+      "args": [
+        {
+          "kind": "card",
+          "brand": "amex",
+          "last4": "0005",
+          "exp_month": 10,
+          "exp_year": 2026
+        }
+      ],
+      "result": "American Express •••• 0005"
+    },
+    {
+      "args": [
+        {
+          "kind": "card",
+          "brand": "cartes_bancaires",
+          "last4": "1111"
+        }
+      ],
+      "result": "Card •••• 1111"
+    },
+    {
+      "args": [
+        {
+          "kind": "us_bank_account",
+          "last4": "6789",
+          "bank_name": "Chase"
+        }
+      ],
+      "result": "Chase •••• 6789"
+    },
+    {
+      "args": [
+        {
+          "kind": "us_bank_account",
+          "last4": "6789",
+          "bank_name": " "
+        }
+      ],
+      "result": "Bank account •••• 6789"
+    }
+  ],
+  "savedMethodDetail": [
+    {
+      "args": [
+        {
+          "kind": "card",
+          "brand": "visa",
+          "last4": "4242",
+          "exp_month": 4,
+          "exp_year": 2030
+        },
+        "2026-11-16"
+      ],
+      "result": "Expires 04/30"
+    },
+    {
+      "args": [
+        {
+          "kind": "card",
+          "brand": "amex",
+          "last4": "0005",
+          "exp_month": 10,
+          "exp_year": 2026
+        },
+        "2026-11-16"
+      ],
+      "result": "Expired 10/26"
+    },
+    {
+      "args": [
+        {
+          "kind": "card",
+          "brand": "amex",
+          "last4": "0005",
+          "exp_month": 10,
+          "exp_year": 2026
+        },
+        "2026-10-31"
+      ],
+      "result": "Expires 10/26"
+    },
+    {
+      "args": [
+        {
+          "kind": "card",
+          "brand": "cartes_bancaires",
+          "last4": "1111"
+        },
+        "2026-11-16"
+      ],
+      "result": "Card"
+    },
+    {
+      "args": [
+        {
+          "kind": "us_bank_account",
+          "last4": "6789",
+          "bank_name": "Chase"
+        },
+        "2026-11-16"
+      ],
+      "result": "Bank account"
+    }
+  ],
+  "autopaySettings": [
+    {
+      "args": [
+        {}
+      ],
+      "result": {
+        "on": true,
+        "retries": 2,
+        "retryDays": 3
+      }
+    },
+    {
+      "args": [
+        null
+      ],
+      "result": {
+        "on": true,
+        "retries": 2,
+        "retryDays": 3
+      }
+    },
+    {
+      "args": [
+        {
+          "autopay": false,
+          "autopay_retries": 0,
+          "autopay_retry_days": 7
+        }
+      ],
+      "result": {
+        "on": false,
+        "retries": 0,
+        "retryDays": 7
+      }
+    },
+    {
+      "args": [
+        {
+          "autopay_retries": 9,
+          "autopay_retry_days": 30
+        }
+      ],
+      "result": {
+        "on": true,
+        "retries": 2,
+        "retryDays": 3
+      }
+    }
+  ],
+  "autopayNextTry": [
+    {
+      "args": [
+        "2026-11-30",
+        1,
+        {
+          "on": true,
+          "retries": 2,
+          "retryDays": 3
+        }
+      ],
+      "result": "2026-12-03"
+    },
+    {
+      "args": [
+        "2026-12-30",
+        2,
+        {
+          "on": true,
+          "retries": 2,
+          "retryDays": 3
+        }
+      ],
+      "result": "2027-01-02"
+    },
+    {
+      "args": [
+        "2026-12-06",
+        3,
+        {
+          "on": true,
+          "retries": 2,
+          "retryDays": 3
+        }
+      ],
+      "result": null
+    },
+    {
+      "args": [
+        "2026-02-27",
+        1,
+        {
+          "on": true,
+          "retries": 1,
+          "retryDays": 7
+        }
+      ],
+      "result": "2026-03-06"
+    },
+    {
+      "args": [
+        "2026-11-30",
+        1,
+        {
+          "on": true,
+          "retries": 0,
+          "retryDays": 3
+        }
+      ],
+      "result": null
+    }
+  ],
+  "autopayStatus": [
+    {
+      "args": [
+        true,
+        {
+          "kind": "card",
+          "brand": "visa",
+          "last4": "4242",
+          "exp_month": 4,
+          "exp_year": 2030
+        }
+      ],
+      "result": {
+        "value": "On",
+        "method": "Visa •••• 4242"
+      }
+    },
+    {
+      "args": [
+        false,
+        {
+          "kind": "us_bank_account",
+          "last4": "6789",
+          "bank_name": "Chase"
+        }
+      ],
+      "result": {
+        "value": "Off",
+        "method": "Chase •••• 6789"
+      }
+    },
+    {
+      "args": [
+        true,
+        null
+      ],
+      "result": {
+        "value": "Off",
+        "method": "No card or bank account on file"
+      }
+    }
+  ],
+  "autopayGroupFooter": [
+    {
+      "args": [
+        false,
+        true,
+        {
+          "kind": "card",
+          "brand": "visa",
+          "last4": "4242",
+          "exp_month": 4,
+          "exp_year": 2030
+        }
+      ],
+      "result": "Autopay is off for your shop. Turn it on in Settings › Payments and Deposits."
+    },
+    {
+      "args": [
+        true,
+        true,
+        {
+          "kind": "card",
+          "brand": "visa",
+          "last4": "4242",
+          "exp_month": 4,
+          "exp_year": 2030
+        }
+      ],
+      "result": "Monthly maintenance invoices are charged to this card the day they’re sent. Other invoices: Charge Card on File on the invoice."
+    },
+    {
+      "args": [
+        true,
+        false,
+        {
+          "kind": "card",
+          "brand": "visa",
+          "last4": "4242",
+          "exp_month": 4,
+          "exp_year": 2030
+        }
+      ],
+      "result": "Saved, but not charged automatically. Charge Card on File on an invoice charges it once."
+    },
+    {
+      "args": [
+        true,
+        false,
+        null
+      ],
+      "result": "Send a link so the customer can save a card or bank account. Nothing is charged until an invoice is sent."
+    }
+  ],
+  "autopayInvoiceLine": [
+    {
+      "args": [
+        {
+          "autopay_status": "succeeded",
+          "autopay_method": "Visa •••• 4242"
+        }
+      ],
+      "result": "Paid automatically with Visa •••• 4242"
+    },
+    {
+      "args": [
+        {
+          "autopay_status": "processing",
+          "autopay_method": "Chase •••• 6789"
+        }
+      ],
+      "result": "Charged to Chase •••• 6789; the bank payment is processing"
+    },
+    {
+      "args": [
+        {
+          "autopay_status": "failed",
+          "autopay_method": "Visa •••• 4242",
+          "autopay_failure": "Your card was declined.",
+          "autopay_next_try": "2026-12-03"
+        }
+      ],
+      "result": "Autopay failed: Your card was declined. Trying again Dec 3."
+    },
+    {
+      "args": [
+        {
+          "autopay_status": "failed",
+          "autopay_failure": "Insufficient funds"
+        }
+      ],
+      "result": "Autopay failed: Insufficient funds. No more tries."
+    },
+    {
+      "args": [
+        {
+          "autopay_status": "failed"
+        }
+      ],
+      "result": "Autopay failed. No more tries."
+    },
+    {
+      "args": [
+        {
+          "autopay_status": "succeeded"
+        }
+      ],
+      "result": "Paid automatically with the saved card"
+    },
+    {
+      "args": [
+        {}
+      ],
+      "result": null
+    }
+  ],
+  "chargeConfirm": [
+    {
+      "args": [
+        {
+          "kind": "card",
+          "brand": "visa",
+          "last4": "4242",
+          "exp_month": 4,
+          "exp_year": 2030
+        },
+        16400,
+        300,
+        "Jane Smith"
+      ],
+      "result": {
+        "title": "Charge Visa •••• 4242?",
+        "message": "Jane Smith is charged $168.92 now. That includes the 3% card fee ($4.92).",
+        "confirm": "Charge $168.92",
+        "totalCents": 16892,
+        "feeCents": 492
+      }
+    },
+    {
+      "args": [
+        {
+          "kind": "card",
+          "brand": "visa",
+          "last4": "4242",
+          "exp_month": 4,
+          "exp_year": 2030
+        },
+        16400,
+        0,
+        "Jane Smith"
+      ],
+      "result": {
+        "title": "Charge Visa •••• 4242?",
+        "message": "Jane Smith is charged $164.00 now.",
+        "confirm": "Charge $164.00",
+        "totalCents": 16400,
+        "feeCents": 0
+      }
+    },
+    {
+      "args": [
+        {
+          "kind": "card",
+          "brand": "visa",
+          "last4": "4242",
+          "exp_month": 4,
+          "exp_year": 2030
+        },
+        12345,
+        290,
+        "Jane Smith"
+      ],
+      "result": {
+        "title": "Charge Visa •••• 4242?",
+        "message": "Jane Smith is charged $127.03 now. That includes the 2.9% card fee ($3.58).",
+        "confirm": "Charge $127.03",
+        "totalCents": 12703,
+        "feeCents": 358
+      }
+    },
+    {
+      "args": [
+        {
+          "kind": "us_bank_account",
+          "last4": "6789",
+          "bank_name": "Chase"
+        },
+        16400,
+        300,
+        "Jane Smith"
+      ],
+      "result": {
+        "title": "Charge Chase •••• 6789?",
+        "message": "Jane Smith is charged $164.00 now. Bank payments take a few business days to clear.",
+        "confirm": "Charge $164.00",
+        "totalCents": 16400,
+        "feeCents": 0
+      }
+    }
+  ]
+}

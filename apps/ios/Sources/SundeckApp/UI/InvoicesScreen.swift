@@ -16,7 +16,7 @@
         @State private var list: [InvoiceListItem] = []
         @State private var loaded = false
         @State private var shared: SharedFile?
-        @State private var unbilled: [UnbilledMonth] = []
+        @State private var months: [BillingMonth] = []
         @State private var filter: InvoiceFilter
         @State private var sort = InvoiceSort.newest
         @State private var search = ""
@@ -39,31 +39,25 @@
             let manager = isManagerRole(company?.role)
             let timeZone = company?.timeZone ?? "America/Phoenix"
             List {
+                // The subtitle and the export buttons are separate rows: in a List, a row holding
+                // both cut off the subtitle's first character (owner, 2026-11-16: "3 open" read
+                // "ɜ open"; the screenshot probe showed it only with buttons in the row).
                 Section {
-                    PageHeader {
-                        Text(invoicesSubtitle(list))
-                    } actions: {
-                        if manager {
-                            Button("Export Invoices") { export("invoices") }.buttonStyle(.secondary)
-                            Button("Export Payments") { export("payments") }.buttonStyle(.secondary)
+                    PageHeader(subtitle: invoicesSubtitle(list)).plainListRow()
+                    if manager {
+                        ViewThatFits(in: .horizontal) {
+                            HStack(spacing: 12) { exportButtons }
+                            VStack(alignment: .leading, spacing: 12) { exportButtons }
                         }
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .padding(.top, 12)
+                        .plainListRow()
                     }
-                    .plainListRow()
                 }
-                if manager, company?.services != .leak, !unbilled.isEmpty {
-                    Section {
-                        ForEach(unbilled) { month in
-                            MonthToBillRow(month: month) { await loadUnbilled() }.surfaceRow()
-                        }
-                    } header: {
-                        SectionLabel("Maintenance to bill")
-                    } footer: {
-                        Text(
-                            "One draft invoice per customer for the month: the plan’s monthly price and any priced cleanings. Review the drafts, then send them. Last month is drafted automatically on the 1st."
-                        )
-                        .textRole(.footnote)
-                        .foregroundStyle(Color.textMuted)
-                    }
+                // Monthly Billing (owner, 2026-11-15; was Maintenance to bill): pool shops' months
+                // with drafts to send or customers not invoiced yet.
+                if manager, company.map({ offersPool($0.settings) }) == true, !months.isEmpty {
+                    MonthlyBillingSection(months: months)
                 }
                 let today = localDay(Date(), timeZone: timeZone)
                 let shown = shownInvoices(list, filter: filter, sort: sort, q: search, today: today)
@@ -99,7 +93,7 @@
                     Section {
                         ForEach(shown) { item in
                             Button {
-                                openRoute(.jobSection(item.invoice.jobId, .wrapUp))
+                                open(item)
                             } label: {
                                 InvoiceRow(item: item, timeZone: timeZone, today: today)
                             }
@@ -122,7 +116,7 @@
             .groupedList()
             .refreshable {
                 await sync.syncNow()
-                await loadUnbilled()
+                await loadMonths()
             }
             .navigationTitle("Invoices")
             .navigationBarTitleDisplayMode(.large)
@@ -174,7 +168,12 @@
                 Button("Cancel", role: .cancel) {}
             }
             .task(id: "\(sync.revision)|\(company?.id ?? "")") { reload() }
-            .task { await loadUnbilled() }
+            .task { await loadMonths() }
+        }
+
+        @ViewBuilder private var exportButtons: some View {
+            Button("Export Invoices") { export("invoices") }.buttonStyle(.secondary)
+            Button("Export Payments") { export("payments") }.buttonStyle(.secondary)
         }
 
         private func reload() {
@@ -196,9 +195,7 @@
         private func menu(_ item: InvoiceListItem) -> [SwipeAction] {
             let actions = rowActions[item.id]
             var list = [
-                SwipeAction(title: "Open", systemImage: "arrow.up.right", tint: Color.link) {
-                    openRoute(.jobSection(item.invoice.jobId, .wrapUp))
-                }
+                SwipeAction(title: "Open", systemImage: "arrow.up.right", tint: Color.link) { open(item) }
             ]
             if let link = actions?.link {
                 list.append(
@@ -226,6 +223,18 @@
                     })
             }
             return list
+        }
+
+        /// A monthly draft opens on its month's page, with the rest to send (owner, 2026-11-15);
+        /// anything else on its job's Wrap-Up.
+        private func open(_ item: InvoiceListItem) {
+            if let month = item.invoice.periodMonth, item.invoice.status == .draft,
+                offersPool(session.company?.settings), isManagerRole(session.company?.role)
+            {
+                openRoute(.more(.billingMonth(String(month.prefix(10)), open: item.invoice.id)))
+            } else {
+                openRoute(.jobSection(item.invoice.jobId, .wrapUp))
+            }
         }
 
         private func startPayment(_ item: InvoiceListItem) {
@@ -268,84 +277,15 @@
             shared = SharedFile(url: url)
         }
 
-        /// Finished maintenance visits not on an invoice yet (managers at pool shops; needs a signal).
-        private func loadUnbilled() async {
-            guard let company = session.company, isManagerRole(company.role), company.services != .leak else { return }
-            if let months: [UnbilledMonth] = try? await app.client
-                .rpc("unbilled_maintenance", params: ["target_company": company.id]).execute().value
+        /// Monthly Billing's months (managers at pool shops; needs a signal, else they stay as
+        /// they were).
+        private func loadMonths() async {
+            guard let company = session.company, isManagerRole(company.role), offersPool(company.settings) else {
+                return
+            }
+            if let rows = try? await MonthlyBillingServer.months(LenientRPC(client: app.client), companyId: company.id)
             {
-                unbilled = months
-            }
-        }
-    }
-
-    /// A month of maintenance waiting to be billed (website `MonthlyBilling`).
-    struct UnbilledMonth: Decodable, Identifiable, Hashable {
-        var month: String
-        var visits: Int
-        var customers: Int
-        var totalCents: Int
-
-        var id: String { month }
-
-        enum CodingKeys: String, CodingKey {
-            case month, visits, customers
-            case totalCents = "total_cents"
-        }
-    }
-
-    struct MonthToBillRow: View {
-        var month: UnbilledMonth
-        var done: () async -> Void
-        @Environment(Session.self) private var session
-        @Environment(SyncService.self) private var sync
-        @Environment(AppEnvironment.self) private var app
-        @State private var busy = false
-        @State private var result: (text: String, error: Bool)?
-
-        var body: some View {
-            let current = month.month.hasPrefix(
-                String(isoTimestamp(milliseconds: Date().timeIntervalSince1970 * 1000).prefix(7)))
-            VStack(alignment: .leading, spacing: 12) {
-                HStack(spacing: 12) {
-                    VStack(alignment: .leading, spacing: 2) {
-                        (Text(monthName(month.month)).font(.role(.bodyMedium)).foregroundStyle(Color.text)
-                            + Text(current ? " · so far" : "").font(.role(.body)).foregroundStyle(Color.textMuted))
-                        Text(
-                            "\(month.visits == 1 ? "1 visit" : "\(month.visits) visits") · \(month.customers == 1 ? "1 customer" : "\(month.customers) customers") · \(formatCents(month.totalCents))"
-                        )
-                        .textRole(.secondary)
-                        .foregroundStyle(Color.textMuted)
-                    }
-                    Spacer(minLength: 0)
-                    Button {
-                        Task { await bill() }
-                    } label: {
-                        Text(busy ? "Creating…" : "Create Invoices")
-                    }
-                    .buttonStyle(.secondary)
-                    .disabled(busy)
-                }
-                if let result { Notice(kind: result.error ? .error : .success, text: result.text) }
-            }
-            .padding(.vertical, 4)
-        }
-
-        private func bill() async {
-            guard let company = session.company, !busy else { return }
-            busy = true
-            defer { busy = false }
-            do {
-                let n: Int = try await app.client
-                    .rpc("create_monthly_invoices", params: ["target_company": company.id, "month": month.month])
-                    .execute().value
-                result = (n == 1 ? "1 draft invoice ready to review." : "\(n) draft invoices ready to review.", false)
-                await sync.syncNow()
-                await done()
-            } catch let failure as PostgrestError {
-                result = (friendlyError(failure.message), true)
-            } catch {
-                result = ("No connection. Try again when you're online.", true)
+                months = rows
             }
         }
     }

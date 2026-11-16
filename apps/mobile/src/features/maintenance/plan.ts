@@ -1,4 +1,12 @@
-import { isDateString, parseDollars, type PlanRepeat } from "@leakbook/core";
+import {
+  INVOICE_DAYS,
+  isDateString,
+  ordinalDay,
+  parseDollars,
+  parseInvoiceDay,
+  planInvoiceDayLabel,
+  type PlanRepeat,
+} from "@leakbook/core";
 
 // A maintenance plan's form on the phone (New Job's plan and a customer's visit plans), checked
 // the same way as the website's (apps/web/src/lib/plan-repeat.ts and app/actions/maintenance.ts).
@@ -35,6 +43,8 @@ export interface PlanDraft {
   /** A member's user id, or blank: nobody yet. */
   tech: string;
   notes: string;
+  /** "1" to "28", or blank: the shop's day (owner, 2026-11-15). */
+  invoiceDay?: string;
 }
 
 export type PlanErrors = Partial<
@@ -54,6 +64,7 @@ export interface PlanValues {
   price_cents: number | null;
   ends_on: string | null;
   notes: string | null;
+  invoice_day: number | null;
 }
 
 /** The plan's values, or the fields to fix. `endsMessage` differs on New Job. */
@@ -90,8 +101,20 @@ export function checkPlan(
       price_cents: price,
       ends_on: ends || null,
       notes: d.notes.trim() || null,
+      invoice_day: parseInvoiceDay(d.invoiceDay ?? ""),
     },
   };
+}
+
+/**
+ * A plan's Invoice Day choices (owner, 2026-11-15: "set the invoice date when setting up a new
+ * recurring job"), as the website's: "Shop Default (1st)", then the 1st to the 28th.
+ */
+export function invoiceDayOptions(shopDay: number): { value: string; label: string }[] {
+  return [
+    { value: "", label: planInvoiceDayLabel(null, shopDay) },
+    ...INVOICE_DAYS.map((d) => ({ value: String(d), label: ordinalDay(d) })),
+  ];
 }
 
 /** A network failure from fetch, as opposed to the server saying no. */

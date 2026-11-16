@@ -9,7 +9,12 @@ import { useRows } from "./hooks";
 // them through the sync layer, as the website's settings actions do.
 
 export type ConfigTable =
-  "price_book_item" | "component_type" | "test_type" | "severity_level" | "exclusion_reason";
+  | "price_book_item"
+  | "component_type"
+  | "test_type"
+  | "severity_level"
+  | "exclusion_reason"
+  | "skip_reason";
 
 /** A table's rows, not removed, in their order. */
 export function useConfig<T extends { sort_order?: number | null }>(

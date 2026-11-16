@@ -95,7 +95,7 @@
             let company = session.company
             let services = company?.services ?? .both
             let manager = isManagerRole(company?.role)
-            let canAdd = manager && (page == .priceBook || page == .exclusions)
+            let canAdd = manager && (page == .priceBook || page == .exclusions || page == .skipReasons)
             // Charge for Chemicals (owner, 2026-10-24) sits with the prices it uses, just above the
             // price book's Chemicals group, as on the website: owners and admins of pool shops.
             let charge = page == .priceBook && manager && company.map { offersPool($0.settings) } == true
@@ -406,6 +406,7 @@
             case .tests: groups = [(nil, testTypeItems(store, companyId: company.id))]
             case .severities: groups = [(nil, severityItems(store, companyId: company.id))]
             case .exclusions: groups = [(nil, exclusionItems(store, companyId: company.id))]
+            case .skipReasons: groups = [(nil, skipReasonItems(store, companyId: company.id))]
             case .team:
                 team = teamMembers(store, kv: sync.kv, companyId: company.id, me: session.user?.id)
                 profiles = profileRows(personProfiles(store, companyId: company.id), team: team)
@@ -922,10 +923,13 @@
                     LabeledFieldRow(label: "Order", text: $form.order, keyboard: .numberPad)
                 }
                 Grouped(
-                    footer: page == .exclusions ? nil : "Other fields are on the website, in Settings › \(page.title)."
+                    footer: page == .exclusions || page == .skipReasons
+                        ? nil : "Other fields are on the website, in Settings › \(page.title)."
                 ) {
                     if page == .severities { SwitchRow("Must appear in the report summary", isOn: $form.mustMention) }
-                    if item != nil || page == .exclusions { SwitchRow(words.active, isOn: $form.active) }
+                    if item != nil || page == .exclusions || page == .skipReasons {
+                        SwitchRow(words.active, isOn: $form.active)
+                    }
                 }
                 if let error { Notice(kind: .error, text: error) }
                 Button(item == nil ? words.add : "Save") { save() }

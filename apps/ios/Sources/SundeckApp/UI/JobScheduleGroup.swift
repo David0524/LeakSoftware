@@ -48,7 +48,7 @@
                         ActionRow(item.scheduledStart == nil ? "Schedule Job" : "Change Schedule") {
                             moving = MoveTarget(job: item, from: from(item, board))
                         }
-                        if canUnschedule(item.status) {
+                        if canUnschedule(item.status) || item.status == .skipped {
                             ActionRow("Suggest Times") { suggesting = item }
                         }
                     }
@@ -61,6 +61,12 @@
                 }
             }
             .sensoryFeedback(.success, trigger: saves)
+            // Reschedule on a skipped visit's card opens Move (skip-visit.ts).
+            .onReceive(NotificationCenter.default.publisher(for: .rescheduleVisit)) { note in
+                guard (note.object as? String) == job.id, let board else { return }
+                let item = board.jobs.first(where: { $0.id == job.id }) ?? ScheduleJob(job)
+                moving = MoveTarget(job: item, from: from(item, board))
+            }
             .task(id: "\(sync.revision)|\(drive.known.count)") { reload() }
             .task(id: job.id) {
                 guard let company = session.company, let user = session.user else { return }

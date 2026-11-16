@@ -11,12 +11,19 @@ import {
   SettingsForm,
   SettingsSection,
 } from "@/components/settings-forms";
+import { ReminderChannelChoice } from "@/components/reminder-channel";
 import { ServicesChoice } from "@/components/services-form";
 import { PageHeader } from "@/components/ui";
 import { getOffice } from "@/lib/auth";
 import { getCompany } from "@/lib/data";
 import { createClient } from "@/lib/supabase/server";
-import { companyServices, offersLeak } from "@leakbook/core";
+import {
+  FEEDBACK_WORDS,
+  askFeedbackFirst,
+  companyServices,
+  offersLeak,
+  reminderChannel,
+} from "@leakbook/core";
 
 export const metadata: Metadata = { title: "Company Settings · Sundeck Pro" };
 
@@ -57,6 +64,7 @@ export default async function CompanySettingsPage() {
     reminders?: { quote_days?: number[]; invoice_days?: number[] };
     review_requests?: boolean;
   };
+  const channel = reminderChannel(company.settings);
   const zones = US_ZONES.includes(company.timezone) ? US_ZONES : [company.timezone, ...US_ZONES];
 
   return (
@@ -114,9 +122,10 @@ export default async function CompanySettingsPage() {
 
         <SettingsSection title="Reminders and Reviews">
           <p className="px-4 text-[0.9375rem] text-text-muted sm:px-0">
-            Emails sent once a day, in the morning. They stop when a quote is accepted or an invoice
-            is paid, and customers can turn them off from any of them.
+            Sent once a day, in the morning. They stop when a quote is accepted or an invoice is
+            paid, and customers can turn them off from any of them.
           </p>
+          <ReminderChannelChoice initial={channel} />
           <SettingsFields className="sm:grid sm:grid-cols-2 sm:gap-4">
             <SField
               label="Quote reminders (days after sending)"
@@ -143,6 +152,12 @@ export default async function CompanySettingsPage() {
                   ? undefined
                   : "Add your review link under Company profile to send review requests."
               }
+            />
+            <SSwitch
+              name="ask_feedback_first"
+              label={FEEDBACK_WORDS.settingTitle}
+              defaultChecked={askFeedbackFirst(company.settings)}
+              hint={FEEDBACK_WORDS.settingHint}
             />
           </SettingsFields>
         </SettingsSection>

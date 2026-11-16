@@ -868,6 +868,12 @@ public func lockColumns(_ lock: JobLock) -> LockColumns {
 /// (owner, 2026-10-18). Plan Route still leaves started and finished jobs where they are.
 public func canMoveJob(_ status: JobStatus) -> Bool { status != .canceled }
 
+/// The status a job has once it is moved to a day: Scheduled for one that hasn't started and for a
+/// skipped visit (a new day puts it back on), as it was for a started or finished one.
+public func statusAfterMove(_ status: JobStatus) -> JobStatus {
+    canUnschedule(status) || status == .skipped ? .scheduled : status
+}
+
 /// Whether a job can go back to Needs a Time: only one that hasn't started.
 public func canUnschedule(_ status: JobStatus) -> Bool { status == .scheduled || status == .unscheduled }
 

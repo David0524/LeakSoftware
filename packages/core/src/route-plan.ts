@@ -223,6 +223,14 @@ export function canMoveJob(status: string): boolean {
   return status !== "canceled";
 }
 
+/**
+ * The status a job has once it is moved to a day: Scheduled for one that hasn't started and
+ * for a skipped visit (a new day puts it back on), as it was for a started or finished one.
+ */
+export function statusAfterMove(status: string): string {
+  return canUnschedule(status) || status === "skipped" ? "scheduled" : status;
+}
+
 /** Whether a job can go back to Needs a Time: only one that hasn't started. */
 export function canUnschedule(status: string): boolean {
   return status === "scheduled" || status === "unscheduled";

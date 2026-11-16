@@ -106,9 +106,15 @@ begin
   -- A chemical added on the job (840_chemical_additions).
   insert into chemical_addition (company_id, job_id, property_id, name, unit, quantity, added_by)
     values (c, j, prop, 'Liquid chlorine', 'gal', 0.5, t);
+  -- A charge on the job (only maintenance visits bill them; 890_monthly_billing).
+  insert into visit_charge (company_id, job_id, name, unit_price_cents, added_by)
+    values (c, j, 'Replace skimmer basket', 2400, t);
   -- A repair on the job (on a leak detection job it doesn't change the price; 670_job_repairs).
   insert into job_repair (company_id, job_id, description, price_cents)
     values (c, j, 'Replace pump seal', 9500);
+  -- An issue the tech reported on the visit (896_service_issues).
+  insert into service_issue (company_id, customer_id, property_id, job_id, description, reported_by)
+    values (c, cust, prop, j, 'Pump leaking at the seal', t);
   insert into saved_report (company_id, name, sections)
     values (c, 'No leak found ' || label, '{"summary": "We found no leak."}');
   insert into team_profile (company_id, user_id, name, phone, emergency_name, emergency_phone)
@@ -127,6 +133,12 @@ begin
   insert into call_log (company_id, conversation_id, direction, status)
     values (c, conv, 'in', 'missed');
   insert into stripe_account (company_id, stripe_account_id) values (c, 'acct_' || label);
+  -- The customer's saved card (server only; owners and admins read it; 894_autopay).
+  insert into customer_payment_method (company_id, customer_id, kind, brand, last4, exp_month,
+                                       exp_year, stripe_account_id, stripe_customer_id,
+                                       stripe_payment_method_id)
+    values (c, cust, 'card', 'visa', '4242', 4, 2030, 'acct_' || label, 'cus_' || label,
+            'pm_' || label);
   insert into subscription (company_id) values (c);
   insert into invite (company_id, email, role) values (c, 'new-' || label || '@test.local', 'tech');
   insert into audit_log (company_id, table_name, row_id, field) values (c, 'job', j, 'status');
@@ -138,6 +150,11 @@ begin
     values (c, 'Fall opening', 'Hi {first name}', o, 1) returning id into ec;
   insert into email_campaign_recipient (company_id, campaign_id, customer_id, email)
     values (c, ec, cust, 'c@example.com');
+  -- A closed complaint from the customer (server writes it; owners and admins read it). Closed,
+  -- so it holds back no review request in the follow-up tests.
+  insert into customer_feedback (company_id, customer_id, job_id, rating, comment, status,
+                                 closed_at)
+    values (c, cust, j, 'down', 'The tech was late.', 'closed', now());
   -- A leg of a route that follows the roads (server only; members read it).
   insert into route_leg (company_id, provider, from_key, to_key, polyline)
     values (c, 'apple', '33.4152,-111.8315', '33.4100,-111.9030', '_p~iF~ps|U_ulLnnqC');

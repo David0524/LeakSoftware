@@ -25,10 +25,13 @@ public struct PlanDraft: Equatable, Sendable {
     /// A member's user id, or nil: nobody yet.
     public var tech: String?
     public var notes: String
+    /// The day of the next month its customer's invoice is drafted (1 to 28), or nil: the shop's
+    /// (owner, 2026-11-15).
+    public var invoiceDay: Int?
 
     public init(
         repeats: PlanRepeat = .weekly, days: [Int] = [], startsOn: String, time: String = "", minutes: String,
-        price: String = "", endsOn: String = "", tech: String? = nil, notes: String = ""
+        price: String = "", endsOn: String = "", tech: String? = nil, notes: String = "", invoiceDay: Int? = nil
     ) {
         self.repeats = repeats
         self.days = days
@@ -39,6 +42,7 @@ public struct PlanDraft: Equatable, Sendable {
         self.endsOn = endsOn
         self.tech = tech
         self.notes = notes
+        self.invoiceDay = invoiceDay
     }
 
     /// A new plan: weekly from today, the shop's visit length.
@@ -52,7 +56,7 @@ public struct PlanDraft: Equatable, Sendable {
             repeats: planRepeat(plan), days: plan.weekdays ?? [], startsOn: plan.startsOn,
             time: plan.visitTime.map { String($0.prefix(5)) } ?? "", minutes: String(plan.durationMinutes),
             price: plan.priceCents.map(centsText) ?? "", endsOn: plan.endsOn ?? "", tech: plan.assignedUserId,
-            notes: plan.notes ?? "")
+            notes: plan.notes ?? "", invoiceDay: plan.invoiceDay)
     }
 
     /// The plan's columns, as service_plan and create_service_plan take them, or the fields to
@@ -83,6 +87,7 @@ public struct PlanDraft: Equatable, Sendable {
             "visit_time": clock.isEmpty ? .null : .string(clock), "duration_minutes": .number(Double(wholeMinutes)),
             "price_cents": cents.map { .number(Double($0)) } ?? .null, "ends_on": ends.isEmpty ? .null : .string(ends),
             "notes": note.isEmpty ? .null : .string(note),
+            "invoice_day": invoiceDay.flatMap { (1...28).contains($0) ? .number(Double($0)) : nil } ?? .null,
         ]
         for (key, value) in s.row { row[key] = value }
         return .success(row)

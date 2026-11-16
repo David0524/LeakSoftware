@@ -17,6 +17,8 @@ import { MonthReportView, type MonthSnapshot } from "@/components/month-report-v
 import { getUser } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import { adminClient } from "@/server/admin";
+import { FeedbackCard } from "@/components/feedback-card";
+import { feedbackCard } from "@/server/feedback";
 import { notifyReportOpened } from "@/server/notify-events";
 import { documentMetadata, fromPreviewFetcher, loadLinkPreview } from "@/server/link-preview";
 import { publicClient } from "@/server/reports";
@@ -96,13 +98,16 @@ async function Report({ params, searchParams }: PageProps<"/r/[token]">) {
     ...s.media.filter((m) => m.kind === "photo").map((m) => m.storage_path),
     ...s.signatures.map((x) => x.image_path).filter((x): x is string => !!x),
   ];
-  const [media, logo] = await Promise.all([
+  // "How did we do?" under the report, when the shop asks (owner's competitor notes, 2026-11-16).
+  // Not in the PDF, and not on a report that was updated since.
+  const [media, logo, feedback] = await Promise.all([
     paths.length
       ? db.storage.from("media").createSignedUrls(paths, 3600)
       : Promise.resolve({ data: [] }),
     s.company.logo_path
       ? db.storage.from("company-assets").createSignedUrl(s.company.logo_path, 3600)
       : Promise.resolve({ data: null }),
+    !print && r.status === "sent" ? feedbackCard(token, admin) : Promise.resolve(null),
   ]);
   const urls = new Map(
     (media.data ?? [])
@@ -155,6 +160,16 @@ async function Report({ params, searchParams }: PageProps<"/r/[token]">) {
           pdfHref={print ? undefined : `/r/${token}/pdf`}
         />
       )}
+      {feedback?.enabled ? (
+        <div className="report-actions mx-auto max-w-4xl px-4 pb-8 sm:px-8 print:hidden">
+          <FeedbackCard
+            token={token}
+            shop={feedback.company}
+            reviewUrl={feedback.review_url}
+            initial={null}
+          />
+        </div>
+      ) : null}
     </>
   );
 }

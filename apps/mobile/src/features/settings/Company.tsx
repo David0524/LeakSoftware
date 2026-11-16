@@ -2,9 +2,15 @@ import * as ImagePicker from "expo-image-picker";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Image, StyleSheet, View } from "react-native";
 import {
+  FEEDBACK_WORDS,
+  REMINDER_CHANNELS,
+  REMINDER_CHANNEL_HINT,
+  askFeedbackFirst,
   isHexColor,
   offersLeak,
   parseReminderDays,
+  reminderChannel,
+  type ReminderChannel,
   suggestedBrandColor,
   uploadRefusal,
   uploadRefusalMessage,
@@ -17,7 +23,16 @@ import { useAddressSuggestions } from "../address/AddressSuggestions";
 import { locateAfterSync } from "../../lib/locate";
 import { getServices } from "../../lib/services";
 import { useCompany } from "../../state/session";
-import { Button, FieldGroup, FieldRow, Screen, Section, T, Toggle } from "../../ui/components";
+import {
+  Button,
+  FieldGroup,
+  FieldRow,
+  Screen,
+  Section,
+  Segmented,
+  T,
+  Toggle,
+} from "../../ui/components";
 import { haptics } from "../../ui/haptics";
 import { Select } from "../../ui/Select";
 import { color, space } from "../../ui/theme";
@@ -58,8 +73,9 @@ export function CompanySettings() {
 }
 
 type Settings = {
-  reminders?: { quote_days?: number[]; invoice_days?: number[] };
+  reminders?: { quote_days?: number[]; invoice_days?: number[]; channel?: ReminderChannel };
   review_requests?: boolean;
+  ask_feedback_first?: boolean;
 };
 
 const profileOf = (row: Row, timezone: string) => ({
@@ -80,6 +96,10 @@ const followupsOf = (settings: Settings) => ({
   quote: (settings.reminders?.quote_days ?? [3, 7]).join(", "),
   invoice: (settings.reminders?.invoice_days ?? [7, 14, 30]).join(", "),
   reviews: settings.review_requests ?? true,
+  // Email, text or both; and "How did we do?" before the review link (owner's competitor notes,
+  // 2026-11-16).
+  channel: reminderChannel(settings),
+  askFirst: askFeedbackFirst(settings),
 });
 
 const brandingOf = (row: Row) => ({
@@ -253,15 +273,21 @@ function CompanyPage() {
       const reminders = {
         quote_days: parseReminderDays(followups.quote) ?? [],
         invoice_days: parseReminderDays(followups.invoice) ?? [],
+        channel: followups.channel,
       };
       write({
         settings: {
           ...(company.settings as unknown as Record<string, JsonValue>),
           reminders,
           review_requests: followups.reviews,
+          ask_feedback_first: followups.askFirst,
         },
       });
-      const stored = followupsOf({ reminders, review_requests: followups.reviews });
+      const stored = followupsOf({
+        reminders,
+        review_requests: followups.reviews,
+        ask_feedback_first: followups.askFirst,
+      });
       setFollowups(stored);
       setSavedFollowups(stored);
     }
@@ -514,8 +540,19 @@ function FollowupsPart({
     <View style={styles.part}>
       <FieldGroup
         title="Reminders and Reviews"
-        footer="Emails sent once a day, in the morning. They stop when a quote is accepted or an invoice is paid, and customers can turn them off from any of them."
+        footer="Sent once a day, in the morning. They stop when a quote is accepted or an invoice is paid, and customers can turn them off from any of them."
       >
+        <View style={styles.setting}>
+          <Segmented
+            label="Send Reminders By"
+            options={REMINDER_CHANNELS}
+            value={value.channel}
+            onChange={set("channel")}
+          />
+          <T variant="secondary" muted>
+            {REMINDER_CHANNEL_HINT}
+          </T>
+        </View>
         <FieldRow
           label="Quote reminders (days after sending)"
           layout="stacked"
@@ -543,6 +580,16 @@ function FollowupsPart({
               Add your review link under Company profile to send review requests.
             </T>
           )}
+        </View>
+        <View style={styles.setting}>
+          <Toggle
+            label={FEEDBACK_WORDS.settingTitle}
+            value={value.askFirst}
+            onChange={set("askFirst")}
+          />
+          <T variant="secondary" muted>
+            {FEEDBACK_WORDS.settingHint}
+          </T>
         </View>
       </FieldGroup>
     </View>

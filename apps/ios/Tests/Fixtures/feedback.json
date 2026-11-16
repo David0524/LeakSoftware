@@ -1,0 +1,507 @@
+{
+  "FEEDBACK_FILTERS": [
+    {
+      "args": [],
+      "result": [
+        {
+          "value": "open",
+          "label": "Open"
+        },
+        {
+          "value": "closed",
+          "label": "Closed"
+        },
+        {
+          "value": "up",
+          "label": "Thumbs Up"
+        }
+      ]
+    }
+  ],
+  "feedbackWords": [
+    {
+      "args": [],
+      "result": {
+        "FEEDBACK_TITLE": "Customer Feedback",
+        "FEEDBACK_EMPTY": {
+          "open": "No open complaints.",
+          "closed": "No closed complaints yet.",
+          "up": "No thumbs up yet."
+        },
+        "FEEDBACK_OFFLINE": "No connection. Connect to see customer feedback.",
+        "FEEDBACK_WORDS": {
+          "close": "Close",
+          "reopen": "Reopen",
+          "noteLabel": "Note",
+          "notePlaceholder": "What was done about it?",
+          "noComment": "No comment left.",
+          "thumbsUp": "Thumbs up",
+          "customerSection": "Feedback",
+          "seeAll": "See All Feedback",
+          "settingTitle": "Ask How We Did First",
+          "settingHint": "The review request asks “How did we do?” first. A thumbs up goes on to your Google review; a thumbs down is a private message to you. Customers with an open complaint get no review requests."
+        },
+        "REMINDER_CHANNELS": [
+          {
+            "value": "email",
+            "label": "Email"
+          },
+          {
+            "value": "text",
+            "label": "Text"
+          },
+          {
+            "value": "both",
+            "label": "Both"
+          }
+        ],
+        "REMINDER_CHANNEL_HINT": "Texts go from your company number to customers with a mobile number who haven’t replied STOP. Set up texting under Phone and Texting."
+      }
+    }
+  ],
+  "feedbackFilter": [
+    {
+      "args": [
+        [
+          {
+            "id": "a",
+            "customer_id": "c",
+            "customer_name": "Rebecca Soto",
+            "job_id": "j",
+            "job_number": 1042,
+            "rating": "down",
+            "comment": "The pool is still green.",
+            "status": "open",
+            "office_note": null,
+            "closed_at": null,
+            "closed_by_name": null,
+            "created_at": "2026-11-16T17:00:00Z"
+          },
+          {
+            "id": "b",
+            "customer_id": "c",
+            "customer_name": "Rebecca Soto",
+            "job_id": "j",
+            "job_number": 1042,
+            "rating": "down",
+            "comment": "The pool is still green.",
+            "status": "closed",
+            "office_note": null,
+            "closed_at": "2026-11-16T18:00:00Z",
+            "closed_by_name": null,
+            "created_at": "2026-11-16T17:00:00Z"
+          },
+          {
+            "id": "c",
+            "customer_id": "c",
+            "customer_name": "Rebecca Soto",
+            "job_id": "j",
+            "job_number": 1042,
+            "rating": "up",
+            "comment": null,
+            "status": "closed",
+            "office_note": null,
+            "closed_at": "2026-11-16T18:00:00Z",
+            "closed_by_name": null,
+            "created_at": "2026-11-16T17:00:00Z"
+          },
+          {
+            "id": "d",
+            "customer_id": "c",
+            "customer_name": "Rebecca Soto",
+            "job_id": "j",
+            "job_number": 1042,
+            "rating": "down",
+            "comment": "The pool is still green.",
+            "status": "open",
+            "office_note": null,
+            "closed_at": null,
+            "closed_by_name": null,
+            "created_at": "2026-11-16T17:00:00Z"
+          }
+        ],
+        "open"
+      ],
+      "result": [
+        "a",
+        "d"
+      ]
+    },
+    {
+      "args": [
+        [
+          {
+            "id": "a",
+            "customer_id": "c",
+            "customer_name": "Rebecca Soto",
+            "job_id": "j",
+            "job_number": 1042,
+            "rating": "down",
+            "comment": "The pool is still green.",
+            "status": "open",
+            "office_note": null,
+            "closed_at": null,
+            "closed_by_name": null,
+            "created_at": "2026-11-16T17:00:00Z"
+          },
+          {
+            "id": "b",
+            "customer_id": "c",
+            "customer_name": "Rebecca Soto",
+            "job_id": "j",
+            "job_number": 1042,
+            "rating": "down",
+            "comment": "The pool is still green.",
+            "status": "closed",
+            "office_note": null,
+            "closed_at": "2026-11-16T18:00:00Z",
+            "closed_by_name": null,
+            "created_at": "2026-11-16T17:00:00Z"
+          },
+          {
+            "id": "c",
+            "customer_id": "c",
+            "customer_name": "Rebecca Soto",
+            "job_id": "j",
+            "job_number": 1042,
+            "rating": "up",
+            "comment": null,
+            "status": "closed",
+            "office_note": null,
+            "closed_at": "2026-11-16T18:00:00Z",
+            "closed_by_name": null,
+            "created_at": "2026-11-16T17:00:00Z"
+          },
+          {
+            "id": "d",
+            "customer_id": "c",
+            "customer_name": "Rebecca Soto",
+            "job_id": "j",
+            "job_number": 1042,
+            "rating": "down",
+            "comment": "The pool is still green.",
+            "status": "open",
+            "office_note": null,
+            "closed_at": null,
+            "closed_by_name": null,
+            "created_at": "2026-11-16T17:00:00Z"
+          }
+        ],
+        "closed"
+      ],
+      "result": [
+        "b"
+      ]
+    },
+    {
+      "args": [
+        [
+          {
+            "id": "a",
+            "customer_id": "c",
+            "customer_name": "Rebecca Soto",
+            "job_id": "j",
+            "job_number": 1042,
+            "rating": "down",
+            "comment": "The pool is still green.",
+            "status": "open",
+            "office_note": null,
+            "closed_at": null,
+            "closed_by_name": null,
+            "created_at": "2026-11-16T17:00:00Z"
+          },
+          {
+            "id": "b",
+            "customer_id": "c",
+            "customer_name": "Rebecca Soto",
+            "job_id": "j",
+            "job_number": 1042,
+            "rating": "down",
+            "comment": "The pool is still green.",
+            "status": "closed",
+            "office_note": null,
+            "closed_at": "2026-11-16T18:00:00Z",
+            "closed_by_name": null,
+            "created_at": "2026-11-16T17:00:00Z"
+          },
+          {
+            "id": "c",
+            "customer_id": "c",
+            "customer_name": "Rebecca Soto",
+            "job_id": "j",
+            "job_number": 1042,
+            "rating": "up",
+            "comment": null,
+            "status": "closed",
+            "office_note": null,
+            "closed_at": "2026-11-16T18:00:00Z",
+            "closed_by_name": null,
+            "created_at": "2026-11-16T17:00:00Z"
+          },
+          {
+            "id": "d",
+            "customer_id": "c",
+            "customer_name": "Rebecca Soto",
+            "job_id": "j",
+            "job_number": 1042,
+            "rating": "down",
+            "comment": "The pool is still green.",
+            "status": "open",
+            "office_note": null,
+            "closed_at": null,
+            "closed_by_name": null,
+            "created_at": "2026-11-16T17:00:00Z"
+          }
+        ],
+        "up"
+      ],
+      "result": [
+        "c"
+      ]
+    },
+    {
+      "args": [
+        [],
+        "open"
+      ],
+      "result": []
+    }
+  ],
+  "feedbackOpenLabel": [
+    {
+      "args": [
+        0
+      ],
+      "result": "No open complaints"
+    },
+    {
+      "args": [
+        1
+      ],
+      "result": "1 open complaint"
+    },
+    {
+      "args": [
+        2
+      ],
+      "result": "2 open complaints"
+    },
+    {
+      "args": [
+        37
+      ],
+      "result": "37 open complaints"
+    },
+    {
+      "args": [
+        -1
+      ],
+      "result": "No open complaints"
+    }
+  ],
+  "feedbackSubtitle": [
+    {
+      "args": [
+        1042,
+        "Nov 16"
+      ],
+      "result": "Job #1042 · Nov 16"
+    },
+    {
+      "args": [
+        null,
+        "Nov 16"
+      ],
+      "result": "Nov 16"
+    },
+    {
+      "args": [
+        0,
+        "Nov 16"
+      ],
+      "result": "Nov 16"
+    }
+  ],
+  "feedbackNotification": [
+    {
+      "args": [
+        "Rebecca Soto",
+        "The pool is still green."
+      ],
+      "result": {
+        "title": "Customer complaint",
+        "body": "Rebecca Soto: The pool is still green."
+      }
+    },
+    {
+      "args": [
+        "Rebecca Soto",
+        "  Late\n and   rude "
+      ],
+      "result": {
+        "title": "Customer complaint",
+        "body": "Rebecca Soto: Late and rude"
+      }
+    },
+    {
+      "args": [
+        "Rebecca Soto",
+        null
+      ],
+      "result": {
+        "title": "Customer complaint",
+        "body": "Rebecca Soto gave a thumbs down."
+      }
+    },
+    {
+      "args": [
+        "Rebecca Soto",
+        "   "
+      ],
+      "result": {
+        "title": "Customer complaint",
+        "body": "Rebecca Soto gave a thumbs down."
+      }
+    },
+    {
+      "args": [
+        "Rebecca Soto",
+        "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+      ],
+      "result": {
+        "title": "Customer complaint",
+        "body": "Rebecca Soto: xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx…"
+      }
+    },
+    {
+      "args": [
+        "Rebecca Soto",
+        "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+      ],
+      "result": {
+        "title": "Customer complaint",
+        "body": "Rebecca Soto: xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+      }
+    },
+    {
+      "args": [
+        "Rebecca Soto",
+        "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+      ],
+      "result": {
+        "title": "Customer complaint",
+        "body": "Rebecca Soto: xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx…"
+      }
+    }
+  ],
+  "reminderChannel": [
+    {
+      "args": [
+        null
+      ],
+      "result": "email"
+    },
+    {
+      "args": [
+        {}
+      ],
+      "result": "email"
+    },
+    {
+      "args": [
+        {
+          "reminders": {}
+        }
+      ],
+      "result": "email"
+    },
+    {
+      "args": [
+        {
+          "reminders": {
+            "channel": "text"
+          }
+        }
+      ],
+      "result": "text"
+    },
+    {
+      "args": [
+        {
+          "reminders": {
+            "channel": "both"
+          }
+        }
+      ],
+      "result": "both"
+    },
+    {
+      "args": [
+        {
+          "reminders": {
+            "channel": "email"
+          }
+        }
+      ],
+      "result": "email"
+    },
+    {
+      "args": [
+        {
+          "reminders": {
+            "channel": "carrier pigeon"
+          }
+        }
+      ],
+      "result": "email"
+    },
+    {
+      "args": [
+        {
+          "reminders": {
+            "channel": 3
+          }
+        }
+      ],
+      "result": "email"
+    }
+  ],
+  "askFeedbackFirst": [
+    {
+      "args": [
+        null
+      ],
+      "result": true
+    },
+    {
+      "args": [
+        {}
+      ],
+      "result": true
+    },
+    {
+      "args": [
+        {
+          "ask_feedback_first": true
+        }
+      ],
+      "result": true
+    },
+    {
+      "args": [
+        {
+          "ask_feedback_first": false
+        }
+      ],
+      "result": false
+    },
+    {
+      "args": [
+        {
+          "ask_feedback_first": "false"
+        }
+      ],
+      "result": true
+    }
+  ]
+}

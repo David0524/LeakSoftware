@@ -81,12 +81,14 @@ export function PayDepositForm({
   demo,
   print,
   cardFee,
+  later,
 }: {
   token: string;
   amount: string;
   demo?: boolean;
   print?: boolean;
   cardFee?: { bankLabel: string; cardLabel: string; note: string } | null;
+  later?: { line: string; button: string } | null;
 }) {
   return (
     <PayForm
@@ -96,6 +98,7 @@ export function PayDepositForm({
       demo={demo}
       print={print}
       cardFee={cardFee}
+      later={later}
     />
   );
 }

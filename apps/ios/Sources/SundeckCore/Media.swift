@@ -33,6 +33,8 @@ public struct Media: Codable, Equatable, Sendable {
     public var findingId: String?
     public var jobComponentId: String?
     public var testResultId: String?
+    /// An issue reported on the job (docs/design/2026-11-16-service-issues.md).
+    public var serviceIssueId: String?
     public var kind: MediaKind
     public var storagePath: String?
     public var uploadState: MediaUploadState
@@ -58,6 +60,7 @@ public struct Media: Codable, Equatable, Sendable {
         case findingId = "finding_id"
         case jobComponentId = "job_component_id"
         case testResultId = "test_result_id"
+        case serviceIssueId = "service_issue_id"
         case storagePath = "storage_path"
         case uploadState = "upload_state"
         case mimeType = "mime_type"
@@ -76,6 +79,7 @@ public struct Media: Codable, Equatable, Sendable {
         findingId = try c.decodeIfPresent(String.self, forKey: .findingId)
         jobComponentId = try c.decodeIfPresent(String.self, forKey: .jobComponentId)
         testResultId = try c.decodeIfPresent(String.self, forKey: .testResultId)
+        serviceIssueId = try c.decodeIfPresent(String.self, forKey: .serviceIssueId)
         kind = try c.decode(MediaKind.self, forKey: .kind)
         storagePath = try c.decodeIfPresent(String.self, forKey: .storagePath)
         // Not yet uploaded, or a state from a newer server: treat as waiting.

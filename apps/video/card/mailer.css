@@ -1,0 +1,39 @@
+/* The 6 x 9 mailer (mailer-front.html, mailer-back.html): card.css's look on a 9 x 6 in
+   landscape piece. Design units: the trimmed mailer is 2700 x 1800 (300 per inch), plus the
+   card's 37.5 bleed; everything that matters stays 75 (0.25 in) inside the trim. */
+html,
+body {
+  width: calc(2700px + 2 * var(--bleed));
+  height: calc(1800px + 2 * var(--bleed));
+}
+.card {
+  width: 2700px;
+  height: 1800px;
+}
+.water {
+  top: 0;
+  height: 100%;
+}
+.logo {
+  left: 75px;
+  top: 80px;
+  height: 88px;
+}
+h1 {
+  font-family: Barlow;
+  font-weight: 800;
+  letter-spacing: -1px;
+}
+h1 .o {
+  color: var(--safety);
+}
+/* The stores' own badges, unaltered (Apple's and Google's guidelines), the same height. */
+.stores {
+  display: flex;
+  gap: 28px;
+  align-items: center;
+}
+.stores img {
+  height: 104px;
+  display: block;
+}

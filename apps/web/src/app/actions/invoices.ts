@@ -15,7 +15,8 @@ import { parseQuantity } from "@/lib/quantity";
 import { siteOrigin } from "@/lib/origin";
 import { createClient } from "@/lib/supabase/server";
 import { EmailNotConfigured } from "@/server/email";
-import { createInvoice, sendInvoice, sendPaymentReceipt } from "@/server/invoices";
+import { autopaySentNote, sendInvoiceWithAutopay } from "@/server/autopay";
+import { createInvoice, sendPaymentReceipt } from "@/server/invoices";
 import {
   CheckoutRefused,
   PaymentsNotConfigured,
@@ -134,18 +135,19 @@ export async function sendInvoiceAction(
   await getOffice();
   const channel = text(form, "channel") === "email" ? "email" : "link";
   try {
-    const r = await sendInvoice(await createClient(), text(form, "invoice"), {
+    const r = await sendInvoiceWithAutopay(await createClient(), text(form, "invoice"), {
       channel,
       to: text(form, "to") || null,
       origin: await siteOrigin(),
     });
     refresh(form);
     return {
-      message: r.emailed
-        ? `Sent to ${text(form, "to")}${r.reportLink ? ", with the month’s service report" : ""}.`
-        : r.reportLink
-          ? "Invoice sent with the month’s service report. Copy the link for the customer; the invoice page links the report."
-          : "Invoice sent. Copy the link for the customer.",
+      message:
+        (r.emailed
+          ? `Sent to ${text(form, "to")}${r.reportLink ? ", with the month’s service report" : ""}.`
+          : r.reportLink
+            ? "Invoice sent with the month’s service report. Copy the link for the customer; the invoice page links the report."
+            : "Invoice sent. Copy the link for the customer.") + autopaySentNote(r.autopay),
       link: r.link,
     };
   } catch (e) {
@@ -255,7 +257,9 @@ export async function payInvoice(_: PayState, form: FormData): Promise<PayState>
       undefined,
       undefined,
       undefined,
-      method === "card" || method === "bank" ? method : null,
+      method === "card" || method === "bank" || method === "later" ? method : null,
+      // Save for Autopay (docs/design/2026-11-16-autopay.md), with the consent shown beside it.
+      form.get("save") === "on",
     );
   } catch (e) {
     if (e instanceof CheckoutRefused || e instanceof PaymentsNotConfigured)

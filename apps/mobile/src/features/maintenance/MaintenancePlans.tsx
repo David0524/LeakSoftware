@@ -1,4 +1,5 @@
 import {
+  PLAN_INVOICE_DAY_FOOTER,
   cleaningCountdown,
   cleaningSummary,
   filterAge,
@@ -6,6 +7,7 @@ import {
   maintenanceSettings,
   planRepeat,
   planSummary,
+  shopInvoiceDay,
   upcomingVisitDates,
   type PlanRepeat as Repeat,
 } from "@leakbook/core";
@@ -24,11 +26,11 @@ import { Select } from "../../ui/Select";
 import { color, face, MAX_TEXT_SCALE, space, type } from "../../ui/theme";
 import { CleaningIcon, cleaningType, usePlanCleanings } from "./Cleanings";
 import { DateField, TimeField } from "../schedule/DateField";
-import { checkPlan, firstVisitHint, type PlanErrors } from "./plan";
+import { checkPlan, firstVisitHint, invoiceDayOptions, type PlanErrors } from "./plan";
 import { PlanRepeat } from "./PlanRepeat";
 import { formChanged } from "../../lib/discard";
 
-type Plan = ServicePlanRow & { notes?: string | null };
+type Plan = ServicePlanRow & { notes?: string | null; invoice_day?: number | null };
 
 /**
  * A pool's maintenance plans on the customer's page (the website's MaintenancePlans): each
@@ -209,6 +211,7 @@ function PlanSheet({
     price: plan?.price_cents != null ? (plan.price_cents / 100).toFixed(2) : "",
     endsOn: plan?.ends_on ?? "",
     notes: plan?.notes ?? "",
+    invoiceDay: plan?.invoice_day ? String(plan.invoice_day) : "",
   });
   // Unsaved entries ask before closing (owner, 2026-10-20: "Discard changes?" everywhere).
   const [startF] = useState(f);
@@ -316,6 +319,15 @@ function PlanSheet({
         keyboardType="decimal-pad"
         hint="Billed once a month on the customer's invoice."
         error={errors.price}
+      />
+      <Select
+        label="Invoice day"
+        value={f.invoiceDay}
+        onChange={set("invoiceDay")}
+        options={invoiceDayOptions(
+          shopInvoiceDay(company.settings as unknown as Record<string, unknown>),
+        )}
+        hint={PLAN_INVOICE_DAY_FOOTER}
       />
       <DateField
         label="Last visit (optional)"

@@ -23,6 +23,8 @@
         case review(jobId: String)
         /// New Job, pushed (spec decision 3); `back` is the screen it came from ("Jobs").
         case newJob(back: String)
+        /// An issue reported on a visit (docs/design/2026-11-16-service-issues.md).
+        case issue(String)
     }
 
     /// The editors that open as sheets over the job (S4).
@@ -61,11 +63,17 @@
         }
     }
 
-    /// Jobs | Reports.
+    /// Jobs | Reports | Issues (issues reported on visits, docs/design/2026-11-16-service-issues.md).
     enum JobsMode: String, Hashable, CaseIterable {
-        case jobs, reports
+        case jobs, reports, issues
 
-        var title: String { self == .jobs ? "Jobs" : "Reports" }
+        var title: String {
+            switch self {
+            case .jobs: "Jobs"
+            case .reports: "Reports"
+            case .issues: IssueText.segment
+            }
+        }
     }
 
     /// Jobs (spec 5.2) and Reports (5.3) in one screen: the search field, the segmented control,
@@ -81,6 +89,7 @@
         @State private var filter: JobFilter
         @State private var mode = JobsMode.jobs
         @State private var reportFilter = ReportFilter.all
+        @State private var issueFilter = IssueFilter.open
         /// The list's order (owner, 2026-10-20: "Add sorting on the jobs page just like invoices").
         @State private var sort = JobSort.scheduled
         /// The Type menu (owner, 2026-10-22: "Add a filter on the jobs and activity pages for job
@@ -120,7 +129,7 @@
                     if mode == .jobs {
                         ShopSearchField(text: $query, focused: $searchFocused, active: searching) { cancelSearch() }
                             .padding(.horizontal, 16)
-                    } else {
+                    } else if mode == .reports {
                         // Reports: the field filters the list in place.
                         ShopSearchField(
                             text: $reportQuery, focused: $searchFocused,
@@ -172,7 +181,7 @@
                 Text(CompleteSendPrompt.message(customer: row.customer == "Customer" ? nil : row.customer))
             }
             // Type, Sort and the "+" on the bar's right while on Jobs; Type and Sort on Reports.
-            .rootTitle(mode.title, trailingButtons: mode == .jobs ? 3 : 2)
+            .rootTitle(mode.title, trailingButtons: mode == .jobs ? 3 : mode == .reports ? 2 : 0)
             .toolbar {
                 if mode == .jobs {
                     ToolbarItem(placement: .topBarTrailing) {
@@ -192,7 +201,8 @@
                         .accessibilityLabel("Sort, \(sort.label)")
                     }
                     NewJobToolbar(back: "Jobs")
-                } else {
+                } else if mode == .reports {
+                    // Issues has its filter pills only.
                     ToolbarItem(placement: .topBarTrailing) {
                         JobTypeMenu(selection: $reportType, services: companyServices(company?.settings))
                     }
@@ -231,9 +241,14 @@
 
         /// The list's part of the page: Jobs | Reports, the sync bar, filters, the list.
         @ViewBuilder private func jobsAndReports(_ company: CompanyContext?) -> some View {
+            let userId = session.user?.id ?? ""
+            let openIssues = company.map {
+                openIssueCount(shopIssues(sync.store, companyId: $0.id), userId: userId, role: $0.role)
+            }
             Segmented(
-                selection: $mode, options: JobsMode.allCases, label: \.title, title: "Jobs and Reports",
-                minSegmentWidth: 88
+                selection: $mode, options: JobsMode.allCases,
+                label: { $0 == .issues ? issuesSegmentLabel(openIssues ?? 0) : $0.title },
+                title: "Jobs, Reports and Issues", minSegmentWidth: 88
             )
             .padding(.horizontal, 16)
             // Only while something waits to send, as on Today: an empty row doubled the space
@@ -242,6 +257,9 @@
             if mode == .jobs {
                 FilterPills(selection: $filter, options: JobFilter.allCases, label: \.title)
                 jobsList.padding(.horizontal, 16)
+            } else if mode == .issues {
+                FilterPills(selection: $issueFilter, options: IssueFilter.allCases, label: \.label)
+                IssuesList(filter: issueFilter).padding(.horizontal, 16)
             } else {
                 FilterPills(selection: $reportFilter, options: ReportFilter.allCases, label: \.title)
                 reportsList.padding(.horizontal, 16)

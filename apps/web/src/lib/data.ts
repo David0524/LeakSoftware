@@ -21,9 +21,16 @@ import type {
   SeverityLevel,
   TestResult,
   TestType,
+  BillingMonth,
+  InvoiceLine,
+  MonthBilling,
+  VisitCharge,
+  SavedMethod,
 } from "@leakbook/core";
 import {
   canMakeJobs,
+  chargeItems,
+  invoiceTotals,
   checklistTally,
   countCustomers,
   customersAddedSince,
@@ -756,6 +763,25 @@ export async function getCustomer(office: Office, id: string) {
   return { customer: customer as Customer, properties, plans, jobs: await attach(office, jobs) };
 }
 
+/**
+ * The customer's saved card or bank account (docs/design/2026-11-16-autopay.md), or null.
+ * Owners and admins read it; for anyone else row security returns none.
+ */
+export async function getSavedMethod(
+  office: Office,
+  customerId: string,
+): Promise<(SavedMethod & { id: string }) | null> {
+  const supabase = await db();
+  const { data } = await supabase
+    .from("customer_payment_method")
+    .select("id, kind, brand, last4, exp_month, exp_year, bank_name")
+    .eq("company_id", office.company.id)
+    .eq("customer_id", customerId)
+    .is("deleted_at", null)
+    .maybeSingle();
+  return (data as (SavedMethod & { id: string }) | null) ?? null;
+}
+
 // ---------------------------------------------------------------------------
 // Settings
 // ---------------------------------------------------------------------------
@@ -1019,13 +1045,18 @@ export interface InvoiceRow {
   notes: string | null;
   sent_at: string | null;
   paid_at: string | null;
+  /** The latest automatic charge (docs/design/2026-11-16-autopay.md). */
+  autopay_status: string | null;
+  autopay_method: string | null;
+  autopay_failure: string | null;
+  autopay_next_try: string | null;
   lines: InvoiceLineRow[];
   payments: QuoteRow["payments"];
   token: string | null;
 }
 
 const INVOICE_COLUMNS =
-  "id, job_id, number, status, subtotal_cents, discount_cents, tax_cents, credit_cents, total_cents, amount_paid_cents, due_date, notes, sent_at, paid_at";
+  "id, job_id, number, status, subtotal_cents, discount_cents, tax_cents, credit_cents, total_cents, amount_paid_cents, due_date, notes, sent_at, paid_at, autopay_status, autopay_method, autopay_failure, autopay_next_try";
 
 /** A job's invoices, newest first, with lines, payments, and the customer link. */
 export const getInvoices = cache(async function getInvoices(
@@ -1100,6 +1131,36 @@ export interface InvoiceListRow {
 }
 
 /** Every invoice in the company, newest first, with its job number and customer. */
+/** Drafts' totals from their lines, discount and the shop's tax rate. */
+async function draftTotals(office: Office, ids: string[]): Promise<Map<string, number>> {
+  if (ids.length === 0) return new Map();
+  const supabase = await db();
+  const [lines, drafts, company] = await Promise.all([
+    supabase
+      .from("invoice_line_item")
+      .select("invoice_id, kind, quantity, unit_price_cents, taxable, deleted_at")
+      .in("invoice_id", ids)
+      .is("deleted_at", null),
+    supabase.from("invoice").select("id, discount_cents").in("id", ids),
+    supabase.from("company").select("settings").eq("id", office.company.id).single(),
+  ]);
+  const rate = Number(
+    ((company.data?.settings ?? {}) as { tax_rate_bps?: number }).tax_rate_bps ?? 0,
+  );
+  const byInvoice = new Map<string, InvoiceLine[]>();
+  for (const l of (lines.data ?? []) as (InvoiceLine & { invoice_id: string })[])
+    byInvoice.set(l.invoice_id, [
+      ...(byInvoice.get(l.invoice_id) ?? []),
+      { ...l, quantity: Number(l.quantity) },
+    ]);
+  return new Map(
+    ((drafts.data ?? []) as { id: string; discount_cents: number | null }[]).map((d) => [
+      d.id,
+      invoiceTotals(byInvoice.get(d.id) ?? [], d.discount_cents ?? 0, rate).total_cents,
+    ]),
+  );
+}
+
 export async function listInvoices(office: Office): Promise<InvoiceListRow[]> {
   const supabase = await db();
   const invoices = must(
@@ -1139,8 +1200,15 @@ export async function listInvoices(office: Office): Promise<InvoiceListRow[]> {
   const rows = await attach(office, jobs);
   const byId = new Map(rows.map((j) => [j.id, j]));
   const tokenOf = new Map(links.map((l) => [l.invoice_id, l.token]));
+  // A draft's total is only stored when it's sent: work it out from its lines, as the
+  // database does (core invoiceTotals), so a draft never reads $0.00 (owner, 2026-11-15).
+  const draftTotal = await draftTotals(
+    office,
+    invoices.filter((i) => i.status === "draft").map((i) => i.id),
+  );
   return invoices.map((i) => ({
     ...i,
+    total_cents: draftTotal.get(i.id) ?? i.total_cents,
     jobNumber: byId.get(i.job_id)?.number ?? null,
     customer: byId.get(i.job_id)?.customer?.name ?? null,
     customerEmail: byId.get(i.job_id)?.customer?.email ?? null,
@@ -1476,9 +1544,9 @@ export async function getVisitChemicals(office: Office, jobId: string) {
 }
 
 /** A pool's added chemicals, for its log's monthly use. */
-export async function getPoolAdditions(office: Office, propertyId: string) {
+export async function getPoolAdditions(office: Office, propertyId: string, days = 100) {
   const supabase = await db();
-  const since = new Date(Date.now() - 100 * 86_400_000).toISOString();
+  const since = new Date(Date.now() - days * 86_400_000).toISOString();
   const rows = must(
     await supabase
       .from("chemical_addition")
@@ -1490,6 +1558,36 @@ export async function getPoolAdditions(office: Office, propertyId: string) {
       .order("added_at", { ascending: false }),
   ) as ChemicalAddition[];
   return rows.map((a) => ({ ...a, quantity: Number(a.quantity) }));
+}
+
+/**
+ * Every pool's log entries of the last `days` days, newest first, with the pool's customer and
+ * address, for Chemicals › Out of Range (docs/design/2026-11-16-chemistry-trends.md).
+ */
+export async function getRecentReadings(office: Office, days = 30) {
+  const supabase = await db();
+  const since = new Date(Date.now() - days * 86_400_000).toISOString();
+  const readings = must(
+    await supabase
+      .from("chemical_reading")
+      .select("*")
+      .eq("company_id", office.company.id)
+      .is("deleted_at", null)
+      .gte("recorded_at", since)
+      .order("recorded_at", { ascending: false })
+      .limit(1000),
+  ) as ChemicalReading[];
+  const ids = [...new Set(readings.map((r) => r.property_id))];
+  const pools = ids.length
+    ? (must(
+        await supabase
+          .from("property")
+          .select("*, customer:customer!property_customer_id_company_id_fkey(id, name)")
+          .eq("company_id", office.company.id)
+          .in("id", ids),
+      ) as (Property & { customer: { id: string; name: string } | null })[])
+    : [];
+  return { readings, pools };
 }
 
 /** The pool the Chemical screen was opened for, with its customer's name. */
@@ -1558,4 +1656,86 @@ export async function visitCleanings(
     out.set(row.job_id, list);
   }
   return out;
+}
+
+// ---------------------------------------------------------------------------
+// Monthly billing (owner, 2026-11-15; docs/design/2026-11-15-monthly-billing.md)
+// ---------------------------------------------------------------------------
+
+/** Owners and admins: Invoices › Monthly Billing, newest month first. */
+export async function billingMonths(office: Office): Promise<BillingMonth[]> {
+  if (!office.isManager) return [];
+  const { data, error } = await (
+    await db()
+  ).rpc("billing_months", {
+    target_company: office.company.id,
+  });
+  if (error) return [];
+  return (data ?? []) as BillingMonth[];
+}
+
+/** A month's Monthly Billing page. */
+export async function getMonthBilling(office: Office, month: string): Promise<MonthBilling> {
+  const { data, error } = await (
+    await db()
+  ).rpc("month_billing", {
+    target_company: office.company.id,
+    month,
+  });
+  if (error) throw new Error(error.message);
+  return data as MonthBilling;
+}
+
+/** The price book items Add Charge offers: services and parts, not chemicals. */
+export async function getChargeItems(office: Office) {
+  const { data } = await (
+    await db()
+  )
+    .from("price_book_item")
+    .select("id, name, category, price_cents, chemical, sort_order, active, deleted_at")
+    .eq("company_id", office.company.id)
+    .is("deleted_at", null)
+    .order("sort_order")
+    .order("name");
+  return chargeItems(
+    (
+      (data ?? []) as {
+        id: string;
+        name: string;
+        category: string | null;
+        price_cents: number | null;
+        chemical: string | null;
+        active: boolean | null;
+      }[]
+    ).filter((i) => i.active !== false),
+  ).map(({ id, name, category, price_cents }) => ({ id, name, category, price_cents }));
+}
+
+/** A visit's charges, and the sent invoice they're on (if any). */
+export async function getVisitCharges(office: Office, jobId: string) {
+  const { data } = await (
+    await db()
+  )
+    .from("visit_charge")
+    .select(
+      "*, invoice:invoice!visit_charge_billed_invoice_id_company_id_fkey(status, number, sent_at)",
+    )
+    .eq("company_id", office.company.id)
+    .eq("job_id", jobId)
+    .is("deleted_at", null)
+    .order("added_at");
+  const rows = (data ?? []) as (VisitCharge & {
+    invoice: { status: string; number: number | null; sent_at: string | null } | null;
+  })[];
+  const sent = rows.find(
+    (r) => r.invoice && r.invoice.status !== "draft" && r.invoice.status !== "void",
+  )?.invoice;
+  return {
+    charges: rows.map((r) => {
+      const c: VisitCharge & { invoice?: unknown } = { ...r };
+      delete c.invoice;
+      return { ...c, quantity: Number(c.quantity) };
+    }),
+    sent: sent ? { number: sent.number, sentAt: sent.sent_at } : null,
+  };
 }

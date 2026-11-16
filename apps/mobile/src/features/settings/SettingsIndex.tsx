@@ -18,15 +18,19 @@ export const NATIVE_PAGES = [
   "team",
   "scheduling",
   "phone",
+  "payments",
   "reports",
   "price-book",
   "components",
   "tests",
   "severities",
   "exclusions",
+  "skip-reasons",
 ];
 
 const LEAK_ONLY = ["tests", "severities", "exclusions"];
+// Skip Reasons are for pool care visits (owner, 2026-11-16).
+const POOL_ONLY = ["skip-reasons"];
 
 export function settingsGroups(settings: unknown) {
   const leak = offersLeak(settings);
@@ -44,6 +48,7 @@ export function settingsGroups(settings: unknown) {
     tests: "Tests techs record on the phone",
     severities: "How serious a finding is",
     exclusions: "Why a component wasn’t inspected",
+    "skip-reasons": "Why a visit was skipped",
     reports: "Which reports techs can send",
   };
   const label: Record<string, string> = {
@@ -58,6 +63,7 @@ export function settingsGroups(settings: unknown) {
     tests: "Test Types",
     severities: "Severities",
     exclusions: "Exclusion Reasons",
+    "skip-reasons": "Skip Reasons",
     reports: "Report Templates",
   };
   const groups = [
@@ -65,13 +71,14 @@ export function settingsGroups(settings: unknown) {
     { title: "Money", pages: ["price-book", "payments"] },
     {
       title: "Checklists and reports",
-      pages: ["components", "tests", "severities", "exclusions", "reports"],
+      pages: ["components", "tests", "severities", "exclusions", "skip-reasons", "reports"],
     },
   ];
   return groups.map((g) => ({
     title: g.title,
     pages: g.pages
       .filter((p) => leak || !LEAK_ONLY.includes(p))
+      .filter((p) => offersPool(settings) || !POOL_ONLY.includes(p))
       .map((p) => ({ page: p, label: label[p]!, detail: detail[p]! })),
   }));
 }

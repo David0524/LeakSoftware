@@ -11,6 +11,9 @@ import {
   offersPool,
   propertyLocation,
   routingSettings,
+  skipsUnfinishedVisits,
+  SKIP_UNFINISHED_HINT,
+  SKIP_UNFINISHED_LABEL,
   type ComponentType,
   type Property,
 } from "@leakbook/core";
@@ -26,9 +29,11 @@ import {
   FieldRow,
   Notice,
   Screen,
+  Group,
   Section,
   Segmented,
   T,
+  Toggle,
 } from "../../ui/components";
 import { haptics } from "../../ui/haptics";
 import { color, face, minTap, MAX_TEXT_SCALE, space, type } from "../../ui/theme";
@@ -72,6 +77,7 @@ function SchedulingPage() {
       {offersPool(company.settings) && types.length ? (
         <CleaningDefaults types={types} onSaved={said} />
       ) : null}
+      {offersPool(company.settings) ? <MissedVisits /> : null}
       <ShopLocation onSaved={said} />
       <DriveTimes />
     </Screen>
@@ -79,6 +85,37 @@ function SchedulingPage() {
 }
 
 type Said = (text: string, tone?: "success" | "error") => void;
+
+/**
+ * Skip Unfinished Visits at Day's End (owner, 2026-11-16): off by default; on, the daily run
+ * skips visits that were never started as Not Done. Saves when flipped, like iOS settings.
+ */
+function MissedVisits() {
+  const company = useCompany();
+  return (
+    <Section title="Missed visits">
+      <Group>
+        <Toggle
+          inList
+          label={SKIP_UNFINISHED_LABEL}
+          value={skipsUnfinishedVisits(company.settings)}
+          onChange={(on) => {
+            getServices().sync.write("company", company.id, company.id, {
+              settings: {
+                ...(company.settings as unknown as Record<string, JsonValue>),
+                skip_unfinished_visits: on,
+              },
+            });
+            haptics.selection();
+          }}
+        />
+      </Group>
+      <T variant="secondary" muted>
+        {SKIP_UNFINISHED_HINT}
+      </T>
+    </Section>
+  );
+}
 
 function WorkingDay({ onSaved }: { onSaved: Said }) {
   const company = useCompany();

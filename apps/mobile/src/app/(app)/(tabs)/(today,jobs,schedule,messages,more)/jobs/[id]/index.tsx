@@ -8,11 +8,12 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import {
   MAPS_LABELS,
   JOB_TYPE_LABELS,
-  POOL_TYPE_LABELS,
+  poolSummary,
   intakeQuestionsFor,
   formatAddress,
   mapStatus,
   formatSchedule,
+  isManagerRole,
   jobActionLabel,
   isBackwardMove,
   parseGallons,
@@ -41,6 +42,7 @@ import * as WebBrowser from "expo-web-browser";
 import type { JsonValue } from "@leakbook/sync";
 import { useRow, useRows } from "../../../../../../data/hooks";
 import { JobRepairs } from "../../../../../../features/job/Repairs";
+import { JobIssues } from "../../../../../../features/issues/Issues";
 import { useJobReports } from "../../../../../../data/reports";
 import { API_URL } from "../../../../../../lib/config";
 import { WrapUpList, useWrapUp, type WrapUpOpen } from "../../../../../../features/job/WrapUp";
@@ -122,7 +124,11 @@ import { ChecklistTab } from "../../../../../../features/inspection/ChecklistTab
 import { DiagramPanel } from "../../../../../../features/inspection/DiagramPanel";
 import { VisitChemicals } from "../../../../../../features/chemicals/VisitChemicals";
 import { VisitCleanings } from "../../../../../../features/maintenance/Cleanings";
+import { VisitCharges } from "../../../../../../features/charges/Charges";
 import { VisitReport } from "../../../../../../features/maintenance/VisitReport";
+import { SkipVisitSheet, SkippedCard } from "../../../../../../features/job/SkipVisit";
+import { watchSkipNotices } from "../../../../../../lib/skipNotices";
+import { useJobMedia } from "../../../../../../data/media";
 import { useReportPhotoBlock } from "../../../../../../features/maintenance/ReportPhoto";
 import { queueAutoVisitReport } from "../../../../../../lib/visitReports";
 import { FindingsTab } from "../../../../../../features/inspection/FindingsTab";
@@ -203,6 +209,10 @@ export default function JobDetail() {
   const reportControls = useRef<ReportControls | null>(null);
   const sync = usePinnedSyncBar(() => router.push("/more/sync"));
   const moreMenu = useMenu();
+  // Skip Visit (owner, 2026-11-16): its sheet, and the owners hear once it reaches the server.
+  const [skipping, setSkipping] = useState(false);
+  useEffect(() => watchSkipNotices(), []);
+  const canSkip = Boolean(job && !job.sample && jobMoves(job.status, job.type).includes("skipped"));
   const backMoves =
     job && !job.sample
       ? jobMoves(job.status, job.type).filter((to) => isBackwardMove(job.status, to))
@@ -217,23 +227,36 @@ export default function JobDetail() {
     title: job ? (customer?.name ?? (job.number ? `Job #${job.number}` : "New Job")) : "Job",
     topInset: sync.height,
     // Steps back, in a ••• menu so the page's buttons move the job forward (owner, 2026-10-29).
-    headerRight: backMoves.length
-      ? () => (
-          <HeaderButton
-            title="More Job Actions"
-            icon="more"
-            onPress={() =>
-              moreMenu.open({
-                title: "Job",
-                items: backMoves.map((to) => ({
-                  label: jobActionLabel(job!.status, to),
-                  onPress: () => changeStatus(to),
-                })),
-              })
-            }
-          />
-        )
-      : () => null,
+    headerRight:
+      backMoves.length || canSkip
+        ? () => (
+            <HeaderButton
+              title="More Job Actions"
+              icon="more"
+              onPress={() =>
+                moreMenu.open({
+                  title: "Job",
+                  items: [
+                    ...backMoves.map((to) => ({
+                      label: jobActionLabel(job!.status, to),
+                      onPress: () => changeStatus(to),
+                    })),
+                    // Destructive, so last; it opens the Skip Visit sheet.
+                    ...(canSkip
+                      ? [
+                          {
+                            label: jobActionLabel(job!.status, "skipped"),
+                            onPress: () => setSkipping(true),
+                            destructive: true,
+                          },
+                        ]
+                      : []),
+                  ],
+                })
+              }
+            />
+          )
+        : () => null,
   });
   const routeKey = useRoute().key;
   const barY = barState(routeKey).y;
@@ -357,7 +380,10 @@ export default function JobDetail() {
   const startable = job.status === "scheduled" || job.status === "unscheduled";
   const transitions = jobMoves(job.status, job.type).filter(
     (to) =>
-      to !== "canceled" && !(to === "in_progress" && startable) && !isBackwardMove(job.status, to),
+      to !== "canceled" &&
+      to !== "skipped" &&
+      !(to === "in_progress" && startable) &&
+      !isBackwardMove(job.status, to),
   );
 
   // A maintenance visit's report on the bar (core visitReportBar), and its page once sent.
@@ -569,6 +595,7 @@ export default function JobDetail() {
                 property={property}
                 customer={customer}
                 update={update}
+                onSkip={canSkip ? () => setSkipping(true) : undefined}
                 onCancel={
                   jobMoves(job.status, job.type).includes("canceled")
                     ? () =>
@@ -601,6 +628,10 @@ export default function JobDetail() {
                 ) : null}
                 {/* Its filter and salt cell cleanings (owner, 2026-10-19), as the website. */}
                 {maintenance ? <VisitCleanings job={job} /> : null}
+                {/* Parts and services added on the visit, billed monthly (owner, 2026-11-15). */}
+                {maintenance ? (
+                  <VisitCharges job={job} customerName={customer?.name ?? null} />
+                ) : null}
                 <View style={styles.heading}>
                   <T variant="sectionHeading">Checklist</T>
                   <T muted>
@@ -702,6 +733,14 @@ export default function JobDetail() {
         </ModalSheet>
       ) : null}
       {moreMenu.element}
+      {maintenance ? (
+        <SkipVisitSheet
+          job={job}
+          customer={customer}
+          visible={skipping}
+          onClose={() => setSkipping(false)}
+        />
+      ) : null}
     </KeyboardAvoider>
   );
 }
@@ -712,15 +751,21 @@ function Details({
   property,
   customer,
   update,
+  onSkip,
   onCancel,
 }: {
   job: Job;
   property: Property | undefined;
   customer: Customer | undefined;
   update: (values: Record<string, JsonValue>) => void;
+  onSkip?: () => void;
   onCancel?: () => void;
 }) {
   const company = useCompany();
+  const { membership } = useSession();
+  const photos = useJobMedia(company.id, job.id).filter(
+    (x) => x.kind === "photo" && !(x as { deleted_at?: string | null }).deleted_at,
+  ).length;
   const { services } = useSession();
   const line = useLine(company.id);
   const conversations = useConversations(company.id);
@@ -822,6 +867,16 @@ function Details({
 
   return (
     <>
+      {/* A skipped visit: why, who and when, and what the office does next. */}
+      {job.status === "skipped" ? (
+        <SkippedCard
+          job={job}
+          by={nameOf(job.skipped_by)}
+          photos={photos}
+          isManager={isManagerRole(membership?.role)}
+          onDismiss={() => update({ skip_handled_at: new Date().toISOString() })}
+        />
+      ) : null}
       <Section title="Customer">
         <Group>
           <ListRow>
@@ -911,15 +966,7 @@ function Details({
                     <T variant="bodyEmphasis">{address}</T>
                   </AddressLine>
                   <T variant="secondary" muted>
-                    {[
-                      property.pool_type ? POOL_TYPE_LABELS[property.pool_type] : null,
-                      property.has_spa ? "Pool and spa" : "Pool",
-                      property.approx_gallons
-                        ? `${property.approx_gallons.toLocaleString("en-US")} gallons`
-                        : null,
-                    ]
-                      .filter(Boolean)
-                      .join(" · ")}
+                    {poolSummary(property)}
                   </T>
                 </ListRow>
               </View>
@@ -997,6 +1044,13 @@ function Details({
           </Group>
         </Section>
       ) : null}
+
+      {/* Report an Issue (docs/design/2026-11-16-service-issues.md). */}
+      <JobIssues
+        jobId={job.id}
+        customerId={job.bill_to_customer_id ?? property?.customer_id}
+        propertyId={job.property_id}
+      />
 
       <Section
         title="On site"
@@ -1140,9 +1194,11 @@ function Details({
         </View>
       )}
 
-      {onCancel ? (
-        <View style={{ marginTop: space["2"] }}>
-          <Button title="Cancel Job" kind="danger" onPress={onCancel} />
+      {onSkip || onCancel ? (
+        <View style={{ marginTop: space["2"], gap: space["3"] }}>
+          {/* Destructive actions sit apart, at the end of Details. */}
+          {onSkip ? <Button title="Skip Visit" kind="danger" onPress={onSkip} /> : null}
+          {onCancel ? <Button title="Cancel Job" kind="danger" onPress={onCancel} /> : null}
         </View>
       ) : null}
     </>

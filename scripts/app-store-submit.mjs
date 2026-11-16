@@ -174,9 +174,65 @@ async function main() {
   }
   say();
 
+  if (action === "resubmit") {
+    // Swap in a newer build (owner, 2026-11-16): take the version back from review, then submit
+    // it again with the build asked for (or the newest).
+    const fresh = await withdraw({ api, appId, version, versions, say });
+    await submit({ api, appId, version, versions: fresh, say, build: env.BUILD });
+  }
   if (action === "submit") await submit({ api, appId, version, versions, say, build: env.BUILD });
 
   if (env.GITHUB_STEP_SUMMARY) appendFileSync(env.GITHUB_STEP_SUMMARY, summary.join("\n") + "\n");
+}
+
+/** States a version is in while a review submission can still be taken back. */
+export const WITHDRAWABLE = new Set(["WAITING_FOR_REVIEW", "IN_REVIEW", "READY_FOR_REVIEW"]);
+
+/**
+ * Take `version` back from App Review (Apple's "Remove from Review"): cancel the submission that
+ * holds it, then wait until the version can be edited again. Returns the versions as they are
+ * after. A version that isn't with Apple is left as it is.
+ */
+async function withdraw({ api, appId, version, versions, say }) {
+  const v = versions.find((x) => x.attributes?.versionString === version);
+  if (!v) throw new Error(`There is no App Store version ${version} to take back from review.`);
+  if (EDITABLE.has(stateOf(v))) return versions;
+  if (!WITHDRAWABLE.has(stateOf(v))) {
+    throw new Error(
+      `${version} is ${stateOf(v)}; only a version waiting for or in review can be taken back.`,
+    );
+  }
+  const subs =
+    (
+      await api(
+        "GET",
+        `/reviewSubmissions?filter[app]=${appId}&filter[platform]=IOS` +
+          "&filter[state]=WAITING_FOR_REVIEW,IN_REVIEW,READY_FOR_REVIEW,UNRESOLVED_ISSUES&limit=5",
+      )
+    ).data ?? [];
+  if (subs.length === 0) throw new Error(`No review submission holds ${version}.`);
+  for (const sub of subs) {
+    await api("PATCH", `/reviewSubmissions/${sub.id}`, {
+      data: { type: "reviewSubmissions", id: sub.id, attributes: { canceled: true } },
+    });
+  }
+  say(`Took ${version} back from App Review.`);
+  // Canceling takes a moment; the version becomes editable (Developer Rejected) after.
+  for (let tries = 0; tries < 30; tries++) {
+    const now =
+      (
+        await api(
+          "GET",
+          `/apps/${appId}/appStoreVersions?filter[platform]=IOS&limit=10` +
+            "&fields[appStoreVersions]=versionString,appStoreState,appVersionState,releaseType",
+        )
+      ).data ?? [];
+    const again = now.find((x) => x.attributes?.versionString === version);
+    if (EDITABLE.has(stateOf(again))) return now;
+    console.log(`${version} is ${stateOf(again)}; waiting.`);
+    await sleep(20_000);
+  }
+  throw new Error(`${version} was still not editable 10 minutes after taking it back; run again.`);
 }
 
 async function submit({ api, appId, version, versions, say, build }) {

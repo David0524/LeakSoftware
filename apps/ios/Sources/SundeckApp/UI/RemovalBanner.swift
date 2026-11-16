@@ -40,6 +40,14 @@
                 detail: removeItemConfirm(component.label, fromPlan: component.planCleaningId != nil).message)
         }
 
+        /// A change that can be taken back but isn't a removal (Visit skipped), with its Undo.
+        func showUndoable(_ title: String, undo: @escaping () -> Void) {
+            self.undo = undo
+            banner = ResultBanner(
+                kind: .success, title: title, undoable: true, undoHint: "Puts it back",
+                holdSeconds: Double(RemovedUndo.seconds))
+        }
+
         /// A removal made some other way (a repair also rewrites its job's price), with its Undo.
         func show(_ kind: RemovedKind, detail: String? = nil, undo: @escaping () -> Void) {
             self.undo = undo

@@ -73,6 +73,7 @@ public struct DashboardStatusRow: Identifiable, Equatable, Sendable {
         case .inProgress: .inProgress
         case .paid: .paid
         case .done: .done
+        case .skipped: .skipped
         case .canceled: .canceled
         }
     }

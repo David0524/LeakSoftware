@@ -36,6 +36,11 @@ export interface Invoice {
   paid_at?: string | null;
   voided_at?: string | null;
   deleted_at?: string | null;
+  /** The latest automatic charge (server-written; 2026-11-16-autopay.md). */
+  autopay_status?: string | null;
+  autopay_method?: string | null;
+  autopay_failure?: string | null;
+  autopay_next_try?: string | null;
 }
 
 export interface InvoiceLine {

@@ -63,7 +63,9 @@ public func markCompleteValues(type: String, day: String) -> [String: JSONValue]
 /// be able to reschedule a job from the jobs page after creating it"): until its work is done,
 /// started jobs included; repairs as before. Port of `jobReschedulable`.
 public func jobReschedulable(type: String, status: String) -> Bool {
+    // A skipped visit is rescheduled from the same place (skip-visit.ts).
     type == "repair" || status == "unscheduled" || status == "scheduled" || status == "in_progress"
+        || status == "skipped"
 }
 
 /// What a done stop on Today offers (owner, 2026-10-20: "Maintenance jobs don't have a reopen

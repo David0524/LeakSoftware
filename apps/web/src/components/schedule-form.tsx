@@ -4,6 +4,7 @@ import { useActionState, useCallback, useEffect, useRef, useState, useTransition
 import { scheduleJob } from "@/app/actions/jobs";
 import { moveJob, type RouteResult } from "@/app/actions/routes";
 import { Suggestions } from "./route-board";
+import { useRescheduleRequest } from "./skip-events";
 import { Sheet, useConfirm } from "./sheet";
 import { JOB_LOCKS, JOB_LOCK_HELP, JOB_LOCK_LABELS, type JobLock } from "@leakbook/core";
 import { LockIcon } from "./icons";
@@ -29,6 +30,11 @@ export function JobSchedule({
   const [open, setOpen] = useState(false);
   const [done, setDone] = useState<string | null>(null);
   const close = useCallback(() => setOpen(false), []);
+  // Reschedule on a skipped visit opens this sheet (skip-visit.tsx).
+  useRescheduleRequest(() => {
+    setDone(null);
+    setOpen(true);
+  });
   const row = "flex min-h-11 items-center gap-3 px-4 py-2.5";
   return (
     <div>

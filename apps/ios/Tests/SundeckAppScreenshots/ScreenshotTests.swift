@@ -1232,6 +1232,38 @@
             try await snapshot("46-invoices", NavigationStack { InvoicesScreen() }.app(env))
         }
 
+        /// Monthly Billing (owner, 2026-11-15): a month's drafts with Send All.
+        @Test func monthBilling() async throws {
+            let env = try sampleEnvironment()
+            func draft(_ id: String, _ name: String, _ email: String?, _ lines: [(String, Cents)])
+                -> MonthBillingInvoice
+            {
+                MonthBillingInvoice(
+                    id: id, number: nil, status: "draft", jobId: "j-\(id)", customerId: "cu-\(id)",
+                    customer: name, email: email, phone: nil,
+                    totalCents: lines.reduce(0) { $0 + $1.1 }, amountPaidCents: 0, sentAt: nil,
+                    dueDate: nil,
+                    lines: lines.enumerated().map {
+                        MonthBillingLine(
+                            id: "\(id)-\($0.offset)", description: $0.element.0, quantity: 1,
+                            unitPriceCents: $0.element.1, kind: "item", taxable: false)
+                    })
+            }
+            let sample = MonthBilling(
+                month: "2026-10-01",
+                invoices: [
+                    draft(
+                        "i1", "Alicia Salazar", "alicia@example.com",
+                        [("Pool service, October", 18500), ("Replace skimmer basket, Oct 14", 3500)]),
+                    draft("i2", "Caleb Walters", "caleb@example.com", [("Pool service, October", 18500)]),
+                    draft("i3", "Gina Castillo", nil, [("Pool service, October", 14500)]),
+                ],
+                notInvoiced: 2, waiting: [BillingWait(date: "2026-11-15", customers: 2)])
+            try await snapshot(
+                "46-month-billing", height: 1500,
+                NavigationStack { MonthBillingScreen(month: "2026-10-01", sample: sample) }.app(env))
+        }
+
         @Test func chemicals() async throws {
             let env = try sampleEnvironment()
             try await snapshot(

@@ -26,6 +26,9 @@ import {
   JOB_LOCKS,
   lockColumns,
   type JobLock,
+  parseInvoiceDay,
+  SANITIZER_LABELS,
+  HEATER_LABELS,
 } from "@leakbook/core";
 import { getOffice } from "@/lib/auth";
 import { getCompany, mayMakeJobs } from "@/lib/data";
@@ -87,7 +90,8 @@ export async function scheduleJob(_: FormState, form: FormData): Promise<FormSta
       scheduled_end: end,
       // The lock picker (owner, 2026-10-20): day, time, both, or none.
       ...lockColumns(lock),
-      ...(status === "unscheduled" ? { status: "scheduled" } : {}),
+      // A skipped visit given a new day is back on the schedule (skip-visit.ts).
+      ...(status === "unscheduled" || status === "skipped" ? { status: "scheduled" } : {}),
     })
     .eq("id", id)
     .eq("company_id", office.company.id)
@@ -176,6 +180,15 @@ export async function savePool(_: FormState, form: FormData): Promise<FormState>
   const gallons = gallonsText ? Math.round(Number(gallonsText)) : null;
   if (gallons !== null && !(Number.isFinite(gallons) && gallons > 0 && gallons < 10_000_000))
     return { fields: { approx_gallons: "Enter the gallons as a number, like 20,000." } };
+  const sanitizer = text(form, "sanitizer");
+  if (sanitizer && !(sanitizer in SANITIZER_LABELS)) return { fields: { sanitizer: "Pick one." } };
+  const heater = text(form, "heater");
+  if (heater && !(heater in HEATER_LABELS)) return { fields: { heater: "Pick one." } };
+  const accessNotes = text(form, "access_notes");
+  if (accessNotes.length > 2000)
+    return { fields: { access_notes: "Keep it under 2,000 characters." } };
+  const poolNotes = text(form, "notes");
+  if (poolNotes.length > 2000) return { fields: { notes: "Keep it under 2,000 characters." } };
   const address = {
     address_line1: line1,
     address_line2: text(form, "address_line2") || null,
@@ -201,7 +214,11 @@ export async function savePool(_: FormState, form: FormData): Promise<FormState>
       pool_type: poolType || null,
       has_spa: form.get("has_spa") === "on",
       approx_gallons: gallons,
-      access_notes: text(form, "access_notes") || null,
+      sanitizer: sanitizer || null,
+      heater: heater || null,
+      has_solar_heater: form.get("has_solar_heater") === "on",
+      access_notes: accessNotes || null,
+      notes: poolNotes || null,
       ...(moved
         ? { latitude: null, longitude: null, geocoded_address: null, location_source: null }
         : {}),
@@ -393,6 +410,7 @@ export async function createJobAction(_: FormState, form: FormData): Promise<For
         visit_time: time || null,
         duration_minutes: minutes,
         price_cents: fee,
+        invoice_day: parseInvoiceDay(text(form, "invoice_day")),
         ends_on: ends || null,
         notes: text(form, "notes") || null,
       },

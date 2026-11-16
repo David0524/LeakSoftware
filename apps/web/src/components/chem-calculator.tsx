@@ -509,8 +509,9 @@ export function ChemCalculator({
             </p>
           )}
         </section>
-        {/* Room to scroll the last fields clear of the docked bar. */}
-        <div aria-hidden="true" className="h-20 lg:hidden" />
+        {/* Room to scroll the last fields clear of the docked bar. A pool's page has its trends
+            and log below, and leaves that room at its own end instead. */}
+        {pool ? null : <div aria-hidden="true" className="h-20 lg:hidden" />}
       </div>
 
       <section aria-labelledby="dose-title" className="card p-5 max-lg:hidden lg:sticky lg:top-20">

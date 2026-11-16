@@ -22,6 +22,7 @@ describe("How did you hear about us?", () => {
       "Trade Show or Event",
       "Advertisement",
       "Laminate Card",
+      "Mailer",
       "Other",
     ]);
     // Keys are the database's shape and a link's ?from=.
@@ -48,6 +49,7 @@ describe("How did you hear about us?", () => {
   it("reads a sign-up link's ?from= or ?ref=", () => {
     expect(heardFromLink({ from: "card" })).toBe("card");
     expect(heardFromLink({ ref: "card" })).toBe("card");
+    expect(heardFromLink({ from: "mailer" })).toBe("mailer");
     expect(heardFromLink({ from: ["trade_show", "card"] })).toBe("trade_show");
     expect(heardFromLink({ from: "nope", ref: "google" })).toBe("google");
     expect(heardFromLink({ from: "nope" })).toBeNull();

@@ -28,7 +28,7 @@ import { RowMenuButton } from "@/components/row-actions";
 import { siteOrigin } from "@/lib/origin";
 import type { InvoiceListRow } from "@/lib/data";
 import { getOffice } from "@/lib/auth";
-import { listInvoices, unbilledMaintenance, getCompany } from "@/lib/data";
+import { listInvoices, billingMonths, getCompany } from "@/lib/data";
 import { MonthlyBilling } from "@/components/monthly-billing";
 
 export const metadata: Metadata = { title: "Invoices · Sundeck Pro" };
@@ -39,7 +39,7 @@ export default async function InvoicesPage({ searchParams }: PageProps<"/invoice
   const one = (k: string) => (typeof params[k] === "string" ? (params[k] as string) : "");
   const [all, unbilled, company, origin, line] = await Promise.all([
     listInvoices(office),
-    unbilledMaintenance(office),
+    billingMonths(office),
     getCompany(office),
     siteOrigin(),
     getLine(office),
@@ -82,11 +82,15 @@ export default async function InvoicesPage({ searchParams }: PageProps<"/invoice
   };
   const count = (key: string) =>
     key === "all" ? all.length : filterInvoices(all, { filter: key, today }).length;
-  const thisMonth = `${dateFormat("en-CA", { year: "numeric", month: "2-digit", timeZone: tz }).format(new Date())}-01`;
   const monthLabel = (month: string) =>
     dateFormat("en-US", { month: "long", year: "numeric", timeZone: "UTC" }).format(
       new Date(`${month}T12:00:00Z`),
     );
+  // A monthly draft opens on its month's page, with the rest to send (owner, 2026-11-15).
+  const invoiceHref = (i: InvoiceListRow) =>
+    i.period_month && i.status === "draft"
+      ? `/invoices/month/${i.period_month}?invoice=${i.id}`
+      : `/jobs/${i.job_id}?tab=wrap-up`;
   const day = (iso: string | null) =>
     iso
       ? dateFormat("en-US", { dateStyle: "medium", timeZone: tz }).format(
@@ -116,9 +120,7 @@ export default async function InvoicesPage({ searchParams }: PageProps<"/invoice
           ) : null
         }
       />
-      {offersPool(company.settings) ? (
-        <MonthlyBilling months={unbilled} thisMonth={thisMonth} />
-      ) : null}
+      {offersPool(company.settings) ? <MonthlyBilling months={unbilled} /> : null}
       {all.length ? (
         <>
           <PillRow
@@ -181,7 +183,7 @@ export default async function InvoicesPage({ searchParams }: PageProps<"/invoice
             {invoices.map((i) => (
               <InvoiceActions key={i.id} as="li" invoice={actions(i)}>
                 <RowContent
-                  href={`/jobs/${i.job_id}?tab=wrap-up`}
+                  href={invoiceHref(i)}
                   label={<span className="font-semibold">{i.customer}</span>}
                   detail={
                     <>
@@ -245,7 +247,7 @@ export default async function InvoicesPage({ searchParams }: PageProps<"/invoice
                   >
                     <td className="px-4 py-3">
                       <Link
-                        href={`/jobs/${i.job_id}?tab=wrap-up`}
+                        href={invoiceHref(i)}
                         className="inline-flex min-h-11 items-center font-semibold text-link underline-offset-4 hover:underline"
                       >
                         #{i.number}

@@ -13,11 +13,15 @@ import {
   type PoolType,
   type DiagramShape,
   type Services,
+  INVOICE_DAYS,
+  PLAN_INVOICE_DAY_FOOTER,
+  ordinalDay,
+  planInvoiceDayLabel,
 } from "@leakbook/core";
 import { createJobAction } from "@/app/actions/jobs";
 import { NewJobRepairs } from "./job-repairs";
 import { AddressField } from "./address-field";
-import { FieldError, SField, STextArea, SettingsForm } from "./settings-forms";
+import { FieldError, SField, SSelect, STextArea, SettingsForm } from "./settings-forms";
 import { Suggestions } from "./route-board";
 import type { RepeatChoice } from "@/lib/plan-repeat";
 import { PlanRepeat } from "./plan-repeat";
@@ -91,7 +95,10 @@ export function NewJobForm({
   services = "both",
   repairItems = [],
   inspectionFee = null,
+  shopInvoiceDay = 1,
 }: {
+  /** Settings › Payments › Invoice Day: a new plan's default. */
+  shopInvoiceDay?: number;
   /** The price book's Pool inspection price, filled in when Pool Inspection is picked. */
   inspectionFee?: number | null;
   /** From the Customer: the price book items a repair can be booked for (owner, 2026-10-19). */
@@ -365,6 +372,20 @@ export function NewJobForm({
               />
               {/* A plan's monthly price is part of starting it, so it stays in view. */}
               {plan ? priceField : null}
+              {/* When the customer's monthly invoice is drafted (owner, 2026-11-15: "set the
+                  invoice date when setting up a new recurring job"). */}
+              {plan ? (
+                <SSelect
+                  label="Invoice day"
+                  name="invoice_day"
+                  defaultValue=""
+                  options={[
+                    { value: "", label: planInvoiceDayLabel(null, shopInvoiceDay) },
+                    ...INVOICE_DAYS.map((d) => ({ value: String(d), label: ordinalDay(d) })),
+                  ]}
+                  hint={PLAN_INVOICE_DAY_FOOTER}
+                />
+              ) : null}
             </div>
           </div>
         </Section>

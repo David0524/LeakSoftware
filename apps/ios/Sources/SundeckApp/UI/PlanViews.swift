@@ -142,6 +142,23 @@
         }
     }
 
+    /// A plan's Invoice day (owner, 2026-11-15): "Shop Default (1st)", then the 1st to the 28th,
+    /// under Price per month (website maintenance-plans.tsx and new-job-form.tsx).
+    struct PlanInvoiceDayField: View {
+        @Binding var day: Int?
+        /// The shop's day, for "Shop Default (1st)".
+        var shopDay: Int
+
+        var body: some View {
+            VStack(alignment: .leading, spacing: 4) {
+                SelectField(
+                    label: "Invoice day", selection: $day, options: [nil] + invoiceDayChoices.map { Optional($0) },
+                    optionLabel: { planInvoiceDayLabel($0, shopDay: shopDay) })
+                FieldHint(text: MonthlyBillingText.planInvoiceDayFooter)
+            }
+        }
+    }
+
     /// A pool's plans on the customer's page (the website's MaintenancePlans): each plan in one
     /// line with its tech, next visits and visits done; owners and admins open one to change,
     /// pause or end it, or add one.
@@ -299,6 +316,7 @@
                 OutlinedField(
                     label: "Price per month ($)", text: d.price, hint: "Billed once a month on the customer's invoice.",
                     error: errors["price"], keyboard: .decimalPad)
+                PlanInvoiceDayField(day: d.invoiceDay, shopDay: shopInvoiceDay(company.settings))
                 PlanDateField(
                     label: "Last visit (optional)", value: d.endsOn, timeZone: company.timeZone,
                     start: d.wrappedValue.startsOn, optional: true, placeholder: "No end date",

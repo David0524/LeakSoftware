@@ -140,8 +140,16 @@ export interface SendInput {
 /** A text from the same person to the same conversation this many seconds ago is a double tap. */
 const REPEAT_SECONDS = 10;
 
-/** Send a text from the company number, as the signed-in person. */
-export async function sendCompanyText(user: Db, userId: string, input: SendInput, origin: string) {
+/**
+ * Send a text from the company number, as the signed-in person; `userId` null is the shop
+ * itself (the daily run's monthly invoices, with `user` the server's client).
+ */
+export async function sendCompanyText(
+  user: Db,
+  userId: string | null,
+  input: SendInput,
+  origin: string,
+) {
   const body = input.body.trim();
   // The phone app's API passes JSON straight through: check its shape (security review
   // 2026-10-16), up to 10 pictures, images only.
@@ -232,7 +240,7 @@ export async function sendCompanyText(user: Db, userId: string, input: SendInput
         : null;
     }
     // Older apps send no id: the same words from the same person a moment ago.
-    if (!body || pictures.length) return null;
+    if (!body || pictures.length || !userId) return null;
     const { data } = await db
       .from("text_message")
       .select("id, conversation_id")

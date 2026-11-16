@@ -176,6 +176,13 @@
 
         private var reminders: some View {
             VStack(alignment: .leading, spacing: 12) {
+                VStack(alignment: .leading, spacing: 8) {
+                    SectionLabel("Send Reminders By")
+                    Segmented(
+                        selection: $followups.channel, options: ReminderChannel.allCases, label: \.label,
+                        title: "Send Reminders By", fillsWidth: true)
+                    Text(FeedbackText.reminderChannelHint).textRole(.secondary).foregroundStyle(Color.textMuted)
+                }
                 Grouped(label: "Reminders and Reviews", footer: FollowupsForm.note) {
                     LabeledFieldRow(
                         label: "Quote reminders", text: $followups.quoteDays, placeholder: "3, 7",
@@ -188,6 +195,8 @@
                         detail: profile.reviewURL.isEmpty
                             ? "Add your review link under Company profile to send review requests." : nil,
                         isOn: $followups.reviewRequests)
+                    SwitchRow(
+                        FeedbackText.settingTitle, detail: FeedbackText.settingHint, isOn: $followups.askFirst)
                 }
                 Text(
                     "Days after sending. Leave empty for none."
@@ -428,6 +437,14 @@
                                 label: "Schedule maintenance ahead (weeks)", text: $form.weeksAhead,
                                 keyboard: .numberPad, labelWidth: 220)
                         }
+                        // Skip Unfinished Visits at Day's End (owner, 2026-11-16): off by default.
+                        Grouped(label: "Missed visits", footer: skipUnfinishedHint) {
+                            SwitchRow(
+                                skipUnfinishedLabel,
+                                isOn: Binding(
+                                    get: { skipsUnfinishedVisits(company?.settings) },
+                                    set: { setSkipUnfinished($0) }))
+                        }
                     }
                     VStack(alignment: .leading, spacing: 8) {
                         SectionLabel("Working days")
@@ -497,6 +514,17 @@
                     savedForm = form
                     loaded = true
                 }
+            }
+        }
+
+        /// Skip Unfinished Visits at Day's End saves when flipped, through the sync layer.
+        private func setSkipUnfinished(_ on: Bool) {
+            guard let company = session.company else { return }
+            do {
+                try SkipUnfinishedWrites.set(sync, company: company, on: on)
+                session.reloadCompanies()
+            } catch {
+                result = (userMessage(error), true)
             }
         }
 

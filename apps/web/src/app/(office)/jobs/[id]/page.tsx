@@ -5,17 +5,22 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { Suspense } from "react";
 import {
+  cardFeeBps,
+  companyServices,
   directionsHref,
   visitReportMode,
   JOB_TYPE_LABELS,
   MEDIA_KIND_LABELS,
-  POOL_TYPE_LABELS,
+  poolSummary,
   SIGNATURE_PURPOSE_LABELS,
   checklistTally,
   checklistTallyText,
   inspectionTallyText,
   checklistReady,
   jobReschedulable,
+  pickableSkipReasons,
+  skipActions,
+  skipSummary,
   mapStatus,
   inspectionProgress,
   intakeQuestionsFor,
@@ -39,6 +44,7 @@ import {
   suggestItems,
   timeline,
   type CompanySettings,
+  type SkipReason,
   type PriceBookItem,
   type Media,
   seesAllJobs,
@@ -100,10 +106,13 @@ import {
   getVisitChemicals,
   getPoolHistory,
   getCompany,
+  getSavedMethod,
   getInvoices,
   getJob,
   getPaymentAccount,
   getPlanCleanings,
+  getVisitCharges,
+  getChargeItems,
   getQuotes,
   getReports,
   getSignatures,
@@ -122,6 +131,7 @@ import { QuotePanel } from "@/components/quote-panel";
 import { RemoveSignature } from "@/components/remove-signature";
 import { ReportPanel } from "@/components/report-panel";
 import { VisitReportPanel } from "@/components/visit-report-panel";
+import { VisitCharges } from "@/components/charges";
 import { VisitChemicals } from "@/components/visit-chemicals";
 import { JobSchedule } from "@/components/schedule-form";
 import { emailConfigured } from "@/server/email";
@@ -129,8 +139,11 @@ import { routingConfigured } from "@/server/routing";
 import { NotOnMapRow, NotOnMapTag } from "@/components/not-on-map";
 import { AccessNotesForm, PoolDetailsForm } from "@/components/pool-details";
 import { SheetRow } from "@/components/settings-list";
+import { SkipVisit, SkippedActions } from "@/components/skip-visit";
 import { SampleJob } from "@/components/sample-job";
 import { JobRepairs } from "@/components/job-repairs";
+import { JobIssues } from "@/components/issues";
+import { jobIssues } from "@/lib/issues";
 import { WrapUpList } from "@/components/wrap-up";
 import { wrapUpInput } from "@/lib/wrap-up";
 
@@ -149,15 +162,25 @@ export default async function JobPage({ params, searchParams }: PageProps<"/jobs
   quiet(getQuotes(office, id));
   quiet(listConfig(office, "price_book_item"));
   if (office.isManager) quiet(getPaymentAccount(office));
-  const [detail, company, line] = await Promise.all([
+  const [detail, company, line, issues] = await Promise.all([
     getJob(office, id),
     getCompany(office),
     getLine(office),
+    jobIssues(office, id),
   ]);
   if (!detail) notFound();
   const { job } = detail;
   const wrap = jobHasWrapUp(job.type) && !job.sample ? await wrapUpOf(office, detail) : null;
   const visit = job.type === "maintenance" ? await visitReportOf(office, detail) : null;
+  // Skip Visit's reasons (Settings › Skip Reasons) and who skipped this one.
+  const skipReasons =
+    job.type === "maintenance"
+      ? pickableSkipReasons(await listConfig<SkipReason>(office, "skip_reason"))
+      : [];
+  const skippedBy =
+    job.status === "skipped" && job.skipped_by
+      ? ((await getTeam(office)).find((t) => t.user_id === job.skipped_by)?.name ?? "Teammate")
+      : null;
   // The sample job opens to its finished report (owner, 2026-10-22: first win).
   if (job.sample) return <SampleJob office={office} job={job} />;
   const tz = office.company.timezone;
@@ -252,6 +275,17 @@ export default async function JobPage({ params, searchParams }: PageProps<"/jobs
         navAction={<JobMoreMenu jobId={job.id} status={job.status} jobType={job.type} />}
       />
 
+      {job.type === "maintenance" ? (
+        <SkipVisit
+          jobId={job.id}
+          reasons={skipReasons}
+          customer={job.customer?.name ?? null}
+          phone={job.customer?.phone ?? null}
+          tech={office.user.name ?? "your technician"}
+          shop={office.company.name}
+        />
+      ) : null}
+
       <JobSections
         initial={typeof tab === "string" ? tab : undefined}
         // The widest screens show the pool diagram and findings beside the checklist (owner,
@@ -277,6 +311,47 @@ export default async function JobPage({ params, searchParams }: PageProps<"/jobs
             label: "Details",
             content: (
               <>
+                {/* A skipped visit: why, who and when, and what the office does next. */}
+                {job.status === "skipped" ? (
+                  <div className="mb-6 max-w-2xl space-y-3">
+                    <Grouped title="Skipped">
+                      <Row label="Reason" value={job.skip_reason ?? "No reason"} />
+                      {job.skip_note ? (
+                        <Row>
+                          <span className="min-w-0 flex-1">
+                            <span className="block text-[0.9375rem] text-text-muted">Note</span>
+                            <span className="block whitespace-pre-line">{job.skip_note}</span>
+                          </span>
+                        </Row>
+                      ) : null}
+                      <Row
+                        label="Skipped"
+                        value={skipSummary(
+                          {},
+                          skippedBy ?? "Sundeck Pro",
+                          job.skipped_at ? formatSchedule(job.skipped_at, new Date(), tz) : null,
+                        )}
+                      />
+                      <Row
+                        label="Photos"
+                        value={String(detail.media.filter((m) => m.kind === "photo").length)}
+                        href={`/jobs/${job.id}?tab=photos`}
+                      />
+                      {job.skip_handled_at ? (
+                        <Row
+                          label="Dismissed"
+                          value={formatSchedule(job.skip_handled_at, new Date(), tz)}
+                        />
+                      ) : null}
+                    </Grouped>
+                    <SkippedActions
+                      jobId={job.id}
+                      reschedule={skipActions(job, office.isManager).reschedule}
+                      dismiss={skipActions(job, office.isManager).dismiss}
+                    />
+                  </div>
+                ) : null}
+
                 {/* iOS Settings-style groups: customer, pool, and who's on it (two columns
                     on wide screens), then the On Site form. */}
                 <div className="grid grid-cols-[minmax(0,1fr)] items-start gap-x-6 gap-y-6 lg:grid-cols-2">
@@ -332,17 +407,7 @@ export default async function JobPage({ params, searchParams }: PageProps<"/jobs
                               ) : null}
                             </>
                           }
-                          detail={[
-                            job.property.pool_type
-                              ? POOL_TYPE_LABELS[job.property.pool_type]
-                              : null,
-                            job.property.has_spa ? "Pool and spa" : "Pool",
-                            job.property.approx_gallons
-                              ? `${job.property.approx_gallons.toLocaleString("en-US")} gallons`
-                              : null,
-                          ]
-                            .filter(Boolean)
-                            .join(" · ")}
+                          detail={poolSummary(job.property)}
                           accessory={
                             <a
                               href={directionsHref({
@@ -424,6 +489,14 @@ export default async function JobPage({ params, searchParams }: PageProps<"/jobs
                         ))}
                       </Grouped>
                     ) : null}
+
+                    {/* Report an Issue (docs/design/2026-11-16-service-issues.md). */}
+                    <JobIssues
+                      jobId={job.id}
+                      issues={issues}
+                      services={companyServices(company.settings)}
+                      timeZone={tz}
+                    />
                   </div>
 
                   <section aria-labelledby="on-site">
@@ -518,6 +591,13 @@ export default async function JobPage({ params, searchParams }: PageProps<"/jobs
                       {job.type === "maintenance" && job.service_plan_id ? (
                         <Suspense fallback={null}>
                           <Cleanings detail={detail} tz={tz} />
+                        </Suspense>
+                      ) : null}
+                      {/* Parts and services added on the visit, billed monthly (owner,
+                          2026-11-15). */}
+                      {job.type === "maintenance" ? (
+                        <Suspense fallback={null}>
+                          <Charges detail={detail} tz={tz} />
                         </Suspense>
                       ) : null}
                       <h2 id="checklist" className="font-display text-2xl font-bold">
@@ -802,6 +882,41 @@ async function Cleanings({ detail, tz }: { detail: JobDetail; tz: string }) {
         );
       })}
     </Grouped>
+  );
+}
+
+/**
+ * A visit's Charges (owner, 2026-11-15: "a way to add extra charges ... like if they cleaned
+ * their filter or cleaned the salt cell, or replaced any parts"): billed on the monthly invoice.
+ */
+async function Charges({ detail, tz }: { detail: JobDetail; tz: string }) {
+  const office = await getOffice();
+  const job = detail.job;
+  const [{ charges, sent }, items] = await Promise.all([
+    getVisitCharges(office, job.id).catch(() => ({ charges: [], sent: null })),
+    getChargeItems(office).catch(() => []),
+  ]);
+  const day = job.plan_date ?? job.scheduled_start ?? job.completed_at ?? new Date().toISOString();
+  return (
+    <VisitCharges
+      jobId={job.id}
+      charges={charges}
+      items={items}
+      firstName={job.customer?.name?.split(" ")[0] ?? "the customer"}
+      month={monthName(day, tz)}
+      sentInvoice={
+        sent
+          ? {
+              number: sent.number,
+              sentOn: sent.sentAt
+                ? dateFormat("en-US", { month: "short", day: "numeric", timeZone: tz }).format(
+                    new Date(sent.sentAt),
+                  )
+                : "",
+            }
+          : null
+      }
+    />
   );
 }
 
@@ -1319,6 +1434,15 @@ async function Invoices({ detail, only }: { detail: JobDetail; only?: string }) 
             emailReady={emailConfigured()}
             isOwner={office.isManager}
             role={office.company.role}
+            autopay={
+              office.isManager && job.customer
+                ? {
+                    method: await getSavedMethod(office, job.customer.id),
+                    feeBps: cardFeeBps(company.settings),
+                    customer: job.customer.name,
+                  }
+                : null
+            }
           />
         </div>
       ) : job.type === "maintenance" ? (

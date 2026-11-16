@@ -179,6 +179,21 @@ async function uploadMedia(
   if (!done.ok) throw new Error(done.error);
 }
 
+/** Photos for the whole visit (Skip Visit's photo; owner, 2026-11-16). */
+export async function uploadJobPhotos(jobId: string, files: File[]) {
+  for (const file of files) {
+    const photo = await preparePhoto(file);
+    await uploadMedia(
+      jobId,
+      "photo",
+      photo.blob,
+      baseMime(photo.mime),
+      { width: photo.width, height: photo.height, durationMs: null },
+      "",
+    );
+  }
+}
+
 /** Photos for one checklist item (a pool inspection question's camera button). */
 export async function uploadItemPhotos(jobId: string, componentId: string, files: File[]) {
   for (const file of files) {
@@ -191,6 +206,48 @@ export async function uploadItemPhotos(jobId: string, componentId: string, files
       { width: photo.width, height: photo.height, durationMs: null },
       `component:${componentId}`,
     );
+  }
+}
+
+/**
+ * Photos and videos for an issue reported on a job (docs/design/2026-11-16-service-issues.md):
+ * job media linked to the issue. `progress` hears "Uploading 2 of 3…".
+ */
+export async function uploadIssueFiles(
+  jobId: string,
+  issueId: string,
+  files: File[],
+  progress?: (text: string) => void,
+) {
+  for (const [i, file] of files.entries()) {
+    progress?.(files.length > 1 ? `Uploading ${i + 1} of ${files.length}…` : "Uploading…");
+    if (file.type.startsWith("video/")) {
+      const info = await videoInfo(file).catch(() => null);
+      if (info && info.durationMs > (MEDIA_LIMITS.videoMaxSeconds + 1) * 1000)
+        throw new Error(`Videos can be up to ${MEDIA_LIMITS.videoMaxSeconds} seconds.`);
+      await uploadMedia(
+        jobId,
+        "video",
+        file,
+        baseMime(file.type || "video/mp4"),
+        {
+          width: info?.width ?? null,
+          height: info?.height ?? null,
+          durationMs: info?.durationMs ?? null,
+        },
+        `issue:${issueId}`,
+      );
+    } else {
+      const photo = await preparePhoto(file);
+      await uploadMedia(
+        jobId,
+        "photo",
+        photo.blob,
+        baseMime(photo.mime),
+        { width: photo.width, height: photo.height, durationMs: null },
+        `issue:${issueId}`,
+      );
+    }
   }
 }
 

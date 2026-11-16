@@ -103,7 +103,9 @@ export function jobReschedulable(job: { type: string; status: string }): boolean
     job.type === "repair" ||
     job.status === "unscheduled" ||
     job.status === "scheduled" ||
-    job.status === "in_progress"
+    job.status === "in_progress" ||
+    // A skipped visit is rescheduled from the same place (skip-visit.ts).
+    job.status === "skipped"
   );
 }
 
@@ -326,9 +328,13 @@ export interface Customer extends Base {
   marketing_opt_out?: boolean;
   phone?: string | null;
   notes?: string | null;
+  /** Charged automatically with a saved card (server-written; 2026-11-16-autopay.md). */
+  autopay?: boolean;
 }
 
 export type PoolType = "gunite_plaster" | "vinyl" | "fiberglass" | "other";
+export type Sanitizer = "chlorine" | "salt" | "bromine" | "other";
+export type Heater = "none" | "gas" | "heat_pump" | "electric" | "other";
 
 export interface Property extends Base {
   customer_id: string;
@@ -344,7 +350,14 @@ export interface Property extends Base {
   approx_gallons?: number | null;
   /** Mirror and spa placement (owner, 2026-10-19); read with parseDiagramLayout. */
   diagram_layout?: unknown;
+  /** Chlorine, salt, bromine or other; empty is "Not sure" (owner, 2026-11-16). */
+  sanitizer?: Sanitizer | null;
+  /** The pool's heater, if any; empty is "Not sure". */
+  heater?: Heater | null;
+  /** A solar heater, apart from the heater: drained before a freeze. */
+  has_solar_heater?: boolean;
   access_notes?: string | null;
+  /** Pool notes: equipment and quirks, kept apart from access notes. */
   notes?: string | null;
   latitude?: number | null;
   longitude?: number | null;
@@ -393,6 +406,13 @@ export interface Job extends Base {
   arrive_at?: string | null;
   /** When the stop was finished (set by the server, or the phone's time; owner, 2026-10-22). */
   stop_done_at?: string | null;
+  /** Skipped visits (owner, 2026-11-16; skip-visit.ts): why, who and when, and Dismiss. */
+  skip_reason?: string | null;
+  skip_note?: string | null;
+  skipped_at?: string | null;
+  skipped_by?: string | null;
+  skip_handled_at?: string | null;
+  skip_handled_by?: string | null;
   /** The shop's sample job (set by the server; owner, 2026-10-22). Never counted. */
   sample?: boolean;
   created_at?: string;

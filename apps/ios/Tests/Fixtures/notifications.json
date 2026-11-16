@@ -28,6 +28,21 @@
           "label": "Opened reports"
         },
         {
+          "key": "skip",
+          "label": "Skipped visits",
+          "hint": "Owners and admins: a maintenance visit that was skipped."
+        },
+        {
+          "key": "feedback",
+          "label": "Customer complaints",
+          "hint": "Owners and admins: a customer gave a thumbs down."
+        },
+        {
+          "key": "issue",
+          "label": "Reported issues",
+          "hint": "Owners and admins: a problem a tech reported on a visit."
+        },
+        {
           "key": "live",
           "label": "Live Activity",
           "hint": "Your current stop on the Lock Screen during the workday."
@@ -36,6 +51,11 @@
           "key": "day",
           "label": "Start of the day",
           "hint": "Your first stop, when your workday starts."
+        },
+        {
+          "key": "chemistry",
+          "label": "Out-of-range readings",
+          "hint": "A pool's water test far outside its range. Owners and admins."
         }
       ]
     }
@@ -94,6 +114,27 @@
     {
       "args": [
         null,
+        "skip"
+      ],
+      "result": true
+    },
+    {
+      "args": [
+        null,
+        "feedback"
+      ],
+      "result": true
+    },
+    {
+      "args": [
+        null,
+        "issue"
+      ],
+      "result": true
+    },
+    {
+      "args": [
+        null,
         "live"
       ],
       "result": true
@@ -107,6 +148,13 @@
     },
     {
       "args": [
+        null,
+        "chemistry"
+      ],
+      "result": true
+    },
+    {
+      "args": [
         {},
         "text"
       ],
@@ -150,6 +198,27 @@
     {
       "args": [
         {},
+        "skip"
+      ],
+      "result": true
+    },
+    {
+      "args": [
+        {},
+        "feedback"
+      ],
+      "result": true
+    },
+    {
+      "args": [
+        {},
+        "issue"
+      ],
+      "result": true
+    },
+    {
+      "args": [
+        {},
         "live"
       ],
       "result": true
@@ -158,6 +227,13 @@
       "args": [
         {},
         "day"
+      ],
+      "result": true
+    },
+    {
+      "args": [
+        {},
+        "chemistry"
       ],
       "result": true
     },
@@ -220,6 +296,33 @@
         {
           "text": false
         },
+        "skip"
+      ],
+      "result": true
+    },
+    {
+      "args": [
+        {
+          "text": false
+        },
+        "feedback"
+      ],
+      "result": true
+    },
+    {
+      "args": [
+        {
+          "text": false
+        },
+        "issue"
+      ],
+      "result": true
+    },
+    {
+      "args": [
+        {
+          "text": false
+        },
         "live"
       ],
       "result": true
@@ -230,6 +333,15 @@
           "text": false
         },
         "day"
+      ],
+      "result": true
+    },
+    {
+      "args": [
+        {
+          "text": false
+        },
+        "chemistry"
       ],
       "result": true
     },
@@ -299,6 +411,36 @@
           "text": true,
           "job": false
         },
+        "skip"
+      ],
+      "result": true
+    },
+    {
+      "args": [
+        {
+          "text": true,
+          "job": false
+        },
+        "feedback"
+      ],
+      "result": true
+    },
+    {
+      "args": [
+        {
+          "text": true,
+          "job": false
+        },
+        "issue"
+      ],
+      "result": true
+    },
+    {
+      "args": [
+        {
+          "text": true,
+          "job": false
+        },
         "live"
       ],
       "result": true
@@ -316,6 +458,16 @@
     {
       "args": [
         {
+          "text": true,
+          "job": false
+        },
+        "chemistry"
+      ],
+      "result": true
+    },
+    {
+      "args": [
+        {
           "payment": "false"
         },
         "text"
@@ -372,6 +524,33 @@
         {
           "payment": "false"
         },
+        "skip"
+      ],
+      "result": true
+    },
+    {
+      "args": [
+        {
+          "payment": "false"
+        },
+        "feedback"
+      ],
+      "result": true
+    },
+    {
+      "args": [
+        {
+          "payment": "false"
+        },
+        "issue"
+      ],
+      "result": true
+    },
+    {
+      "args": [
+        {
+          "payment": "false"
+        },
         "live"
       ],
       "result": true
@@ -388,6 +567,15 @@
     {
       "args": [
         {
+          "payment": "false"
+        },
+        "chemistry"
+      ],
+      "result": true
+    },
+    {
+      "args": [
+        {
           "quote": 0
         },
         "text"
@@ -444,6 +632,33 @@
         {
           "quote": 0
         },
+        "skip"
+      ],
+      "result": true
+    },
+    {
+      "args": [
+        {
+          "quote": 0
+        },
+        "feedback"
+      ],
+      "result": true
+    },
+    {
+      "args": [
+        {
+          "quote": 0
+        },
+        "issue"
+      ],
+      "result": true
+    },
+    {
+      "args": [
+        {
+          "quote": 0
+        },
         "live"
       ],
       "result": true
@@ -459,6 +674,15 @@
     },
     {
       "args": [
+        {
+          "quote": 0
+        },
+        "chemistry"
+      ],
+      "result": true
+    },
+    {
+      "args": [
         "x",
         "text"
       ],
@@ -502,6 +726,27 @@
     {
       "args": [
         "x",
+        "skip"
+      ],
+      "result": true
+    },
+    {
+      "args": [
+        "x",
+        "feedback"
+      ],
+      "result": true
+    },
+    {
+      "args": [
+        "x",
+        "issue"
+      ],
+      "result": true
+    },
+    {
+      "args": [
+        "x",
         "live"
       ],
       "result": true
@@ -510,6 +755,13 @@
       "args": [
         "x",
         "day"
+      ],
+      "result": true
+    },
+    {
+      "args": [
+        "x",
+        "chemistry"
       ],
       "result": true
     },
@@ -572,6 +824,33 @@
         [
           false
         ],
+        "skip"
+      ],
+      "result": true
+    },
+    {
+      "args": [
+        [
+          false
+        ],
+        "feedback"
+      ],
+      "result": true
+    },
+    {
+      "args": [
+        [
+          false
+        ],
+        "issue"
+      ],
+      "result": true
+    },
+    {
+      "args": [
+        [
+          false
+        ],
         "live"
       ],
       "result": true
@@ -582,6 +861,15 @@
           false
         ],
         "day"
+      ],
+      "result": true
+    },
+    {
+      "args": [
+        [
+          false
+        ],
+        "chemistry"
       ],
       "result": true
     }

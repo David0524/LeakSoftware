@@ -1,10 +1,11 @@
 import { cx } from "../ui";
-import { APP_STORE_URL } from "./structured-data";
+import { APP_STORE_URL, GOOGLE_PLAY_URL } from "./structured-data";
 
 /**
  * The stores' own badges (owner, 2026-11-06: "Add App Store and Play Store linked logos to the
  * website. You can leave Android's as no link for now"), unaltered as Apple's and Google's
- * guidelines ask, both 40 px tall. Google Play links once the Android app is live there.
+ * guidelines ask, both 40 px tall. Google Play links to the listing since the app's approval
+ * (owner, 2026-11-16).
  */
 export function StoreBadges({ className }: { className?: string }) {
   return (
@@ -19,16 +20,16 @@ export function StoreBadges({ className }: { className?: string }) {
           className="h-10 w-auto"
         />
       </a>
-      <span className="inline-flex min-h-11 items-center">
+      <a href={GOOGLE_PLAY_URL} className="inline-flex min-h-11 items-center">
         {/* eslint-disable-next-line @next/next/no-img-element -- a fixed-size badge */}
         <img
           src="/badges/google-play.png"
-          alt="Google Play: coming soon"
+          alt="Get it on Google Play"
           width={134}
           height={40}
           className="h-10 w-auto"
         />
-      </span>
+      </a>
     </div>
   );
 }

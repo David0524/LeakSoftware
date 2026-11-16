@@ -253,10 +253,15 @@
                     if let notes = c.notes { ListRow("Notes", detail: notes) }
                     ActionRow("Edit Contact Details") { editingContact = true }
                 }
+                // Autopay (docs/design/2026-11-16-autopay.md): owners and admins.
+                if manager { AutopayGroup(customer: c) }
+                // Problems techs reported on visits (docs/design/2026-11-16-service-issues.md).
+                CustomerIssuesGroup(customerId: c.id)
                 if c.pools.isEmpty { EmptyState(text: "No pools.") }
                 ForEach(Array(c.pools.enumerated()), id: \.element.id) { index, pool in
                     poolGroups(pool, customer: c, title: c.pools.count > 1 ? "Pool \(index + 1)" : "Pool")
                 }
+                if manager { CustomerFeedbackSection(customerId: c.id) }
                 if manager {
                     VStack(alignment: .leading, spacing: 8) {
                         Button(role: .destructive) {
@@ -338,6 +343,7 @@
                 .buttonStyle(.row)
                 .accessibilityHint("Opens Pool Details")
                 if let notes = pool.accessNotes { ListRow("Access notes", detail: notes) }
+                if let notes = pool.poolNotes { ListRow("Pool notes", detail: notes) }
                 // Pool shops: Chemical for this pool, with its latest readings (owner, 2026-10-19).
                 if services != .leak {
                     Button {
@@ -509,7 +515,8 @@
         }
     }
 
-    /// Pool Details: the address, the pool type, gallons, the spa, and access notes.
+    /// Pool Details: the address; the pool type, gallons, sanitizer, heater, spa and solar heater;
+    /// access notes; and pool notes, kept apart from access notes (owner, 2026-11-16).
     struct PoolSheet: View {
         var propertyId: String
         var row: Row
@@ -529,13 +536,22 @@
         @State private var poolType = ""
         @State private var gallons = ""
         @State private var hasSpa = false
+        @State private var sanitizer = ""
+        @State private var heater = ""
+        @State private var hasSolar = false
         @State private var access = ""
+        @State private var poolNotes = ""
         @State private var original: [String] = []
         @State private var error: String?
         /// Typed text kept until it's saved or discarded (owner, 2026-10-27).
         @State private var draft = DraftHandle()
 
-        private var current: [String] { [street, unit, city, state, zip, poolType, gallons, String(hasSpa), access] }
+        private var current: [String] {
+            [
+                street, unit, city, state, zip, poolType, gallons, String(hasSpa), sanitizer, heater, String(hasSolar),
+                access, poolNotes,
+            ]
+        }
 
         var body: some View {
             FormSheet(title: "Pool Details", dirty: !original.isEmpty && current != original, draft: draft) {
@@ -556,7 +572,7 @@
                     LabeledFieldRow(label: "State", text: $state, contentType: .addressState)
                     LabeledFieldRow(label: "ZIP", text: $zip, keyboard: .numberPad, contentType: .postalCode)
                 }
-                Grouped(footer: "Gate code, dog, where to park.") {
+                Grouped {
                     LabeledPickerRow(
                         label: "Pool type", selection: $poolType, options: [""] + PoolType.allCases.map(\.rawValue),
                         optionLabel: { PoolType(rawValue: $0)?.label ?? "Not sure" })
@@ -565,8 +581,20 @@
                         label: "Gallons",
                         text: Binding(get: { gallons }, set: { gallons = gallonsWithCommas($0) }),
                         placeholder: "20,000", keyboard: .numberPad)
+                    LabeledPickerRow(
+                        label: "Sanitizer", selection: $sanitizer, options: [""] + Sanitizer.allCases.map(\.rawValue),
+                        optionLabel: { Sanitizer(rawValue: $0)?.label ?? "Not sure" })
+                    LabeledPickerRow(
+                        label: "Heater", selection: $heater, options: [""] + Heater.allCases.map(\.rawValue),
+                        optionLabel: { Heater(rawValue: $0)?.label ?? "Not sure" })
                     SwitchRow("Has a spa", isOn: $hasSpa)
+                    SwitchRow("Has a solar heater", isOn: $hasSolar)
+                }
+                Grouped(footer: "Gate code, pets, where to park.") {
                     LabeledFieldRow(label: "Access notes", text: $access, multiline: true)
+                }
+                Grouped(footer: "Equipment, quirks, draining the solar for winter.") {
+                    LabeledFieldRow(label: "Pool notes", text: $poolNotes, multiline: true)
                 }
                 if let error { Notice(kind: .error, text: error) }
                 Button("Save") { save() }.buttonStyle(.primary(fullWidth: true, size: .field))
@@ -582,14 +610,18 @@
                 poolType = r["pool_type"]?.string ?? ""
                 gallons = poolGallonsField(r["approx_gallons"])
                 hasSpa = r["has_spa"]?.bool ?? false
+                sanitizer = r["sanitizer"]?.string ?? ""
+                heater = r["heater"]?.string ?? ""
+                hasSolar = r["has_solar_heater"]?.bool ?? false
                 access = r["access_notes"]?.string ?? ""
+                poolNotes = r["notes"]?.string ?? ""
                 original = current
             }
             .keepsDraft(
                 draft, form: "pool-details", id: propertyId,
                 fields: [
                     "street": street, "unit": unit, "city": city, "state": state, "zip": zip, "gallons": gallons,
-                    "access": access,
+                    "access": access, "poolNotes": poolNotes,
                 ], ready: !original.isEmpty
             ) { changes in
                 if let value = changes["street"] { street = value }
@@ -599,6 +631,7 @@
                 if let value = changes["zip"] { zip = value }
                 if let value = changes["gallons"] { gallons = value }
                 if let value = changes["access"] { access = value }
+                if let value = changes["poolNotes"] { poolNotes = value }
             }
         }
 
@@ -626,7 +659,8 @@
                         "address_line1": .string(street.trimmingCharacters(in: .whitespaces)),
                         "address_line2": opt(unit), "city": opt(city), "state": opt(state.uppercased()),
                         "postal_code": opt(zip), "pool_type": opt(poolType), "has_spa": .bool(hasSpa),
-                        "approx_gallons": approxGallons, "access_notes": opt(access),
+                        "approx_gallons": approxGallons, "sanitizer": opt(sanitizer), "heater": opt(heater),
+                        "has_solar_heater": .bool(hasSolar), "access_notes": opt(access), "notes": opt(poolNotes),
                     ], locate: app.locate)
                 draft.clear()
                 saved()

@@ -3,6 +3,8 @@ import {
   READING_LABELS,
   READING_LIMITS,
   chemicalItems,
+  formatAddress,
+  outOfRangeRows,
   type AcidProduct,
   type AdditionDraft,
   type ChemicalAddition,
@@ -36,6 +38,26 @@ export function useChemicalLog(companyId: string): ChemicalReading[] {
         ),
     [rows],
   );
+}
+
+/**
+ * The last 30 days' readings well outside their range, newest first (Chemicals › Out of Range;
+ * owner, 2026-11-16), each with the pool's name: its customer's, else its address.
+ */
+export function useOutOfRange(companyId: string) {
+  const log = useChemicalLog(companyId);
+  const pools = useRows<Property & { deleted_at?: string | null }>("property", companyId);
+  const customers = useRows<{ id: string; name: string }>("customer", companyId);
+  return useMemo(() => {
+    const names = new Map(customers.map((c) => [c.id, c.name]));
+    const pool = new Map(
+      pools.map((p) => [p.id, { name: names.get(p.customer_id) ?? formatAddress(p) }]),
+    );
+    return outOfRangeRows(log, new Date().toISOString()).map((r) => ({
+      ...r,
+      pool: pool.get(r.propertyId)?.name ?? "A pool",
+    }));
+  }, [log, pools, customers]);
 }
 
 /** Each pool's latest entry, by property id. */

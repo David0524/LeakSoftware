@@ -178,8 +178,22 @@ function Body() {
               <p className="text-text-muted">{a}</p>
             </details>
           ))}
-          {/* Contact Us (owner, 2026-10-19). */}
+          {/* The full FAQ and the manuals (owner, 2026-11-16). */}
           <p className="pt-4 text-center text-[1.0625rem]">
+            <a href="/faq" className="font-semibold text-link underline">
+              See all questions
+            </a>{" "}
+            or read the{" "}
+            <a
+              href={leak ? "/manual/leak-detection" : "/manual/pool-care"}
+              className="font-semibold text-link underline"
+            >
+              {leak ? "Leak Detection" : "Pool Care"} manual
+            </a>
+            .
+          </p>
+          {/* Contact Us (owner, 2026-10-19). */}
+          <p className="text-center text-[1.0625rem]">
             Still have a question? Contact us at{" "}
             <a href={`mailto:${CONTACT_EMAIL}`} className="font-semibold text-link underline">
               {CONTACT_EMAIL}
@@ -302,7 +316,7 @@ const FAQ: Record<PlanId, [string, string][]> = {
     ],
     [
       "How does monthly billing work?",
-      "Each customer’s plan has a monthly price. At the start of each month Sundeck Pro drafts one invoice per customer for the month’s service, plus any extras like a filter cleaning, ready for the office to send.",
+      "Each customer’s plan has a monthly price. On the customer’s invoice day (the 1st unless you pick another) Sundeck Pro drafts one invoice for the month’s service, plus any extras like a filter cleaning. Send them all at once, or let them send themselves.",
     ],
     [
       "Who counts as a person on the team?",

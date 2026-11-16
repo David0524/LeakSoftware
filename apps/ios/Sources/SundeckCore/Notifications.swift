@@ -6,7 +6,7 @@ import Foundation
 // same thing.
 
 public enum NotificationKind: String, Codable, CaseIterable, Sendable {
-    case text, job, quote, payment, report, opened, live, day
+    case text, job, quote, payment, report, opened, skip, feedback, issue, live, day, chemistry
 }
 
 /// Each kind a person can turn off in More › Notifications (`NOTIFICATION_KINDS`).
@@ -18,9 +18,17 @@ public let notificationKinds: [(key: NotificationKind, label: String, hint: Stri
     (.report, "Signed reports", nil),
     // Owner, 2026-10-22: "Techs never hear the outcome." The customer's first open of a report.
     (.opened, "Opened reports", nil),
+    // Owner, 2026-11-16: owners and admins hear when a visit is skipped (skip-visit.ts).
+    (.skip, "Skipped visits", "Owners and admins: a maintenance visit that was skipped."),
+    // Owner's competitor notes, 2026-11-16: a customer's thumbs down, to owners and admins.
+    (.feedback, "Customer complaints", "Owners and admins: a customer gave a thumbs down."),
+    // A tech reported an issue on a visit: to the owners and admins (2026-11-16-service-issues.md).
+    (.issue, "Reported issues", "Owners and admins: a problem a tech reported on a visit."),
     (.live, "Live Activity", "Your current stop on the Lock Screen during the workday."),
     // Owner, 2026-10-22: "Techs: the first stop of the day opens in one tap from the notification."
     (.day, "Start of the day", "Your first stop, when your workday starts."),
+    // Owner, 2026-11-16: owners and admins hear about a reading far outside its range.
+    (.chemistry, "Out-of-range readings", "A pool's water test far outside its range. Owners and admins."),
 ]
 
 /// Whether a person gets a kind: on unless their notification prefs turn it off.

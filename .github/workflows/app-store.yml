@@ -10,9 +10,9 @@ on:
   workflow_dispatch:
     inputs:
       action:
-        description: "status: show versions and builds. submit: submit the Info.plist version for App Review."
+        description: "status: show versions and builds. submit: submit the Info.plist version for App Review. resubmit: take it back from review and submit it again with a newer build."
         type: choice
-        options: [status, submit]
+        options: [status, submit, resubmit]
         default: status
       build:
         description: "Build number to submit (blank: the newest processed build of that version)"
@@ -47,7 +47,7 @@ jobs:
           printf '%s\n' "$ASC_KEY_P8" > "$dir/AuthKey_$ASC_KEY_ID.p8"
           echo "ASC_KEY_PATH=$dir/AuthKey_$ASC_KEY_ID.p8" >> "$GITHUB_ENV"
 
-      - name: ${{ inputs.action == 'submit' && 'Submit for App Review' || 'Status' }}
+      - name: ${{ inputs.action == 'status' && 'Status' || 'Submit for App Review' }}
         env:
           ASC_KEY_ID: ${{ secrets.ASC_KEY_ID }}
           ASC_ISSUER_ID: ${{ secrets.ASC_ISSUER_ID }}

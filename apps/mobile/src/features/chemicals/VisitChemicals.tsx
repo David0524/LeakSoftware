@@ -28,6 +28,7 @@ import {
   chemicalCardLine,
   chemicalItems,
   chemicalRows,
+  doseWarning,
   formatCents,
   formatSchedule,
   itemAddition,
@@ -67,7 +68,7 @@ import {
 } from "../../data/chemicals";
 import { getServices } from "../../lib/services";
 import { useCompany } from "../../state/session";
-import { Button, Check, Chevron, Group, Section, T, Toggle } from "../../ui/components";
+import { Button, Check, Chevron, Group, Notice, Section, T, Toggle } from "../../ui/components";
 import { haptic, haptics } from "../../ui/haptics";
 import { ModalSheet, useUnsavedChanges } from "../../ui/ModalSheet";
 import { Select } from "../../ui/Select";
@@ -591,6 +592,7 @@ const Body = memo(function Body({
       <AddedSheet
         editing={editing}
         items={items}
+        gallons={gallons}
         charges={charges}
         locked={!!editing && locked.has(editing.row.id)}
         onClose={() => setEditing(null)}
@@ -607,6 +609,7 @@ const Body = memo(function Body({
       <PickSheet
         open={picking}
         items={items}
+        gallons={gallons}
         usual={history.usual}
         charges={charges}
         onClose={() => setPicking(false)}
@@ -986,6 +989,7 @@ function NoteRow({
 function AddedSheet(props: {
   editing: Editing | null;
   items: ChemicalItem[];
+  gallons: number;
   charges: boolean;
   locked: boolean;
   onClose: () => void;
@@ -1000,6 +1004,7 @@ function AddedSheet(props: {
 function AddedSheetForm({
   editing,
   items,
+  gallons,
   charges,
   locked,
   onClose,
@@ -1008,6 +1013,7 @@ function AddedSheetForm({
 }: {
   editing: Editing | null;
   items: ChemicalItem[];
+  gallons: number;
   charges: boolean;
   locked: boolean;
   onClose: () => void;
@@ -1026,6 +1032,10 @@ function AddedSheetForm({
   const quantity = num(qty);
   const price = item?.price_cents ?? row?.unit_price_cents ?? 0;
   const valid = quantity !== null && quantity > 0 && quantity <= 100_000;
+  // More than the usual in one dose: a warning, never a block (docs/design/2026-11-16-chemistry-trends.md).
+  const warning = quantity
+    ? doseWarning({ chemical: item?.chemical, unit, quantity, gallons })
+    : null;
   const dirty =
     !!row &&
     !locked &&
@@ -1104,6 +1114,7 @@ function AddedSheetForm({
               <NoteRow value={note} onChange={setNote} disabled={locked} />
             </Group>
           </Section>
+          {warning ? <Notice tone="warning">{warning}</Notice> : null}
           {!isNew && !locked ? (
             <Button title="Remove Chemical" kind="danger" wide onPress={() => onRemove(row)} />
           ) : null}
@@ -1142,6 +1153,7 @@ function ToggleRow({
 function PickSheet(props: {
   open: boolean;
   items: ChemicalItem[];
+  gallons: number;
   /** The pool's usual chemicals (item ids), listed first. */
   usual: string[];
   charges: boolean;
@@ -1155,6 +1167,7 @@ function PickSheet(props: {
 function PickSheetForm({
   open,
   items,
+  gallons,
   usual,
   charges,
   onClose,
@@ -1162,6 +1175,7 @@ function PickSheetForm({
 }: {
   open: boolean;
   items: ChemicalItem[];
+  gallons: number;
   usual: string[];
   charges: boolean;
   onClose: () => void;
@@ -1178,6 +1192,10 @@ function PickSheetForm({
   const shownCount = groups.usual.length + groups.rest.length;
   const quantity = num(qty);
   const valid = picked !== null && quantity !== null && quantity > 0 && quantity <= 100_000;
+  const warning =
+    picked && quantity
+      ? doseWarning({ chemical: picked.chemical, unit: picked.unit, quantity, gallons })
+      : null;
   const add = () => {
     if (!picked || quantity === null || !valid) return;
     onAdd(itemAddition(picked, quantity), supplied, note.trim() || null);
@@ -1247,6 +1265,7 @@ function PickSheetForm({
               </Group>
             </Section>
           ) : null}
+          {warning ? <Notice tone="warning">{warning}</Notice> : null}
           <View style={[styles.search, { backgroundColor: color.fill }]}>
             <WebIcon name="search" size={20} color={color.textMuted} />
             <TextInput

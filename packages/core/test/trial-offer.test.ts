@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { servicesPriceCents, TRIAL_OFFER, trialPackage } from "../src";
+import { servicesPriceCents, TRIAL_OFFER, trialPackage, trialTerms } from "../src";
 
 describe("trial offer", () => {
   it("follows Pool Maintenance for Both", () => {
@@ -22,5 +22,19 @@ describe("servicesPriceCents", () => {
     expect(servicesPriceCents("leak", 1)).toBe(4_900);
     expect(servicesPriceCents("both", 4)).toBe(14_900 + 4_900);
     expect(servicesPriceCents("leak", 6)).toBe(9_900 + 2 * 2_500);
+  });
+});
+
+describe("trialTerms", () => {
+  it("gives the mailer's shops 3 months and everyone else 30 days", () => {
+    expect(trialTerms("mailer")).toEqual({
+      button: "Start 3-Month Free Trial",
+      heading: "3 months free",
+      fromToday: "3 months from today",
+    });
+    for (const from of [null, undefined, "card", "google"]) {
+      expect(trialTerms(from).button).toBe("Start 30-Day Free Trial");
+      expect(trialTerms(from).heading).toBe("30 days free");
+    }
   });
 });

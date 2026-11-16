@@ -56,7 +56,7 @@ export async function saveLeadNotes(form: FormData): Promise<void> {
     })
     .eq("id", id);
   if (error) throw staffFailure(error.message, "lead notes");
-  revalidatePath("/admin/leads");
+  revalidatePath("/k4cs4uxrntb27z/leads");
 }
 
 /** Staff: Archive takes a lead off the call list without a call; Unarchive puts it back. */
@@ -72,5 +72,5 @@ export async function archiveLead(form: FormData): Promise<void> {
     })
     .eq("id", id);
   if (error) throw staffFailure(error.message, "lead archive");
-  revalidatePath("/admin/leads");
+  revalidatePath("/k4cs4uxrntb27z/leads");
 }

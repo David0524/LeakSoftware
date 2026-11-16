@@ -14,7 +14,6 @@ describe("search engines", () => {
       "/stop/",
       "/unsubscribe/",
       "/api/",
-      "/admin",
       "/jobs",
       "/in-app/",
     ]) {
