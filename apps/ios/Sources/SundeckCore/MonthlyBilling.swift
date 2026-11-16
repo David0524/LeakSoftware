@@ -54,6 +54,14 @@ public enum MonthlyBillingText {
     public static let noWayToSend = "No email or mobile number"
     public static let sendAllFooter =
         "Each goes by email, or by text from your shop’s number when there’s no email. Customers without either stay here."
+    /// The Send All footer's addition when the shop sends by itself (owner, 2026-11-16).
+    public static let autoSendOnFooter =
+        "These also go by themselves on each customer’s invoice day. Send All sends them now."
+}
+
+/// A draft that couldn't go by itself: "Didn’t go on its invoice day: No email or mobile number".
+public func autoSendFailed(_ reason: String) -> String {
+    "Didn’t go on its invoice day: \(reason)"
 }
 
 // MARK: - Charges on a visit
@@ -290,10 +298,13 @@ public struct MonthBillingInvoice: Codable, Equatable, Sendable, Identifiable {
     public var amountPaidCents: Cents
     public var sentAt: String?
     public var dueDate: String?
+    /// Why it didn't go by itself on the invoice day (a draft only).
+    public var autoSendError: String?
     public var lines: [MonthBillingLine]
 
     enum CodingKeys: String, CodingKey {
         case id, number, status, customer, email, phone, lines
+        case autoSendError = "auto_send_error"
         case jobId = "job_id"
         case customerId = "customer_id"
         case totalCents = "total_cents"
@@ -305,8 +316,9 @@ public struct MonthBillingInvoice: Codable, Equatable, Sendable, Identifiable {
     public init(
         id: String, number: Int?, status: String, jobId: String, customerId: String, customer: String,
         email: String?, phone: String?, totalCents: Cents, amountPaidCents: Cents, sentAt: String?,
-        dueDate: String?, lines: [MonthBillingLine]
+        dueDate: String?, lines: [MonthBillingLine], autoSendError: String? = nil
     ) {
+        self.autoSendError = autoSendError
         self.id = id
         self.number = number
         self.status = status

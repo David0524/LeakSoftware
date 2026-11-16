@@ -92,9 +92,22 @@ When a customer's monthly invoice is made.
   **Create Invoices** on the month's page drafts everyone now, whatever their day.
 - Days run 1 to 28 so every month has them. An invoice is dated when it's sent.
 
+## 4. Send Automatically (owner, 2026-11-16: "Add auto-send on the invoice day too")
+
+- **Settings › Payments › Monthly Invoices › Send Automatically** (switch, off by default),
+  under Invoice Day. Footer: "On: each customer's invoice is sent on their invoice day, by email
+  or a text from your shop's number, with any charges added by then. Off: drafts wait for you
+  to send them." The iPhone's Payments settings open the website, as before.
+- On: the daily run drafts each customer's month on their day, then sends it the same way Send
+  All does, as the shop. Each draft is tried once.
+- **Only drafts whose invoice day is on or after the day it was switched on** go by themselves
+  (`send_monthly_invoices_from`), so switching it on never sends a backlog; those stay for Send
+  All.
+- One that couldn't go stays in To Send with "Didn't go on its invoice day: No email or mobile
+  number". With it on, the Send All footer adds "These also go by themselves on each customer's
+  invoice day. Send All sends them now."
+
 ## Not now (proposed for later)
 
-- **Sending by themselves on the invoice day.** It needs the server to send as the shop
-  (today every send is by a signed-in person). Send All is one tap; if shops ask, this is next.
 - Billing in advance (this month's service on the 1st) and anniversary billing periods.
 - Charges on the customer's visit report.

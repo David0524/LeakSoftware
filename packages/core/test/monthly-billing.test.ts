@@ -1,5 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
+  autoSendFailed,
+  sendsMonthlyInvoices,
   billingMonthDetail,
   chargeCents,
   chargeDetail,
@@ -43,6 +45,16 @@ describe("invoice day", () => {
     expect(parseInvoiceDay("29")).toBeNull();
     expect(planInvoiceDayLabel(null, 1)).toBe("Shop Default (1st)");
     expect(planInvoiceDayLabel(15, 1)).toBe("15th");
+  });
+});
+
+describe("auto-send", () => {
+  it("is off unless switched on, and says why a draft didn't go", () => {
+    expect(sendsMonthlyInvoices({})).toBe(false);
+    expect(sendsMonthlyInvoices({ send_monthly_invoices: true })).toBe(true);
+    expect(autoSendFailed("No email or mobile number")).toBe(
+      "Didn’t go on its invoice day: No email or mobile number",
+    );
   });
 });
 

@@ -1,4 +1,5 @@
 import {
+  AUTO_SEND_ON_FOOTER,
   CHARGE_LOCKED,
   INVOICE_DAYS,
   INVOICE_DAY_FOOTER,
@@ -20,6 +21,7 @@ import {
   sendAllConfirm,
   sendAllLabel,
   sendAllResult,
+  autoSendFailed,
   sendRoute,
   sendRouteLabel,
   shopInvoiceDay,
@@ -167,6 +169,7 @@ export const monthlyBilling: ModuleCases = {
       CHARGE_LOCKED,
       NO_WAY_TO_SEND,
       SEND_ALL_FOOTER,
+      AUTO_SEND_ON_FOOTER,
     }),
     [[]],
   ),
@@ -319,4 +322,5 @@ export const monthlyBilling: ModuleCases = {
       [0, 1],
     ],
   ),
+  autoSendFailed: rule((reason: string) => autoSendFailed(reason), [["No email or mobile number"]]),
 };

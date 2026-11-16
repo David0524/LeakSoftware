@@ -205,7 +205,9 @@
                             Button {
                                 open = d.id
                             } label: {
-                                DraftRow(invoice: d, route: draftRoutes[i], reason: failed[d.id])
+                                DraftRow(
+                                    invoice: d, route: draftRoutes[i],
+                                    reason: failed[d.id] ?? d.autoSendError.map(autoSendFailed))
                             }
                             .buttonStyle(.row)
                             .surfaceRow()
@@ -223,10 +225,14 @@
                             }
                             .buttonStyle(.primary(fullWidth: true))
                             .disabled(sending || sendable == 0)
-                            Text(MonthlyBillingText.sendAllFooter)
-                                .textRole(.footnote)
-                                .foregroundStyle(Color.textMuted)
-                                .padding(.horizontal, 16)
+                            Text(
+                                company.settings["send_monthly_invoices"]?.bool == true
+                                    ? "\(MonthlyBillingText.sendAllFooter) \(MonthlyBillingText.autoSendOnFooter)"
+                                    : MonthlyBillingText.sendAllFooter
+                            )
+                            .textRole(.footnote)
+                            .foregroundStyle(Color.textMuted)
+                            .padding(.horizontal, 16)
                         }
                         .plainListRow()
                     }

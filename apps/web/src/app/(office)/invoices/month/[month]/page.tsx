@@ -1,6 +1,11 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
-import { billingMonthName, monthBillingSubtitle, offersPool } from "@leakbook/core";
+import {
+  billingMonthName,
+  monthBillingSubtitle,
+  offersPool,
+  sendsMonthlyInvoices,
+} from "@leakbook/core";
 import { MonthBillingView } from "@/components/month-billing";
 import { Notice, PageHeader } from "@/components/ui";
 import { getOffice } from "@/lib/auth";
@@ -48,6 +53,7 @@ export default async function MonthBillingPage({
         billing={billing}
         items={items}
         texting={line?.status === "active"}
+        autoSend={sendsMonthlyInvoices(company.settings)}
         timeZone={office.company.timezone}
         openInvoice={typeof open === "string" ? open : null}
       />

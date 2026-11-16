@@ -1,5 +1,7 @@
 import type { Metadata } from "next";
 import {
+  AUTO_SEND_FOOTER,
+  AUTO_SEND_LABEL,
   CARD_FEE_MAX_BPS,
   INVOICE_DAYS,
   INVOICE_DAY_FOOTER,
@@ -7,6 +9,7 @@ import {
   cardFeeBps,
   offersPool,
   ordinalDay,
+  sendsMonthlyInvoices,
   shopInvoiceDay,
 } from "@leakbook/core";
 import { saveCardFee, saveInvoiceDay, savePayments } from "@/app/actions/settings";
@@ -204,6 +207,12 @@ export default async function PaymentsSettingsPage({
                   hint={INVOICE_DAY_FOOTER}
                 />
               </SettingsFields>
+              <SSwitch
+                label={AUTO_SEND_LABEL}
+                name="send_monthly_invoices"
+                defaultChecked={sendsMonthlyInvoices(company.settings)}
+                hint={AUTO_SEND_FOOTER}
+              />
             </SettingsForm>
           </SettingsSection>
         ) : null}

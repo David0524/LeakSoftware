@@ -1,7 +1,7 @@
 import "server-only";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import {
-  billingMonthName,
+  NO_WAY_TO_SEND,
   friendlyError,
   sendAllResult,
   sendRoute,
@@ -59,26 +59,8 @@ export async function sendMonthInvoices(
   const queue = [...drafts];
   const worker = async () => {
     for (let inv = queue.shift(); inv; inv = queue.shift()) {
-      const route = sendRoute(inv, texting);
       try {
-        if (route.channel === "none") throw new Refusal("No email or mobile number");
-        if (route.channel === "email") {
-          await sendInvoice(db, inv.id, { channel: "email", to: route.to, origin });
-        } else {
-          const r = await sendInvoice(db, inv.id, { channel: "link", origin });
-          try {
-            await sendCompanyText(
-              db,
-              userId,
-              { customerId: inv.customer_id, body: r.message, jobId: inv.job_id },
-              origin,
-            );
-          } catch (e) {
-            throw new Refusal(
-              `Marked sent, but the text didn’t go: ${friendlyError(e)} Copy the link from the invoice.`,
-            );
-          }
-        }
+        await sendMonthlyInvoice(db, userId, inv, texting, origin);
         sent++;
       } catch (e) {
         failed.push({ id: inv.id, customer: inv.customer, reason: friendlyError(e) });
@@ -89,7 +71,90 @@ export async function sendMonthInvoices(
   return { sent, failed, message: sendAllResult(sent, failed.length) };
 }
 
-/** A month's name for the alert ("October"). */
-export function monthWord(month: string): string {
-  return billingMonthName(month, false);
+/**
+ * Send one monthly draft: by email, else by text from the shop's number, else refused with
+ * "No email or mobile number". `userId` null: the shop itself (the daily run).
+ */
+export async function sendMonthlyInvoice(
+  db: SupabaseClient,
+  userId: string | null,
+  inv: {
+    id: string;
+    customer_id: string;
+    job_id: string;
+    email: string | null;
+    phone: string | null;
+  },
+  texting: boolean,
+  origin: string,
+): Promise<void> {
+  const route = sendRoute(inv, texting);
+  if (route.channel === "none") throw new Refusal(NO_WAY_TO_SEND);
+  if (route.channel === "email") {
+    await sendInvoice(db, inv.id, { channel: "email", to: route.to, origin });
+    return;
+  }
+  const r = await sendInvoice(db, inv.id, { channel: "link", origin });
+  try {
+    await sendCompanyText(
+      db,
+      userId,
+      { customerId: inv.customer_id, body: r.message, jobId: inv.job_id },
+      origin,
+    );
+  } catch (e) {
+    throw new Refusal(
+      `Marked sent, but the text didn’t go: ${friendlyError(e)} Copy the link from the invoice.`,
+    );
+  }
+}
+
+/**
+ * The daily run (owner, 2026-11-16: "Add auto-send on the invoice day too"): each shop that
+ * sends by itself sends last month's drafts whose invoice day has come, as the shop. One that
+ * can't go stays a draft with the reason, for the month's page. Returns how many went.
+ */
+export async function sendDueMonthlyInvoices(
+  admin: SupabaseClient,
+  origin: string,
+  at: Date,
+): Promise<{ sent: number; failed: number }> {
+  const { data, error } = await admin.rpc("monthly_invoices_to_send", { at: at.toISOString() });
+  if (error) throw new Error(error.message);
+  const due = (data ?? []) as {
+    invoice_id: string;
+    company_id: string;
+    customer_id: string;
+    job_id: string;
+    email: string | null;
+    phone: string | null;
+  }[];
+  const texting = new Map<string, boolean>();
+  let sent = 0;
+  let failed = 0;
+  const queue = [...due];
+  const worker = async () => {
+    for (let d = queue.shift(); d; d = queue.shift()) {
+      if (!texting.has(d.company_id))
+        texting.set(d.company_id, (await activeLine(admin, d.company_id))?.status === "active");
+      try {
+        await sendMonthlyInvoice(
+          admin,
+          null,
+          { ...d, id: d.invoice_id },
+          texting.get(d.company_id)!,
+          origin,
+        );
+        sent++;
+      } catch (e) {
+        failed++;
+        await admin.rpc("record_auto_send", {
+          target_invoice: d.invoice_id,
+          failure: friendlyError(e),
+        });
+      }
+    }
+  };
+  await Promise.all(Array.from({ length: Math.min(AT_ONCE, due.length) }, worker));
+  return { sent, failed };
 }

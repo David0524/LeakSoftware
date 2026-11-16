@@ -269,7 +269,24 @@ export async function saveInvoiceDay(_: FormState, form: FormData): Promise<Form
     .eq("id", office.company.id)
     .single();
   if (readError) return failed(readError);
-  const settings = { ...(company.settings as Record<string, unknown>), invoice_day: day };
+  const before = company.settings as Record<string, unknown>;
+  // Send Automatically (owner, 2026-11-16): from the day it's switched on, so a backlog never
+  // goes out by itself.
+  const auto = form.get("send_monthly_invoices") === "on";
+  const today = new Intl.DateTimeFormat("en-CA", { timeZone: office.company.timezone }).format(
+    new Date(),
+  );
+  const settings = {
+    ...before,
+    invoice_day: day,
+    send_monthly_invoices: auto,
+    send_monthly_invoices_from: auto
+      ? before.send_monthly_invoices === true &&
+        typeof before.send_monthly_invoices_from === "string"
+        ? before.send_monthly_invoices_from
+        : today
+      : null,
+  };
   const { error } = await supabase.from("company").update({ settings }).eq("id", office.company.id);
   if (error) return failed(error);
   revalidatePath("/invoices", "layout");

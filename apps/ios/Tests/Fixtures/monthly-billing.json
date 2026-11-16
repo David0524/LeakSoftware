@@ -37,7 +37,8 @@
         "PLAN_INVOICE_DAY_FOOTER": "The day of the next month this customer’s monthly invoice is drafted.",
         "CHARGE_LOCKED": "This charge is on a sent invoice. Change the invoice instead.",
         "NO_WAY_TO_SEND": "No email or mobile number",
-        "SEND_ALL_FOOTER": "Each goes by email, or by text from your shop’s number when there’s no email. Customers without either stay here."
+        "SEND_ALL_FOOTER": "Each goes by email, or by text from your shop’s number when there’s no email. Customers without either stay here.",
+        "AUTO_SEND_ON_FOOTER": "These also go by themselves on each customer’s invoice day. Send All sends them now."
       }
     }
   ],
@@ -1426,6 +1427,14 @@
         1
       ],
       "result": "Sent 0 invoices. 1 didn’t go."
+    }
+  ],
+  "autoSendFailed": [
+    {
+      "args": [
+        "No email or mobile number"
+      ],
+      "result": "Didn’t go on its invoice day: No email or mobile number"
     }
   ]
 }

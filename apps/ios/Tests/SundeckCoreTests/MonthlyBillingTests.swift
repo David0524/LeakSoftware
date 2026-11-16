@@ -13,7 +13,7 @@ import Testing
                 "text", "ordinalDay", "shopInvoiceDay", "parseInvoiceDay", "planInvoiceDayLabel", "chargeCents",
                 "chargeDetail", "chargeItems", "chargesFooter", "billingMonthName", "billingMonthDetail", "sendRoute",
                 "sendRouteLabel", "linesSummary", "monthBillingSubtitle", "notInvoicedText", "sendAllLabel",
-                "sendAllConfirm", "sendAllResult",
+                "sendAllConfirm", "sendAllResult", "autoSendFailed",
             ])
     }
 
@@ -38,6 +38,7 @@ import Testing
                 "CHARGE_LOCKED": .string(MonthlyBillingText.chargeLocked),
                 "NO_WAY_TO_SEND": .string(MonthlyBillingText.noWayToSend),
                 "SEND_ALL_FOOTER": .string(MonthlyBillingText.sendAllFooter),
+                "AUTO_SEND_ON_FOOTER": .string(MonthlyBillingText.autoSendOnFooter),
             ]
         }
     }
@@ -92,5 +93,6 @@ import Testing
             return sendAllConfirm(routes, monthName: try c.arg(1))
         }
         checkRule(module, "sendAllResult") { c in sendAllResult(sent: try c.arg(0), failed: try c.arg(1)) }
+        checkRule(module, "autoSendFailed") { c in autoSendFailed(try c.arg(0)) }
     }
 }

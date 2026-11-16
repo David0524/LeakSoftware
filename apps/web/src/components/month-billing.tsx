@@ -3,7 +3,9 @@
 import { useActionState, useState } from "react";
 import Link from "next/link";
 import {
+  AUTO_SEND_ON_FOOTER,
   INVOICE_STATUS_LABELS,
+  autoSendFailed,
   SEND_ALL_FOOTER,
   billingMonthName,
   dateFormat,
@@ -41,9 +43,12 @@ export function MonthBillingView({
   billing,
   items,
   texting,
+  autoSend = false,
   timeZone,
   openInvoice,
 }: {
+  /** The shop sends drafts by themselves on each customer's invoice day. */
+  autoSend?: boolean;
   billing: MonthBilling;
   items: ChargeItem[];
   texting: boolean;
@@ -140,12 +145,15 @@ export function MonthBillingView({
                           <span
                             className={cx(
                               "block truncate text-[0.9375rem]",
-                              reason || route.channel === "none"
+                              reason || d.auto_send_error || route.channel === "none"
                                 ? "text-status-warning"
                                 : "text-text-muted",
                             )}
                           >
-                            {reason ?? sendRouteLabel(route)}
+                            {reason ??
+                              (d.auto_send_error
+                                ? autoSendFailed(d.auto_send_error)
+                                : sendRouteLabel(route))}
                           </span>
                         </span>
                         <span className="shrink-0 font-semibold tabular-nums">
@@ -176,7 +184,10 @@ export function MonthBillingView({
                 >
                   {pending ? "Sending…" : sendAllLabel(sendable)}
                 </Button>
-                <p className="mt-2 px-4 text-[0.8125rem] text-text-muted">{SEND_ALL_FOOTER}</p>
+                <p className="mt-2 px-4 text-[0.8125rem] text-text-muted">
+                  {SEND_ALL_FOOTER}
+                  {autoSend ? ` ${AUTO_SEND_ON_FOOTER}` : ""}
+                </p>
               </form>
             </>
           )

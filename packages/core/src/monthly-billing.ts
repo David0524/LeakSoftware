@@ -49,6 +49,26 @@ export function planInvoiceDayLabel(day: number | null | undefined, shopDay: num
 export const INVOICE_DAY_FOOTER =
   "Each customer’s invoice for the month is drafted on this day of the next month, ready to review and send. A plan can use its own day.";
 
+/** Settings › Payments › Monthly Invoices › Send Automatically (owner, 2026-11-16). */
+export const AUTO_SEND_LABEL = "Send Automatically";
+
+export const AUTO_SEND_FOOTER =
+  "On: each customer’s invoice is sent on their invoice day, by email or a text from your shop’s number, with any charges added by then. Off: drafts wait for you to send them.";
+
+/** Does the shop send monthly invoices by themselves? */
+export function sendsMonthlyInvoices(settings: object | null | undefined): boolean {
+  return (settings as { send_monthly_invoices?: unknown } | null)?.send_monthly_invoices === true;
+}
+
+/** The month page's Send All footer when the shop sends by itself. */
+export const AUTO_SEND_ON_FOOTER =
+  "These also go by themselves on each customer’s invoice day. Send All sends them now.";
+
+/** A draft that couldn't go by itself: "Didn’t go on its invoice day: No email or mobile number". */
+export function autoSendFailed(reason: string): string {
+  return `Didn’t go on its invoice day: ${reason}`;
+}
+
 export const PLAN_INVOICE_DAY_FOOTER =
   "The day of the next month this customer’s monthly invoice is drafted.";
 
@@ -140,6 +160,8 @@ export interface MonthBillingInvoice {
   amount_paid_cents: Cents;
   sent_at: string | null;
   due_date: string | null;
+  /** Why it didn't go by itself on the invoice day (a draft only). */
+  auto_send_error?: string | null;
   lines: MonthBillingLine[];
 }
 

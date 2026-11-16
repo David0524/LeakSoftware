@@ -2,6 +2,7 @@ import { adminClient } from "@/server/admin";
 import { syncAllSubscriptionPrices } from "@/server/billing";
 import { runFollowups } from "@/server/followups";
 import { siteOrigin } from "@/lib/origin";
+import { sendDueMonthlyInvoices } from "@/server/monthly-billing";
 import { sendMonthReport, sendVisitReport } from "@/server/visit-reports";
 
 export const maxDuration = 300;
@@ -24,6 +25,11 @@ export async function GET(request: Request) {
   const { data: visits, error } = await admin.rpc("extend_service_plans");
   // Last month's finished visits become one draft invoice per customer (20261012002900).
   const billed = await admin.rpc("bill_maintenance_due", { at: when.toISOString() });
+  // Shops that send by themselves: each customer's draft goes on their invoice day (owner,
+  // 2026-11-16), after the drafting above.
+  const autoSent = await sendDueMonthlyInvoices(admin, await siteOrigin(), when).catch(
+    (e: unknown) => (e instanceof Error ? e.message : String(e)),
+  );
   // Customer links past their 180 days are turned off, so the next send makes a new one.
   const links = await admin.rpc("expire_share_links");
   // Sundeck Pro prices follow each shop's package and people; this catches anything missed.
@@ -61,6 +67,7 @@ export async function GET(request: Request) {
     expiredLinks: links.error ? links.error.message : links.data,
     maintenanceVisits: error ? error.message : visits,
     monthlyInvoices: billed.error ? billed.error.message : billed.data,
+    monthlyInvoicesSent: autoSent,
     visitReports: due.error ? due.error.message : visitReports,
     monthReports: months.error ? months.error.message : monthReports,
     usagePruned: usage.error ? usage.error.message : usage.data,

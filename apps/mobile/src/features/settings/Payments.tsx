@@ -1,10 +1,14 @@
 import { useState } from "react";
 import { Linking, View } from "react-native";
 import {
+  AUTO_SEND_FOOTER,
+  AUTO_SEND_LABEL,
   INVOICE_DAYS,
   INVOICE_DAY_FOOTER,
   offersPool,
   ordinalDay,
+  sendsMonthlyInvoices,
+  dateFormat,
   shopInvoiceDay,
 } from "@leakbook/core";
 import type { JsonValue } from "@leakbook/sync";
@@ -12,7 +16,7 @@ import { formChanged } from "../../lib/discard";
 import { API_URL } from "../../lib/config";
 import { getServices } from "../../lib/services";
 import { useCompany } from "../../state/session";
-import { Button, Notice, Screen, Section, T } from "../../ui/components";
+import { Button, Group, Notice, Screen, Section, SwitchControl, T } from "../../ui/components";
 import { haptics } from "../../ui/haptics";
 import { useUnsavedChanges } from "../../ui/ModalSheet";
 import { Select } from "../../ui/Select";
@@ -53,20 +57,35 @@ function PaymentsPage() {
 /** Monthly Invoices › Invoice Day: the day of the next month each month's invoice is drafted. */
 function InvoiceDay() {
   const company = useCompany();
-  const saved = String(shopInvoiceDay(company.settings as unknown as Record<string, unknown>));
-  const [day, setDay] = useState(saved);
+  const settings0 = company.settings as unknown as Record<string, unknown>;
+  const saved = { day: String(shopInvoiceDay(settings0)), auto: sendsMonthlyInvoices(settings0) };
+  const [day, setDay] = useState(saved.day);
+  const [auto, setAuto] = useState(saved.auto);
   const [start, setStart] = useState(saved);
   const [notice, setNotice] = useState<string | null>(null);
   // Unsaved entries ask before leaving (owner, 2026-10-20: "Discard changes?" everywhere).
-  useUnsavedChanges(formChanged({ day: start }, { day }));
+  useUnsavedChanges(formChanged({ day: start.day, auto: start.auto }, { day, auto }));
 
   function save() {
     const settings = company.settings as unknown as Record<string, JsonValue>;
+    // Send Automatically (owner, 2026-11-16) counts from the day it's switched on, so a backlog
+    // never goes out by itself (as the website's saveInvoiceDay).
+    const today = dateFormat("en-CA", { timeZone: company.timezone }).format(new Date());
+    const from =
+      settings.send_monthly_invoices === true &&
+      typeof settings.send_monthly_invoices_from === "string"
+        ? settings.send_monthly_invoices_from
+        : today;
     getServices().sync.write("company", company.id, company.id, {
-      settings: { ...settings, invoice_day: Number(day) },
+      settings: {
+        ...settings,
+        invoice_day: Number(day),
+        send_monthly_invoices: auto,
+        send_monthly_invoices_from: auto ? from : null,
+      },
     });
     haptics.success();
-    setStart(day);
+    setStart({ day, auto });
     setNotice("Saved.");
   }
 
@@ -84,6 +103,33 @@ function InvoiceDay() {
           options={INVOICE_DAYS.map((d) => ({ value: String(d), label: ordinalDay(d) }))}
           hint={INVOICE_DAY_FOOTER}
         />
+        <View style={{ gap: space["2"] }}>
+          <Group>
+            <View
+              style={{
+                flexDirection: "row",
+                alignItems: "center",
+                minHeight: 44,
+                paddingHorizontal: space["4"],
+                paddingVertical: space["2"],
+                gap: space["3"],
+              }}
+            >
+              <T style={{ flex: 1 }}>{AUTO_SEND_LABEL}</T>
+              <SwitchControl
+                value={auto}
+                label={AUTO_SEND_LABEL}
+                onValueChange={(v) => {
+                  setNotice(null);
+                  setAuto(v);
+                }}
+              />
+            </View>
+          </Group>
+          <T variant="footnote" muted>
+            {AUTO_SEND_FOOTER}
+          </T>
+        </View>
         <Button title="Save" wide onPress={save} />
       </View>
     </Section>

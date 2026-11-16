@@ -3,7 +3,10 @@ import { useCallback, useRef, useState } from "react";
 import { Alert, RefreshControl, StyleSheet, View } from "react-native";
 import {
   INVOICE_STATUS_LABELS,
+  AUTO_SEND_ON_FOOTER,
   SEND_ALL_FOOTER,
+  autoSendFailed,
+  sendsMonthlyInvoices,
   billingMonthName,
   dateFormat,
   formatCents,
@@ -269,14 +272,17 @@ function MonthPage({
                           <T
                             variant="secondary"
                             numberOfLines={1}
-                            muted={!(reason || route.channel === "none")}
+                            muted={!(reason || d.auto_send_error || route.channel === "none")}
                             style={
-                              reason || route.channel === "none"
+                              reason || d.auto_send_error || route.channel === "none"
                                 ? { color: color.warning }
                                 : undefined
                             }
                           >
-                            {reason ?? sendRouteLabel(route)}
+                            {reason ??
+                              (d.auto_send_error
+                                ? autoSendFailed(d.auto_send_error)
+                                : sendRouteLabel(route))}
                           </T>
                         </ListRow>
                       );
@@ -293,6 +299,7 @@ function MonthPage({
                   <View style={styles.footer}>
                     <T variant="footnote" muted>
                       {SEND_ALL_FOOTER}
+                      {sendsMonthlyInvoices(company.settings) ? ` ${AUTO_SEND_ON_FOOTER}` : ""}
                     </T>
                   </View>
                 </View>
