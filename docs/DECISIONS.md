@@ -2,6 +2,9 @@
 
 Newest first. Each entry: date, decision, reason.
 
+## 2026-11-16 (owner: "Build a new Android release for the Play Store")
+- **Android 1.0.1** (app.json `version`; EAS counts the version code) carries monthly billing, Send Automatically, and the Add Charge fix. Built with "Upload to Google Play" off, as before, since the Play service account isn't set up; the owner uploads the bundle by hand (`docs/play-store/README.md` § 10, with its release notes). 1.0.0 (code 4) stays in Google's production review.
+
 ## 2026-11-16 (owner: "Submit 1.0.3 to the App Store")
 - **iPhone 1.0.3 (build 1083) is submitted for App Review** through the App Store workflow, with What's New for monthly billing (`docs/release/APP_STORE.md` § 1.9). The workflow made the version as a manual release, so it goes live when the owner releases it after approval.
 
