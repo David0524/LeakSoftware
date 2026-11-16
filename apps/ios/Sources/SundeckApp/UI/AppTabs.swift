@@ -238,6 +238,7 @@
             case .signature(let jobId, let quoteId): SignatureScreen(jobId: jobId, quoteId: quoteId)
             case .review(let jobId): ReviewScreen(jobId: jobId)
             case .newJob(let back): NewJobRoute(back: back)
+            case .issue(let id): IssueScreen(issueId: id)
             }
         }
     }

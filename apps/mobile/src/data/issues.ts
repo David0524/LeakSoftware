@@ -80,7 +80,8 @@ export function saveIssue(
       suggested_type: row.suggested_type,
     });
   } else {
-    sync.write("service_issue", id, companyId, row as unknown as Values);
+    // Open on the phone at once (the server's default; pushed as an unchanged update).
+    sync.write("service_issue", id, companyId, { ...row, status: "open" } as unknown as Values);
   }
   return id;
 }

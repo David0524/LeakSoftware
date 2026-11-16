@@ -62,6 +62,7 @@ describe("service issues on the phone", () => {
       description: "Cracked skimmer throat",
       suggested_type: "repair",
       reported_by: "tech",
+      status: "open",
     });
     // A photo taken on the visit, linked to the issue.
     sync.write("media", "0190b6b0-0000-7000-8000-0000000000aa", company, {

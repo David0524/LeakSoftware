@@ -75,6 +75,8 @@
                         }
                     }
                 }
+                // Report an Issue (docs/design/2026-11-16-service-issues.md).
+                JobIssuesGroup(job: job)
                 onSite(details)
                 if JobScheduleGroup.shows(job) { JobScheduleGroup(job: job) }
                 if isManagerRole(company?.role) { JobTimeline(jobId: job.id) }

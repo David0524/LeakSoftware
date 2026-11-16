@@ -55,6 +55,8 @@ select is((select reported_by from service_issue where description = 'Someone el
   (select tech_a from ids), 'a report is always by whoever wrote it');
 select lives_ok(format($$ update service_issue set description = 'Cracked skimmer throat, leaking'
   where id = %L $$, (select id from issue)), 'the tech can say more');
+select lives_ok(format($$ update service_issue set status = 'open' where id = %L $$,
+  (select id from issue)), 'a phone''s report pushes its status unchanged (open)');
 select throws_ok(format($$ update service_issue set status = 'resolved', resolved_at = now()
   where id = %L $$, (select id from issue)), '42501', null, 'but can''t resolve it');
 reset role;
