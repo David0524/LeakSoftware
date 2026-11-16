@@ -388,19 +388,19 @@ async function Company({ tabs, payer }: { tabs: ReactNode; payer: Payer | null }
           <table className={TABLE}>
             <thead className="border-b border-border text-text-muted">
               <tr>
-                <th scope="col" className="px-3 py-2 font-semibold">
+                <th scope="col" className="px-3 py-2 font-semibold whitespace-nowrap">
                   Service
                 </th>
-                <th scope="col" className="px-3 py-2 font-semibold">
+                <th scope="col" className="px-3 py-2 font-semibold whitespace-nowrap">
                   How Often
                 </th>
-                <th scope="col" className="px-3 py-2 text-right font-semibold">
+                <th scope="col" className="px-3 py-2 text-right font-semibold whitespace-nowrap">
                   Amount
                 </th>
-                <th scope="col" className="px-3 py-2 text-right font-semibold">
+                <th scope="col" className="px-3 py-2 text-right font-semibold whitespace-nowrap">
                   A Month
                 </th>
-                <th scope="col" className="px-3 py-2 font-semibold">
+                <th scope="col" className="px-3 py-2 font-semibold whitespace-nowrap">
                   Paid By
                 </th>
                 <th scope="col" className="px-3 py-2">
@@ -430,7 +430,7 @@ async function Company({ tabs, payer }: { tabs: ReactNode; payer: Payer | null }
                     <td>{REPEAT_LABELS[c.repeats]}</td>
                     <td className="text-right tabular-nums">
                       {c.amount_cents === null ? (
-                        <span className="text-status-warning">Needs a price</span>
+                        <span className="whitespace-nowrap text-status-warning">Needs a price</span>
                       ) : (
                         formatCents(c.amount_cents)
                       )}
@@ -498,8 +498,7 @@ async function Company({ tabs, payer }: { tabs: ReactNode; payer: Payer | null }
         <Panel
           title="Expenses"
           className="col-span-3"
-          subtitle="One-time costs, newest first."
-          actions={<CostButton label="Add Expense" />}
+          subtitle="One-time costs, newest first. Add one with Add Expense at the top."
         >
           <nav aria-label="Paid by" className="mb-4 flex flex-wrap gap-2">
             {[null, ...PAYERS].map((p) => (
