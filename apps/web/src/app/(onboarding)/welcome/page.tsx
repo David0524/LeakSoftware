@@ -31,7 +31,7 @@ async function WelcomeBody() {
   const [{ data: sub }, { count }] = await Promise.all([
     supabase
       .from("subscription")
-      .select("trial_ends_at")
+      .select("trial_ends_at, heard_from")
       .eq("company_id", office.company.id)
       .maybeSingle(),
     supabase
@@ -48,6 +48,7 @@ async function WelcomeBody() {
       people={people}
       teamSize={chosenTeamSize(company.settings) ?? people}
       trialEnds={(sub?.trial_ends_at as string | null) ?? null}
+      heardFrom={(sub?.heard_from as string | null) ?? null}
       billing={billingConfigured()}
       publishableKey={stripePublishableKey()}
     />
