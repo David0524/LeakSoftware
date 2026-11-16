@@ -51,6 +51,7 @@ describe("notifications", () => {
       "opened",
       "live",
       "day",
+      "chemistry",
     ]);
     expect(notificationOn({}, "text")).toBe(true);
     expect(notificationOn(null, "job")).toBe(true);

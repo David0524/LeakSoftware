@@ -8,7 +8,7 @@ import { cleaningDueSpoken, cleaningShortLabel, type CleaningKind } from "./main
 import { routingSettings, weekday, workDay, zonedMinutesToIso } from "./route-plan";
 
 export type NotificationKind =
-  "text" | "job" | "quote" | "payment" | "report" | "opened" | "live" | "day";
+  "text" | "job" | "quote" | "payment" | "report" | "opened" | "live" | "day" | "chemistry";
 
 /** Each kind a person can turn off in More › Notifications or Settings › Notifications. */
 export const NOTIFICATION_KINDS: { key: NotificationKind; label: string; hint?: string }[] = [
@@ -34,6 +34,13 @@ export const NOTIFICATION_KINDS: { key: NotificationKind; label: string; hint?: 
     key: "day",
     label: "Start of the day",
     hint: "Your first stop, when your workday starts.",
+  },
+  // Owner, 2026-11-16 (chemistry trends): owners and admins hear when a visit's reading is
+  // well outside its range, once per reading. On unless turned off.
+  {
+    key: "chemistry",
+    label: "Out-of-Range Readings",
+    hint: "A pool's water test far outside its range. Owners and admins.",
   },
 ];
 

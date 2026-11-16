@@ -21,6 +21,8 @@
         @State private var form = ChemicalForm()
         @State private var started = false
         @State private var showDoses = false
+        /// Calculator or Out of Range, when it isn't opened for a pool (owner, 2026-11-16).
+        @State private var tab: ChemicalsTab = .calculator
         @State private var submitResult: (text: String, error: Bool)?
         /// The readings last submitted to the pool's log.
         @State private var submitted: [ReadingKey: String] = [:]
@@ -30,26 +32,37 @@
             let result = form.result
             let ready = form.ready
             let pool = target.flatMap { chemicalPool(sync.store, $0) }
+            let outOfRange = pool == nil && tab == .outOfRange
             ScreenScroll {
                 if let pool { PageHeader(subtitle: pool.subtitle) }
-                VStack(alignment: .leading, spacing: 16) {
-                    CardTitle("Pool")
-                    OutlinedField(
-                        label: "Gallons",
-                        text: Binding(get: { form.gallons }, set: { form.gallons = gallonsWithCommas($0) }),
-                        placeholder: "20,000", unit: "gal", keyboard: .numberPad
-                    )
-                    .frame(maxWidth: 320, alignment: .leading)
+                if pool == nil {
+                    Segmented(
+                        selection: $tab, options: ChemicalsTab.allCases, label: \.label, title: "Chemical",
+                        fillsWidth: true)
                 }
-                .card()
-                readings(pool)
+                if outOfRange {
+                    OutOfRangeList(entries: outOfRangeEntries())
+                } else {
+                    VStack(alignment: .leading, spacing: 16) {
+                        CardTitle("Pool")
+                        OutlinedField(
+                            label: "Gallons",
+                            text: Binding(get: { form.gallons }, set: { form.gallons = gallonsWithCommas($0) }),
+                            placeholder: "20,000", unit: "gal", keyboard: .numberPad
+                        )
+                        .frame(maxWidth: 320, alignment: .leading)
+                    }
                     .card()
-                if let pool {
-                    added(pool)
-                    log(pool)
+                    readings(pool)
+                        .card()
+                    if let pool {
+                        trends(pool)
+                        added(pool)
+                        log(pool)
+                    }
+                    // Room to scroll the last fields clear of the docked bar.
+                    Color.clear.frame(height: 56)
                 }
-                // Room to scroll the last fields clear of the docked bar.
-                Color.clear.frame(height: 56)
             }
             .navigationTitle("Chemical")
             .navigationBarTitleDisplayMode(.large)
@@ -57,9 +70,11 @@
             // calculator, with nothing to keep.
             .discardOnBack(dirty: pool != nil && form.hasUnsubmittedReadings(since: submitted))
             .safeAreaInset(edge: .bottom) {
-                WhatToAddBar(summary: form.summary, ready: ready) { showDoses = true }
-                    .padding(.horizontal, 12)
-                    .padding(.bottom, 8)
+                if !outOfRange {
+                    WhatToAddBar(summary: form.summary, ready: ready) { showDoses = true }
+                        .padding(.horizontal, 12)
+                        .padding(.bottom, 8)
+                }
             }
             .sheet(isPresented: $showDoses) {
                 FormSheet(title: "What to Add", cancelTitle: "Close") { DoseList(result: result) }
@@ -90,6 +105,23 @@
                 } else {
                     Text(ChemicalLogText.noPool).textRole(.secondary).foregroundStyle(Color.textMuted)
                 }
+            }
+        }
+
+        /// The last 30 days' readings far outside their range, across every pool.
+        private func outOfRangeEntries() -> [OutOfRangeEntry] {
+            session.company.map {
+                outOfRangeList(sync.store, companyId: $0.id, names: teamNames(sync.kv), timeZone: $0.timeZone)
+            } ?? []
+        }
+
+        /// The pool's trends: a year of its log and of what techs added (owner, 2026-11-16).
+        @ViewBuilder private func trends(_ pool: ChemicalPool) -> some View {
+            if let company = session.company {
+                ChemicalTrends(
+                    readings: chemicalReadings(sync.store, companyId: company.id, propertyId: pool.propertyId),
+                    additions: poolAdditions(sync.store, companyId: company.id, propertyId: pool.propertyId),
+                    charges: chargesChemicals(company.settings), timeZone: company.timeZone)
             }
         }
 

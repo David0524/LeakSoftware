@@ -36,6 +36,11 @@
           "key": "day",
           "label": "Start of the day",
           "hint": "Your first stop, when your workday starts."
+        },
+        {
+          "key": "chemistry",
+          "label": "Out-of-Range Readings",
+          "hint": "A pool's water test far outside its range. Owners and admins."
         }
       ]
     }
@@ -107,6 +112,13 @@
     },
     {
       "args": [
+        null,
+        "chemistry"
+      ],
+      "result": true
+    },
+    {
+      "args": [
         {},
         "text"
       ],
@@ -158,6 +170,13 @@
       "args": [
         {},
         "day"
+      ],
+      "result": true
+    },
+    {
+      "args": [
+        {},
+        "chemistry"
       ],
       "result": true
     },
@@ -236,6 +255,15 @@
     {
       "args": [
         {
+          "text": false
+        },
+        "chemistry"
+      ],
+      "result": true
+    },
+    {
+      "args": [
+        {
           "text": true,
           "job": false
         },
@@ -316,6 +344,16 @@
     {
       "args": [
         {
+          "text": true,
+          "job": false
+        },
+        "chemistry"
+      ],
+      "result": true
+    },
+    {
+      "args": [
+        {
           "payment": "false"
         },
         "text"
@@ -388,6 +426,15 @@
     {
       "args": [
         {
+          "payment": "false"
+        },
+        "chemistry"
+      ],
+      "result": true
+    },
+    {
+      "args": [
+        {
           "quote": 0
         },
         "text"
@@ -459,6 +506,15 @@
     },
     {
       "args": [
+        {
+          "quote": 0
+        },
+        "chemistry"
+      ],
+      "result": true
+    },
+    {
+      "args": [
         "x",
         "text"
       ],
@@ -515,6 +571,13 @@
     },
     {
       "args": [
+        "x",
+        "chemistry"
+      ],
+      "result": true
+    },
+    {
+      "args": [
         [
           false
         ],
@@ -582,6 +645,15 @@
           false
         ],
         "day"
+      ],
+      "result": true
+    },
+    {
+      "args": [
+        [
+          false
+        ],
+        "chemistry"
       ],
       "result": true
     }

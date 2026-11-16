@@ -1519,9 +1519,9 @@ export async function getVisitChemicals(office: Office, jobId: string) {
 }
 
 /** A pool's added chemicals, for its log's monthly use. */
-export async function getPoolAdditions(office: Office, propertyId: string) {
+export async function getPoolAdditions(office: Office, propertyId: string, days = 100) {
   const supabase = await db();
-  const since = new Date(Date.now() - 100 * 86_400_000).toISOString();
+  const since = new Date(Date.now() - days * 86_400_000).toISOString();
   const rows = must(
     await supabase
       .from("chemical_addition")
@@ -1533,6 +1533,36 @@ export async function getPoolAdditions(office: Office, propertyId: string) {
       .order("added_at", { ascending: false }),
   ) as ChemicalAddition[];
   return rows.map((a) => ({ ...a, quantity: Number(a.quantity) }));
+}
+
+/**
+ * Every pool's log entries of the last `days` days, newest first, with the pool's customer and
+ * address, for Chemicals › Out of Range (docs/design/2026-11-16-chemistry-trends.md).
+ */
+export async function getRecentReadings(office: Office, days = 30) {
+  const supabase = await db();
+  const since = new Date(Date.now() - days * 86_400_000).toISOString();
+  const readings = must(
+    await supabase
+      .from("chemical_reading")
+      .select("*")
+      .eq("company_id", office.company.id)
+      .is("deleted_at", null)
+      .gte("recorded_at", since)
+      .order("recorded_at", { ascending: false })
+      .limit(1000),
+  ) as ChemicalReading[];
+  const ids = [...new Set(readings.map((r) => r.property_id))];
+  const pools = ids.length
+    ? (must(
+        await supabase
+          .from("property")
+          .select("*, customer:customer!property_customer_id_company_id_fkey(id, name)")
+          .eq("company_id", office.company.id)
+          .in("id", ids),
+      ) as (Property & { customer: { id: string; name: string } | null })[])
+    : [];
+  return { readings, pools };
 }
 
 /** The pool the Chemical screen was opened for, with its customer's name. */

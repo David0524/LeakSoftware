@@ -41,6 +41,7 @@ import { drafts } from "./cases/drafts";
 import { poolEquipment } from "./cases/pool-equipment";
 import { friendlyErrorCases } from "./cases/friendly-error";
 import { monthlyBilling } from "./cases/monthly-billing";
+import { chemistryTrends } from "./cases/chemistry-trends";
 
 /** One fixture file per entry: apps/ios/Tests/Fixtures/<name>.json. */
 export const modules: Record<string, ModuleCases> = {
@@ -86,4 +87,5 @@ export const modules: Record<string, ModuleCases> = {
   drafts,
   "friendly-error": friendlyErrorCases,
   "monthly-billing": monthlyBilling,
+  "chemistry-trends": chemistryTrends,
 };

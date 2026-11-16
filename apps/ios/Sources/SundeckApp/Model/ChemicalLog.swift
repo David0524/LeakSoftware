@@ -221,3 +221,66 @@ public enum ChemicalCardText {
         latestChemicalLine(store, companyId: companyId, propertyId: propertyId, now: now, timeZone: timeZone) ?? empty
     }
 }
+
+// MARK: - Trends and Out of Range (owner, 2026-11-16; docs/design/2026-11-16-chemistry-trends.md)
+
+/// What the Chemical screen shows when it isn't opened for a pool: the calculator, or the
+/// readings far outside their range.
+public enum ChemicalsTab: String, CaseIterable, Sendable {
+    case calculator
+    case outOfRange
+
+    public var label: String {
+        switch self {
+        case .calculator: "Calculator"
+        case .outOfRange: "Out of Range"
+        }
+    }
+}
+
+/// What Out of Range says when nothing is out of range, and under its list.
+public enum OutOfRangeText {
+    public static let title = "Last 30 days"
+    public static let empty = "No readings out of range in the last 30 days."
+    public static let footer = "Readings well outside the pool’s range, newest first."
+    public static let noReadings = "No readings in this period."
+    public static let costNote = "Each month’s added chemicals."
+}
+
+/// One line of Out of Range: the pool, the reading and its value, the range, when, and who.
+public struct OutOfRangeEntry: Identifiable, Equatable, Sendable {
+    public var id: String
+    public var propertyId: String
+    /// The customer's name, else the address.
+    public var pool: String
+    /// "pH 8.2 · High"
+    public var value: String
+    /// "Aim for 7.4–7.6 · Mon, Oct 19, 8:15 AM · Tony Tech"
+    public var detail: String
+    public var direction: String
+}
+
+/// The last 30 days' readings far outside their range, newest first, across every pool.
+public func outOfRangeList(
+    _ store: LocalStore, companyId: String, names: [String: String], now: Date = Date(), timeZone: String
+) -> [OutOfRangeEntry] {
+    let readings = ((try? store.list("chemical_reading", companyId: companyId)) ?? [])
+        .filter { $0["deleted_at"]?.string == nil }
+        .compactMap(decodeChemicalReading)
+    var pools: [String: String] = [:]
+    return outOfRangeRows(readings, now: isoTimestamp(milliseconds: now.timeIntervalSince1970 * 1000)).map { r in
+        if pools[r.propertyId] == nil {
+            pools[r.propertyId] = chemicalPool(store, ChemicalTarget(propertyId: r.propertyId))?.name ?? "A pool"
+        }
+        return OutOfRangeEntry(
+            id: r.id, propertyId: r.propertyId, pool: pools[r.propertyId] ?? "A pool",
+            value: "\(r.label) \(r.valueText) · \(r.direction == "low" ? "Low" : "High")",
+            detail: [
+                "Aim for \(r.range)",
+                try? formatSchedule(r.recordedAt, now, timeZone),
+                r.recordedBy.flatMap { names[$0] },
+            ]
+            .compactMap { $0 }.joined(separator: " · "),
+            direction: r.direction)
+    }
+}

@@ -11,6 +11,10 @@
     {
       "path": "/api/cron/weekly",
       "schedule": "5 * * * *"
+    },
+    {
+      "path": "/api/cron/chemistry",
+      "schedule": "35 * * * *"
     }
   ]
 }

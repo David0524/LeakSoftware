@@ -2,6 +2,7 @@ import { useLocalSearchParams } from "expo-router";
 import { useState } from "react";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 import {
+  chargesChemicals,
   formatAddress,
   formatSchedule,
   monthlyUsage,
@@ -23,7 +24,9 @@ import { removeRows } from "../../../../lib/removal";
 import { announceRemoved } from "../../../../lib/removedBanner";
 import { getServices } from "../../../../lib/services";
 import { useCompany } from "../../../../state/session";
-import { Card, Group, ListRow, Screen, Section, T } from "../../../../ui/components";
+import { OutOfRangeList } from "../../../../features/chemicals/OutOfRange";
+import { PoolTrends } from "../../../../features/chemicals/Trends";
+import { Card, Group, ListRow, Screen, Section, Segmented, T } from "../../../../ui/components";
 import { Glass } from "../../../../ui/Glass";
 import { ModalSheet } from "../../../../ui/ModalSheet";
 import { color, face, MAX_TEXT_SCALE, minTap, space, tabular, type } from "../../../../ui/theme";
@@ -50,7 +53,11 @@ export default function Chemicals() {
   // What the pool took each month (owner, 2026-10-24), from what techs added on visits.
   const months = monthlyUsage(usePoolAdditions(company.id, pool?.id ?? ""), company.timezone);
   const [sheet, setSheet] = useState(false);
+  const [tab, setTab] = useState<"calculator" | "out-of-range">("calculator");
   const barTop = useTabBarTop();
+  // A year of the pool's log and additions, for Trends (owner, 2026-11-16).
+  const yearLog = useChemicalLog(company.id).filter((r) => pool && r.property_id === pool.id);
+  const yearAdditions = usePoolAdditions(company.id, pool?.id ?? "");
 
   // Removed at once, with Undo for five seconds (owner, 2026-10-26), not asked first.
   function remove(id: string) {
@@ -61,9 +68,37 @@ export default function Chemicals() {
   const who = (uid: string | null | undefined) =>
     uid ? team.find((t) => t.user_id === uid)?.name : undefined;
 
+  // Without a pool, Out of Range lists the last 30 days' readings far outside their range.
+  if (!pool && tab === "out-of-range")
+    return (
+      <Screen title="Chemical">
+        <Segmented
+          label="Chemical"
+          value={tab}
+          onChange={setTab}
+          options={[
+            { value: "calculator", label: "Calculator" },
+            { value: "out-of-range", label: "Out of Range" },
+          ]}
+        />
+        <OutOfRangeList />
+      </Screen>
+    );
+
   return (
     <View style={{ flex: 1 }}>
       <Screen title="Chemical" subtitle={pool ? formatAddress(pool) : undefined}>
+        {!pool ? (
+          <Segmented
+            label="Chemical"
+            value={tab}
+            onChange={setTab}
+            options={[
+              { value: "calculator", label: "Calculator" },
+              { value: "out-of-range", label: "Out of Range" },
+            ]}
+          />
+        ) : null}
         <Card style={{ gap: space["4"] }}>
           <T variant="cardTitle">Pool</T>
           <GallonsInput calc={calc} />
@@ -83,6 +118,14 @@ export default function Chemicals() {
             </View>
           )}
         </Card>
+        {pool ? (
+          <PoolTrends
+            readings={yearLog}
+            additions={yearAdditions}
+            charges={chargesChemicals(company.settings)}
+            timeZone={company.timezone}
+          />
+        ) : null}
         {pool && months.length ? (
           <Section title="Chemicals added">
             <Group>

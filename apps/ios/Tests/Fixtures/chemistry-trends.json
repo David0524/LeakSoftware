@@ -1,0 +1,3010 @@
+{
+  "TREND_PERIODS": [
+    {
+      "args": [],
+      "result": [
+        {
+          "key": "90d",
+          "label": "90 Days",
+          "days": 90
+        },
+        {
+          "key": "6m",
+          "label": "6 Months",
+          "days": 183
+        },
+        {
+          "key": "1y",
+          "label": "1 Year",
+          "days": 365
+        }
+      ]
+    }
+  ],
+  "OUT_OF_RANGE_MARGIN": [
+    {
+      "args": [],
+      "result": {
+        "fc": 1,
+        "ph": 0.2,
+        "ta": 20,
+        "ch": 50,
+        "cya": 10,
+        "salt": 300
+      }
+    }
+  ],
+  "DOSE_LIMITS": [
+    {
+      "args": [],
+      "result": {
+        "liquid_chlorine": {
+          "quantity": 1,
+          "unit": "gal"
+        },
+        "muriatic_acid": {
+          "quantity": 0.5,
+          "unit": "gal"
+        },
+        "dry_acid": {
+          "quantity": 2,
+          "unit": "lb"
+        },
+        "cal_hypo": {
+          "quantity": 2,
+          "unit": "lb"
+        },
+        "tabs": {
+          "quantity": 3,
+          "unit": "tab"
+        },
+        "baking_soda": {
+          "quantity": 3,
+          "unit": "lb"
+        },
+        "soda_ash": {
+          "quantity": 1,
+          "unit": "lb"
+        },
+        "calcium_chloride": {
+          "quantity": 3,
+          "unit": "lb"
+        },
+        "stabilizer": {
+          "quantity": 3,
+          "unit": "lb"
+        },
+        "salt": {
+          "quantity": 3,
+          "unit": "bag"
+        },
+        "algaecide": {
+          "quantity": 0.25,
+          "unit": "gal"
+        },
+        "clarifier": {
+          "quantity": 0.125,
+          "unit": "gal"
+        },
+        "enzyme": {
+          "quantity": 0.125,
+          "unit": "gal"
+        },
+        "phosphate_remover": {
+          "quantity": 0.25,
+          "unit": "gal"
+        }
+      }
+    }
+  ],
+  "trendWindow": [
+    {
+      "args": [
+        "90d",
+        "2026-11-16T15:00:00Z"
+      ],
+      "result": {
+        "from": "2026-08-18T15:00:00.000Z",
+        "to": "2026-11-16T15:00:00.000Z"
+      }
+    },
+    {
+      "args": [
+        "6m",
+        "2026-11-16T15:00:00Z"
+      ],
+      "result": {
+        "from": "2026-05-17T15:00:00.000Z",
+        "to": "2026-11-16T15:00:00.000Z"
+      }
+    },
+    {
+      "args": [
+        "1y",
+        "2026-11-16T15:00:00Z"
+      ],
+      "result": {
+        "from": "2025-11-16T15:00:00.000Z",
+        "to": "2026-11-16T15:00:00.000Z"
+      }
+    }
+  ],
+  "readingSeries": [
+    {
+      "args": [
+        [
+          {
+            "id": "r1",
+            "property_id": "p",
+            "job_id": null,
+            "recorded_at": "2026-08-20T14:00:00Z",
+            "recorded_by": "u1",
+            "gallons": 15000,
+            "fc": 1,
+            "ph": 7.9,
+            "ta": 70,
+            "ch": null,
+            "cya": 30,
+            "salt": null,
+            "chlorine_product": null,
+            "acid_product": null,
+            "notes": null,
+            "goals": null
+          },
+          {
+            "id": "r2",
+            "property_id": "p",
+            "job_id": null,
+            "recorded_at": "2026-09-20T14:00:00Z",
+            "recorded_by": "u1",
+            "gallons": 15000,
+            "fc": 3.5,
+            "ph": 7.5,
+            "ta": 90,
+            "ch": 250,
+            "cya": null,
+            "salt": null,
+            "chlorine_product": null,
+            "acid_product": null,
+            "notes": null,
+            "goals": null
+          },
+          {
+            "id": "r3",
+            "property_id": "p",
+            "job_id": null,
+            "recorded_at": "2026-10-18T14:00:00Z",
+            "recorded_by": "u1",
+            "gallons": 15000,
+            "fc": 5,
+            "ph": 7.7,
+            "ta": 100,
+            "ch": null,
+            "cya": 50,
+            "salt": 3100,
+            "chlorine_product": null,
+            "acid_product": null,
+            "notes": null,
+            "goals": null
+          },
+          {
+            "id": "r4",
+            "property_id": "p",
+            "job_id": null,
+            "recorded_at": "2026-11-10T14:00:00Z",
+            "recorded_by": "u1",
+            "gallons": 15000,
+            "fc": 2.5,
+            "ph": 7.4,
+            "ta": null,
+            "ch": null,
+            "cya": null,
+            "salt": null,
+            "chlorine_product": null,
+            "acid_product": null,
+            "notes": null,
+            "goals": {
+              "fc": 4
+            }
+          },
+          {
+            "id": "r5",
+            "property_id": "p",
+            "job_id": null,
+            "recorded_at": "2025-12-01T14:00:00Z",
+            "recorded_by": "u1",
+            "gallons": 15000,
+            "fc": 9,
+            "ph": 8.2,
+            "ta": 300,
+            "ch": null,
+            "cya": null,
+            "salt": null,
+            "chlorine_product": null,
+            "acid_product": null,
+            "notes": null,
+            "goals": null
+          },
+          {
+            "id": "r6",
+            "property_id": "p",
+            "job_id": null,
+            "recorded_at": "2026-11-30T14:00:00Z",
+            "recorded_by": "u1",
+            "gallons": 15000,
+            "fc": 9,
+            "ph": null,
+            "ta": null,
+            "ch": null,
+            "cya": null,
+            "salt": null,
+            "chlorine_product": null,
+            "acid_product": null,
+            "notes": null,
+            "goals": null
+          }
+        ],
+        "90d",
+        "2026-11-16T15:00:00Z"
+      ],
+      "result": [
+        {
+          "key": "fc",
+          "label": "Free chlorine",
+          "points": [
+            {
+              "at": "2026-08-20T14:00:00Z",
+              "value": 1
+            },
+            {
+              "at": "2026-09-20T14:00:00Z",
+              "value": 3.5
+            },
+            {
+              "at": "2026-10-18T14:00:00Z",
+              "value": 5
+            },
+            {
+              "at": "2026-11-10T14:00:00Z",
+              "value": 2.5
+            }
+          ],
+          "low": 3.5,
+          "high": 6,
+          "min": 0.5,
+          "max": 6.5,
+          "latest": 2.5,
+          "status": "low",
+          "summary": "Free chlorine: 4 readings, from 1 to 2.5 (low). Lowest 1, highest 5. Aim for 3.5 to 6."
+        },
+        {
+          "key": "ph",
+          "label": "pH",
+          "points": [
+            {
+              "at": "2026-08-20T14:00:00Z",
+              "value": 7.9
+            },
+            {
+              "at": "2026-09-20T14:00:00Z",
+              "value": 7.5
+            },
+            {
+              "at": "2026-10-18T14:00:00Z",
+              "value": 7.7
+            },
+            {
+              "at": "2026-11-10T14:00:00Z",
+              "value": 7.4
+            }
+          ],
+          "low": 7.4,
+          "high": 7.6,
+          "min": 7.35,
+          "max": 7.95,
+          "latest": 7.4,
+          "status": "ok",
+          "summary": "pH: 4 readings, from 7.9 to 7.4 (in range). Lowest 7.4, highest 7.9. Aim for 7.4 to 7.6."
+        },
+        {
+          "key": "ta",
+          "label": "Alkalinity",
+          "points": [
+            {
+              "at": "2026-08-20T14:00:00Z",
+              "value": 70
+            },
+            {
+              "at": "2026-09-20T14:00:00Z",
+              "value": 90
+            },
+            {
+              "at": "2026-10-18T14:00:00Z",
+              "value": 100
+            }
+          ],
+          "low": 80,
+          "high": 120,
+          "min": 65,
+          "max": 125,
+          "latest": 100,
+          "status": "ok",
+          "summary": "Alkalinity: 3 readings, from 70 to 100 (in range). Lowest 70, highest 100. Aim for 80 to 120."
+        },
+        {
+          "key": "ch",
+          "label": "Calcium",
+          "points": [
+            {
+              "at": "2026-09-20T14:00:00Z",
+              "value": 250
+            }
+          ],
+          "low": 200,
+          "high": 400,
+          "min": 180,
+          "max": 420,
+          "latest": 250,
+          "status": "ok",
+          "summary": "Calcium: 1 reading, 250 (in range). Aim for 200 to 400."
+        },
+        {
+          "key": "cya",
+          "label": "Stabilizer",
+          "points": [
+            {
+              "at": "2026-08-20T14:00:00Z",
+              "value": 30
+            },
+            {
+              "at": "2026-10-18T14:00:00Z",
+              "value": 50
+            }
+          ],
+          "low": 30,
+          "high": 80,
+          "min": 25,
+          "max": 85,
+          "latest": 50,
+          "status": "ok",
+          "summary": "Stabilizer: 2 readings, from 30 to 50 (in range). Lowest 30, highest 50. Aim for 30 to 80."
+        },
+        {
+          "key": "salt",
+          "label": "Salt",
+          "points": [
+            {
+              "at": "2026-10-18T14:00:00Z",
+              "value": 3100
+            }
+          ],
+          "low": 2700,
+          "high": 3400,
+          "min": 2630,
+          "max": 3470,
+          "latest": 3100,
+          "status": "ok",
+          "summary": "Salt: 1 reading, 3100 (in range). Aim for 2700 to 3400."
+        }
+      ]
+    },
+    {
+      "args": [
+        [
+          {
+            "id": "r1",
+            "property_id": "p",
+            "job_id": null,
+            "recorded_at": "2026-08-20T14:00:00Z",
+            "recorded_by": "u1",
+            "gallons": 15000,
+            "fc": 1,
+            "ph": 7.9,
+            "ta": 70,
+            "ch": null,
+            "cya": 30,
+            "salt": null,
+            "chlorine_product": null,
+            "acid_product": null,
+            "notes": null,
+            "goals": null
+          },
+          {
+            "id": "r2",
+            "property_id": "p",
+            "job_id": null,
+            "recorded_at": "2026-09-20T14:00:00Z",
+            "recorded_by": "u1",
+            "gallons": 15000,
+            "fc": 3.5,
+            "ph": 7.5,
+            "ta": 90,
+            "ch": 250,
+            "cya": null,
+            "salt": null,
+            "chlorine_product": null,
+            "acid_product": null,
+            "notes": null,
+            "goals": null
+          },
+          {
+            "id": "r3",
+            "property_id": "p",
+            "job_id": null,
+            "recorded_at": "2026-10-18T14:00:00Z",
+            "recorded_by": "u1",
+            "gallons": 15000,
+            "fc": 5,
+            "ph": 7.7,
+            "ta": 100,
+            "ch": null,
+            "cya": 50,
+            "salt": 3100,
+            "chlorine_product": null,
+            "acid_product": null,
+            "notes": null,
+            "goals": null
+          },
+          {
+            "id": "r4",
+            "property_id": "p",
+            "job_id": null,
+            "recorded_at": "2026-11-10T14:00:00Z",
+            "recorded_by": "u1",
+            "gallons": 15000,
+            "fc": 2.5,
+            "ph": 7.4,
+            "ta": null,
+            "ch": null,
+            "cya": null,
+            "salt": null,
+            "chlorine_product": null,
+            "acid_product": null,
+            "notes": null,
+            "goals": {
+              "fc": 4
+            }
+          },
+          {
+            "id": "r5",
+            "property_id": "p",
+            "job_id": null,
+            "recorded_at": "2025-12-01T14:00:00Z",
+            "recorded_by": "u1",
+            "gallons": 15000,
+            "fc": 9,
+            "ph": 8.2,
+            "ta": 300,
+            "ch": null,
+            "cya": null,
+            "salt": null,
+            "chlorine_product": null,
+            "acid_product": null,
+            "notes": null,
+            "goals": null
+          },
+          {
+            "id": "r6",
+            "property_id": "p",
+            "job_id": null,
+            "recorded_at": "2026-11-30T14:00:00Z",
+            "recorded_by": "u1",
+            "gallons": 15000,
+            "fc": 9,
+            "ph": null,
+            "ta": null,
+            "ch": null,
+            "cya": null,
+            "salt": null,
+            "chlorine_product": null,
+            "acid_product": null,
+            "notes": null,
+            "goals": null
+          }
+        ],
+        "6m",
+        "2026-11-16T15:00:00Z"
+      ],
+      "result": [
+        {
+          "key": "fc",
+          "label": "Free chlorine",
+          "points": [
+            {
+              "at": "2026-08-20T14:00:00Z",
+              "value": 1
+            },
+            {
+              "at": "2026-09-20T14:00:00Z",
+              "value": 3.5
+            },
+            {
+              "at": "2026-10-18T14:00:00Z",
+              "value": 5
+            },
+            {
+              "at": "2026-11-10T14:00:00Z",
+              "value": 2.5
+            }
+          ],
+          "low": 3.5,
+          "high": 6,
+          "min": 0.5,
+          "max": 6.5,
+          "latest": 2.5,
+          "status": "low",
+          "summary": "Free chlorine: 4 readings, from 1 to 2.5 (low). Lowest 1, highest 5. Aim for 3.5 to 6."
+        },
+        {
+          "key": "ph",
+          "label": "pH",
+          "points": [
+            {
+              "at": "2026-08-20T14:00:00Z",
+              "value": 7.9
+            },
+            {
+              "at": "2026-09-20T14:00:00Z",
+              "value": 7.5
+            },
+            {
+              "at": "2026-10-18T14:00:00Z",
+              "value": 7.7
+            },
+            {
+              "at": "2026-11-10T14:00:00Z",
+              "value": 7.4
+            }
+          ],
+          "low": 7.4,
+          "high": 7.6,
+          "min": 7.35,
+          "max": 7.95,
+          "latest": 7.4,
+          "status": "ok",
+          "summary": "pH: 4 readings, from 7.9 to 7.4 (in range). Lowest 7.4, highest 7.9. Aim for 7.4 to 7.6."
+        },
+        {
+          "key": "ta",
+          "label": "Alkalinity",
+          "points": [
+            {
+              "at": "2026-08-20T14:00:00Z",
+              "value": 70
+            },
+            {
+              "at": "2026-09-20T14:00:00Z",
+              "value": 90
+            },
+            {
+              "at": "2026-10-18T14:00:00Z",
+              "value": 100
+            }
+          ],
+          "low": 80,
+          "high": 120,
+          "min": 65,
+          "max": 125,
+          "latest": 100,
+          "status": "ok",
+          "summary": "Alkalinity: 3 readings, from 70 to 100 (in range). Lowest 70, highest 100. Aim for 80 to 120."
+        },
+        {
+          "key": "ch",
+          "label": "Calcium",
+          "points": [
+            {
+              "at": "2026-09-20T14:00:00Z",
+              "value": 250
+            }
+          ],
+          "low": 200,
+          "high": 400,
+          "min": 180,
+          "max": 420,
+          "latest": 250,
+          "status": "ok",
+          "summary": "Calcium: 1 reading, 250 (in range). Aim for 200 to 400."
+        },
+        {
+          "key": "cya",
+          "label": "Stabilizer",
+          "points": [
+            {
+              "at": "2026-08-20T14:00:00Z",
+              "value": 30
+            },
+            {
+              "at": "2026-10-18T14:00:00Z",
+              "value": 50
+            }
+          ],
+          "low": 30,
+          "high": 80,
+          "min": 25,
+          "max": 85,
+          "latest": 50,
+          "status": "ok",
+          "summary": "Stabilizer: 2 readings, from 30 to 50 (in range). Lowest 30, highest 50. Aim for 30 to 80."
+        },
+        {
+          "key": "salt",
+          "label": "Salt",
+          "points": [
+            {
+              "at": "2026-10-18T14:00:00Z",
+              "value": 3100
+            }
+          ],
+          "low": 2700,
+          "high": 3400,
+          "min": 2630,
+          "max": 3470,
+          "latest": 3100,
+          "status": "ok",
+          "summary": "Salt: 1 reading, 3100 (in range). Aim for 2700 to 3400."
+        }
+      ]
+    },
+    {
+      "args": [
+        [
+          {
+            "id": "r1",
+            "property_id": "p",
+            "job_id": null,
+            "recorded_at": "2026-08-20T14:00:00Z",
+            "recorded_by": "u1",
+            "gallons": 15000,
+            "fc": 1,
+            "ph": 7.9,
+            "ta": 70,
+            "ch": null,
+            "cya": 30,
+            "salt": null,
+            "chlorine_product": null,
+            "acid_product": null,
+            "notes": null,
+            "goals": null
+          },
+          {
+            "id": "r2",
+            "property_id": "p",
+            "job_id": null,
+            "recorded_at": "2026-09-20T14:00:00Z",
+            "recorded_by": "u1",
+            "gallons": 15000,
+            "fc": 3.5,
+            "ph": 7.5,
+            "ta": 90,
+            "ch": 250,
+            "cya": null,
+            "salt": null,
+            "chlorine_product": null,
+            "acid_product": null,
+            "notes": null,
+            "goals": null
+          },
+          {
+            "id": "r3",
+            "property_id": "p",
+            "job_id": null,
+            "recorded_at": "2026-10-18T14:00:00Z",
+            "recorded_by": "u1",
+            "gallons": 15000,
+            "fc": 5,
+            "ph": 7.7,
+            "ta": 100,
+            "ch": null,
+            "cya": 50,
+            "salt": 3100,
+            "chlorine_product": null,
+            "acid_product": null,
+            "notes": null,
+            "goals": null
+          },
+          {
+            "id": "r4",
+            "property_id": "p",
+            "job_id": null,
+            "recorded_at": "2026-11-10T14:00:00Z",
+            "recorded_by": "u1",
+            "gallons": 15000,
+            "fc": 2.5,
+            "ph": 7.4,
+            "ta": null,
+            "ch": null,
+            "cya": null,
+            "salt": null,
+            "chlorine_product": null,
+            "acid_product": null,
+            "notes": null,
+            "goals": {
+              "fc": 4
+            }
+          },
+          {
+            "id": "r5",
+            "property_id": "p",
+            "job_id": null,
+            "recorded_at": "2025-12-01T14:00:00Z",
+            "recorded_by": "u1",
+            "gallons": 15000,
+            "fc": 9,
+            "ph": 8.2,
+            "ta": 300,
+            "ch": null,
+            "cya": null,
+            "salt": null,
+            "chlorine_product": null,
+            "acid_product": null,
+            "notes": null,
+            "goals": null
+          },
+          {
+            "id": "r6",
+            "property_id": "p",
+            "job_id": null,
+            "recorded_at": "2026-11-30T14:00:00Z",
+            "recorded_by": "u1",
+            "gallons": 15000,
+            "fc": 9,
+            "ph": null,
+            "ta": null,
+            "ch": null,
+            "cya": null,
+            "salt": null,
+            "chlorine_product": null,
+            "acid_product": null,
+            "notes": null,
+            "goals": null
+          }
+        ],
+        "1y",
+        "2026-11-16T15:00:00Z"
+      ],
+      "result": [
+        {
+          "key": "fc",
+          "label": "Free chlorine",
+          "points": [
+            {
+              "at": "2025-12-01T14:00:00Z",
+              "value": 9
+            },
+            {
+              "at": "2026-08-20T14:00:00Z",
+              "value": 1
+            },
+            {
+              "at": "2026-09-20T14:00:00Z",
+              "value": 3.5
+            },
+            {
+              "at": "2026-10-18T14:00:00Z",
+              "value": 5
+            },
+            {
+              "at": "2026-11-10T14:00:00Z",
+              "value": 2.5
+            }
+          ],
+          "low": 3.5,
+          "high": 6,
+          "min": 0.2,
+          "max": 9.8,
+          "latest": 2.5,
+          "status": "low",
+          "summary": "Free chlorine: 5 readings, from 9 to 2.5 (low). Lowest 1, highest 9. Aim for 3.5 to 6."
+        },
+        {
+          "key": "ph",
+          "label": "pH",
+          "points": [
+            {
+              "at": "2025-12-01T14:00:00Z",
+              "value": 8.2
+            },
+            {
+              "at": "2026-08-20T14:00:00Z",
+              "value": 7.9
+            },
+            {
+              "at": "2026-09-20T14:00:00Z",
+              "value": 7.5
+            },
+            {
+              "at": "2026-10-18T14:00:00Z",
+              "value": 7.7
+            },
+            {
+              "at": "2026-11-10T14:00:00Z",
+              "value": 7.4
+            }
+          ],
+          "low": 7.4,
+          "high": 7.6,
+          "min": 7.32,
+          "max": 8.28,
+          "latest": 7.4,
+          "status": "ok",
+          "summary": "pH: 5 readings, from 8.2 to 7.4 (in range). Lowest 7.4, highest 8.2. Aim for 7.4 to 7.6."
+        },
+        {
+          "key": "ta",
+          "label": "Alkalinity",
+          "points": [
+            {
+              "at": "2025-12-01T14:00:00Z",
+              "value": 300
+            },
+            {
+              "at": "2026-08-20T14:00:00Z",
+              "value": 70
+            },
+            {
+              "at": "2026-09-20T14:00:00Z",
+              "value": 90
+            },
+            {
+              "at": "2026-10-18T14:00:00Z",
+              "value": 100
+            }
+          ],
+          "low": 80,
+          "high": 120,
+          "min": 47,
+          "max": 323,
+          "latest": 100,
+          "status": "ok",
+          "summary": "Alkalinity: 4 readings, from 300 to 100 (in range). Lowest 70, highest 300. Aim for 80 to 120."
+        },
+        {
+          "key": "ch",
+          "label": "Calcium",
+          "points": [
+            {
+              "at": "2026-09-20T14:00:00Z",
+              "value": 250
+            }
+          ],
+          "low": 200,
+          "high": 400,
+          "min": 180,
+          "max": 420,
+          "latest": 250,
+          "status": "ok",
+          "summary": "Calcium: 1 reading, 250 (in range). Aim for 200 to 400."
+        },
+        {
+          "key": "cya",
+          "label": "Stabilizer",
+          "points": [
+            {
+              "at": "2026-08-20T14:00:00Z",
+              "value": 30
+            },
+            {
+              "at": "2026-10-18T14:00:00Z",
+              "value": 50
+            }
+          ],
+          "low": 30,
+          "high": 80,
+          "min": 25,
+          "max": 85,
+          "latest": 50,
+          "status": "ok",
+          "summary": "Stabilizer: 2 readings, from 30 to 50 (in range). Lowest 30, highest 50. Aim for 30 to 80."
+        },
+        {
+          "key": "salt",
+          "label": "Salt",
+          "points": [
+            {
+              "at": "2026-10-18T14:00:00Z",
+              "value": 3100
+            }
+          ],
+          "low": 2700,
+          "high": 3400,
+          "min": 2630,
+          "max": 3470,
+          "latest": 3100,
+          "status": "ok",
+          "summary": "Salt: 1 reading, 3100 (in range). Aim for 2700 to 3400."
+        }
+      ]
+    },
+    {
+      "args": [
+        [],
+        "90d",
+        "2026-11-16T15:00:00Z"
+      ],
+      "result": []
+    },
+    {
+      "args": [
+        [
+          {
+            "id": "r4",
+            "property_id": "p",
+            "job_id": null,
+            "recorded_at": "2026-11-10T14:00:00Z",
+            "recorded_by": "u1",
+            "gallons": 15000,
+            "fc": 2.5,
+            "ph": 7.4,
+            "ta": null,
+            "ch": null,
+            "cya": null,
+            "salt": null,
+            "chlorine_product": null,
+            "acid_product": null,
+            "notes": null,
+            "goals": {
+              "fc": 4
+            }
+          }
+        ],
+        "90d",
+        "2026-11-16T15:00:00Z"
+      ],
+      "result": [
+        {
+          "key": "fc",
+          "label": "Free chlorine",
+          "points": [
+            {
+              "at": "2026-11-10T14:00:00Z",
+              "value": 2.5
+            }
+          ],
+          "low": 3.5,
+          "high": 6,
+          "min": 2.15,
+          "max": 6.35,
+          "latest": 2.5,
+          "status": "low",
+          "summary": "Free chlorine: 1 reading, 2.5 (low). Aim for 3.5 to 6."
+        },
+        {
+          "key": "ph",
+          "label": "pH",
+          "points": [
+            {
+              "at": "2026-11-10T14:00:00Z",
+              "value": 7.4
+            }
+          ],
+          "low": 7.4,
+          "high": 7.6,
+          "min": 7.38,
+          "max": 7.62,
+          "latest": 7.4,
+          "status": "ok",
+          "summary": "pH: 1 reading, 7.4 (in range). Aim for 7.4 to 7.6."
+        }
+      ]
+    }
+  ],
+  "chemicalCostBars": [
+    {
+      "args": [
+        [
+          {
+            "id": "1",
+            "job_id": "j",
+            "property_id": "p",
+            "price_book_item_id": "cl",
+            "name": "Liquid chlorine",
+            "unit": "gal",
+            "reading_key": "fc",
+            "suggested_quantity": 0.5,
+            "quantity": 2,
+            "customer_supplied": false,
+            "note": null,
+            "unit_price_cents": 800,
+            "taxable": true,
+            "billed_invoice_id": null,
+            "added_at": "2026-08-12T14:00:00Z",
+            "sort_order": 0,
+            "deleted_at": null
+          },
+          {
+            "id": "2",
+            "job_id": "j",
+            "property_id": "p",
+            "price_book_item_id": "cl",
+            "name": "Liquid chlorine",
+            "unit": "gal",
+            "reading_key": "fc",
+            "suggested_quantity": 0.5,
+            "quantity": 1.5,
+            "customer_supplied": false,
+            "note": null,
+            "unit_price_cents": 1500,
+            "taxable": true,
+            "billed_invoice_id": null,
+            "added_at": "2026-10-03T14:00:00Z",
+            "sort_order": 0,
+            "deleted_at": null
+          },
+          {
+            "id": "3",
+            "job_id": "j",
+            "property_id": "p",
+            "price_book_item_id": "cl",
+            "name": "Liquid chlorine",
+            "unit": "gal",
+            "reading_key": "fc",
+            "suggested_quantity": 0.5,
+            "quantity": 0.5,
+            "customer_supplied": true,
+            "note": null,
+            "unit_price_cents": 800,
+            "taxable": true,
+            "billed_invoice_id": null,
+            "added_at": "2026-10-23T14:00:00Z",
+            "sort_order": 0,
+            "deleted_at": null
+          },
+          {
+            "id": "4",
+            "job_id": "j",
+            "property_id": "p",
+            "price_book_item_id": "cl",
+            "name": "Liquid chlorine",
+            "unit": "gal",
+            "reading_key": "fc",
+            "suggested_quantity": 0.5,
+            "quantity": 0.5,
+            "customer_supplied": false,
+            "note": null,
+            "unit_price_cents": 800,
+            "taxable": true,
+            "billed_invoice_id": null,
+            "added_at": "2026-10-30T14:00:00Z",
+            "sort_order": 0,
+            "deleted_at": "2026-10-31T00:00:00Z"
+          },
+          {
+            "id": "5",
+            "job_id": "j",
+            "property_id": "p",
+            "price_book_item_id": "cl",
+            "name": "Liquid chlorine",
+            "unit": "gal",
+            "reading_key": "fc",
+            "suggested_quantity": 0.5,
+            "quantity": 1,
+            "customer_supplied": false,
+            "note": null,
+            "unit_price_cents": 800,
+            "taxable": true,
+            "billed_invoice_id": null,
+            "added_at": "2026-11-01T03:00:00Z",
+            "sort_order": 0,
+            "deleted_at": null
+          },
+          {
+            "id": "6",
+            "job_id": "j",
+            "property_id": "p",
+            "price_book_item_id": "cl",
+            "name": "Liquid chlorine",
+            "unit": "gal",
+            "reading_key": "fc",
+            "suggested_quantity": 0.5,
+            "quantity": 4,
+            "customer_supplied": false,
+            "note": null,
+            "unit_price_cents": 800,
+            "taxable": true,
+            "billed_invoice_id": null,
+            "added_at": "2025-12-15T14:00:00Z",
+            "sort_order": 0,
+            "deleted_at": null
+          }
+        ],
+        "90d",
+        "2026-11-16T15:00:00Z",
+        "America/New_York"
+      ],
+      "result": [
+        {
+          "month": "2026-08",
+          "label": "Aug",
+          "cents": 1600
+        },
+        {
+          "month": "2026-09",
+          "label": "Sep",
+          "cents": 0
+        },
+        {
+          "month": "2026-10",
+          "label": "Oct",
+          "cents": 3050
+        },
+        {
+          "month": "2026-11",
+          "label": "Nov",
+          "cents": 0
+        }
+      ]
+    },
+    {
+      "args": [
+        [
+          {
+            "id": "1",
+            "job_id": "j",
+            "property_id": "p",
+            "price_book_item_id": "cl",
+            "name": "Liquid chlorine",
+            "unit": "gal",
+            "reading_key": "fc",
+            "suggested_quantity": 0.5,
+            "quantity": 2,
+            "customer_supplied": false,
+            "note": null,
+            "unit_price_cents": 800,
+            "taxable": true,
+            "billed_invoice_id": null,
+            "added_at": "2026-08-12T14:00:00Z",
+            "sort_order": 0,
+            "deleted_at": null
+          },
+          {
+            "id": "2",
+            "job_id": "j",
+            "property_id": "p",
+            "price_book_item_id": "cl",
+            "name": "Liquid chlorine",
+            "unit": "gal",
+            "reading_key": "fc",
+            "suggested_quantity": 0.5,
+            "quantity": 1.5,
+            "customer_supplied": false,
+            "note": null,
+            "unit_price_cents": 1500,
+            "taxable": true,
+            "billed_invoice_id": null,
+            "added_at": "2026-10-03T14:00:00Z",
+            "sort_order": 0,
+            "deleted_at": null
+          },
+          {
+            "id": "3",
+            "job_id": "j",
+            "property_id": "p",
+            "price_book_item_id": "cl",
+            "name": "Liquid chlorine",
+            "unit": "gal",
+            "reading_key": "fc",
+            "suggested_quantity": 0.5,
+            "quantity": 0.5,
+            "customer_supplied": true,
+            "note": null,
+            "unit_price_cents": 800,
+            "taxable": true,
+            "billed_invoice_id": null,
+            "added_at": "2026-10-23T14:00:00Z",
+            "sort_order": 0,
+            "deleted_at": null
+          },
+          {
+            "id": "4",
+            "job_id": "j",
+            "property_id": "p",
+            "price_book_item_id": "cl",
+            "name": "Liquid chlorine",
+            "unit": "gal",
+            "reading_key": "fc",
+            "suggested_quantity": 0.5,
+            "quantity": 0.5,
+            "customer_supplied": false,
+            "note": null,
+            "unit_price_cents": 800,
+            "taxable": true,
+            "billed_invoice_id": null,
+            "added_at": "2026-10-30T14:00:00Z",
+            "sort_order": 0,
+            "deleted_at": "2026-10-31T00:00:00Z"
+          },
+          {
+            "id": "5",
+            "job_id": "j",
+            "property_id": "p",
+            "price_book_item_id": "cl",
+            "name": "Liquid chlorine",
+            "unit": "gal",
+            "reading_key": "fc",
+            "suggested_quantity": 0.5,
+            "quantity": 1,
+            "customer_supplied": false,
+            "note": null,
+            "unit_price_cents": 800,
+            "taxable": true,
+            "billed_invoice_id": null,
+            "added_at": "2026-11-01T03:00:00Z",
+            "sort_order": 0,
+            "deleted_at": null
+          },
+          {
+            "id": "6",
+            "job_id": "j",
+            "property_id": "p",
+            "price_book_item_id": "cl",
+            "name": "Liquid chlorine",
+            "unit": "gal",
+            "reading_key": "fc",
+            "suggested_quantity": 0.5,
+            "quantity": 4,
+            "customer_supplied": false,
+            "note": null,
+            "unit_price_cents": 800,
+            "taxable": true,
+            "billed_invoice_id": null,
+            "added_at": "2025-12-15T14:00:00Z",
+            "sort_order": 0,
+            "deleted_at": null
+          }
+        ],
+        "6m",
+        "2026-11-16T15:00:00Z",
+        "America/New_York"
+      ],
+      "result": [
+        {
+          "month": "2026-05",
+          "label": "May",
+          "cents": 0
+        },
+        {
+          "month": "2026-06",
+          "label": "Jun",
+          "cents": 0
+        },
+        {
+          "month": "2026-07",
+          "label": "Jul",
+          "cents": 0
+        },
+        {
+          "month": "2026-08",
+          "label": "Aug",
+          "cents": 1600
+        },
+        {
+          "month": "2026-09",
+          "label": "Sep",
+          "cents": 0
+        },
+        {
+          "month": "2026-10",
+          "label": "Oct",
+          "cents": 3050
+        },
+        {
+          "month": "2026-11",
+          "label": "Nov",
+          "cents": 0
+        }
+      ]
+    },
+    {
+      "args": [
+        [
+          {
+            "id": "1",
+            "job_id": "j",
+            "property_id": "p",
+            "price_book_item_id": "cl",
+            "name": "Liquid chlorine",
+            "unit": "gal",
+            "reading_key": "fc",
+            "suggested_quantity": 0.5,
+            "quantity": 2,
+            "customer_supplied": false,
+            "note": null,
+            "unit_price_cents": 800,
+            "taxable": true,
+            "billed_invoice_id": null,
+            "added_at": "2026-08-12T14:00:00Z",
+            "sort_order": 0,
+            "deleted_at": null
+          },
+          {
+            "id": "2",
+            "job_id": "j",
+            "property_id": "p",
+            "price_book_item_id": "cl",
+            "name": "Liquid chlorine",
+            "unit": "gal",
+            "reading_key": "fc",
+            "suggested_quantity": 0.5,
+            "quantity": 1.5,
+            "customer_supplied": false,
+            "note": null,
+            "unit_price_cents": 1500,
+            "taxable": true,
+            "billed_invoice_id": null,
+            "added_at": "2026-10-03T14:00:00Z",
+            "sort_order": 0,
+            "deleted_at": null
+          },
+          {
+            "id": "3",
+            "job_id": "j",
+            "property_id": "p",
+            "price_book_item_id": "cl",
+            "name": "Liquid chlorine",
+            "unit": "gal",
+            "reading_key": "fc",
+            "suggested_quantity": 0.5,
+            "quantity": 0.5,
+            "customer_supplied": true,
+            "note": null,
+            "unit_price_cents": 800,
+            "taxable": true,
+            "billed_invoice_id": null,
+            "added_at": "2026-10-23T14:00:00Z",
+            "sort_order": 0,
+            "deleted_at": null
+          },
+          {
+            "id": "4",
+            "job_id": "j",
+            "property_id": "p",
+            "price_book_item_id": "cl",
+            "name": "Liquid chlorine",
+            "unit": "gal",
+            "reading_key": "fc",
+            "suggested_quantity": 0.5,
+            "quantity": 0.5,
+            "customer_supplied": false,
+            "note": null,
+            "unit_price_cents": 800,
+            "taxable": true,
+            "billed_invoice_id": null,
+            "added_at": "2026-10-30T14:00:00Z",
+            "sort_order": 0,
+            "deleted_at": "2026-10-31T00:00:00Z"
+          },
+          {
+            "id": "5",
+            "job_id": "j",
+            "property_id": "p",
+            "price_book_item_id": "cl",
+            "name": "Liquid chlorine",
+            "unit": "gal",
+            "reading_key": "fc",
+            "suggested_quantity": 0.5,
+            "quantity": 1,
+            "customer_supplied": false,
+            "note": null,
+            "unit_price_cents": 800,
+            "taxable": true,
+            "billed_invoice_id": null,
+            "added_at": "2026-11-01T03:00:00Z",
+            "sort_order": 0,
+            "deleted_at": null
+          },
+          {
+            "id": "6",
+            "job_id": "j",
+            "property_id": "p",
+            "price_book_item_id": "cl",
+            "name": "Liquid chlorine",
+            "unit": "gal",
+            "reading_key": "fc",
+            "suggested_quantity": 0.5,
+            "quantity": 4,
+            "customer_supplied": false,
+            "note": null,
+            "unit_price_cents": 800,
+            "taxable": true,
+            "billed_invoice_id": null,
+            "added_at": "2025-12-15T14:00:00Z",
+            "sort_order": 0,
+            "deleted_at": null
+          }
+        ],
+        "1y",
+        "2026-11-16T15:00:00Z",
+        "America/New_York"
+      ],
+      "result": [
+        {
+          "month": "2025-11",
+          "label": "Nov",
+          "cents": 0
+        },
+        {
+          "month": "2025-12",
+          "label": "Dec",
+          "cents": 3200
+        },
+        {
+          "month": "2026-01",
+          "label": "Jan",
+          "cents": 0
+        },
+        {
+          "month": "2026-02",
+          "label": "Feb",
+          "cents": 0
+        },
+        {
+          "month": "2026-03",
+          "label": "Mar",
+          "cents": 0
+        },
+        {
+          "month": "2026-04",
+          "label": "Apr",
+          "cents": 0
+        },
+        {
+          "month": "2026-05",
+          "label": "May",
+          "cents": 0
+        },
+        {
+          "month": "2026-06",
+          "label": "Jun",
+          "cents": 0
+        },
+        {
+          "month": "2026-07",
+          "label": "Jul",
+          "cents": 0
+        },
+        {
+          "month": "2026-08",
+          "label": "Aug",
+          "cents": 1600
+        },
+        {
+          "month": "2026-09",
+          "label": "Sep",
+          "cents": 0
+        },
+        {
+          "month": "2026-10",
+          "label": "Oct",
+          "cents": 3050
+        },
+        {
+          "month": "2026-11",
+          "label": "Nov",
+          "cents": 0
+        }
+      ]
+    },
+    {
+      "args": [
+        [
+          {
+            "id": "1",
+            "job_id": "j",
+            "property_id": "p",
+            "price_book_item_id": "cl",
+            "name": "Liquid chlorine",
+            "unit": "gal",
+            "reading_key": "fc",
+            "suggested_quantity": 0.5,
+            "quantity": 2,
+            "customer_supplied": false,
+            "note": null,
+            "unit_price_cents": 800,
+            "taxable": true,
+            "billed_invoice_id": null,
+            "added_at": "2026-08-12T14:00:00Z",
+            "sort_order": 0,
+            "deleted_at": null
+          },
+          {
+            "id": "2",
+            "job_id": "j",
+            "property_id": "p",
+            "price_book_item_id": "cl",
+            "name": "Liquid chlorine",
+            "unit": "gal",
+            "reading_key": "fc",
+            "suggested_quantity": 0.5,
+            "quantity": 1.5,
+            "customer_supplied": false,
+            "note": null,
+            "unit_price_cents": 1500,
+            "taxable": true,
+            "billed_invoice_id": null,
+            "added_at": "2026-10-03T14:00:00Z",
+            "sort_order": 0,
+            "deleted_at": null
+          },
+          {
+            "id": "3",
+            "job_id": "j",
+            "property_id": "p",
+            "price_book_item_id": "cl",
+            "name": "Liquid chlorine",
+            "unit": "gal",
+            "reading_key": "fc",
+            "suggested_quantity": 0.5,
+            "quantity": 0.5,
+            "customer_supplied": true,
+            "note": null,
+            "unit_price_cents": 800,
+            "taxable": true,
+            "billed_invoice_id": null,
+            "added_at": "2026-10-23T14:00:00Z",
+            "sort_order": 0,
+            "deleted_at": null
+          },
+          {
+            "id": "4",
+            "job_id": "j",
+            "property_id": "p",
+            "price_book_item_id": "cl",
+            "name": "Liquid chlorine",
+            "unit": "gal",
+            "reading_key": "fc",
+            "suggested_quantity": 0.5,
+            "quantity": 0.5,
+            "customer_supplied": false,
+            "note": null,
+            "unit_price_cents": 800,
+            "taxable": true,
+            "billed_invoice_id": null,
+            "added_at": "2026-10-30T14:00:00Z",
+            "sort_order": 0,
+            "deleted_at": "2026-10-31T00:00:00Z"
+          },
+          {
+            "id": "5",
+            "job_id": "j",
+            "property_id": "p",
+            "price_book_item_id": "cl",
+            "name": "Liquid chlorine",
+            "unit": "gal",
+            "reading_key": "fc",
+            "suggested_quantity": 0.5,
+            "quantity": 1,
+            "customer_supplied": false,
+            "note": null,
+            "unit_price_cents": 800,
+            "taxable": true,
+            "billed_invoice_id": null,
+            "added_at": "2026-11-01T03:00:00Z",
+            "sort_order": 0,
+            "deleted_at": null
+          },
+          {
+            "id": "6",
+            "job_id": "j",
+            "property_id": "p",
+            "price_book_item_id": "cl",
+            "name": "Liquid chlorine",
+            "unit": "gal",
+            "reading_key": "fc",
+            "suggested_quantity": 0.5,
+            "quantity": 4,
+            "customer_supplied": false,
+            "note": null,
+            "unit_price_cents": 800,
+            "taxable": true,
+            "billed_invoice_id": null,
+            "added_at": "2025-12-15T14:00:00Z",
+            "sort_order": 0,
+            "deleted_at": null
+          }
+        ],
+        "6m",
+        "2026-11-16T15:00:00Z",
+        "America/Los_Angeles"
+      ],
+      "result": [
+        {
+          "month": "2026-05",
+          "label": "May",
+          "cents": 0
+        },
+        {
+          "month": "2026-06",
+          "label": "Jun",
+          "cents": 0
+        },
+        {
+          "month": "2026-07",
+          "label": "Jul",
+          "cents": 0
+        },
+        {
+          "month": "2026-08",
+          "label": "Aug",
+          "cents": 1600
+        },
+        {
+          "month": "2026-09",
+          "label": "Sep",
+          "cents": 0
+        },
+        {
+          "month": "2026-10",
+          "label": "Oct",
+          "cents": 3050
+        },
+        {
+          "month": "2026-11",
+          "label": "Nov",
+          "cents": 0
+        }
+      ]
+    },
+    {
+      "args": [
+        [],
+        "90d",
+        "2026-11-16T15:00:00Z",
+        "UTC"
+      ],
+      "result": [
+        {
+          "month": "2026-08",
+          "label": "Aug",
+          "cents": 0
+        },
+        {
+          "month": "2026-09",
+          "label": "Sep",
+          "cents": 0
+        },
+        {
+          "month": "2026-10",
+          "label": "Oct",
+          "cents": 0
+        },
+        {
+          "month": "2026-11",
+          "label": "Nov",
+          "cents": 0
+        }
+      ]
+    }
+  ],
+  "costSummary": [
+    {
+      "args": [
+        [
+          {
+            "id": "1",
+            "job_id": "j",
+            "property_id": "p",
+            "price_book_item_id": "cl",
+            "name": "Liquid chlorine",
+            "unit": "gal",
+            "reading_key": "fc",
+            "suggested_quantity": 0.5,
+            "quantity": 2,
+            "customer_supplied": false,
+            "note": null,
+            "unit_price_cents": 800,
+            "taxable": true,
+            "billed_invoice_id": null,
+            "added_at": "2026-08-12T14:00:00Z",
+            "sort_order": 0,
+            "deleted_at": null
+          },
+          {
+            "id": "2",
+            "job_id": "j",
+            "property_id": "p",
+            "price_book_item_id": "cl",
+            "name": "Liquid chlorine",
+            "unit": "gal",
+            "reading_key": "fc",
+            "suggested_quantity": 0.5,
+            "quantity": 1.5,
+            "customer_supplied": false,
+            "note": null,
+            "unit_price_cents": 1500,
+            "taxable": true,
+            "billed_invoice_id": null,
+            "added_at": "2026-10-03T14:00:00Z",
+            "sort_order": 0,
+            "deleted_at": null
+          },
+          {
+            "id": "3",
+            "job_id": "j",
+            "property_id": "p",
+            "price_book_item_id": "cl",
+            "name": "Liquid chlorine",
+            "unit": "gal",
+            "reading_key": "fc",
+            "suggested_quantity": 0.5,
+            "quantity": 0.5,
+            "customer_supplied": true,
+            "note": null,
+            "unit_price_cents": 800,
+            "taxable": true,
+            "billed_invoice_id": null,
+            "added_at": "2026-10-23T14:00:00Z",
+            "sort_order": 0,
+            "deleted_at": null
+          },
+          {
+            "id": "4",
+            "job_id": "j",
+            "property_id": "p",
+            "price_book_item_id": "cl",
+            "name": "Liquid chlorine",
+            "unit": "gal",
+            "reading_key": "fc",
+            "suggested_quantity": 0.5,
+            "quantity": 0.5,
+            "customer_supplied": false,
+            "note": null,
+            "unit_price_cents": 800,
+            "taxable": true,
+            "billed_invoice_id": null,
+            "added_at": "2026-10-30T14:00:00Z",
+            "sort_order": 0,
+            "deleted_at": "2026-10-31T00:00:00Z"
+          },
+          {
+            "id": "5",
+            "job_id": "j",
+            "property_id": "p",
+            "price_book_item_id": "cl",
+            "name": "Liquid chlorine",
+            "unit": "gal",
+            "reading_key": "fc",
+            "suggested_quantity": 0.5,
+            "quantity": 1,
+            "customer_supplied": false,
+            "note": null,
+            "unit_price_cents": 800,
+            "taxable": true,
+            "billed_invoice_id": null,
+            "added_at": "2026-11-01T03:00:00Z",
+            "sort_order": 0,
+            "deleted_at": null
+          },
+          {
+            "id": "6",
+            "job_id": "j",
+            "property_id": "p",
+            "price_book_item_id": "cl",
+            "name": "Liquid chlorine",
+            "unit": "gal",
+            "reading_key": "fc",
+            "suggested_quantity": 0.5,
+            "quantity": 4,
+            "customer_supplied": false,
+            "note": null,
+            "unit_price_cents": 800,
+            "taxable": true,
+            "billed_invoice_id": null,
+            "added_at": "2025-12-15T14:00:00Z",
+            "sort_order": 0,
+            "deleted_at": null
+          }
+        ],
+        "90d",
+        "America/New_York"
+      ],
+      "result": "Chemicals cost $46.50 in 4 months. Aug $16.00, Sep $0.00, Oct $30.50, Nov $0.00."
+    },
+    {
+      "args": [
+        [
+          {
+            "id": "1",
+            "job_id": "j",
+            "property_id": "p",
+            "price_book_item_id": "cl",
+            "name": "Liquid chlorine",
+            "unit": "gal",
+            "reading_key": "fc",
+            "suggested_quantity": 0.5,
+            "quantity": 2,
+            "customer_supplied": false,
+            "note": null,
+            "unit_price_cents": 800,
+            "taxable": true,
+            "billed_invoice_id": null,
+            "added_at": "2026-08-12T14:00:00Z",
+            "sort_order": 0,
+            "deleted_at": null
+          },
+          {
+            "id": "2",
+            "job_id": "j",
+            "property_id": "p",
+            "price_book_item_id": "cl",
+            "name": "Liquid chlorine",
+            "unit": "gal",
+            "reading_key": "fc",
+            "suggested_quantity": 0.5,
+            "quantity": 1.5,
+            "customer_supplied": false,
+            "note": null,
+            "unit_price_cents": 1500,
+            "taxable": true,
+            "billed_invoice_id": null,
+            "added_at": "2026-10-03T14:00:00Z",
+            "sort_order": 0,
+            "deleted_at": null
+          },
+          {
+            "id": "3",
+            "job_id": "j",
+            "property_id": "p",
+            "price_book_item_id": "cl",
+            "name": "Liquid chlorine",
+            "unit": "gal",
+            "reading_key": "fc",
+            "suggested_quantity": 0.5,
+            "quantity": 0.5,
+            "customer_supplied": true,
+            "note": null,
+            "unit_price_cents": 800,
+            "taxable": true,
+            "billed_invoice_id": null,
+            "added_at": "2026-10-23T14:00:00Z",
+            "sort_order": 0,
+            "deleted_at": null
+          },
+          {
+            "id": "4",
+            "job_id": "j",
+            "property_id": "p",
+            "price_book_item_id": "cl",
+            "name": "Liquid chlorine",
+            "unit": "gal",
+            "reading_key": "fc",
+            "suggested_quantity": 0.5,
+            "quantity": 0.5,
+            "customer_supplied": false,
+            "note": null,
+            "unit_price_cents": 800,
+            "taxable": true,
+            "billed_invoice_id": null,
+            "added_at": "2026-10-30T14:00:00Z",
+            "sort_order": 0,
+            "deleted_at": "2026-10-31T00:00:00Z"
+          },
+          {
+            "id": "5",
+            "job_id": "j",
+            "property_id": "p",
+            "price_book_item_id": "cl",
+            "name": "Liquid chlorine",
+            "unit": "gal",
+            "reading_key": "fc",
+            "suggested_quantity": 0.5,
+            "quantity": 1,
+            "customer_supplied": false,
+            "note": null,
+            "unit_price_cents": 800,
+            "taxable": true,
+            "billed_invoice_id": null,
+            "added_at": "2026-11-01T03:00:00Z",
+            "sort_order": 0,
+            "deleted_at": null
+          },
+          {
+            "id": "6",
+            "job_id": "j",
+            "property_id": "p",
+            "price_book_item_id": "cl",
+            "name": "Liquid chlorine",
+            "unit": "gal",
+            "reading_key": "fc",
+            "suggested_quantity": 0.5,
+            "quantity": 4,
+            "customer_supplied": false,
+            "note": null,
+            "unit_price_cents": 800,
+            "taxable": true,
+            "billed_invoice_id": null,
+            "added_at": "2025-12-15T14:00:00Z",
+            "sort_order": 0,
+            "deleted_at": null
+          }
+        ],
+        "1y",
+        "UTC"
+      ],
+      "result": "Chemicals cost $78.50 in 13 months. Nov $0.00, Dec $32.00, Jan $0.00, Feb $0.00, Mar $0.00, Apr $0.00, May $0.00, Jun $0.00, Jul $0.00, Aug $16.00, Sep $0.00, Oct $22.50, Nov $8.00."
+    },
+    {
+      "args": [
+        [],
+        "90d",
+        "UTC"
+      ],
+      "result": "Chemicals cost $0.00 in 4 months. Aug $0.00, Sep $0.00, Oct $0.00, Nov $0.00."
+    }
+  ],
+  "outOfRangeReadings": [
+    {
+      "args": [
+        {
+          "id": "r",
+          "property_id": "p",
+          "job_id": null,
+          "recorded_at": "2026-11-10T14:00:00Z",
+          "recorded_by": "u1",
+          "gallons": 15000,
+          "fc": 0.5,
+          "ph": 8.2,
+          "ta": 85,
+          "ch": 500,
+          "cya": 40,
+          "salt": 2000,
+          "chlorine_product": null,
+          "acid_product": null,
+          "notes": null,
+          "goals": null
+        }
+      ],
+      "result": [
+        {
+          "key": "fc",
+          "label": "Free chlorine",
+          "value": 0.5,
+          "valueText": "0.5",
+          "range": "3–6",
+          "direction": "low"
+        },
+        {
+          "key": "ph",
+          "label": "pH",
+          "value": 8.2,
+          "valueText": "8.2",
+          "range": "7.4–7.6",
+          "direction": "high"
+        },
+        {
+          "key": "ch",
+          "label": "Calcium",
+          "value": 500,
+          "valueText": "500",
+          "range": "200–400",
+          "direction": "high"
+        },
+        {
+          "key": "salt",
+          "label": "Salt",
+          "value": 2000,
+          "valueText": "2000",
+          "range": "2700–3400",
+          "direction": "low"
+        }
+      ]
+    },
+    {
+      "args": [
+        {
+          "id": "r",
+          "property_id": "p",
+          "job_id": null,
+          "recorded_at": "2026-11-10T14:00:00Z",
+          "recorded_by": "u1",
+          "gallons": 15000,
+          "fc": 4,
+          "ph": 7.7,
+          "ta": 125,
+          "ch": 140,
+          "cya": 90,
+          "salt": 3600,
+          "chlorine_product": null,
+          "acid_product": null,
+          "notes": null,
+          "goals": null
+        }
+      ],
+      "result": [
+        {
+          "key": "fc",
+          "label": "Free chlorine",
+          "value": 4,
+          "valueText": "4",
+          "range": "7–10",
+          "direction": "low"
+        },
+        {
+          "key": "ch",
+          "label": "Calcium",
+          "value": 140,
+          "valueText": "140",
+          "range": "200–400",
+          "direction": "low"
+        }
+      ]
+    },
+    {
+      "args": [
+        {
+          "id": "r",
+          "property_id": "p",
+          "job_id": null,
+          "recorded_at": "2026-11-10T14:00:00Z",
+          "recorded_by": "u1",
+          "gallons": 15000,
+          "fc": 1,
+          "ph": 7.8,
+          "ta": 59,
+          "ch": 149,
+          "cya": 19,
+          "salt": 2399,
+          "chlorine_product": null,
+          "acid_product": null,
+          "notes": null,
+          "goals": null
+        }
+      ],
+      "result": [
+        {
+          "key": "ta",
+          "label": "Alkalinity",
+          "value": 59,
+          "valueText": "59",
+          "range": "80–120",
+          "direction": "low"
+        },
+        {
+          "key": "ch",
+          "label": "Calcium",
+          "value": 149,
+          "valueText": "149",
+          "range": "200–400",
+          "direction": "low"
+        },
+        {
+          "key": "cya",
+          "label": "Stabilizer",
+          "value": 19,
+          "valueText": "19",
+          "range": "30–80",
+          "direction": "low"
+        },
+        {
+          "key": "salt",
+          "label": "Salt",
+          "value": 2399,
+          "valueText": "2399",
+          "range": "2700–3400",
+          "direction": "low"
+        }
+      ]
+    },
+    {
+      "args": [
+        {
+          "id": "r",
+          "property_id": "p",
+          "job_id": null,
+          "recorded_at": "2026-11-10T14:00:00Z",
+          "recorded_by": "u1",
+          "gallons": 15000,
+          "fc": 0.99,
+          "ph": 7.81,
+          "ta": null,
+          "ch": null,
+          "cya": 100,
+          "salt": null,
+          "chlorine_product": null,
+          "acid_product": null,
+          "notes": null,
+          "goals": null
+        }
+      ],
+      "result": [
+        {
+          "key": "fc",
+          "label": "Free chlorine",
+          "value": 0.99,
+          "valueText": "0.99",
+          "range": "7.5–10.5",
+          "direction": "low"
+        },
+        {
+          "key": "ph",
+          "label": "pH",
+          "value": 7.81,
+          "valueText": "7.81",
+          "range": "7.4–7.6",
+          "direction": "high"
+        },
+        {
+          "key": "cya",
+          "label": "Stabilizer",
+          "value": 100,
+          "valueText": "100",
+          "range": "30–80",
+          "direction": "high"
+        }
+      ]
+    },
+    {
+      "args": [
+        {
+          "id": "r",
+          "property_id": "p",
+          "job_id": null,
+          "recorded_at": "2026-11-10T14:00:00Z",
+          "recorded_by": "u1",
+          "gallons": 15000,
+          "fc": 2.5,
+          "ph": null,
+          "ta": null,
+          "ch": null,
+          "cya": null,
+          "salt": null,
+          "chlorine_product": null,
+          "acid_product": null,
+          "notes": null,
+          "goals": {
+            "fc": 6
+          }
+        }
+      ],
+      "result": [
+        {
+          "key": "fc",
+          "label": "Free chlorine",
+          "value": 2.5,
+          "valueText": "2.5",
+          "range": "5.5–6.5",
+          "direction": "low"
+        }
+      ]
+    },
+    {
+      "args": [
+        {
+          "id": "r",
+          "property_id": "p",
+          "job_id": null,
+          "recorded_at": "2026-11-10T14:00:00Z",
+          "recorded_by": "u1",
+          "gallons": 15000,
+          "fc": 7.5,
+          "ph": 7.5,
+          "ta": null,
+          "ch": null,
+          "cya": null,
+          "salt": null,
+          "chlorine_product": null,
+          "acid_product": null,
+          "notes": null,
+          "goals": {
+            "fc": 4,
+            "ph": 7.2
+          }
+        }
+      ],
+      "result": [
+        {
+          "key": "fc",
+          "label": "Free chlorine",
+          "value": 7.5,
+          "valueText": "7.5",
+          "range": "3.5–6",
+          "direction": "high"
+        }
+      ]
+    },
+    {
+      "args": [
+        {
+          "id": "r",
+          "property_id": "p",
+          "job_id": null,
+          "recorded_at": "2026-11-10T14:00:00Z",
+          "recorded_by": "u1",
+          "gallons": 15000,
+          "fc": null,
+          "ph": null,
+          "ta": null,
+          "ch": null,
+          "cya": null,
+          "salt": null,
+          "chlorine_product": null,
+          "acid_product": null,
+          "notes": null,
+          "goals": null
+        }
+      ],
+      "result": []
+    },
+    {
+      "args": [
+        {
+          "id": "r1",
+          "property_id": "p",
+          "job_id": null,
+          "recorded_at": "2026-08-20T14:00:00Z",
+          "recorded_by": "u1",
+          "gallons": 15000,
+          "fc": 1,
+          "ph": 7.9,
+          "ta": 70,
+          "ch": null,
+          "cya": 30,
+          "salt": null,
+          "chlorine_product": null,
+          "acid_product": null,
+          "notes": null,
+          "goals": null
+        }
+      ],
+      "result": [
+        {
+          "key": "fc",
+          "label": "Free chlorine",
+          "value": 1,
+          "valueText": "1",
+          "range": "2.5–5.5",
+          "direction": "low"
+        },
+        {
+          "key": "ph",
+          "label": "pH",
+          "value": 7.9,
+          "valueText": "7.9",
+          "range": "7.4–7.6",
+          "direction": "high"
+        }
+      ]
+    },
+    {
+      "args": [
+        {
+          "id": "r2",
+          "property_id": "p",
+          "job_id": null,
+          "recorded_at": "2026-09-20T14:00:00Z",
+          "recorded_by": "u1",
+          "gallons": 15000,
+          "fc": 3.5,
+          "ph": 7.5,
+          "ta": 90,
+          "ch": 250,
+          "cya": null,
+          "salt": null,
+          "chlorine_product": null,
+          "acid_product": null,
+          "notes": null,
+          "goals": null
+        }
+      ],
+      "result": []
+    },
+    {
+      "args": [
+        {
+          "id": "r3",
+          "property_id": "p",
+          "job_id": null,
+          "recorded_at": "2026-10-18T14:00:00Z",
+          "recorded_by": "u1",
+          "gallons": 15000,
+          "fc": 5,
+          "ph": 7.7,
+          "ta": 100,
+          "ch": null,
+          "cya": 50,
+          "salt": 3100,
+          "chlorine_product": null,
+          "acid_product": null,
+          "notes": null,
+          "goals": null
+        }
+      ],
+      "result": []
+    },
+    {
+      "args": [
+        {
+          "id": "r4",
+          "property_id": "p",
+          "job_id": null,
+          "recorded_at": "2026-11-10T14:00:00Z",
+          "recorded_by": "u1",
+          "gallons": 15000,
+          "fc": 2.5,
+          "ph": 7.4,
+          "ta": null,
+          "ch": null,
+          "cya": null,
+          "salt": null,
+          "chlorine_product": null,
+          "acid_product": null,
+          "notes": null,
+          "goals": {
+            "fc": 4
+          }
+        }
+      ],
+      "result": []
+    },
+    {
+      "args": [
+        {
+          "id": "r5",
+          "property_id": "p",
+          "job_id": null,
+          "recorded_at": "2025-12-01T14:00:00Z",
+          "recorded_by": "u1",
+          "gallons": 15000,
+          "fc": 9,
+          "ph": 8.2,
+          "ta": 300,
+          "ch": null,
+          "cya": null,
+          "salt": null,
+          "chlorine_product": null,
+          "acid_product": null,
+          "notes": null,
+          "goals": null
+        }
+      ],
+      "result": [
+        {
+          "key": "fc",
+          "label": "Free chlorine",
+          "value": 9,
+          "valueText": "9",
+          "range": "3–6",
+          "direction": "high"
+        },
+        {
+          "key": "ph",
+          "label": "pH",
+          "value": 8.2,
+          "valueText": "8.2",
+          "range": "7.4–7.6",
+          "direction": "high"
+        },
+        {
+          "key": "ta",
+          "label": "Alkalinity",
+          "value": 300,
+          "valueText": "300",
+          "range": "80–120",
+          "direction": "high"
+        }
+      ]
+    },
+    {
+      "args": [
+        {
+          "id": "r6",
+          "property_id": "p",
+          "job_id": null,
+          "recorded_at": "2026-11-30T14:00:00Z",
+          "recorded_by": "u1",
+          "gallons": 15000,
+          "fc": 9,
+          "ph": null,
+          "ta": null,
+          "ch": null,
+          "cya": null,
+          "salt": null,
+          "chlorine_product": null,
+          "acid_product": null,
+          "notes": null,
+          "goals": null
+        }
+      ],
+      "result": [
+        {
+          "key": "fc",
+          "label": "Free chlorine",
+          "value": 9,
+          "valueText": "9",
+          "range": "3–6",
+          "direction": "high"
+        }
+      ]
+    }
+  ],
+  "outOfRangeRows": [
+    {
+      "args": [
+        [
+          {
+            "id": "r1",
+            "property_id": "p",
+            "job_id": null,
+            "recorded_at": "2026-08-20T14:00:00Z",
+            "recorded_by": "u1",
+            "gallons": 15000,
+            "fc": 1,
+            "ph": 7.9,
+            "ta": 70,
+            "ch": null,
+            "cya": 30,
+            "salt": null,
+            "chlorine_product": null,
+            "acid_product": null,
+            "notes": null,
+            "goals": null
+          },
+          {
+            "id": "r2",
+            "property_id": "p",
+            "job_id": null,
+            "recorded_at": "2026-09-20T14:00:00Z",
+            "recorded_by": "u1",
+            "gallons": 15000,
+            "fc": 3.5,
+            "ph": 7.5,
+            "ta": 90,
+            "ch": 250,
+            "cya": null,
+            "salt": null,
+            "chlorine_product": null,
+            "acid_product": null,
+            "notes": null,
+            "goals": null
+          },
+          {
+            "id": "r3",
+            "property_id": "p",
+            "job_id": null,
+            "recorded_at": "2026-10-18T14:00:00Z",
+            "recorded_by": "u1",
+            "gallons": 15000,
+            "fc": 5,
+            "ph": 7.7,
+            "ta": 100,
+            "ch": null,
+            "cya": 50,
+            "salt": 3100,
+            "chlorine_product": null,
+            "acid_product": null,
+            "notes": null,
+            "goals": null
+          },
+          {
+            "id": "r4",
+            "property_id": "p",
+            "job_id": null,
+            "recorded_at": "2026-11-10T14:00:00Z",
+            "recorded_by": "u1",
+            "gallons": 15000,
+            "fc": 2.5,
+            "ph": 7.4,
+            "ta": null,
+            "ch": null,
+            "cya": null,
+            "salt": null,
+            "chlorine_product": null,
+            "acid_product": null,
+            "notes": null,
+            "goals": {
+              "fc": 4
+            }
+          },
+          {
+            "id": "r5",
+            "property_id": "p",
+            "job_id": null,
+            "recorded_at": "2025-12-01T14:00:00Z",
+            "recorded_by": "u1",
+            "gallons": 15000,
+            "fc": 9,
+            "ph": 8.2,
+            "ta": 300,
+            "ch": null,
+            "cya": null,
+            "salt": null,
+            "chlorine_product": null,
+            "acid_product": null,
+            "notes": null,
+            "goals": null
+          },
+          {
+            "id": "r6",
+            "property_id": "p",
+            "job_id": null,
+            "recorded_at": "2026-11-30T14:00:00Z",
+            "recorded_by": "u1",
+            "gallons": 15000,
+            "fc": 9,
+            "ph": null,
+            "ta": null,
+            "ch": null,
+            "cya": null,
+            "salt": null,
+            "chlorine_product": null,
+            "acid_product": null,
+            "notes": null,
+            "goals": null
+          }
+        ],
+        "2026-11-16T15:00:00Z",
+        null
+      ],
+      "result": []
+    },
+    {
+      "args": [
+        [
+          {
+            "id": "r1",
+            "property_id": "p",
+            "job_id": null,
+            "recorded_at": "2026-08-20T14:00:00Z",
+            "recorded_by": "u1",
+            "gallons": 15000,
+            "fc": 1,
+            "ph": 7.9,
+            "ta": 70,
+            "ch": null,
+            "cya": 30,
+            "salt": null,
+            "chlorine_product": null,
+            "acid_product": null,
+            "notes": null,
+            "goals": null
+          },
+          {
+            "id": "r2",
+            "property_id": "p",
+            "job_id": null,
+            "recorded_at": "2026-09-20T14:00:00Z",
+            "recorded_by": "u1",
+            "gallons": 15000,
+            "fc": 3.5,
+            "ph": 7.5,
+            "ta": 90,
+            "ch": 250,
+            "cya": null,
+            "salt": null,
+            "chlorine_product": null,
+            "acid_product": null,
+            "notes": null,
+            "goals": null
+          },
+          {
+            "id": "r3",
+            "property_id": "p",
+            "job_id": null,
+            "recorded_at": "2026-10-18T14:00:00Z",
+            "recorded_by": "u1",
+            "gallons": 15000,
+            "fc": 5,
+            "ph": 7.7,
+            "ta": 100,
+            "ch": null,
+            "cya": 50,
+            "salt": 3100,
+            "chlorine_product": null,
+            "acid_product": null,
+            "notes": null,
+            "goals": null
+          },
+          {
+            "id": "r4",
+            "property_id": "p",
+            "job_id": null,
+            "recorded_at": "2026-11-10T14:00:00Z",
+            "recorded_by": "u1",
+            "gallons": 15000,
+            "fc": 2.5,
+            "ph": 7.4,
+            "ta": null,
+            "ch": null,
+            "cya": null,
+            "salt": null,
+            "chlorine_product": null,
+            "acid_product": null,
+            "notes": null,
+            "goals": {
+              "fc": 4
+            }
+          },
+          {
+            "id": "r5",
+            "property_id": "p",
+            "job_id": null,
+            "recorded_at": "2025-12-01T14:00:00Z",
+            "recorded_by": "u1",
+            "gallons": 15000,
+            "fc": 9,
+            "ph": 8.2,
+            "ta": 300,
+            "ch": null,
+            "cya": null,
+            "salt": null,
+            "chlorine_product": null,
+            "acid_product": null,
+            "notes": null,
+            "goals": null
+          },
+          {
+            "id": "r6",
+            "property_id": "p",
+            "job_id": null,
+            "recorded_at": "2026-11-30T14:00:00Z",
+            "recorded_by": "u1",
+            "gallons": 15000,
+            "fc": 9,
+            "ph": null,
+            "ta": null,
+            "ch": null,
+            "cya": null,
+            "salt": null,
+            "chlorine_product": null,
+            "acid_product": null,
+            "notes": null,
+            "goals": null
+          }
+        ],
+        "2026-11-16T15:00:00Z",
+        400
+      ],
+      "result": [
+        {
+          "key": "fc",
+          "label": "Free chlorine",
+          "value": 1,
+          "valueText": "1",
+          "range": "2.5–5.5",
+          "direction": "low",
+          "id": "r1:fc",
+          "readingId": "r1",
+          "propertyId": "p",
+          "recordedAt": "2026-08-20T14:00:00Z",
+          "recordedBy": "u1"
+        },
+        {
+          "key": "ph",
+          "label": "pH",
+          "value": 7.9,
+          "valueText": "7.9",
+          "range": "7.4–7.6",
+          "direction": "high",
+          "id": "r1:ph",
+          "readingId": "r1",
+          "propertyId": "p",
+          "recordedAt": "2026-08-20T14:00:00Z",
+          "recordedBy": "u1"
+        },
+        {
+          "key": "fc",
+          "label": "Free chlorine",
+          "value": 9,
+          "valueText": "9",
+          "range": "3–6",
+          "direction": "high",
+          "id": "r5:fc",
+          "readingId": "r5",
+          "propertyId": "p",
+          "recordedAt": "2025-12-01T14:00:00Z",
+          "recordedBy": "u1"
+        },
+        {
+          "key": "ph",
+          "label": "pH",
+          "value": 8.2,
+          "valueText": "8.2",
+          "range": "7.4–7.6",
+          "direction": "high",
+          "id": "r5:ph",
+          "readingId": "r5",
+          "propertyId": "p",
+          "recordedAt": "2025-12-01T14:00:00Z",
+          "recordedBy": "u1"
+        },
+        {
+          "key": "ta",
+          "label": "Alkalinity",
+          "value": 300,
+          "valueText": "300",
+          "range": "80–120",
+          "direction": "high",
+          "id": "r5:ta",
+          "readingId": "r5",
+          "propertyId": "p",
+          "recordedAt": "2025-12-01T14:00:00Z",
+          "recordedBy": "u1"
+        }
+      ]
+    },
+    {
+      "args": [
+        [],
+        "2026-11-16T15:00:00Z",
+        null
+      ],
+      "result": []
+    }
+  ],
+  "outOfRangeLine": [
+    {
+      "args": [
+        0
+      ],
+      "result": "Free chlorine 0.5 low (aim 3–6)"
+    },
+    {
+      "args": [
+        1
+      ],
+      "result": "pH 8.2 high (aim 7.4–7.6)"
+    },
+    {
+      "args": [
+        2
+      ],
+      "result": "Calcium 500 high (aim 200–400)"
+    },
+    {
+      "args": [
+        3
+      ],
+      "result": "Salt 2000 low (aim 2700–3400)"
+    }
+  ],
+  "outOfRangeNotification": [
+    {
+      "args": [
+        "Rebecca Soto",
+        1
+      ],
+      "result": {
+        "title": "Out-of-range reading",
+        "body": "Rebecca Soto: Free chlorine 0.5 low (aim 3–6)"
+      }
+    },
+    {
+      "args": [
+        "Rebecca Soto",
+        3
+      ],
+      "result": {
+        "title": "Out-of-range readings",
+        "body": "Rebecca Soto: Free chlorine 0.5 low (aim 3–6), pH 8.2 high (aim 7.4–7.6), Calcium 500 high (aim 200–400)"
+      }
+    },
+    {
+      "args": [
+        "The customer",
+        4
+      ],
+      "result": {
+        "title": "Out-of-range readings",
+        "body": "The customer: Free chlorine 0.5 low (aim 3–6), pH 8.2 high (aim 7.4–7.6), Calcium 500 high (aim 200–400), Salt 2000 low (aim 2700–3400)"
+      }
+    }
+  ],
+  "doseWarning": [
+    {
+      "args": [
+        "liquid_chlorine",
+        "gal",
+        1,
+        10000
+      ],
+      "result": null
+    },
+    {
+      "args": [
+        "liquid_chlorine",
+        "gal",
+        1.25,
+        10000
+      ],
+      "result": "That’s more than the usual 1 gal per 10,000 gal at once. Check the amount."
+    },
+    {
+      "args": [
+        "liquid_chlorine",
+        "gal",
+        2,
+        20000
+      ],
+      "result": null
+    },
+    {
+      "args": [
+        "liquid_chlorine",
+        "gal",
+        2.5,
+        20000
+      ],
+      "result": "That’s more than the usual 1 gal per 10,000 gal at once. Check the amount."
+    },
+    {
+      "args": [
+        "liquid_chlorine",
+        "qt",
+        5,
+        10000
+      ],
+      "result": "That’s more than the usual 4 qt per 10,000 gal at once. Check the amount."
+    },
+    {
+      "args": [
+        "liquid_chlorine",
+        "jug",
+        50,
+        10000
+      ],
+      "result": null
+    },
+    {
+      "args": [
+        "liquid_chlorine",
+        "gal",
+        5,
+        null
+      ],
+      "result": null
+    },
+    {
+      "args": [
+        "liquid_chlorine",
+        "gal",
+        5,
+        0
+      ],
+      "result": null
+    },
+    {
+      "args": [
+        "liquid_chlorine",
+        "gal",
+        0,
+        10000
+      ],
+      "result": null
+    },
+    {
+      "args": [
+        "muriatic_acid",
+        "gal",
+        1,
+        15000
+      ],
+      "result": "That’s more than the usual ½ gal per 10,000 gal at once. Check the amount."
+    },
+    {
+      "args": [
+        "muriatic_acid",
+        "gal",
+        0.75,
+        15000
+      ],
+      "result": null
+    },
+    {
+      "args": [
+        "muriatic_acid",
+        "qt",
+        4,
+        10000
+      ],
+      "result": "That’s more than the usual 2 qt per 10,000 gal at once. Check the amount."
+    },
+    {
+      "args": [
+        "stabilizer",
+        "lb",
+        6,
+        15000
+      ],
+      "result": "That’s more than the usual 3 lb per 10,000 gal at once. Check the amount."
+    },
+    {
+      "args": [
+        "stabilizer",
+        "lb",
+        4.5,
+        15000
+      ],
+      "result": null
+    },
+    {
+      "args": [
+        "stabilizer",
+        "oz",
+        100,
+        10000
+      ],
+      "result": "That’s more than the usual 48 oz per 10,000 gal at once. Check the amount."
+    },
+    {
+      "args": [
+        "tabs",
+        "tab",
+        4,
+        10000
+      ],
+      "result": "That’s more than the usual 3 tabs per 10,000 gal at once. Check the amount."
+    },
+    {
+      "args": [
+        "tabs",
+        "tab",
+        12,
+        30000
+      ],
+      "result": "That’s more than the usual 3 tabs per 10,000 gal at once. Check the amount."
+    },
+    {
+      "args": [
+        "salt",
+        "bag",
+        5,
+        10000
+      ],
+      "result": "That’s more than the usual 3 bags per 10,000 gal at once. Check the amount."
+    },
+    {
+      "args": [
+        "algaecide",
+        "qt",
+        2,
+        10000
+      ],
+      "result": "That’s more than the usual 1 qt per 10,000 gal at once. Check the amount."
+    },
+    {
+      "args": [
+        "clarifier",
+        "gal",
+        1,
+        10000
+      ],
+      "result": "That’s more than the usual 2 cups per 10,000 gal at once. Check the amount."
+    },
+    {
+      "args": [
+        "enzyme",
+        "each",
+        3,
+        10000
+      ],
+      "result": null
+    },
+    {
+      "args": [
+        "soda_ash",
+        "oz",
+        20,
+        10000
+      ],
+      "result": "That’s more than the usual 16 oz per 10,000 gal at once. Check the amount."
+    },
+    {
+      "args": [
+        "something_else",
+        "gal",
+        50,
+        10000
+      ],
+      "result": null
+    },
+    {
+      "args": [
+        null,
+        "gal",
+        50,
+        10000
+      ],
+      "result": null
+    }
+  ]
+}

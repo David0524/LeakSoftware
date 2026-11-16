@@ -25,6 +25,7 @@ import {
   chemicalCardLine,
   chemicalItems,
   chemicalRows,
+  doseWarning,
   formatCents,
   itemAddition,
   lineTotal,
@@ -61,7 +62,7 @@ import { NO_CONNECTION, whenOffline } from "@/lib/offline";
 import { saveFailed } from "./instant";
 import { showRemoved } from "./removed";
 import { Sheet } from "./sheet";
-import { buttonClass, cx } from "./ui";
+import { Notice, buttonClass, cx } from "./ui";
 
 // A visit's Chemicals (owner, 2026-10-24: "the actual reading, the aim for, the suggested
 // chemicals to add, and what was actually added"; docs/design/2026-10-24-chemicals-added.md).
@@ -651,6 +652,7 @@ export function VisitChemicals(props: VisitChemicalsProps) {
       <AddedSheet
         row={editing}
         items={items}
+        gallons={gallons}
         charges={charges}
         locked={!!editing && locked.has(editing.id)}
         onClose={() => setEditing(null)}
@@ -667,6 +669,7 @@ export function VisitChemicals(props: VisitChemicalsProps) {
       <PickSheet
         open={picking}
         items={items}
+        gallons={gallons}
         usual={props.usualItems ?? []}
         charges={charges}
         onClose={() => setPicking(false)}
@@ -1055,6 +1058,7 @@ function Switch({
 function AddedSheet({
   row,
   items,
+  gallons,
   charges,
   locked,
   onClose,
@@ -1063,6 +1067,7 @@ function AddedSheet({
 }: {
   row: ChemicalAddition | null;
   items: ChemicalItem[];
+  gallons: number;
   charges: boolean;
   locked: boolean;
   onClose: () => void;
@@ -1088,6 +1093,7 @@ function AddedSheet({
           key={row.id || "new"}
           row={row}
           items={items}
+          gallons={gallons}
           charges={charges}
           locked={locked}
           onSave={onSave}
@@ -1101,6 +1107,7 @@ function AddedSheet({
 function AddedForm({
   row,
   items,
+  gallons,
   charges,
   locked,
   onSave,
@@ -1108,6 +1115,7 @@ function AddedForm({
 }: {
   row: ChemicalAddition;
   items: ChemicalItem[];
+  gallons: number;
   charges: boolean;
   locked: boolean;
   onSave: (row: ChemicalAddition) => void;
@@ -1123,6 +1131,10 @@ function AddedForm({
   const quantity = num(qty);
   const price = item?.price_cents ?? row.unit_price_cents;
   const valid = quantity !== null && quantity > 0 && quantity <= 100_000;
+  // More than the usual in one dose: a warning, never a block (docs/design/2026-11-16-chemistry-trends.md).
+  const warning = quantity
+    ? doseWarning({ chemical: item?.chemical, unit, quantity, gallons })
+    : null;
   const selectId = useId();
   return (
     <form
@@ -1191,6 +1203,11 @@ function AddedForm({
           />
         </div>
       </Group>
+      {warning ? (
+        <div className="mt-3">
+          <Notice tone="warning">{warning}</Notice>
+        </div>
+      ) : null}
       <button id="added-form-submit" type="submit" className="sr-only" tabIndex={-1} aria-hidden>
         Save
       </button>
@@ -1211,6 +1228,7 @@ function AddedForm({
 function PickSheet({
   open,
   items,
+  gallons,
   usual,
   charges,
   onClose,
@@ -1218,6 +1236,7 @@ function PickSheet({
 }: {
   open: boolean;
   items: ChemicalItem[];
+  gallons: number;
   /** The pool's usual chemicals (item ids), listed first. */
   usual: string[];
   charges: boolean;
@@ -1235,18 +1254,22 @@ function PickSheet({
           : undefined
       }
     >
-      {open ? <PickForm items={items} usual={usual} charges={charges} onAdd={onAdd} /> : null}
+      {open ? (
+        <PickForm items={items} gallons={gallons} usual={usual} charges={charges} onAdd={onAdd} />
+      ) : null}
     </Sheet>
   );
 }
 
 function PickForm({
   items,
+  gallons,
   usual,
   charges,
   onAdd,
 }: {
   items: ChemicalItem[];
+  gallons: number;
   usual: string[];
   charges: boolean;
   onAdd: (draft: AdditionDraft, supplied: boolean, note: string | null) => void;
@@ -1261,6 +1284,10 @@ function PickForm({
   const groups = pickList(list, usual, query);
   const shownCount = groups.usual.length + groups.rest.length;
   const quantity = num(qty);
+  const warning =
+    picked && quantity
+      ? doseWarning({ chemical: picked.chemical, unit: picked.unit, quantity, gallons })
+      : null;
   const pick = (i: ChemicalItem) => {
     setPicked(i);
     setQty(String(itemAddition(i).quantity));
@@ -1340,6 +1367,11 @@ function PickForm({
             />
           </div>
         </Group>
+      ) : null}
+      {warning ? (
+        <div className="mt-3">
+          <Notice tone="warning">{warning}</Notice>
+        </div>
       ) : null}
       <div className="mt-4 flex min-h-11 items-center gap-2 rounded-[10px] bg-fill px-3">
         <svg

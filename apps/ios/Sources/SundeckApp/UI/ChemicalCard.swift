@@ -165,11 +165,14 @@
             .haptic(.allChemicalsAdded, trigger: addedAll)
             .sheet(item: $editing) { t in
                 AddedChemicalSheet(
-                    target: t, items: items, charges: charges, locked: locked.contains(t.id),
+                    target: t, items: items, gallons: chemicalNumber(form.gallons) ?? 0, charges: charges,
+                    locked: locked.contains(t.id),
                     onSave: { save(t, $0) }, onRemove: { remove($0, undoable: true) })
             }
             .sheet(isPresented: $picking) {
-                AddChemicalSheet(items: items, usual: history.usual, charges: charges) { draft, supplied, note in
+                AddChemicalSheet(
+                    items: items, gallons: chemicalNumber(form.gallons) ?? 0, usual: history.usual, charges: charges
+                ) { draft, supplied, note in
                     add([draft], added: added, supplied: supplied, note: note)
                 }
             }
@@ -731,6 +734,8 @@
     struct AddedChemicalSheet: View {
         var target: AddedChemicalTarget
         var items: [ChemicalItem]
+        /// The pool's gallons, for the dose-limit warning (0 when unknown).
+        var gallons: Double = 0
         var charges: Bool
         /// On a sent invoice: shown, not changed (sent invoices are final).
         var locked = false
@@ -760,6 +765,10 @@
             let price = item?.priceCents ?? original.unitPriceCents
             let quantity = chemicalNumber(amount)
             let valid = (quantity ?? 0) > 0 && (quantity ?? 0) <= 100_000
+            // More than the usual in one dose: a warning, never a block.
+            let warning = quantity.flatMap {
+                doseWarning(chemical: item?.chemical, unit: unit, quantity: $0, gallons: gallons)
+            }
             NavigationStack {
                 ScrollView {
                     VStack(alignment: .leading, spacing: 20) {
@@ -795,6 +804,7 @@
                             ChemicalNoteRow(note: $note)
                         }
                         .disabled(locked)
+                        if let warning { Notice(kind: .warning, text: warning) }
                         if !isNew && !locked {
                             Button("Remove Chemical", role: .destructive) {
                                 onRemove(original)
@@ -885,6 +895,8 @@
     /// Add Chemical: the shop's chemicals with search, then the amount.
     struct AddChemicalSheet: View {
         var items: [ChemicalItem]
+        /// The pool's gallons, for the dose-limit warning (0 when unknown).
+        var gallons: Double = 0
         /// The pool's usual chemicals (item ids), listed first (owner, 2026-10-26).
         var usual: [String] = []
         var charges: Bool
@@ -934,6 +946,9 @@
             let shownCount = groups.usual.count + groups.rest.count
             let quantity = chemicalNumber(amount)
             let valid = picked != nil && (quantity ?? 0) > 0 && (quantity ?? 0) <= 100_000
+            let warning = picked.flatMap { p in
+                quantity.flatMap { doseWarning(chemical: p.chemical, unit: p.unit, quantity: $0, gallons: gallons) }
+            }
             NavigationStack {
                 ScrollView {
                     VStack(alignment: .leading, spacing: 20) {
@@ -955,6 +970,7 @@
                                 ChemicalNoteRow(note: $note)
                             }
                         }
+                        if let warning { Notice(kind: .warning, text: warning) }
                         if !groups.usual.isEmpty {
                             Grouped(label: "Usual for This Pool") {
                                 ForEach(groups.usual, id: \.id) { i in
