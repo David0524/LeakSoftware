@@ -82,6 +82,7 @@ export async function reportIssue(_: FormState, form: FormData): Promise<FormSta
       jobId: j.id,
       description,
       suggested,
+      userId: office.user.id,
       now: new Date().toISOString(),
     }),
   });

@@ -90,13 +90,17 @@ export function issueNoteError(text: string): string | null {
     : null;
 }
 
-/** The new issue's row (the client-writable insert columns), for a visit's customer and pool. */
+/**
+ * The new issue's row (the client-writable insert columns), for a visit's customer and pool. The
+ * reporter is written so the phone lists it as theirs at once (the server sets it anyway).
+ */
 export function reportIssueRow(input: {
   customerId: string;
   propertyId: string;
   jobId: string | null;
   description: string;
   suggested: IssueWork | null;
+  userId: string;
   now: string;
 }): {
   customer_id: string;
@@ -104,6 +108,7 @@ export function reportIssueRow(input: {
   job_id: string | null;
   description: string;
   suggested_type: IssueWork | null;
+  reported_by: string;
   reported_at: string;
 } {
   return {
@@ -112,6 +117,7 @@ export function reportIssueRow(input: {
     job_id: input.jobId,
     description: input.description.trim(),
     suggested_type: input.suggested,
+    reported_by: input.userId,
     reported_at: input.now,
   };
 }

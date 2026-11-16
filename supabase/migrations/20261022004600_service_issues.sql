@@ -60,7 +60,7 @@ insert into app.sync_table
   (table_name, read_role, write_role, insert_columns, update_columns, device_sync, sort_order,
    job_ref)
 values ('service_issue', 'member', 'member',
-  '{customer_id,property_id,job_id,description,suggested_type,reported_at}',
+  '{customer_id,property_id,job_id,description,suggested_type,reported_at,reported_by}',
   '{description,suggested_type,status,resolution_note,resolved_by,resolved_at,converted_job_id,deleted_at}',
   true, 312, 't.job_id');
 
@@ -68,7 +68,7 @@ grant select on public.service_issue to authenticated;
 create policy service_issue_select on public.service_issue for select to authenticated
   using (app.is_member(company_id));
 grant insert (id, company_id, customer_id, property_id, job_id, description, suggested_type,
-  reported_at) on public.service_issue to authenticated;
+  reported_at, reported_by) on public.service_issue to authenticated;
 create policy service_issue_insert on public.service_issue for insert to authenticated
   with check (app.is_member(company_id));
 grant update (description, suggested_type, status, resolution_note, resolved_by, resolved_at,

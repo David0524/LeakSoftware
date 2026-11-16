@@ -2,14 +2,22 @@ import { router, useLocalSearchParams } from "expo-router";
 import { useMemo, useState } from "react";
 import { Animated, Linking, Pressable, RefreshControl, StyleSheet, View } from "react-native";
 import {
+  ISSUE_FILTERS,
+  ISSUE_STATUS_LABELS,
   JOB_SORTS,
   JOB_TYPE_FILTER_TITLE,
   JOB_TYPE_LABELS,
   REPORT_SORTS,
   canMakeJobs,
+  canManageIssues,
   companyServices,
   formatAddress,
   formatSchedule,
+  issueDetailLine,
+  issueList,
+  issueTitle,
+  issuesEmpty,
+  issuesSegmentLabel,
   jobReschedulable,
   jobSort,
   jobTypeFilter,
@@ -22,9 +30,13 @@ import {
   reportsEmpty,
   sortJobs,
   toE164,
+  type Customer,
+  type IssueFilter,
   type JobStatus,
   type JobTypeFilter,
+  type ServiceIssue,
 } from "@leakbook/core";
+import { useIssues } from "../../../../../data/issues";
 import { useRows } from "../../../../../data/hooks";
 import { useJobViews, type JobView } from "../../../../../data/jobs";
 import type { ReportRecord } from "../../../../../data/reports";
@@ -114,7 +126,10 @@ const REPORT_FILTERS = [
   { value: "draft", label: "Drafts" },
 ];
 
-type View_ = "jobs" | "reports";
+type View_ = "jobs" | "reports" | "issues";
+
+/** Issues' filter (docs/design/2026-11-16-service-issues.md), kept while the app runs. */
+let lastIssueFilter: IssueFilter = "open";
 
 /**
  * Jobs (spec 5.2) and Reports (5.3) in one tab: a segmented control switches the list and the
@@ -124,10 +139,21 @@ type View_ = "jobs" | "reports";
  */
 export default function Jobs() {
   const company = useCompany();
-  const { services, membership } = useSession();
+  const { services, membership, user } = useSession();
   const canAdd = canMakeJobs(membership?.role, company.settings);
   const jobs = useJobViews(company.id);
   const reports = useRows<ReportRecord>("report", company.id);
+  // Issues reported on visits: owners and admins see all, a tech the ones they reported.
+  const issues = useIssues(company.id);
+  const customers = useRows<Customer>("customer", company.id);
+  const viewer = { userId: user?.id ?? "", role: membership?.role };
+  const [issueFilter, setIssueFilterState] = useState<IssueFilter>(lastIssueFilter);
+  const setIssueFilter = (v: IssueFilter) => {
+    lastIssueFilter = v;
+    setIssueFilterState(v);
+  };
+  const openIssues = issueList(issues, "open", viewer).length;
+  const issueRows = issueList(issues, issueFilter, viewer);
   const [view, setView] = useState<View_>("jobs");
   const [filter, setFilter] = useState("open");
   // Opened from the Dashboard on a status (`/jobs?status=paid`): show that filter.
@@ -280,7 +306,7 @@ export default function Jobs() {
   };
 
   const { header, ref, scrollProps, contentContainerStyle } = useScreenChrome({
-    title: view === "jobs" ? "Jobs" : "Reports",
+    title: view === "jobs" ? "Jobs" : view === "reports" ? "Reports" : "Issues",
     headerRight:
       canAdd && view === "jobs"
         ? () => <HeaderButton title="New Job" icon="add" onPress={() => router.push("/jobs/new")} />
@@ -300,9 +326,9 @@ export default function Jobs() {
       {header}
       {view === "jobs" ? (
         <ShopSearchField search={shop} />
-      ) : (
+      ) : view === "reports" ? (
         <ShopSearchField search={reportSearch} placeholder={REPORT_SEARCH_PLACEHOLDER} />
-      )}
+      ) : null}
       {searching ? (
         <ShopSearchResults search={shop} />
       ) : (
@@ -310,10 +336,11 @@ export default function Jobs() {
           <Segmented
             fill={false}
             minSegmentWidth={88}
-            accessibilityLabel="Jobs or reports"
+            accessibilityLabel="Jobs, reports or issues"
             options={[
               { value: "jobs", label: "Jobs" },
               { value: "reports", label: "Reports" },
+              { value: "issues", label: issuesSegmentLabel(openIssues) },
             ]}
             value={view}
             onChange={setView}
@@ -336,6 +363,13 @@ export default function Jobs() {
               />
               {menu.element}
             </>
+          ) : view === "issues" ? (
+            <FilterPills
+              label="Issues"
+              options={ISSUE_FILTERS.map((f) => ({ value: f.key, label: f.label }))}
+              value={issueFilter}
+              onChange={setIssueFilter}
+            />
           ) : (
             <>
               <FilterPills
@@ -364,6 +398,8 @@ export default function Jobs() {
 
   const empty = searching ? null : view === "jobs" ? (
     <Empty>{jobsEmpty(jobType)}</Empty>
+  ) : view === "issues" ? (
+    <Empty>{issuesEmpty(issueFilter, canManageIssues(membership?.role))}</Empty>
   ) : (
     <Empty>
       {reportSearch.query.trim()
@@ -399,24 +435,38 @@ export default function Jobs() {
               />
             ),
           }))
-        : reportRows.map(({ report, job }) => ({
-            key: report.id,
-            node: (first, last) => (
-              <ReportRow
-                report={report}
-                job={job}
-                first={first}
-                last={last}
-                onMenu={(open) =>
-                  rowMenu.open(
-                    menuTitle(job?.customer?.name, job?.number ? `#${job.number}` : null),
-                    reportRowActions().menu,
-                    open,
-                  )
-                }
-              />
-            ),
-          }));
+        : view === "issues"
+          ? issueRows.map((issue) => ({
+              key: issue.id,
+              node: (first, last) => (
+                <IssueListRow
+                  issue={issue}
+                  customer={customers.find((c) => c.id === issue.customer_id)?.name ?? null}
+                  reporter={techName(issue.reported_by)}
+                  timeZone={company.timezone}
+                  first={first}
+                  last={last}
+                />
+              ),
+            }))
+          : reportRows.map(({ report, job }) => ({
+              key: report.id,
+              node: (first, last) => (
+                <ReportRow
+                  report={report}
+                  job={job}
+                  first={first}
+                  last={last}
+                  onMenu={(open) =>
+                    rowMenu.open(
+                      menuTitle(job?.customer?.name, job?.number ? `#${job.number}` : null),
+                      reportRowActions().menu,
+                      open,
+                    )
+                  }
+                />
+              ),
+            }));
 
   return (
     <View style={{ flex: 1, backgroundColor: color.bg }}>
@@ -618,6 +668,46 @@ function JobRowFace({
     </SwipeActions>
   ) : (
     row
+  );
+}
+
+/** An issue in Issues: "**Customer** · What's wrong", the line under it, its status. */
+function IssueListRow({
+  issue,
+  customer,
+  reporter,
+  timeZone,
+  first,
+  last,
+}: {
+  issue: ServiceIssue;
+  customer: string | null;
+  reporter: string | null;
+  timeZone: string;
+  first: boolean;
+  last: boolean;
+}) {
+  return (
+    <GroupedRow first={first} last={last} onPress={() => router.push(`/issues/${issue.id}`)}>
+      <View style={styles.rowBody}>
+        <T numberOfLines={2}>
+          <T variant="bodyEmphasis">{customer ?? "Customer"}</T>
+          <T muted>{` · ${issueTitle(issue.description, 60)}`}</T>
+        </T>
+        <T variant="secondary" muted numberOfLines={2}>
+          {issueDetailLine({
+            suggested: issue.suggested_type,
+            reporter,
+            reportedOn: new Date(issue.reported_at).toLocaleDateString("en-US", {
+              timeZone,
+              month: "short",
+              day: "numeric",
+            }),
+          })}
+        </T>
+      </View>
+      {issue.status === "open" ? null : <T muted>{ISSUE_STATUS_LABELS[issue.status]}</T>}
+    </GroupedRow>
   );
 }
 

@@ -25,6 +25,8 @@ import { useState } from "react";
 import { Alert, Linking, StyleSheet, Text, View } from "react-native";
 import { latestByPool, useChemicalLog } from "../../../../../data/chemicals";
 import { KIND_LABELS, useCustomerData } from "../../../../../data/customers";
+import { useIssues } from "../../../../../data/issues";
+import { IssueRow, useTeamName } from "../../../../../features/issues/Issues";
 import { MaintenancePlans } from "../../../../../features/maintenance/MaintenancePlans";
 import { useRememberOpened } from "../../../../../features/search/useRememberOpened";
 import { useTeam } from "../../../../../data/schedule";
@@ -75,6 +77,11 @@ export default function CustomerPage() {
   const routing = useRoutingOn();
   const [editing, setEditing] = useState<"contact" | Property | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
+  const issues = useIssues(company.id);
+  const issueReporter = useTeamName();
+  const openIssues = issues
+    .filter((i) => i.customer_id === id && i.status === "open")
+    .sort((a, b) => b.reported_at.localeCompare(a.reported_at));
   const customer = customers.find((c) => c.id === id && !c.deleted_at);
   // First under Recent in search (docs/plans/search-and-activity.md), as the website's.
   useRememberOpened(
@@ -189,6 +196,22 @@ export default function CustomerPage() {
             />
           </Group>
         </Section>
+
+        {/* Problems techs reported on visits (docs/design/2026-11-16-service-issues.md). */}
+        {openIssues.length ? (
+          <Section title="Open Issues">
+            <Group>
+              {openIssues.map((issue) => (
+                <IssueRow
+                  key={issue.id}
+                  issue={issue}
+                  reporter={issueReporter(issue.reported_by)}
+                  timeZone={company.timezone}
+                />
+              ))}
+            </Group>
+          </Section>
+        ) : null}
 
         {pools.length === 0 ? <T muted>No pools.</T> : null}
         {pools.map((p, i) => {

@@ -41,6 +41,7 @@ import * as WebBrowser from "expo-web-browser";
 import type { JsonValue } from "@leakbook/sync";
 import { useRow, useRows } from "../../../../../../data/hooks";
 import { JobRepairs } from "../../../../../../features/job/Repairs";
+import { JobIssues } from "../../../../../../features/issues/Issues";
 import { useJobReports } from "../../../../../../data/reports";
 import { API_URL } from "../../../../../../lib/config";
 import { WrapUpList, useWrapUp, type WrapUpOpen } from "../../../../../../features/job/WrapUp";
@@ -994,6 +995,13 @@ function Details({
           </Group>
         </Section>
       ) : null}
+
+      {/* Report an Issue (docs/design/2026-11-16-service-issues.md). */}
+      <JobIssues
+        jobId={job.id}
+        customerId={job.bill_to_customer_id ?? property?.customer_id}
+        propertyId={job.property_id}
+      />
 
       <Section
         title="On site"

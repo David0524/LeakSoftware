@@ -39,6 +39,7 @@ describe("reporting", () => {
         jobId: "visit",
         description: " Pump leaking ",
         suggested: "repair",
+        userId: "tech",
         now: "2026-11-16T15:00:00Z",
       }),
     ).toEqual({
@@ -47,6 +48,7 @@ describe("reporting", () => {
       job_id: "visit",
       description: "Pump leaking",
       suggested_type: "repair",
+      reported_by: "tech",
       reported_at: "2026-11-16T15:00:00Z",
     });
   });

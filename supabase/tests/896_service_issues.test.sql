@@ -15,7 +15,7 @@ create temp view ids as select
   from fx;
 grant select on ids to authenticated;
 
-select ok((select '{customer_id,property_id,job_id,description,suggested_type,reported_at}'::text[]
+select ok((select '{customer_id,property_id,job_id,description,suggested_type,reported_at,reported_by}'::text[]
                   = insert_columns
            from app.sync_table where table_name = 'service_issue'), 'phones report issues');
 select ok((select '{description,suggested_type,status,resolution_note,resolved_by,resolved_at,converted_job_id,deleted_at}'::text[]
@@ -49,6 +49,10 @@ select is((select status from service_issue where id = (select id from issue)), 
   'a report is open');
 select is((select reported_by from service_issue where id = (select id from issue)),
   (select tech_a from ids), 'reported by the tech');
+insert into service_issue (company_id, customer_id, property_id, job_id, description, reported_by)
+  select ca, cust_a, prop_a, job_a, 'Someone else said so', owner_a from ids;
+select is((select reported_by from service_issue where description = 'Someone else said so'),
+  (select tech_a from ids), 'a report is always by whoever wrote it');
 select lives_ok(format($$ update service_issue set description = 'Cracked skimmer throat, leaking'
   where id = %L $$, (select id from issue)), 'the tech can say more');
 select throws_ok(format($$ update service_issue set status = 'resolved', resolved_at = now()
