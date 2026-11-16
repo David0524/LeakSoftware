@@ -465,7 +465,9 @@ export function Table({
                     {c}
                   </th>
                 ) : (
-                  <td key={j}>{c}</td>
+                  <td key={j} data-label={head?.[j]}>
+                    {c}
+                  </td>
                 ),
               )}
             </tr>
