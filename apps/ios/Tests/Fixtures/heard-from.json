@@ -48,6 +48,10 @@
           "label": "Laminate Card"
         },
         {
+          "key": "mailer",
+          "label": "Mailer"
+        },
+        {
           "key": "other",
           "label": "Other"
         }
@@ -60,6 +64,12 @@
         " Card "
       ],
       "result": "card"
+    },
+    {
+      "args": [
+        "mailer"
+      ],
+      "result": "mailer"
     },
     {
       "args": [

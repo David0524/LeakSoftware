@@ -29,6 +29,7 @@ export const HEARD_FROM_OPTIONS = [
   { key: "trade_show", label: "Trade Show or Event" },
   { key: "advertisement", label: "Advertisement" },
   { key: "card", label: "Laminate Card" },
+  { key: "mailer", label: "Mailer" },
   { key: "other", label: "Other" },
 ] as const;
 
@@ -50,7 +51,7 @@ export function heardFromOther(key: HeardFrom | null, text: unknown): string | n
 
 /**
  * The option a sign-up link picks: `?from=<key>`, or `?ref=<key>` (a printed card says
- * `?from=card` or `?ref=card`). Unknown values pick nothing.
+ * `?from=card` or `?ref=card`; the 6 x 9 mailer `?from=mailer`). Unknown values pick nothing.
  */
 export function heardFromLink(params: { from?: unknown; ref?: unknown }): HeardFrom | null {
   const one = (v: unknown) => (Array.isArray(v) ? v[0] : v);

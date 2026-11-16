@@ -6,7 +6,7 @@ export const heardFrom: ModuleCases = {
   HEARD_FROM_OPTIONS: rule(() => HEARD_FROM_OPTIONS, [[]]),
   parseHeardFrom: rule(
     (v: string | null) => parseHeardFrom(v),
-    [[" Card "], ["google"], ["Laminate Card"], [""], [null], ["OTHER"]],
+    [[" Card "], ["mailer"], ["google"], ["Laminate Card"], [""], [null], ["OTHER"]],
   ),
   heardFromOther: rule(
     (key: string | null, text: string | null) => heardFromOther(parseHeardFrom(key), text),

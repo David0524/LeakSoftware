@@ -1,0 +1,269 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <title>Sundeck Pro mailer, back</title>
+    <link rel="stylesheet" href="card.css" />
+    <link rel="stylesheet" href="mailer.css" />
+    <style>
+      h1 {
+        left: 72px;
+        top: 196px;
+        font-size: 104px;
+        line-height: 0.92;
+      }
+      .sub {
+        left: 78px;
+        top: 410px;
+        font-size: 38px;
+        font-weight: 500;
+        color: rgba(255, 255, 255, 0.9);
+      }
+      .stores {
+        left: 78px;
+        top: 488px;
+      }
+
+      /* White panels, as on the laminate card's back. */
+      .panel {
+        left: 75px;
+        width: 1200px;
+        background: #fff;
+        color: #12263a;
+        border-radius: 40px;
+        box-shadow: 0 24px 60px rgba(2, 10, 22, 0.3);
+      }
+      .features {
+        top: 640px;
+        height: 510px;
+        padding: 44px 40px;
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        column-gap: 30px;
+        row-gap: 34px;
+      }
+      .item {
+        display: flex;
+        gap: 18px;
+        align-items: flex-start;
+      }
+      .item .tile {
+        width: 60px;
+        height: 60px;
+        border-radius: 16px;
+        background: #e8f0f8;
+        box-shadow: none;
+      }
+      .item .tile svg {
+        width: 32px;
+        height: 32px;
+      }
+      .item b {
+        display: block;
+        font-family: Barlow;
+        font-weight: 700;
+        font-size: 38px;
+        line-height: 1.05;
+        white-space: nowrap;
+      }
+      .item div > span {
+        display: block;
+        font-size: 29px;
+        line-height: 1.25;
+        color: #46535f;
+        margin-top: 4px;
+        white-space: nowrap;
+      }
+
+      .join {
+        top: 1190px;
+        height: 535px;
+        padding: 40px;
+        display: flex;
+        gap: 40px;
+        align-items: center;
+      }
+      .join .qr {
+        width: 330px;
+        height: 330px;
+        padding: 0;
+        border-radius: 0;
+      }
+      .join .cta {
+        gap: 14px;
+      }
+      .join .price {
+        font-size: 34px;
+      }
+      .reach {
+        margin-top: 18px;
+        font-size: 36px;
+        line-height: 1.5;
+        font-weight: 500;
+      }
+      .reach span {
+        color: #46535f;
+      }
+
+      /* The mail panel: the right 4.5 in stays white and empty, wider than the address,
+         postage and barcode areas of the usual print-and-mail services' 6 x 9 templates, so
+         theirs prints here. */
+      .mail {
+        left: 1350px;
+        top: calc(-1 * var(--bleed));
+        width: calc(1350px + var(--bleed));
+        height: calc(1800px + 2 * var(--bleed));
+        background: #fff;
+      }
+    </style>
+  </head>
+  <body>
+    <img class="water" src="mailer-bg.png" alt="" />
+    <div class="card">
+      <img class="abs logo" src="../../../brand/logo/sundeck-logo-reverse.svg" />
+      <h1 class="abs">Everything your<br /><span class="o">shop runs on.</span></h1>
+      <p class="abs sub">iPhone, Android and the web, always in sync.</p>
+      <div class="abs stores">
+        <img src="../../web/public/badges/app-store.svg" alt="Download on the App Store" />
+        <img src="../../web/public/badges/google-play.png" alt="Get it on Google Play" />
+      </div>
+
+      <section class="abs panel features">
+        <div class="item">
+          <span class="tile"
+            ><svg
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="#1A63A0"
+              stroke-width="2.2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            >
+              <rect x="2.5" y="6" width="19" height="12" rx="6" />
+              <circle cx="8.5" cy="12" r="2" fill="#1A63A0" /></svg
+          ></span>
+          <div><b>Pool diagram</b><span>Pin every leak where it is</span></div>
+        </div>
+        <div class="item">
+          <span class="tile"
+            ><svg
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="#1A63A0"
+              stroke-width="2.2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            >
+              <circle cx="12" cy="13" r="8" />
+              <path d="M12 13l4-4M9.5 3h5" /></svg
+          ></span>
+          <div><b>Pressure &amp; dye tests</b><span>Held or dropped, on record</span></div>
+        </div>
+        <div class="item">
+          <span class="tile"
+            ><svg
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="#1A63A0"
+              stroke-width="2.2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            >
+              <rect x="3" y="5" width="18" height="14" rx="3" />
+              <circle cx="12" cy="12" r="3.5" />
+              <path d="M15.5 8.5l4-3" /></svg
+          ></span>
+          <div><b>Photo markup</b><span>Mark up the proof</span></div>
+        </div>
+        <div class="item">
+          <span class="tile"
+            ><svg
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="#1A63A0"
+              stroke-width="2.2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            >
+              <path
+                d="M2 9a15 15 0 0 1 20 0M5.5 12.5a10 10 0 0 1 13 0M9 16a5 5 0 0 1 6 0M3 3l18 18"
+              /></svg
+          ></span>
+          <div><b>Works offline</b><span>No signal? Keep working</span></div>
+        </div>
+        <div class="item">
+          <span class="tile"
+            ><svg
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="#1A63A0"
+              stroke-width="2.2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            >
+              <rect x="3" y="4.5" width="18" height="16" rx="2.5" />
+              <path d="M3 9.5h18M8 2.5v4M16 2.5v4" /></svg
+          ></span>
+          <div><b>Schedule &amp; routes</b><span>Drag, drop, optimize</span></div>
+        </div>
+        <div class="item">
+          <span class="tile"
+            ><svg
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="#1A63A0"
+              stroke-width="2.2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            >
+              <path d="M7 3h7l4 4v14H7z" />
+              <path d="M10 12h5M10 16h5" /></svg
+          ></span>
+          <div><b>Quotes from findings</b><span>From your price book</span></div>
+        </div>
+        <div class="item">
+          <span class="tile"
+            ><svg
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="#1A63A0"
+              stroke-width="2.2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            >
+              <rect x="3" y="6" width="18" height="12" rx="3" />
+              <path d="M3 10h18M7 15h3" /></svg
+          ></span>
+          <div><b>Invoices &amp; payments</b><span>Card, bank, cash, check</span></div>
+        </div>
+        <div class="item">
+          <span class="tile"
+            ><svg
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="#1A63A0"
+              stroke-width="2.2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            >
+              <path d="M7 3h7l4 4v14H7z" />
+              <path d="M10 12h5M10 16h5M10 8h2" /></svg
+          ></span>
+          <div><b>Branded reports</b><span>Your logo on every page</span></div>
+        </div>
+      </section>
+
+      <section class="abs panel join">
+        <div class="qr"><img src="qr-mailer.svg" /></div>
+        <div class="cta">
+          <div class="btn">Start Your Free Trial</div>
+          <div class="url">sundeckpro.com</div>
+          <div class="price">Starting at $49/mo</div>
+          <div class="reach"><span>Call</span> (702) 785-1548<br />office@sundeckpro.com</div>
+        </div>
+      </section>
+
+      <div class="abs mail"></div>
+    </div>
+  </body>
+</html>
