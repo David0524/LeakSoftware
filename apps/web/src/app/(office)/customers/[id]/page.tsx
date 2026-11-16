@@ -2,12 +2,14 @@ import { RememberRecent } from "@/components/remember-recent";
 import {
   CUSTOMER_EMAILS_LABEL,
   CUSTOMER_EMAILS_OFF_LABEL,
+  FEEDBACK_WORDS,
   mapStatus,
   offersLeak,
   offersPool,
   shopInvoiceDay,
 } from "@leakbook/core";
 import type { Metadata } from "next";
+import Link from "next/link";
 import { notFound } from "next/navigation";
 import { NotOnMapTag } from "@/components/not-on-map";
 import { routingConfigured } from "@/server/routing";
@@ -51,7 +53,9 @@ import {
   listConfig,
   type ComponentType,
 } from "@/lib/data";
+import { feedbackList } from "@/lib/feedback";
 import { getLine } from "@/lib/messages";
+import { FeedbackRowItem } from "@/components/feedback-rows";
 
 export const metadata: Metadata = { title: "Customer · Sundeck Pro" };
 
@@ -69,7 +73,7 @@ export default async function CustomerPage({ params }: PageProps<"/customers/[id
   if (!isUuid(id)) notFound();
   const office = await getOffice();
   // All three at once: each used to wait for the one before.
-  const [data, team, company, line, componentTypes, priceBook] = await Promise.all([
+  const [data, team, company, line, componentTypes, priceBook, feedback] = await Promise.all([
     getCustomer(office, id),
     getTeam(office),
     getCompany(office),
@@ -79,6 +83,9 @@ export default async function CustomerPage({ params }: PageProps<"/customers/[id
       office,
       "price_book_item",
     ),
+    // Owners and admins see what this customer told the shop (owner's competitor notes,
+    // 2026-11-16).
+    office.isManager ? feedbackList(office.company.id, id) : Promise.resolve(null),
   ]);
   if (!data) notFound();
   // Checklist items done on a schedule, for a plan's Regular Cleanings (owner, 2026-10-18),
@@ -324,6 +331,28 @@ export default async function CustomerPage({ params }: PageProps<"/customers/[id
           })}
         </div>
       </div>
+      {feedback && feedback.rows.length > 0 ? (
+        <section className="mt-10 max-w-xl" aria-label={FEEDBACK_WORDS.customerSection}>
+          <Grouped
+            title={FEEDBACK_WORDS.customerSection}
+            footer={
+              <Link href="/feedback" className="text-link underline-offset-4 hover:underline">
+                {FEEDBACK_WORDS.seeAll}
+              </Link>
+            }
+          >
+            {feedback.rows.slice(0, 5).map((r) => (
+              <FeedbackRowItem
+                key={r.id}
+                row={r}
+                timeZone={office.company.timezone}
+                now={now}
+                showCustomer={false}
+              />
+            ))}
+          </Grouped>
+        </section>
+      ) : null}
       {office.isManager ? (
         <section className="mt-10 max-w-xl" aria-labelledby="delete-customer">
           <h2 id="delete-customer" className="sr-only">

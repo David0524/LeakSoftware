@@ -176,6 +176,13 @@
 
         private var reminders: some View {
             VStack(alignment: .leading, spacing: 12) {
+                VStack(alignment: .leading, spacing: 8) {
+                    SectionLabel("Send Reminders By")
+                    Segmented(
+                        selection: $followups.channel, options: ReminderChannel.allCases, label: \.label,
+                        title: "Send Reminders By", fillsWidth: true)
+                    Text(FeedbackText.reminderChannelHint).textRole(.secondary).foregroundStyle(Color.textMuted)
+                }
                 Grouped(label: "Reminders and Reviews", footer: FollowupsForm.note) {
                     LabeledFieldRow(
                         label: "Quote reminders", text: $followups.quoteDays, placeholder: "3, 7",
@@ -188,6 +195,8 @@
                         detail: profile.reviewURL.isEmpty
                             ? "Add your review link under Company profile to send review requests." : nil,
                         isOn: $followups.reviewRequests)
+                    SwitchRow(
+                        FeedbackText.settingTitle, detail: FeedbackText.settingHint, isOn: $followups.askFirst)
                 }
                 Text(
                     "Days after sending. Leave empty for none."

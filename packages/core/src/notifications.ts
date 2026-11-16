@@ -15,6 +15,7 @@ export type NotificationKind =
   | "report"
   | "opened"
   | "skip"
+  | "feedback"
   | "live"
   | "day"
   | "chemistry";
@@ -35,6 +36,13 @@ export const NOTIFICATION_KINDS: { key: NotificationKind; label: string; hint?: 
     label: "Skipped visits",
     hint: "Owners and admins: a maintenance visit that was skipped.",
   },
+  // Owner's competitor notes, 2026-11-16: a customer's thumbs down is a private complaint; the
+  // owners and admins hear about it.
+  {
+    key: "feedback",
+    label: "Customer complaints",
+    hint: "Owners and admins: a customer gave a thumbs down.",
+  },
   // Owner, 2026-10-20: "Add a Live Activities toggle in the notifications setting." The stop
   // you're on, on the Lock Screen during the workday (iPhone's Live Activity, Android's ongoing
   // notification).
@@ -54,7 +62,7 @@ export const NOTIFICATION_KINDS: { key: NotificationKind; label: string; hint?: 
   // well outside its range, once per reading. On unless turned off.
   {
     key: "chemistry",
-    label: "Out-of-Range Readings",
+    label: "Out-of-range readings",
     hint: "A pool's water test far outside its range. Owners and admins.",
   },
 ];

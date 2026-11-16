@@ -83,6 +83,13 @@ const SHAPES = {
   back: { line: "M15 4l-8 8 8 8" },
   forward: { line: "M9 4l8 8-8 8" },
   chevronRight: { line: "M9 6l6 6-6 6" },
+  // Customer feedback (owner's competitor notes, 2026-11-16): the website's thumbs.
+  thumbsUp: {
+    line: "M14 9V5a3 3 0 0 0-3-3l-4 9v11h11.3a2 2 0 0 0 2-1.7l1.4-9a2 2 0 0 0-2-2.3zM7 22H4a2 2 0 0 1-2-2v-7a2 2 0 0 1 2-2h3",
+  },
+  thumbsDown: {
+    line: "M10 15v4a3 3 0 0 0 3 3l4-9V2H5.7a2 2 0 0 0-2 1.7l-1.4 9a2 2 0 0 0 2 2.3zM17 2h2.7A2.3 2.3 0 0 1 22 4v7a2.3 2.3 0 0 1-2.3 2H17",
+  },
   chevronDown: { line: "M6 9l6 6 6-6" },
   search: { line: "M20 20l-4.3-4.3", circles: [[11, 11, 6.5]] },
   close: { line: "M6 6l12 12M18 6L6 18" },

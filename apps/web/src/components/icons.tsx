@@ -228,3 +228,19 @@ export const EyeSlashIcon = ({ className }: { className?: string }) => (
     <path d="M9.9 9.9a3 3 0 0 0 4.2 4.2M3.5 3.5l17 17" />
   </Icon>
 );
+
+/** Thumbs up (hand.thumbsup): the customer's "How did we do?" and the Feedback list. */
+export const ThumbsUpIcon = ({ className }: { className?: string }) => (
+  <Icon className={className}>
+    <path d="M14 9V5a3 3 0 0 0-3-3l-4 9v11h11.3a2 2 0 0 0 2-1.7l1.4-9a2 2 0 0 0-2-2.3z" />
+    <path d="M7 22H4a2 2 0 0 1-2-2v-7a2 2 0 0 1 2-2h3" />
+  </Icon>
+);
+
+/** Thumbs down (hand.thumbsdown). */
+export const ThumbsDownIcon = ({ className }: { className?: string }) => (
+  <Icon className={className}>
+    <path d="M10 15v4a3 3 0 0 0 3 3l4-9V2H5.7a2 2 0 0 0-2 1.7l-1.4 9a2 2 0 0 0 2 2.3z" />
+    <path d="M17 2h2.7A2.3 2.3 0 0 1 22 4v7a2.3 2.3 0 0 1-2.3 2H17" />
+  </Icon>
+);

@@ -21,6 +21,11 @@
         case myProfile
         case notifications
         case dashboard
+        /// Customer Feedback: thumbs customers gave, complaints to close (owner's competitor
+        /// notes, 2026-11-16; FeedbackScreen.swift).
+        case feedback
+        /// One complaint.
+        case complaint(FeedbackRow)
         /// What happened in the shop (owner, 2026-10-20; ActivityScreen.swift).
         case activity
         /// Jobs on one filter (the dashboard's status rows).
@@ -55,6 +60,8 @@
             case .myProfile: MyProfileScreen()
             case .notifications: NotificationsScreen()
             case .dashboard: DashboardScreen()
+            case .feedback: FeedbackScreen()
+            case .complaint(let row): ComplaintScreen(row: row)
             case .activity: ActivityScreen()
             case .jobs(let filter): JobsView(filter: filter)
             case .invoicesFiltered(let filter): InvoicesScreen(filter: filter)

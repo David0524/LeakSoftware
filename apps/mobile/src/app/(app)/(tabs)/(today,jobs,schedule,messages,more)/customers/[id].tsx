@@ -34,6 +34,7 @@ import { AddressLine } from "../../../../../ui/NotOnMap";
 import { PoolForm } from "../../../../../features/pool/PoolForm";
 import { getServices } from "../../../../../lib/services";
 import { openDirections, useDirectionsChoice } from "../../../../../state/directions";
+import { CustomerFeedback } from "../../../../../features/feedback/CustomerFeedback";
 import { useCompany, useSession } from "../../../../../state/session";
 import {
   Button,
@@ -309,6 +310,8 @@ export default function CustomerPage() {
             </View>
           );
         })}
+
+        {manager ? <CustomerFeedback customerId={customer.id} /> : null}
 
         {manager ? (
           <View style={{ gap: space["2"] }}>

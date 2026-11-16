@@ -33,6 +33,11 @@
           "hint": "Owners and admins: a maintenance visit that was skipped."
         },
         {
+          "key": "feedback",
+          "label": "Customer complaints",
+          "hint": "Owners and admins: a customer gave a thumbs down."
+        },
+        {
           "key": "live",
           "label": "Live Activity",
           "hint": "Your current stop on the Lock Screen during the workday."
@@ -44,7 +49,7 @@
         },
         {
           "key": "chemistry",
-          "label": "Out-of-Range Readings",
+          "label": "Out-of-range readings",
           "hint": "A pool's water test far outside its range. Owners and admins."
         }
       ]
@@ -111,6 +116,13 @@
     {
       "args": [
         null,
+        "feedback"
+      ],
+      "result": true
+    },
+    {
+      "args": [
+        null,
         "live"
       ],
       "result": true
@@ -175,6 +187,13 @@
       "args": [
         {},
         "skip"
+      ],
+      "result": true
+    },
+    {
+      "args": [
+        {},
+        "feedback"
       ],
       "result": true
     },
@@ -267,6 +286,15 @@
         {
           "text": false
         },
+        "feedback"
+      ],
+      "result": true
+    },
+    {
+      "args": [
+        {
+          "text": false
+        },
         "live"
       ],
       "result": true
@@ -365,6 +393,16 @@
           "text": true,
           "job": false
         },
+        "feedback"
+      ],
+      "result": true
+    },
+    {
+      "args": [
+        {
+          "text": true,
+          "job": false
+        },
         "live"
       ],
       "result": true
@@ -457,6 +495,15 @@
         {
           "payment": "false"
         },
+        "feedback"
+      ],
+      "result": true
+    },
+    {
+      "args": [
+        {
+          "payment": "false"
+        },
         "live"
       ],
       "result": true
@@ -547,6 +594,15 @@
         {
           "quote": 0
         },
+        "feedback"
+      ],
+      "result": true
+    },
+    {
+      "args": [
+        {
+          "quote": 0
+        },
         "live"
       ],
       "result": true
@@ -621,6 +677,13 @@
     {
       "args": [
         "x",
+        "feedback"
+      ],
+      "result": true
+    },
+    {
+      "args": [
+        "x",
         "live"
       ],
       "result": true
@@ -699,6 +762,15 @@
           false
         ],
         "skip"
+      ],
+      "result": true
+    },
+    {
+      "args": [
+        [
+          false
+        ],
+        "feedback"
       ],
       "result": true
     },

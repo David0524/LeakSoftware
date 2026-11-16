@@ -257,6 +257,7 @@
                 ForEach(Array(c.pools.enumerated()), id: \.element.id) { index, pool in
                     poolGroups(pool, customer: c, title: c.pools.count > 1 ? "Pool \(index + 1)" : "Pool")
                 }
+                if manager { CustomerFeedbackSection(customerId: c.id) }
                 if manager {
                     VStack(alignment: .leading, spacing: 8) {
                         Button(role: .destructive) {

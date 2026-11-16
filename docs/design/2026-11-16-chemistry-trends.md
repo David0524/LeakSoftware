@@ -38,7 +38,7 @@ levels" setting to read, so a reading is judged exactly as the visit's Low / In 
   salt 300. A hair outside is the visit's Low / High label only, no push.
 - The visit already flags each reading Low / High (the Chemicals section and the report's water
   test), so nothing new is stored on the visit.
-- **Notification kind `chemistry`, "Out-of-Range Readings"** (Settings › Notifications and More ›
+- **Notification kind `chemistry`, "Out-of-range readings"** (Settings › Notifications and More ›
   Notifications, on by default; hint "A pool's water test far outside its range. Owners and
   admins."). Sent to the shop's active owners and admins only, not techs.
 - **Sent server side, hourly:** `/api/cron/chemistry` (`apps/web/vercel.json`, minute 35) calls

@@ -15,6 +15,7 @@ import {
   activityRow,
   customersAddedNote,
   dashboardTotals,
+  FEEDBACK_TITLE,
   formatCents,
   formatCount,
   monthLabel,
@@ -25,6 +26,7 @@ import {
 } from "@leakbook/core";
 import { useActivityUnread } from "../../../../data/activity";
 import { useCustomerCounts } from "../../../../data/customers";
+import { useOpenComplaints } from "../../../../data/feedback";
 import { ActivityItem, ACTIVITY_SEPARATOR_INSET } from "../../../../features/activity/ActivityRow";
 import { fetchActivity } from "../../../../lib/activity";
 import { getServices } from "../../../../lib/services";
@@ -142,6 +144,8 @@ function DashboardBody({ d }: { d: Dashboard }) {
   // Customer trackers (owner, 2026-10-22: "a tracker of total customers, and customers actively
   // on a plan"), from the synced rows, each opening Customers on its Show choice.
   const counts = useCustomerCounts(company.id, company.timezone);
+  // Customer feedback (owner's competitor notes, 2026-11-16): complaints waiting to be closed.
+  const complaints = useOpenComplaints(company.id);
   const totals = dashboardTotals(d.months);
   const statuses = JOB_STATUSES.map((s) => ({ status: s, n: d.statuses[s] ?? 0 })).filter(
     (s) => s.n > 0,
@@ -165,6 +169,15 @@ function DashboardBody({ d }: { d: Dashboard }) {
             value={formatCount(counts.plan)}
             note={onPlanShareNote(counts.plan, counts.all)}
             onPress={() => router.push("/customers?show=plan")}
+            chevron
+          />
+        ) : null}
+        {complaints != null ? (
+          <Stat
+            label={FEEDBACK_TITLE}
+            value={formatCount(complaints)}
+            note="open complaints"
+            onPress={() => router.push("/feedback")}
             chevron
           />
         ) : null}

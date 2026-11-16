@@ -1,4 +1,5 @@
 import { formatCents } from "./money";
+import { isUsNumber, toE164 } from "./texting";
 
 // Follow-up emails (M10): reminders for quotes not yet accepted and invoices not yet paid,
 // and a review request after payment. The database decides what is due
@@ -14,8 +15,89 @@ export interface Followup {
   number: number | null;
   amount_cents: number;
   token: string;
-  customer: { name: string | null; email: string; cc_emails: string[] };
+  /** The shop's reminder channel (settings.reminders.channel); a review request is always email. */
+  channel?: ReminderChannel;
+  /** Whether the review request asks "How did we do?" first (settings.ask_feedback_first). */
+  feedback_first?: boolean;
+  /** Channels ("email", "sms") already sent for this step. */
+  sent_channels?: string[];
+  customer: {
+    name: string | null;
+    email: string;
+    phone?: string | null;
+    cc_emails: string[];
+  };
   company: { name: string; email: string | null; phone: string | null; review_url: string | null };
+}
+
+/** How reminders for unpaid invoices and unaccepted quotes go (Settings › Company and Branding). */
+export type ReminderChannel = "email" | "text" | "both";
+
+export const REMINDER_CHANNELS: { value: ReminderChannel; label: string }[] = [
+  { value: "email", label: "Email" },
+  { value: "text", label: "Text" },
+  { value: "both", label: "Both" },
+];
+
+export const REMINDER_CHANNEL_HINT =
+  "Texts go from your company number to customers with a mobile number who haven’t replied STOP. Set up texting under Phone and Texting.";
+
+/** The channel setting as stored; anything unknown is email, as before texts existed. */
+export function reminderChannel(settings: unknown): ReminderChannel {
+  const r = (settings as { reminders?: { channel?: unknown } } | null | undefined)?.reminders;
+  return r?.channel === "text" || r?.channel === "both" ? r.channel : "email";
+}
+
+/** Whether the review request asks "How did we do?" first: on unless turned off. */
+export function askFeedbackFirst(settings: unknown): boolean {
+  return (
+    (settings as { ask_feedback_first?: unknown } | null | undefined)?.ask_feedback_first !== false
+  );
+}
+
+export interface FollowupPlan {
+  /** Send the email (to the customer's address). */
+  email: boolean;
+  /** Send a text, to this number. */
+  text: string | null;
+}
+
+/**
+ * What goes for a due follow-up, by the shop's channel and what the customer can get. An email
+ * needs an address and a configured mailer; a text needs the shop's working number, a US mobile
+ * number, and no STOP reply. Channels that already went for the step are left out. The review
+ * request is always email.
+ */
+export function planFollowup(
+  f: Followup,
+  can: { email: boolean; texting: boolean; textOptedOut: boolean },
+): FollowupPlan {
+  const channel = f.template === "review_request" ? "email" : (f.channel ?? "email");
+  const sent = f.sent_channels ?? [];
+  const phone = toE164(f.customer.phone);
+  const wantsEmail = channel !== "text";
+  const wantsText = channel !== "email";
+  return {
+    email: wantsEmail && can.email && !sent.includes("email") && f.customer.email.trim().length > 0,
+    text:
+      wantsText && can.texting && !can.textOptedOut && !sent.includes("sms") && isUsNumber(phone)
+        ? phone
+        : null,
+  };
+}
+
+/**
+ * The text for a quote or invoice reminder: short, the shop's name and the link. (Carriers
+ * answer STOP, START and HELP themselves, so the words aren't added.)
+ */
+export function followupText(f: Followup, origin: string): string {
+  const shop = f.company.name;
+  if (f.template.startsWith("quote_reminder_")) {
+    const quote = f.number ? `quote #${f.number}` : "quote";
+    return `${shop}: a reminder about your ${quote} for ${formatCents(f.amount_cents)}. Review and accept it: ${origin}/q/${f.token}`;
+  }
+  const invoice = f.number ? `invoice #${f.number}` : "invoice";
+  return `${shop}: a reminder that ${formatCents(f.amount_cents)} is still due on your ${invoice}. Pay online: ${origin}/i/${f.token}`;
 }
 
 export interface FollowupEmail {
@@ -35,6 +117,7 @@ export function followupEmail(f: Followup, origin: string): FollowupEmail {
   let subject: string;
   let lines: string[];
   let link: { url: string; label: string };
+  let feedback: { up: string; down: string } | null = null;
   if (f.template.startsWith("quote_reminder_")) {
     const quote = f.number ? `quote #${f.number}` : "quote";
     subject = `Your repair quote from ${shop}`;
@@ -53,16 +136,32 @@ export function followupEmail(f: Followup, origin: string): FollowupEmail {
     link = { url: `${origin}/i/${f.token}`, label: "View and pay your invoice" };
   } else {
     subject = `How did we do? ${shop}`;
-    lines = [
-      "Thank you for choosing us. If you were happy with the work, a short review helps other pool owners find us.",
-    ];
-    link = { url: f.company.review_url ?? origin, label: "Leave a review" };
+    if (f.feedback_first) {
+      // The thumbs links only show the answer; nothing is recorded until the customer sends it
+      // on the page (mail scanners open every link).
+      feedback = {
+        up: `${origin}/f/${f.token}?rating=up`,
+        down: `${origin}/f/${f.token}?rating=down`,
+      };
+      lines = ["Thank you for choosing us. How did we do?"];
+      link = { url: feedback.up, label: "Thumbs up" };
+    } else {
+      lines = [
+        "Thank you for choosing us. If you were happy with the work, a short review helps other pool owners find us.",
+      ];
+      link = { url: f.company.review_url ?? origin, label: "Leave a review" };
+    }
   }
   const text = [
     greeting,
     "",
     ...lines,
-    `${link.label}: ${link.url}`,
+    ...(feedback
+      ? [
+          `Thumbs up (we did great): ${feedback.up}`,
+          `Thumbs down (something went wrong): ${feedback.down}`,
+        ]
+      : [`${link.label}: ${link.url}`]),
     "",
     "Thank you!",
     signoff,
@@ -72,7 +171,9 @@ export function followupEmail(f: Followup, origin: string): FollowupEmail {
   const html = [
     `<p>${escape(greeting)}</p>`,
     ...lines.map((l) => `<p>${escape(l)}</p>`),
-    `<p><a href="${escape(link.url)}">${escape(link.label)}</a></p>`,
+    feedback
+      ? `<p><a href="${escape(feedback.up)}"><b>&#128077; We did great</b></a><br><a href="${escape(feedback.down)}"><b>&#128078; Something went wrong</b></a></p>`
+      : `<p><a href="${escape(link.url)}">${escape(link.label)}</a></p>`,
     `<p>Thank you!<br>${escape(signoff)}</p>`,
     `<p style="font-size:13px;color:#5B6B7A"><a href="${escape(stop)}">Stop reminder, review and shop emails from ${escape(shop)}</a></p>`,
   ].join("");

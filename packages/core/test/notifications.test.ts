@@ -50,6 +50,7 @@ describe("notifications", () => {
       "report",
       "opened",
       "skip",
+      "feedback",
       "live",
       "day",
       "chemistry",
