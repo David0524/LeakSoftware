@@ -9,10 +9,13 @@
 //   4. a review submission holding that version, submitted.
 //
 // The listing, screenshots, App Privacy, age rating and review contact carry over from the last
-// version, so nothing else is set. It never releases a version: the owner does that.
+// version, so nothing else is set. It releases a version only when asked by name (ACTION
+// release, RELEASE_VERSION; owner, 2026-11-17: Claude may release an approved version for them).
 //
 // Env: ASC_KEY_ID, ASC_ISSUER_ID, ASC_KEY_PATH (the .p8 file), APP_STORE_APP_ID,
-//      ACTION (status | submit), BUILD (optional build number), GITHUB_STEP_SUMMARY (optional).
+//      ACTION (status | submit | resubmit | release), BUILD (optional build number),
+//      RELEASE_VERSION (release: the approved version to put on the App Store),
+//      GITHUB_STEP_SUMMARY (optional).
 // Usage: node scripts/app-store-submit.mjs
 
 import { appendFileSync, readFileSync } from "node:fs";
@@ -181,8 +184,45 @@ async function main() {
     await submit({ api, appId, version, versions: fresh, say, build: env.BUILD });
   }
   if (action === "submit") await submit({ api, appId, version, versions, say, build: env.BUILD });
+  if (action === "release") await release({ api, versions, say, target: env.RELEASE_VERSION });
 
   if (env.GITHUB_STEP_SUMMARY) appendFileSync(env.GITHUB_STEP_SUMMARY, summary.join("\n") + "\n");
+}
+
+/**
+ * Which App Store version to release ("Release This Version"): only the one named, and only
+ * when Apple approved it and it waits for the developer. Returns its id, or what's wrong.
+ */
+export function releasePlan(versions, target) {
+  const name = (target ?? "").trim();
+  if (!name) return { error: "Name the approved version to release (Version to release)." };
+  const v = versions.find((x) => x.attributes?.versionString === name);
+  if (!v) return { error: `There is no App Store version ${name}.` };
+  const s = stateOf(v);
+  if (s === "READY_FOR_DISTRIBUTION" || s === "READY_FOR_SALE")
+    return { done: `${name} is already out.` };
+  if (s !== "PENDING_DEVELOPER_RELEASE") {
+    return {
+      error: `${name} is ${s}; only a version Apple approved and waiting for release can be released.`,
+    };
+  }
+  return { id: v.id };
+}
+
+/** Put an approved version on the App Store, as Release This Version does. */
+async function release({ api, versions, say, target }) {
+  const p = releasePlan(versions, target);
+  if (p.error) throw new Error(p.error);
+  if (p.done) return say(p.done);
+  await api("POST", "/appStoreVersionReleaseRequests", {
+    data: {
+      type: "appStoreVersionReleaseRequests",
+      relationships: { appStoreVersion: { data: { type: "appStoreVersions", id: p.id } } },
+    },
+  });
+  say(
+    `Released ${target.trim()}: it goes out on the App Store over the next hours, as Apple rolls it out.`,
+  );
 }
 
 /** States a version is in while a review submission can still be taken back. */

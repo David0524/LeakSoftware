@@ -1,7 +1,7 @@
 // node scripts/app-store-submit.test.mjs
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
-import { fieldText, plan, plistVersion } from "./app-store-submit.mjs";
+import { fieldText, plan, plistVersion, releasePlan } from "./app-store-submit.mjs";
 
 const v = (id, versionString, appVersionState) => ({
   id,
@@ -45,3 +45,16 @@ const md = readFileSync(new URL("docs/release/APP_STORE.md", root), "utf8");
 assert.ok(fieldText(md, "whats-new").length > 0);
 assert.throws(() => fieldText("<!-- field:x limit:3 -->\n```text\nabcd\n```", "x"), /limit is 3/);
 console.log("app-store-submit: ok");
+
+// Release only the version named, and only once Apple approved it (owner, 2026-11-17).
+assert.deepEqual(releasePlan([v("a", "1.0.3", "PENDING_DEVELOPER_RELEASE")], "1.0.3"), { id: "a" });
+assert.match(releasePlan([v("a", "1.0.3", "PENDING_DEVELOPER_RELEASE")], "").error, /Name/);
+assert.match(
+  releasePlan([v("a", "1.0.3", "PENDING_DEVELOPER_RELEASE")], "1.0.4").error,
+  /no App Store version 1\.0\.4/,
+);
+assert.match(
+  releasePlan([v("b", "1.0.4", "WAITING_FOR_REVIEW")], "1.0.4").error,
+  /WAITING_FOR_REVIEW/,
+);
+assert.match(releasePlan([v("c", "1.0.2", "READY_FOR_DISTRIBUTION")], "1.0.2").done, /already out/);

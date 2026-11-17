@@ -2,6 +2,9 @@
 
 Newest first. Each entry: date, decision, reason.
 
+## 2026-11-17 (owner: "2", picking "I release it for you")
+- **The App Store workflow can release an approved version** (action `release`, "Version to release"): only the version named, and only when Apple approved it and it waits for release (`releasePlan` in `scripts/app-store-submit.mjs`). Claude released 1.0.3 this way so 1.0.4 could be submitted. Releasing still happens only when the owner asks.
+
 ## 2026-11-16 (owner: "Switch the site to live mode")
 - **Live mode is set up from the dashboards, not the code.** Prices come from `packages/core/src/plans.ts` (no price IDs) and the apps hold no Stripe keys, so no code or app build changes. Steps in `docs/release/STRIPE_LIVE_HANDOFF.md`: check live activation and Connect, the customer portal, payment methods and the `sundeckpro.com` domain, two live webhooks (the sandbox's twelve events), the four Vercel variables on **Production only** (Preview and Development stay on the sandbox, so test deployments never move real money), a production redeploy, and a test event to each webhook (200 means the signing secret matches).
 - **Secrets stay with the owner:** Claude in Chrome stops before any key or signing secret, and the owner copies the four values into Vercel.
