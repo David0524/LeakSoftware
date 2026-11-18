@@ -3,8 +3,9 @@ name: App Store
 # Shows where the iPhone app stands on App Store Connect (versions, builds), or submits the
 # version in apps/ios/Info.plist for App Review with its newest TestFlight build and the What's
 # New text in docs/release/APP_STORE.md (scripts/app-store-submit.mjs). Only when asked:
-# Actions › App Store › Run workflow. release puts an approved version on the App Store, only the
-# one named in "Version to release" (owner, 2026-11-17).
+# Actions › App Store › Run workflow. A submitted version goes on the App Store as soon as Apple
+# approves it (owner, 2026-11-18). release puts an approved version that waits for a manual
+# release on the App Store, only the one named in "Version to release" (owner, 2026-11-17).
 # Same App Store Connect key as the TestFlight workflow (ASC_KEY_ID, ASC_ISSUER_ID, ASC_KEY_P8).
 
 on:

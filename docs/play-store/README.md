@@ -164,6 +164,17 @@ service account in step 8 exists), download the `.aab` from the run's summary, t
 release › **Internal testing › Create new release** › upload it › release notes ›
 **Start rollout**, and promote the same release to Production when it's tested.
 
+**1.0.2** (2026-11-18) release notes, en-US (500 characters), the iPhone 1.0.4 What's New shortened:
+
+```text
+Pool equipment: record each pool's sanitizer, heater, and solar heater, with pool notes.
+Skip Visit: skip a maintenance visit with a reason, note, and photo.
+Report an Issue: report a problem from any job, with photos.
+Chemistry trends: each pool's readings over time, with out-of-range alerts.
+Autopay: customers can save a card so monthly invoices are paid automatically.
+Ask How We Did: reports ask for a thumbs up or down before asking for a review.
+```
+
 **1.0.1** (2026-11-16) release notes, en-US (500 characters):
 
 ```text

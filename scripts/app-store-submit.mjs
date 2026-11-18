@@ -3,7 +3,8 @@
 // (.github/workflows/app-store.yml); the steps are those an owner clicks in App Store Connect:
 //
 //   1. the App Store version (apps/ios/Info.plist's CFBundleShortVersionString), made if missing,
-//      released by hand after approval, like 1.0.0;
+//      set to release automatically once Apple approves it (owner, 2026-11-18: "These should
+//      auto release when approved");
 //   2. its What's New text, from docs/release/APP_STORE.md (field:whats-new);
 //   3. the newest processed TestFlight build of that version (or the one asked for);
 //   4. a review submission holding that version, submitted.
@@ -295,21 +296,26 @@ async function submit({ api, appId, version, versions, say, build }) {
 
   // 1. The version.
   let versionId = next.use ?? next.rename;
-  if (next.rename) {
+  if (next.rename || next.use) {
     await api("PATCH", `/appStoreVersions/${versionId}`, {
-      data: { type: "appStoreVersions", id: versionId, attributes: { versionString: version } },
+      data: {
+        type: "appStoreVersions",
+        id: versionId,
+        attributes: { versionString: version, releaseType: "AFTER_APPROVAL" },
+      },
     });
-    say(`Renamed App Store version ${next.from} to ${version}.`);
+    if (next.rename) say(`Renamed App Store version ${next.from} to ${version}.`);
+    say(`${version} releases automatically once Apple approves it.`);
   } else if (next.create) {
     const made = await api("POST", "/appStoreVersions", {
       data: {
         type: "appStoreVersions",
-        attributes: { platform: "IOS", versionString: version, releaseType: "MANUAL" },
+        attributes: { platform: "IOS", versionString: version, releaseType: "AFTER_APPROVAL" },
         relationships: { app: { data: { type: "apps", id: appId } } },
       },
     });
     versionId = made.data.id;
-    say(`Made App Store version ${version} (released by hand after approval).`);
+    say(`Made App Store version ${version} (releases automatically once Apple approves it).`);
   }
 
   // 2. The build: the newest processed one of this version, or the one asked for. A fresh upload
@@ -389,7 +395,7 @@ async function submit({ api, appId, version, versions, say, build }) {
     data: { type: "reviewSubmissions", id: submissionId, attributes: { submitted: true } },
   });
   say(
-    `**Submitted ${version} (${chosen.attributes.version}) for App Review.** Apple emails when it's reviewed; release it by hand after approval.`,
+    `**Submitted ${version} (${chosen.attributes.version}) for App Review.** Apple emails when it's reviewed; it goes on the App Store as soon as it's approved.`,
   );
 }
 
