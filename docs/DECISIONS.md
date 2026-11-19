@@ -5,7 +5,8 @@ Newest first. Each entry: date, decision, reason.
 ## 2026-11-18 (owner: "Release 1.04 These should auto release when approved")
 - **iPhone 1.0.4 released** (App Store workflow, `release`).
 - **iPhone updates release automatically once Apple approves them.** The App Store workflow's `submit` and `resubmit` set the version to release after approval (`AFTER_APPROVAL`), including a version already made as manual. Replaces "released by hand" (2026-11-05, 2026-11-17); `release` stays for a version made manual in App Store Connect.
-- **Android 1.0.2** brings the Play app level with iPhone 1.0.4.
+- **Android 1.0.2** brings the Play app level with iPhone 1.0.4. Sent for Production review (full rollout) the same day, through Claude in Chrome (`docs/play-store/CHROME_RELEASE_1.0.2.md`); 1.0.1 was already live.
+- **Play's hardware-feature warning was ignored for 1.0.2** (owner: "Proceed anyway"): `android.hardware.screen.portrait` (the app is portrait-only) and `android.hardware.wifi` were required in 1.0.1 too, and Play counted 0 devices lost. The next Android release marks both `required="false"` in the manifest.
 
 ## 2026-11-17 (owner: "2", picking "I release it for you")
 - **The App Store workflow can release an approved version** (action `release`, "Version to release"): only the version named, and only when Apple approved it and it waits for release (`releasePlan` in `scripts/app-store-submit.mjs`). Claude released 1.0.3 this way so 1.0.4 could be submitted. Releasing still happens only when the owner asks.
