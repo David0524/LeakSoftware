@@ -306,6 +306,11 @@ export interface Membership extends Base {
 export interface MemberStart extends Base {
   user_id: string;
   start_from: "shop" | "home";
+  /**
+   * Where the day ends (owner, 2026-11-23): "shop" or "home", set apart from the start. Missing
+   * (a row from before it existed) ends where the day starts.
+   */
+  end_at?: "shop" | "home";
   /** One line, as typed or picked from the suggestions. */
   home_address?: string | null;
   home_latitude?: number | null;

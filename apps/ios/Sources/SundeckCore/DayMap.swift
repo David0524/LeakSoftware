@@ -518,14 +518,21 @@ public struct DayMapPins: Codable, Equatable, Sendable {
 
 /// Pins for a day: the start (the shop, or home for someone who starts there), then each located
 /// stop numbered by its place in the day (so the numbers match the list), toned done, current
-/// (the stop you're on), or still to do. `depot` is the tech's start (`startFor(…).at`);
-/// `startLabel` `.home` draws it as Home.
+/// (the stop you're on), or still to do, then the end when the day ends somewhere else (owner,
+/// 2026-11-23), last. `depot` is the tech's start (`startFor(…).at`); `startLabel` `.home` draws
+/// it as Home. `end` and `endLabel`: `startFor(…).end`.
 public func dayMapPins(
-    stops: [MapStop], depot: LatLng?, currentId: String? = nil, startLabel: RouteStartLabel? = nil
+    stops: [MapStop], depot: LatLng?, currentId: String? = nil, startLabel: RouteStartLabel? = nil,
+    end: LatLng? = nil, endLabel: RouteStartLabel? = nil
 ) -> DayMapPins {
     var pins: [MapPin] = []
     if let depot {
         pins.append(MapPin(label: "", at: depot, tone: .shop, home: startLabel == .home ? true : nil))
+    }
+    // Only after a start: a lone pin draws as the start and the end.
+    var endPin: MapPin?
+    if let depot, let end, !(end.lat == depot.lat && end.lng == depot.lng) {
+        endPin = MapPin(label: "", at: end, tone: .shop, home: endLabel == .home ? true : nil)
     }
     var missing = 0
     for (i, s) in stops.enumerated() {
@@ -536,7 +543,8 @@ public func dayMapPins(
         let tone: PinTone = s.done ? .done : (currentId != nil && s.id == currentId) ? .current : .todo
         pins.append(MapPin(label: String(i + 1), at: location, tone: tone, id: s.id))
     }
-    return DayMapPins(pins: Array(pins.prefix(mapPinLimit)), missing: missing)
+    guard let endPin else { return DayMapPins(pins: Array(pins.prefix(mapPinLimit)), missing: missing) }
+    return DayMapPins(pins: Array(pins.prefix(mapPinLimit - 1)) + [endPin], missing: missing)
 }
 
 /// A home start pin's code ("h:33.4,-111.8"); it decodes as the start pin with `home`.

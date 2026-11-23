@@ -15,7 +15,8 @@ public struct PlanContext: Codable, Sendable {
     public var today: String
     public var nowMin: Int
     /// The shop's member_start rows this person can read (their own, or everyone's for owners
-    /// and admins). Each tech's day starts and ends at startFor(techId, starts, depot).
+    /// and admins). Each tech's day starts at startFor(techId, starts, depot).at and ends at its
+    /// end.at.
     public var starts: [MemberStart]?
 
     public init(
@@ -31,7 +32,7 @@ public struct PlanContext: Codable, Sendable {
     }
 
     /// Where this tech's routes start and end in this context.
-    func startOf(_ techId: String?) -> LatLng? { startFor(techId, starts, shop: depot).at }
+    func startOf(_ techId: String?) -> RouteStart { startFor(techId, starts, shop: depot) }
 }
 
 public struct ScheduleChange: Encodable, Equatable, Sendable {
@@ -185,8 +186,8 @@ public func partnerProblem<J: PlanJobFields>(
             })
     let start = ctx.startOf(partner.techId)
     let hours = workDay(ctx.settings)
-    let was = timeRoute(before, depot: start, day: hours, drive: drive)
-    let now = timeRoute(after, depot: start, day: hours, drive: drive)
+    let was = timeRoute(before, depot: start.at, day: hours, drive: drive, end: start.end.at)
+    let now = timeRoute(after, depot: start.at, day: hours, drive: drive, end: start.end.at)
     var lateBefore: [String: Int] = [:]
     for t in was.stops { lateBefore[t.id] = t.lateMin }
     for (i, t) in now.stops.enumerated() {
@@ -266,7 +267,7 @@ public func planTechDay<J: PlanJobFields>(
     var pinned = Set<String>()
     let earliest = date == ctx.today ? ctx.nowMin : nil
     var stops = base
-    var plan = (order: [Int](), route: timeRoute([], depot: start, day: hours, drive: drive))
+    var plan = (order: [Int](), route: timeRoute([], depot: start.at, day: hours, drive: drive, end: start.end.at))
     // Each run that doesn't fit pins one more shared job, so this ends.
     for _ in 0...shared.count {
         stops = base.map { s in
@@ -277,7 +278,7 @@ public func planTechDay<J: PlanJobFields>(
             free.earliestMin = earliest
             return free
         }
-        plan = optimizeRoute(stops, depot: start, day: hours, drive: drive)
+        plan = optimizeRoute(stops, depot: start.at, day: hours, drive: drive, end: start.end.at)
         // The shared jobs that moved, by the other tech.
         var moves: [(partner: String, moves: [PartnerMove])] = []
         for (at, i) in plan.order.enumerated() {
@@ -313,7 +314,7 @@ public func planTechDay<J: PlanJobFields>(
     }
     return DayPlan(
         stops: stops, order: plan.order, route: plan.route,
-        before: timeRoute(stops, depot: start, day: hours, drive: drive), kept: kept,
+        before: timeRoute(stops, depot: start.at, day: hours, drive: drive, end: start.end.at), kept: kept,
         freed: sharedIds.filter { !pinned.contains($0) })
 }
 
@@ -414,7 +415,7 @@ public func planDay<J: PlanJobFields>(
     let start = ctx.startOf(techId)
     let notes: [String?] = [
         plan.stops.contains { $0.location == nil } ? "driving to pools not on the map isn’t counted" : nil,
-        start == nil ? "the shop has no location (Settings › Scheduling)" : nil,
+        start.at == nil || start.end.at == nil ? "the shop has no location (Settings › Scheduling)" : nil,
     ]
     let stayed = keptNote(plan.kept, names: names)
     // One short line for the banner at the top of the screen (owner, 2026-10-20: the note under
@@ -615,7 +616,8 @@ public func moveJobChange<J: PlanJobFields>(_ ctx: PlanContext, _ input: MoveInp
         earliestMin: date == ctx.today ? ctx.nowMin : nil, movable: fixedMin == nil, own: true)
     let index = max(0, min(input.index, others.count))
     stops.insert(moved, at: index)
-    let route = timeRoute(stops, depot: ctx.startOf(tech), day: workDay(ctx.settings), drive: drive)
+    let techStart = ctx.startOf(tech)
+    let route = timeRoute(stops, depot: techStart.at, day: workDay(ctx.settings), drive: drive, end: techStart.end.at)
     var updates = try routeUpdates(date, ctx.timeZone, stops, route)
     let mineAt = updates.firstIndex { $0.id == job.id }!
     var mine = updates.remove(at: mineAt)
@@ -718,7 +720,8 @@ public func suggestTimes<J: PlanJobFields>(
         for j in jobs { labels[j.id] = j.label ?? "the job before" }
         return TechDay(
             date: r.date, techId: r.techId, techName: r.techName, stops: stops, labels: labels,
-            notBeforeMin: r.date == ctx.today ? ctx.nowMin : nil, start: .some(ctx.startOf(r.techId)))
+            notBeforeMin: r.date == ctx.today ? ctx.nowMin : nil, start: .some(ctx.startOf(r.techId).at),
+            end: .some(ctx.startOf(r.techId).end.at))
     }
     let found = suggestSlots(
         location: location, durationMin: durationMin, days: days, depot: ctx.depot, day: workDay(ctx.settings),

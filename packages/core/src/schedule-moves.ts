@@ -40,9 +40,9 @@ import {
 } from "./routing";
 import { startFor, type MemberStartFields } from "./route-start";
 
-/** Where this tech's routes start and end in this context. */
+/** Where this tech's routes start (`at`) and end (`end.at`) in this context. */
 const startOf = (ctx: PlanContext, techId: string | null | undefined) =>
-  startFor(techId, ctx.starts, ctx.depot).at;
+  startFor(techId, ctx.starts, ctx.depot);
 
 export interface PlanContext {
   timeZone: string;
@@ -51,7 +51,7 @@ export interface PlanContext {
   depot: LatLng | null;
   /**
    * The shop's member_start rows this person can read (their own, or everyone's for owners and
-   * admins). Each tech's day starts and ends at startFor(techId, starts, depot).
+   * admins). Each tech's day starts at startFor(techId, starts, depot).at and ends at its end.at.
    */
   starts?: readonly (MemberStartFields & { user_id: string })[] | null;
   /** The shop's today ("2026-10-19") and minutes after midnight now. */
@@ -205,8 +205,8 @@ export function partnerProblem(
   ].sort(byTime);
   const start = startOf(ctx, partner.techId);
   const hours = workDay(ctx.settings);
-  const was = timeRoute(before, start, hours, drive);
-  const now = timeRoute(after, start, hours, drive);
+  const was = timeRoute(before, start.at, hours, drive, start.end.at);
+  const now = timeRoute(after, start.at, hours, drive, start.end.at);
   const lateBefore = new Map(was.stops.map((t) => [t.id, t.lateMin]));
   for (let i = 0; i < after.length; i++) {
     const t = now.stops[i]!;
@@ -303,7 +303,7 @@ export function planTechDay(
         ? { ...s, movable: true, fixedStartMin: null, earliestMin: earliest }
         : s,
     );
-    plan = optimizeRoute(stops, start, hours, drive);
+    plan = optimizeRoute(stops, start.at, hours, drive, start.end.at);
     // The shared jobs that moved, by the other tech.
     const moves = new Map<string, PartnerMove[]>();
     plan.order.forEach((i, at) => {
@@ -340,7 +340,7 @@ export function planTechDay(
     stops,
     order: plan.order,
     route: plan.route,
-    before: timeRoute(stops, start, hours, drive),
+    before: timeRoute(stops, start.at, hours, drive, start.end.at),
     kept,
     freed: [...shared].filter((id) => !pinned.has(id)),
   };
@@ -451,7 +451,7 @@ export function planDay(
   const start = startOf(ctx, techId);
   const notes = [
     stops.some((s) => !s.location) ? "driving to pools not on the map isn’t counted" : null,
-    !start ? "the shop has no location (Settings › Scheduling)" : null,
+    !start.at || !start.end.at ? "the shop has no location (Settings › Scheduling)" : null,
   ];
   const stayed = keptNote(kept, names);
   // One short line for the banner at the top of the screen (owner, 2026-10-20: the note under
@@ -677,7 +677,8 @@ export function moveJobChange(ctx: PlanContext, input: MoveInput, drive: DriveFn
     Math.min(Number.isInteger(input.index) ? input.index : others.length, others.length),
   );
   stops.splice(index, 0, moved);
-  const route = timeRoute(stops, startOf(ctx, tech), workDay(ctx.settings), drive);
+  const techStart = startOf(ctx, tech);
+  const route = timeRoute(stops, techStart.at, workDay(ctx.settings), drive, techStart.end.at);
   const updates: JobChange[] = routeUpdates(date, ctx.timeZone, stops, route);
   const mine = updates.find((u) => u.id === job.id)!;
   mine.assigned_user_id = tech;
@@ -894,7 +895,8 @@ export function suggestTimes(
       stops,
       labels: Object.fromEntries(jobs.map((j) => [j.id, j.label ?? "the job before"])),
       notBeforeMin: r.date === ctx.today ? ctx.nowMin : null,
-      start: startOf(ctx, r.techId),
+      start: startOf(ctx, r.techId).at,
+      end: startOf(ctx, r.techId).end.at,
     };
   });
   const found = suggestSlots(
