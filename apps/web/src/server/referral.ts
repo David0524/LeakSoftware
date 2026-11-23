@@ -7,8 +7,8 @@ export interface ReferralOffer {
   code: string;
   used: number;
   earned: number;
-  /** The sign-up page the share message links to. */
-  signUpUrl: string;
+  /** The site the share message's sign-up link points to (referralShareText adds /sign-up?code=). */
+  origin: string;
 }
 
 /** `referral_summary`'s answer, or null when there is no code to share. */
@@ -42,7 +42,7 @@ export async function referralOfferFor(
     });
     const summary = error ? null : referralFromSummary(data);
     if (!summary) return null;
-    return { ...summary, signUpUrl: `${await siteOrigin()}/sign-up` };
+    return { ...summary, origin: await siteOrigin() };
   } catch {
     return null;
   }

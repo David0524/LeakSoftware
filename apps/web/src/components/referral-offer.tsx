@@ -49,7 +49,7 @@ function ReferralSheet({
         code={offer.code}
         used={offer.used}
         earned={offer.earned}
-        signUpUrl={offer.signUpUrl}
+        origin={offer.origin}
       />
     </Sheet>
   );
@@ -80,7 +80,7 @@ export function ReferralOfferCard({ offer }: { offer: ReferralOffer }) {
   const share = async () => {
     if (!canShare) return setOpen(true);
     try {
-      await navigator.share({ text: referralShareText(offer.code, offer.signUpUrl) });
+      await navigator.share({ text: referralShareText(offer.code, offer.origin) });
     } catch {
       // Closed the share sheet.
     }

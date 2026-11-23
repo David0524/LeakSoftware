@@ -46,7 +46,7 @@ describe("referralOfferFor", () => {
       code: "BLUEWAVEPOOLS",
       used: 1,
       earned: 0,
-      signUpUrl: "https://sundeckpro.com/sign-up",
+      origin: "https://sundeckpro.com",
     });
     expect(client.rpc).toHaveBeenCalledWith("referral_summary", { target_company: "c1" });
   });
