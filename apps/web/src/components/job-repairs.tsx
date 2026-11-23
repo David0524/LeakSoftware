@@ -160,7 +160,7 @@ function AddRepairForm({ jobId, items }: { jobId: string; items: RepairItem[] })
   const typed = !items.length || draft.pick === REPAIR_CUSTOM;
   return (
     <Draft form="repair" id={jobId}>
-      <SettingsForm action={addRepairAction} submit={REPAIR_LABELS.save} full primary>
+      <SettingsForm action={addRepairAction} submit={REPAIR_LABELS.save} full>
         <input type="hidden" name="job" value={jobId} />
         {items.length ? (
           <div>

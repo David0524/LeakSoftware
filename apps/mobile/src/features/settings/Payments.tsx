@@ -174,7 +174,7 @@ function AutopaySettings() {
             {`${AUTOPAY_TEXT.payOverTimeFooter}${status ? ` ${status}` : ""}`}
           </T>
         </View>
-        <Button title="Save" wide kind="secondary" onPress={save} />
+        <Button title="Save" wide onPress={save} />
       </View>
     </Section>
   );

@@ -643,7 +643,6 @@ export function ChecklistEditor({
                 action={addCustomItem}
                 submit={ADD_ITEM_SAVE}
                 onSaved={() => setTyping(false)}
-                primary
                 pinned
               >
                 <input type="hidden" name="job" value={jobId} />
@@ -1245,7 +1244,6 @@ function TestForm({
         action={saveTest}
         submit={test ? "Save Test" : "Add Test"}
         onSaved={onDone}
-        primary
         pinned
       >
         <input type="hidden" name="job" value={jobId} />
@@ -1523,7 +1521,6 @@ function FindingForm({
         action={saveFinding}
         submit={finding ? "Save Finding" : "Add Finding"}
         onSaved={onDone}
-        primary
         pinned
       >
         <input type="hidden" name="job" value={jobId} />

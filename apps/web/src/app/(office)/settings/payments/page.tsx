@@ -76,8 +76,6 @@ export default async function PaymentsSettingsPage({
       ? await payLaterStatusFor(office.company.id)
       : null,
   );
-  // One filled button per page: while Stripe setup is pending, that is the main action.
-  const setupPending = paymentsConfigured() && !account?.charges_enabled && office.isOwner;
 
   return (
     <>
@@ -200,7 +198,7 @@ export default async function PaymentsSettingsPage({
         </SettingsSection>
 
         <SettingsSection title="Deposits, tax, and discounts">
-          <SettingsForm action={savePayments} primary={!setupPending} full>
+          <SettingsForm action={savePayments} full>
             <SettingsFields labelWidth="10rem" className="sm:grid sm:grid-cols-2 sm:gap-4">
               <SSelect
                 label="Deposit on accepted quotes"

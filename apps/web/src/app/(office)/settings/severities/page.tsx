@@ -65,7 +65,7 @@ export default async function SeveritiesPage() {
       add={{
         label: "Add Severity",
         form: (
-          <SettingsForm action={saveSeverity} submit="Add Severity" primary full>
+          <SettingsForm action={saveSeverity} submit="Add Severity" full>
             <SeverityFields />
           </SettingsForm>
         ),
@@ -96,7 +96,7 @@ export default async function SeveritiesPage() {
               </>
             }
           >
-            <SettingsForm action={saveSeverity} primary full>
+            <SettingsForm action={saveSeverity} full>
               <input type="hidden" name="id" value={s.id} />
               <SeverityFields s={s} />
             </SettingsForm>

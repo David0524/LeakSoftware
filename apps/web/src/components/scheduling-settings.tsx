@@ -31,7 +31,7 @@ export function SchedulingForm({
 }) {
   const [window, setWindow] = useState(String(defaults.windowMin) as "0" | "60" | "120" | "240");
   return (
-    <SettingsForm action={saveScheduling} primary full>
+    <SettingsForm action={saveScheduling} full>
       <SettingsFields labelWidth="9.5rem" className="sm:grid sm:grid-cols-3 sm:gap-4">
         <SField label="Day starts" name="day_start" type="time" defaultValue={defaults.dayStart} />
         <SField

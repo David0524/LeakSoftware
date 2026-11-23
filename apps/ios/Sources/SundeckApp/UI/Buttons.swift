@@ -6,7 +6,8 @@
     // 8 apart, sized to their label unless full width. Title Case labels that say what happens.
     //
     //   Button("Start Job") { … }.buttonStyle(.primary)
-    //   Button("Save") { … }.buttonStyle(.secondary)
+    //   Button("Save") { … }.buttonStyle(.primary)
+    //   Button("Use Saved Report") { … }.buttonStyle(.secondary)
     //   Button("Delete Test", role: .destructive) { … }.buttonStyle(.danger(fullWidth: true))
     //   Button("Report") { … }.buttonStyle(.quiet)
     //   Button("Download PDF") { … }.buttonStyle(.quiet(size: .small))

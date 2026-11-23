@@ -198,7 +198,6 @@ export function NewJobForm({
       <SettingsForm
         action={createJobAction}
         submit={plan ? "Start Plan" : "Create Job"}
-        primary
         className="max-w-3xl"
       >
         <Section title="Customer">

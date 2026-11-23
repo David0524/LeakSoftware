@@ -509,7 +509,7 @@ function DraftParts({ invoice, customer }: { invoice: JobInvoice; customer?: Cus
         <DraftNote draft={detailsDraft} />
         <Field label="Note to the customer" value={notes} onChangeText={setNotes} multiline />
         <View style={styles.row}>
-          <Button title="Save" kind="secondary" onPress={saveDetails} />
+          <Button title="Save" onPress={saveDetails} />
           {detailsMessage ? (
             <T
               variant="secondary"

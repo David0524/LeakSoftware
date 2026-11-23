@@ -230,7 +230,14 @@ function TeamPage() {
 
   return (
     <>
-      <SettingsList title="Team" notice={sheet.notice}>
+      {/* One way to invite: the "+" in the navigation bar, as iOS Contacts does (owner,
+          2026-11-23). */}
+      <SettingsList
+        title="Team"
+        notice={sheet.notice}
+        addLabel="Invite Someone"
+        onAdd={() => setInviting(true)}
+      >
         <Section title="Active">
           <Group separatorInset={space["4"] + 10 + space["3"]}>
             {order.active.map((m) => (
@@ -277,18 +284,19 @@ function TeamPage() {
                 : "Open invites show when there’s a signal."
           }
         >
-          <Group>
-            {(invites ?? []).map((i) => (
-              <ListRow
-                key={i.id}
-                title={i.email}
-                detail={roleLabel(i.role)}
-                accessibilityHint="Share the link or revoke the invite"
-                onPress={() => inviteActions(i)}
-              />
-            ))}
-            <ListRow title="+ Invite Someone" tone="link" onPress={() => setInviting(true)} />
-          </Group>
+          {invites?.length ? (
+            <Group>
+              {invites.map((i) => (
+                <ListRow
+                  key={i.id}
+                  title={i.email}
+                  detail={roleLabel(i.role)}
+                  accessibilityHint="Share the link or revoke the invite"
+                  onPress={() => inviteActions(i)}
+                />
+              ))}
+            </Group>
+          ) : null}
         </Section>
 
         <Section title="Without the app" footer="Only owners and admins see these.">

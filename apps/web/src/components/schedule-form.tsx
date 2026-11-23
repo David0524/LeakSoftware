@@ -211,7 +211,7 @@ function ScheduleForm({
         </div>
         {state.error ? <Notice tone="error">{state.error}</Notice> : null}
         <div className="flex items-center gap-3">
-          <Button type="submit" kind="secondary" disabled={pending}>
+          <Button type="submit" disabled={pending}>
             {pending ? "Saving…" : "Save Schedule"}
           </Button>
           <span role="status" className="text-[0.9375rem] text-status-pass">
