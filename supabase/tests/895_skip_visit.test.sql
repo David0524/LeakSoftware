@@ -47,12 +47,12 @@ select tests.authenticate_as((select tech_a from ids));
 select throws_ok(format($$ update job set status = 'skipped' where id = %L $$, (select visit from ids)),
   '23514', null, 'a skip needs a reason');
 select is(tests.rows_affected(format($$ update job set status = 'skipped', skip_reason = 'Dog in Yard',
-  skip_note = 'Two big dogs loose', skipped_at = '2026-11-16 15:05:00+00' where id = %L $$,
+  skip_note = 'Two big dogs loose', skipped_at = now() - interval '1 hour' where id = %L $$,
   (select visit from ids))), 1::bigint, 'the tech skips the visit');
 select is((select skipped_by from job where id = (select visit from ids)), (select tech_a from ids),
   'the server records who');
 select is((select skipped_at from job where id = (select visit from ids)),
-  '2026-11-16 15:05:00+00'::timestamptz, 'and keeps the phone''s time');
+  now() - interval '1 hour', 'and keeps the phone''s time');
 select is((select stop_done_at from job where id = (select visit from ids)), null,
   'a skipped stop is not "done" for the owner''s Last done');
 
@@ -60,7 +60,7 @@ select is((select stop_done_at from job where id = (select visit from ids)), nul
 update job set skipped_at = now(), skip_note = 'Two big dogs, loose in the yard'
   where id = (select visit from ids);
 select is((select skipped_at from job where id = (select visit from ids)),
-  '2026-11-16 15:05:00+00'::timestamptz, 'the skip time stays once skipped');
+  now() - interval '1 hour', 'the skip time stays once skipped');
 select throws_ok(format($$ update job set skipped_by = %L where id = %L $$, (select owner_a from ids),
   (select visit from ids)), '42501', null, 'skipped_by is the server''s');
 select throws_ok(format($$ update job set skip_handled_at = now() where id = %L $$,
