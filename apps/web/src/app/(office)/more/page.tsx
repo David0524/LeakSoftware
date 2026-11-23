@@ -20,6 +20,8 @@ import { Dot } from "@/components/nav-links";
 import { createClient } from "@/lib/supabase/server";
 import { CONTACT_EMAIL, CONTACT_PHONE, CONTACT_PHONE_URL } from "@/lib/site";
 import { memberStartOf } from "@/server/member-start";
+import { referralOfferFor } from "@/server/referral";
+import { ReferralOfferCard } from "@/components/referral-offer";
 
 export const metadata: Metadata = { title: "More · Sundeck Pro" };
 
@@ -30,7 +32,7 @@ export const metadata: Metadata = { title: "More · Sundeck Pro" };
 export default async function MorePage() {
   const office = await getOffice();
   const db = await createClient();
-  const [company, dot, { data: profile }, start] = await Promise.all([
+  const [company, dot, { data: profile }, start, referral] = await Promise.all([
     getCompany(office),
     activityUnread(office),
     db
@@ -39,6 +41,8 @@ export default async function MorePage() {
       .eq("id", office.user.id)
       .maybeSingle(),
     memberStartOf(db, office.company.id, office.user.id),
+    // Give a Month, Get a Month (owners; null for anyone else or on any failure).
+    referralOfferFor(office, db),
   ]);
   const rest = phoneNav(
     officeLinks(office.isManager, company.settings, 0, dot, office.canContact),
@@ -50,6 +54,9 @@ export default async function MorePage() {
     <>
       <PageHeader title="More" subtitle={office.user.name ?? office.user.email} />
       <div className="max-w-xl space-y-6">
+        {/* Near the top and in the brand's orange, unlike every other row here (owner,
+            2026-11-23: "Referral links should be more visible"). */}
+        {referral ? <ReferralOfferCard offer={referral} /> : null}
         <Grouped>
           {rest.map((l) => (
             <Row

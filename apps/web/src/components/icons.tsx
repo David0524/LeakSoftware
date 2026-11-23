@@ -244,3 +244,19 @@ export const ThumbsDownIcon = ({ className }: { className?: string }) => (
     <path d="M17 2h2.7A2.3 2.3 0 0 1 22 4v7a2.3 2.3 0 0 1-2.3 2H17" />
   </Icon>
 );
+
+/** A wrapped present (gift): Give a Month, Get a Month. */
+export const GiftIcon = ({ className }: { className?: string }) => (
+  <Icon className={className}>
+    <rect x="3.5" y="8" width="17" height="4" rx="1" />
+    <path d="M5 12v7.5a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V12M12 8v12.5" />
+    <path d="M12 8C10.5 5 7 4.2 7 6.3 7 7.5 8.6 8 12 8zm0 0c1.5-3 5-3.8 5-1.7C17 7.5 15.4 8 12 8z" />
+  </Icon>
+);
+
+/** Share (square.and.arrow.up). */
+export const ShareIcon = ({ className }: { className?: string }) => (
+  <Icon className={className}>
+    <path d="M12 3.5V14M8 7.5l4-4 4 4M8.5 10H7a2 2 0 0 0-2 2v6.5a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V12a2 2 0 0 0-2-2h-1.5" />
+  </Icon>
+);
