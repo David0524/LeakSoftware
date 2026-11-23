@@ -60,7 +60,7 @@ import {
 } from "../../../../../../data/inspection";
 import { useConversations, useLine } from "../../../../../../data/texting";
 import { openDirections, useDirectionsChoice } from "../../../../../../state/directions";
-import { useCompany, useSession } from "../../../../../../state/session";
+import { useCanContact, useCompany, useSession } from "../../../../../../state/session";
 import {
   HeaderButton,
   Button,
@@ -803,6 +803,7 @@ function Details({
     return p?.full_name ?? p?.email ?? "Teammate";
   };
   const texting = line?.status === "active";
+  const canContact = useCanContact();
   const phone = customer?.phone ? toE164(customer.phone) : null;
   const conversation = phone ? conversations.find((c) => c.phone === phone) : undefined;
   const address = property ? formatAddress(property) : "";
@@ -882,7 +883,8 @@ function Details({
           <ListRow>
             <T variant="bodyEmphasis">{customer?.name ?? "No customer"}</T>
           </ListRow>
-          {customer?.phone || customer?.email ? (
+          {/* Only with Text and Call Customers (owner, 2026-11-23). */}
+          {canContact && (customer?.phone || customer?.email) ? (
             <ListRow
               trailing={
                 <View style={styles.contact}>

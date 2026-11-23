@@ -19,6 +19,8 @@ import {
   type Customer,
   type Job,
   friendlyError,
+  ON_FILE_NOTE,
+  ON_FILE_SENT,
 } from "@leakbook/core";
 import {
   createJobInvoice,
@@ -29,7 +31,7 @@ import {
 import { reportsOnline } from "../../data/reports";
 import { API_URL } from "../../lib/config";
 import { getServices } from "../../lib/services";
-import { useCompany, useSession } from "../../state/session";
+import { useCanContact, useCompany, useSession } from "../../state/session";
 import { Button, Card, Empty, Field, Notice, T, Toggle } from "../../ui/components";
 import { confirmDestructive } from "../../ui/confirm";
 import { parseLineQuantity } from "../../lib/lineQuantity";
@@ -338,6 +340,8 @@ function DraftParts({ invoice, customer }: { invoice: JobInvoice; customer?: Cus
   const [detailsMessage, setDetailsMessage] = useState<Message>(null);
   const [to, setTo] = useState<string | null>(null);
   const email = (to ?? customer?.email ?? "").trim();
+  const canContact = useCanContact();
+  const emailOk = !canContact || /^\S+@\S+\.\S+$/.test(email);
   const [busy, setBusy] = useState<"email" | "link" | null>(null);
   const [sendMessage, setSendMessage] = useState<Message>(null);
   // The typed text is kept as drafts until the line is added or the details saved (owner,
@@ -420,8 +424,7 @@ function DraftParts({ invoice, customer }: { invoice: JobInvoice; customer?: Cus
     setBusy(channel);
     setSendMessage(null);
     try {
-      if (channel === "email" && !/^\S+@\S+\.\S+$/.test(email))
-        throw new Error("Enter the customer’s email.");
+      if (channel === "email" && !emailOk) throw new Error("Enter the customer’s email.");
       const r = await sendJobInvoice(
         invoice.id,
         channel === "email" ? "email" : "sms_device",
@@ -433,7 +436,8 @@ function DraftParts({ invoice, customer }: { invoice: JobInvoice; customer?: Cus
           tone: "success",
           text: "Invoice sent. Share the link with the customer.",
         });
-      } else setSendMessage({ tone: "success", text: `Sent to ${email}.` });
+      } else
+        setSendMessage({ tone: "success", text: canContact ? `Sent to ${email}.` : ON_FILE_SENT });
     } catch (e) {
       setSendMessage({ tone: "error", text: friendlyError(e) });
     } finally {
@@ -519,18 +523,25 @@ function DraftParts({ invoice, customer }: { invoice: JobInvoice; customer?: Cus
 
       <View style={styles.stack}>
         <T variant="subHeading">Send</T>
-        <Field
-          label="Customer email"
-          value={to ?? customer?.email ?? ""}
-          onChangeText={setTo}
-          keyboardType="email-address"
-          autoCapitalize="none"
-          autoCorrect={false}
-          spellCheck={false}
-          autoComplete="off"
-          textContentType="none"
-          hint="Their other emails get it too."
-        />
+        {/* Without Text and Call Customers: the email on file (owner, 2026-11-23). */}
+        {canContact ? (
+          <Field
+            label="Customer email"
+            value={to ?? customer?.email ?? ""}
+            onChangeText={setTo}
+            keyboardType="email-address"
+            autoCapitalize="none"
+            autoCorrect={false}
+            spellCheck={false}
+            autoComplete="off"
+            textContentType="none"
+            hint="Their other emails get it too."
+          />
+        ) : (
+          <T variant="secondary" muted>
+            {ON_FILE_NOTE}
+          </T>
+        )}
         <View style={styles.row}>
           <Button
             title={busy === "email" ? "Sending…" : "Send by Email"}

@@ -4,7 +4,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useActivityUnread } from "../data/activity";
 import { useSyncStatus } from "../data/hooks";
 import { useConversations } from "../data/texting";
-import { useCompany } from "../state/session";
+import { useCanContact, useCompany } from "../state/session";
 import { Glass } from "./Glass";
 import { haptics } from "./haptics";
 import { color, face, shape, type } from "./theme";
@@ -24,7 +24,8 @@ export const TABS: { name: string; label: string; icon: WebIconName }[] = [
  * glass capsule 12 in from the sides, five items of an icon over a label, the selected one
  * filled in the link color. Messages carries the unread count; More a red dot when changes
  * couldn't be saved, else a blue one when there's new Activity (owner, 2026-10-20). Tapping the current tab pops its stack to the root, then scrolls to the
- * top (the stack and the screen's scroll view listen for the press).
+ * top (the stack and the screen's scroll view listen for the press). A tech without Text and
+ * Call Customers has no Messages tab (owner, 2026-11-23).
  */
 export function TabBar({ state, navigation }: BottomTabBarProps) {
   const insets = useSafeAreaInsets();
@@ -32,6 +33,8 @@ export function TabBar({ state, navigation }: BottomTabBarProps) {
   const unread = useConversations(company.id).filter((c) => c.unread).length;
   const problems = useSyncStatus().problems.length;
   const activity = useActivityUnread(company.id);
+  // No Messages for a tech without Text and Call Customers (owner, 2026-11-23).
+  const canContact = useCanContact();
   return (
     // The full-width layer catches taps beside the bar so they never reach the page under it.
     <View
@@ -42,7 +45,7 @@ export function TabBar({ state, navigation }: BottomTabBarProps) {
         <View style={styles.items} accessibilityRole="tablist">
           {state.routes.map((route, index) => {
             const tab = TABS.find((t) => t.name === route.name);
-            if (!tab) return null;
+            if (!tab || (tab.name === "(messages)" && !canContact)) return null;
             const focused = state.index === index;
             const badge = tab.name === "(messages)" && unread > 0 ? unread : null;
             const dot = tab.name === "(more)" && problems > 0;

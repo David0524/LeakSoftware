@@ -1,5 +1,6 @@
 import { useMemo, useState, useSyncExternalStore } from "react";
 import type { Row } from "@leakbook/sync";
+import { maskedTable, maskRow, useContactMaskVersion } from "../lib/contactMask";
 import { getServices } from "../lib/services";
 import type { SyncStatus } from "../lib/sync-service";
 
@@ -21,10 +22,15 @@ function useTableVersion(table: string): string {
 /** Non-deleted rows of a table, optionally for one company. */
 export function useRows<T>(table: string, companyId?: string): T[] {
   const version = useTableVersion(table);
+  // Customers' numbers and emails, for someone without Text and Call Customers (contactMask).
+  const mask = useContactMaskVersion();
   return useMemo(
-    () => getServices().sync.list(table, companyId) as unknown as T[],
+    () => {
+      const rows = getServices().sync.list(table, companyId);
+      return (maskedTable(table) ? rows.map((r) => maskRow(table, r)) : rows) as unknown as T[];
+    },
     // eslint-disable-next-line react-hooks/exhaustive-deps -- version signals data changes
-    [table, companyId, version],
+    [table, companyId, version, mask],
   );
 }
 
@@ -53,10 +59,14 @@ export function useJobRowsWithRemoved<T>(table: string, companyId: string, jobId
 
 export function useRow<T>(table: string, id: string | undefined): T | undefined {
   const version = useTableVersion(table);
+  const mask = useContactMaskVersion();
   return useMemo(
-    () => (id ? (getServices().sync.get<Row>(table, id) as unknown as T | undefined) : undefined),
+    () =>
+      id
+        ? (maskRow(table, getServices().sync.get<Row>(table, id)) as unknown as T | undefined)
+        : undefined,
     // eslint-disable-next-line react-hooks/exhaustive-deps -- version signals data changes
-    [table, id, version],
+    [table, id, version, mask],
   );
 }
 

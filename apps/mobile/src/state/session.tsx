@@ -10,6 +10,7 @@ import {
 import { AppState } from "react-native";
 import type { Session, User } from "@supabase/supabase-js";
 import {
+  canContactCustomers,
   friendlyError,
   heardFromOther,
   parseHeardFrom,
@@ -29,6 +30,7 @@ import {
 import { unregisterPush } from "../lib/push";
 import { checkSetup, readSetupNeeded, type SetupCheck } from "../lib/setupGate";
 import { getServices, type Services } from "../lib/services";
+import { setNoContactCompanies } from "../lib/contactMask";
 import { useRows, useSyncStatus } from "../data/hooks";
 import { signUpOnServer } from "../data/sign-up";
 
@@ -163,6 +165,12 @@ export function SessionProvider({ children }: { children: ReactNode }) {
   const companies = allCompanies.filter((c) => memberships.some((m) => m.company_id === c.id));
   const company = companies.find((c) => c.id === activeId) ?? companies[0] ?? null;
   const membership = memberships.find((m) => m.company_id === company?.id) ?? null;
+  // Customers' numbers and emails stay hidden where this person may not contact customers.
+  const noContact = memberships
+    .filter((m) => !canContactCustomers(m.role, m.can_contact_customers))
+    .map((m) => m.company_id)
+    .join(",");
+  useEffect(() => setNoContactCompanies(noContact ? noContact.split(",") : []), [noContact]);
 
   // Finish Setting Up Your Account (owner, 2026-10-24): checked when the shop's row is here,
   // and each time the app comes back to the front. Offline, the last answer stands.
@@ -301,6 +309,15 @@ export function useCompany(): Company {
   const { company } = useSession();
   if (!company) throw new Error("No active company");
   return company;
+}
+
+/**
+ * Text and Call Customers (owner, 2026-11-23; core contact.ts): Messages, and the call, text
+ * and email buttons for customers. Owners and admins always; techs unless it's turned off.
+ */
+export function useCanContact(): boolean {
+  const { membership } = useSession();
+  return canContactCustomers(membership?.role, membership?.can_contact_customers);
 }
 
 export { useSyncStatus };

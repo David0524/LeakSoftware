@@ -60,7 +60,7 @@ import { PlanRepeat } from "../../../../../features/maintenance/PlanRepeat";
 import { ChipToggles } from "../../../../../features/inspection/ChoicePills";
 import { Select } from "../../../../../ui/Select";
 import { AddRepairButton, RepairFields, repairItemsOf } from "../../../../../features/job/Repairs";
-import { useCompany, useSession } from "../../../../../state/session";
+import { useCanContact, useCompany, useSession } from "../../../../../state/session";
 import {
   Button,
   Card,
@@ -105,6 +105,7 @@ export default function NewJob() {
 function NewJobForm() {
   const company = useCompany();
   const { services, user, membership } = useSession();
+  const canContact = useCanContact();
   const seesAll = seesAllJobs(membership?.role, company.settings);
   const customers = useRows<Customer>("customer", company.id);
   const properties = useRows<Property>("property", company.id);
@@ -627,9 +628,12 @@ function NewJobForm() {
                     }}
                   >
                     <T variant="strong">{c.name}</T>
-                    <T variant="muted">
-                      {[c.phone, c.email].filter(Boolean).join(" · ") || "No contact details"}
-                    </T>
+                    {/* Numbers and emails only with Text and Call Customers (2026-11-23). */}
+                    {canContact ? (
+                      <T variant="muted">
+                        {[c.phone, c.email].filter(Boolean).join(" · ") || "No contact details"}
+                      </T>
+                    ) : null}
                   </ListRow>
                 ))}
               </Group>

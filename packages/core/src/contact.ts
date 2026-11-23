@@ -35,6 +35,9 @@ export const NO_CONTACT_MESSAGE =
  */
 export const ON_FILE_NOTE = "Goes to the customer’s email on file.";
 
+/** After such a send. */
+export const ON_FILE_SENT = "Sent to the customer’s email on file.";
+
 /** Whether this person may text, call, and email customers, and see Messages. */
 export function canContactCustomers(
   role: string | null | undefined,

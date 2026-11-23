@@ -1,4 +1,5 @@
 import { router, useLocalSearchParams } from "expo-router";
+import { ContactOnly } from "../../../../../features/messages/ContactOnly";
 import { formatPhone, friendlyError } from "@leakbook/core";
 import { useState } from "react";
 import { Alert } from "react-native";
@@ -16,7 +17,16 @@ import { useDiscardChanges } from "../../../../../ui/discard";
  * their page or a job) or to a number typed in. Sending opens the new conversation in its
  * place.
  */
+// Only with Text and Call Customers (owner, 2026-11-23).
 export default function NewMessage() {
+  return (
+    <ContactOnly>
+      <NewMessageScreen />
+    </ContactOnly>
+  );
+}
+
+function NewMessageScreen() {
   const params = useLocalSearchParams<{
     customer?: string;
     job?: string;
