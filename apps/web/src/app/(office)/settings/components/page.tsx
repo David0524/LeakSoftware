@@ -294,7 +294,7 @@ export default async function ComponentsPage({ searchParams }: PageProps<"/setti
         // "It's in a hard to find spot").
         inList: true,
         form: (
-          <SettingsForm action={saveComponentType} submit="Add Component" primary full>
+          <SettingsForm action={saveComponentType} submit="Add Component" full>
             <TypeFields kind={kind} />
           </SettingsForm>
         ),
@@ -344,7 +344,7 @@ export default async function ComponentsPage({ searchParams }: PageProps<"/setti
               }
               value={t.active ? undefined : "Off"}
             >
-              <SettingsForm action={saveComponentType} primary full>
+              <SettingsForm action={saveComponentType} full>
                 <input type="hidden" name="id" value={t.id} />
                 <TypeFields t={t} kind={kind} />
               </SettingsForm>

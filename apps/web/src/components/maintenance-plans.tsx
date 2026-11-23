@@ -121,6 +121,7 @@ export function MaintenancePlans(p: Props) {
                   <SettingsForm
                     action={setPlanPaused}
                     submit={plan.paused ? "Resume" : "Pause"}
+                    secondary
                     inline
                     className="flex"
                   >
@@ -176,7 +177,6 @@ function PlanForm({
     <SettingsForm
       action={savePlan}
       submit={plan ? "Save Plan" : "Add Plan"}
-      primary
       full
       className="space-y-3"
     >

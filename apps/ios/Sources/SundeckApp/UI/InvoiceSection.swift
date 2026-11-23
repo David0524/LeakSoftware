@@ -274,7 +274,7 @@
                         }
                         if savedDetails { detailsKept.clear() }
                     }
-                    .buttonStyle(.secondary)
+                    .buttonStyle(.primary)
                     if savedDetails { Text("Saved.").textRole(.secondary).foregroundStyle(Color.pass) }
                 }
             }

@@ -49,7 +49,7 @@ export function PoolDetailsForm({ pool: p }: { pool: Property }) {
   ];
   return (
     <Draft form="pool-details" id={p.id}>
-      <SettingsForm action={savePool} primary full>
+      <SettingsForm action={savePool} full>
         <input type="hidden" name="property" value={p.id} />
         <SettingsFields labelWidth="6.5rem">
           <AddressField
@@ -143,7 +143,7 @@ export function PoolDetailsForm({ pool: p }: { pool: Property }) {
 export function AccessNotesForm({ pool: p }: { pool: Pick<Property, "id" | "access_notes"> }) {
   return (
     <Draft form="access-notes" id={p.id}>
-      <SettingsForm action={saveAccessNotes} primary full>
+      <SettingsForm action={saveAccessNotes} full>
         <input type="hidden" name="property" value={p.id} />
         <SettingsFields labelWidth="6.5rem">
           <STextArea

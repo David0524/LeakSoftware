@@ -18,7 +18,7 @@ export default async function SkipReasonsPage() {
       add={{
         label: "Add Reason",
         form: (
-          <SettingsForm action={saveSkipReason} submit="Add Reason" primary full>
+          <SettingsForm action={saveSkipReason} submit="Add Reason" full>
             <SettingsFields labelWidth="7rem">
               <SField
                 label="New reason"
@@ -47,7 +47,7 @@ export default async function SkipReasonsPage() {
             label={r.label}
             value={r.active ? undefined : "Off"}
           >
-            <SettingsForm action={saveSkipReason} primary full>
+            <SettingsForm action={saveSkipReason} full>
               <input type="hidden" name="id" value={r.id} />
               <SettingsFields
                 labelWidth="5rem"

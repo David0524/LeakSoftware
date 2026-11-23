@@ -73,7 +73,7 @@ export function SettingsForm({
   children,
   className,
   danger = false,
-  primary = false,
+  secondary = false,
   confirm,
   inline = false,
   full = false,
@@ -86,8 +86,12 @@ export function SettingsForm({
   children?: ReactNode;
   className?: string;
   danger?: boolean;
-  /** The page's main form. One filled (primary) button per page (house rule). */
-  primary?: boolean;
+  /**
+   * A lesser action set beside another (Pause beside End Plan, a row's Remove): a tinted
+   * button. Every other submit, Save above all, is filled blue with white text (house rule;
+   * owner, 2026-11-23: a pale Save looked turned off).
+   */
+  secondary?: boolean;
   /** Ask before submitting, e.g. "Remove this item?". */
   confirm?: string;
   inline?: boolean;
@@ -144,7 +148,7 @@ export function SettingsForm({
   const button = (
     <Button
       type="submit"
-      kind={danger ? "danger" : primary ? "primary" : "secondary"}
+      kind={danger ? "danger" : secondary ? "secondary" : "primary"}
       disabled={pending}
       className={full || pinned ? "w-full" : undefined}
       onClick={(e) => {

@@ -164,7 +164,7 @@ export function ShopNoteForm({ companyId }: { companyId: string }) {
       <input type="hidden" name="company_id" value={companyId} />
       <TextArea label="New Note" name="note" maxLength={4000} required />
       <Result state={state} />
-      <Button type="submit" kind="secondary" disabled={pending}>
+      <Button type="submit" disabled={pending}>
         {pending ? "Saving…" : "Save Note"}
       </Button>
     </form>

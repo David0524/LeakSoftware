@@ -340,7 +340,7 @@ function CleaningDefaults({ types, onSaved }: { types: ComponentType[]; onSaved:
           New plans use these. To change a plan that’s already running, open it on the customer’s
           page.
         </T>
-        <Button title="Save" kind="secondary" onPress={save} />
+        <Button title="Save" onPress={save} />
       </View>
     </Section>
   );

@@ -98,7 +98,7 @@ export default async function PhoneSettingsPage() {
 
         {line ? (
           <SettingsSection title="Texts and calls">
-            <SettingsForm action={saveLine} primary>
+            <SettingsForm action={saveLine}>
               <SettingsFields labelWidth="8rem">
                 <SSwitch label="Photos in texts" name="pictures" defaultChecked={line.pictures} />
                 <STextArea

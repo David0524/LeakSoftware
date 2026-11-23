@@ -425,7 +425,8 @@
                     saveNotes()
                     saves += 1
                 }
-                .buttonStyle(.secondary)
+                // Every Save is filled (owner, 2026-11-23: a pale Save looked turned off).
+                .buttonStyle(.primary)
             }
         }
 

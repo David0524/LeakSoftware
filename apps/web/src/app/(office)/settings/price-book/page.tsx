@@ -163,7 +163,7 @@ export default async function PriceBookPage() {
           </span>
         }
       >
-        <SettingsForm action={savePriceItem} submit="Save Item" primary full>
+        <SettingsForm action={savePriceItem} submit="Save Item" full>
           <input type="hidden" name="id" value={item.id} />
           <ItemFields item={item} types={types} categories={categories} />
         </SettingsForm>
@@ -189,7 +189,7 @@ export default async function PriceBookPage() {
       add={{
         label: "Add Item",
         form: (
-          <SettingsForm action={savePriceItem} submit="Add Item" primary full>
+          <SettingsForm action={savePriceItem} submit="Add Item" full>
             <ItemFields types={types} categories={categories} />
           </SettingsForm>
         ),

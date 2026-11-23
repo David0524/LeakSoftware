@@ -36,6 +36,7 @@ export function NumberPicker() {
               <SettingsForm
                 action={takeNumber}
                 submit="Use This Number"
+                secondary
                 inline
                 className="flex flex-wrap items-center justify-between gap-3"
               >

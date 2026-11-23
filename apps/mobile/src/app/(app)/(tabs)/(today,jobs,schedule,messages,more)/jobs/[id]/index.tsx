@@ -1167,7 +1167,6 @@ function Details({
       <View style={styles.saveRow}>
         <Button
           title="Save"
-          kind="secondary"
           onPress={() => {
             saveFee();
             saveGallons();

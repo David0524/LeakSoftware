@@ -97,7 +97,7 @@ export default async function TestTypesPage() {
       add={{
         label: "Add Test Type",
         form: (
-          <SettingsForm action={saveTestType} submit="Add Test Type" primary full>
+          <SettingsForm action={saveTestType} submit="Add Test Type" full>
             <SettingsFields labelWidth="5rem" className="sm:grid sm:grid-cols-[1fr_120px] sm:gap-4">
               <NameFields p="new" placeholder="Thermal camera scan" />
             </SettingsFields>
@@ -134,7 +134,7 @@ export default async function TestTypesPage() {
             detail={t.calculator ? "Calculates the result" : undefined}
             value={t.active ? undefined : "Off"}
           >
-            <SettingsForm action={saveTestType} primary full>
+            <SettingsForm action={saveTestType} full>
               <input type="hidden" name="id" value={t.id} />
               <SettingsFields
                 labelWidth="5rem"

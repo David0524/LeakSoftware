@@ -18,7 +18,7 @@ export default async function ExclusionsPage() {
       add={{
         label: "Add Reason",
         form: (
-          <SettingsForm action={saveExclusionReason} submit="Add Reason" primary full>
+          <SettingsForm action={saveExclusionReason} submit="Add Reason" full>
             <SettingsFields labelWidth="7rem">
               <SField
                 label="New reason"
@@ -47,7 +47,7 @@ export default async function ExclusionsPage() {
             label={r.label}
             value={r.active ? undefined : "Off"}
           >
-            <SettingsForm action={saveExclusionReason} primary full>
+            <SettingsForm action={saveExclusionReason} full>
               <input type="hidden" name="id" value={r.id} />
               <SettingsFields
                 labelWidth="5rem"

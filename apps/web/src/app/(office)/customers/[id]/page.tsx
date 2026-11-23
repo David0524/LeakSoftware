@@ -204,7 +204,7 @@ export default async function CustomerPage({ params }: PageProps<"/customers/[id
               label={<span className="text-link">Edit Contact Details</span>}
             >
               <Draft form="customer" id={customer.id}>
-                <SettingsForm action={saveCustomer} primary full>
+                <SettingsForm action={saveCustomer} full>
                   <input type="hidden" name="customer" value={customer.id} />
                   <SettingsFields labelWidth="6.5rem">
                     <SField label="Name" name="name" defaultValue={customer.name} required />

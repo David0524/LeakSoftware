@@ -4,6 +4,7 @@ import {
   createContext,
   use,
   useCallback,
+  useId,
   useOptimistic,
   useState,
   useTransition,
@@ -88,11 +89,15 @@ export function SettingsListPage({
   );
 }
 
-/** The add row at the end of a grouped list ("Invite Someone"), as iOS Settings draws it. */
+/**
+ * The add row at the end of a grouped list ("Invite Someone"), as iOS Settings draws it. Wider
+ * screens only: phones have the "+" in the navigation bar, which opens the same sheet, and one
+ * way to add is enough (owner, 2026-11-23).
+ */
 export function SettingsAddRow({ label }: { label: string }) {
   const open = use(OpenAdd);
   return (
-    <li>
+    <li className="max-sm:hidden">
       <button
         type="button"
         onClick={open}
@@ -143,7 +148,9 @@ export function SheetNotices({ children }: { children: ReactNode }) {
 /**
  * One row of a settings list: the name (and a line of detail) on the left, a key value on the
  * right, and a chevron. Tapping it opens `children` (the edit form) in a sheet titled `title`.
- * Use inside Grouped. Without children the row only shows (nothing to edit).
+ * Use inside Grouped. Without children the row only shows (nothing to edit). `chevron={false}`:
+ * the accessory (Team's On/Off switch) is the only thing at the row's end, as iOS does (owner,
+ * 2026-11-23); `hint` then tells VoiceOver what tapping the row opens.
  */
 export function SheetRow({
   label,
@@ -153,6 +160,8 @@ export function SheetRow({
   testId,
   accessory,
   under,
+  hint,
+  chevron = true,
   remove,
   children,
 }: {
@@ -166,6 +175,10 @@ export function SheetRow({
    * fills the row behind the label, and this sits above it, so the two never nest.
    */
   under?: ReactNode;
+  /** Whether the row shows a chevron. Off for a row whose accessory is a switch. */
+  chevron?: boolean;
+  /** What tapping the row opens, read after its name ("Opens their profile"). */
+  hint?: string;
   /** The sheet's title, usually the item's name. */
   title: string;
   testId?: string;
@@ -183,6 +196,13 @@ export function SheetRow({
   const [gone, setGone] = useOptimistic(false);
   const [confirm, confirmSheet] = useConfirm();
   const close = useCallback(() => setOpen(false), []);
+  const hintId = useId();
+  const described = hint ? { "aria-describedby": hintId } : {};
+  const hintText = hint ? (
+    <span id={hintId} hidden>
+      {hint}
+    </span>
+  ) : null;
   const done = useCallback(
     (message: string) => {
       setOpen(false);
@@ -266,9 +286,11 @@ export function SheetRow({
           type="button"
           aria-haspopup="dialog"
           aria-label={title}
+          {...described}
           onClick={edit}
           className="absolute inset-0 transition-colors hover:bg-text/[0.03] focus-visible:outline-3 focus-visible:-outline-offset-3 focus-visible:outline-focus active:bg-text/[0.06]"
         />
+        {hintText}
         {/* Taps on the words reach the button behind them; the control above takes its own. */}
         <span className="pointer-events-none relative min-w-0 flex-1 pt-2.5 pl-4">
           <span aria-hidden="true" className="block break-words">
@@ -276,12 +298,14 @@ export function SheetRow({
           </span>
           <span className="pointer-events-auto block">{under}</span>
         </span>
-        <span
-          aria-hidden="true"
-          className="pointer-events-none relative shrink-0 text-xl leading-none text-text-muted/70"
-        >
-          ›
-        </span>
+        {chevron ? (
+          <span
+            aria-hidden="true"
+            className="pointer-events-none relative shrink-0 text-xl leading-none text-text-muted/70"
+          >
+            ›
+          </span>
+        ) : null}
         {accessory ? <span className="relative">{accessory}</span> : null}
         <Sheet open={open} onClose={close} title={title}>
           <SheetDone value={done}>{children}</SheetDone>
@@ -295,14 +319,18 @@ export function SheetRow({
           <button
             type="button"
             aria-haspopup="dialog"
+            {...described}
             onClick={edit}
             className={`${row} ${accessory ? "min-w-0 flex-1" : ""} transition-colors hover:bg-text/[0.03] focus-visible:outline-3 focus-visible:-outline-offset-3 focus-visible:outline-focus active:bg-text/[0.06]`}
           >
             {inner}
-            <span aria-hidden="true" className="shrink-0 text-xl leading-none text-text-muted/70">
-              ›
-            </span>
+            {chevron ? (
+              <span aria-hidden="true" className="shrink-0 text-xl leading-none text-text-muted/70">
+                ›
+              </span>
+            ) : null}
           </button>
+          {hintText}
           {accessory}
           <Sheet open={open} onClose={close} title={title}>
             <SheetDone value={done}>{children}</SheetDone>

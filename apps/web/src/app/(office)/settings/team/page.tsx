@@ -79,7 +79,7 @@ function ProfileFields({
 }) {
   const p = profile?.id ?? user ?? "new";
   return (
-    <SettingsForm action={saveTeamProfile} primary full submit={profile ? "Save" : "Save Profile"}>
+    <SettingsForm action={saveTeamProfile} full submit={profile ? "Save" : "Save Profile"}>
       {profile ? <input type="hidden" name="id" value={profile.id} /> : null}
       {!profile && user ? <input type="hidden" name="user" value={user} /> : null}
       <SettingsFields labelWidth="5.5rem">
@@ -196,6 +196,9 @@ export default async function TeamSettingsPage() {
         key={m.membership_id}
         testId="member"
         title={name}
+        // One control at the row's end: the switch (owner, 2026-11-23). The row opens the profile.
+        chevron={false}
+        hint="Opens their profile"
         label={
           <span className="flex items-center gap-2.5">
             <TechDot color={m.color} />
@@ -292,7 +295,7 @@ export default async function TeamSettingsPage() {
         // Under the open invites, where the new one appears (owner, 2026-10-16).
         inList: true,
         form: (
-          <SettingsForm action={inviteMember} submit="Create Invite" primary full>
+          <SettingsForm action={inviteMember} submit="Create Invite" full>
             <SettingsFields labelWidth="4.5rem">
               <SField label="Email" name="email" type="email" autoComplete="off" required />
             </SettingsFields>

@@ -266,6 +266,7 @@ function CustomerSheet({
               <SettingsForm
                 action={removeMonthLine}
                 submit="Remove"
+                secondary
                 inline
                 confirm={`Remove “${l.description}”?`}
               >

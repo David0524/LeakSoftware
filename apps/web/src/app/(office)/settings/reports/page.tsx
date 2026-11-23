@@ -105,7 +105,7 @@ export default async function ReportTemplatesPage() {
               inList: true,
               form: (
                 <Draft form="saved-report">
-                  <SettingsForm action={saveSavedReport} submit="Add Saved Report" primary full>
+                  <SettingsForm action={saveSavedReport} submit="Add Saved Report" full>
                     <SavedReportFields />
                   </SettingsForm>
                 </Draft>
@@ -124,7 +124,7 @@ export default async function ReportTemplatesPage() {
               detail={ABOUT}
               value={t.enabled ? "On" : "Off"}
             >
-              <SettingsForm action={saveReportTemplate} primary full>
+              <SettingsForm action={saveReportTemplate} full>
                 <input type="hidden" name="id" value={t.id} />
                 <SettingsFields labelWidth="5rem">
                   <SField
@@ -184,7 +184,7 @@ export default async function ReportTemplatesPage() {
                 .join(", ")}
             >
               <Draft form="saved-report" id={r.id}>
-                <SettingsForm action={saveSavedReport} primary full>
+                <SettingsForm action={saveSavedReport} full>
                   <input type="hidden" name="id" value={r.id} />
                   <SavedReportFields saved={r} />
                 </SettingsForm>
