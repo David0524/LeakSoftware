@@ -104,8 +104,8 @@ const lit = (s) => (s == null ? "null" : `'${String(s).replaceAll("'", "''")}'`)
  * "City Center 5es", "Hall, Grace 884", "Swift Quote 65810D"), or a fixture's name.
  * Seeded demo customers (fixed ids) and anything else someone typed are kept.
  */
-/** Team members the website's tests make (turned off at the end of each run). */
-export const TEST_PERSON = String.raw`^E2E (Tech|Admin)( |$)`;
+/** Team members the website's tests make and turn off (office.spec, launch.spec). */
+export const TEST_PERSON = String.raw`^(E2E (Tech|Admin)( |$)|Leaving Tech$)`;
 export const TEST_NAME = String.raw`(\s(mv[a-z0-9]{8,}|[a-z0-9]{3}|[0-9A-F]{6})$)|^(E2E|EDGE|Hosted media test|Swift media test|Apple Map|Plan Week|Routes |Reorder |Visibility Check)`;
 const SEEDED_ID = "00000000-0000-4000-8000-%";
 
@@ -1045,7 +1045,9 @@ console.log(
 console.log(
   `  ${counts.test_customers} of ${counts.customers} customers, made by test runs, and their pools`,
 );
-console.log(`  ${counts.test_people} turned-off test people on the team (E2E Tech, E2E Admin)`);
+console.log(
+  `  ${counts.test_people} turned-off test people on the team (E2E Tech, E2E Admin, Leaving Tech)`,
+);
 if (kept.length) {
   console.log(
     `  kept, typed by someone (not demo data, not a test run's): ${kept.map((k) => k.name).join(", ")}`,
