@@ -41,6 +41,9 @@ const ICONS = {
   hide: { sf: "eye.slash", ion: "eye-off-outline" },
   /** A page's ••• menu (the job page's steps back). */
   more: { sf: "ellipsis.circle", ion: "ellipsis-horizontal-circle-outline" },
+  /** More's Refer a Pool Company row: another shop, and the share sheet it opens. */
+  refer: { sf: "person.2.fill", ion: "people" },
+  share: { sf: "square.and.arrow.up", ion: "share-outline" },
 } as const satisfies Record<string, { sf: SFSymbolName; ion: IoniconName }>;
 
 export type IconName = keyof typeof ICONS;

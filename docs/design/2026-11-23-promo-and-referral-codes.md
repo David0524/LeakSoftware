@@ -9,7 +9,9 @@ want a referral program where if someone refers another customer, they both get 
 Maybe the companies name actually?"
 
 Website only (desktop and phone sizes). The iPhone and Android apps show no prices or purchases (App
-Store rule 3.1.1, DECISIONS 2026-11-12), so codes aren't in them.
+Store rule 3.1.1, DECISIONS 2026-11-12), so codes aren't in them. The one exception: owners get a
+Refer a Pool Company row on More that shares the sign-up link and never mentions the offer (core
+`refer.ts`; DECISIONS 2026-11-23).
 
 ## One code box
 

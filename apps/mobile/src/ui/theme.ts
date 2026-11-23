@@ -92,6 +92,8 @@ function palette(scheme: Scheme) {
     navy: tokens.color.brand.navy,
     water: tokens.color.brand.water,
     safety: tokens.color.brand.safety,
+    /** Behind white glyphs where orange is wanted (white on safety is too faint). */
+    safetyDeep: tokens.color.brand.safetyDeep,
     paper: tokens.color.brand.paper,
     // Kept for screens not restyled yet; new code uses the roles and tints.
     neutral100: dark ? tint(role.text, 0.08) : tokens.color.neutral["100"],
@@ -102,6 +104,9 @@ function palette(scheme: Scheme) {
     iconTint: tint(role.link, 0.1),
     dangerTint: tint(status.fail, 0.12),
     dangerPressed: tint(status.fail, 0.24),
+    /** More's Refer a Pool Company row: the brand accent, softly (owner, 2026-11-23). */
+    safetyTint: tint(tokens.color.brand.safety, 0.12),
+    safetyPressed: tint(tokens.color.brand.safety, 0.24),
     rowPressed: tint(role.text, 0.06),
     well: tint(role.text, 0.04),
     emptyFill: tint(role.text, 0.04),

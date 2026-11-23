@@ -1,0 +1,115 @@
+{
+  "REFER_COPY": [
+    {
+      "args": [],
+      "result": {
+        "title": "Refer a Pool Company",
+        "subtitle": "Share Sundeck Pro with another pool company.",
+        "hint": "Opens the share sheet."
+      }
+    }
+  ],
+  "referralLink": [
+    {
+      "args": [
+        "https://sundeckpro.com",
+        "BLUEWAVEPOOLS"
+      ],
+      "result": "https://sundeckpro.com/sign-up?code=BLUEWAVEPOOLS"
+    },
+    {
+      "args": [
+        "https://sundeckpro.com/",
+        " bluewave-pools2 "
+      ],
+      "result": "https://sundeckpro.com/sign-up?code=BLUEWAVEPOOLS2"
+    },
+    {
+      "args": [
+        "http://localhost:3000",
+        "Cole's Pool Cleaning"
+      ],
+      "result": "http://localhost:3000/sign-up?code=COLESPOOLCLEANING"
+    },
+    {
+      "args": [
+        "https://sundeckpro.com",
+        ""
+      ],
+      "result": ""
+    },
+    {
+      "args": [
+        "https://sundeckpro.com",
+        null
+      ],
+      "result": ""
+    },
+    {
+      "args": [
+        "",
+        "BLUEWAVEPOOLS"
+      ],
+      "result": ""
+    },
+    {
+      "args": [
+        null,
+        "BLUEWAVEPOOLS"
+      ],
+      "result": ""
+    }
+  ],
+  "referShareMessage": [
+    {
+      "args": [
+        "https://sundeckpro.com/sign-up?code=BLUEWAVEPOOLS"
+      ],
+      "result": "Try Sundeck Pro for your pool business: https://sundeckpro.com/sign-up?code=BLUEWAVEPOOLS"
+    }
+  ],
+  "showsReferRow": [
+    {
+      "args": [
+        "owner",
+        "BLUEWAVEPOOLS"
+      ],
+      "result": true
+    },
+    {
+      "args": [
+        "admin",
+        "BLUEWAVEPOOLS"
+      ],
+      "result": false
+    },
+    {
+      "args": [
+        "tech",
+        "BLUEWAVEPOOLS"
+      ],
+      "result": false
+    },
+    {
+      "args": [
+        "owner",
+        null
+      ],
+      "result": false
+    },
+    {
+      "args": [
+        "owner",
+        " - "
+      ],
+      "result": false
+    },
+    {
+      "args": [
+        null,
+        "BLUEWAVEPOOLS"
+      ],
+      "result": false
+    }
+  ]
+}

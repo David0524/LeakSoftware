@@ -82,10 +82,52 @@
         }
     }
 
+    /// `referral_summary`'s reply (owners only; not a synced row). Only the code is shown in the app.
+    struct ReferralSummary: Decodable {
+        var code: String?
+    }
+
+    /// Refer a Pool Company (owner, 2026-11-23: "in a color that differs from all of the other
+    /// buttons there"): a row on the brand's orange tint with an orange icon, that opens the share
+    /// sheet with the shop's referral link. No money words (App Store rules 3.1.1 and 3.1.3(f);
+    /// SundeckCore Refer.swift).
+    struct ReferRow: View {
+        var message: String
+
+        var body: some View {
+            ShareLink(item: message) {
+                HStack(spacing: 12) {
+                    Image(systemName: "person.2.fill")
+                        .font(.system(size: 15, weight: .semibold))
+                        .foregroundStyle(Color.paper)
+                        .frame(width: 36, height: 36)
+                        .background(Circle().fill(Color.safetyDeep))
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text(ReferCopy.title).font(.role(.bodyMedium)).foregroundStyle(Color.text)
+                        Text(ReferCopy.subtitle).textRole(.secondary).foregroundStyle(Color.textMuted)
+                    }
+                    Spacer(minLength: 8)
+                    Image(systemName: "square.and.arrow.up")
+                        .font(.body.weight(.semibold))
+                        .foregroundStyle(Color.safetyDeep)
+                }
+                .padding(.horizontal, 16)
+                .padding(.vertical, 12)
+                .frame(maxWidth: .infinity, minHeight: 64, alignment: .leading)
+                .contentShape(Rectangle())
+            }
+            .buttonStyle(.row)
+            .accessibilityLabel("\(ReferCopy.title). \(ReferCopy.subtitle)")
+            .accessibilityHint(ReferCopy.hint)
+        }
+    }
+
     /// More (spec 5.8; website app/(office)/more): the sections that don't fit in the tab bar, the
     /// person's account, this phone, sync, help, and signing out.
     struct MoreScreen: View {
         var showReauth: () -> Void
+        /// The shop's referral code without asking the server (the screenshot tests).
+        var referralPreview: String? = nil
         @Environment(Session.self) private var session
         @Environment(SyncService.self) private var sync
         @Environment(AppEnvironment.self) private var app
@@ -98,6 +140,9 @@
         @State private var directions = DirectionsChoice.automatic
         @State private var confirmSignOut = false
         @State private var requesting = false
+        /// The shop's referral code (owners only; nil until the server gives one, offline, or on
+        /// an error, and then there's no Refer a Pool Company row).
+        @State private var referralCode: String?
 
         var body: some View {
             let company = session.company
@@ -115,6 +160,14 @@
                         }
                         .surfaceRow()
                         .listRowInsets(EdgeInsets(top: 0, leading: 0, bottom: 0, trailing: 16))
+                    }
+                }
+                // Refer a Pool Company, in the brand's orange so it stands apart (owner, 2026-11-23).
+                if let message = referMessage(role: company?.role) {
+                    Section {
+                        ReferRow(message: message)
+                            .listRowBackground(Color.safetyTint)
+                            .listRowInsets(EdgeInsets())
                     }
                 }
                 account
@@ -176,6 +229,31 @@
             }
             .onChange(of: directions) { _, choice in sync.kv.directionsChoice = choice }
             .task { await loadProfile() }
+            .task(id: company.map { "\($0.id):\($0.role)" }) { await loadReferral() }
+        }
+
+        /// The share message for Refer a Pool Company, or nil when the row doesn't show.
+        private func referMessage(role: String?) -> String? {
+            guard showsReferRow(role, referralCode) else { return nil }
+            let link = referralLink(AppConfig.webURL.absoluteString, referralCode)
+            return link.isEmpty ? nil : referShareMessage(link)
+        }
+
+        /// `referral_summary`'s code, owners only (the server refuses anyone else). Never blocks More:
+        /// offline or on an error the row just isn't there.
+        private func loadReferral() async {
+            referralCode = nil
+            guard let company = session.company, company.role == "owner" else { return }
+            if let referralPreview {
+                referralCode = referralPreview
+                return
+            }
+            guard
+                let response = try? await app.client.rpc("referral_summary", params: ["target_company": company.id])
+                    .execute(),
+                let summary = try? JSONDecoder().decode(ReferralSummary.self, from: response.data)
+            else { return }
+            referralCode = summary.code
         }
 
         private var displayName: String {
