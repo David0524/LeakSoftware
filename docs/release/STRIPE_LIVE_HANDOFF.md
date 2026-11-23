@@ -87,7 +87,7 @@ default and tell me which it is.
    - Endpoint URL: `https://sundeckpro.com/api/stripe/webhook`
    - Events: `checkout.session.completed`, `checkout.session.async_payment_succeeded`,
      `checkout.session.async_payment_failed`, `customer.subscription.created`,
-     `customer.subscription.updated`, `customer.subscription.deleted`
+     `customer.subscription.updated`, `customer.subscription.deleted`, `invoice.paid` (referral rewards, 2026-11-23)
 2. **Sundeck Pro Customers** (events from **Connected accounts**; newer dashboards say
    "Connected and v2 accounts")
    - Endpoint URL: `https://sundeckpro.com/api/stripe/webhook`

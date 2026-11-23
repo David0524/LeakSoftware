@@ -2,6 +2,17 @@
 
 Newest first. Each entry: date, decision, reason.
 
+## 2026-11-23 (owner: "i think promo code might be best. And we should be able to see what promo code they use. We could have it so if someone recommend the app to a friend and they use their code, it gives both companies a free month"; "Maybe the companies name actually?")
+Design and wording: `docs/design/2026-11-23-promo-and-referral-codes.md`. Website only (the apps show no prices, rule 3.1.1).
+- **One code box** on the trial page and in Settings › Sundeck Pro Billing ("Have a Code?" before subscribing) takes demo codes, promo codes and referral codes, any case, spaces and punctuation ignored (`public.redeem_code`, migration `20261022005100_promo_codes.sql`). **One promo or referral code per shop, before it subscribes**; they don't stack. A promo code wins a name clash.
+- **Promo codes are made by staff** in Admin › Codes (`app.promo_code`): free months (0 to 12) and/or a percent off (1 to 100) for 1 to 36 paid months or forever, with an optional last day and most uses. The offer can't be edited once made; Turn Off stops new shops and leaves shops that used it alone. The offer is copied onto the shop's subscription row. No meetup code is seeded: the owner picks its name and offer.
+- **A promo's free months are the trial's length from sign-up** (3 is "3 months free", like the mailer), never shortening a trial. Reason: the meetup offer is "3 free months", and 30 days plus 3 months would read as 4.
+- **A percent off is a Stripe coupon** on Checkout, one per offer under a fixed id, lasting the trial's whole months plus the paid months, because Stripe counts a coupon's months from when it's applied (core `couponMonths`).
+- **Every shop's referral code is its name** (BLUEWAVEPOOLS; LLC, Inc and the like dropped; a number only on a clash), made for new shops by a trigger and given to existing shops by the migration. A new shop that enters it gets 1 extra month at once. The referring shop gets a free month after the new shop's first real payment (`invoice.paid`, amount over $0), once: a Stripe balance credit of its monthly price when subscribed (no subscription change, stacks, can't collide with a promo coupon), a month more of trial when not yet subscribed, nothing for demo or canceled shops. Waiting for a payment stops fake sign-ups farming months. Can't use your own shop's code or one of a shop you belong to.
+- **Owners see their code** on Settings › Sundeck Pro Billing, Give a Month, Get a Month, with Copy Code, Share and how many shops used it. **Staff see** the code each shop used, who referred it and the referrer's reward on Shops, a shop's page, and Admin › Codes.
+- **Terms** say a code's offer applies as described, has no cash value, can end for new shops, one per shop, and how the referral month is given.
+- **Owner to do:** add `invoice.paid` to the live Sundeck Pro webhook (Your account); choose the meetup code's name and offer and make it in Admin › Codes.
+
 ## 2026-11-18 (owner: "Release 1.04 These should auto release when approved")
 - **iPhone 1.0.4 released** (App Store workflow, `release`).
 - **iPhone updates release automatically once Apple approves them.** The App Store workflow's `submit` and `resubmit` set the version to release after approval (`AFTER_APPROVAL`), including a version already made as manual. Replaces "released by hand" (2026-11-05, 2026-11-17); `release` stays for a version made manual in App Store Connect.
