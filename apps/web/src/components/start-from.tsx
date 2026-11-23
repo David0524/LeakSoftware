@@ -33,7 +33,7 @@ export function StartFromForm({
   missing: boolean;
   /** Unique on the page (Team has one per person). */
   id: string;
-  /** The button's words; Team's sheet names each section's ("Save Start", like "Save Role"). */
+  /** The button's words; Team's sheet names each section's ("Save Start and End", like "Save Role"). */
   submit?: string;
 }) {
   const [from, setFrom] = useState<RouteStartLabel>(startFrom);
@@ -48,7 +48,7 @@ export function StartFromForm({
         {user ? <input type="hidden" name="user" value={user} /> : null}
         <div className="space-y-4 px-4 sm:px-0">
           <Segmented
-            label={START_FROM_COPY.field}
+            label={user ? START_FROM_COPY.othersField : START_FROM_COPY.field}
             name="start_from"
             value={from}
             onChange={setFrom}
@@ -56,7 +56,7 @@ export function StartFromForm({
             segmentClassName="min-h-11"
           />
           <Segmented
-            label={START_FROM_COPY.endField}
+            label={user ? START_FROM_COPY.othersEndField : START_FROM_COPY.endField}
             name="end_at"
             value={to}
             onChange={setTo}

@@ -799,7 +799,7 @@
                             .padding(.horizontal, 16)
                     }
                 }
-                StartFromSection(form: $start, saved: startSaved, userId: member.userId)
+                StartFromSection(form: $start, saved: startSaved, userId: member.userId, others: true)
                 if let error { Notice(kind: .error, text: error) }
                 Button(ProfileText.save) { save() }
                     .buttonStyle(.primary(fullWidth: true, size: .field))

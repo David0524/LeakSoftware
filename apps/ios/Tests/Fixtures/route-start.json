@@ -5,6 +5,9 @@
       "result": {
         "field": "Start My Day From",
         "endField": "End My Day At",
+        "othersField": "Start Day From",
+        "othersEndField": "End Day At",
+        "save": "Save Start and End",
         "shop": "The Shop",
         "home": "Home",
         "homeAddress": "Home Address",

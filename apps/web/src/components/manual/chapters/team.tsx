@@ -124,8 +124,9 @@ export const team: ChapterDef = {
         >
           <p>
             Tap a person to open their profile: name, phone, email, address, an emergency contact
-            and notes, plus <Ui>Start My Day From</Ui> (the shop or home, so their drive times begin
-            where they really start), their role, a <Ui>Color</Ui> and an <Ui>On</Ui> switch.
+            and notes, plus <Ui>Start Day From</Ui> and <Ui>End Day At</Ui> (the shop or home, so
+            their drive times begin and end where they really do), their role, a <Ui>Color</Ui> and
+            an <Ui>On</Ui> switch.
           </p>
           <p>
             Owners can also change a role right on the list: the role under each name is a pop-up (

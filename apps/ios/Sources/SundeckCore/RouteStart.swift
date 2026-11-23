@@ -118,6 +118,11 @@ public enum StartFromCopy {
     public static let field = "Start My Day From"
     /// Right under it, the same control (owner, 2026-11-23).
     public static let endField = "End My Day At"
+    /// On someone else's profile (Team › their profile), without "My" (2026-11-23).
+    public static let othersField = "Start Day From"
+    public static let othersEndField = "End Day At"
+    /// Team › a person's profile has a save per section on the website; this one saves both ends.
+    public static let save = "Save Start and End"
     public static let shop = "The Shop"
     public static let home = "Home"
     public static let homeAddress = "Home Address"
@@ -129,7 +134,8 @@ public enum StartFromCopy {
 
     /// All of it, keyed as in TypeScript.
     public static let all: [String: String] = [
-        "field": field, "endField": endField, "shop": shop, "home": home, "homeAddress": homeAddress,
+        "field": field, "endField": endField, "othersField": othersField, "othersEndField": othersEndField,
+        "save": save, "shop": shop, "home": home, "homeAddress": homeAddress,
         "footer": footer, "pending": pending, "homePin": homePin,
     ]
 }

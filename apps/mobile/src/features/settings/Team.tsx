@@ -664,6 +664,7 @@ function ProfileForm({
           ) : null}
           <ColorPicker value={tech} onChange={setTech} />
           <StartFromFields
+            others
             form={start}
             onChange={(next) => {
               setStartError(undefined);

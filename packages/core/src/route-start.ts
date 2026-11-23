@@ -36,6 +36,11 @@ export const START_FROM_COPY = {
   field: "Start My Day From",
   /** Right under it, the same control (owner, 2026-11-23). */
   endField: "End My Day At",
+  /** On someone else's profile (Team › their profile), without "My" (owner's screenshot review, 2026-11-23). */
+  othersField: "Start Day From",
+  othersEndField: "End Day At",
+  /** Team › a person's profile has a save per section; this one saves both ends. */
+  save: "Save Start and End",
   shop: "The Shop",
   home: "Home",
   homeAddress: "Home Address",

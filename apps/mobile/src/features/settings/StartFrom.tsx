@@ -18,8 +18,11 @@ export function StartFromFields({
   onChange,
   row,
   error,
+  others = false,
 }: {
   form: StartForm;
+  /** Someone else's (Team › their profile): the labels without "My". */
+  others?: boolean;
   onChange: (form: StartForm) => void;
   /** The saved row, for whether its home is on the map yet. */
   row: MemberStart | null | undefined;
@@ -40,13 +43,13 @@ export function StartFromFields({
   return (
     <View style={{ gap: space["3"] }}>
       <Segmented
-        label={START_FROM_COPY.field}
+        label={others ? START_FROM_COPY.othersField : START_FROM_COPY.field}
         value={form.start_from}
         onChange={(start_from) => onChange({ ...form, start_from })}
         options={places}
       />
       <Segmented
-        label={START_FROM_COPY.endField}
+        label={others ? START_FROM_COPY.othersEndField : START_FROM_COPY.endField}
         value={form.end_at}
         onChange={(end_at) => onChange({ ...form, end_at })}
         options={places}

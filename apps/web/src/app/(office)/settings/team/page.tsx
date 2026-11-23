@@ -8,6 +8,7 @@ import {
 } from "@/app/actions/settings";
 import {
   NO_CONTACT_NOTE,
+  START_FROM_COPY,
   assignableRoles,
   canContactCustomers,
   canMakeJobs,
@@ -243,7 +244,7 @@ export default async function TeamSettingsPage() {
           <StartFromForm
             id={m.membership_id}
             user={m.user_id}
-            submit="Save Start"
+            submit={START_FROM_COPY.save}
             startFrom={startOf.get(m.user_id)?.start_from === "home" ? "home" : "shop"}
             endAt={endAtOf(startOf.get(m.user_id) ?? { start_from: "shop" })}
             homeAddress={startOf.get(m.user_id)?.home_address ?? ""}

@@ -13,22 +13,26 @@
         /// The saved row, for whether its map point still belongs to the address.
         var saved: MemberStart?
         var userId: String
+        /// Someone else's (Team › their profile): the labels without "My".
+        var others = false
         @State private var suggester = AddressSuggester()
         @State private var addressFocused = false
 
         var body: some View {
             let status = StartFromStatus(form, saved: saved, userId: userId)
+            let field = others ? StartFromCopy.othersField : StartFromCopy.field
+            let endField = others ? StartFromCopy.othersEndField : StartFromCopy.endField
             VStack(alignment: .leading, spacing: 8) {
-                SectionLabel(StartFromCopy.field)
+                SectionLabel(field)
                 Segmented(
                     selection: $form.from, options: [RouteStartLabel.shop, .home],
-                    label: { $0 == .home ? StartFromCopy.home : StartFromCopy.shop }, title: StartFromCopy.field,
+                    label: { $0 == .home ? StartFromCopy.home : StartFromCopy.shop }, title: field,
                     fillsWidth: true)
-                SectionLabel(StartFromCopy.endField)
+                SectionLabel(endField)
                     .padding(.top, 8)
                 Segmented(
                     selection: $form.to, options: [RouteStartLabel.shop, .home],
-                    label: { $0 == .home ? StartFromCopy.home : StartFromCopy.shop }, title: StartFromCopy.endField,
+                    label: { $0 == .home ? StartFromCopy.home : StartFromCopy.shop }, title: endField,
                     fillsWidth: true)
                 if form.usesHomeAddress {
                     Grouped {
