@@ -175,7 +175,9 @@
                 } else {
                     ListRow("No customer")
                 }
-                if let line = details.contactLine {
+                // Numbers, emails and their buttons only with Text and Call Customers (owner,
+                // 2026-11-23).
+                if session.company?.canContact ?? true, let line = details.contactLine {
                     // Side by side; stacked at accessibility text sizes, where the number would
                     // break across lines beside the buttons.
                     let layout =
@@ -236,7 +238,7 @@
             let thread = details.customerId.flatMap { id in
                 conversations(sync.store, companyId: company.id).first { $0.customerId == id }
             }
-            if let name = details.customerName, thread != nil || texting {
+            if company.canContact, let name = details.customerName, thread != nil || texting {
                 Grouped(label: "Messages") {
                     if let thread {
                         Button {

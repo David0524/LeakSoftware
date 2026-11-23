@@ -157,8 +157,9 @@
 
         var body: some View {
             switch route {
-            case .conversation(let id): ConversationScreen(conversationId: id)
-            case .newMessage(let customerId): NewMessageScreen(customerId: customerId)
+            // Only with Text and Call Customers (owner, 2026-11-23).
+            case .conversation(let id): ContactOnly { ConversationScreen(conversationId: id) }
+            case .newMessage(let customerId): ContactOnly { NewMessageScreen(customerId: customerId) }
             case .customer(let id): CustomerScreen(customerId: id)
             }
         }

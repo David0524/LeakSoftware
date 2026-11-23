@@ -98,10 +98,11 @@ public enum VisitReportServer {
     /// Send Visit Report. Done work must reach the server first, so the report has it.
     public static func send(
         sync: SyncService, api: WebAPI, jobId: String, channel: VisitReportChannel, to: String?,
-        onStep: ((Int) -> Void)? = nil
+        onFile: Bool = false, onStep: ((Int) -> Void)? = nil
     ) async throws -> VisitReportSent {
         let email = (to ?? "").trimmingCharacters(in: .whitespacesAndNewlines)
-        if channel == .email, email.wholeMatch(of: /\S+@\S+\.\S+/) == nil {
+        // Without Text and Call Customers (onFile): the server sends to the email on file.
+        if channel == .email, !onFile, email.wholeMatch(of: /\S+@\S+\.\S+/) == nil {
             throw WebAPI.Failure(description: VisitReportText.enterEmail)
         }
         onStep?(0)

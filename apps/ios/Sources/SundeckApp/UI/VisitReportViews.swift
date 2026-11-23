@@ -52,16 +52,21 @@
                         if photoBlock != nil {
                             ReportPhotoNotice(jobId: job.id)
                         } else {
-                            VStack(alignment: .leading, spacing: 4) {
-                                FieldLabel(VisitReportText.customerEmail)
-                                TextField("", text: Binding(get: { email }, set: { to = $0 }))
-                                    .keyboardType(.emailAddress)
-                                    .textInputAutocapitalization(.never)
-                                    .autocorrectionDisabled()
-                                    .textContentType(nil)
-                                    .focused($focused)
-                                    .accessibilityLabel(VisitReportText.customerEmail)
-                                    .fieldBox(focused: focused)
+                            // Without Text and Call Customers: the email on file (owner, 2026-11-23).
+                            if canContact {
+                                VStack(alignment: .leading, spacing: 4) {
+                                    FieldLabel(VisitReportText.customerEmail)
+                                    TextField("", text: Binding(get: { email }, set: { to = $0 }))
+                                        .keyboardType(.emailAddress)
+                                        .textInputAutocapitalization(.never)
+                                        .autocorrectionDisabled()
+                                        .textContentType(nil)
+                                        .focused($focused)
+                                        .accessibilityLabel(VisitReportText.customerEmail)
+                                        .fieldBox(focused: focused)
+                                }
+                            } else {
+                                Text(onFileNote).textRole(.secondary).foregroundStyle(Color.textMuted)
                             }
                             FlowRow(spacing: 12) {
                                 Button {
@@ -72,7 +77,8 @@
                                         busy: busy == .email, busyTitle: "Sending…")
                                 }
                                 .buttonStyle(.primary)
-                                .disabled(busy != nil || email.trimmingCharacters(in: .whitespaces).isEmpty)
+                                .disabled(
+                                    busy != nil || (canContact && email.trimmingCharacters(in: .whitespaces).isEmpty))
                                 Button {
                                     send(hasLine ? .text : .smsDevice)
                                 } label: {
@@ -116,6 +122,8 @@
         }
 
         private var email: String { to ?? job.customer?["email"]?.string ?? "" }
+        /// Text and Call Customers (owner, 2026-11-23): without it, the email on file.
+        private var canContact: Bool { session.company?.canContact ?? true }
 
         private func send(_ channel: VisitReportChannel) {
             guard busy == nil else { return }
@@ -129,7 +137,8 @@
                     // The steps: saving the visit, the server sending it, then syncing it down.
                     let sent = try await VisitReportServer.send(
                         sync: sync, api: app.api, jobId: job.id, channel: channel,
-                        to: channel == .email ? email : nil, onStep: { step = $0 })
+                        to: channel == .email ? (canContact ? email : "") : nil, onFile: !canContact,
+                        onStep: { step = $0 })
                     result = (sent.message, false)
                     share = sent.share
                     sentReports += 1

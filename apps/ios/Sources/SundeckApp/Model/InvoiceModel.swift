@@ -367,16 +367,20 @@ public final class InvoiceFlow {
     }
 
     /// Send by Email (to the customer's address) or Send Without Email (a link to text).
-    public func send(_ invoiceId: String, email to: String?, phone: String?, server: MoneyServer) async {
-        let email = to?.trimmingCharacters(in: .whitespacesAndNewlines)
+    /// `onFile` (no Text and Call Customers, owner 2026-11-23): Send by Email goes to the email on
+    /// file, which the server fills in; nothing typed is checked or shown.
+    public func send(
+        _ invoiceId: String, email to: String?, phone: String?, server: MoneyServer, onFile: Bool = false
+    ) async {
+        let email = onFile ? to.map { _ in "" } : to?.trimmingCharacters(in: .whitespacesAndNewlines)
         await run(email == nil ? .withoutEmail : .email) {
-            if let email, email.wholeMatch(of: /\S+@\S+\.\S+/) == nil {
+            if !onFile, let email, email.wholeMatch(of: /\S+@\S+\.\S+/) == nil {
                 throw WebAPI.Failure(description: "Enter the customer’s email.")
             }
             let sent = try await server.sendInvoice(
                 invoiceId, channel: email == nil ? .smsDevice : .email, to: email ?? phone)
             if let email, sent.emailed {
-                message = "Sent to \(email)."
+                message = onFile ? onFileSent : "Sent to \(email)."
             } else {
                 message = "Invoice sent. Copy the link for the customer."
                 shareText = sent.message.isEmpty ? nil : sent.message
@@ -459,6 +463,9 @@ public final class ReceiptForm {
     public var phone: String
     public var busy = false
     public var error: String?
+    /// Without Text and Call Customers (owner, 2026-11-23): nothing typed or shown; the server
+    /// sends to the customer's email or number on file.
+    public var onFile = false
 
     public init(start: ReceiptStart, email: String?, phone: String?, texting: Bool) {
         self.start = start
@@ -474,7 +481,7 @@ public final class ReceiptForm {
 
     /// Sends it; returns the result line ("Receipt emailed to …") or nil with `error` set.
     public func send(server: MoneyServer) async -> String? {
-        if let problem = receiptRecipientError(channel, to) {
+        if !onFile, let problem = receiptRecipientError(channel, to) {
             error = problem
             return nil
         }
@@ -483,8 +490,9 @@ public final class ReceiptForm {
         error = nil
         defer { busy = false }
         do {
-            try await server.sendReceipt(start.invoiceId, channel: channel, to: to, paymentId: start.paymentId)
-            return receiptSentMessage(channel, to)
+            try await server.sendReceipt(
+                start.invoiceId, channel: channel, to: onFile ? "" : to, paymentId: start.paymentId)
+            return onFile ? "Receipt sent to the customer." : receiptSentMessage(channel, to)
         } catch let failure as WebAPI.Failure {
             error = failure.offline ? ReceiptText.offline : failure.description
         } catch {

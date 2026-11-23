@@ -18,6 +18,7 @@ import { progressCues } from "./cases/progress-cues";
 import { weekPlan } from "./cases/week-plan";
 import { download } from "./cases/download";
 import { team } from "./cases/team";
+import { contact } from "./cases/contact";
 import { logoColors } from "./cases/logo-colors";
 import { wrapUpCases } from "./cases/wrap-up";
 import { visitReportBarCases } from "./cases/visit-report-bar";
@@ -68,6 +69,7 @@ export const modules: Record<string, ModuleCases> = {
   "week-plan": weekPlan,
   download,
   team,
+  contact,
   "logo-colors": logoColors,
   "wrap-up": wrapUpCases,
   "visit-report-bar": visitReportBarCases,

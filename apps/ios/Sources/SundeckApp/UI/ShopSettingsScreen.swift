@@ -78,6 +78,8 @@
         @State private var editingMember: SettingsTeamMember?
         /// Turning someone off from their row's switch, asked first.
         @State private var turningOff: SettingsTeamMember?
+        /// Making someone an owner from their row's role pop-up, asked first (owner, 2026-11-23).
+        @State private var promoting: SettingsTeamMember?
         /// Which checklist Checklist Components shows (pool visits, leak or pool inspections).
         @State private var list: ChecklistList = .leak
         @State private var editing: ConfigSheetTarget?
@@ -182,7 +184,7 @@
             .sheet(item: $editingMember) { member in
                 TeamMemberSheet(
                     member: member, profile: profiles.first { $0.userId == member.userId },
-                    owner: company?.role == "owner"
+                    owner: company?.role == "owner", lastOwner: TeamWrites.lastOwner(member, in: team)
                 ) { notice = $0 }
             }
             .confirmationDialog(
@@ -191,6 +193,14 @@
                 titleVisibility: .visible, presenting: turningOff
             ) { member in
                 Button(TeamText.turnOff, role: .destructive) { setActive(member, false) }
+                Button("Cancel", role: .cancel) {}
+            }
+            .confirmationDialog(
+                TeamText.makeOwnerQuestion(promoting?.name ?? ""),
+                isPresented: Binding(get: { promoting != nil }, set: { if !$0 { promoting = nil } }),
+                titleVisibility: .visible, presenting: promoting
+            ) { member in
+                Button(TeamText.makeOwner) { setRole(member, "owner") }
                 Button("Cancel", role: .cancel) {}
             }
             .browserSheet($browser)
@@ -213,7 +223,7 @@
         @ViewBuilder private func teamGroups(manager: Bool, owner: Bool) -> some View {
             let sections = teamSections(team)
             Section {
-                ForEach(sections.active) { teamRow($0, manager: manager) }
+                ForEach(sections.active) { teamRow($0, manager: manager, owner: owner) }
             } header: {
                 SectionLabel(TeamText.active)
             } footer: {
@@ -223,7 +233,7 @@
             }
             if !sections.off.isEmpty {
                 Section {
-                    ForEach(sections.off) { teamRow($0, manager: manager) }
+                    ForEach(sections.off) { teamRow($0, manager: manager, owner: owner) }
                 } header: {
                     SectionLabel(TeamText.off)
                 } footer: {
@@ -232,27 +242,44 @@
             }
         }
 
-        private func teamRow(_ m: SettingsTeamMember, manager: Bool) -> some View {
+        private func teamRow(_ m: SettingsTeamMember, manager: Bool, owner: Bool) -> some View {
             HStack(spacing: 0) {
-                Button {
-                    if manager { editingMember = m }
-                } label: {
-                    HStack(spacing: CGFloat(Spacing.rowItems)) {
-                        TechDot(color: m.color)
-                        VStack(alignment: .leading, spacing: 2) {
-                            Text(m.isMe ? "\(m.name) (you)" : m.name).textRole(.body).foregroundStyle(Color.text)
-                            Text(roleLabel(m.role)).textRole(.secondary).foregroundStyle(Color.textMuted)
+                // The row opens their profile. For owners the role under the name is a pop-up
+                // (owner, 2026-11-23: "this screen is where the owner can set what role each user
+                // is"), drawn above the row's button (its background) so the two never nest; the
+                // words let taps through to the button.
+                HStack(spacing: CGFloat(Spacing.rowItems)) {
+                    TechDot(color: m.color).allowsHitTesting(false)
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text(m.isMe ? "\(m.name) (you)" : m.name).textRole(.body).foregroundStyle(Color.text)
+                            .allowsHitTesting(false)
+                        if owner {
+                            rolePopUp(m)
+                        } else {
+                            Text(teamRoleLine(m.role, m.canContact)).textRole(.secondary)
+                                .foregroundStyle(Color.textMuted)
+                                .allowsHitTesting(false)
                         }
-                        Spacer(minLength: 0)
                     }
-                    .padding(.leading, CGFloat(Spacing.rowHorizontal))
-                    .padding(.vertical, CGFloat(Spacing.rowVertical))
-                    .frame(maxWidth: .infinity, minHeight: minTarget, alignment: .leading)
-                    .contentShape(Rectangle())
+                    Spacer(minLength: 0).allowsHitTesting(false)
                 }
-                .buttonStyle(.row)
-                .disabled(!manager)
-                .accessibilityHint(manager ? "Opens their profile" : "")
+                .padding(.leading, CGFloat(Spacing.rowHorizontal))
+                .padding(.vertical, CGFloat(Spacing.rowVertical))
+                .frame(maxWidth: .infinity, minHeight: minTarget, alignment: .leading)
+                .accessibilityElement(children: owner ? .contain : .ignore)
+                .accessibilityHidden(!owner)
+                .background {
+                    Button {
+                        if manager { editingMember = m }
+                    } label: {
+                        Color.clear.contentShape(Rectangle())
+                    }
+                    .buttonStyle(.row)
+                    .disabled(!manager)
+                    .accessibilityLabel(m.isMe ? "\(m.name) (you)" : m.name)
+                    .accessibilityValue(teamRoleLine(m.role, m.canContact))
+                    .accessibilityHint(manager ? "Opens their profile" : "")
+                }
                 if manager {
                     Toggle(
                         TeamText.on,
@@ -270,6 +297,62 @@
             }
             .surfaceRow()
             .listRowInsets(EdgeInsets())
+        }
+
+        /// The role as an iOS pop-up button: the role in link blue with the up-and-down chevron,
+        /// a menu of Owner, Admin and Tech with a check on the current one. "· No customer
+        /// contact" follows it for a tech without Text and Call Customers.
+        private func rolePopUp(_ m: SettingsTeamMember) -> some View {
+            HStack(spacing: 4) {
+                Menu {
+                    Picker(TeamText.role, selection: Binding(get: { m.role }, set: { pickRole(m, $0) })) {
+                        ForEach(Role.allCases, id: \.self) { Text($0.label).tag($0.rawValue) }
+                    }
+                    .pickerStyle(.inline)
+                } label: {
+                    HStack(spacing: 4) {
+                        Text(roleLabel(m.role))
+                        Image(systemName: "chevron.up.chevron.down")
+                            .font(.caption.weight(.semibold))
+                            .accessibilityHidden(true)
+                    }
+                    .textRole(.secondary)
+                    .foregroundStyle(Color.link)
+                    .frame(minHeight: minTarget)
+                    .contentShape(Rectangle())
+                }
+                .padding(.vertical, -12)
+                .accessibilityLabel("\(m.name), \(TeamText.role)")
+                .accessibilityValue(roleLabel(m.role))
+                if !canContactCustomers(m.role, m.canContact) {
+                    Text("· \(noContactNote)").textRole(.secondary).foregroundStyle(Color.textMuted)
+                        .allowsHitTesting(false)
+                }
+            }
+        }
+
+        private func pickRole(_ m: SettingsTeamMember, _ role: String) {
+            guard role != m.role else { return }
+            if TeamWrites.lastOwner(m, in: team) {
+                banner = ResultBanner(kind: .error, title: TeamText.lastOwner)
+                return
+            }
+            if role == "owner" {
+                promoting = m
+                return
+            }
+            setRole(m, role)
+        }
+
+        private func setRole(_ m: SettingsTeamMember, _ role: String) {
+            promoting = nil
+            guard let company = session.company else { return }
+            do {
+                try TeamWrites.save(sync, companyId: company.id, membershipId: m.id, role: role, color: nil)
+                banner = ResultBanner(kind: .success, title: TeamText.roleChanged(m.name, role))
+            } catch {
+                banner = ResultBanner(kind: .error, title: userMessage(error))
+            }
         }
 
         private func setActive(_ m: SettingsTeamMember, _ on: Bool) {
@@ -612,6 +695,8 @@
         var member: SettingsTeamMember
         var profile: ProfileListRow?
         var owner: Bool
+        /// The shop's only active owner: their role stays Owner.
+        var lastOwner = false
         var done: (String) -> Void
         @Environment(Session.self) private var session
         @Environment(SyncService.self) private var sync
@@ -621,6 +706,8 @@
         @State private var role = "tech"
         @State private var color = TechColor.blue
         @State private var active = true
+        /// Text and Call Customers (owner, 2026-11-23): techs only; the switch saves at once.
+        @State private var contact = true
         @State private var confirmOff = false
         @State private var error: String?
         @State private var loaded = false
@@ -701,6 +788,17 @@
                             .padding(.horizontal, 16)
                     }
                 }
+                if member.role == "tech" {
+                    VStack(alignment: .leading, spacing: 8) {
+                        Grouped {
+                            SwitchRow(
+                                contactSwitchLabel,
+                                isOn: Binding(get: { contact }, set: { setContact($0) }))
+                        }
+                        Text(contactSwitchFooter).textRole(.footnote).foregroundStyle(Color.textMuted)
+                            .padding(.horizontal, 16)
+                    }
+                }
                 StartFromSection(form: $start, saved: startSaved, userId: member.userId)
                 if let error { Notice(kind: .error, text: error) }
                 Button(ProfileText.save) { save() }
@@ -722,6 +820,7 @@
                 role = member.role
                 color = member.color
                 active = member.active
+                contact = member.canContact
                 if let company = session.company {
                     startSaved = memberStart(sync.store, companyId: company.id, userId: member.userId)
                 }
@@ -740,10 +839,24 @@
             }
         }
 
+        private func setContact(_ on: Bool) {
+            guard let company = session.company else { return }
+            do {
+                try TeamWrites.setContact(sync, companyId: company.id, membershipId: member.id, on)
+                contact = on
+            } catch {
+                self.error = userMessage(error)
+            }
+        }
+
         private func save() {
             guard let company = session.company else { return }
             if form != original, let problem = form.error {
                 error = problem
+                return
+            }
+            if lastOwner && owner && role != member.role {
+                error = TeamText.lastOwner
                 return
             }
             do {
