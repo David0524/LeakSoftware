@@ -320,9 +320,11 @@
         }
 
         @ViewBuilder private func notices(_ board: Board) -> some View {
-            // Only while someone shown starts at the shop (owner, 2026-10-21), as the website.
+            // Only while someone shown starts or ends at the shop (owner, 2026-10-21), as the website.
             if board.ctx.depot == nil,
-                board.shownTechs.contains(where: { board.ctx.start(for: $0.id).label == .shop })
+                board.shownTechs.contains(where: {
+                    board.ctx.start(for: $0.id).label == .shop || board.ctx.start(for: $0.id).end.label == .shop
+                })
             {
                 Notice(
                     kind: .warning,
@@ -1051,7 +1053,8 @@
                 let start = ctx.start(for: route.techId)
                 leadMap = dayMapModel(
                     jobs: route.jobs, depot: start.at, date: self.date, today: ctx.today, tech: route.techName,
-                    timeZone: ctx.timeZone, startLabel: start.label, color: colors[route.techId])
+                    timeZone: ctx.timeZone, startLabel: start.label, end: start.end.at, endLabel: start.end.label,
+                    color: colors[route.techId])
             }
         }
 
@@ -1989,12 +1992,15 @@
                 } ?? ids.map { _ in 0 }
             let shown = from.map { ScheduleReorder.order(ids, from: $0, to: to ?? $0) } ?? ids
             let start = board.ctx.start(for: tech?.id).at != nil
+            // The drive back is known when where the day ends is on the map.
+            let end = board.ctx.start(for: tech?.id).end.at != nil
+            let endLabel = board.ctx.start(for: tech?.id).end.label
             let located = jobs.map { !notOnMap($0) }
             let chips =
                 route.map { StopDrive.chips(legs: $0.summary.legs, located: located, startLocated: start) }
                 ?? jobs.map { _ in nil }
             let home = route.flatMap {
-                StopDrive.home(backMin: $0.summary.backLegMin, located: located, startLocated: start)
+                StopDrive.home(backMin: $0.summary.backLegMin, located: located, startLocated: end)
             }
             let noDrive = lifted != nil || settling
             let space = space
@@ -2023,7 +2029,7 @@
                 // The drive home, the block's last line (hidden when there's none).
                 if let home {
                     Label {
-                        Text(verbatim: "\(durationLabel(home)) \(backLegLabel(board.ctx.start(for: tech?.id).label))")
+                        Text(verbatim: "\(durationLabel(home)) \(backLegLabel(endLabel))")
                     } icon: {
                         Image(systemName: "house.fill").imageScale(.small)
                     }

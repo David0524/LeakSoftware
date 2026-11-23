@@ -272,7 +272,7 @@ export interface BoardColumn {
   /** The tech's color (Settings › Team): a dot by their name, a stripe on their cards. */
   color?: string | null;
   date: string;
-  /** Where the tech's day starts and ends: their home when they start there, else the shop. */
+  /** Where the tech's day starts (their home when they start there, else the shop) and ends (`end`). */
   start: RouteStart;
   stops: BoardStop[];
   driveMin: number;
@@ -1276,7 +1276,15 @@ function DayColumnMap({
 }: Pick<DayHeaderProps, "column" | "stops" | "maps" | "today"> & { className?: string }) {
   const map =
     maps && stops.length
-      ? dayMap({ stops, depot: c.start.at, startLabel: c.start.label, date: c.date, today })
+      ? dayMap({
+          stops,
+          depot: c.start.at,
+          startLabel: c.start.label,
+          end: c.start.end.at,
+          endLabel: c.start.end.label,
+          date: c.date,
+          today,
+        })
       : null;
   if (!maps || !map || (!map.pins && !map.missing)) return null;
   return (
@@ -1886,7 +1894,7 @@ function StopBlock({
   stops: BoardStop[];
   compact?: boolean;
 }) {
-  const home = c.techId ? driveHomeLine(c.backLegMin, c.start.label) : null;
+  const home = c.techId ? driveHomeLine(c.backLegMin, c.start.end.label) : null;
   const offMap = stops.map((s) => s.notOnMap || (!!s.address && !s.location));
   return (
     <div
@@ -2136,11 +2144,17 @@ function WeekMaps({
               const key = `${tech}|${d}`;
               const col = columns.find((c) => c.key === key);
               const stops = lists[key] ?? [];
-              const start = col?.start ?? { at: maps.depot, label: "shop" as const };
+              const start = col?.start ?? {
+                at: maps.depot,
+                label: "shop" as const,
+                end: { at: maps.depot, label: "shop" as const },
+              };
               const map = dayMap({
                 stops,
                 depot: start.at,
                 startLabel: start.label,
+                end: start.end.at,
+                endLabel: start.end.label,
                 date: d,
                 today,
               });

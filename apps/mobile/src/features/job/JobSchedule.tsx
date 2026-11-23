@@ -78,8 +78,11 @@ export function useJobMove(onResult: (r: MoveResult) => void) {
   const [moving, setMoving] = useState<MoveTarget | null>(null);
   const { drive } = useDriveTimes(company.id, [
     ctx.depot,
-    // Where techs who start from home start (owner, 2026-10-21).
-    ...(ctx.starts ?? []).map((s) => startFor(s.user_id, ctx.starts, ctx.depot).at),
+    // Where techs who start or end at home start and end (owner, 2026-10-21 and 2026-11-23).
+    ...(ctx.starts ?? []).flatMap((s) => {
+      const where = startFor(s.user_id, ctx.starts, ctx.depot);
+      return [where.at, where.end.at];
+    }),
     ...jobs.filter((j) => j.scheduled_start).map((j) => propertyLocation(j.property)),
   ]);
   const movers = (

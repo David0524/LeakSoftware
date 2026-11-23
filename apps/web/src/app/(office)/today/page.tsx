@@ -169,8 +169,8 @@ export default async function TodayPage({ searchParams }: PageProps<"/today">) {
     const jobs = route?.jobs ?? [];
     const legs = route?.summary.legs.reduce((a, b) => a + b, 0) ?? 0;
     const backLeg = route ? route.summary.driveMin - legs : 0;
-    // Home for someone who starts their day there, else the shop.
-    const startLabel = route?.start.label ?? "shop";
+    // Where the day ends: home for someone who ends their day there, else the shop.
+    const endLabel = route?.start.end.label ?? "shop";
     const mine = dayTech === office.user.id;
     // The card at the top for the stop you're on (owner, 2026-10-20; docs/plans/today-hero.md):
     // the Live Activity's rule, so the phone and the website pick the same stop. The card
@@ -256,7 +256,7 @@ export default async function TodayPage({ searchParams }: PageProps<"/today">) {
         ? { jobId: j.id, customer: j.customer?.name ?? "Customer", lock: s.lock, ...m }
         : undefined;
     };
-    const homeLine = driveHomeLine(route ? backLeg : null, startLabel);
+    const homeLine = driveHomeLine(route ? backLeg : null, endLabel);
     const anyMoves = canReorder && [...moveable.values()].some((m) => m.up || m.down);
 
     // The day's stops touch in one block (owner, 2026-10-21; docs/design/
@@ -412,6 +412,8 @@ export default async function TodayPage({ searchParams }: PageProps<"/today">) {
             stops: mapStops,
             depot: route.start.at,
             startLabel: route.start.label,
+            end: route.start.end.at,
+            endLabel: route.start.end.label,
             date: ctx.today,
             today: ctx.today,
           })

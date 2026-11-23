@@ -39,8 +39,11 @@ export type PreviewJob = PlanJob & { service_plan_id?: string | null };
 
 /** What the page knows for planning in the browser. */
 export type PreviewContext = Omit<PlanContext, "starts"> & {
-  /** Each tech whose day starts at home, and where (never the street). */
-  homes: { techId: string; at: LatLng }[];
+  /**
+   * Each tech whose day starts or ends at home, and where (never the street). `start` and `end`
+   * say which (both when left out).
+   */
+  homes: { techId: string; at: LatLng; start?: boolean; end?: boolean }[];
   /**
    * Owners and admins: Optimize may move a shared job when it fits the other tech's day, as
    * the server's planRoute does (owner, 2026-10-24).
@@ -51,7 +54,8 @@ export type PreviewContext = Omit<PlanContext, "starts"> & {
 const startsOf = (ctx: PreviewContext): PlanContext["starts"] =>
   ctx.homes.map((h) => ({
     user_id: h.techId,
-    start_from: "home",
+    start_from: h.start === false ? "shop" : "home",
+    end_at: h.end === false ? "shop" : "home",
     home_address: "home",
     home_geocoded_address: null,
     home_latitude: h.at.lat,
@@ -137,6 +141,7 @@ export function previewWeek(input: {
         stays: [],
         earliestMin: date === ctx.today ? ctx.nowMin : null,
         start: startFor(techId, starts, ctx.depot).at,
+        end: startFor(techId, starts, ctx.depot).end.at,
       };
       for (const j of input.dayJobs(techId, date)) {
         const own = j.assigned_user_id === techId;

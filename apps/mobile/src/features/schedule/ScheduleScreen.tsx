@@ -359,6 +359,7 @@ export function ScheduleScreen() {
       start.at,
       hours,
       drive,
+      start.end.at,
     );
     const legs = summary.legs.reduce((a, b) => a + b, 0);
     return {
@@ -368,6 +369,7 @@ export function ScheduleScreen() {
       color: team.find((t) => t.user_id === techId)?.color ?? null,
       date: d,
       startLabel: start.label,
+      endLabel: start.end.label,
       startOnMap: start.at != null,
       stops: list.map((j, i) =>
         toStop(j, techId, summary.legs[i] ?? null, summary.short[i] ?? 0, d),
@@ -461,12 +463,15 @@ export function ScheduleScreen() {
       : null;
   const leadMap = useMemo(() => {
     if (!lead) return null;
-    // The start pin: a house labeled Home for someone who starts there.
+    // The start pin: a house labeled Home for someone who starts there; the end's too, when the
+    // day ends somewhere else.
     const start = startOf(lead.techId);
     return dayMap({
       stops: lead.stops.map((s) => ({ id: s.id, location: s.location, status: s.status })),
       depot: start.at,
       startLabel: start.label,
+      end: start.end.at,
+      endLabel: start.end.label,
       date: lead.date,
       today,
     });
@@ -1005,8 +1010,12 @@ export function ScheduleScreen() {
           />
         ) : null}
 
-        {/* Only while someone shown starts at the shop (owner, 2026-10-21), as the website. */}
-        {!ctx.depot && shown.some((t) => startOf(t.user_id).label === "shop") ? (
+        {/* Only while someone shown starts or ends at the shop (owner, 2026-10-21), as the website. */}
+        {!ctx.depot &&
+        shown.some((t) => {
+          const s = startOf(t.user_id);
+          return s.label === "shop" || s.end.label === "shop";
+        }) ? (
           <Notice tone="warning">
             <T style={{ flex: 1 }}>
               Routes start and end at the shop, which has no map location yet.{" "}

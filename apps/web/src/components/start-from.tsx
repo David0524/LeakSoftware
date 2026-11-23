@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { START_FROM_COPY, type RouteStartLabel } from "@leakbook/core";
+import { START_FROM_COPY, usesHome, type RouteStartLabel } from "@leakbook/core";
 import { saveStartFrom } from "@/app/actions/start-from";
 import { AddressField } from "./address-field";
 import { NotOnMapRow } from "./not-on-map";
@@ -9,14 +9,16 @@ import { Segmented } from "./segmented";
 import { SettingsFields, SettingsForm } from "./settings-forms";
 
 /**
- * Start My Day From (owner, 2026-10-21; docs/design/2026-10-21-start-from-home.md): The Shop or
- * Home, and with Home, the home address with the same suggestions as a pool's. Until the address
- * is found on the map the day starts at the shop, and the warning says so. The same words on
- * every platform (START_FROM_COPY).
+ * Start My Day From and End My Day At (owner, 2026-10-21 and 2026-11-23;
+ * docs/design/2026-10-21-start-from-home.md): The Shop or Home for each, and with Home for
+ * either, the home address with the same suggestions as a pool's. Until the address is found on
+ * the map the day uses the shop, and the warning says so. The same words on every platform
+ * (START_FROM_COPY).
  */
 export function StartFromForm({
   user,
   startFrom,
+  endAt,
   homeAddress,
   missing,
   id,
@@ -25,8 +27,9 @@ export function StartFromForm({
   /** Someone else's (Team › their profile); left out for your own. */
   user?: string;
   startFrom: RouteStartLabel;
+  endAt: RouteStartLabel;
   homeAddress: string;
-  /** Set to Home, but the address isn't found on the map (homeMapStatus "missing"). */
+  /** Starts or ends at Home, but the address isn't found on the map (homeMapStatus "missing"). */
   missing: boolean;
   /** Unique on the page (Team has one per person). */
   id: string;
@@ -34,24 +37,34 @@ export function StartFromForm({
   submit?: string;
 }) {
   const [from, setFrom] = useState<RouteStartLabel>(startFrom);
+  const [to, setTo] = useState<RouteStartLabel>(endAt);
+  const places = [
+    { value: "shop" as const, label: START_FROM_COPY.shop },
+    { value: "home" as const, label: START_FROM_COPY.home },
+  ];
   return (
     <div data-testid="start-from">
       <SettingsForm action={saveStartFrom} submit={submit} full>
         {user ? <input type="hidden" name="user" value={user} /> : null}
-        <div className="px-4 sm:px-0">
+        <div className="space-y-4 px-4 sm:px-0">
           <Segmented
             label={START_FROM_COPY.field}
             name="start_from"
             value={from}
             onChange={setFrom}
-            options={[
-              { value: "shop", label: START_FROM_COPY.shop },
-              { value: "home", label: START_FROM_COPY.home },
-            ]}
+            options={places}
+            segmentClassName="min-h-11"
+          />
+          <Segmented
+            label={START_FROM_COPY.endField}
+            name="end_at"
+            value={to}
+            onChange={setTo}
+            options={places}
             segmentClassName="min-h-11"
           />
         </div>
-        {from === "home" ? (
+        {usesHome(from, to) ? (
           <div className="mt-4 space-y-3">
             <SettingsFields labelWidth="7.5rem">
               <AddressField
@@ -64,7 +77,7 @@ export function StartFromForm({
                 required
               />
             </SettingsFields>
-            {missing && startFrom === "home" ? (
+            {missing && usesHome(startFrom, endAt) ? (
               <ul className="grouped">
                 <NotOnMapRow detail={START_FROM_COPY.pending} />
               </ul>

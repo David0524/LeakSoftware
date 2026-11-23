@@ -37,16 +37,22 @@ const row = (over: Partial<MemberStart> = {}): MemberStart => ({
 
 describe("Start My Day From: the form", () => {
   it("opens on The Shop with no row, and on the saved choice otherwise", () => {
-    expect(startForm(null)).toEqual({ start_from: "shop", home_address: "" });
+    expect(startForm(null)).toEqual({ start_from: "shop", end_at: "shop", home_address: "" });
     expect(startForm(row())).toEqual({
       start_from: "home",
+      // A row from before End My Day At ends where it starts.
+      end_at: "home",
       home_address: "12 Elm St, Mesa, AZ 85201",
+    });
+    expect(startForm(row({ start_from: "shop", end_at: "home" }))).toMatchObject({
+      start_from: "shop",
+      end_at: "home",
     });
     expect(startForm(row({ deleted_at: "2026-10-21T00:00:00Z" })).start_from).toBe("shop");
   });
 
   it("writes nothing when nothing changed, so saving a profile makes no row", () => {
-    expect(startWrite(null, { start_from: "shop", home_address: "  " })).toEqual({
+    expect(startWrite(null, { start_from: "shop", end_at: "shop", home_address: "  " })).toEqual({
       values: {},
       locate: false,
     });
@@ -54,7 +60,11 @@ describe("Start My Day From: the form", () => {
   });
 
   it("switching to Home with an address writes both and asks for a lookup", () => {
-    const w = startWrite(null, { start_from: "home", home_address: " 12  Elm St, Mesa " });
+    const w = startWrite(null, {
+      start_from: "home",
+      end_at: "shop",
+      home_address: " 12  Elm St, Mesa ",
+    });
     expect(w).toEqual({
       values: {
         start_from: "home",
@@ -68,7 +78,11 @@ describe("Start My Day From: the form", () => {
   });
 
   it("a changed address drops the old coordinates in the same write", () => {
-    const w = startWrite(row(), { start_from: "home", home_address: "40 Oak Ave, Mesa, AZ" });
+    const w = startWrite(row(), {
+      start_from: "home",
+      end_at: "home",
+      home_address: "40 Oak Ave, Mesa, AZ",
+    });
     expect("values" in w && w.values).toMatchObject({
       home_address: "40 Oak Ave, Mesa, AZ",
       home_latitude: null,
@@ -79,12 +93,16 @@ describe("Start My Day From: the form", () => {
   });
 
   it("choosing The Shop keeps the home address for later", () => {
-    const w = startWrite(row(), { start_from: "shop", home_address: row().home_address! });
+    const w = startWrite(row(), {
+      start_from: "shop",
+      end_at: "home",
+      home_address: row().home_address!,
+    });
     expect(w).toEqual({ values: { start_from: "shop" }, locate: false });
   });
 
   it("clearing the address doesn't look anything up", () => {
-    const w = startWrite(row(), { start_from: "home", home_address: "" });
+    const w = startWrite(row(), { start_from: "home", end_at: "home", home_address: "" });
     expect("values" in w && w.values.home_address).toBeNull();
     expect("locate" in w && w.locate).toBe(false);
   });
@@ -92,6 +110,7 @@ describe("Start My Day From: the form", () => {
   it("refuses an address longer than the database keeps", () => {
     const w = startWrite(null, {
       start_from: "home",
+      end_at: "shop",
       home_address: "a".repeat(HOME_ADDRESS_MAX + 1),
     });
     expect(w).toEqual({ error: `Enter an address up to ${HOME_ADDRESS_MAX} characters.` });
@@ -100,17 +119,19 @@ describe("Start My Day From: the form", () => {
   it("an address not on the map yet is pending: the day starts at the shop", () => {
     const pending = row({ home_latitude: null, home_longitude: null });
     expect(homeMapStatus(pending)).toBe("missing");
-    expect(startFor("t1", [pending], shop)).toEqual({ at: shop, label: "shop" });
-    expect(START_FROM_COPY.pending).toBe(
-      "Starting from the shop until the address is found on the map.",
-    );
+    expect(startFor("t1", [pending], shop)).toEqual({
+      at: shop,
+      label: "shop",
+      end: { at: shop, label: "shop" },
+    });
+    expect(START_FROM_COPY.pending).toBe("Using the shop until the address is found on the map.");
   });
 });
 
 describe("Routes start at the tech's start", () => {
   it("names the legs from home or from the shop", () => {
     const start = startFor("t1", [row()], shop);
-    expect(start).toEqual({ at: homeAt, label: "home" });
+    expect(start).toEqual({ at: homeAt, label: "home", end: { at: homeAt, label: "home" } });
     expect(`18 min ${startLegLabel(start.label)}`).toBe("18 min from home");
     expect(`36 min ${backLegLabel(start.label)}`).toBe("36 min back home");
     const other = startFor("t2", [row()], shop);
@@ -189,5 +210,50 @@ describe("Routes start at the tech's start", () => {
       r.updates.map((u) => u.scheduled_start ?? "").sort()[0] ?? "";
     expect(first(fromHome)).not.toBe("");
     expect(first(fromHome) < first(fromShop)).toBe(true);
+  });
+});
+
+// End My Day At (owner, 2026-11-23: "start location at the shop, and finish location at home").
+describe("End My Day At", () => {
+  it("writes only the end when only the end changed", () => {
+    const w = startWrite(row({ start_from: "shop", end_at: "shop" }), {
+      start_from: "shop",
+      end_at: "home",
+      home_address: row().home_address!,
+    });
+    expect(w).toEqual({ values: { end_at: "home" }, locate: false });
+  });
+
+  it("starts at the shop and ends at home: the drive back says home", () => {
+    const where = startFor("t1", [row({ start_from: "shop", end_at: "home" })], shop);
+    expect(where).toEqual({ at: shop, label: "shop", end: { at: homeAt, label: "home" } });
+    expect(`18 min ${startLegLabel(where.label)}`).toBe("18 min from the shop");
+    expect(`36 min ${backLegLabel(where.end.label)}`).toBe("36 min back home");
+    const back = startFor("t1", [row({ start_from: "home", end_at: "shop" })], shop);
+    expect(`36 min ${backLegLabel(back.end.label)}`).toBe("36 min back to the shop");
+  });
+
+  it("the day map shows both the shop and Home when they differ", () => {
+    const stops = [{ id: "j1", location: { lat: 33.3, lng: -112.0 }, status: "scheduled" }];
+    const both = dayMap({
+      stops,
+      depot: shop,
+      startLabel: "shop",
+      end: homeAt,
+      endLabel: "home",
+      date: "d",
+      today: "x",
+    });
+    expect(both.pins).toMatch(/^s:33\.45000,-112\.07000;.*;h:33\.25000,-112\.07000$/);
+    const same = dayMap({
+      stops,
+      depot: homeAt,
+      startLabel: "home",
+      end: homeAt,
+      endLabel: "home",
+      date: "d",
+      today: "x",
+    });
+    expect(same.pins!.split(";")).toHaveLength(2);
   });
 });

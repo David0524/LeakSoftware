@@ -11,6 +11,7 @@ interface Row {
   company_id: string;
   user_id: string;
   start_from: string;
+  end_at?: string;
   home_address: string | null;
   home_latitude: number | null;
   home_longitude: number | null;
@@ -217,6 +218,46 @@ describe("saveMemberStartWith (Start My Day From)", () => {
       saved: { found: null },
     });
     expect(t.rows[0]).toMatchObject({ user_id: "u2", start_from: "shop" });
+  });
+
+  // End My Day At (owner, 2026-11-23): start at the shop, finish at home.
+  it("saves where the day ends apart from where it starts", async () => {
+    const t = table([]);
+    routing.geocodeAddress.mockResolvedValue({ lat: 33.4, lng: -111.8 });
+    expect(
+      await saveMemberStartWith(t.db, me, {
+        userId: "",
+        startFrom: "shop",
+        endAt: "home",
+        homeAddress: "12 Elm St, Mesa, AZ 85201",
+      }),
+    ).toEqual({ saved: { found: true } });
+    expect(t.rows[0]).toMatchObject({ start_from: "shop", end_at: "home", home_latitude: 33.4 });
+    // Ending at home needs the address too.
+    expect(
+      await saveMemberStartWith(table([]).db, me, {
+        userId: "",
+        startFrom: "shop",
+        endAt: "home",
+        homeAddress: "",
+      }),
+    ).toEqual({ fields: { home_address: "Enter the home address." } });
+    expect(
+      (
+        await saveMemberStartWith(table([]).db, me, {
+          userId: "",
+          startFrom: "shop",
+          endAt: "office",
+          homeAddress: "",
+        })
+      ).error,
+    ).toBeTruthy();
+  });
+
+  it("ends where it starts when no end is given", async () => {
+    const t = table([]);
+    await saveMemberStartWith(t.db, me, { userId: "", startFrom: "shop", homeAddress: "" });
+    expect(t.rows[0]).toMatchObject({ start_from: "shop", end_at: "shop" });
   });
 });
 

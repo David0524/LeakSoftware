@@ -9,6 +9,7 @@ import {
 import {
   assignableRoles,
   canMakeJobs,
+  endAtOf,
   homeMapStatus,
   requiresFinishPhoto,
   requiresFinishedChecklist,
@@ -220,6 +221,7 @@ export default async function TeamSettingsPage() {
             user={m.user_id}
             submit="Save Start"
             startFrom={startOf.get(m.user_id)?.start_from === "home" ? "home" : "shop"}
+            endAt={endAtOf(startOf.get(m.user_id) ?? { start_from: "shop" })}
             homeAddress={startOf.get(m.user_id)?.home_address ?? ""}
             missing={homeMapStatus(startOf.get(m.user_id)) === "missing"}
           />

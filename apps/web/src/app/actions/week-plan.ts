@@ -132,8 +132,9 @@ export async function planWeek(input: {
         date,
         stays: [],
         earliestMin: date === ctx.today ? ctx.nowMin : null,
-        // The tech's own start: home when they start there, else the shop.
+        // The tech’s own start and end: home when they chose it, else the shop.
         start: techStart(ctx, techId).at,
+        end: techStart(ctx, techId).end.at,
       };
       for (const j of day?.jobs ?? []) {
         const own = j.assigned_user_id === techId;

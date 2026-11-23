@@ -95,18 +95,22 @@ export function techStart(
   return startFor(techId, ctx.starts, ctx.depot);
 }
 
-/** Every place a day can start from (the shop and each readable home), for drive times. */
+/** Every place a day can start or end (the shop and each readable home), for drive times. */
 export function startPoints(ctx: Pick<RouteContext, "depot" | "starts">): LatLng[] {
-  return [ctx.depot, ...ctx.starts.map((s) => techStart(ctx, s.user_id).at)].filter(
-    (p): p is LatLng => !!p,
-  );
+  return [
+    ctx.depot,
+    ...ctx.starts.flatMap((s) => {
+      const start = techStart(ctx, s.user_id);
+      return [start.at, start.end.at];
+    }),
+  ].filter((p): p is LatLng => !!p);
 }
 
 export interface DayRoute {
   techId: string;
   techName: string;
   date: string;
-  /** Where this tech's day starts and ends (home or the shop). */
+  /** Where this tech's day starts (home or the shop), and where it ends (`start.end`). */
   start: RouteStart;
   /** In route order; includes jobs where this tech is the second tech. */
   jobs: JobRow[];
@@ -183,6 +187,7 @@ export async function loadRoutes(
         start.at,
         workDay(ctx.settings),
         drive,
+        start.end.at,
       ),
     });
   }

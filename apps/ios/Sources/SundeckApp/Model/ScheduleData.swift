@@ -33,12 +33,17 @@ public struct ScheduleContext: Sendable {
     public var plan: PlanContext {
         PlanContext(timeZone: timeZone, settings: settings, depot: depot, today: today, nowMin: nowMin, starts: starts)
     }
-    /// Where this tech's day starts and ends: their home when they start there and it's on the
-    /// map, else the shop (core `startFor`).
+    /// Where this tech's day starts (`at`) and ends (`end.at`): their home when they chose it and
+    /// it's on the map, else the shop (core `startFor`).
     public func start(for techId: String?) -> RouteStart { startFor(techId, starts, shop: depot) }
-    /// Every place a day can start: the shop, and each home start on the map (for drive times).
+    /// Every place a day can start or end: the shop, and each home start or end on the map (for
+    /// drive times).
     public var startPoints: [LatLng?] {
-        [depot] + starts.compactMap { routeStart($0, shop: nil).at }
+        [depot]
+            + starts.flatMap { row -> [LatLng] in
+                let r = routeStart(row, shop: nil)
+                return [r.at, r.end.at].compactMap { $0 }
+            }
     }
     public var origin: MapPlace? {
         depot != nil || !depotAddress.isEmpty ? MapPlace(address: depotAddress, location: depot) : nil
@@ -373,12 +378,13 @@ public func loadRoutes(
     var routes: [String: DayRoute] = [:]
     for (key, d) in byKey {
         let ordered = inRouteOrder(d.jobs)
+        let start = ctx.start(for: d.tech)
         let summary = daySummary(
             ordered.map {
                 SavedStop(
                     id: $0.id, location: $0.location, startMin: $0.startMin(ctx.timeZone),
                     endMin: $0.endMin(ctx.timeZone))
-            }, depot: ctx.start(for: d.tech).at, day: ctx.workDay, drive: drive.drive)
+            }, depot: start.at, day: ctx.workDay, drive: drive.drive, end: start.end.at)
         routes[key] = DayRoute(
             techId: d.tech, techName: names[d.tech] ?? "Teammate", date: d.date, jobs: ordered, summary: summary)
     }

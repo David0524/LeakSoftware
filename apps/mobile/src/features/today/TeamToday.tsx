@@ -67,7 +67,8 @@ export function useTeamToday({
         const stops = inRouteOrderViews(
           dayJobs.filter((j) => j.assigned_user_id === p.value || j.second_tech_id === p.value),
         );
-        return { person: p, stops, start: startFor(p.value, starts, shop).at };
+        const where = startFor(p.value, starts, shop);
+        return { person: p, stops, start: where.at, end: where.end.at };
       })
       .filter((d) => d.stops.length > 0);
     // eslint-disable-next-line react-hooks/exhaustive-deps -- the shop's point by value
@@ -76,6 +77,7 @@ export function useTeamToday({
     () =>
       days.flatMap((d) => [
         d.start,
+        d.end,
         ...d.stops.map((j) => propertyLocation(j.property)),
       ]) as (LatLng | null)[],
     [days],
@@ -83,7 +85,7 @@ export function useTeamToday({
   const { drive } = useDriveTimes(company.id, points);
   return useMemo(
     () =>
-      days.map(({ person, stops, start }) => {
+      days.map(({ person, stops, start, end }) => {
         const summary = daySummary(
           stops.map((j) => ({
             id: j.id,
@@ -94,6 +96,7 @@ export function useTeamToday({
           start,
           workDay(settings),
           drive,
+          end,
         );
         const day = techDayProgress(
           stops.map((j, i) => ({

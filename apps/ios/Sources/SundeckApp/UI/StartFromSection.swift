@@ -2,9 +2,10 @@
     import SundeckCore
     import SwiftUI
 
-    // Start My Day From (owner, 2026-10-21; docs/design/2026-10-21-start-from-home.md), in More ›
-    // My Profile and on a person in Settings › Team: The Shop or Home as a segmented control
-    // (two related states), Home's address with the same suggestions as a pool's, what happens
+    // Start My Day From and End My Day At (owner, 2026-10-21 and 2026-11-23;
+    // docs/design/2026-10-21-start-from-home.md), in More › My Profile and on a person in
+    // Settings › Team: The Shop or Home as a segmented control for each (two related states),
+    // Home's address (when either is Home) with the same suggestions as a pool's, what happens
     // while it isn't on the map, and the footer. Words from core `START_FROM_COPY`.
 
     struct StartFromSection: View {
@@ -23,7 +24,13 @@
                     selection: $form.from, options: [RouteStartLabel.shop, .home],
                     label: { $0 == .home ? StartFromCopy.home : StartFromCopy.shop }, title: StartFromCopy.field,
                     fillsWidth: true)
-                if form.from == .home {
+                SectionLabel(StartFromCopy.endField)
+                    .padding(.top, 8)
+                Segmented(
+                    selection: $form.to, options: [RouteStartLabel.shop, .home],
+                    label: { $0 == .home ? StartFromCopy.home : StartFromCopy.shop }, title: StartFromCopy.endField,
+                    fillsWidth: true)
+                if form.usesHomeAddress {
                     Grouped {
                         LabeledFieldRow(
                             label: StartFromCopy.homeAddress, text: $form.address, labelWidth: 132,

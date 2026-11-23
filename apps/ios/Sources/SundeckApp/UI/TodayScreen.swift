@@ -340,7 +340,7 @@
                         moveStop(stops[first].element, .place(to > first ? to - 1 : to), from: .reorder)
                     }
                 } footer: {
-                    Text(verbatim: "\(durationLabel(route.summary.backLegMin)) \(backLegLabel(day.startLabel))")
+                    Text(verbatim: "\(durationLabel(route.summary.backLegMin)) \(backLegLabel(day.endLabel))")
                         .textRole(.secondary)
                         .foregroundStyle(Color.textMuted)
                 }
@@ -583,8 +583,10 @@
             return route?.jobs.first { $0.id == id }
         }
 
-        /// Where this day starts and ends: home for someone who starts there, else the shop.
+        /// Where this day starts: home for someone who starts there, else the shop.
         var startLabel: RouteStartLabel { ctx.start(for: techId).label }
+        /// Where this day ends: home for someone who ends there, else the shop (the drive back).
+        var endLabel: RouteStartLabel { ctx.start(for: techId).end.label }
 
         /// Whether each stop, in route order, is on the map (drive times count it).
         private var located: [Bool] {
@@ -604,9 +606,9 @@
             guard let route,
                 let min = StopDrive.home(
                     backMin: route.summary.backLegMin, located: located,
-                    startLocated: ctx.start(for: techId).at != nil)
+                    startLocated: ctx.start(for: techId).end.at != nil)
             else { return nil }
-            return "\(durationLabel(min)) \(backLegLabel(startLabel))"
+            return "\(durationLabel(min)) \(backLegLabel(endLabel))"
         }
 
         /// The drive to a stop, from the day's start or the stop before it.

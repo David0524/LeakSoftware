@@ -324,7 +324,7 @@ export default async function SchedulePage({ searchParams }: PageProps<"/schedul
   // Customers to Add: the plans, and the techs (you first, as on the rest of Schedule).
   const plans = routePlans ? { list: routePlans, workDays: ctx.settings.workDays } : null;
   // What the browser needs to show Optimize's and Optimize Week's new order at once: the
-  // settings, the shop, and where each tech who starts at home starts (a map point only).
+  // settings, the shop, and each tech who starts or ends at home, and where (a map point only).
   const preview = {
     timeZone: ctx.timeZone,
     settings: ctx.settings,
@@ -335,9 +335,12 @@ export default async function SchedulePage({ searchParams }: PageProps<"/schedul
     partners: office.isManager,
     homes: [
       ...new Map(
-        columns
-          .filter((c) => c.start.label === "home" && c.start.at)
-          .map((c) => [c.techId, { techId: c.techId, at: c.start.at! }]),
+        columns.flatMap((c) => {
+          const start = c.start.label === "home";
+          const end = c.start.end.label === "home";
+          const at = start ? c.start.at : end ? c.start.end.at : null;
+          return at ? [[c.techId, { techId: c.techId, at, start, end }] as const] : [];
+        }),
       ).values(),
     ],
   };
@@ -479,7 +482,8 @@ export default async function SchedulePage({ searchParams }: PageProps<"/schedul
           </div>
         ) : null}
 
-        {!ctx.depot && columns.some((c) => c.start.label === "shop") ? (
+        {!ctx.depot &&
+        columns.some((c) => c.start.label === "shop" || c.start.end.label === "shop") ? (
           <div className="mb-4">
             <Notice tone="warning">
               Routes start and end at the shop, which has no map location yet.{" "}

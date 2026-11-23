@@ -4,9 +4,10 @@ import { OWNER, RUN, TECH, signIn } from "./helpers";
 
 // Start the day from home or from the shop (owner, 2026-10-21;
 // docs/design/2026-10-21-start-from-home.md): a tech sets Home with an address in More › My
-// Profile; until it's on the map the setting says the day starts at the shop; once it is, the
-// tech's day on Today drives from home and back home. No routing key in CI, so the lookup's
-// result is written here as the website's lookup would write it.
+// Profile; until it's on the map the setting says the day uses the shop; once it is, the
+// tech's day on Today drives from home and back home. End My Day At (owner, 2026-11-23) is set
+// apart: ending at the shop turns the drive back to the shop. No routing key in CI, so the
+// lookup's result is written here as the website's lookup would write it.
 
 // A real public place (approximate coordinates), never a home.
 const PLACE = {
@@ -22,10 +23,12 @@ const HOME = { address: "1625 N Central Ave, Phoenix, AZ 85004", lat: 33.4672, l
 // The setting's words (core START_FROM_COPY), the same on every platform.
 const START_FROM_COPY = {
   field: "Start My Day From",
+  endField: "End My Day At",
+  shop: "The Shop",
   home: "Home",
   homeAddress: "Home Address",
-  footer: "Routes, drive times and Optimize start and end here.",
-  pending: "Starting from the shop until the address is found on the map.",
+  footer: "Routes, drive times and Optimize start and end at these places.",
+  pending: "Using the shop until the address is found on the map.",
 };
 
 test("a tech starts their day from home", async ({ page }) => {
@@ -73,25 +76,29 @@ test("a tech starts their day from home", async ({ page }) => {
       .update({ latitude: PLACE.lat, longitude: PLACE.lng, location_source: "manual" })
       .eq("id", job!.property_id);
 
-    // More › My Profile: Start My Day From, Home, and the home address.
+    // More › My Profile: Start My Day From and End My Day At, Home, and the home address.
     await signIn(page, TECH, "/more");
     await page.getByRole("link", { name: /My Profile/ }).click();
     await expect(page.getByRole("heading", { name: "My Profile" })).toBeVisible();
     const setting = page.getByTestId("start-from");
-    await expect(setting.getByRole("radiogroup", { name: START_FROM_COPY.field })).toBeVisible();
+    const startGroup = setting.getByRole("radiogroup", { name: START_FROM_COPY.field });
+    const endGroup = setting.getByRole("radiogroup", { name: START_FROM_COPY.endField });
+    await expect(startGroup).toBeVisible();
+    await expect(endGroup).toBeVisible();
     await expect(setting).toContainText(START_FROM_COPY.footer);
-    await setting.getByRole("radio", { name: START_FROM_COPY.home }).click();
+    await startGroup.getByRole("radio", { name: START_FROM_COPY.home }).click();
+    await endGroup.getByRole("radio", { name: START_FROM_COPY.home }).click();
     await setting.getByRole("combobox", { name: START_FROM_COPY.homeAddress }).fill(HOME.address);
     await setting.getByRole("button", { name: "Save" }).click();
     await expect(page.getByText(/^Saved\./).first()).toBeVisible();
 
     const { data: row } = await tech
       .from("member_start")
-      .select("id, start_from, home_address")
+      .select("id, start_from, end_at, home_address")
       .eq("user_id", techId)
       .is("deleted_at", null)
       .single();
-    expect(row).toMatchObject({ start_from: "home", home_address: HOME.address });
+    expect(row).toMatchObject({ start_from: "home", end_at: "home", home_address: HOME.address });
 
     // Not found on the map: the setting says the day starts at the shop until it is.
     await tech
@@ -118,8 +125,20 @@ test("a tech starts their day from home", async ({ page }) => {
     // said "from home" is gone, owner 2026-10-22).
     await expect(page.getByText(/\d+ (min|hr).* back home$/)).toBeVisible();
     await expect(page.getByText(/back to the shop/)).toHaveCount(0);
+
+    // Start at home, end at the shop: the drive back goes to the shop.
+    await page.goto("/more/profile");
+    await endGroup.getByRole("radio", { name: START_FROM_COPY.shop }).click();
+    await setting.getByRole("button", { name: "Save" }).click();
+    await expect(page.getByText(/^Saved\./).first()).toBeVisible();
+    await page.goto("/today");
+    await expect(page.getByText(/\d+ (min|hr).* back to the shop$/)).toBeVisible();
+    await expect(page.getByText(/back home/)).toHaveCount(0);
   } finally {
     // Back to the shop, so the demo tech's other tests see the shop's wording.
-    await tech.from("member_start").update({ start_from: "shop" }).eq("user_id", techId);
+    await tech
+      .from("member_start")
+      .update({ start_from: "shop", end_at: "shop" })
+      .eq("user_id", techId);
   }
 });

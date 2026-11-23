@@ -176,9 +176,11 @@ export default function Today() {
   });
   const showTeam = teamRows.some((r) => r.value !== me);
   useTeamSync(showTeam);
-  // Where this tech's day starts and ends: the shop, or their home (owner, 2026-10-21).
+  // Where this tech's day starts and ends: the shop, or their home (owner, 2026-10-21), each set
+  // apart (owner, 2026-11-23).
   const start = useRouteStart(company, shownTech);
   const depot = start.at;
+  const end = start.end.at;
   const line = useLine(company.id);
   const weather = useWeather((company as { postal_code?: string | null }).postal_code);
   // Kept between renders (owner, 2026-10-20: smooth), so the card's rule and the day's drive
@@ -197,8 +199,8 @@ export default function Today() {
     [stops.length, jobs, shownTech, today, tz],
   );
   const points = useMemo(
-    () => [depot, ...stops.map((j) => propertyLocation(j.property))],
-    [depot, stops],
+    () => [depot, end, ...stops.map((j) => propertyLocation(j.property))],
+    [depot, end, stops],
   );
   const { drive } = useDriveTimes(company.id, points);
   const summary = useMemo(
@@ -213,8 +215,9 @@ export default function Today() {
         depot,
         workDay(settings),
         drive,
+        end,
       ),
-    [stops, depot, settings, drive, tz],
+    [stops, depot, end, settings, drive, tz],
   );
   // Pools on today's stops with an address but no map location are looked up in the background.
   const pools = useMemo(() => stops.map((j) => j.property), [stops]);
@@ -310,7 +313,7 @@ export default function Today() {
   const [doneOpen, setDoneOpen] = useState(false);
   const heroAt = heroJob ? stops.indexOf(heroJob) : -1;
   const backLeg = summary.driveMin - summary.legs.reduce((a, b) => a + b, 0);
-  const homeLine = driveHomeLine(backLeg, start.label);
+  const homeLine = driveHomeLine(backLeg, start.end.label);
   // Do Later and Reorder (owner, 2026-10-20; docs/plans/today-reorder.md): the Schedule's move,
   // from this phone's jobs, saved through the sync layer.
   const reorder = useTodayReorder({ company, stops, techId: shownTech, me, manager, drive });

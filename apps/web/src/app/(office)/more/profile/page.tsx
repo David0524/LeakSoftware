@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { homeMapStatus } from "@leakbook/core";
+import { endAtOf, homeMapStatus } from "@leakbook/core";
 import { StartFromForm } from "@/components/start-from";
 import { PageHeader } from "@/components/ui";
 import { getOffice } from "@/lib/auth";
@@ -26,6 +26,7 @@ export default async function MyProfilePage() {
         <StartFromForm
           id="me"
           startFrom={start?.start_from === "home" ? "home" : "shop"}
+          endAt={endAtOf(start ?? { start_from: "shop" })}
           homeAddress={start?.home_address ?? ""}
           missing={homeMapStatus(start) === "missing"}
         />
