@@ -14,7 +14,7 @@ Store rule 3.1.1, DECISIONS 2026-11-12), so codes aren't in them.
 ## One code box
 
 The trial page (`/welcome`) and Settings › Sundeck Pro Billing take every kind of code in one field,
-"Code" (placeholder "Promo code or a shop’s name", hint "Referred by another shop? Enter its name.").
+"Code" (placeholder "Enter code", hint "Referred by another shop? Enter its name.").
 Any case; spaces and punctuation are ignored (`normalizeCode`, `app.normalize_code`).
 
 | Kind | Made by | What it does |
