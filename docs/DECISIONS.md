@@ -3,7 +3,7 @@
 Newest first. Each entry: date, decision, reason.
 
 ## 2026-11-23 (owner, answering the report: "Write a Claude for Chrome for this", "Yes", "Correct", "Correct, they cannot", "Ok", "Correct these")
-- **`invoice.paid` on the live webhook** is the owner's step, through Claude in Chrome: `docs/release/STRIPE_INVOICE_PAID_HANDOFF.md`.
+- **`invoice.paid` is on the live Sundeck Pro webhook** (`we_1UcZ7gQS7f6dOQmZuB0vyyTO`, API `2026-09-30.endive`; owner through Claude in Chrome, same day, `docs/release/STRIPE_INVOICE_PAID_HANDOFF.md`): the old six events plus `invoice.paid`, nothing else changed. It had no deliveries yet because no shop has a live subscription (0 of 3); the endpoint answers an unsigned request with 400, as it should.
 - **Next.js goes to 16.4.6**, the security patch for 16.4.2.
 - **Confirmed:** a promo's free months are the trial's whole length (CANNONBALL90 is 3 months from sign-up), and a referral adds a month on top; techs without Text and Call Customers can't send On My Way texts; the iPhone Team title stays as it is unless it overlaps at rest.
 - **Fixed from the live screenshot review:** Team rows have one control on the right (the switch); one way to invite; Save buttons are solid blue (the house rule for primary buttons), on all four platforms where they apply.
