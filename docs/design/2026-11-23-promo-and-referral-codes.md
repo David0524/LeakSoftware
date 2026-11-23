@@ -144,6 +144,27 @@ the code large, "Start your free trial at sundeckpro.com", and a QR (error corre
 `qrcode` package) for the link above. Colors from `brand/tokens.json`; orange only in the logo's dot.
 Outputs go to `apps/video/out/` (not committed, like the laminate card and mailer).
 
+### On More and in the account menu (owner, same day: "Referral links should be more visible")
+
+Owners (demo shops too) also see it at the top of **More**, above the first list, in the brand's
+orange accent, which More uses nowhere else (`components/referral-offer.tsx`):
+
+- A card on a soft orange wash (`color.brand.safety` at 10% over `role.surface`, 14% in dark mode),
+  no outline, with a 44 pt round Safety-orange badge holding a navy gift symbol.
+- **Give a Month, Get a Month** (Barlow, bold) and "Share your code. They get an extra month free,
+  and so do you." (secondary text).
+- "Your code" and the code large in Barlow ExtraBold on a white (dark: card-colored) ticket with a
+  dashed orange edge; codes over 12 letters get smaller type so a 20-letter code stays on one line.
+- **Share**: a pill in Safety orange with navy text (4.9:1), full width on phones, beside the code
+  on computers. It opens the share sheet where there is one, otherwise the sheet below.
+- The rest of the card opens a sheet titled Give a Month, Get a Month (Done) holding the full card
+  above. It isn't a link to the billing page, which doesn't show the card to demo shops.
+
+On a computer, the account menu (the avatar at the end of the header, with Contact Us) has the same
+thing as a tinted item under the name: the gift badge, **Give a Month, Get a Month**, and the code;
+it opens the same sheet. Admins, techs, shops without a code, and any error show nothing. More
+reads `referral_summary` with its other data; the header passes it to the menu unawaited.
+
 ## Admin portal
 
 - **Codes** (Growth › Codes): Promo Codes (code, note, who made it, offer, used by with the shops

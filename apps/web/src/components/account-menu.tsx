@@ -2,13 +2,15 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useEffect, useRef, useState } from "react";
+import { Suspense, useEffect, useRef, useState } from "react";
 import { switchCompany } from "@/app/actions/auth";
 import { FeatureRequest } from "./feature-request";
 import { ThemeToggle } from "./theme-toggle";
 import { SignOutForm } from "./sign-out-form";
 import { CONTACT_EMAIL, CONTACT_PHONE, CONTACT_PHONE_URL } from "@/lib/site";
 import { cx } from "./ui";
+import { ReferralMenuItem } from "./referral-offer";
+import type { ReferralOffer } from "@/server/referral";
 
 /** Up to two initials from a name, or the email's first letter. */
 function initials(name: string | null, email: string) {
@@ -26,10 +28,13 @@ export function AccountMenu({
   user,
   company,
   companies,
+  referral = null,
 }: {
   user: { name: string | null; email: string };
   company: { id: string; name: string };
   companies: { id: string; name: string }[];
+  /** The owner's referral code, still loading: Give a Month, Get a Month (owner, 2026-11-23). */
+  referral?: Promise<ReferralOffer | null> | null;
 }) {
   const path = usePathname();
   // The page the menu was opened on: it closes by itself on a new page.
@@ -116,6 +121,11 @@ export function AccountMenu({
                 Switch
               </button>
             </form>
+          ) : null}
+          {referral ? (
+            <Suspense fallback={null}>
+              <ReferralMenuItem offer={referral} />
+            </Suspense>
           ) : null}
           <div className="border-t-[0.5px] border-separator" />
           <div className="flex min-h-11 items-center justify-between pr-2 pl-4">

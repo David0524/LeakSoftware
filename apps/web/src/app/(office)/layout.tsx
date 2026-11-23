@@ -19,6 +19,8 @@ import { activityUnread } from "@/lib/activity";
 import { DesktopSearch } from "@/components/shop-search";
 import { desktopNav, officeLinks } from "@/lib/nav";
 import { onboardingAvailable } from "@/server/billing";
+import { referralOfferFor } from "@/server/referral";
+import { createClient } from "@/lib/supabase/server";
 
 /**
  * Office shell. The header frame renders at once; everything that depends on who is signed
@@ -204,6 +206,14 @@ async function OfficeNav() {
         user={{ name: office.user.name, email: office.user.email }}
         company={{ id: office.company.id, name: office.company.name }}
         companies={office.companies.map((c) => ({ id: c.id, name: c.name }))}
+        // Give a Month, Get a Month (owners): not awaited, so it never holds up the header.
+        referral={
+          office.isOwner
+            ? createClient()
+                .then((db) => referralOfferFor(office, db))
+                .catch(() => null)
+            : null
+        }
       />
     </div>
   );
