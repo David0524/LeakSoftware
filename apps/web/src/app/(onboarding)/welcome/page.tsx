@@ -6,7 +6,8 @@ import { TrialOffer } from "@/components/trial-offer";
 import { getOffice } from "@/lib/auth";
 import { getAccess, getCompany } from "@/lib/data";
 import { createClient } from "@/lib/supabase/server";
-import { billingConfigured } from "@/server/billing";
+import { adminClient } from "@/server/admin";
+import { appliedCode, billingConfigured } from "@/server/billing";
 import { stripePublishableKey } from "@/server/stripe";
 
 export const metadata: Metadata = { title: "Start Your Free Trial · Sundeck Pro" };
@@ -28,7 +29,7 @@ async function WelcomeBody() {
   const [access, company] = await Promise.all([getAccess(office), getCompany(office)]);
   if (!mustFinishSetup(access, office.company.role)) redirect("/home");
   const supabase = await createClient();
-  const [{ data: sub }, { count }] = await Promise.all([
+  const [{ data: sub }, { count }, code] = await Promise.all([
     supabase
       .from("subscription")
       .select("trial_ends_at, heard_from")
@@ -40,6 +41,9 @@ async function WelcomeBody() {
       .eq("company_id", office.company.id)
       .eq("status", "active")
       .is("deleted_at", null),
+    // The code used, if any (owner, 2026-11-23); the owner's own client reads it without the
+    // server key, just not the referring shop's name.
+    appliedCode(office.company.id, adminClient() ?? supabase),
   ]);
   const people = Math.max(1, count ?? 1);
   return (
@@ -51,6 +55,8 @@ async function WelcomeBody() {
       heardFrom={(sub?.heard_from as string | null) ?? null}
       billing={billingConfigured()}
       publishableKey={stripePublishableKey()}
+      offer={code.offer}
+      canEnterCode={code.canEnter}
     />
   );
 }

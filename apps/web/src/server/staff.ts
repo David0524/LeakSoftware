@@ -68,7 +68,10 @@ export type StaffActionKind =
   | "internal_off"
   | "cost_add"
   | "cost_change"
-  | "cost_delete";
+  | "cost_delete"
+  | "promo_add"
+  | "promo_on"
+  | "promo_off";
 
 /** Writes the staff log (public.staff_action), which no one can change afterwards. */
 export async function logStaffAction(
@@ -201,6 +204,60 @@ export async function loadShop(id: string): Promise<ShopDetail | null> {
       error: failedSendText(f.error, "failed send"),
     })),
   };
+}
+
+/** A shop that used a code or another shop's referral code (Admin › Codes, a shop's page). */
+export interface CodeShop {
+  id: string;
+  name: string;
+  applied_at: string;
+  status: string;
+  subscribed: boolean;
+}
+
+export interface PromoCodeRow {
+  code: string;
+  free_months: number;
+  percent_off: number | null;
+  percent_months: number | null;
+  active: boolean;
+  expires_at: string | null;
+  max_uses: number | null;
+  note: string | null;
+  created_by: string | null;
+  created_at: string;
+  shops: CodeShop[];
+}
+
+export interface ReferralRow extends CodeShop {
+  code?: string;
+  referrer_id?: string | null;
+  referrer_name?: string | null;
+  rewarded_at: string | null;
+  reward: "credit" | "trial" | "none" | null;
+  reward_cents: number | null;
+}
+
+export interface Codes {
+  promo: PromoCodeRow[];
+  demo: {
+    code: string;
+    active: boolean;
+    note: string | null;
+    max_uses: number | null;
+    expires_at: string | null;
+    uses: number;
+  }[];
+  referrals: ReferralRow[];
+}
+
+/** Admin › Codes (owner, 2026-11-23): promo codes and their shops, demo codes, referrals. */
+export const loadCodes = cache(() => rpc<Codes>("admin_codes"));
+
+/** The shops a shop referred, for its page. */
+export async function loadShopReferrals(id: string): Promise<ReferralRow[]> {
+  if (!/^[0-9a-f-]{36}$/i.test(id)) return [];
+  return rpc<ReferralRow[]>("admin_shop_referrals", { target: id });
 }
 
 export interface PersonRow {

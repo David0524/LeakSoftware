@@ -1,7 +1,15 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { COST_CATEGORIES, PAYERS, parseDollars, REPEATS } from "@leakbook/core";
+import {
+  COST_CATEGORIES,
+  PAYERS,
+  parseDollars,
+  PROMO_MAX_FREE_MONTHS,
+  PROMO_MAX_PERCENT_MONTHS,
+  REPEATS,
+  validPromoCode,
+} from "@leakbook/core";
 import { cookies } from "next/headers";
 import { redirect, unstable_rethrow } from "next/navigation";
 import { ACTIVE_COMPANY_COOKIE } from "@/lib/auth";
@@ -336,4 +344,90 @@ async function deleteCostAction(form: FormData): Promise<AdminState> {
   await logStaffAction(staff, "cost_delete", { details: data });
   revalidatePath("/k4cs4uxrntb27z/finances");
   return { message: "Deleted." };
+}
+
+/**
+ * New Code (owner, 2026-11-23: "i think promo code might be best"): free months (the trial
+ * runs that many months from sign-up: 3 is "3 months free") and/or a percent off for some paid
+ * months or forever, with an optional end date and most uses. The offer can't be changed
+ * afterwards; a code is turned off instead.
+ */
+export async function addPromoCode(_: AdminState, form: FormData): Promise<AdminState> {
+  return guarded("addPromoCode", () => addPromoCodeAction(form));
+}
+
+const wholeNumber = (v: string) => (/^\d{1,4}$/.test(v) ? Number(v) : NaN);
+
+async function addPromoCodeAction(form: FormData): Promise<AdminState> {
+  const { staff, db } = await requireStaff();
+  const code = text(form, "code", 40);
+  const free = wholeNumber(text(form, "free_months", 4) || "0");
+  const percentText = text(form, "percent_off", 4);
+  const percent = percentText ? wholeNumber(percentText) : null;
+  const forever = form.get("percent_for") === "forever";
+  const months = percent === null || forever ? null : wholeNumber(text(form, "percent_months", 4));
+  const endsOn = text(form, "ends_on", 10);
+  const maxText = text(form, "max_uses", 6);
+  const maxUses = maxText ? Number(maxText) : null;
+  const note = text(form, "note", 500);
+  if (!validPromoCode(code)) return { error: "A code is 3 to 24 letters and numbers." };
+  if (!Number.isInteger(free) || free < 0 || free > PROMO_MAX_FREE_MONTHS)
+    return { error: `Free months are 0 to ${PROMO_MAX_FREE_MONTHS}.` };
+  if (percent !== null && (!Number.isInteger(percent) || percent < 1 || percent > 100))
+    return { error: "Percent off is 1 to 100." };
+  if (
+    months !== null &&
+    (!Number.isInteger(months) || months < 1 || months > PROMO_MAX_PERCENT_MONTHS)
+  )
+    return { error: `The percent off lasts 1 to ${PROMO_MAX_PERCENT_MONTHS} months, or forever.` };
+  if (endsOn && !/^\d{4}-\d{2}-\d{2}$/.test(endsOn)) return { error: "Choose the end date." };
+  if (maxUses !== null && (!Number.isInteger(maxUses) || maxUses < 1))
+    return { error: "Most uses is a whole number, 1 or more." };
+  const { data, error } = await db.rpc("admin_add_promo_code", {
+    new_code: code,
+    free_months: free,
+    percent_off: percent,
+    percent_months: months,
+    // The end of that day, Arizona time (no daylight saving), so the code works all day.
+    ends_at: endsOn ? `${endsOn}T23:59:59-07:00` : null,
+    max_uses: maxUses,
+    note: note || null,
+    staff_email: staff.email,
+  });
+  if (error)
+    return error.code === "22023" || error.code === "23505"
+      ? { error: error.message }
+      : refused(error, "add promo code");
+  await logStaffAction(staff, "promo_add", {
+    details: {
+      code: data,
+      free_months: free,
+      percent_off: percent,
+      percent_months: months,
+      ends_on: endsOn || null,
+      max_uses: maxUses,
+    },
+  });
+  revalidatePath("/k4cs4uxrntb27z/codes");
+  return { message: `${data as string} is ready to use.` };
+}
+
+/** Turn Off (new shops can't use it; shops that did keep their offer) or Turn On a code. */
+export async function setPromoCodeActive(_: AdminState, form: FormData): Promise<AdminState> {
+  return guarded("setPromoCodeActive", () => setPromoCodeActiveAction(form));
+}
+
+async function setPromoCodeActiveAction(form: FormData): Promise<AdminState> {
+  const { staff, db } = await requireStaff();
+  const code = text(form, "code", 40);
+  const on = form.get("active") === "1";
+  const { error } = await db.rpc("admin_set_promo_code_active", {
+    target_code: code,
+    on_now: on,
+  });
+  if (error)
+    return error.code === "22023" ? { error: error.message } : refused(error, "promo code on");
+  await logStaffAction(staff, on ? "promo_on" : "promo_off", { details: { code } });
+  revalidatePath("/k4cs4uxrntb27z/codes");
+  return { message: on ? "Turned on." : "Turned off. Shops that used it keep their offer." };
 }

@@ -52,6 +52,23 @@ export interface AdminShop {
   heard_from_other: string | null;
   /** Sundeck Pro's own shop (demo, App Review, tests): left out of the portal's counts and money. */
   internal?: boolean;
+  /** The promo or referral code the shop used (owner, 2026-11-23), its offer and when. */
+  promo_code?: string | null;
+  promo_kind?: "promo" | "referral" | null;
+  promo_applied_at?: string | null;
+  promo_free_months?: number;
+  promo_percent_off?: number | null;
+  promo_percent_months?: number | null;
+  /** The shop's own referral code (its name). */
+  referral_code?: string | null;
+  /** The shop whose referral code it used, and that shop's free month. */
+  referred_by?: string | null;
+  referred_by_name?: string | null;
+  referral_rewarded_at?: string | null;
+  referral_reward?: "credit" | "trial" | "none" | null;
+  referral_reward_cents?: number | null;
+  /** How many shops used its referral code. */
+  referrals?: number;
 }
 
 /**

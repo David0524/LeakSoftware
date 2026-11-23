@@ -2,6 +2,9 @@
 
 import { useActionState, useCallback, useState } from "react";
 import {
+  afterTrialText,
+  discountedCents,
+  discountNote,
   formatCents,
   planForServices,
   planTier,
@@ -11,10 +14,12 @@ import {
   TRIAL_OFFER,
   trialTerms,
   trialPackage,
+  type CodeOffer,
   type Services,
 } from "@leakbook/core";
 import type { SubscribeState } from "@/app/actions/auth";
-import { redeemCode, startCheckout } from "@/app/actions/onboarding";
+import { startCheckout } from "@/app/actions/onboarding";
+import { AppliedCode, CodeField } from "./code-field";
 import { Logo } from "./logo";
 import { CheckoutPlaceholder, SubscriptionCheckout } from "./subscription-checkout";
 import { TeamSizeStepper, useSettledTeamSize } from "./team-size";
@@ -23,7 +28,9 @@ import { orOffline } from "@/lib/offline";
 
 // A new shop's trial page (/welcome), straight after sign-up (owner, 2026-10-24: the
 // questionnaire that came first is gone). The price for the shop's package and team (the owner
-// picks how many people, owner 2026-11-12), what's included, then the card for the free trial (30 days; 3 months from the mailer), or a demo code (VIP26). With Stripe's
+// picks how many people, owner 2026-11-12), what's included, then the card for the free trial
+// (30 days; 3 months from the mailer), or a code: demo (VIP26), promo, or another shop's
+// referral code, whose offer then shows in the price and trial (owner, 2026-11-23). With Stripe's
 // publishable key the card form is embedded beside the offer (owner, 2026-10-24); without it
 // the button opens Stripe's page. Copy: packages/core/src/trial-offer.ts.
 
@@ -39,6 +46,8 @@ export function TrialOffer({
   heardFrom = null,
   billing,
   publishableKey = null,
+  offer = null,
+  canEnterCode = true,
 }: {
   services: Services;
   /** Active people on the team: the fewest the owner can pick. */
@@ -52,9 +61,13 @@ export function TrialOffer({
   billing: boolean;
   /** Stripe's publishable key: with it (and billing), the card form is on this page. */
   publishableKey?: string | null;
+  /** The promo or referral code applied, if any. */
+  offer?: CodeOffer | null;
+  /** Whether a code can still be entered (one per shop). */
+  canEnterCode?: boolean;
 }) {
-  const offer = TRIAL_OFFER[trialPackage(services)];
-  const terms = trialTerms(heardFrom);
+  const pkg = TRIAL_OFFER[trialPackage(services)];
+  const terms = trialTerms(heardFrom, offer);
   const [team, setTeam] = useState(Math.max(people, teamSize));
   // The card form is started for the team size the owner settles on.
   const settled = useSettledTeamSize(team);
@@ -64,20 +77,22 @@ export function TrialOffer({
     {},
   );
   const tier = planTier(planForServices(services), team);
-  const price = dollars(servicesPriceCents(services, team));
+  const fullCents = servicesPriceCents(services, team);
+  const price = dollars(discountedCents(fullCents, offer?.percentOff));
+  const discount = discountNote(fullCents, offer);
   // Every new shop comes to this payment page (owner, 2026-10-16). Without Stripe on the
   // server, cards can't be taken yet; a demo code (VIP26) still gets a shop in.
   const [showCode, setShowCode] = useState(!billing);
   const embedded = billing && Boolean(publishableKey);
   const chargeNote = `You won’t be charged until ${trialEnds ? longDate(trialEnds) : terms.fromToday}; cancel before then in Settings › Sundeck Pro Billing and you never will be.`;
   const codeLink =
-    billing && !showCode ? (
+    billing && !showCode && canEnterCode ? (
       <button
         type="button"
         onClick={() => setShowCode(true)}
         className="mx-auto mt-1 block min-h-11 px-3 text-link"
       >
-        Have a Demo Code?
+        Have a Code?
       </button>
     ) : null;
   // Phones: full screen, the button pinned above the home indicator. Wider screens: a window
@@ -100,13 +115,18 @@ export function TrialOffer({
       >
         <div>
           <h1 className="mb-6 font-display text-[2.125rem] leading-tight font-extrabold">
-            {offer.promise}
+            {pkg.promise}
           </h1>
           <div className="card p-5">
             <p className="font-display text-5xl font-extrabold" data-testid="onboarding-price">
               {price}
               <span className="font-sans text-lg font-normal text-text-muted"> / month</span>
             </p>
+            {discount ? (
+              <p className="mt-1 font-semibold" data-testid="onboarding-discount">
+                {discount}
+              </p>
+            ) : null}
             <p className="mt-1 text-text-muted">
               {tier.name}, for {team === 1 ? "1 person" : `${team} people`}.
             </p>
@@ -138,7 +158,7 @@ export function TrialOffer({
             ) : null}
             <ul className="mt-4 space-y-2">
               {[
-                ...offer.included,
+                ...pkg.included,
                 ...(services === "both"
                   ? ["Leak detection: inspections, tests, reports, and repair quotes"]
                   : []),
@@ -158,10 +178,14 @@ export function TrialOffer({
             <h2 className="mb-1 font-display text-[1.75rem] leading-tight font-extrabold">
               {terms.heading}
             </h2>
-            <p className="mb-4 text-text-muted">Then {price} a month. Add a card to start.</p>
+            <p className="mb-4 text-text-muted">
+              {afterTrialText(fullCents, offer)} Add a card to start.
+            </p>
+            {offer ? <AppliedCode offer={offer} className="mb-4" /> : null}
             {settled === team ? (
               <SubscriptionCheckout
-                key={settled}
+                // Starts again for a new team size or a code just applied.
+                key={`${settled}-${offer?.code ?? ""}`}
                 publishableKey={publishableKey!}
                 start={startEmbedded}
               />
@@ -169,7 +193,7 @@ export function TrialOffer({
               <CheckoutPlaceholder />
             )}
             <p className="mt-3 text-center text-[0.9375rem] text-text-muted">{chargeNote}</p>
-            {showCode ? <DemoCode /> : codeLink}
+            {showCode && canEnterCode ? <CodeField from="welcome" /> : codeLink}
           </div>
         ) : null}
         {embedded ? null : state.error ? (
@@ -177,7 +201,8 @@ export function TrialOffer({
             {state.error}
           </p>
         ) : null}
-        {embedded ? null : showCode ? <DemoCode /> : null}
+        {embedded || !offer ? null : <AppliedCode offer={offer} className="mt-4" />}
+        {embedded ? null : showCode && canEnterCode ? <CodeField from="welcome" /> : null}
         {embedded ? null : (
           <form
             action={act}
@@ -190,55 +215,12 @@ export function TrialOffer({
             <p className="mt-3 text-center text-[0.9375rem] text-text-muted">
               {billing
                 ? `Add a card on Stripe’s secure page. ${chargeNote}`
-                : "Card payments aren’t connected yet. Use a demo code above to continue."}
+                : "Card payments aren’t connected yet. Use a code above to continue."}
             </p>
             {codeLink}
           </form>
         )}
       </div>
     </div>
-  );
-}
-
-/** A demo code instead of a card (VIP26): the shop gets in with no card and no charge. */
-function DemoCode() {
-  const [state, act, pending] = useActionState(orOffline(redeemCode), {});
-  const error = state.fields?.code;
-  return (
-    <form action={act} className="mt-6">
-      <label
-        htmlFor="demo-code"
-        className="mb-1 block px-4 text-[0.8125rem] text-text-muted uppercase"
-      >
-        Demo code
-      </label>
-      <div className="grouped flex items-center gap-2 py-1 pr-1 pl-4">
-        <input
-          id="demo-code"
-          name="code"
-          defaultValue={state.values?.code ?? ""}
-          autoCapitalize="characters"
-          autoComplete="off"
-          autoCorrect="off"
-          spellCheck={false}
-          placeholder="Enter code"
-          aria-invalid={error ? true : undefined}
-          aria-describedby={error ? "demo-code-error" : undefined}
-          className="min-h-11 min-w-0 flex-1 bg-transparent text-[1.0625rem] uppercase outline-none placeholder:normal-case"
-        />
-        <Button type="submit" kind="secondary" disabled={pending}>
-          Apply
-        </Button>
-      </div>
-      {error ? (
-        <p
-          id="demo-code-error"
-          role="alert"
-          className="mt-2 px-4 text-[0.9375rem] text-status-fail"
-        >
-          {error}
-        </p>
-      ) : null}
-    </form>
   );
 }

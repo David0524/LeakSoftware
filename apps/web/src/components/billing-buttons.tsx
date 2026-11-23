@@ -1,7 +1,15 @@
 "use client";
 
 import { useActionState, useCallback, useEffect, useRef, useState } from "react";
-import { formatCents, servicesPriceCents, TEAM_SIZE_MAX, type Services } from "@leakbook/core";
+import {
+  discountedCents,
+  discountNote,
+  formatCents,
+  servicesPriceCents,
+  TEAM_SIZE_MAX,
+  type CodeOffer,
+  type Services,
+} from "@leakbook/core";
 import { manageBilling, setTeamSize, subscribe } from "@/app/actions/billing";
 import { CheckoutPlaceholder, SubscriptionCheckout } from "./subscription-checkout";
 import { TeamSizeStepper, useSettledTeamSize } from "./team-size";
@@ -71,6 +79,7 @@ export function BillingPlan({
   active,
   subscribed,
   publishableKey,
+  offer = null,
 }: {
   name: string;
   services: Services;
@@ -80,6 +89,8 @@ export function BillingPlan({
   active: number;
   subscribed: boolean;
   publishableKey: string | null;
+  /** A promo code's percent off (owner, 2026-11-23), shown in the price. */
+  offer?: CodeOffer | null;
 }) {
   const [team, setTeam] = useState(Math.max(active, billed));
   const settled = useSettledTeamSize(team);
@@ -93,14 +104,19 @@ export function BillingPlan({
       (e) => setError(isNoConnection(e) ? NO_CONNECTION : "Couldn’t save. Try again."),
     );
   }, [settled, subscribed]);
+  const fullCents = servicesPriceCents(services, team);
+  const discount = discountNote(fullCents, offer);
   return (
     <>
-      <p data-testid="billing-price">
-        {name} · {people(team)} ·{" "}
-        <span className="font-semibold">
-          {formatCents(servicesPriceCents(services, team))} a month
-        </span>
-      </p>
+      <div>
+        <p data-testid="billing-price">
+          {name} · {people(team)} ·{" "}
+          <span className="font-semibold">
+            {formatCents(discountedCents(fullCents, offer?.percentOff))} a month
+          </span>
+        </p>
+        {discount ? <p className="mt-1 text-[0.9375rem] text-text-muted">{discount}</p> : null}
+      </div>
       <div>
         <div className="flex items-center justify-between gap-2">
           <p id="billing-team-size">People on your team</p>

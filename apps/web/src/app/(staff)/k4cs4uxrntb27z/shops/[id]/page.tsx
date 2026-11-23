@@ -6,7 +6,9 @@ import {
   formatCents,
   formatPhone,
   heardFromText,
+  referralRewardText,
   servicesLabel,
+  shopCodeText,
   shopPriceCents,
   shopStanding,
 } from "@leakbook/core";
@@ -31,7 +33,7 @@ import { CopyLink } from "@/components/settings-forms";
 import { iconButtonClass, PageHeader } from "@/components/ui";
 import { siteOrigin } from "@/lib/origin";
 import { dailyLimit } from "@/server/usage";
-import { loadShop, loadUsage, staffGate, type TeamMember } from "@/server/staff";
+import { loadShop, loadShopReferrals, loadUsage, staffGate, type TeamMember } from "@/server/staff";
 import {
   PeriodControl,
   UsageDetail,
@@ -81,10 +83,11 @@ async function Shop({
   const days = usagePeriod((await searchParams).days);
   const gate = await staffGate(`/k4cs4uxrntb27z/shops/${id}`);
   if ("needsTwoStep" in gate) return <TwoStepNeeded title="Shop" />;
-  const [d, origin, usage] = await Promise.all([
+  const [d, origin, usage, referred] = await Promise.all([
     loadShop(id),
     siteOrigin(),
     loadUsage(days, { companyId: id }),
+    loadShopReferrals(id),
   ]);
   if (!d) notFound();
   const s = d.shop;
@@ -217,6 +220,48 @@ async function Shop({
               ["Trial ends", s.trial_ends_at ? fmtDate(s.trial_ends_at) : null],
               ["Paid through", s.current_period_end ? fmtDate(s.current_period_end) : null],
               ["Demo code", s.access_code],
+              [
+                "Code used",
+                shopCodeText(s)
+                  ? `${shopCodeText(s)}${s.promo_applied_at ? ` · ${fmtDate(s.promo_applied_at)}` : ""}`
+                  : null,
+              ],
+              [
+                "Referred by",
+                s.referred_by ? (
+                  <span>
+                    <Link
+                      href={`/k4cs4uxrntb27z/shops/${s.referred_by}`}
+                      className="text-link hover:underline"
+                    >
+                      {s.referred_by_name ?? "A shop"}
+                    </Link>
+                    {" · their month: "}
+                    {referralRewardText(s.referral_reward, s.referral_reward_cents)}
+                  </span>
+                ) : null,
+              ],
+              ["Referral code", s.referral_code ?? null],
+              [
+                "Shops referred",
+                referred.length ? (
+                  <ul className="space-y-1">
+                    {referred.map((r) => (
+                      <li key={r.id}>
+                        <Link
+                          href={`/k4cs4uxrntb27z/shops/${r.id}`}
+                          className="text-link hover:underline"
+                        >
+                          {r.name}
+                        </Link>{" "}
+                        · {fmtDate(r.applied_at)} · {referralRewardText(r.reward, r.reward_cents)}
+                      </li>
+                    ))}
+                  </ul>
+                ) : (
+                  "None yet"
+                ),
+              ],
               [
                 "Stripe",
                 s.stripe_customer_id ? (
