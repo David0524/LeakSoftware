@@ -15,7 +15,7 @@ export function CodeField({ from }: { from: "welcome" | "billing" }) {
   const error = state.fields?.code;
   const id = `code-${from}`;
   return (
-    <form action={act} className="mt-6">
+    <form action={act} className={from === "billing" ? "[&_.grouped]:bg-bg" : "mt-6"}>
       <input type="hidden" name="from" value={from} />
       <label htmlFor={id} className="mb-1 block px-4 text-[0.8125rem] text-text-muted uppercase">
         Code
@@ -29,7 +29,7 @@ export function CodeField({ from }: { from: "welcome" | "billing" }) {
           autoComplete="off"
           autoCorrect="off"
           spellCheck={false}
-          placeholder="Promo code or a shop’s name"
+          placeholder="Enter code"
           aria-invalid={error ? true : undefined}
           aria-describedby={error ? `${id}-error` : `${id}-hint`}
           className="min-h-11 min-w-0 flex-1 bg-transparent text-[1.0625rem] uppercase outline-none placeholder:normal-case"

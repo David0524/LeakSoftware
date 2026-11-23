@@ -176,7 +176,13 @@ export async function subscribeCheckout(
   const price = await shopPrice(db, company.id);
   const { data: sub } = await db
     .from("subscription")
-    .select("trial_ends_at, stripe_customer_id, promo_percent_off, promo_percent_months")
+    .select("trial_ends_at, stripe_customer_id")
+    .eq("company_id", company.id)
+    .maybeSingle();
+  // Read apart, so a database without the codes migration still opens Checkout (no discount).
+  const { data: promo } = await db
+    .from("subscription")
+    .select("promo_percent_off, promo_percent_months")
     .eq("company_id", company.id)
     .maybeSingle();
   let customer = sub?.stripe_customer_id as string | null | undefined;
@@ -207,12 +213,12 @@ export async function subscribeCheckout(
   );
   // A promo code's percent off (owner, 2026-11-23): a coupon on the subscription, lasting the
   // trial's whole months plus the paid months promised.
-  const percentOff = (sub?.promo_percent_off as number | null | undefined) ?? null;
+  const percentOff = (promo?.promo_percent_off as number | null | undefined) ?? null;
   const coupon = percentOff
     ? await promoCoupon(
         stripe,
         percentOff,
-        (sub?.promo_percent_months as number | null | undefined) ?? null,
+        (promo?.promo_percent_months as number | null | undefined) ?? null,
         trialEnd ? new Date(trialEnd * 1000) : null,
       )
     : null;
@@ -309,7 +315,9 @@ export async function appliedCode(
     )
     .eq("company_id", companyId)
     .maybeSingle();
-  if (error) throw new Error(error.message);
+  // Logged, not thrown: the trial page and Billing work without codes (a database before the
+  // codes migration).
+  if (error) console.error("[billing] couldn't read the shop's code:", error.message);
   if (!data) return { offer: null, canEnter: false };
   let referrer: string | null = null;
   if (data.referred_by) {

@@ -118,6 +118,8 @@ export function TrialOffer({
             {pkg.promise}
           </h1>
           <div className="card p-5">
+            {/* The code used, first, so it's seen with the price it changed (2026-11-23). */}
+            {offer ? <AppliedCode offer={offer} className="mb-3 font-semibold" /> : null}
             <p className="font-display text-5xl font-extrabold" data-testid="onboarding-price">
               {price}
               <span className="font-sans text-lg font-normal text-text-muted"> / month</span>
@@ -181,7 +183,6 @@ export function TrialOffer({
             <p className="mb-4 text-text-muted">
               {afterTrialText(fullCents, offer)} Add a card to start.
             </p>
-            {offer ? <AppliedCode offer={offer} className="mb-4" /> : null}
             {settled === team ? (
               <SubscriptionCheckout
                 // Starts again for a new team size or a code just applied.
@@ -201,7 +202,6 @@ export function TrialOffer({
             {state.error}
           </p>
         ) : null}
-        {embedded || !offer ? null : <AppliedCode offer={offer} className="mt-4" />}
         {embedded ? null : showCode && canEnterCode ? <CodeField from="welcome" /> : null}
         {embedded ? null : (
           <form
