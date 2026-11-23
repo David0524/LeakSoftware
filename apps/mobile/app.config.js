@@ -8,11 +8,31 @@
 /* global __dirname */
 const { existsSync } = require("node:fs");
 const { join } = require("node:path");
+const { withAndroidManifest } = require("expo/config-plugins");
+
+// Play warned for 1.0.2 that the app requires a portrait screen and Wi-Fi, which some devices
+// lack (owner, 2026-11-18: "The next Android release marks both required=false"). The app is
+// portrait-only and works on mobile data, so neither is required.
+const OPTIONAL_FEATURES = ["android.hardware.screen.portrait", "android.hardware.wifi"];
+
+function withOptionalFeatures(config) {
+  return withAndroidManifest(config, (mod) => {
+    const manifest = mod.modResults.manifest;
+    const features = (manifest["uses-feature"] = manifest["uses-feature"] ?? []);
+    for (const name of OPTIONAL_FEATURES) {
+      const found = features.find((f) => f.$?.["android:name"] === name);
+      if (found) found.$["android:required"] = "false";
+      else features.push({ $: { "android:name": name, "android:required": "false" } });
+    }
+    return mod;
+  });
+}
 
 module.exports = ({ config }) => {
   const googleServicesFile =
     process.env.GOOGLE_SERVICES_JSON ||
     (existsSync(join(__dirname, "google-services.json")) ? "./google-services.json" : undefined);
-  if (!googleServicesFile) return config;
-  return { ...config, android: { ...config.android, googleServicesFile } };
+  const withFeatures = withOptionalFeatures(config);
+  if (!googleServicesFile) return withFeatures;
+  return { ...withFeatures, android: { ...withFeatures.android, googleServicesFile } };
 };

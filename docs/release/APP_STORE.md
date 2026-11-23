@@ -120,18 +120,16 @@ https://sundeckpro.com/
 
 ### 1.9 What's New in This Version (4,000)
 
-1.0.0 (the first release) had none. This is **1.0.4**'s; the App Store workflow's `submit`
+1.0.0 (the first release) had none. This is **1.0.5**'s; the App Store workflow's `submit`
 sends it, so replace it for each update (raise `CFBundleShortVersionString` in
 `apps/ios/Info.plist` and `apps/ios/LiveActivity-Info.plist` together).
 
 <!-- field:whats-new limit:4000 -->
 ```text
-- Pool equipment: record each pool's sanitizer (chlorine or salt), heater, and solar heater, with pool notes kept apart from access notes like gate codes.
-- Skip Visit: skip a maintenance visit with a reason, a note, and a photo. The office can reschedule it or dismiss it.
-- Report an Issue: report a problem from any job, with photos. The office can turn it into a quote or a leak detection job.
-- Chemistry trends: see each pool's readings over time, with alerts when a reading is out of range.
-- Autopay: customers can save a card on file, so monthly invoices are paid automatically.
-- Ask How We Did: reports ask customers for a thumbs up or down before asking for a review.
+- End My Day At: choose where your day starts and where it ends, the shop or home, each on its own. Routes, drive times, and Optimize finish where you do.
+- Text and Call Customers: owners and admins choose, for each tech, whether they can text, call, and email customers and see customers' phone numbers and emails.
+- Roles on Team: owners change someone's role (Owner, Admin, or Tech) right from the Team list.
+- Clearer buttons: Save buttons are solid blue, and Team rows have a single switch.
 ```
 
 ### 1.10 Build

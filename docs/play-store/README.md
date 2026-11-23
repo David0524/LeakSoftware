@@ -164,6 +164,15 @@ service account in step 8 exists), download the `.aab` from the run's summary, t
 release › **Internal testing › Create new release** › upload it › release notes ›
 **Start rollout**, and promote the same release to Production when it's tested.
 
+**1.0.3** (2026-11-23) release notes, en-US (500 characters), the iPhone 1.0.5 What's New shortened. The portrait screen and Wi-Fi are no longer required device features (Play's 1.0.2 warning):
+
+```text
+End My Day At: start and end your day at the shop or home, each on its own; routes finish where you do.
+Text and Call Customers: owners and admins choose which techs can contact customers.
+Roles on Team: owners change someone's role right from the Team list.
+Clearer buttons: Save buttons are solid blue; Team rows have a single switch.
+```
+
 **1.0.2** (2026-11-18) release notes, en-US (500 characters), the iPhone 1.0.4 What's New shortened:
 
 ```text

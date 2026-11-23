@@ -2,6 +2,10 @@
 
 Newest first. Each entry: date, decision, reason.
 
+## 2026-11-23 (owner: "We can release the new iphone update to the public"; "What about android?")
+- **iPhone 1.0.5 goes to App Review** (App Store workflow `submit`, the newest TestFlight build of the release commit) and releases automatically once approved, as 1.0.4 did. What's New: `docs/release/APP_STORE.md` § 1.9.
+- **Android 1.0.3** carries the same changes (End My Day At, Text and Call Customers, roles on Team, filled Saves, Team rows with one switch, one way to invite). It also marks `android.hardware.screen.portrait` and `android.hardware.wifi` as `required="false"` (a config plugin in `apps/mobile/app.config.js`; `npx expo config --type introspect` shows both), clearing Play's 1.0.2 hardware-feature warning. Built by the Android workflow with "Upload to Google Play" off; the owner releases it through Claude in Chrome (`docs/play-store/CHROME_RELEASE_1.0.3.md`). Release notes: `docs/play-store/README.md` § 10.
+
 ## 2026-11-23 (owner, answering the report: "Write a Claude for Chrome for this", "Yes", "Correct", "Correct, they cannot", "Ok", "Correct these")
 - **`invoice.paid` is on the live Sundeck Pro webhook** (`we_1UcZ7gQS7f6dOQmZuB0vyyTO`, API `2026-09-30.endive`; owner through Claude in Chrome, same day, `docs/release/STRIPE_INVOICE_PAID_HANDOFF.md`): the old six events plus `invoice.paid`, nothing else changed. It had no deliveries yet because no shop has a live subscription (0 of 3); the endpoint answers an unsigned request with 400, as it should.
 - **Next.js goes to 16.4.6**, the security patch for 16.4.2.
