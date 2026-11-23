@@ -14,14 +14,20 @@ import Testing
     @Test func everyRuleIsChecked() {
         #expect(
             Fixtures.rules(module) == [
-                "START_FROM_COPY", "homeLookupAddress", "homeMapStatus", "routeStart", "startFor", "startLegLabel",
-                "backLegLabel", "timeRoute", "planDay", "moveJobChange", "suggestTimes", "suggestSlots", "planWeek",
-                "suggestServiceDays", "dayMapPins", "encodePins", "decodePins",
+                "START_FROM_COPY", "endAtOf", "usesHome", "homeLookupAddress", "homeMapStatus", "routeStart",
+                "startFor", "startLegLabel", "backLegLabel", "timeRoute", "optimizeRoute", "daySummary", "planDay",
+                "moveJobChange", "suggestTimes", "suggestSlots", "planWeek", "suggestServiceDays", "dayMapPins",
+                "encodePins", "decodePins",
             ])
     }
 
     @Test func theSetting() {
         checkRule(module, "START_FROM_COPY") { _ in StartFromCopy.all }
+        checkRule(module, "endAtOf") { c in
+            let m = try c.arg(0, as: StartAndEnd.self)
+            return endAtOf(startFrom: m.startFrom, endAt: m.endAt)
+        }
+        checkRule(module, "usesHome") { c in usesHome(try c.arg(0), try c.arg(1)) }
         checkRule(module, "homeLookupAddress") { c in homeLookupAddress(try c.arg(0)) }
         checkRule(module, "homeMapStatus") { c in homeMapStatus(try c.arg(0)) }
         checkRule(module, "routeStart") { c in routeStart(try c.arg(0), shop: try c.arg(1)) }
@@ -50,11 +56,26 @@ import Testing
         let stops: [MapStop]
         let depot: LatLng?
         let startLabel: RouteStartLabel?
+        let end: LatLng?
+        let endLabel: RouteStartLabel?
     }
 
     @Test func routesFromTheStart() {
         checkRule(module, "timeRoute") { c in
-            timeRoute(try c.arg(0), depot: try c.arg(1), day: Self.day, drive: try RoutingTests.drive(c, 2))
+            let s = try c.arg(1, as: RouteStart.self)
+            return timeRoute(
+                try c.arg(0), depot: s.at, day: Self.day, drive: try RoutingTests.drive(c, 2), end: s.end.at)
+        }
+        checkRule(module, "optimizeRoute") { c in
+            let s = try c.arg(1, as: RouteStart.self)
+            let r = optimizeRoute(
+                try c.arg(0), depot: s.at, day: Self.day, drive: try RoutingTests.drive(c, 2), end: s.end.at)
+            return RoutingTests.Optimized(order: r.order, route: r.route)
+        }
+        checkRule(module, "daySummary") { c in
+            let s = try c.arg(1, as: RouteStart.self)
+            return daySummary(
+                try c.arg(0), depot: s.at, day: Self.day, drive: try RoutingTests.drive(c, 2), end: s.end.at)
         }
         checkRule(module, "planDay") { c in
             try planDay(c.arg(0), c.arg(1), c.arg(2), c.arg(3, as: [PlanJob].self), drive: RoutingTests.drive(c, 4))
@@ -108,7 +129,8 @@ import Testing
     @Test func homeOnTheMap() {
         checkRule(module, "dayMapPins") { c in
             let i = try c.arg(0, as: MapInput.self)
-            return dayMapPins(stops: i.stops, depot: i.depot, startLabel: i.startLabel)
+            return dayMapPins(
+                stops: i.stops, depot: i.depot, startLabel: i.startLabel, end: i.end, endLabel: i.endLabel)
         }
         checkRule(module, "encodePins") { c in encodePins(try c.arg(0)) }
         checkRule(module, "decodePins") { c in decodePins(try c.arg(0)) }
@@ -124,5 +146,26 @@ import Testing
         let back = try #require(decodePins(encodePins(pins)))
         #expect(back.first?.home == true)
         #expect(back.first?.tone == .shop)
+    }
+
+    @Test func endsApart() {
+        let shop = Self.shop
+        let home = LatLng(lat: 33.69, lng: -112)
+        let row = MemberStart(
+            userId: "t1", startFrom: "shop", endAt: "home", homeAddress: "4 Elm St", homeLatitude: home.lat,
+            homeLongitude: home.lng, homeGeocodedAddress: "4 Elm St")
+        let r = routeStart(row, shop: shop)
+        #expect(r.at == shop && r.label == .shop)
+        #expect(r.end == RoutePoint(at: home, label: .home))
+        // A row from before end_at ends where it starts.
+        var old = row
+        old.endAt = nil
+        #expect(routeStart(old, shop: shop).end.label == .shop)
+        let pins = dayMapPins(
+            stops: [MapStop(id: "a", location: LatLng(lat: 33.5, lng: -111.9), done: false)], depot: r.at,
+            startLabel: r.label, end: r.end.at, endLabel: r.end.label
+        ).pins
+        #expect(pins.count == 3)
+        #expect(pins.last?.home == true)
     }
 }

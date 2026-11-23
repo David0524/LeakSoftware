@@ -41,7 +41,10 @@ export function useMemberStart(companyId: string, userId: string | null | undefi
   return userId ? rows.find((r) => r.user_id === userId) : undefined;
 }
 
-/** Where this tech's day starts and ends: their home when it's on the map, else the shop. */
+/**
+ * Where this tech's day starts (`at`) and ends (`end.at`): their home when they chose it and it's
+ * on the map, else the shop.
+ */
 export function useRouteStart(company: Company, techId: string | null | undefined): RouteStart {
   const starts = useMemberStarts(company.id);
   const shop = shopLocation(company);
@@ -71,7 +74,12 @@ export function saveMemberStart(
   const values = w.values as Record<string, JsonValue>;
   const id = row
     ? (sync.write("member_start", row.id, companyId, values), row.id)
-    : sync.insert("member_start", companyId, { start_from: "shop", ...values, user_id: userId });
+    : sync.insert("member_start", companyId, {
+        start_from: "shop",
+        end_at: "shop",
+        ...values,
+        user_id: userId,
+      });
   // After the write (and any batch around it) is done: push it, then look the address up.
   if (w.locate)
     setTimeout(() => void locateAfterSync(companyId, { home_user_id: userId, start_id: id }), 0);

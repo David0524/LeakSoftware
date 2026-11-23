@@ -387,7 +387,8 @@ export async function moveJob(input: MoveInput): Promise<RouteResult> {
     Math.min(Number.isInteger(input.index) ? input.index : others.length, others.length),
   );
   stops.splice(index, 0, moved);
-  const route = timeRoute(stops, techStart(ctx, tech).at, workDay(ctx.settings), drive);
+  const where = techStart(ctx, tech);
+  const route = timeRoute(stops, where.at, workDay(ctx.settings), drive, where.end.at);
   const updates = routeUpdates(date, ctx.timeZone, stops, route);
   const mine: JobUpdate & {
     assigned_user_id?: string;
@@ -704,8 +705,9 @@ export async function suggestTimes(target: {
         stops,
         labels: Object.fromEntries(jobs.map((j) => [j.id, j.customer?.name ?? "the job before"])),
         notBeforeMin: date === ctx.today ? ctx.nowMin : null,
-        // Each tech's day from their own start (home or the shop).
+        // Each tech's day from their own start (home or the shop), to their own end.
         start: techStart(ctx, t.user_id).at,
+        end: techStart(ctx, t.user_id).end.at,
       });
     }
   }

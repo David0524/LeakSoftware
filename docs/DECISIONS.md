@@ -2,6 +2,12 @@
 
 Newest first. Each entry: date, decision, reason.
 
+## 2026-11-23 (owner, for Kevin: "When setting the routes, you can make the start and finish location the shop, or your home. He wants to make it so you can individually change the start and finish location. This way he can do start location at the shop, and finish location at home.")
+- **Where the day ends is set apart from where it starts.** Right under Start My Day From (The Shop | Home) is **End My Day At** (The Shop | Home), the same segmented control, on all four platforms: My Profile (website More › My Profile, Settings › My Profile on the phones) and Team › the person's profile. Reason: Kevin and one tech drive their own trucks; they start at the shop in the morning and finish at home.
+- **One home address for both.** It shows when either is Home; until it's on the map, both ends use the shop ("Using the shop until the address is found on the map.", replacing "Starting from the shop …"). Footer: "Routes, drive times and Optimize start and end at these places."
+- **Every route's last leg goes to the end:** the drive back ("36 min back home" or "back to the shop", by the end), Optimize (it orders the day toward the end, not just relabels), Move, Suggest Times, Plan Week, Suggest Days, day totals, and day maps, which show both pins (shop and a house labeled Home) when the ends differ, one when they're the same. The first leg still comes from the start.
+- **Data:** `member_start.end_at` ('shop' or 'home', default 'shop'), client-writable through sync (`20261022004900_end_day_at.sql`). Existing rows were set to end where they start, so nobody's routes changed; a phone row from before the column ends where it starts too. A new row from the phones writes `end_at` explicitly.
+
 ## 2026-11-18 (owner: "Release 1.04 These should auto release when approved")
 - **iPhone 1.0.4 released** (App Store workflow, `release`).
 - **iPhone updates release automatically once Apple approves them.** The App Store workflow's `submit` and `resubmit` set the version to release after approval (`AFTER_APPROVAL`), including a version already made as manual. Replaces "released by hand" (2026-11-05, 2026-11-17); `release` stays for a version made manual in App Store Connect.

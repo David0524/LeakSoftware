@@ -17,8 +17,8 @@ export interface MapPin {
   /** The stop's job (none for the shop). */
   id: string | null;
   /**
-   * On the start pin (tone "shop") of someone who starts from home: drawn as a house labeled
-   * "Home" (START_FROM_COPY.homePin), never the street.
+   * On a start or end pin (tone "shop") at someone's home: drawn as a house labeled "Home"
+   * (START_FROM_COPY.homePin), never the street.
    */
   home?: true;
 }
@@ -26,10 +26,17 @@ export interface MapPin {
 /** Most pins one map shows (the map image's address has a length limit). */
 export const MAP_PIN_LIMIT = 60;
 
+const placePin = (at: LatLng, label: RouteStartLabel | null | undefined): MapPin =>
+  label === "home"
+    ? { label: "", at, tone: "shop", id: null, home: true }
+    : { label: "", at, tone: "shop", id: null };
+
 /**
- * Pins for a day: the start (the shop, or home for someone who starts there), then each located stop numbered by its place in the day (so the
- * numbers match the list), toned done, current (the stop you're on), or still to do. `missing`
- * counts stops with no map location, shown under the map instead of guessed.
+ * Pins for a day: the start (the shop, or home for someone who starts there), then each located
+ * stop numbered by its place in the day (so the numbers match the list), toned done, current (the
+ * stop you're on), or still to do, then the end when the day ends somewhere else (owner,
+ * 2026-11-23: start at the shop, finish at home), last. `missing` counts stops with no map
+ * location, shown under the map instead of guessed.
  */
 export function dayMapPins(input: {
   stops: { id: string; location: LatLng | null; done: boolean }[];
@@ -37,15 +44,21 @@ export function dayMapPins(input: {
   depot: LatLng | null;
   /** startFor(…).label: "home" draws the start as Home. */
   startLabel?: RouteStartLabel | null;
+  /** Where the day ends (startFor(…).end.at) when it isn't `depot`. */
+  end?: LatLng | null;
+  /** startFor(…).end.label: "home" draws the end as Home. */
+  endLabel?: RouteStartLabel | null;
   currentId?: string | null;
 }): { pins: MapPin[]; missing: number } {
   const pins: MapPin[] = [];
-  if (input.depot)
-    pins.push(
-      input.startLabel === "home"
-        ? { label: "", at: input.depot, tone: "shop", id: null, home: true }
-        : { label: "", at: input.depot, tone: "shop", id: null },
-    );
+  if (input.depot) pins.push(placePin(input.depot, input.startLabel));
+  // Only after a start: a lone pin draws as the start and the end (routeOrder).
+  const end =
+    input.depot &&
+    input.end &&
+    !(input.end.lat === input.depot.lat && input.end.lng === input.depot.lng)
+      ? placePin(input.end, input.endLabel)
+      : null;
   let missing = 0;
   input.stops.forEach((s, i) => {
     if (!s.location) {
@@ -59,7 +72,8 @@ export function dayMapPins(input: {
       id: s.id,
     });
   });
-  return { pins: pins.slice(0, MAP_PIN_LIMIT), missing };
+  if (!end) return { pins: pins.slice(0, MAP_PIN_LIMIT), missing };
+  return { pins: [...pins.slice(0, MAP_PIN_LIMIT - 1), end], missing };
 }
 
 /**
@@ -105,12 +119,15 @@ export const ROUTE_STYLE = {
 
 /**
  * The route's order on every map: the start (shop or home), each stop in turn, and back to the
- * start. A day with no start is just its stops.
+ * start, or on to the end when the day ends somewhere else (a second start-tone pin: the first is
+ * the start, the last the end). A day with no start is just its stops.
  */
 export function routeOrder<P extends { tone: PinTone }>(pins: P[]): P[] {
-  const start = pins.find((p) => p.tone === "shop");
+  const ends = pins.filter((p) => p.tone === "shop");
   const stops = pins.filter((p) => p.tone !== "shop");
-  return [...(start ? [start] : []), ...stops, ...(start && stops.length ? [start] : [])];
+  const start = ends[0];
+  const end = ends[ends.length - 1];
+  return [...(start ? [start] : []), ...stops, ...(end && stops.length ? [end] : [])];
 }
 
 /**

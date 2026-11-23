@@ -155,8 +155,11 @@ public struct TimedRoute: Codable, Equatable, Sendable {
     public var lateMin: Int
 }
 
-/// Times for stops visited in the given order, from the shop and back.
-public func timeRoute(_ stops: [RouteStop], depot: LatLng?, day: WorkDay, drive: DriveFn) -> TimedRoute {
+/// Times for stops visited in the given order, from the shop and back. `end`: where the day ends
+/// when it isn't `depot` (`startFor(…).end.at`); nil: `depot`, `.some(nil)`: no location.
+public func timeRoute(
+    _ stops: [RouteStop], depot: LatLng?, day: WorkDay, drive: DriveFn, end: LatLng?? = nil
+) -> TimedRoute {
     var clock = day.startMin
     var at = depot
     var driveTotal = 0
@@ -174,7 +177,7 @@ public func timeRoute(_ stops: [RouteStop], depot: LatLng?, day: WorkDay, drive:
             id: s.id, driveMin: d, arriveMin: arrive, startMin: start, endMin: clock, lateMin: late,
             unlocated: s.location == nil)
     }
-    let back = drive(at, depot)
+    let back = drive(at, end ?? depot)
     driveTotal += back
     let backMin = clock + back
     return TimedRoute(
@@ -211,17 +214,19 @@ private func permutations(_ n: Int) -> [[Int]] {
 /// The order to visit a tech's stops: least driving, keeping fixed appointments and the working
 /// day. Exact for up to 8 stops (every order is tried); for more, the nearest stop first and then
 /// improving swaps (2-opt and moving single stops) until nothing helps. Ties keep the current
-/// order, so planning twice gives the same answer.
-public func optimizeRoute(_ stops: [RouteStop], depot: LatLng?, day: WorkDay, drive: DriveFn) -> (
-    order: [Int], route: TimedRoute
-) {
+/// order, so planning twice gives the same answer. `end`: where the day ends when it isn't `depot`
+/// (`timeRoute`); the last leg counts to there.
+public func optimizeRoute(
+    _ stops: [RouteStop], depot: LatLng?, day: WorkDay, drive: DriveFn, end: LatLng?? = nil
+) -> (order: [Int], route: TimedRoute) {
     let n = stops.count
     // Every order of 8 stops is 40,320 routes, so each leg's drive is looked up once (stops 0..<n,
-    // the shop at n) and an order is costed with plain arithmetic: the same sums as
-    // `routeCost(timeRoute(…))`, which turned each leg into two point keys (owner, 2026-10-20:
-    // "The Liquid Glass literally freezes up when I press 'plan route'").
-    let points = stops.map(\.location) + [depot]
-    let width = n + 1
+    // the start at n, the end at n + 1) and an order is costed with plain arithmetic: the same
+    // sums as `routeCost(timeRoute(…))`, which turned each leg into two point keys (owner,
+    // 2026-10-20: "The Liquid Glass literally freezes up when I press 'plan route'").
+    let finish: LatLng? = end ?? depot
+    let points = stops.map(\.location) + [depot, finish]
+    let width = n + 2
     var legs = [Int](repeating: 0, count: width * width)
     for a in 0..<width {
         for b in 0..<width { legs[a * width + b] = drive(points[a], points[b]) }
@@ -241,7 +246,7 @@ public func optimizeRoute(_ stops: [RouteStop], depot: LatLng?, day: WorkDay, dr
             clock = start + s.durationMin
             if s.location != nil { at = i }
         }
-        let back = legs[at * width + n]
+        let back = legs[at * width + n + 1]
         driveTotal += back
         return driveTotal + lateTotal * 20 + max(0, clock + back - day.endMin) * 5
     }
@@ -308,7 +313,7 @@ public func optimizeRoute(_ stops: [RouteStop], depot: LatLng?, day: WorkDay, dr
             }
         }
     }
-    return (best, timeRoute(best.map { stops[$0] }, depot: depot, day: day, drive: drive))
+    return (best, timeRoute(best.map { stops[$0] }, depot: depot, day: day, drive: drive, end: finish))
 }
 
 // MARK: - Suggesting a slot for a new job
@@ -326,10 +331,13 @@ public struct TechDay: Codable, Sendable {
     /// Where this tech's day starts and ends (`startFor`), when not the shop passed as `depot`.
     /// nil: the shop; `.some(nil)`: no location.
     public var start: LatLng??
+    /// Where this tech's day ends (`startFor(…).end.at`), when not where it starts. nil: where it
+    /// starts; `.some(nil)`: no location.
+    public var end: LatLng??
 
     public init(
         date: String, techId: String, techName: String, stops: [RouteStop], labels: [String: String]? = nil,
-        notBeforeMin: Int? = nil, start: LatLng?? = nil
+        notBeforeMin: Int? = nil, start: LatLng?? = nil, end: LatLng?? = nil
     ) {
         self.date = date
         self.techId = techId
@@ -338,9 +346,10 @@ public struct TechDay: Codable, Sendable {
         self.labels = labels
         self.notBeforeMin = notBeforeMin
         self.start = start
+        self.end = end
     }
 
-    enum CodingKeys: String, CodingKey { case date, techId, techName, stops, labels, notBeforeMin, start }
+    enum CodingKeys: String, CodingKey { case date, techId, techName, stops, labels, notBeforeMin, start, end }
 
     public init(from decoder: Decoder) throws {
         let c = try decoder.container(keyedBy: CodingKeys.self)
@@ -351,6 +360,7 @@ public struct TechDay: Codable, Sendable {
         labels = try c.decodeIfPresent([String: String].self, forKey: .labels)
         notBeforeMin = try c.decodeIfPresent(Int.self, forKey: .notBeforeMin)
         start = try c.contains(.start) ? .some(c.decodeIfPresent(LatLng.self, forKey: .start)) : nil
+        end = try c.contains(.end) ? .some(c.decodeIfPresent(LatLng.self, forKey: .end)) : nil
     }
 }
 
@@ -402,14 +412,15 @@ public func suggestSlots(
     var found: [(slot: SlotSuggestion, score: Double)] = []
     for td in days {
         let from = td.start ?? depot
-        let base = timeRoute(td.stops, depot: from, day: day, drive: drive)
+        let to: LatLng? = td.end ?? from
+        let base = timeRoute(td.stops, depot: from, day: day, drive: drive, end: to)
         var best: (slot: SlotSuggestion, score: Double)?
         for p in 0...td.stops.count {
             let candidate = RouteStop(
                 id: "__new", location: location, durationMin: durationMin, earliestMin: td.notBeforeMin)
             var stops = td.stops
             stops.insert(candidate, at: p)
-            let r = timeRoute(stops, depot: from, day: day, drive: drive)
+            let r = timeRoute(stops, depot: from, day: day, drive: drive, end: to)
             if r.overtimeMin > base.overtimeMin || r.lateMin > base.lateMin { continue }
             let added = r.driveMin - base.driveMin
             let score = Double(added) + daysOut(days, td) * 2
@@ -1028,7 +1039,7 @@ public struct DaySummary: Codable, Equatable, Sendable {
     public var legs: [Int]
     /// Minutes each stop is short of the drive from the stop before (0 = it fits).
     public var short: [Int]
-    /// Driving for the whole day, back to the shop included.
+    /// Driving for the whole day, back to the shop (or where it ends) included.
     public var driveMin: Int
     public var backMin: Int?
     public var overtimeMin: Int
@@ -1039,8 +1050,11 @@ public struct DaySummary: Codable, Equatable, Sendable {
 }
 
 /// Drive times and problems for a day as saved: the times the techs and customers have, not a
-/// re-plan. A stop is short when the job before ends too late to drive there in time.
-public func daySummary(_ stops: [SavedStop], depot: LatLng?, day: WorkDay, drive: DriveFn) -> DaySummary {
+/// re-plan. A stop is short when the job before ends too late to drive there in time. `end`: where
+/// the day ends when it isn't `depot` (`startFor(…).end.at`).
+public func daySummary(
+    _ stops: [SavedStop], depot: LatLng?, day: WorkDay, drive: DriveFn, end: LatLng?? = nil
+) -> DaySummary {
     var at = depot
     var prevEnd: Int?
     var total = 0
@@ -1058,7 +1072,7 @@ public func daySummary(_ stops: [SavedStop], depot: LatLng?, day: WorkDay, drive
         if let l = s.location { at = l }
         if let end = s.endMin { prevEnd = end }
     }
-    let back = stops.isEmpty ? 0 : drive(at, depot)
+    let back = stops.isEmpty ? 0 : drive(at, end ?? depot)
     total += back
     let backMin = prevEnd.map { $0 + back }
     return DaySummary(

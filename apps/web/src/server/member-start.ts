@@ -1,17 +1,19 @@
 import "server-only";
 import type { SupabaseClient } from "@supabase/supabase-js";
-import { homeLookupAddress, uuidv7, type LatLng, type MemberStart } from "@leakbook/core";
+import { homeLookupAddress, usesHome, uuidv7, type LatLng, type MemberStart } from "@leakbook/core";
 import { geocodeAddress, routingConfigured } from "./routing";
 
 import { friendlyDbError } from "@/lib/limits";
 // Where each person's day starts: the shop, or their home (owner, 2026-10-21;
-// docs/design/2026-10-21-start-from-home.md). member_start rows are read as the signed-in
+// docs/design/2026-10-21-start-from-home.md), and where it ends (owner, 2026-11-23), set apart.
+// member_start rows are read as the signed-in
 // person, so RLS gives a tech only their own and owners and admins everyone's.
 
 export type StartRow = Pick<
   MemberStart,
   | "user_id"
   | "start_from"
+  | "end_at"
   | "home_address"
   | "home_latitude"
   | "home_longitude"
@@ -19,7 +21,7 @@ export type StartRow = Pick<
 > & { id: string };
 
 const COLUMNS =
-  "id, user_id, start_from, home_address, home_latitude, home_longitude, home_geocoded_address";
+  "id, user_id, start_from, end_at, home_address, home_latitude, home_longitude, home_geocoded_address";
 
 /**
  * The shop's member_start rows this person may use for routing: everyone's for owners and
@@ -99,34 +101,36 @@ const ADDRESS_MAX = 400;
 export interface SaveStartResult {
   error?: string;
   fields?: Record<string, string>;
-  /** Saved; `found` says whether a home start is on the map (null for the shop). */
+  /** Saved; `found` says whether a home start or end is on the map (null for the shop). */
   saved?: { found: boolean | null };
 }
 
 /**
- * Save where a person's day starts, as `db`'s person (their own row, or anyone's for owners and
- * admins; RLS checks it again): upserts their member_start row, then looks the home address up
- * when it changed since the last lookup. Switching to the shop keeps the address, so switching
- * back is one tap.
+ * Save where a person's day starts and ends, as `db`'s person (their own row, or anyone's for
+ * owners and admins; RLS checks it again): upserts their member_start row, then looks the home
+ * address up when it changed since the last lookup. Switching to the shop keeps the address, so
+ * switching back is one tap. No `endAt`: the day ends where it starts.
  */
 export async function saveMemberStartWith(
   db: SupabaseClient,
   who: { companyId: string; actorId: string; manager: boolean },
-  input: { userId: string; startFrom: string; homeAddress: string },
+  input: { userId: string; startFrom: string; endAt?: string; homeAddress: string },
 ): Promise<SaveStartResult> {
   const userId = input.userId || who.actorId;
   if (userId !== who.actorId && !who.manager)
     return { error: "Only owners and admins can change someone else’s start." };
-  if (input.startFrom !== "shop" && input.startFrom !== "home")
+  const endAt = input.endAt || input.startFrom;
+  const places = ["shop", "home"];
+  if (!places.includes(input.startFrom) || !places.includes(endAt))
     return { error: "Pick The Shop or Home." };
   const address = homeLookupAddress(input.homeAddress);
   if (address.length > ADDRESS_MAX)
     return { fields: { home_address: "That address is too long." } };
-  if (input.startFrom === "home" && !address)
-    return { fields: { home_address: "Enter the home address." } };
+  const home = usesHome(input.startFrom, endAt);
+  if (home && !address) return { fields: { home_address: "Enter the home address." } };
 
   const current = await memberStartOf(db, who.companyId, userId);
-  const values = { start_from: input.startFrom, home_address: address || null };
+  const values = { start_from: input.startFrom, end_at: endAt, home_address: address || null };
   const { error } = current
     ? await db.from("member_start").update(values).eq("id", current.id)
     : await db
@@ -135,7 +139,7 @@ export async function saveMemberStartWith(
   if (error) return { error: friendlyDbError(error.message) };
 
   if (address) await locateHomeWith(db, who.companyId, userId);
-  if (input.startFrom !== "home") return { saved: { found: null } };
+  if (!home) return { saved: { found: null } };
   const now = await memberStartOf(db, who.companyId, userId);
   return { saved: { found: now?.home_latitude != null } };
 }

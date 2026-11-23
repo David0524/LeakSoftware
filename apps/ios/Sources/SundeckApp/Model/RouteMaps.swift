@@ -125,12 +125,13 @@ public struct PinSpot: Equatable, Sendable {
 /// Nil when the day has no stops.
 public func dayMapModel(
     jobs: [ScheduleJob], depot: LatLng?, date: String, today: String, tech: String, timeZone: String,
-    startLabel: RouteStartLabel? = nil, color: TechColor? = nil
+    startLabel: RouteStartLabel? = nil, end: LatLng? = nil, endLabel: RouteStartLabel? = nil, color: TechColor? = nil
 ) -> DayMapModel? {
     guard !jobs.isEmpty else { return nil }
     let stops = jobs.map { MapStop(id: $0.id, location: $0.location, done: !openStatuses.contains($0.status)) }
     let currentId = date == today ? stops.first(where: { !$0.done })?.id : nil
-    let found = dayMapPins(stops: stops, depot: depot, currentId: currentId, startLabel: startLabel)
+    let found = dayMapPins(
+        stops: stops, depot: depot, currentId: currentId, startLabel: startLabel, end: end, endLabel: endLabel)
     let names = Dictionary(jobs.map { ($0.id, $0.customerName) }, uniquingKeysWith: { a, _ in a })
     let annotations = mapAnnotations(found.pins, customers: names)
     let located = annotations.filter { !$0.isShop }.count
@@ -155,7 +156,8 @@ public func mapAnnotations(_ pins: [MapPin], customers: [String: String]) -> [Da
         let name = p.id.flatMap { customers[$0] }
         let home = shop && p.home == true
         return DayMapAnnotation(
-            id: p.id ?? "shop", label: p.label, at: p.at, tone: p.tone,
+            // The start and a different end are never both the shop or both home.
+            id: p.id ?? (home ? "home" : "shop"), label: p.label, at: p.at, tone: p.tone,
             spoken: home
                 ? StartFromCopy.homePin
                 : shop ? "The shop" : ["Stop \(p.label)", name].compactMap { $0 }.joined(separator: ", "),
@@ -164,12 +166,14 @@ public func mapAnnotations(_ pins: [MapPin], customers: [String: String]) -> [Da
 }
 
 /// The line through the day: from the start (the shop or home), through each stop in order, and
-/// back.
+/// back, or on to the end when the day ends somewhere else (core `routeOrder`: the first start-tone
+/// pin is the start, the last the end).
 public func routeLine(_ annotations: [DayMapAnnotation]) -> [LatLng] {
     let shop = annotations.first(where: \.isShop)?.at
+    let end = annotations.last(where: \.isShop)?.at
     let stops = annotations.filter { !$0.isShop }.map(\.at)
     guard !stops.isEmpty else { return [] }
-    let line = (shop.map { [$0] } ?? []) + stops + (shop.map { [$0] } ?? [])
+    let line = (shop.map { [$0] } ?? []) + stops + (end.map { [$0] } ?? [])
     return line.count > 1 ? line : []
 }
 

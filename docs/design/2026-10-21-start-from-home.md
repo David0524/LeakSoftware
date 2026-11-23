@@ -10,12 +10,15 @@ from the shop." Built on all four platforms with the same words and behavior.
 - **Where it's set:**
   - Techs set their own in Settings › My Profile (website: More › My Profile).
   - Owners and admins set anyone's in Team › the person's profile.
-- **Choosing Home:** shows a **Home Address** field, with the same address suggestions as a
-  pool's address. It's looked up on the map the same way, through `locatePropertyWith`'s free
-  lookups first, and shows the not-on-map warning if it isn't found.
-  - Until the address is found, the day starts at the shop. The setting says "Starting from the
-    shop until the address is found on the map."
-- **Footer:** "Routes, drive times and Optimize start and end here."
+- **Choosing Home** (for the start or the end, see "End location"): shows a **Home Address**
+  field, with the same address suggestions as a pool's address. It's looked up on the map the
+  same way, through `locatePropertyWith`'s free lookups first, and shows the not-on-map warning
+  if it isn't found.
+  - Until the address is found, the day uses the shop at both ends. The setting says "Using the
+    shop until the address is found on the map." (2026-11-23; it said "Starting from the shop …"
+    while there was only a start.)
+- **Footer:** "Routes, drive times and Optimize start and end at these places." (2026-11-23; was
+  "… start and end here.")
 
 ## What it changes
 
@@ -30,6 +33,42 @@ from the shop." Built on all four platforms with the same words and behavior.
 - **Wording:** the shop's wording stays for people who start at the shop ("from the shop",
   "back to the shop").
 - **Two-tech jobs:** the job is routed from its main tech's start.
+
+## End location
+
+Owner, 2026-11-23, for Kevin: "He wants to make it so you can individually change the start and
+finish location. This way he can do start location at the shop, and finish location at home." He
+and one tech drive their own trucks: they start at the shop and finish at home.
+
+- **Field:** **End My Day At**: **The Shop** or **Home**, right under Start My Day From, the same
+  segmented control (Title Case segments, sentence-case footer), in the same places, on all four
+  platforms. Words in core `START_FROM_COPY.endField` (Swift `StartFromCopy.endField`).
+- **One home address:** the Home Address field shows when either is Home. Until it's on the map,
+  both ends use the shop.
+- **What it changes:** the last leg of every route goes to the end; the first still comes from the
+  start:
+  - the drive back and its words, by the end ("36 min back home", "36 min back to the shop");
+  - day totals and overtime (`daySummary(…, end)`), Move and Suggest Times (`PlanContext.starts`),
+    Optimize (`optimizeRoute(…, end)`: the order is chosen toward the end, so a day from the shop
+    to home finishes near home), Plan Week (`WeekDay.end`), suggestSlots (`TechDay.end`) and
+    Suggest Days (`suggestServiceDays({ starts })`);
+  - day maps: when the ends differ, both pins (the shop, and a house labeled Home), the end last
+    (`dayMapPins({ end, endLabel })`; core `routeOrder` draws the first start-tone pin as the start
+    and the last as the end, so map addresses need no new code). The same place: one pin, as
+    before. No start on the map (a shop with no location): no end pin either.
+  - The "Routes start and end at the shop, which has no map location yet" notice also shows for
+    someone who only ends at the shop.
+- **Data:** `member_start.end_at text not null default 'shop' check (end_at in ('shop','home'))`
+  (`supabase/migrations/20261022004900_end_day_at.sql`, tested by
+  `supabase/tests/601_end_day_at.test.sql`), client-writable in `app.sync_table`. Rows that existed
+  were set to `end_at = start_from`, so nobody's routes changed. Core `endAtOf(row)` reads a row
+  without `end_at` (a phone's copy from before the column) as ending where it starts; the phones
+  write `end_at` on every new row so their copy matches the server's.
+- **Core:** `routeStart`/`startFor` return `{ at, label, end: { at, label } }` (`at`/`label` stay
+  the start, so callers that only need the start are unchanged); `homeMapStatus` counts a home
+  start or end; `usesHome(start_from, end_at)`. Every routing function takes the end as an optional
+  last argument (or field) that defaults to the start, so a call without it behaves as before.
+  Swift port and fixtures in `apps/ios/Tests/Fixtures/route-start.json`.
 
 ## Privacy
 
@@ -68,8 +107,9 @@ Built in `supabase/migrations/20261012008000_start_from_home.sql`, tested by
   and `home_geocoded_address`; not found, only `home_geocoded_address`, so the same address
   isn't tried again. Phones ask through `/api/locate` (`{ company_id, home_user_id }`).
 - **Core** (`packages/core/src/route-start.ts`):
-  - `routeStart(member, shop): { at: LatLng | null; label: "home" | "shop" }` (home only when
-    `start_from` is `home` and `homeMapStatus` is `found`);
+  - `routeStart(member, shop): { at: LatLng | null; label: "home" | "shop"; end }` (home only when
+    `start_from` is `home` and `homeMapStatus` is `found`; `end` likewise for `end_at`, see "End
+    location");
   - `startFor(techId, starts, shop)`: the depot every routing call uses for that tech;
   - `homeMapStatus(member)`: `found`, `missing` (show `START_FROM_COPY.pending` and the
     not-on-map warning) or null;

@@ -40,10 +40,11 @@ export function driveSpoken(minutes: number): string {
 /** The block's last line: "27 min back to the shop" or "27 min back home"; null when none. */
 export function driveHomeLine(
   backLegMin: number | null,
-  startLabel: RouteStartLabel = "shop",
+  /** Where the day ends (startFor(…).end.label). */
+  endLabel: RouteStartLabel = "shop",
 ): string | null {
   if (backLegMin == null || !Number.isFinite(backLegMin) || Math.round(backLegMin) <= 0) {
     return null;
   }
-  return `${durationLabel(backLegMin)} ${backLegLabel(startLabel)}`;
+  return `${durationLabel(backLegMin)} ${backLegLabel(endLabel)}`;
 }

@@ -122,12 +122,13 @@ public func suggestServiceDays(
     starts: [MemberStart]? = nil, day: WorkDay, drive: DriveFn
 ) -> ServiceDaySuggestions {
     let days = techs.flatMap { techId in
-        workDays.map { d in
+        let start = startFor(techId, starts, shop: depot)
+        return workDays.map { d in
             WeekDay(
                 techId: techId, date: String(d),
                 stays: keep.filter { $0.techId == techId && $0.days.contains(d) }.map {
                     RouteStop(id: $0.id, location: $0.location, durationMin: $0.durationMin)
-                }, start: .some(startFor(techId, starts, shop: depot).at))
+                }, start: .some(start.at), end: .some(start.end.at))
         }
     }
     let movable = place.filter { $0.days.count <= 1 && $0.location != nil }

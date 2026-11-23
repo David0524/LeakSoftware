@@ -8,9 +8,10 @@ import { saveMemberStartWith } from "@/server/member-start";
 import type { FormState } from "./auth";
 
 /**
- * Start My Day From (owner, 2026-10-21; docs/design/2026-10-21-start-from-home.md): More › My
- * Profile for your own, Team › a person's profile for owners and admins. Saved as the signed-in
- * person, so RLS allows only your own row or, for owners and admins, anyone's.
+ * Start My Day From and End My Day At (owner, 2026-10-21 and 2026-11-23;
+ * docs/design/2026-10-21-start-from-home.md): More › My Profile for your own, Team › a person's
+ * profile for owners and admins. Saved as the signed-in person, so RLS allows only your own row
+ * or, for owners and admins, anyone's.
  */
 export async function saveStartFrom(_: FormState, form: FormData): Promise<FormState> {
   const office = await getOffice();
@@ -20,6 +21,7 @@ export async function saveStartFrom(_: FormState, form: FormData): Promise<FormS
     {
       userId: String(form.get("user") ?? "").trim(),
       startFrom: String(form.get("start_from") ?? ""),
+      endAt: String(form.get("end_at") ?? ""),
       homeAddress: String(form.get("home_address") ?? ""),
     },
   );

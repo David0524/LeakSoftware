@@ -236,6 +236,9 @@ export function routeDay(input: {
   depot: LatLng | null;
   /** "home" for someone who starts there: the map's start pin is a house labeled Home. */
   startLabel?: RouteStartLabel | null;
+  /** Where the tech's day ends (startFor(…).end), when it isn't the start. */
+  end?: LatLng | null;
+  endLabel?: RouteStartLabel | null;
   workDay: WorkDay;
 }): RouteDay {
   const mine = input.plans
@@ -248,7 +251,7 @@ export function routeDay(input: {
     durationMin: p.durationMin,
   }));
   const { order, route } = stops.length
-    ? optimizeRoute(stops, input.depot, input.workDay, estimateDriveMinutes)
+    ? optimizeRoute(stops, input.depot, input.workDay, estimateDriveMinutes, input.end)
     : { order: [] as number[], route: null };
   const plans = [...order.map((i) => located[i]!), ...mine.filter((p) => !p.location)];
   const serviceMin = mine.reduce((n, p) => n + p.durationMin, 0);
@@ -257,6 +260,8 @@ export function routeDay(input: {
     stops: plans.map((p) => ({ id: p.planId, location: p.location, done: false })),
     depot: input.depot,
     startLabel: input.startLabel,
+    end: input.end,
+    endLabel: input.endLabel,
   });
   const onMap = pins.some((p) => p.tone !== "shop");
   return {

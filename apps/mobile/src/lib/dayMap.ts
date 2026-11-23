@@ -35,6 +35,9 @@ export function dayMap(input: {
   depot: LatLng | null;
   /** "home" draws the start pin as a house labeled Home (never the street). */
   startLabel?: RouteStartLabel | null;
+  /** Where the day ends (startFor(…).end), when it isn't the start: a second pin, last. */
+  end?: LatLng | null;
+  endLabel?: RouteStartLabel | null;
   date: string;
   today: string;
 }): { pins: string | null; located: number; missing: number } {
@@ -48,6 +51,8 @@ export function dayMap(input: {
     stops,
     depot: input.depot,
     startLabel: input.startLabel,
+    end: input.end,
+    endLabel: input.endLabel,
     currentId,
   });
   const located = pins.filter((p) => p.tone !== "shop").length;

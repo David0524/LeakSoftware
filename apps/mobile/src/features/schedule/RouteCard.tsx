@@ -78,6 +78,8 @@ export interface Route {
   date: string;
   /** Where the tech's day starts and ends: "home" for someone who starts there. */
   startLabel?: RouteStartLabel;
+  /** Where the day ends (startFor(…).end.label): the drive back's words. */
+  endLabel?: RouteStartLabel;
   /** That start has a map point (else the first stop gets no drive chip). */
   startOnMap?: boolean;
   stops: Stop[];
@@ -255,7 +257,7 @@ export function RouteCard({
  * as its last line. Day and Week.
  */
 export function StopBlock({ route: c, children }: { route: Route; children: ReactNode }) {
-  const home = driveHomeLine(c.backLegMin, c.startLabel ?? "shop");
+  const home = driveHomeLine(c.backLegMin, c.endLabel ?? c.startLabel ?? "shop");
   return (
     <View style={[styles.block, { backgroundColor: color.surface }, cardShadow()]}>
       <View style={styles.blockClip}>

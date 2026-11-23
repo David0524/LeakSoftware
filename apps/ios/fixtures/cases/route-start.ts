@@ -3,11 +3,14 @@ import {
   START_FROM_COPY,
   backLegLabel,
   dayMapPins,
+  daySummary,
   decodePins,
   encodePins,
+  endAtOf,
   homeLookupAddress,
   homeMapStatus,
   moveJobChange,
+  optimizeRoute,
   planDay,
   planWeek,
   routeStart,
@@ -17,6 +20,7 @@ import {
   suggestSlots,
   suggestTimes,
   timeRoute,
+  usesHome,
   zonedMinutesToIso,
   type LatLng,
   type MapPin,
@@ -24,8 +28,10 @@ import {
   type MoveInput,
   type PlanContext,
   type PlanJob,
+  type RouteStart,
   type RouteStartLabel,
   type RouteStop,
+  type SavedStop,
   type SuggestRoute,
   type TechDay,
   type WeekDay,
@@ -54,6 +60,13 @@ const start = (o: Partial<MemberStart> = {}): MemberStart => ({
   ...o,
 });
 const STARTS = [start(), start({ id: "s2", user_id: "t2", start_from: "shop" })];
+/** Ends apart from starts (owner, 2026-11-23): t1 shop to home, t2 home to the shop. */
+const ENDS = [
+  start({ start_from: "shop", end_at: "home" }),
+  start({ id: "s2", user_id: "t2", start_from: "home", end_at: "shop" }),
+];
+const SHOP_TO_HOME = startFor("t1", ENDS, SHOP);
+const HOME_TO_SHOP = startFor("t2", ENDS, SHOP);
 
 /** Tuesday 2026-10-20, 8:00 AM in Phoenix. */
 const CTX: PlanContext = {
@@ -64,6 +77,7 @@ const CTX: PlanContext = {
   nowMin: 480,
 };
 const HOME_CTX: PlanContext = { ...CTX, starts: STARTS };
+const END_CTX: PlanContext = { ...CTX, starts: ENDS };
 
 const timed = (id: string, p: LatLng | null, i: number, o: Partial<PlanJob> = {}) =>
   planJob(id, {
@@ -109,6 +123,26 @@ type ServiceDaysInput = Omit<Parameters<typeof suggestServiceDays>[0], "drive">;
 
 export const routeStartCases: ModuleCases = {
   START_FROM_COPY: rule(() => START_FROM_COPY, [[]]),
+  endAtOf: rule(
+    (m: Pick<MemberStart, "start_from" | "end_at">) => endAtOf(m),
+    [
+      [{ start_from: "shop" }],
+      [{ start_from: "home" }],
+      [{ start_from: "shop", end_at: "home" }],
+      [{ start_from: "home", end_at: "shop" }],
+      [{ start_from: "home", end_at: "home" }],
+    ],
+  ),
+  usesHome: rule(
+    (a: string | null, b: string | null) => usesHome(a, b),
+    [
+      ["shop", "shop"],
+      ["home", "shop"],
+      ["shop", "home"],
+      ["home", "home"],
+      [null, null],
+    ],
+  ),
   homeLookupAddress: rule(
     (a: string | null) => homeLookupAddress(a),
     [[null], [""], ["  4 Elm St,\n  Phoenix, AZ  "], ["4 Elm St"]],
@@ -126,6 +160,10 @@ export const routeStartCases: ModuleCases = {
       [start({ home_address: null })],
       [start({ home_address: "  " })],
       [start({ deleted_at: "2026-10-21T00:00:00Z" })],
+      [start({ start_from: "shop", end_at: "home" })],
+      [start({ start_from: "shop", end_at: "home", home_latitude: null, home_longitude: null })],
+      [start({ start_from: "home", end_at: "shop" })],
+      [start({ start_from: "shop", end_at: "shop" })],
     ],
   ),
   routeStart: rule(
@@ -139,6 +177,15 @@ export const routeStartCases: ModuleCases = {
       [start({ home_latitude: null, home_longitude: null }), SHOP],
       [start({ home_geocoded_address: "1 Old Rd" }), SHOP],
       [start({ deleted_at: "2026-10-21T00:00:00Z" }), SHOP],
+      [start({ start_from: "shop", end_at: "home" }), SHOP],
+      [start({ start_from: "home", end_at: "shop" }), SHOP],
+      [start({ start_from: "home", end_at: "home" }), SHOP],
+      [start({ start_from: "shop", end_at: "home" }), null],
+      // Home not on the map: the shop at both ends.
+      [
+        start({ start_from: "shop", end_at: "home", home_latitude: null, home_longitude: null }),
+        SHOP,
+      ],
     ],
   ),
   startFor: rule(
@@ -152,17 +199,64 @@ export const routeStartCases: ModuleCases = {
       ["t1", null, SHOP],
       ["t1", [start({ deleted_at: "2026-10-21T00:00:00Z" })], SHOP],
       ["t1", STARTS, null],
+      ["t1", ENDS, SHOP],
+      ["t2", ENDS, SHOP],
     ],
   ),
   startLegLabel: rule((l: RouteStartLabel) => startLegLabel(l), [["shop"], ["home"]]),
   backLegLabel: rule((l: RouteStartLabel) => backLegLabel(l), [["shop"], ["home"]]),
 
   timeRoute: rule(
-    (stops: RouteStop[], depot: LatLng | null, known?: Known) =>
-      timeRoute(stops, depot, DAY, driveOf(known)),
+    (stops: RouteStop[], s: RouteStart, known?: Known) =>
+      timeRoute(stops, s.at, DAY, driveOf(known), s.end.at),
     [
-      [[stop("n", NORTH), stop("near", NEAR)], startFor("t1", STARTS, SHOP).at],
-      [[stop("n", NORTH), stop("near", NEAR)], startFor("t2", STARTS, SHOP).at],
+      [[stop("n", NORTH), stop("near", NEAR)], startFor("t1", STARTS, SHOP)],
+      [[stop("n", NORTH), stop("near", NEAR)], startFor("t2", STARTS, SHOP)],
+      [[stop("n", NORTH), stop("near", NEAR)], SHOP_TO_HOME],
+      [[stop("n", NORTH), stop("near", NEAR)], HOME_TO_SHOP],
+    ],
+  ),
+  optimizeRoute: rule(
+    (stops: RouteStop[], s: RouteStart, known?: Known) =>
+      optimizeRoute(stops, s.at, DAY, driveOf(known), s.end.at),
+    [
+      ...[startFor("t1", STARTS, SHOP), SHOP_TO_HOME, HOME_TO_SHOP].map(
+        (s): [RouteStop[], RouteStart] => [
+          [stop("n", NORTH), stop("near", NEAR), stop("e", EAST), stop("w", WEST)],
+          s,
+        ],
+      ),
+      // More than eight: nearest first, then swaps, to the end.
+      [
+        [
+          stop("n", NORTH),
+          stop("near", NEAR),
+          stop("e", EAST),
+          stop("w", WEST),
+          stop("s", SOUTH),
+          stop("n2", { lat: 33.68, lng: -112.01 }),
+          stop("e2", { lat: 33.42, lng: -111.7 }),
+          stop("w2", { lat: 33.47, lng: -112.03 }),
+          stop("s2", { lat: 33.32, lng: -111.92 }),
+        ],
+        SHOP_TO_HOME,
+      ],
+    ],
+  ),
+  daySummary: rule(
+    (stops: SavedStop[], s: RouteStart, known?: Known) =>
+      daySummary(stops, s.at, DAY, driveOf(known), s.end.at),
+    [
+      ...[startFor("t1", STARTS, SHOP), SHOP_TO_HOME, HOME_TO_SHOP].map(
+        (s): [SavedStop[], RouteStart] => [
+          [
+            { id: "a", location: NEAR, startMin: 480, endMin: 600 },
+            { id: "b", location: NORTH, startMin: 660, endMin: 720 },
+          ],
+          s,
+        ],
+      ),
+      [[], SHOP_TO_HOME],
     ],
   ),
   planDay: rule(
@@ -176,6 +270,11 @@ export const routeStartCases: ModuleCases = {
       // From home with no shop location: no note about the shop.
       [{ ...HOME_CTX, depot: null }, "t1", "2026-10-21", DAY_JOBS],
       [{ ...HOME_CTX, depot: null }, "t2", "2026-10-21", DAY_JOBS],
+      // Ends apart from starts: the day heads toward where it ends.
+      [END_CTX, "t1", "2026-10-21", DAY_JOBS],
+      [END_CTX, "t2", "2026-10-21", DAY_JOBS.map((j) => ({ ...j, assigned_user_id: "t2" }))],
+      // Ending at home with no shop location: the note about the shop.
+      [{ ...END_CTX, depot: null }, "t1", "2026-10-21", DAY_JOBS],
     ],
   ),
   moveJobChange: rule(
@@ -184,6 +283,8 @@ export const routeStartCases: ModuleCases = {
       [CTX, move({ job: planJob("x", { property: at(NORTH) }) })],
       [HOME_CTX, move({ job: planJob("x", { property: at(NORTH) }) })],
       [HOME_CTX, move({ job: planJob("x", { property: at(NORTH) }), tech: "t2" })],
+      [END_CTX, move({ job: planJob("x", { property: at(NORTH) }) })],
+      [END_CTX, move({ job: planJob("x", { property: at(NORTH) }), tech: "t2" })],
     ],
   ),
   suggestTimes: rule(
@@ -194,7 +295,7 @@ export const routeStartCases: ModuleCases = {
       known?: Known,
     ) => suggestTimes(c, job, routes, driveOf(known)),
     [
-      ...[CTX, HOME_CTX].map(
+      ...[CTX, HOME_CTX, END_CTX].map(
         (c) =>
           [
             c,
@@ -217,6 +318,22 @@ export const routeStartCases: ModuleCases = {
           { date: "2026-10-21", techId: "t1", techName: "Ana", stops: [], start: HOME },
           { date: "2026-10-21", techId: "t2", techName: "Ben", stops: [] },
           { date: "2026-10-21", techId: "t3", techName: "Cy", stops: [], start: null },
+        ],
+      ],
+      // Ends apart: from the shop to home, from home to the shop, and an end with no location.
+      [
+        { location: NORTH, durationMin: 60 },
+        [
+          { date: "2026-10-21", techId: "t1", techName: "Ana", stops: [], start: SHOP, end: HOME },
+          {
+            date: "2026-10-21",
+            techId: "t2",
+            techName: "Ben",
+            stops: [stop("near", NEAR)],
+            start: HOME,
+            end: SHOP,
+          },
+          { date: "2026-10-21", techId: "t3", techName: "Cy", stops: [], end: null },
         ],
       ],
     ],
@@ -255,6 +372,20 @@ export const routeStartCases: ModuleCases = {
         [{ techId: "t1", date: "2026-10-26", stays: [stop("kept", NEAR)], start: HOME }],
         [weekJob("n", NORTH)],
       ],
+      // Ends apart: the north pools go to the tech who ends at home there, last in the day.
+      [
+        [
+          { techId: "t1", date: "2026-10-26", stays: [], start: SHOP, end: HOME },
+          { techId: "t2", date: "2026-10-26", stays: [], start: HOME, end: SHOP },
+        ],
+        [
+          weekJob("n1", NORTH, ["t1", "t2"]),
+          weekJob("s", SOUTH, ["t1", "t2"]),
+          weekJob("near", NEAR, ["t1", "t2"]),
+          weekJob("e", EAST, ["t1", "t2"]),
+        ],
+        true,
+      ],
     ],
   ),
   suggestServiceDays: rule(
@@ -262,7 +393,12 @@ export const routeStartCases: ModuleCases = {
       suggestServiceDays({ ...input, drive: driveOf(known) }),
     [
       // A north pool: the first tech when both start at the shop, the one living north otherwise.
-      ...[null, [start({ user_id: "t2" })]].map((starts): [ServiceDaysInput] => [
+      ...[
+        null,
+        [start({ user_id: "t2" })],
+        // Only ending there counts too.
+        [start({ user_id: "t2", start_from: "shop", end_at: "home" })],
+      ].map((starts): [ServiceDaysInput] => [
         {
           place: [{ id: "p1", techId: null, days: [], location: NORTH, durationMin: 60 }],
           keep: [],
@@ -282,6 +418,28 @@ export const routeStartCases: ModuleCases = {
       [{ stops: [{ id: "a", location: NORTH, done: false }], depot: SHOP, startLabel: "shop" }],
       [{ stops: [], depot: SHOP, startLabel: null }],
       [{ stops: [{ id: "a", location: NORTH, done: true }], depot: null, startLabel: "home" }],
+      // Ends apart: both pins, the end last; the same place: one.
+      [
+        {
+          stops: [{ id: "a", location: NORTH, done: false }],
+          depot: SHOP,
+          startLabel: "shop",
+          end: HOME,
+          endLabel: "home",
+        },
+      ],
+      [
+        {
+          stops: [{ id: "a", location: NORTH, done: false }],
+          depot: HOME,
+          startLabel: "home",
+          end: SHOP,
+          endLabel: "shop",
+        },
+      ],
+      [{ stops: [], depot: HOME, startLabel: "home", end: HOME, endLabel: "home" }],
+      // No start on the map: no end pin either.
+      [{ stops: [], depot: null, startLabel: "shop", end: HOME, endLabel: "home" }],
     ],
   ),
   encodePins: rule(

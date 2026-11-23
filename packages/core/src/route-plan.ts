@@ -357,7 +357,7 @@ export interface DaySummary {
   legs: number[];
   /** Minutes each stop is short of the drive from the stop before (0 = it fits). */
   short: number[];
-  /** Driving for the whole day, back to the shop included. */
+  /** Driving for the whole day, back to the shop (or where it ends) included. */
   driveMin: number;
   backMin: number | null;
   overtimeMin: number;
@@ -373,6 +373,8 @@ export function daySummary(
   depot: LatLng | null,
   day: WorkDay,
   drive: (a: LatLng | null, b: LatLng | null) => number,
+  /** Where the day ends when it isn't `depot` (startFor(…).end.at). */
+  end?: LatLng | null,
 ): DaySummary {
   let at = depot;
   let prevEnd: number | null = null;
@@ -387,7 +389,7 @@ export function daySummary(
     if (s.location) at = s.location;
     if (s.endMin != null) prevEnd = s.endMin;
   }
-  const back = stops.length ? drive(at, depot) : 0;
+  const back = stops.length ? drive(at, end !== undefined ? end : depot) : 0;
   total += back;
   const backMin = prevEnd != null ? prevEnd + back : null;
   return {

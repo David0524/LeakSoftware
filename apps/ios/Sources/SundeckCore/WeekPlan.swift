@@ -23,16 +23,23 @@ public struct WeekDay: Codable, Equatable, Sendable {
     /// the shop given as `depot`, for someone who starts from home. nil: the shop; `.some(nil)`:
     /// no location.
     public var start: LatLng??
+    /// Where this tech's day ends (`startFor(…).end.at`) when not where it starts. nil: where it
+    /// starts; `.some(nil)`: no location.
+    public var end: LatLng??
 
-    public init(techId: String, date: String, stays: [RouteStop], earliestMin: Int? = nil, start: LatLng?? = nil) {
+    public init(
+        techId: String, date: String, stays: [RouteStop], earliestMin: Int? = nil, start: LatLng?? = nil,
+        end: LatLng?? = nil
+    ) {
         self.techId = techId
         self.date = date
         self.stays = stays
         self.earliestMin = earliestMin
         self.start = start
+        self.end = end
     }
 
-    enum CodingKeys: String, CodingKey { case techId, date, stays, earliestMin, start }
+    enum CodingKeys: String, CodingKey { case techId, date, stays, earliestMin, start, end }
 
     public init(from decoder: Decoder) throws {
         let c = try decoder.container(keyedBy: CodingKeys.self)
@@ -41,6 +48,7 @@ public struct WeekDay: Codable, Equatable, Sendable {
         stays = try c.decode([RouteStop].self, forKey: .stays)
         earliestMin = try c.decodeIfPresent(Int.self, forKey: .earliestMin)
         start = try c.contains(.start) ? .some(c.decodeIfPresent(LatLng.self, forKey: .start)) : nil
+        end = try c.contains(.end) ? .some(c.decodeIfPresent(LatLng.self, forKey: .end)) : nil
     }
 }
 
@@ -172,8 +180,10 @@ private func planWeekRun(
     }
     /// Where a day's route starts and ends: the tech's start, else the shop.
     func from(_ d: WeekDay) -> LatLng? { d.start ?? depot }
+    /// Where it ends: the tech's end, else where it starts.
+    func to(_ d: WeekDay) -> LatLng? { d.end ?? from(d) }
     func driveOf(_ k: String, _ stops: [RouteStop]) -> Int {
-        timeRoute(stops, depot: from(byKey[k]!), day: day, drive: drive).driveMin
+        timeRoute(stops, depot: from(byKey[k]!), day: day, drive: drive, end: to(byKey[k]!)).driveMin
     }
     let driveBefore = now.filter { !$0.value.isEmpty }.reduce(0) { $0 + driveOf($1.key, $1.value) }
 
@@ -205,12 +215,12 @@ private func planWeekRun(
         for (di, d) in days.enumerated() where ok(d.techId) {
             let k = dayKey(d.techId, d.date)
             let stops = planned[k]!
-            let was = timeRoute(stops, depot: from(d), day: day, drive: drive)
+            let was = timeRoute(stops, depot: from(d), day: day, drive: drive, end: to(d))
             let stop = asStop(j, d.earliestMin)
             for at in 0...stops.count {
                 var next = stops
                 next.insert(stop, at: at)
-                let r = timeRoute(next, depot: from(d), day: day, drive: drive)
+                let r = timeRoute(next, depot: from(d), day: day, drive: drive, end: to(d))
                 // Never run a day later or longer than it was.
                 if r.lateMin > was.lateMin || r.overtimeMin > was.overtimeMin { continue }
                 // Driving added, plus a little for how full the day already is, so near-ties
@@ -250,7 +260,8 @@ private func planWeekRun(
                 for i in 0...stops.count {
                     var next = stops
                     next.insert(stop, at: i)
-                    let c = Double(routeCost(timeRoute(next, depot: from(home), day: day, drive: drive)))
+                    let r = timeRoute(next, depot: from(home), day: day, drive: drive, end: to(home))
+                    let c = Double(routeCost(r))
                     if c < cheapest - 1e-9 {
                         cheapest = c
                         at = i
@@ -278,7 +289,7 @@ private func planWeekRun(
     for d in days {
         let stops = planned[dayKey(d.techId, d.date)]!
         if stops.isEmpty { continue }
-        let (o, route) = optimizeRoute(stops, depot: from(d), day: day, drive: drive)
+        let (o, route) = optimizeRoute(stops, depot: from(d), day: day, drive: drive, end: to(d))
         driveAfter += route.driveMin
         out.append(WeekPlanDay(techId: d.techId, date: d.date, stops: o.map { stops[$0] }, route: route))
     }

@@ -91,21 +91,23 @@ export function suggestServiceDays(input: {
   techs: string[];
   workDays: number[];
   depot: LatLng | null;
-  /** The shop's member_start rows: each tech's days start and end at their start (startFor). */
+  /** The shop's member_start rows: each tech's days start and end at their own (startFor). */
   starts?: readonly (MemberStartFields & { user_id: string })[] | null;
   day: WorkDay;
   drive: DriveFn;
 }): { suggestions: DaySuggestion[]; left: string[] } {
-  const days = input.techs.flatMap((techId) =>
-    input.workDays.map((d) => ({
+  const days = input.techs.flatMap((techId) => {
+    const start = startFor(techId, input.starts, input.depot);
+    return input.workDays.map((d) => ({
       techId,
       date: String(d),
-      start: startFor(techId, input.starts, input.depot).at,
+      start: start.at,
+      end: start.end.at,
       stays: input.keep
         .filter((p) => p.techId === techId && p.days.includes(d))
         .map((p) => ({ id: p.id, location: p.location, durationMin: p.durationMin })),
-    })),
-  );
+    }));
+  });
   const movable = input.place.filter((p) => p.days.length <= 1 && p.location);
   const plan = planWeek({
     days,

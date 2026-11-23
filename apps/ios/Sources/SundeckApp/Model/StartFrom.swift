@@ -8,7 +8,8 @@ import SundeckSync
 // `member_start` (one row per person; none means the shop), which only the person and owners and
 // admins get on their phones. Written through the sync layer; a new home address clears its old
 // map point in the same write, and the website then looks it up (POST /api/locate with
-// `home_user_id`), as a pool's address is.
+// `home_user_id`), as a pool's address is. End My Day At (owner, 2026-11-23: "start location at
+// the shop, and finish location at home") is set apart, right under it, with the same home address.
 
 /// The phone's member_start rows for the shop (those this person can read).
 public func memberStarts(_ store: LocalStore, companyId: String) -> [MemberStart] {
@@ -27,27 +28,33 @@ public func memberStart(_ store: LocalStore, companyId: String, userId: String) 
     memberStarts(store, companyId: companyId).first { $0.userId == userId && ($0.deletedAt ?? "").isEmpty }
 }
 
-/// The setting as edited: where the day starts, and the home address.
+/// The setting as edited: where the day starts and ends, and the home address.
 public struct StartFromForm: Equatable, Sendable {
     public var from: RouteStartLabel = .shop
+    public var to: RouteStartLabel = .shop
     public var address = ""
 
-    public init(from: RouteStartLabel = .shop, address: String = "") {
+    public init(from: RouteStartLabel = .shop, to: RouteStartLabel = .shop, address: String = "") {
         self.from = from
+        self.to = to
         self.address = address
     }
 
     public init(_ row: MemberStart?) {
         from = row?.startFrom == "home" ? .home : .shop
+        to = row.map { endAtOf($0) } ?? .shop
         address = row?.homeAddress ?? ""
     }
+
+    /// The home address shows when the day starts or ends at Home.
+    public var usesHomeAddress: Bool { usesHome(from.rawValue, to.rawValue) }
 
     /// What the saved row would be with this form, the old map point kept only for the same
     /// address: what `homeMapStatus` reads.
     public func preview(_ saved: MemberStart?, userId: String) -> MemberStart {
         let same = homeLookupAddress(address) == homeLookupAddress(saved?.homeAddress)
         return MemberStart(
-            userId: userId, startFrom: from.rawValue, homeAddress: address,
+            userId: userId, startFrom: from.rawValue, endAt: to.rawValue, homeAddress: address,
             homeLatitude: same ? saved?.homeLatitude : nil, homeLongitude: same ? saved?.homeLongitude : nil,
             homeGeocodedAddress: same ? saved?.homeGeocodedAddress : nil)
     }
@@ -56,7 +63,7 @@ public struct StartFromForm: Equatable, Sendable {
 /// What the setting shows under it while Home isn't on the map: the pending line, and the
 /// not-on-map warning once the address was looked up and not found.
 public struct StartFromStatus: Equatable, Sendable {
-    /// `StartFromCopy.pending`, or nil when the day starts at the shop or home is on the map.
+    /// `StartFromCopy.pending`, or nil when the day starts and ends at the shop or home is on the map.
     public var pending: String?
     /// The address was tried and not found.
     public var notOnMap: Bool
@@ -84,6 +91,7 @@ public enum StartFromWrites {
         let address = form.address.trimmingCharacters(in: .whitespacesAndNewlines)
         var values: Row = [:]
         if (saved?.startFrom ?? "shop") != form.from.rawValue { values["start_from"] = .string(form.from.rawValue) }
+        if (saved.map { endAtOf($0) } ?? .shop) != form.to { values["end_at"] = .string(form.to.rawValue) }
         let moved = homeLookupAddress(address) != homeLookupAddress(saved?.homeAddress)
         if moved {
             values["home_address"] = address.isEmpty ? .null : .string(address)
@@ -97,6 +105,8 @@ public enum StartFromWrites {
         } else {
             values["user_id"] = .string(userId)
             values["start_from"] = .string(form.from.rawValue)
+            // Always written, so the phone's row ends where the server's does.
+            values["end_at"] = .string(form.to.rawValue)
             _ = try sync.insert("member_start", companyId: companyId, values)
         }
         if moved && !address.isEmpty {

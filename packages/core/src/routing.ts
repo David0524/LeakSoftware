@@ -89,12 +89,16 @@ export interface TimedRoute {
   lateMin: number;
 }
 
-/** Times for stops visited in the given order, from the shop and back. */
+/**
+ * Times for stops visited in the given order, from the shop and back. `end`: where the day ends
+ * when it isn't `depot` (startFor(…).end.at, for someone who ends at home but starts elsewhere).
+ */
 export function timeRoute(
   stops: RouteStop[],
   depot: LatLng | null,
   day: WorkDay,
   drive: DriveFn,
+  end?: LatLng | null,
 ): TimedRoute {
   let clock = day.startMin;
   let at: LatLng | null = depot;
@@ -120,7 +124,7 @@ export function timeRoute(
       unlocated: !s.location,
     };
   });
-  const back = drive(at, depot);
+  const back = drive(at, end !== undefined ? end : depot);
   driveTotal += back;
   const backMin = clock + back;
   return {
@@ -164,13 +168,15 @@ function* permutations(n: number): Generator<number[]> {
  * The order to visit a tech's stops: least driving, keeping fixed appointments and the
  * working day. Exact for up to 8 stops (every order is tried); for more, the nearest stop
  * first and then improving swaps (2-opt and moving single stops) until nothing helps.
- * Ties keep the current order, so planning twice gives the same answer.
+ * Ties keep the current order, so planning twice gives the same answer. `end`: where the day
+ * ends when it isn't `depot` (timeRoute); the last leg counts to there.
  */
 export function optimizeRoute(
   stops: RouteStop[],
   depot: LatLng | null,
   day: WorkDay,
   drive: DriveFn,
+  end?: LatLng | null,
 ): { order: number[]; route: TimedRoute } {
   const cost = (order: number[]) =>
     routeCost(
@@ -179,6 +185,7 @@ export function optimizeRoute(
         depot,
         day,
         drive,
+        end,
       ),
     );
   const n = stops.length;
@@ -259,6 +266,7 @@ export function optimizeRoute(
       depot,
       day,
       drive,
+      end,
     ),
   };
 }
@@ -279,6 +287,8 @@ export interface TechDay {
   notBeforeMin?: number | null;
   /** Where this tech's day starts and ends (startFor), when not the shop passed as `depot`. */
   start?: LatLng | null;
+  /** Where this tech's day ends (startFor(…).end.at), when not where it starts. */
+  end?: LatLng | null;
 }
 
 export interface SlotSuggestion {
@@ -312,7 +322,8 @@ export function suggestSlots(
   const found: (SlotSuggestion & { score: number })[] = [];
   days.forEach((td) => {
     const from = td.start !== undefined ? td.start : depot;
-    const base = timeRoute(td.stops, from, day, drive);
+    const to = td.end !== undefined ? td.end : from;
+    const base = timeRoute(td.stops, from, day, drive, to);
     let best: (SlotSuggestion & { score: number }) | null = null;
     for (let p = 0; p <= td.stops.length; p++) {
       const candidate: RouteStop = {
@@ -322,7 +333,7 @@ export function suggestSlots(
         earliestMin: td.notBeforeMin ?? null,
       };
       const stops = [...td.stops.slice(0, p), candidate, ...td.stops.slice(p)];
-      const r = timeRoute(stops, from, day, drive);
+      const r = timeRoute(stops, from, day, drive, to);
       if (r.overtimeMin > base.overtimeMin || r.lateMin > base.lateMin) continue;
       const added = r.driveMin - base.driveMin;
       const score = added + daysOut(days, td) * 2;

@@ -73,4 +73,35 @@ import Testing
         row = try #require(memberStart(sync.store, companyId: "c1", userId: "u1"))
         #expect(row.startFrom == "shop" && row.homeAddress == "9 Oak Ave, Mesa, AZ")
     }
+
+    /// End My Day At (owner, 2026-11-23): start at the shop, finish at home.
+    @Test func endsTheDayApartFromWhereItStarts() throws {
+        try StartFromWrites.save(
+            sync, companyId: "c1", userId: "u2", StartFromForm(from: .shop, to: .home, address: "4 Elm St"),
+            locate: queue)
+        var row = try #require(memberStart(sync.store, companyId: "c1", userId: "u2"))
+        #expect(row.startFrom == "shop" && row.endAt == "home")
+        #expect(StartFromForm(row).to == .home && StartFromForm(row).usesHomeAddress)
+        // Not on the map yet: the shop at both ends, and the setting says so.
+        #expect(StartFromStatus(StartFromForm(row), saved: row, userId: "u2").pending == StartFromCopy.pending)
+        let id = try #require(row.id)
+        try sync.store.write(
+            "member_start", id: id, companyId: "c1",
+            ["home_latitude": 33.69, "home_longitude": -112.0, "home_geocoded_address": "4 Elm St"])
+        row = try #require(memberStart(sync.store, companyId: "c1", userId: "u2"))
+        let shop = LatLng(lat: 33.4, lng: -111.8)
+        let start = startFor("u2", [row], shop: shop)
+        #expect(start.at == shop && start.label == .shop)
+        #expect(start.end.label == .home && start.end.at == LatLng(lat: 33.69, lng: -112.0))
+        #expect(backLegLabel(start.end.label) == "back home")
+
+        // Only the end changes: only end_at is written.
+        let before = try sync.store.pendingCount()
+        try StartFromWrites.save(
+            sync, companyId: "c1", userId: "u2", StartFromForm(from: .shop, to: .shop, address: "4 Elm St"),
+            locate: queue)
+        row = try #require(memberStart(sync.store, companyId: "c1", userId: "u2"))
+        #expect(row.endAt == "shop" && row.homeLatitude == 33.69)
+        #expect(try sync.store.pendingCount() >= before)
+    }
 }
