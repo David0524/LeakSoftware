@@ -104,6 +104,8 @@ const lit = (s) => (s == null ? "null" : `'${String(s).replaceAll("'", "''")}'`)
  * "City Center 5es", "Hall, Grace 884", "Swift Quote 65810D"), or a fixture's name.
  * Seeded demo customers (fixed ids) and anything else someone typed are kept.
  */
+/** Team members the website's tests make (turned off at the end of each run). */
+export const TEST_PERSON = String.raw`^E2E (Tech|Admin)( |$)`;
 export const TEST_NAME = String.raw`(\s(mv[a-z0-9]{8,}|[a-z0-9]{3}|[0-9A-F]{6})$)|^(E2E|EDGE|Hosted media test|Swift media test|Apple Map|Plan Week|Routes |Reorder |Visibility Check)`;
 const SEEDED_ID = "00000000-0000-4000-8000-%";
 
@@ -778,6 +780,12 @@ begin
   where company_id = co and deleted_at is null
     and id::text not like ${lit(SEEDED_ID)} and name ~ ${lit(TEST_NAME)};
   get diagnostics k = row_count; removed := removed || jsonb_build_object('test_customers', k);
+  -- The website's tests each leave a turned-off "E2E Tech …" or "E2E Admin …" on the team; they
+  -- go, so the demo's Team shows the demo team (owner's screenshot, 2026-11-23).
+  update public.membership m set deleted_at = now()
+  where m.company_id = co and m.deleted_at is null and m.status = 'disabled'
+    and m.user_id in (select p.id from public.profile p where p.full_name ~ ${lit(TEST_PERSON)});
+  get diagnostics k = row_count; removed := removed || jsonb_build_object('test_people', k);
   perform set_config('app.invoice_server', 'off', true);
   perform set_config('app.quote_server', 'off', true);
 
@@ -1009,7 +1017,10 @@ const [counts] = await query(`
     (select count(*) from public.service_plan where company_id = ${co} and deleted_at is null)::int as plans,
     (select count(*) from public.customer where company_id = ${co} and deleted_at is null)::int as customers,
     (select count(*) from public.customer where company_id = ${co} and deleted_at is null
-       and id::text not like ${lit(SEEDED_ID)} and name ~ ${lit(TEST_NAME)})::int as test_customers`);
+       and id::text not like ${lit(SEEDED_ID)} and name ~ ${lit(TEST_NAME)})::int as test_customers,
+    (select count(*) from public.membership m join public.profile p on p.id = m.user_id
+     where m.company_id = ${co} and m.deleted_at is null and m.status = 'disabled'
+       and p.full_name ~ ${lit(TEST_PERSON)})::int as test_people`);
 const kept = await query(`
   select name from public.customer
   where company_id = ${co} and deleted_at is null and id::text not like ${lit(SEEDED_ID)}
@@ -1034,6 +1045,7 @@ console.log(
 console.log(
   `  ${counts.test_customers} of ${counts.customers} customers, made by test runs, and their pools`,
 );
+console.log(`  ${counts.test_people} turned-off test people on the team (E2E Tech, E2E Admin)`);
 if (kept.length) {
   console.log(
     `  kept, typed by someone (not demo data, not a test run's): ${kept.map((k) => k.name).join(", ")}`,
