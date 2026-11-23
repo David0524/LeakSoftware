@@ -66,7 +66,7 @@ test("a new shop signs up and runs the whole loop, then subscribes", async ({
   await expect(page.getByTestId("onboarding-price")).toContainText("$49");
   // In with the demo code (CI has no Stripe keys), then back on an ordinary trial as if the
   // card were in, since this test goes on to subscribe and to be locked when canceled.
-  await page.getByLabel("Demo code").fill("VIP26");
+  await page.getByLabel("Code", { exact: true }).fill("VIP26");
   await page.getByRole("button", { name: "Apply" }).click();
   await page.waitForURL((url) => url.pathname === "/welcome/done");
   const { data: shop } = await admin!

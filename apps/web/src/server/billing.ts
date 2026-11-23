@@ -5,6 +5,11 @@ import {
   billedTeamSize,
   checkoutTrialEnd,
   chosenTeamSize,
+  couponId,
+  couponMonths,
+  offerFromRow,
+  percentText,
+  type CodeOffer,
   companyServices,
   parseTeamSize,
   PLANS,
@@ -174,6 +179,12 @@ export async function subscribeCheckout(
     .select("trial_ends_at, stripe_customer_id")
     .eq("company_id", company.id)
     .maybeSingle();
+  // Read apart, so a database without the codes migration still opens Checkout (no discount).
+  const { data: promo } = await db
+    .from("subscription")
+    .select("promo_percent_off, promo_percent_months")
+    .eq("company_id", company.id)
+    .maybeSingle();
   let customer = sub?.stripe_customer_id as string | null | undefined;
   if (!customer) {
     const created = await stripe.customers.create({
@@ -200,6 +211,17 @@ export async function subscribeCheckout(
     new Date(),
     (zone?.timezone as string | undefined) ?? "America/New_York",
   );
+  // A promo code's percent off (owner, 2026-11-23): a coupon on the subscription, lasting the
+  // trial's whole months plus the paid months promised.
+  const percentOff = (promo?.promo_percent_off as number | null | undefined) ?? null;
+  const coupon = percentOff
+    ? await promoCoupon(
+        stripe,
+        percentOff,
+        (promo?.promo_percent_months as number | null | undefined) ?? null,
+        trialEnd ? new Date(trialEnd * 1000) : null,
+      )
+    : null;
   const done =
     from === "welcome"
       ? `${origin}/welcome/done?session_id={CHECKOUT_SESSION_ID}`
@@ -226,6 +248,7 @@ export async function subscribeCheckout(
       },
     ],
     metadata: { kind: "tidemark_subscription", company_id: company.id },
+    ...(coupon ? { discounts: [{ coupon }] } : {}),
     subscription_data: {
       metadata: { company_id: company.id },
       ...(trialEnd ? { trial_end: trialEnd } : {}),
@@ -237,6 +260,84 @@ export async function subscribeCheckout(
   }
   if (!session.url) throw new Error("Stripe didn’t return a checkout link.");
   return { kind: "page", url: session.url };
+}
+
+/**
+ * The Stripe coupon for a promo code's percent off, made the first time it's needed under a
+ * fixed id and reused (core couponId). A repeating coupon counts its months from Checkout, so
+ * it lasts the trial's whole months plus the paid months (core couponMonths).
+ */
+export async function promoCoupon(
+  stripe: Stripe,
+  percentOff: number,
+  paidMonths: number | null,
+  trialEnd: Date | null,
+  now: Date = new Date(),
+): Promise<string> {
+  const duration = paidMonths ? couponMonths(paidMonths, now, trialEnd) : null;
+  const id = couponId(percentOff, duration);
+  try {
+    await stripe.coupons.retrieve(id);
+    return id;
+  } catch (error) {
+    if ((error as { code?: string }).code !== "resource_missing") throw error;
+  }
+  try {
+    await stripe.coupons.create({
+      id,
+      name: `Sundeck Pro ${percentText(percentOff, paidMonths)}`,
+      percent_off: percentOff,
+      ...(duration
+        ? { duration: "repeating" as const, duration_in_months: duration }
+        : { duration: "forever" as const }),
+    });
+  } catch (error) {
+    // Another request made it first.
+    if ((error as { code?: string }).code !== "resource_already_exists") throw error;
+  }
+  return id;
+}
+
+/**
+ * The promo or referral code the shop used, with its offer (owner, 2026-11-23), and whether it
+ * can still enter one (not subscribed, not a demo shop, no code yet). With the server key, so
+ * the referring shop's name can be shown.
+ */
+export async function appliedCode(
+  companyId: string,
+  db: SupabaseClient | null = adminClient(),
+): Promise<{ offer: CodeOffer | null; canEnter: boolean }> {
+  if (!db) return { offer: null, canEnter: false };
+  const { data, error } = await db
+    .from("subscription")
+    .select(
+      "plan, status, stripe_subscription_id, promo_code, promo_kind, promo_free_months, promo_percent_off, promo_percent_months, referred_by",
+    )
+    .eq("company_id", companyId)
+    .maybeSingle();
+  // Logged, not thrown: the trial page and Billing work without codes (a database before the
+  // codes migration).
+  if (error) console.error("[billing] couldn't read the shop's code:", error.message);
+  if (!data) return { offer: null, canEnter: false };
+  let referrer: string | null = null;
+  if (data.referred_by) {
+    const { data: shop } = await db
+      .from("company")
+      .select("name")
+      .eq("id", data.referred_by)
+      .maybeSingle();
+    referrer = (shop?.name as string | undefined) ?? null;
+  }
+  const offer = offerFromRow(data, referrer);
+  return {
+    offer,
+    canEnter:
+      !offer &&
+      data.plan !== "demo" &&
+      !data.stripe_subscription_id &&
+      data.status !== "canceled" &&
+      data.status !== "past_due",
+  };
 }
 
 /** Stripe's billing portal: change the card, see receipts, cancel. */
@@ -273,14 +374,23 @@ const iso = (seconds: number | null | undefined) =>
   seconds ? new Date(seconds * 1000).toISOString() : null;
 
 /**
- * Applies a billing event, if it is one: the subscription Checkout finishing, or the
- * subscription changing. Returns false for anything else.
+ * Applies a billing event, if it is one: the subscription Checkout finishing, the
+ * subscription changing, or a Sundeck Pro bill paid (the referral reward). Returns false for
+ * anything else.
  */
-export async function applyBillingEvent(event: Stripe.Event, db: SupabaseClient): Promise<boolean> {
+export async function applyBillingEvent(
+  event: Stripe.Event,
+  db: SupabaseClient,
+  stripe: Stripe | null = stripeClient(),
+): Promise<boolean> {
   // Sundeck Pro subscriptions live on the platform account. An event from a shop's connected
   // account carries metadata that shop wrote, so it never changes anyone's subscription
   // (security audit, 2026-10-17).
   if (event.account) return false;
+  if (event.type === "invoice.paid") {
+    await rewardReferral(event.data.object as Stripe.Invoice, db, stripe);
+    return true;
+  }
   if (event.type === "checkout.session.completed") {
     const s = event.data.object as Stripe.Checkout.Session;
     if (s.metadata?.kind !== "tidemark_subscription" || !s.metadata.company_id) return false;
@@ -323,6 +433,74 @@ export async function applyBillingEvent(event: Stripe.Event, db: SupabaseClient)
     return true;
   }
   return false;
+}
+
+/**
+ * Give a Month, Get a Month (owner, 2026-11-23): when a shop that used another shop's referral
+ * code first pays a real bill, the shop that shared the code gets its free month, once.
+ * Subscribed: a Stripe balance credit of its current monthly price, which its next bill uses
+ * up (the idempotency key keeps a retried event from crediting twice). Still on a trial with no
+ * Stripe subscription: a month more of trial. A demo or canceled shop gets nothing, recorded.
+ */
+export async function rewardReferral(
+  invoice: Stripe.Invoice,
+  db: SupabaseClient,
+  stripe: Stripe | null = stripeClient(),
+): Promise<"credit" | "trial" | "none" | null> {
+  const customer =
+    typeof invoice.customer === "string" ? invoice.customer : (invoice.customer?.id ?? null);
+  if (!customer || !(invoice.amount_paid > 0)) return null;
+  const { data: referred, error } = await db
+    .from("subscription")
+    .select("company_id, referred_by, referral_rewarded_at")
+    .eq("stripe_customer_id", customer)
+    .maybeSingle();
+  if (error) throw new Error(error.message);
+  if (!referred?.referred_by || referred.referral_rewarded_at) return null;
+  const referrerId = referred.referred_by as string;
+  const { data: referrer, error: referrerError } = await db
+    .from("subscription")
+    .select("plan, status, stripe_customer_id, stripe_subscription_id")
+    .eq("company_id", referrerId)
+    .maybeSingle();
+  if (referrerError) throw new Error(referrerError.message);
+  let reward: "credit" | "trial" | "none" = "none";
+  let cents: number | null = null;
+  if (referrer && referrer.plan !== "demo") {
+    if (
+      referrer.stripe_subscription_id &&
+      referrer.stripe_customer_id &&
+      referrer.status !== "canceled"
+    ) {
+      if (!stripe) throw new BillingNotConfigured();
+      const { data: shop } = await db
+        .from("company")
+        .select("name")
+        .eq("id", referred.company_id)
+        .maybeSingle();
+      cents = (await shopPrice(db, referrerId)).cents;
+      await stripe.customers.createBalanceTransaction(
+        referrer.stripe_customer_id as string,
+        {
+          amount: -cents,
+          currency: "usd",
+          description: `A free month for referring ${(shop?.name as string | undefined) ?? "a shop"}`,
+          metadata: { kind: "referral_reward", referred_company_id: referred.company_id as string },
+        },
+        { idempotencyKey: `referral_reward_${referred.company_id as string}` },
+      );
+      reward = "credit";
+    } else if (referrer.status === "trialing") {
+      reward = "trial";
+    }
+  }
+  const { data: given, error: rewardError } = await db.rpc("referral_reward", {
+    referred: referred.company_id,
+    reward,
+    cents,
+  });
+  if (rewardError) throw new Error(rewardError.message);
+  return given ? reward : null;
 }
 
 /**
@@ -459,6 +637,7 @@ export async function confirmCheckout(
       data: { object: s },
     } as unknown as Stripe.Event,
     db,
+    stripe,
   );
   // The subscription too, so the trial end Stripe bills is in trial_ends_at before the
   // webhook arrives.
@@ -474,6 +653,7 @@ export async function confirmCheckout(
         data: { object: subscription },
       } as unknown as Stripe.Event,
       db,
+      stripe,
     );
   await finishOnboarding(db, companyId);
   return true;

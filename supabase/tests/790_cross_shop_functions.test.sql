@@ -35,6 +35,8 @@ insert into calls values
   ('select prepare_report(%2$L::uuid, ''homeowner'')::text', null),
   ('select record_invoice_payment(%4$L::uuid, 100, ''cash'', null)::text', null),
   ('select redeem_access_code(%1$L::uuid, ''VIP26'')::text', null),
+  ('select redeem_code(%1$L::uuid, ''VIP26'')::text', null),
+  ('select referral_summary(%1$L::uuid)::text', null),
   ('select coalesce(report_preview(%5$L::uuid)::text, ''null'')', 'null'),
   ('select routing_use(%1$L::uuid, ''map'', 1, 100)::text', null),
   ('select save_drive_times(%1$L::uuid, ''[]''::jsonb)::text', null),

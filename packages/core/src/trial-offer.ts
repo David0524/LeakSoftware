@@ -1,3 +1,4 @@
+import type { CodeOffer } from "./codes";
 import type { Services } from "./models";
 
 // The trial page a new shop's owner sees after sign-up (/welcome): the price and what's
@@ -51,18 +52,27 @@ export interface TrialTerms {
 /**
  * A new shop's trial: 3 months for shops from the 6 x 9 mailer (owner, 2026-11-16), whose
  * answer to "How did you hear about us?" is Mailer; 30 days for everyone else. The database's
- * create_company sets the same end date.
+ * create_company sets the same end date. A code changes it (owner, 2026-11-23): a promo
+ * code's free months are the trial's length from sign-up when longer ("3 months free"), and a
+ * referral code adds a month to it, counting 30 days as one ("2 months free").
  */
-export function trialTerms(heardFrom: string | null | undefined): TrialTerms {
-  return heardFrom === "mailer"
-    ? {
-        button: "Start 3-Month Free Trial",
-        heading: "3 months free",
-        fromToday: "3 months from today",
-      }
-    : {
-        button: "Start 30-Day Free Trial",
-        heading: "30 days free",
-        fromToday: "30 days from today",
-      };
+export function trialTerms(
+  heardFrom: string | null | undefined,
+  code: Pick<CodeOffer, "kind" | "freeMonths"> | null = null,
+): TrialTerms {
+  const base = heardFrom === "mailer" ? 3 : 1;
+  const free = Math.max(0, Math.floor(code?.freeMonths ?? 0));
+  const total = !free ? base : code?.kind === "referral" ? base + free : Math.max(base, free);
+  if (total === 1) {
+    return {
+      button: "Start 30-Day Free Trial",
+      heading: "30 days free",
+      fromToday: "30 days from today",
+    };
+  }
+  return {
+    button: `Start ${total}-Month Free Trial`,
+    heading: `${total} months free`,
+    fromToday: `${total} months from today`,
+  };
 }

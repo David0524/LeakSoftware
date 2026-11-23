@@ -1,5 +1,6 @@
 "use server";
 
+import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { requireOwner } from "@/lib/auth";
 import { getCompany } from "@/lib/data";
@@ -52,25 +53,35 @@ export async function startCheckout(teamSize: number): Promise<SubscribeState> {
 }
 
 /**
- * Owners: a demo code instead of a card (owner, 2026-10-16: VIP26). A valid code makes the
- * shop a demo shop (no card, no charge), and setup is done.
+ * Owners: a code, from the trial page or Settings › Sundeck Pro Billing before subscribing.
+ * One field takes every kind (owner, 2026-11-23): a demo code makes the shop a demo shop (no
+ * card, no charge; owner, 2026-10-16: VIP26) and setup is done; a promo code or another shop's
+ * referral code (its name) changes the trial and price, and the page shows the offer.
  */
 export async function redeemCode(_: FormState, form: FormData): Promise<FormState> {
   const office = await requireOwner();
   const code = String(form.get("code") ?? "").trim();
+  const from = form.get("from") === "billing" ? "billing" : "welcome";
   if (!code) return { fields: { code: "Enter your code." } };
-  const { error } = await (
+  const { data, error } = await (
     await createClient()
-  ).rpc("redeem_access_code", {
+  ).rpc("redeem_code", {
     target_company: office.company.id,
     code,
   });
   if (error)
     return {
-      fields: { code: error.code === "22023" ? "That code isn’t valid." : error.message },
+      // The database's refusals are written for owners ("That code isn’t valid.").
+      fields: {
+        code: error.code === "22023" ? error.message : "Couldn’t check the code. Try again.",
+      },
       values: { code },
     };
-  const admin = adminClient();
-  if (admin) await finishOnboarding(admin, office.company.id);
-  redirect("/welcome/done");
+  if ((data as { kind?: string } | null)?.kind === "demo") {
+    const admin = adminClient();
+    if (admin) await finishOnboarding(admin, office.company.id);
+    if (from === "welcome") redirect("/welcome/done");
+  }
+  revalidatePath(from === "billing" ? "/settings/billing" : "/welcome");
+  return { message: "applied" };
 }

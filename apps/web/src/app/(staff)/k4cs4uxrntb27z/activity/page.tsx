@@ -22,10 +22,14 @@ const ACTION: Record<StaffActionKind, string> = {
   cost_add: "Added a cost",
   cost_change: "Changed a cost",
   cost_delete: "Deleted a cost",
+  promo_add: "Made a promo code",
+  promo_on: "Turned on a promo code",
+  promo_off: "Turned off a promo code",
 };
 
 function detail(details: Record<string, unknown>): string {
   const parts: string[] = [];
+  if (typeof details.code === "string") parts.push(details.code);
   if (details.access) parts.push(details.access === "view" ? "View Only" : "Can Make Changes");
   if (details.minutes) parts.push(`${details.minutes} min`);
   if (details.days) parts.push(`+${details.days} days`);

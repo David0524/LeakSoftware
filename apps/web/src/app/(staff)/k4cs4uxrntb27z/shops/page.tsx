@@ -7,6 +7,7 @@ import {
   heardFromText,
   searchShops,
   servicesLabel,
+  shopCodeText,
   shopPriceCents,
   shopStanding,
   sortShops,
@@ -206,6 +207,9 @@ async function Shops({
                 <th scope="col" className="px-3 py-2 font-semibold text-text-muted">
                   Heard From
                 </th>
+                <th scope="col" className="px-3 py-2 font-semibold text-text-muted">
+                  Code
+                </th>
               </tr>
             </thead>
             <tbody>
@@ -242,6 +246,25 @@ async function Shops({
                   >
                     {heardFromText(s.heard_from, s.heard_from_other) ?? (
                       <span className="text-text-muted">No answer</span>
+                    )}
+                  </td>
+                  <td className="max-w-56 truncate" title={shopCodeText(s) ?? undefined}>
+                    {s.promo_code ? (
+                      <>
+                        <span className="font-mono">{s.promo_code}</span>
+                        <span className="block text-[0.8125rem] text-text-muted">
+                          {s.promo_kind === "referral"
+                            ? `Referred by ${s.referred_by_name ?? "a closed shop"}`
+                            : "Promo code"}
+                        </span>
+                      </>
+                    ) : s.access_code ? (
+                      <>
+                        <span className="font-mono">{s.access_code}</span>
+                        <span className="block text-[0.8125rem] text-text-muted">Demo code</span>
+                      </>
+                    ) : (
+                      <span className="text-text-muted">None</span>
                     )}
                   </td>
                 </tr>

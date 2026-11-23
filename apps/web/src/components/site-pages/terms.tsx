@@ -5,7 +5,7 @@ import { COMPANY, CONTACT_PHONE, CONTACT_PHONE_URL, SUPPORT_EMAIL } from "@/lib/
 export function TermsBody({ inApp = false }: { inApp?: boolean }) {
   const to = (path: string) => (inApp ? `/in-app${path}` : path);
   return (
-    <LegalPage title="Terms of Service" updated="October 24, 2026">
+    <LegalPage title="Terms of Service" updated="November 23, 2026">
       <section>
         <h2>The service and who these terms are with</h2>
         <p>
@@ -30,14 +30,21 @@ export function TermsBody({ inApp = false }: { inApp?: boolean }) {
         <h2>Trial and billing</h2>
         <ul>
           <li>
-            A new shop gets a 30-day free trial. A card is needed to start it, and the subscription
-            begins when the trial ends unless the owner cancels first. Subscriptions are bought on
-            the Sundeck Pro website, not in the apps.
+            A new shop gets a 30-day free trial (longer with some offers). A card is needed to start
+            it, and the subscription begins when the trial ends unless the owner cancels first.
+            Subscriptions are bought on the Sundeck Pro website, not in the apps.
           </li>
           <li>
             The price is monthly and depends on the shop’s package and how many active team members
             it has. Adding or removing people changes the price from then on, prorated. Prices don’t
             include taxes, which are added where they apply.
+          </li>
+          <li>
+            Promotional and referral codes: a shop can use one code, before it subscribes. An offer
+            (free months or a discount for a set time) applies as described when the code is
+            entered, has no cash value, and may be ended for new shops at any time. A shop that
+            refers another gets its free month, as a credit on its next bill or a longer trial,
+            after the other shop’s first payment; a shop can’t refer itself.
           </li>
           <li>
             The owner can cancel at any time on the website (Settings › Sundeck Pro Billing).

@@ -25,6 +25,7 @@ const SECTIONS: { title?: string; links: { href: string; label: string }[] }[] =
     title: "Growth",
     links: [
       { href: "/k4cs4uxrntb27z/leads", label: "Leads" },
+      { href: "/k4cs4uxrntb27z/codes", label: "Codes" },
       { href: "/k4cs4uxrntb27z/requests", label: "Feature Requests" },
       { href: "/k4cs4uxrntb27z/import", label: "Import for a Shop" },
     ],

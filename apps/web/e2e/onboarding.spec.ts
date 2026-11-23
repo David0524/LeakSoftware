@@ -53,10 +53,10 @@ test("a new pool company goes straight from sign-up to its trial", async ({ page
   // CI has no Stripe keys, so cards can't be taken and the demo code is the way in; a wrong
   // code is refused.
   await expect(page.getByRole("button", { name: "Start 30-Day Free Trial" })).toBeDisabled();
-  await page.getByLabel("Demo code").fill("VIP25");
+  await page.getByLabel("Code", { exact: true }).fill("VIP25");
   await page.getByRole("button", { name: "Apply" }).click();
   await expect(page.getByText("That code isn’t valid.")).toBeVisible();
-  await page.getByLabel("Demo code").fill("vip26");
+  await page.getByLabel("Code", { exact: true }).fill("vip26");
   await page.getByRole("button", { name: "Apply" }).click();
   await page.waitForURL((url) => url.pathname === "/welcome/done");
   await expect(page.getByTestId("next-steps")).toContainText("Add your customers");

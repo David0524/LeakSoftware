@@ -1,12 +1,17 @@
 import type { Metadata } from "next";
 import { billingSummary } from "@leakbook/core";
 import { BillingButton, BillingPlan } from "@/components/billing-buttons";
+import { AppliedCode, HaveCode } from "@/components/code-field";
+import { ReferralCard } from "@/components/referral-card";
 import { Banner } from "@/components/doc-ui";
 import { SettingsSection } from "@/components/settings-forms";
 import { PageHeader } from "@/components/ui";
 import { OWNER_ONLY, getOffice } from "@/lib/auth";
 import { getAccess } from "@/lib/data";
-import { billingConfigured, currentPrice } from "@/server/billing";
+import { siteOrigin } from "@/lib/origin";
+import { createClient } from "@/lib/supabase/server";
+import { adminClient } from "@/server/admin";
+import { appliedCode, billingConfigured, currentPrice } from "@/server/billing";
 import { stripePublishableKey } from "@/server/stripe";
 
 export const metadata: Metadata = { title: "Sundeck Pro Billing · Sundeck Pro" };
@@ -21,6 +26,19 @@ export default async function BillingPage({ searchParams }: PageProps<"/settings
     access && access.plan !== "demo" && billingConfigured() && office.isOwner
       ? await currentPrice(office.company.id)
       : null;
+  // The code the shop used, and its own referral code (owner, 2026-11-23). Owners only.
+  const supabase = await createClient();
+  const [code, referral] =
+    office.isOwner && access && access.plan !== "demo"
+      ? await Promise.all([
+          appliedCode(office.company.id, adminClient() ?? supabase),
+          supabase
+            .rpc("referral_summary", { target_company: office.company.id })
+            .then(
+              ({ data }) => data as { code: string | null; used: number; earned: number } | null,
+            ),
+        ])
+      : [null, null];
   return (
     <>
       <PageHeader
@@ -66,16 +84,31 @@ export default async function BillingPage({ searchParams }: PageProps<"/settings
                     active={price.active}
                     subscribed={access.subscribed}
                     publishableKey={stripePublishableKey()}
+                    offer={code?.offer}
                   />
                 ) : access.subscribed ? (
                   <BillingButton kind="manage" />
                 ) : (
                   <BillingButton kind="subscribe" publishableKey={stripePublishableKey()} />
                 )}
+                {code?.offer ? <AppliedCode offer={code.offer} /> : null}
+                {code?.canEnter ? <HaveCode from="billing" /> : null}
               </>
             )}
           </div>
         </SettingsSection>
+        {referral?.code ? (
+          <div className="mt-8">
+            <SettingsSection title="Give a Month, Get a Month" boxed>
+              <ReferralCard
+                code={referral.code}
+                used={Number(referral.used) || 0}
+                earned={Number(referral.earned) || 0}
+                signUpUrl={`${await siteOrigin()}/sign-up`}
+              />
+            </SettingsSection>
+          </div>
+        ) : null}
       </div>
     </>
   );
