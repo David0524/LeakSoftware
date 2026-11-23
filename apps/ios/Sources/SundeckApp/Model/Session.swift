@@ -256,8 +256,10 @@ public final class Session {
         let hidden = Set(companies.filter { !$0.canContact }.map(\.id))
         if hidden != contactHidden {
             contactHidden = hidden
-            let mask: (@Sendable (String, Row) -> Row)? =
-                hidden.isEmpty ? nil : { table, row in contactMasked(table, row, hidden: hidden) }
+            var mask: (@Sendable (String, Row) -> Row)?
+            if !hidden.isEmpty {
+                mask = { @Sendable table, row in contactMasked(table, row, hidden: hidden) }
+            }
             sync.store.setReadMask(tables: Array(contactBlanks.keys), mask)
         }
     }
