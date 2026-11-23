@@ -15,5 +15,8 @@
   },
   "dependencies": {
     "playwright-core": "1.64.0"
+  },
+  "devDependencies": {
+    "qrcode": "1.5.4"
   }
 }

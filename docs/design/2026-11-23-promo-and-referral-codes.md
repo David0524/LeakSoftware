@@ -99,10 +99,48 @@ once they start paying." The code large, **Copy Code** and **Share** (the share 
 one; elsewhere **Copy Message**), and "No shops have used your code yet." / "1 shop has used your
 code. Your free month comes when it starts paying." / "3 shops have used your code. 2 free months
 earned." The message: "Try Sundeck Pro for your pool business. Enter code BLUEWAVEPOOLS when you
-start your free trial and get an extra month free: https://sundeckpro.com/sign-up".
+start your free trial and get an extra month free: https://sundeckpro.com/sign-up?code=BLUEWAVEPOOLS".
+The link carries the code (below), so a shop that taps it gets its month without typing.
 
 Before subscribing, the same page has **Have a Code?** under Subscribe, which opens the field; once
 a code is used, its check line shows instead (also after subscribing).
+
+## A sign-up link that carries the code (owner, 2026-11-23: "Yes do that")
+
+For the meetup, where a code typed on the last onboarding page is easy to miss:
+`https://sundeckpro.com/sign-up?code=CANNONBALL90` (any case; spaces and punctuation ignored, like
+the field). Website only: Create an Account in the iPhone and Android apps takes no payments
+(rule 3.1.1) and is unchanged. Works alongside `?from=card` and the form's bot checks.
+
+1. **Sign-up page.** The server asks `public.code_offer(code)` (migration
+   `20261022005200_code_offer.sql`; server key only, one code's offer, never a list) and, for a
+   working promo code or a shop's referral code, shows a soft card above the fields:
+   "✓ Code CANNONBALL90: 3 months free." / "✓ Code BLUEWAVEPOOLS: 1 extra month free, thanks to
+   Blue Wave Pools." (the trial page's `appliedOfferText`), under it "It’s applied to your shop
+   when you start your trial." The intro follows the trial ("3 months free. You’ll set up your
+   shop next, then invite your techs."; `trialTerms`). Unknown, turned-off, ended and used-up
+   codes, and demo codes, show nothing and are not an error.
+2. **Kept with the account.** Start Free Trial saves the code in the account's user metadata
+   (`promo_code`), beside the other sign-up answers, so it comes through the email confirmation
+   (production confirms email, then `/setup` makes the shop). Chosen over the leads row because
+   the account is what survives confirmation and is read by the person's own session; no new
+   column. When the person makes their shop (at once, or on `/setup`), its id is added
+   (`promo_company`), so the code is only ever for the shop they made: a person who joins a team
+   by invite never applies it.
+3. **Applied on the trial page.** `/welcome` (owners, before subscribing) applies it through
+   `public.redeem_code`, as if typed in the field, then clears both keys (tried once). The page
+   then already shows "3 months free", "Start 3-Month Free Trial", and the card form uses the
+   longer trial. If it's refused (say the code was turned off since), the field opens with the
+   code in it and the field's own message ("That code isn’t valid."); onboarding isn't blocked.
+
+The staff portal's "Code used" already shows it; nothing added there.
+
+**Handout card:** `apps/video/card/promo-card.mjs <CODE> "<Headline>"` makes a 3.5 × 2 in business
+card (front and back, 1/8 in bleed, vector PDF, 600 dpi PNG previews) with the logo, the home
+page's "Find it. Fix it. Get paid." and its one-line description, the headline ("3 Months Free"),
+the code large, "Start your free trial at sundeckpro.com", and a QR (error correction M, the
+`qrcode` package) for the link above. Colors from `brand/tokens.json`; orange only in the logo's dot.
+Outputs go to `apps/video/out/` (not committed, like the laminate card and mailer).
 
 ## Admin portal
 

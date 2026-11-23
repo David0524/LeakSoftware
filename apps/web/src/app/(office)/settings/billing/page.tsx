@@ -104,7 +104,7 @@ export default async function BillingPage({ searchParams }: PageProps<"/settings
                 code={referral.code}
                 used={Number(referral.used) || 0}
                 earned={Number(referral.earned) || 0}
-                signUpUrl={`${await siteOrigin()}/sign-up`}
+                origin={await siteOrigin()}
               />
             </SettingsSection>
           </div>

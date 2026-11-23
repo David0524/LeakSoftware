@@ -15,12 +15,13 @@ export function ReferralCard({
   code,
   used,
   earned,
-  signUpUrl,
+  origin,
 }: {
   code: string;
   used: number;
   earned: number;
-  signUpUrl: string;
+  /** The site's origin: the shared link is its /sign-up?code=<CODE> (2026-11-23). */
+  origin: string;
 }) {
   const [copied, setCopied] = useState<"code" | "message" | null>(null);
   // A share sheet (phones, Safari): known only in the browser.
@@ -29,7 +30,7 @@ export function ReferralCard({
     () => "share" in navigator,
     () => false,
   );
-  const message = referralShareText(code, signUpUrl);
+  const message = referralShareText(code, origin);
   const copy = async (text: string, what: "code" | "message") => {
     try {
       await navigator.clipboard.writeText(text);

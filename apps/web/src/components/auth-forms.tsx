@@ -17,7 +17,10 @@ import {
   BOT_STARTED_FIELD,
   BOT_TRAP_FIELD,
   TERMS_CONSENT,
+  appliedOfferText,
   parseServices,
+  SIGN_UP_CODE_NOTE,
+  type CodeOffer,
   type Services,
 } from "@leakbook/core";
 import { Banner } from "./doc-ui";
@@ -259,10 +262,13 @@ export function NewPasswordForm() {
 export function TrialForm({
   services = "pool",
   heardFrom = null,
+  offer = null,
 }: {
   services?: Services;
   /** Preselected from a sign-up link's ?from= (owner, 2026-10-24). */
   heardFrom?: string | null;
+  /** A sign-up link's ?code=, checked on the server (owner, 2026-11-23): shown and kept. */
+  offer?: CodeOffer | null;
 }) {
   const [state, action, pending] = useActionState(orOffline(startTrial), {});
   // Leads (owner, 2026-10-16): once the email is valid, what's typed so far is kept, so
@@ -288,6 +294,7 @@ export function TrialForm({
     <form data-no-discard action={action} onBlur={keep} className="space-y-4" noValidate>
       <TimezoneInput />
       <BotChecks />
+      {offer ? <SignUpCode offer={offer} /> : null}
       <FieldGroup labelWidth="8.25rem">
         <GroupedField
           label="Your name"
@@ -346,6 +353,27 @@ export function TrialForm({
         </Link>
       </p>
     </form>
+  );
+}
+
+/**
+ * The code a sign-up link carries (owner, 2026-11-23: the meetup's card), in the trial page's
+ * words ("Code CANNONBALL90: 3 months free."). It goes with the account and is applied on the
+ * trial page once the shop exists.
+ */
+function SignUpCode({ offer }: { offer: CodeOffer }) {
+  return (
+    <div className="card flex gap-2 px-4 py-3 sm:bg-bg sm:shadow-none" data-testid="sign-up-code">
+      <input type="hidden" name="code" value={offer.code} />
+      {/* One indent for both lines, under the text rather than the check (as a list row). */}
+      <span aria-hidden="true" className="text-status-pass">
+        ✓
+      </span>
+      <div>
+        <p className="font-semibold">{appliedOfferText(offer)}</p>
+        <p className="mt-0.5 text-[0.9375rem] text-text-muted">{SIGN_UP_CODE_NOTE}</p>
+      </div>
+    </div>
   );
 }
 

@@ -10,8 +10,18 @@ import { Button } from "./ui";
 // referral codes (their names). On the trial page and in Settings › Sundeck Pro Billing before
 // subscribing. The page shows the offer once it's applied (AppliedCode).
 
-export function CodeField({ from }: { from: "welcome" | "billing" }) {
-  const [state, act, pending] = useActionState(orOffline(redeemCode), {});
+export function CodeField({
+  from,
+  refused = null,
+}: {
+  from: "welcome" | "billing";
+  /** A sign-up link's code that couldn't be applied (2026-11-23): in the field, with why. */
+  refused?: { code: string; error: string } | null;
+}) {
+  const [state, act, pending] = useActionState(
+    orOffline(redeemCode),
+    refused ? { fields: { code: refused.error }, values: { code: refused.code } } : {},
+  );
   const error = state.fields?.code;
   const id = `code-${from}`;
   return (

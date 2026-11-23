@@ -7,7 +7,8 @@ import { getOffice } from "@/lib/auth";
 import { getAccess, getCompany } from "@/lib/data";
 import { createClient } from "@/lib/supabase/server";
 import { adminClient } from "@/server/admin";
-import { appliedCode, billingConfigured } from "@/server/billing";
+import { appliedCode, billingConfigured, finishOnboarding } from "@/server/billing";
+import { applySignUpCode } from "@/server/sign-up-code";
 import { stripePublishableKey } from "@/server/stripe";
 
 export const metadata: Metadata = { title: "Start Your Free Trial · Sundeck Pro" };
@@ -29,6 +30,15 @@ async function WelcomeBody() {
   const [access, company] = await Promise.all([getAccess(office), getCompany(office)]);
   if (!mustFinishSetup(access, office.company.role)) redirect("/home");
   const supabase = await createClient();
+  // The code from a sign-up link (owner, 2026-11-23), applied to the shop its owner made, once,
+  // before the offer is read, so the page already shows it. A refusal (say the code was turned
+  // off since) waits in the code field, with the field's own message.
+  const signUpCode = await applySignUpCode(supabase, office.company.id);
+  if (signUpCode.kind === "demo") {
+    const admin = adminClient();
+    if (admin) await finishOnboarding(admin, office.company.id);
+    redirect("/welcome/done");
+  }
   const [{ data: sub }, { count }, code] = await Promise.all([
     supabase
       .from("subscription")
@@ -57,6 +67,9 @@ async function WelcomeBody() {
       publishableKey={stripePublishableKey()}
       offer={code.offer}
       canEnterCode={code.canEnter}
+      refusedCode={
+        signUpCode.kind === "refused" ? { code: signUpCode.code, error: signUpCode.error } : null
+      }
     />
   );
 }

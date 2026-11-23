@@ -11,10 +11,12 @@ import {
   formBotReason,
   heardFromOther,
   isUsNumber,
+  linkCode,
   parseHeardFrom,
   parseServices,
   passwordProblem,
   safePath,
+  SIGN_UP_CODE_KEY,
   toE164,
   tooManyAttempts,
 } from "@leakbook/core";
@@ -26,6 +28,7 @@ import { createAccount, signInLinkByEmail } from "@/server/account-email";
 import { attemptAllowed, attemptFailed } from "@/server/auth-limits";
 import { billingConfigured, logPriceSyncError, syncSubscriptionPrice } from "@/server/billing";
 import { saveLead } from "@/server/leads";
+import { keepSignUpCodeFor } from "@/server/sign-up-code";
 import { EMAIL_PATTERN, sendPasswordChanged, sendPasswordReset } from "@/server/password-reset";
 import {
   newPasswordProblem,
@@ -171,6 +174,9 @@ export async function startTrial(_: FormState, form: FormData): Promise<FormStat
     services: parseServices(text(form, "services")) ?? "pool",
   };
   const heard = heardFrom(form);
+  // A sign-up link's code (owner, 2026-11-23), kept with the account until its shop exists;
+  // the trial page applies it (server/sign-up-code.ts).
+  const code = linkCode(text(form, "code"));
   const password = String(form.get("password") ?? "");
   const fields: Record<string, string> = {};
   if (!values.name) fields.name = "Enter your name.";
@@ -210,6 +216,7 @@ export async function startTrial(_: FormState, form: FormData): Promise<FormStat
       phone,
       // Kept with the account too, so a shop made after the email confirmation gets it.
       ...(heard.heard_from ? heard : {}),
+      ...(code ? { [SIGN_UP_CODE_KEY]: code } : {}),
       // The form says "By creating an account, you agree to the Terms and Privacy Policy.";
       // the database records when (profile.accepted_terms_at).
       accepted_terms: true,
@@ -232,6 +239,7 @@ export async function startTrial(_: FormState, form: FormData): Promise<FormStat
   if (companyError) return { error: friendlyDbError(companyError.message), values: kept };
   await supabase.from("profile").update({ phone }).eq("id", account.userId);
   await requireCard(String(companyId));
+  await keepSignUpCodeFor(supabase, String(companyId), null, code);
   redirect("/welcome");
 }
 
@@ -257,6 +265,9 @@ export async function createCompany(_: FormState, form: FormData): Promise<FormS
   });
   if (error) return { error: friendlyDbError(error.message), values: kept };
   await requireCard(String(companyId));
+  // The code from the sign-up link, kept with the account through the email confirmation, is
+  // for this shop (never one joined by invite).
+  await keepSignUpCodeFor(supabase, String(companyId), user.user_metadata);
   redirect("/welcome");
 }
 

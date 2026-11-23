@@ -2,6 +2,12 @@
 
 Newest first. Each entry: date, decision, reason.
 
+## 2026-11-23 (owner: "Yes do that", to a sign-up link that carries the code and a handout card)
+- **`https://sundeckpro.com/sign-up?code=CANNONBALL90`** (any case) shows the offer on the sign-up form ("Code CANNONBALL90: 3 months free."; a shop's referral code: "Code BLUEWAVEPOOLS: 1 extra month free, thanks to Blue Wave Pools."), checked on the server one code at a time (`public.code_offer`, server key only, migration `20261022005200_code_offer.sql`). Unknown or turned-off codes show nothing. Reason: the meetup's 20 shops would miss a code typed only on the last onboarding page. Website only; the apps' Create an Account is unchanged.
+- **The code rides in the account's user metadata** (`promo_code`) through the email confirmation, is tied to the shop the person makes (`promo_company`), and is applied once on the trial page through `public.redeem_code`. A refusal opens the code field with the code and its message; onboarding goes on. A person who joins a team by invite never applies it. No new column.
+- **Referral share messages use the link too** (`…/sign-up?code=BLUEWAVEPOOLS`), still saying "Enter code BLUEWAVEPOOLS" for people who type it.
+- **Handout card:** a 3.5 × 2 in business card with 1/8 in bleed, made by `apps/video/card/promo-card.mjs <CODE> "<Headline>"` (the code is a parameter). The laminate card and mailer are larger pieces for other uses, so this doesn't match their size. Outputs aren't committed, like theirs.
+
 ## 2026-11-23 (owner: "We can release the new iphone update to the public"; "What about android?")
 - **iPhone 1.0.5 (build 1092) is submitted to App Review** (App Store workflow `submit`, the TestFlight build of the commit with every change today) and releases automatically once approved, as 1.0.4 did. What's New: `docs/release/APP_STORE.md` § 1.9.
 - **Android 1.0.3** carries the same changes (End My Day At, Text and Call Customers, roles on Team, filled Saves, Team rows with one switch, one way to invite). It also marks `android.hardware.screen.portrait` and `android.hardware.wifi` as `required="false"` (a config plugin in `apps/mobile/app.config.js`; `npx expo config --type introspect` shows both), clearing Play's 1.0.2 hardware-feature warning. Built by the Android workflow with "Upload to Google Play" off (1.0.3, version code 8); the owner releases it through Claude in Chrome (`docs/play-store/CHROME_RELEASE_1.0.3.md`). Release notes: `docs/play-store/README.md` § 10.

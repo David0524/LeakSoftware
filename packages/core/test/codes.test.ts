@@ -7,7 +7,11 @@ import {
   couponMonths,
   discountedCents,
   discountNote,
+  linkCode,
   normalizeCode,
+  offerFromLookup,
+  pendingSignUpCode,
+  signUpCodeUrl,
   offerFromRow,
   offerText,
   referralCountText,
@@ -169,8 +173,12 @@ describe("the Stripe coupon", () => {
 
 describe("referrals", () => {
   it("shares the code with the sign-up link", () => {
-    expect(referralShareText("CANYONSTATEPOOLS", "https://sundeckpro.com/sign-up")).toBe(
-      "Try Sundeck Pro for your pool business. Enter code CANYONSTATEPOOLS when you start your free trial and get an extra month free: https://sundeckpro.com/sign-up",
+    expect(referralShareText("CANYONSTATEPOOLS", "https://sundeckpro.com")).toBe(
+      "Try Sundeck Pro for your pool business. Enter code CANYONSTATEPOOLS when you start your free trial and get an extra month free: https://sundeckpro.com/sign-up?code=CANYONSTATEPOOLS",
+    );
+    // The link carries the code, so tapping it applies the extra month (2026-11-23).
+    expect(referralShareText("BLUEWAVEPOOLS", "http://localhost:3000")).toMatch(
+      / http:\/\/localhost:3000\/sign-up\?code=BLUEWAVEPOOLS$/,
     );
   });
 
@@ -204,5 +212,64 @@ describe("the Admin portal's lines", () => {
     expect(referralRewardText("credit", 7_900)).toBe("$79.00 credit in Stripe");
     expect(referralRewardText("trial", null)).toBe("A month added to its trial");
     expect(referralRewardText(null, null)).toBe("Waiting for the first payment");
+  });
+});
+
+describe("a sign-up link that carries a code", () => {
+  it("reads the code in any case, spaces and dashes ignored", () => {
+    expect(linkCode("CANNONBALL90")).toBe("CANNONBALL90");
+    expect(linkCode("cannonball90")).toBe("CANNONBALL90");
+    expect(linkCode(" Cannonball-90 ")).toBe("CANNONBALL90");
+    expect(linkCode(["meet26", "other"])).toBe("MEET26");
+  });
+
+  it("ignores nothing, too short, too long, or not text", () => {
+    expect(linkCode(undefined)).toBeNull();
+    expect(linkCode("")).toBeNull();
+    expect(linkCode("ab")).toBeNull();
+    expect(linkCode("A".repeat(41))).toBeNull();
+    expect(linkCode(42)).toBeNull();
+  });
+
+  it("makes the card's link", () => {
+    expect(signUpCodeUrl("cannonball90")).toBe("https://sundeckpro.com/sign-up?code=CANNONBALL90");
+    expect(signUpCodeUrl("MEET26", "http://localhost:3000")).toBe(
+      "http://localhost:3000/sign-up?code=MEET26",
+    );
+  });
+
+  it("shows the database's offer with the trial page's wording", () => {
+    const promo = offerFromLookup({
+      kind: "promo",
+      code: "CANNONBALL90",
+      free_months: 3,
+      percent_off: null,
+      percent_months: null,
+    });
+    expect(promo && appliedOfferText(promo)).toBe("Code CANNONBALL90: 3 months free.");
+    const referral = offerFromLookup({
+      kind: "referral",
+      code: "BLUEWAVEPOOLS",
+      free_months: 1,
+      percent_off: null,
+      percent_months: null,
+      referrer_name: "Blue Wave Pools",
+    });
+    expect(referral && appliedOfferText(referral)).toBe(
+      "Code BLUEWAVEPOOLS: 1 extra month free, thanks to Blue Wave Pools.",
+    );
+    expect(offerFromLookup(null)).toBeNull();
+    expect(offerFromLookup({ kind: "demo", code: "VIP26" })).toBeNull();
+  });
+
+  it("carries the code only to the shop its account made", () => {
+    const meta = { promo_code: "CANNONBALL90", promo_company: "shop-1" };
+    expect(pendingSignUpCode(meta, "shop-1")).toBe("CANNONBALL90");
+    // Joined another team by invite: never applied there.
+    expect(pendingSignUpCode(meta, "shop-2")).toBeNull();
+    // Before the shop is made.
+    expect(pendingSignUpCode({ promo_code: "CANNONBALL90" }, "shop-1")).toBeNull();
+    expect(pendingSignUpCode({ promo_code: null, promo_company: "shop-1" }, "shop-1")).toBeNull();
+    expect(pendingSignUpCode(undefined, "shop-1")).toBeNull();
   });
 });

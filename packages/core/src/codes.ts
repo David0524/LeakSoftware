@@ -175,9 +175,12 @@ export function couponId(percentOff: number, durationMonths: number | null): str
   return `sundeckpro_${percentOff}off_${durationMonths ? `${durationMonths}mo` : "forever"}`;
 }
 
-/** The share text for a shop's referral code. */
-export function referralShareText(code: string, signUpUrl: string): string {
-  return `Try Sundeck Pro for your pool business. Enter code ${code} when you start your free trial and get an extra month free: ${signUpUrl}`;
+/**
+ * The share text for a shop's referral code. Its link carries the code (2026-11-23), so a shop
+ * that taps it gets the extra month without typing; "Enter code" stays for those who type it.
+ */
+export function referralShareText(code: string, origin = "https://sundeckpro.com"): string {
+  return `Try Sundeck Pro for your pool business. Enter code ${code} when you start your free trial and get an extra month free: ${signUpCodeUrl(code, origin)}`;
 }
 
 /** Under the referral code: how many shops used it and the months earned. */
@@ -220,4 +223,63 @@ export function referralRewardText(
     default:
       return "Waiting for the first payment";
   }
+}
+
+// A sign-up link that carries a code (owner, 2026-11-23: "Yes do that"), for the meetup's
+// handout card: https://sundeckpro.com/sign-up?code=CANNONBALL90. The sign-up page shows the
+// offer, the code rides with the account (its user metadata) through email confirmation, and
+// the trial page applies it once the shop that person made exists.
+
+/** The sign-up link's query parameter. */
+export const SIGN_UP_CODE_PARAM = "code";
+/** The account's user metadata: the code from the link, and the shop it is for once made. */
+export const SIGN_UP_CODE_KEY = "promo_code";
+export const SIGN_UP_CODE_SHOP_KEY = "promo_company";
+/** Longest code a link may carry, normalized (a shop's name typed with its LLC runs long). */
+const LINK_CODE_MAX = 40;
+
+/** The code a link carries (`?code=cannonball90`, any case), normalized; null without one. */
+export function linkCode(value: unknown): string | null {
+  const one: unknown = Array.isArray(value) ? value[0] : value;
+  if (typeof one !== "string") return null;
+  const code = normalizeCode(one);
+  return code.length >= 3 && code.length <= LINK_CODE_MAX ? code : null;
+}
+
+/** Under the code's line on the sign-up form. */
+export const SIGN_UP_CODE_NOTE = "It’s applied to your shop when you start your trial.";
+
+/** The sign-up link for a code:"https://sundeckpro.com/sign-up?code=CANNONBALL90". */
+export function signUpCodeUrl(code: string, origin = "https://sundeckpro.com"): string {
+  return `${origin}/sign-up?${SIGN_UP_CODE_PARAM}=${encodeURIComponent(normalizeCode(code))}`;
+}
+
+/** The database's answer for one code (public.code_offer) as an offer; null for anything else. */
+export function offerFromLookup(value: unknown): CodeOffer | null {
+  if (!value || typeof value !== "object") return null;
+  const v = value as Record<string, unknown>;
+  const num = (x: unknown) => (typeof x === "number" && Number.isFinite(x) ? x : null);
+  if (typeof v.code !== "string") return null;
+  return offerFromRow(
+    {
+      promo_code: v.code,
+      promo_kind: typeof v.kind === "string" ? v.kind : null,
+      promo_free_months: num(v.free_months),
+      promo_percent_off: num(v.percent_off),
+      promo_percent_months: num(v.percent_months),
+    },
+    typeof v.referrer_name === "string" ? v.referrer_name : null,
+  );
+}
+
+/**
+ * The code an account carries for its new shop, from its user metadata: only once that shop
+ * is made, and only for it (a person who joins another team by invite never applies one).
+ */
+export function pendingSignUpCode(
+  metadata: Record<string, unknown> | null | undefined,
+  companyId: string,
+): string | null {
+  if (!metadata || metadata[SIGN_UP_CODE_SHOP_KEY] !== companyId) return null;
+  return linkCode(metadata[SIGN_UP_CODE_KEY]);
 }

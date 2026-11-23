@@ -48,6 +48,7 @@ export function TrialOffer({
   publishableKey = null,
   offer = null,
   canEnterCode = true,
+  refusedCode = null,
 }: {
   services: Services;
   /** Active people on the team: the fewest the owner can pick. */
@@ -65,6 +66,8 @@ export function TrialOffer({
   offer?: CodeOffer | null;
   /** Whether a code can still be entered (one per shop). */
   canEnterCode?: boolean;
+  /** A sign-up link's code that couldn't be applied, shown in the open field with why. */
+  refusedCode?: { code: string; error: string } | null;
 }) {
   const pkg = TRIAL_OFFER[trialPackage(services)];
   const terms = trialTerms(heardFrom, offer);
@@ -82,7 +85,7 @@ export function TrialOffer({
   const discount = discountNote(fullCents, offer);
   // Every new shop comes to this payment page (owner, 2026-10-16). Without Stripe on the
   // server, cards can't be taken yet; a demo code (VIP26) still gets a shop in.
-  const [showCode, setShowCode] = useState(!billing);
+  const [showCode, setShowCode] = useState(!billing || Boolean(refusedCode));
   const embedded = billing && Boolean(publishableKey);
   const chargeNote = `You won’t be charged until ${trialEnds ? longDate(trialEnds) : terms.fromToday}; cancel before then in Settings › Sundeck Pro Billing and you never will be.`;
   const codeLink =
@@ -194,7 +197,11 @@ export function TrialOffer({
               <CheckoutPlaceholder />
             )}
             <p className="mt-3 text-center text-[0.9375rem] text-text-muted">{chargeNote}</p>
-            {showCode && canEnterCode ? <CodeField from="welcome" /> : codeLink}
+            {showCode && canEnterCode ? (
+              <CodeField from="welcome" refused={refusedCode} />
+            ) : (
+              codeLink
+            )}
           </div>
         ) : null}
         {embedded ? null : state.error ? (
@@ -202,7 +209,9 @@ export function TrialOffer({
             {state.error}
           </p>
         ) : null}
-        {embedded ? null : showCode && canEnterCode ? <CodeField from="welcome" /> : null}
+        {embedded ? null : showCode && canEnterCode ? (
+          <CodeField from="welcome" refused={refusedCode} />
+        ) : null}
         {embedded ? null : (
           <form
             action={act}
