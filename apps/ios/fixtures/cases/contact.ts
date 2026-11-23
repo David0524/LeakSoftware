@@ -12,7 +12,7 @@ import { rule, type ModuleCases } from "../case";
 
 // contact.ts: Text and Call Customers, per person (owner, 2026-11-23).
 
-const people = [
+const people: [string | null, boolean | null][] = [
   ["owner", false],
   ["admin", false],
   ["tech", true],
