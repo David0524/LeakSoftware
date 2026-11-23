@@ -80,7 +80,7 @@ async function lineByNumber(db: Db, number: string) {
 export async function mayContactCustomers(companyId: string, userId: string): Promise<boolean> {
   const { data } = await admin()
     .from("membership")
-    .select("role, can_contact_customers")
+    .select("*")
     .eq("company_id", companyId)
     .eq("user_id", userId)
     .eq("status", "active")
@@ -470,7 +470,8 @@ async function ringPhones(db: Db, line: PhoneLine): Promise<string[]> {
   const { data: members } = await db
     .from("membership")
     .select(
-      "user_id, role, status, can_contact_customers, profile:profile!membership_user_profile_fkey(phone)",
+      // `*`: a database without can_contact_customers yet still rings the team.
+      "*, profile:profile!membership_user_profile_fkey(phone)",
     )
     .eq("company_id", line.company_id)
     .eq("status", "active");

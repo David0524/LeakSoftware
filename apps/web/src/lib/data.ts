@@ -95,7 +95,8 @@ export const getTeam = cache(async (office: Office): Promise<TeamMember[]> => {
     await supabase
       .from("membership")
       .select(
-        "id, user_id, role, status, color, disabled_at, schedule_order, can_contact_customers, profile:profile!membership_user_profile_fkey(id, full_name, email)",
+        // `*`: a database without can_contact_customers yet still lists the team.
+        "*, profile:profile!membership_user_profile_fkey(id, full_name, email)",
       )
       .eq("company_id", office.company.id)
       .is("deleted_at", null),

@@ -73,7 +73,9 @@ export const getOffice = cache(async (): Promise<Office> => {
   const [{ data: memberships }, { data: profile }, support] = await Promise.all([
     supabase
       .from("membership")
-      .select("role, can_contact_customers, company:company_id (id, name, timezone)")
+      // `*` (not the column by name) so a database without can_contact_customers yet still
+      // signs everyone in, with the permission on (20261022005000_contact_customers.sql).
+      .select("*, company:company_id (id, name, timezone)")
       .eq("user_id", user.id)
       .eq("status", "active")
       .is("deleted_at", null),

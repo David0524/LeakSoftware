@@ -200,7 +200,7 @@ export async function contactUsers(
   if (!userIds.length) return [];
   const { data } = await db
     .from("membership")
-    .select("user_id, role, can_contact_customers")
+    .select("*")
     .eq("company_id", companyId)
     .in("user_id", userIds);
   const ok = new Set(
