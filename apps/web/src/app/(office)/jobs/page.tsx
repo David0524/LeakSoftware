@@ -90,7 +90,8 @@ export default async function JobsPage({ searchParams }: PageProps<"/jobs">) {
     id: j.id,
     number: j.number ?? null,
     customer: j.customer?.name ?? "Customer",
-    phone: j.customer?.phone ?? null,
+    // Call and Text only with Text and Call Customers (owner, 2026-11-23).
+    phone: office.canContact ? (j.customer?.phone ?? null) : null,
     inboxHref:
       line?.status === "active" && j.customer ? `/messages/new?customer=${j.customer.id}` : null,
     address: j.property ? formatAddress(j.property) : null,

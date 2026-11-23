@@ -7,7 +7,9 @@ import {
   updateMember,
 } from "@/app/actions/settings";
 import {
+  NO_CONTACT_NOTE,
   assignableRoles,
+  canContactCustomers,
   canMakeJobs,
   endAtOf,
   homeMapStatus,
@@ -16,8 +18,9 @@ import {
   roleLabel,
   seesAllJobs,
   teamOrder,
+  teamRoleLine,
 } from "@leakbook/core";
-import { ColorPicker, MemberSwitch } from "@/components/team-controls";
+import { ColorPicker, ContactSwitch, MemberSwitch, RolePopUp } from "@/components/team-controls";
 import { StartFromForm } from "@/components/start-from";
 import { loadStarts } from "@/server/member-start";
 import { TechDot } from "@/components/tech-dot";
@@ -203,7 +206,28 @@ export default async function TeamSettingsPage() {
             </span>
           </span>
         }
-        detail={<span className="pl-5">{roleLabel(m.role)}</span>}
+        // Owners set the role right here, with a pop-up (owner, 2026-11-23); everyone else reads
+        // it. A tech without Text and Call Customers says so.
+        {...(office.isOwner
+          ? {
+              under: (
+                <span className="block pl-5">
+                  <RolePopUp
+                    id={m.membership_id}
+                    name={name}
+                    role={m.role}
+                    note={
+                      canContactCustomers(m.role, m.can_contact_customers)
+                        ? undefined
+                        : NO_CONTACT_NOTE
+                    }
+                  />
+                </span>
+              ),
+            }
+          : {
+              detail: <span className="pl-5">{teamRoleLine(m.role, m.can_contact_customers)}</span>,
+            })}
         accessory={
           <MemberSwitch
             id={m.membership_id}
@@ -236,6 +260,9 @@ export default async function TeamSettingsPage() {
               />
             </div>
           </SettingsForm>
+          {m.role === "tech" ? (
+            <ContactSwitch id={m.membership_id} name={name} on={m.can_contact_customers} />
+          ) : null}
           <ColorPicker id={m.membership_id} name={name} color={m.color} />
           <ul className="grouped">
             <li>

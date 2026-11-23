@@ -366,6 +366,7 @@ export default async function JobPage({ params, searchParams }: PageProps<"/jobs
                         <Row label="No customer" />
                       )}
                       <ContactRow
+                        canContact={office.canContact}
                         name={job.customer?.name ?? "the customer"}
                         phone={job.customer?.phone}
                         email={job.customer?.email}
@@ -377,7 +378,8 @@ export default async function JobPage({ params, searchParams }: PageProps<"/jobs
                       />
                     </Grouped>
 
-                    {job.customer ? (
+                    {/* Not for a tech without Text and Call Customers (owner, 2026-11-23). */}
+                    {job.customer && office.canContact ? (
                       <Suspense fallback={null}>
                         <JobMessages
                           customer={job.customer}
@@ -1190,6 +1192,7 @@ async function Reports({ detail }: { detail: JobDetail }) {
         draft={reports.find((r) => r.template_key === key && r.status === "draft") ?? null}
         sent={reports.filter((r) => r.template_key === key && r.status !== "draft")}
         customerEmail={detail.job.customer?.email ?? null}
+        onFile={!office.canContact}
         emailReady={emailConfigured()}
         saved={saved}
         canSave={office.isManager}
@@ -1311,6 +1314,7 @@ async function visitReportOf(office: Office, detail: JobDetail) {
         auto={mode === "auto"}
         done={detail.job.status === "done"}
         customerEmail={detail.job.customer?.email ?? null}
+        onFile={!office.canContact}
         hasLine={line?.status === "active"}
         emailReady={emailConfigured()}
         versions={versions}
@@ -1430,6 +1434,7 @@ async function Invoices({ detail, only }: { detail: JobDetail; only?: string }) 
             taxRateBps={rate}
             customerEmail={job.customer?.email ?? null}
             customerPhone={job.customer?.phone ?? null}
+            onFile={!office.canContact}
             texting={line?.status === "active"}
             emailReady={emailConfigured()}
             isOwner={office.isManager}
@@ -1634,17 +1639,22 @@ async function JobMessages({
   );
 }
 
-/** Call, text, and email as round icon buttons on the right of the customer's number. */
+/**
+ * Call, text, and email as round icon buttons on the right of the customer's number; without
+ * Text and Call Customers (owner, 2026-11-23), the number and email alone.
+ */
 function ContactRow({
   name,
   phone,
   email,
   textHref,
+  canContact,
 }: {
   name: string;
   phone: string | null | undefined;
   email: string | null | undefined;
   textHref?: string;
+  canContact: boolean;
 }) {
   if (!phone && !email) return null;
   return (
@@ -1653,35 +1663,37 @@ function ContactRow({
       // A long address ends in "…" rather than running under the buttons (Email has it whole).
       detail={phone && email ? <span className="block truncate">{email}</span> : undefined}
       value={
-        <span className="flex gap-2">
-          {phone ? (
-            <>
+        canContact ? (
+          <span className="flex gap-2">
+            {phone ? (
+              <>
+                <a
+                  href={`tel:${phone}`}
+                  aria-label={`Call ${name}, ${phone}`}
+                  className={iconButtonClass()}
+                >
+                  <PhoneIcon />
+                </a>
+                <a
+                  href={textHref ?? `sms:${phone.replace(/[^\d+]/g, "")}`}
+                  aria-label={`Text ${name}`}
+                  className={iconButtonClass()}
+                >
+                  <MessageIcon />
+                </a>
+              </>
+            ) : null}
+            {email ? (
               <a
-                href={`tel:${phone}`}
-                aria-label={`Call ${name}, ${phone}`}
+                href={`mailto:${email}`}
+                aria-label={`Email ${name}, ${email}`}
                 className={iconButtonClass()}
               >
-                <PhoneIcon />
+                <MailIcon />
               </a>
-              <a
-                href={textHref ?? `sms:${phone.replace(/[^\d+]/g, "")}`}
-                aria-label={`Text ${name}`}
-                className={iconButtonClass()}
-              >
-                <MessageIcon />
-              </a>
-            </>
-          ) : null}
-          {email ? (
-            <a
-              href={`mailto:${email}`}
-              aria-label={`Email ${name}, ${email}`}
-              className={iconButtonClass()}
-            >
-              <MailIcon />
-            </a>
-          ) : null}
-        </span>
+            ) : null}
+          </span>
+        ) : undefined
       }
     />
   );

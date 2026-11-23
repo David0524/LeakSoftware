@@ -1,6 +1,7 @@
 import { siteOrigin } from "@/lib/origin";
 import { autopaySentNote, sendInvoiceWithAutopay } from "@/server/autopay";
 import { clientFromRequest, jsonError } from "@/server/bearer";
+import { recipientFor } from "@/server/contact-on-file";
 import { failureMessage, failureStatus } from "@/server/failures";
 
 /**
@@ -16,7 +17,8 @@ export async function POST(request: Request, ctx: RouteContext<"/api/invoices/[i
   try {
     const r = await sendInvoiceWithAutopay(db, id, {
       channel: body.channel === "email" ? "email" : "sms_device",
-      to: body.to ?? null,
+      // Without Text and Call Customers: the email on file (owner, 2026-11-23).
+      to: await recipientFor(db, { invoice: id }, body.to ?? null),
       origin: await siteOrigin(),
     });
     return Response.json({ ...r, autopay: autopaySentNote(r.autopay).trim() || null });

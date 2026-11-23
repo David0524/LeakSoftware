@@ -160,22 +160,32 @@ export default async function CustomerPage({ params }: PageProps<"/customers/[id
         back={{ href: "/customers", label: "Customers" }}
         subtitle={[KIND[customer.kind], customer.company_name].filter(Boolean).join(" · ")}
       />
-      <div className="-mt-2 mb-6">
-        <ContactButtons
-          name={customer.name}
-          phone={customer.phone}
-          email={customer.email}
-          textHref={line?.status === "active" ? `/messages/new?customer=${customer.id}` : undefined}
-        />
-      </div>
+      {/* Call, text and email only with Text and Call Customers (owner, 2026-11-23). */}
+      {office.canContact ? (
+        <div className="-mt-2 mb-6">
+          <ContactButtons
+            name={customer.name}
+            phone={customer.phone}
+            email={customer.email}
+            textHref={
+              line?.status === "active" ? `/messages/new?customer=${customer.id}` : undefined
+            }
+          />
+        </div>
+      ) : null}
       <div className="grid items-start gap-8 lg:grid-cols-3">
         <div className="space-y-8">
           <Grouped title="Contact">
-            <Row label="Phone" value={customer.phone ?? "None"} />
-            <Row
-              label="Email"
-              value={<span className="break-all">{customer.email ?? "None"}</span>}
-            />
+            {/* Numbers and emails only with Text and Call Customers (owner, 2026-11-23). */}
+            {office.canContact ? (
+              <>
+                <Row label="Phone" value={customer.phone ?? "None"} />
+                <Row
+                  label="Email"
+                  value={<span className="break-all">{customer.email ?? "None"}</span>}
+                />
+              </>
+            ) : null}
             {cc.length ? (
               <Row
                 label="Other emails"
@@ -210,29 +220,35 @@ export default async function CustomerPage({ params }: PageProps<"/customers/[id
                       defaultValue={customer.company_name ?? ""}
                       placeholder="Optional"
                     />
-                    <SField
-                      label="Phone"
-                      name="phone"
-                      type="tel"
-                      defaultValue={customer.phone ?? ""}
-                      autoComplete="off"
-                    />
-                    <SField
-                      label="Email"
-                      name="email"
-                      type="email"
-                      defaultValue={customer.email ?? ""}
-                      autoComplete="off"
-                    />
+                    {office.canContact ? (
+                      <>
+                        <SField
+                          label="Phone"
+                          name="phone"
+                          type="tel"
+                          defaultValue={customer.phone ?? ""}
+                          autoComplete="off"
+                        />
+                        <SField
+                          label="Email"
+                          name="email"
+                          type="email"
+                          defaultValue={customer.email ?? ""}
+                          autoComplete="off"
+                        />
+                      </>
+                    ) : null}
                   </SettingsFields>
                   <SettingsFields>
-                    <SField
-                      label="Other emails"
-                      name="cc_emails"
-                      defaultValue={cc.join(" ")}
-                      hint="They get reports too. Separate with spaces."
-                      stacked
-                    />
+                    {office.canContact ? (
+                      <SField
+                        label="Other emails"
+                        name="cc_emails"
+                        defaultValue={cc.join(" ")}
+                        hint="They get reports too. Separate with spaces."
+                        stacked
+                      />
+                    ) : null}
                     <STextArea label="Notes" name="notes" defaultValue={customer.notes ?? ""} />
                     <SSwitch
                       name="no_followups"

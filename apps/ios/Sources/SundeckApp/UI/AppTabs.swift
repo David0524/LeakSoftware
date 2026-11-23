@@ -65,12 +65,16 @@
                 } label: {
                     tabLabel(.schedule)
                 }
-                Tab(value: AppTab.messages) {
-                    stack(.messages) { MessagesScreen() }
-                } label: {
-                    tabLabel(.messages)
+                // No Messages without Text and Call Customers (owner, 2026-11-23): Today, Jobs,
+                // Schedule and More, as on the website and Android.
+                if session.company?.canContact ?? true {
+                    Tab(value: AppTab.messages) {
+                        stack(.messages) { ContactOnly { MessagesScreen() } }
+                    } label: {
+                        tabLabel(.messages)
+                    }
+                    .badge(badgeText(unread).map { Text($0) })
                 }
-                .badge(badgeText(unread).map { Text($0) })
                 Tab(value: AppTab.more) {
                     stack(.more) { MoreScreen(showReauth: { showReauth = true }) }
                 } label: {
@@ -84,6 +88,10 @@
             .modifier(SteadyTabBar())
             .environment(\.zoomNamespace, zoom)
             .environment(activity)
+            // Turned off while on Messages: back to Today.
+            .onChange(of: session.company?.canContact ?? true) { _, can in
+                if !can && tab == .messages { tab = .today }
+            }
             .task(id: "\(sync.revision)|\(session.company?.id ?? "")") {
                 guard let company = session.company else { return }
                 unread = conversations(sync.store, companyId: company.id).filter(\.unread).count
@@ -161,6 +169,7 @@
             case .job(let id):
                 paths[tab, default: NavigationPath()].append(Route.job(id))
             case .conversation(let id):
+                guard session.company?.canContact ?? true else { return }
                 var path = NavigationPath()
                 path.append(MessagesRoute.conversation(id))
                 paths[.messages] = path

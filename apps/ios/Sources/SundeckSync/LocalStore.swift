@@ -18,6 +18,9 @@ public final class LocalStore: @unchecked Sendable {
     private var changes: [String: Int] = [:]
     private var cleared = 0
     private let lock = NSLock()
+    /// How reads show a row (Text and Call Customers, owner 2026-11-23): set by the app; nil shows
+    /// rows as stored. Writes always start from the stored row.
+    private var readMask: (@Sendable (_ table: String, _ row: Row) -> Row)?
 
     static let schemaVersion = 4
     static let schema = [
@@ -117,15 +120,32 @@ public final class LocalStore: @unchecked Sendable {
     // MARK: - Reads
 
     public func get(_ table: String, _ id: String) throws -> Row? {
-        try database.query(
-            "select data from sync_records where table_name = ? and id = ?", [.text(table), .text(id)]
-        ).first.map { try decodeRow($0["data"]) }
+        try storedRow(table, id).map { masked(table, $0) }
     }
 
     /// A row by id, left out when deleted (as `list` leaves deleted rows out).
     public func getLive(_ table: String, _ id: String) throws -> Row? {
         try database.query(
             "select data from sync_records where table_name = ? and id = ? and deleted = 0", [.text(table), .text(id)]
+        ).first.map { masked(table, try decodeRow($0["data"])) }
+    }
+
+    /// How reads show rows from now on (nil: as stored). The tables it may change are marked
+    /// changed, so screens read them again.
+    public func setReadMask(tables: [String], _ mask: (@Sendable (_ table: String, _ row: Row) -> Row)?) {
+        lock.withLock { readMask = mask }
+        for table in tables { touched(table) }
+    }
+
+    private func masked(_ table: String, _ row: Row) -> Row {
+        guard let mask = lock.withLock({ readMask }) else { return row }
+        return mask(table, row)
+    }
+
+    /// The row as stored, for writes.
+    private func storedRow(_ table: String, _ id: String) throws -> Row? {
+        try database.query(
+            "select data from sync_records where table_name = ? and id = ?", [.text(table), .text(id)]
         ).first.map { try decodeRow($0["data"]) }
     }
 
@@ -149,7 +169,7 @@ public final class LocalStore: @unchecked Sendable {
         return try database.query(
             "select data from sync_records\(index) where \(conditions.joined(separator: " and ")) order by id",
             parameters
-        ).map { try decodeRow($0["data"]) }
+        ).map { masked(table, try decodeRow($0["data"])) }
     }
 
     // MARK: - Local writes: the row and the outbox in one transaction
@@ -172,7 +192,7 @@ public final class LocalStore: @unchecked Sendable {
             try database.transaction {
                 let hlc = clock.tick()
                 let fields = values.mapValues { FieldChange(v: $0, hlc: hlc) }
-                let existing = try get(table, id)
+                let existing = try storedRow(table, id)
                 if let existing, existing.companyId != companyId {
                     throw SyncStoreError("\(table) \(id) belongs to another company")
                 }
@@ -195,7 +215,7 @@ public final class LocalStore: @unchecked Sendable {
 
     /// Soft delete, so the deletion syncs like any other change.
     public func softDelete(_ table: String, _ id: String) throws {
-        guard let row = try get(table, id) else { throw SyncStoreError("\(table) \(id) not found") }
+        guard let row = try storedRow(table, id) else { throw SyncStoreError("\(table) \(id) not found") }
         try write(
             table, id: id, companyId: row.companyId,
             ["deleted_at": .string(isoTimestamp(milliseconds: Double(now())))])

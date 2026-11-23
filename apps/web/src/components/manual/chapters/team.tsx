@@ -128,6 +128,11 @@ export const team: ChapterDef = {
             where they really start), their role, a <Ui>Color</Ui> and an <Ui>On</Ui> switch.
           </p>
           <p>
+            Owners can also change a role right on the list: the role under each name is a pop-up (
+            <Ui>Owner</Ui>, <Ui>Admin</Ui> or <Ui>Tech</Ui>, with a check on the current one).
+            Making someone an owner asks first, and the shop always keeps one active owner.
+          </p>
+          <p>
             <strong>Color</strong> is how a tech shows up on the Schedule. Ten are on offer, from
             Blue to Slate, and a new person gets the first one nobody is using. It saves when you
             tap it.
@@ -149,10 +154,20 @@ export const team: ChapterDef = {
           A segmented control, <Ui>Every Job</Ui> or <Ui>Only Their Own</Ui>. Every Job is the
           default. With <Ui>Only Their Own</Ui>, a tech sees only jobs where they are the tech or
           the second tech. Customers stay visible to everyone either way, so a tech can still look
-          up a gate code or call a homeowner.
+          up a gate code or call a homeowner (unless <Ui>Text and Call Customers</Ui> is off for
+          them).
         </p>
         <Sub>Techs can make new jobs</Sub>
         <p>A switch, on by default. Turn it off if jobs should only be booked from the office.</p>
+        <Sub>Text and Call Customers</Sub>
+        <p>
+          Set per tech, on their profile, by owners and admins. On by default. Turned off, that tech
+          has no Messages, can’t call, text or email customers, doesn’t see customers’ phone numbers
+          or emails, and isn’t rung when someone calls the company number. Addresses, gate codes and
+          access notes stay. Reports, visit reports, invoices and receipts they send still go to the
+          customer’s email on file. The Team list shows “Tech · No customer contact” for them.
+          Owners and admins always have it.
+        </p>
         <Sub>Completing a job</Sub>
         <p>
           Two more switches, both off at first, for owners and admins:{" "}

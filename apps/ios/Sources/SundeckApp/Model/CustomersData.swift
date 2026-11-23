@@ -336,19 +336,22 @@ public enum CustomerWrites {
     /// column).
     public static func saveContact(
         _ sync: SyncService, companyId: String, customerId: String, name: String, kind: String, companyName: String,
-        phone: String, email: String, notes: String, noReminders: Bool
+        phone: String, email: String, notes: String, noReminders: Bool, canContact: Bool = true
     ) throws {
         let clean = { (s: String) -> JSONValue in
             let t = s.trimmingCharacters(in: .whitespacesAndNewlines)
             return t.isEmpty ? .null : .string(t)
         }
-        try sync.write(
-            "customer", id: customerId, companyId: companyId,
-            [
-                "name": .string(name.trimmingCharacters(in: .whitespacesAndNewlines)), "kind": .string(kind),
-                "company_name": clean(companyName), "phone": clean(phone), "email": clean(email),
-                "notes": clean(notes), "marketing_opt_out": .bool(noReminders),
-            ])
+        var values: Row = [
+            "name": .string(name.trimmingCharacters(in: .whitespacesAndNewlines)), "kind": .string(kind),
+            "company_name": clean(companyName), "notes": clean(notes), "marketing_opt_out": .bool(noReminders),
+        ]
+        // Without Text and Call Customers the form has no phone or email (the server keeps them).
+        if canContact {
+            values["phone"] = clean(phone)
+            values["email"] = clean(email)
+        }
+        try sync.write("customer", id: customerId, companyId: companyId, values)
     }
 
     public static func savePool(_ sync: SyncService, companyId: String, propertyId: String, _ values: Row) throws {

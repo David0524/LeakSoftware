@@ -15,6 +15,7 @@ import {
   invoiceTotals,
   lineTotal,
   type SavedMethod,
+  ON_FILE_NOTE,
 } from "@leakbook/core";
 import {
   addInvoiceLine,
@@ -120,6 +121,7 @@ export function InvoicePanel({
   isOwner,
   role,
   autopay = null,
+  onFile = false,
 }: {
   invoice: InvoiceRow;
   jobId: string;
@@ -127,6 +129,11 @@ export function InvoicePanel({
   taxRateBps: number;
   customerEmail: string | null;
   customerPhone?: string | null;
+  /**
+   * Without Text and Call Customers (owner, 2026-11-23): no address fields; invoices and
+   * receipts go to what's on file.
+   */
+  onFile?: boolean;
   /** The shop has a working company number, so receipts can be texted. */
   texting?: boolean;
   emailReady: boolean;
@@ -235,17 +242,21 @@ export function InvoicePanel({
             <h4 className="font-display text-lg font-bold">Send</h4>
             <input type="hidden" name="invoice" value={invoice.id} />
             <input type="hidden" name="job" value={jobId} />
-            <Field
-              label="Customer email"
-              name="to"
-              type="email"
-              defaultValue={customerEmail ?? ""}
-              hint={
-                emailReady
-                  ? "Their other emails get it too."
-                  : "Email isn’t set up yet. Send without email and text the link."
-              }
-            />
+            {onFile ? (
+              <p className="text-[0.9375rem] text-text-muted">{ON_FILE_NOTE}</p>
+            ) : (
+              <Field
+                label="Customer email"
+                name="to"
+                type="email"
+                defaultValue={customerEmail ?? ""}
+                hint={
+                  emailReady
+                    ? "Their other emails get it too."
+                    : "Email isn’t set up yet. Send without email and text the link."
+                }
+              />
+            )}
             <div className="flex flex-wrap gap-3">
               <Button type="submit" disabled={sending || !emailReady}>
                 {sending ? "Sending…" : "Send by Email"}
@@ -315,7 +326,7 @@ export function InvoicePanel({
             jobId={jobId}
             balance={balance}
             canRecord={canRecordPayment(role, invoice)}
-            contact={{ email: customerEmail, phone: customerPhone, texting }}
+            contact={{ email: customerEmail, phone: customerPhone, texting, onFile }}
           />
           {isOwner && !hasPayments && invoice.status !== "void" ? (
             <SettingsForm

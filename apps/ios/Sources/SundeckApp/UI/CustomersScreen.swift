@@ -244,9 +244,12 @@
                 }
                 if let saved { Notice(kind: .success, text: saved) }
                 Grouped(label: "Contact") {
-                    ListRow("Phone", value: c.phone ?? "None")
-                    ListRow("Email", value: c.email ?? "None")
-                    if !c.otherEmails.isEmpty {
+                    // Numbers and emails only with Text and Call Customers (owner, 2026-11-23).
+                    if canContact {
+                        ListRow("Phone", value: c.phone ?? "None")
+                        ListRow("Email", value: c.email ?? "None")
+                    }
+                    if canContact && !c.otherEmails.isEmpty {
                         ListRow("Other emails", detail: c.otherEmails.joined(separator: ", "))
                     }
                     ListRow(CustomerEmailsText.label, value: c.remindersOn ? "On" : "Off")
@@ -295,9 +298,11 @@
             }
         }
 
+        private var canContact: Bool { session.company?.canContact ?? true }
+
         private func contactButtons(_ c: CustomerDetail) -> some View {
             HStack(spacing: 8) {
-                if let phone = c.phone {
+                if canContact, let phone = c.phone {
                     RoundIconButton(systemImage: "phone", label: "Call \(c.name), \(phone)") {
                         if let url = URL(string: "tel:\(phone.filter { $0.isNumber || $0 == "+" })") { openURL(url) }
                     }
@@ -309,12 +314,12 @@
                         }
                     }
                 }
-                if let email = c.email {
+                if canContact, let email = c.email {
                     RoundIconButton(systemImage: "envelope", label: "Email \(c.name), \(email)") {
                         if let url = URL(string: "mailto:\(email)") { openURL(url) }
                     }
                 }
-                if let shown = c.phone ?? c.email {
+                if canContact, let shown = c.phone ?? c.email {
                     Text(shown).textRole(.secondary).foregroundStyle(Color.textMuted).padding(.leading, 4)
                 }
             }
@@ -458,11 +463,14 @@
                         label: "Type", selection: $kind, options: customerKinds,
                         optionLabel: { customerKindLabel($0) ?? $0 })
                     LabeledFieldRow(label: "Company", text: $company, placeholder: "Optional")
-                    LabeledFieldRow(label: "Phone", text: $phone, keyboard: .phonePad)
-                    LabeledFieldRow(label: "Email", text: $email, keyboard: .emailAddress)
+                    // Only with Text and Call Customers (owner, 2026-11-23).
+                    if canContact {
+                        LabeledFieldRow(label: "Phone", text: $phone, keyboard: .phonePad)
+                        LabeledFieldRow(label: "Email", text: $email, keyboard: .emailAddress)
+                    }
                 }
                 Grouped(
-                    footer: customer.otherEmails.isEmpty
+                    footer: customer.otherEmails.isEmpty || !canContact
                         ? nil
                         : "Other emails: \(customer.otherEmails.joined(separator: ", ")). Change them on the website."
                 ) {
@@ -496,6 +504,8 @@
             }
         }
 
+        private var canContact: Bool { session.company?.canContact ?? true }
+
         private func save() {
             if let problem = validateCustomerContact(name: name, phone: phone, email: email) {
                 error = problem
@@ -505,7 +515,7 @@
             do {
                 try CustomerWrites.saveContact(
                     sync, companyId: companyId, customerId: customer.id, name: name, kind: kind, companyName: company,
-                    phone: phone, email: email, notes: notes, noReminders: noReminders)
+                    phone: phone, email: email, notes: notes, noReminders: noReminders, canContact: canContact)
                 draft.clear()
                 saved()
                 dismiss()

@@ -226,6 +226,9 @@ public final class ReportFlow {
     public var message: String?
     /// The customer email as typed; nil shows the customer's own.
     public var to: String?
+    /// Without Text and Call Customers (owner, 2026-11-23): no address is typed or shown; the
+    /// server sends to the customer's email on file.
+    public var onFile = false
     /// Other emails as typed; nil shows the customer's saved ones.
     public var otherEmails: String?
     /// A text message with the report link, for the share sheet.
@@ -411,7 +414,7 @@ public final class ReportFlow {
                 let email = (to ?? customer?["email"]?.string ?? "").trimmingCharacters(in: .whitespacesAndNewlines)
                 saveEdits()
                 saveOtherEmails()
-                if action == .email, email.wholeMatch(of: /\S+@\S+\.\S+/) == nil {
+                if action == .email, !onFile, email.wholeMatch(of: /\S+@\S+\.\S+/) == nil {
                     throw WebAPI.Failure(description: "Enter the customer’s email.")
                 }
                 guard let id else { throw WebAPI.Failure(description: "There’s no report to send.") }
@@ -432,7 +435,7 @@ public final class ReportFlow {
                 if action == .text {
                     share = sent.message
                 } else {
-                    message = "Sent to \(email)."
+                    message = onFile ? onFileSent : "Sent to \(email)."
                     reportsSent += 1
                 }
             }

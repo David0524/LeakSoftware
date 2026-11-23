@@ -1,5 +1,6 @@
 "use server";
 
+import { customerOnFile } from "@/server/contact-on-file";
 import { revalidatePath } from "next/cache";
 import type { ReportTemplateKey } from "@leakbook/core";
 import { getOffice } from "@/lib/auth";
@@ -53,8 +54,12 @@ export async function sendReportAction(
   _: ReportFormState,
   form: FormData,
 ): Promise<ReportFormState> {
-  await getOffice();
+  const office = await getOffice();
   const channel = text(form, "channel") as Channel;
+  // Without Text and Call Customers: the email on file, never one typed (owner, 2026-11-23).
+  const to = office.canContact
+    ? text(form, "to")
+    : ((await customerOnFile(await createClient(), { report: text(form, "report") })).email ?? "");
   if (channel !== "email" && channel !== "sms_device") return { error: "Choose how to send it." };
   // The send buttons share the form with the text, so what is on screen is what gets sent.
   const final = sectionsOf(form);
@@ -63,13 +68,15 @@ export async function sendReportAction(
     if (final.length) await saveReportText(await createClient(), text(form, "report"), final);
     const result = await sendReport(await createClient(), text(form, "report"), {
       channel,
-      to: text(form, "to"),
+      to,
       origin: await siteOrigin(),
     });
     revalidatePath(`/jobs/${text(form, "job")}`);
     return {
       message: result.emailed
-        ? `Sent to ${text(form, "to")}.`
+        ? office.canContact
+          ? `Sent to ${to}.`
+          : "Sent to the customer’s email on file."
         : "Report sent. Copy the message below.",
       link: result.link,
       sms: result.message,
@@ -96,7 +103,8 @@ export async function sendVisitReportAction(
   try {
     const sent = await sendVisitReport(await createClient(), jobId, {
       channel,
-      to: text(form, "to") || null,
+      // Without Text and Call Customers: the customer's own email or number on file.
+      to: office.canContact ? text(form, "to") || null : null,
       origin: await siteOrigin(),
       userId: office.user.id,
     });

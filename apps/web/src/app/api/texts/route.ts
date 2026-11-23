@@ -26,7 +26,7 @@ export async function POST(request: Request) {
     const sent = await sendCompanyText(
       session.db,
       session.userId,
-      { ...input, body: String(input.body ?? "") },
+      { ...input, body: String(input.body ?? ""), freeForm: true },
       await siteOrigin(),
     );
     return Response.json(sent);

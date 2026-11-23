@@ -1,8 +1,13 @@
 import { useEffect, useState } from "react";
 import { Alert, Pressable, Share, StyleSheet, Text, View } from "react-native";
 import {
+  CONTACT_SWITCH_FOOTER,
+  CONTACT_SWITCH_LABEL,
+  NO_CONTACT_NOTE,
   ROLE_LABELS,
   TECH_COLORS,
+  canContactCustomers,
+  teamRoleLine,
   assignableRoles,
   canMakeJobs,
   requiresFinishPhoto,
@@ -41,6 +46,7 @@ import {
   Toggle,
 } from "../../ui/components";
 import { chooseAction, confirmDestructive } from "../../ui/confirm";
+import { MenuButton, useMenu } from "../../ui/Select";
 import { haptics } from "../../ui/haptics";
 import { TechDot, techHex } from "../../ui/TechDot";
 import { WebIcon } from "../../ui/WebIcon";
@@ -122,6 +128,41 @@ function TeamPage() {
       onConfirm: write,
     });
   }
+  // The role right on the list, for owners (owner, 2026-11-23: "this screen is where the owner
+  // can set what role each user is"): a pop-up of Owner, Admin and Tech. Making someone an
+  // owner asks first; the shop keeps at least one active owner.
+  const roleMenu = useMenu();
+  function setRole(m: TeamMember, role: Role) {
+    if (role === m.role) return;
+    const owners = team.filter((x) => x.role === "owner" && x.status === "active").length;
+    if (m.role === "owner" && m.status === "active" && owners < 2)
+      return Alert.alert(
+        "The shop needs at least one active owner.",
+        "Make someone else an owner first.",
+      );
+    const write = () => {
+      getServices().sync.write("membership", m.membership_id, company.id, { role });
+      haptics.success();
+      sheet.done(
+        `${m.name} is now ${role === "tech" ? "a" : "an"} ${ROLE_LABELS[role].toLowerCase()}.`,
+      );
+    };
+    if (role !== "owner") return write();
+    chooseAction({
+      title: `Make ${m.name} an owner? Owners can change billing, payments, and everyone’s role.`,
+      actions: [{ label: "Make Owner", onPress: write }],
+    });
+  }
+  function openRoleMenu(m: TeamMember) {
+    roleMenu.open({
+      title: `${m.name}’s role`,
+      items: (["owner", "admin", "tech"] as const).map((r) => ({
+        label: ROLE_LABELS[r],
+        checked: r === m.role,
+        onPress: () => setRole(m, r),
+      })),
+    });
+  }
   const profiles = useTeamProfiles(company.id);
   const profileOf = new Map(profiles.filter((p) => p.user_id).map((p) => [p.user_id!, p]));
   const others = profiles.filter((p) => !p.user_id).sort((a, b) => a.name.localeCompare(b.name));
@@ -199,6 +240,7 @@ function TeamPage() {
                 you={m.user_id === user?.id}
                 canSwitch={canSwitch(m)}
                 onSwitch={(on) => setAccess(m, on)}
+                onRole={owner ? () => openRoleMenu(m) : undefined}
                 onPress={() => setEditingProfile({ member: m, profile: profileOf.get(m.user_id) })}
               />
             ))}
@@ -215,6 +257,7 @@ function TeamPage() {
                   you={m.user_id === user?.id}
                   canSwitch={canSwitch(m)}
                   onSwitch={(on) => setAccess(m, on)}
+                  onRole={owner ? () => openRoleMenu(m) : undefined}
                   onPress={() =>
                     setEditingProfile({ member: m, profile: profileOf.get(m.user_id) })
                   }
@@ -318,6 +361,7 @@ function TeamPage() {
           </Group>
         </Section>
       </SettingsList>
+      {roleMenu.element}
       <EditSheet
         open={editingProfile != null}
         title={editingProfile?.profile?.name ?? editingProfile?.member?.name ?? "Add Person"}
@@ -335,6 +379,24 @@ function TeamPage() {
                 : true
             }
             onSwitch={(on) => editingProfile.member && setAccess(editingProfile.member, on)}
+            lastOwner={
+              editingProfile.member?.role === "owner" &&
+              team.filter((x) => x.role === "owner" && x.status === "active").length < 2
+            }
+            contact={
+              editingProfile.member
+                ? (team.find((m) => m.membership_id === editingProfile.member!.membership_id)
+                    ?.can_contact_customers ?? editingProfile.member.can_contact_customers)
+                : true
+            }
+            onContact={(on) => {
+              const m = editingProfile.member;
+              if (!m) return;
+              getServices().sync.write("membership", m.membership_id, company.id, {
+                can_contact_customers: on,
+              });
+              haptics.success();
+            }}
             onDone={(message) => {
               setEditingProfile(null);
               sheet.done(message);
@@ -433,6 +495,9 @@ function ProfileForm({
   canSwitch,
   on,
   onSwitch,
+  lastOwner,
+  contact,
+  onContact,
   onDone,
 }: {
   target: ProfileTarget;
@@ -442,6 +507,11 @@ function ProfileForm({
   /** Their access now (the switch acts at once, asking before turning off). */
   on: boolean;
   onSwitch: (on: boolean) => void;
+  /** The shop's only active owner: their role stays Owner. */
+  lastOwner: boolean;
+  /** Text and Call Customers (owner, 2026-11-23): techs only; saves at once. */
+  contact: boolean;
+  onContact: (on: boolean) => void;
   onDone: (m: string) => void;
 }) {
   const company = useCompany();
@@ -471,6 +541,11 @@ function ProfileForm({
   function save() {
     const checked = teamProfileValues(f);
     if ("fields" in checked) return setErrors(checked.fields);
+    if (lastOwner && role !== "owner")
+      return Alert.alert(
+        "The shop needs at least one active owner.",
+        "Make someone else an owner first.",
+      );
     setErrors({});
     const startCheck = member ? startWrite(startRow, start) : null;
     if (startCheck && "error" in startCheck) return setStartError(startCheck.error);
@@ -570,6 +645,23 @@ function ProfileForm({
               </T>
             </View>
           )}
+          {member.role === "tech" ? (
+            <View style={{ gap: space["2"] }}>
+              <Group>
+                <View style={styles.switchRow}>
+                  <T style={{ flex: 1 }}>{CONTACT_SWITCH_LABEL}</T>
+                  <SwitchControl
+                    value={contact}
+                    label={CONTACT_SWITCH_LABEL}
+                    onValueChange={onContact}
+                  />
+                </View>
+              </Group>
+              <T variant="footnote" muted style={{ paddingHorizontal: space["4"] }}>
+                {CONTACT_SWITCH_FOOTER}
+              </T>
+            </View>
+          ) : null}
           <ColorPicker value={tech} onChange={setTech} />
           <StartFromFields
             form={start}
@@ -624,20 +716,24 @@ function MemberRow({
   you,
   canSwitch,
   onSwitch,
+  onRole,
   onPress,
 }: {
   member: TeamMember;
   you: boolean;
   canSwitch: boolean;
   onSwitch: (on: boolean) => void;
+  /** Owners: the role is a pop-up (owner, 2026-11-23). */
+  onRole?: () => void;
   onPress: () => void;
 }) {
   const on = m.status === "active";
+  const contact = canContactCustomers(m.role, m.can_contact_customers);
   return (
     <ListRow
       onPress={onPress}
       chevron={false}
-      accessibilityLabel={`${m.name}${you ? " (you)" : ""}, ${roleLabel(m.role)}`}
+      accessibilityLabel={`${m.name}${you ? " (you)" : ""}, ${teamRoleLine(m.role, m.can_contact_customers)}`}
       accessibilityHint="Opens their profile"
       leading={<TechDot tech={m.color} />}
       trailing={
@@ -655,9 +751,20 @@ function MemberRow({
         {m.name}
         {you ? <T muted> (you)</T> : null}
       </T>
-      <T variant="secondary" muted>
-        {roleLabel(m.role)}
-      </T>
+      {onRole ? (
+        <View style={styles.roleLine}>
+          <MenuButton title="Role" value={ROLE_LABELS[m.role]} icon="updown" onPress={onRole} />
+          {contact ? null : (
+            <T variant="secondary" muted>
+              · {NO_CONTACT_NOTE}
+            </T>
+          )}
+        </View>
+      ) : (
+        <T variant="secondary" muted>
+          {teamRoleLine(m.role, m.can_contact_customers)}
+        </T>
+      )}
     </ListRow>
   );
 }
@@ -709,6 +816,13 @@ function ColorPicker({ value, onChange }: { value: TechColor; onChange: (c: Tech
 
 const styles = StyleSheet.create({
   setting: { paddingHorizontal: space["4"], paddingBottom: space["3"] },
+  roleLine: {
+    flexDirection: "row",
+    alignItems: "center",
+    flexWrap: "wrap",
+    gap: 4,
+    marginVertical: -8,
+  },
   switchRow: {
     flexDirection: "row",
     alignItems: "center",

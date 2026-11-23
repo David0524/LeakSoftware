@@ -1,0 +1,103 @@
+{
+  "canContactCustomers": [
+    {
+      "args": [
+        "owner",
+        false
+      ],
+      "result": true
+    },
+    {
+      "args": [
+        "admin",
+        false
+      ],
+      "result": true
+    },
+    {
+      "args": [
+        "tech",
+        true
+      ],
+      "result": true
+    },
+    {
+      "args": [
+        "tech",
+        false
+      ],
+      "result": false
+    },
+    {
+      "args": [
+        "tech",
+        null
+      ],
+      "result": true
+    },
+    {
+      "args": [
+        null,
+        false
+      ],
+      "result": false
+    }
+  ],
+  "teamRoleLine": [
+    {
+      "args": [
+        "owner",
+        false
+      ],
+      "result": "Owner"
+    },
+    {
+      "args": [
+        "admin",
+        false
+      ],
+      "result": "Admin"
+    },
+    {
+      "args": [
+        "tech",
+        true
+      ],
+      "result": "Tech"
+    },
+    {
+      "args": [
+        "tech",
+        false
+      ],
+      "result": "Tech · No customer contact"
+    },
+    {
+      "args": [
+        "tech",
+        null
+      ],
+      "result": "Tech"
+    },
+    {
+      "args": [
+        null,
+        false
+      ],
+      "result": "Tech · No customer contact"
+    }
+  ],
+  "words": [
+    {
+      "args": [],
+      "result": {
+        "CONTACT_SWITCH_LABEL": "Text and Call Customers",
+        "CONTACT_SWITCH_FOOTER": "When it’s off, they don’t see Messages or customers’ phone numbers and emails, can’t call, text, or email customers, and calls to the company number don’t ring them. Reports and invoices still go to the customer.",
+        "NO_CONTACT_NOTE": "No customer contact",
+        "NO_CONTACT_MESSAGE": "Texting and calling customers is turned off for you. Ask an owner or admin.",
+        "ON_FILE_NOTE": "Goes to the customer’s email on file.",
+        "ON_FILE_SENT": "Sent to the customer’s email on file."
+      }
+    }
+  ]
+}

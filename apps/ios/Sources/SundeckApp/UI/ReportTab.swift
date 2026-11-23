@@ -349,22 +349,28 @@
         /// Customer email, Send by Email and Send by Text (spec 5.4). The field holds the
         /// customer's address, so iPhone doesn't offer to fill in the tech's own.
         @ViewBuilder private func sendControls(reportId: String, primary: Bool) -> some View {
-            VStack(alignment: .leading, spacing: 4) {
-                FieldLabel("Customer email")
-                TextField("", text: Binding(get: { flow.emailText(model) }, set: { flow.to = $0 }))
-                    .keyboardType(.emailAddress)
-                    .textInputAutocapitalization(.never)
-                    .autocorrectionDisabled()
-                    .textContentType(nil)
-                    .submitLabel(.done)
-                    .focused($focus, equals: .email(reportId))
-                    .accessibilityLabel("Customer email")
-                    .fieldBox(focused: focus == .email(reportId))
+            // Without Text and Call Customers: the email on file (owner, 2026-11-23).
+            if flow.onFile {
+                Text(onFileNote).textRole(.secondary).foregroundStyle(Color.textMuted)
+            } else {
+                VStack(alignment: .leading, spacing: 4) {
+                    FieldLabel("Customer email")
+                    TextField("", text: Binding(get: { flow.emailText(model) }, set: { flow.to = $0 }))
+                        .keyboardType(.emailAddress)
+                        .textInputAutocapitalization(.never)
+                        .autocorrectionDisabled()
+                        .textContentType(nil)
+                        .submitLabel(.done)
+                        .focused($focus, equals: .email(reportId))
+                        .accessibilityLabel("Customer email")
+                        .fieldBox(focused: focus == .email(reportId))
+                }
             }
             ViewThatFits(in: .horizontal) {
                 HStack(spacing: 12) { sendButtons(reportId: reportId, primary: primary) }
                 VStack(alignment: .leading, spacing: 12) { sendButtons(reportId: reportId, primary: primary) }
             }
+            .onAppear { flow.onFile = !(session.company?.canContact ?? true) }
             // Messages gets the link as a link, with the report's preview card (2026-10-24).
             .linkShareSheet(sharingFrom == reportId ? flow.share : nil) { flow.shareFinished() }
             if let busy = flow.busy, busy == .email || busy == .text, sendingFrom == reportId {

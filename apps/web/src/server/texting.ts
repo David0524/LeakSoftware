@@ -9,6 +9,8 @@ import {
   toE164,
   isManagerRole,
   friendlyError,
+  canContactCustomers,
+  NO_CONTACT_MESSAGE,
 } from "@leakbook/core";
 import { friendlyDbError } from "@/lib/limits";
 import { isUuid } from "@/lib/uuid";
@@ -69,6 +71,24 @@ async function lineByNumber(db: Db, number: string) {
     .is("deleted_at", null)
     .maybeSingle();
   return (data as PhoneLine | null) ?? null;
+}
+
+/**
+ * Whether this person may text, call, and read the inbox for this shop (Text and Call
+ * Customers, owner 2026-11-23; core contact.ts): owners and admins always, techs unless it's off.
+ */
+export async function mayContactCustomers(companyId: string, userId: string): Promise<boolean> {
+  const { data } = await admin()
+    .from("membership")
+    .select("*")
+    .eq("company_id", companyId)
+    .eq("user_id", userId)
+    .eq("status", "active")
+    .is("deleted_at", null)
+    .maybeSingle();
+  // Sundeck Pro support sessions aren't members and work as an admin.
+  if (!data) return true;
+  return canContactCustomers(data.role as string, data.can_contact_customers as boolean | null);
 }
 
 /** The conversation with a phone number, made (and matched to a customer) the first time. */
@@ -135,6 +155,11 @@ export interface SendInput {
    * again): a text sent twice with it is sent once, and the second answer is the first's.
    */
   requestId?: string;
+  /**
+   * Written by the person (Messages, a customer's Text button, On My Way), not a document the
+   * server sends: refused for a tech without Text and Call Customers (owner, 2026-11-23).
+   */
+  freeForm?: boolean;
 }
 
 /** A text from the same person to the same conversation this many seconds ago is a double tap. */
@@ -202,6 +227,8 @@ export async function sendCompanyText(
     if (!data) throw new TextingError("Sign in again.");
     companyId = input.companyId;
   }
+  if (input.freeForm && userId && !(await mayContactCustomers(companyId, userId)))
+    throw new TextingError(NO_CONTACT_MESSAGE);
   if (!isUsNumber(phone)) throw new TextingError("Sundeck Pro texts US and Canadian numbers only.");
   if (!(await shopWritable(user, companyId))) throw new TextingError(READ_ONLY_MESSAGE);
   // Pictures must be ones this person can open: from a conversation they can see, or their own
@@ -435,18 +462,28 @@ async function companyInfo(db: Db, companyId: string) {
   return data as { name: string; timezone: string; settings: unknown };
 }
 
-/** The team phones that ring: the line's chosen people, else the owners. */
+/**
+ * The team phones that ring: the line's chosen people, else the owners and admins; never
+ * someone without Text and Call Customers.
+ */
 async function ringPhones(db: Db, line: PhoneLine): Promise<string[]> {
   const { data: members } = await db
     .from("membership")
-    .select("user_id, role, status, profile:profile!membership_user_profile_fkey(phone)")
+    .select(
+      // `*`: a database without can_contact_customers yet still rings the team.
+      "*, profile:profile!membership_user_profile_fkey(phone)",
+    )
     .eq("company_id", line.company_id)
     .eq("status", "active");
-  const rows = (members ?? []) as unknown as {
-    user_id: string;
-    role: string;
-    profile: { phone: string | null } | null;
-  }[];
+  // Never someone without Text and Call Customers (owner, 2026-11-23).
+  const rows = (
+    (members ?? []) as unknown as {
+      user_id: string;
+      role: string;
+      can_contact_customers: boolean | null;
+      profile: { phone: string | null } | null;
+    }[]
+  ).filter((m) => canContactCustomers(m.role, m.can_contact_customers));
   const chosen = line.ring_user_ids.length
     ? rows.filter((m) => line.ring_user_ids.includes(m.user_id))
     : rows.filter((m) => isManagerRole(m.role));
@@ -565,6 +602,10 @@ export async function startCall(user: Db, userId: string, conversationId: string
     .eq("id", conversationId)
     .maybeSingle();
   if (!conv) throw new TextingError("That conversation isn’t there.");
+  // The inbox's rules already hide it from someone without Text and Call Customers; said
+  // plainly here too.
+  if (!(await mayContactCustomers(conv.company_id as string, userId)))
+    throw new TextingError(NO_CONTACT_MESSAGE);
   if (!(await shopWritable(user, conv.company_id as string)))
     throw new TextingError(READ_ONLY_MESSAGE);
   const db = admin();

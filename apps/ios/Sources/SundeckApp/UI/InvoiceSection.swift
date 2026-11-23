@@ -281,16 +281,21 @@
 
             VStack(alignment: .leading, spacing: 12) {
                 SubHeading("Send")
-                VStack(alignment: .leading, spacing: 4) {
-                    FieldLabel("Customer email")
-                    TextField("", text: Binding(get: { to ?? card.customerEmail }, set: { to = $0 }))
-                        .keyboardType(.emailAddress)
-                        .textInputAutocapitalization(.never)
-                        .autocorrectionDisabled()
-                        .textContentType(nil)
-                        .accessibilityLabel("Customer email")
-                        .fieldBox()
-                    FieldHint(text: InvoiceCardModel.emailHint)
+                // Without Text and Call Customers: the email on file (owner, 2026-11-23).
+                if onFile {
+                    Text(onFileNote).textRole(.secondary).foregroundStyle(Color.textMuted)
+                } else {
+                    VStack(alignment: .leading, spacing: 4) {
+                        FieldLabel("Customer email")
+                        TextField("", text: Binding(get: { to ?? card.customerEmail }, set: { to = $0 }))
+                            .keyboardType(.emailAddress)
+                            .textInputAutocapitalization(.never)
+                            .autocorrectionDisabled()
+                            .textContentType(nil)
+                            .accessibilityLabel("Customer email")
+                            .fieldBox()
+                        FieldHint(text: InvoiceCardModel.emailHint)
+                    }
                 }
                 ViewThatFits(in: .horizontal) {
                     HStack(spacing: 12) { sendButtons }
@@ -304,12 +309,15 @@
                 .disabled(flow.busy != nil)
         }
 
+        /// Without Text and Call Customers (owner, 2026-11-23).
+        private var onFile: Bool { !(session.company?.canContact ?? true) }
+
         @ViewBuilder private var sendButtons: some View {
             Button {
                 Task {
                     await flow.send(
                         card.invoice.id, email: to ?? card.customerEmail, phone: job.customer?["phone"]?.string,
-                        server: server)
+                        server: server, onFile: onFile)
                 }
             } label: {
                 BusyButtonLabel("Send by Email", busy: flow.busy == .email, busyTitle: "Sending…")

@@ -15,6 +15,8 @@ import {
   type FinalSection,
   type Job,
   friendlyError,
+  ON_FILE_NOTE,
+  ON_FILE_SENT,
 } from "@leakbook/core";
 import type { JsonValue } from "@leakbook/sync";
 import { useRows, useSyncStatus } from "../../data/hooks";
@@ -39,7 +41,7 @@ import {
 } from "../../lib/reportQueue";
 import { queuedMessage } from "../../lib/reportRequests";
 import { getServices } from "../../lib/services";
-import { useCompany, useSession } from "../../state/session";
+import { useCanContact, useCompany, useSession } from "../../state/session";
 import { Button, Card, Field, Notice, T } from "../../ui/components";
 import { confirmDestructive } from "../../ui/confirm";
 import { haptic, haptics } from "../../ui/haptics";
@@ -185,6 +187,8 @@ export function ReportTab({
   const [sendStatus, setSendStatus] = useState<Status | null>(null);
   const [to, setTo] = useState<string | null>(null);
   const email = (to ?? customer?.email ?? "").trim();
+  const canContact = useCanContact();
+  const emailOk = !canContact || /^\S+@\S+\.\S+$/.test(email);
   const [otherEmails, setOtherEmails] = useState<string | null>(null);
   // Finishing a draft (Finish Report, or sending it) waits for a photo when the shop requires
   // one (owner setting, 2026-10-19). A finished version is sent as is, as on the website.
@@ -284,7 +288,7 @@ export function ReportTab({
     waitingFor?: "uploads",
   ) {
     const sending = kind !== "finish";
-    if (kind === "email" && !/^\S+@\S+\.\S+$/.test(email))
+    if (kind === "email" && !emailOk)
       return setSendStatus({ tone: "error", text: "Enter the customer’s email." });
     queueReportRequest({
       kind,
@@ -332,8 +336,7 @@ export function ReportTab({
         await finishReportFromPhone(reportId!, false, setStep);
         setStatus({ tone: "success", text: "Report finished. Send it to the customer below." });
       } else {
-        if (kind === "email" && !/^\S+@\S+\.\S+$/.test(email))
-          throw new Error("Enter the customer’s email.");
+        if (kind === "email" && !emailOk) throw new Error("Enter the customer’s email.");
         const r = await sendReportFromPhone(
           reportId!,
           kind === "email" ? "email" : "sms_device",
@@ -344,7 +347,8 @@ export function ReportTab({
         if (kind === "text") {
           await shareLink(r.message);
           setSendStatus({ tone: "success", text: "Report sent." });
-        } else setSendStatus({ tone: "success", text: `Sent to ${email}.` });
+        } else
+          setSendStatus({ tone: "success", text: canContact ? `Sent to ${email}.` : ON_FILE_SENT });
       }
     } catch (e) {
       const text = friendlyError(e);
@@ -363,18 +367,25 @@ export function ReportTab({
   // Email or text one report: the draft (unsigned) or a finished version.
   const sendControls = (reportId: string, primary: boolean) => (
     <View style={styles.stack}>
-      <Field
-        label="Customer email"
-        value={to ?? customer?.email ?? ""}
-        onChangeText={setTo}
-        keyboardType="email-address"
-        autoCapitalize="none"
-        autoCorrect={false}
-        spellCheck={false}
-        autoComplete="off"
-        textContentType="none"
-      />
-      {customer ? (
+      {/* Without Text and Call Customers: the email on file (owner, 2026-11-23). */}
+      {canContact ? (
+        <Field
+          label="Customer email"
+          value={to ?? customer?.email ?? ""}
+          onChangeText={setTo}
+          keyboardType="email-address"
+          autoCapitalize="none"
+          autoCorrect={false}
+          spellCheck={false}
+          autoComplete="off"
+          textContentType="none"
+        />
+      ) : (
+        <T variant="secondary" muted>
+          {ON_FILE_NOTE}
+        </T>
+      )}
+      {customer && canContact ? (
         <Field
           label="Other emails (optional)"
           value={otherEmails ?? (customer.cc_emails ?? []).join(" ")}

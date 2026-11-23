@@ -67,7 +67,7 @@ export default async function NewJobPage() {
         customers={customers.map((c) => ({
           id: c.id,
           name: c.name,
-          detail: [c.phone, c.email].filter(Boolean).join(" · "),
+          detail: office.canContact ? [c.phone, c.email].filter(Boolean).join(" · ") : "",
           pools: c.properties.map((p) => ({
             id: p.id,
             label: formatAddress(p),

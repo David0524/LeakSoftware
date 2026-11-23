@@ -152,6 +152,7 @@ export function SheetRow({
   title,
   testId,
   accessory,
+  under,
   remove,
   children,
 }: {
@@ -160,6 +161,11 @@ export function SheetRow({
   value?: ReactNode;
   /** A control at the row's end, beside the row's button (a round icon button). */
   accessory?: ReactNode;
+  /**
+   * A control under the label, in place of `detail` (Team's role pop-up): the row's button
+   * fills the row behind the label, and this sits above it, so the two never nest.
+   */
+  under?: ReactNode;
   /** The sheet's title, usually the item's name. */
   title: string;
   testId?: string;
@@ -253,6 +259,35 @@ export function SheetRow({
       </>
     );
   }
+  if (under && children)
+    return (
+      <li data-testid={testId} className="relative flex items-center gap-3 pr-3">
+        <button
+          type="button"
+          aria-haspopup="dialog"
+          aria-label={title}
+          onClick={edit}
+          className="absolute inset-0 transition-colors hover:bg-text/[0.03] focus-visible:outline-3 focus-visible:-outline-offset-3 focus-visible:outline-focus active:bg-text/[0.06]"
+        />
+        {/* Taps on the words reach the button behind them; the control above takes its own. */}
+        <span className="pointer-events-none relative min-w-0 flex-1 pt-2.5 pl-4">
+          <span aria-hidden="true" className="block break-words">
+            {label}
+          </span>
+          <span className="pointer-events-auto block">{under}</span>
+        </span>
+        <span
+          aria-hidden="true"
+          className="pointer-events-none relative shrink-0 text-xl leading-none text-text-muted/70"
+        >
+          ›
+        </span>
+        {accessory ? <span className="relative">{accessory}</span> : null}
+        <Sheet open={open} onClose={close} title={title}>
+          <SheetDone value={done}>{children}</SheetDone>
+        </Sheet>
+      </li>
+    );
   return (
     <li data-testid={testId} className={accessory ? "flex items-center pr-3" : undefined}>
       {children ? (

@@ -7,6 +7,7 @@ import {
   writeDraft,
   type ReportFormState,
 } from "@/app/actions/reports";
+import { ON_FILE_NOTE } from "@leakbook/core";
 import { reviewWithCustomer } from "@/app/actions/sign-off";
 import type { ReportRow } from "@/lib/data";
 import { buzz } from "@/lib/haptics";
@@ -34,6 +35,7 @@ export function ReportPanel({
   emailReady,
   saved = [],
   canSave = false,
+  onFile = false,
 }: {
   jobId: string;
   template: "homeowner" | "partner";
@@ -45,6 +47,8 @@ export function ReportPanel({
   /** The shop's saved reports, and whether this person may add one (owners and admins). */
   saved?: SavedReportOption[];
   canSave?: boolean;
+  /** Without Text and Call Customers (owner, 2026-11-23): it goes to the email on file. */
+  onFile?: boolean;
 }) {
   const [draftState, draftAction, drafting] = useActionState(orOffline(writeDraft), {});
   const [sendState, sendAction, sending] = useActionState(orOffline(sendReportAction), {});
@@ -161,6 +165,7 @@ export function ReportPanel({
             sending={sending}
             sendVia={sendVia}
             primary={!hasDraft}
+            onFile={onFile}
           />
           {latestSent.token ? (
             <a
@@ -298,6 +303,7 @@ export function ReportPanel({
                     emailReady={emailReady}
                     sending={sending}
                     sendVia={sendVia}
+                    onFile={onFile}
                   />
                 </details>
               </div>
@@ -421,8 +427,10 @@ function SendControls({
   sending,
   sendVia,
   primary = false,
+  onFile = false,
 }: {
   id: string;
+  onFile?: boolean;
   customerEmail: string | null;
   emailReady: boolean;
   sending: boolean;
@@ -432,18 +440,24 @@ function SendControls({
   return (
     <>
       <div className="mt-3 flex flex-wrap items-end gap-3">
-        <div className="min-w-[min(16rem,100%)] flex-1 space-y-1">
-          <label htmlFor={`${id}-to`} className="block font-medium">
-            Customer email
-          </label>
-          <input
-            id={`${id}-to`}
-            name="to"
-            type="email"
-            defaultValue={customerEmail ?? ""}
-            className="block min-h-11 w-full rounded-[10px] border border-control-border bg-surface px-3"
-          />
-        </div>
+        {onFile ? (
+          <p className="min-w-[min(16rem,100%)] flex-1 text-[0.9375rem] text-text-muted">
+            {ON_FILE_NOTE}
+          </p>
+        ) : (
+          <div className="min-w-[min(16rem,100%)] flex-1 space-y-1">
+            <label htmlFor={`${id}-to`} className="block font-medium">
+              Customer email
+            </label>
+            <input
+              id={`${id}-to`}
+              name="to"
+              type="email"
+              defaultValue={customerEmail ?? ""}
+              className="block min-h-11 w-full rounded-[10px] border border-control-border bg-surface px-3"
+            />
+          </div>
+        )}
         <Button
           type="submit"
           kind={primary ? "primary" : "secondary"}

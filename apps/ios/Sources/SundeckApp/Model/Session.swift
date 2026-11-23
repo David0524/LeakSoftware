@@ -11,6 +11,9 @@ public struct CompanyContext: Equatable, Sendable {
     public var settings: JSONValue
     /// owner, admin or tech.
     public var role: String
+    /// Text and Call Customers (owner, 2026-11-23; SundeckCore Contact.swift): Messages, and
+    /// customers' numbers and emails with their buttons. Owners and admins always.
+    public var canContact: Bool = true
 
     public var services: Services { companyServices(settings) }
 }
@@ -242,11 +245,25 @@ public final class Session {
         let rows = (try? sync.store.list("company")) ?? []
         companies = memberships.compactMap { m in
             guard let row = rows.first(where: { $0.id == m["company_id"]?.string }) else { return nil }
+            let role = m["role"]?.string ?? "tech"
             return CompanyContext(
                 id: row.id, name: row["name"]?.string ?? "", timeZone: row["timezone"]?.string ?? "America/Phoenix",
-                settings: row["settings"] ?? [:], role: m["role"]?.string ?? "tech")
+                settings: row["settings"] ?? [:], role: role,
+                canContact: canContactCustomers(role, m["can_contact_customers"]?.bool))
+        }
+        // Customers' numbers and emails stay hidden where this person may not contact customers,
+        // until the server's blanks arrive (it sends them blank from then on).
+        let hidden = Set(companies.filter { !$0.canContact }.map(\.id))
+        if hidden != contactHidden {
+            contactHidden = hidden
+            let mask: (@Sendable (String, Row) -> Row)? =
+                hidden.isEmpty ? nil : { table, row in contactMasked(table, row, hidden: hidden) }
+            sync.store.setReadMask(tables: Array(contactBlanks.keys), mask)
         }
     }
+
+    /// The shops whose customers' contact details are hidden on this phone (setReadMask).
+    @ObservationIgnored private var contactHidden: Set<String> = []
 
     private func remember(_ newUser: SignedInUser) {
         // Someone else signing in on this phone never sees the last person's work, nor sends its

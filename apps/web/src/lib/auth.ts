@@ -2,7 +2,7 @@ import "server-only";
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import { cache } from "react";
-import { isManagerRole, type Role } from "@leakbook/core";
+import { canContactCustomers, isManagerRole, type Role } from "@leakbook/core";
 import { openSupport, type OpenSupport } from "@/server/support";
 import { createClient } from "./supabase/server";
 
@@ -22,6 +22,11 @@ export interface Office {
   isOwner: boolean;
   /** Owner or admin: everything else that runs the shop. */
   isManager: boolean;
+  /**
+   * Text and Call Customers (owner, 2026-11-23; core contact.ts): Messages, and the call, text
+   * and email buttons for customers. Owners and admins always; techs unless it's turned off.
+   */
+  canContact: boolean;
   /**
    * Sundeck Pro staff helping this shop through a support session (Admin portal): they work
    * as its admin, View Only or Can Make Changes, and the office shows a banner.
@@ -68,7 +73,9 @@ export const getOffice = cache(async (): Promise<Office> => {
   const [{ data: memberships }, { data: profile }, support] = await Promise.all([
     supabase
       .from("membership")
-      .select("role, company:company_id (id, name, timezone)")
+      // `*` (not the column by name) so a database without can_contact_customers yet still
+      // signs everyone in, with the permission on (20261022005000_contact_customers.sql).
+      .select("*, company:company_id (id, name, timezone)")
       .eq("user_id", user.id)
       .eq("status", "active")
       .is("deleted_at", null),
@@ -80,11 +87,16 @@ export const getOffice = cache(async (): Promise<Office> => {
   if (profile?.two_step && user.aal !== "aal2") redirect("/sign-in/verify");
   const rows = (memberships ?? []) as unknown as {
     role: Role;
+    can_contact_customers: boolean | null;
     company: { id: string; name: string; timezone: string } | null;
   }[];
   const companies = rows
     .filter((m) => m.company)
-    .map((m) => ({ ...m.company!, role: m.role }))
+    .map((m) => ({
+      ...m.company!,
+      role: m.role,
+      canContact: canContactCustomers(m.role, m.can_contact_customers),
+    }))
     .sort((a, b) => a.name.localeCompare(b.name));
   // A support session adds its shop, as an admin, unless they're already one of its people.
   const helping = support && !companies.some((c) => c.id === support.companyId) ? support : null;
@@ -94,6 +106,7 @@ export const getOffice = cache(async (): Promise<Office> => {
       name: helping.companyName,
       timezone: helping.timezone,
       role: "admin",
+      canContact: true,
     });
   if (companies.length === 0) redirect("/setup");
 
@@ -101,10 +114,11 @@ export const getOffice = cache(async (): Promise<Office> => {
   const company = companies.find((c) => c.id === wanted) ?? companies[0]!;
   return {
     user: { id: user.id, email: user.email ?? "", name: profile?.full_name ?? null },
-    company,
+    company: { id: company.id, name: company.name, role: company.role, timezone: company.timezone },
     companies: companies.map(({ id, name, role }) => ({ id, name, role })),
     isOwner: company.role === "owner",
     isManager: isManagerRole(company.role),
+    canContact: company.canContact,
     support: helping && company.id === helping.companyId ? helping : null,
   };
 });

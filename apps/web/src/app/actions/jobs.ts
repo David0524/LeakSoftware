@@ -149,9 +149,11 @@ export async function saveCustomer(_: FormState, form: FormData): Promise<FormSt
       name,
       kind,
       company_name: text(form, "company_name") || null,
-      phone: text(form, "phone") || null,
-      email: email || null,
-      cc_emails: cc,
+      // Without Text and Call Customers the form has no phone or emails (the database keeps
+      // them anyway: app.keep_customer_contact).
+      ...(office.canContact
+        ? { phone: text(form, "phone") || null, email: email || null, cc_emails: cc }
+        : {}),
       notes: text(form, "notes") || null,
       marketing_opt_out: form.get("no_followups") === "on",
     })

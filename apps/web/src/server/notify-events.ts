@@ -12,7 +12,7 @@ import {
   reportOpenedNotification,
   textNotification,
 } from "@leakbook/core";
-import { jobTechs, notify, shopManagers } from "./push";
+import { contactUsers, jobTechs, notify, shopManagers } from "./push";
 
 // Who hears about what (docs/plans/live-activities-and-notifications.md, section 2). Each
 // takes the service-role client: these run from webhooks and customer pages, where nobody on
@@ -21,7 +21,10 @@ import { jobTechs, notify, shopManagers } from "./push";
 const name = (c: { name?: string | null } | null | undefined, fallback: string) =>
   c?.name?.trim() || fallback;
 
-/** A customer texted the shop: their open jobs' techs, else the owners and admins. */
+/**
+ * A customer texted the shop: their open jobs' techs who may contact customers, else the owners
+ * and admins.
+ */
 async function notifyTextUnsafe(
   db: SupabaseClient,
   input: {
@@ -46,6 +49,8 @@ async function notifyTextUnsafe(
     ]);
     customer = c;
     techs = (jobs ?? []).flatMap((j) => [j.assigned_user_id, j.second_tech_id]).filter(Boolean);
+    // Not techs without Text and Call Customers (owner, 2026-11-23).
+    techs = await contactUsers(db, input.companyId, techs);
   }
   const userIds = techs.length ? techs : await shopManagers(db, input.companyId);
   await notify(db, {

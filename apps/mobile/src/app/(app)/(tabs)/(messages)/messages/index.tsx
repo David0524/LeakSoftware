@@ -1,4 +1,5 @@
 import { router } from "expo-router";
+import { ContactOnly } from "../../../../../features/messages/ContactOnly";
 import { formatPhone, isManagerRole, friendlyError } from "@leakbook/core";
 import { useEffect, useState } from "react";
 import { Platform, Pressable, RefreshControl, StyleSheet, Text, View } from "react-native";
@@ -24,7 +25,16 @@ import { color, face, MAX_TEXT_SCALE, space, type } from "../../../../../ui/them
  * Call, Mark Read or Mark Unread, and Open Customer (gestures spec section 12), as the
  * thread's own buttons do them.
  */
+// Only with Text and Call Customers (owner, 2026-11-23).
 export default function Messages() {
+  return (
+    <ContactOnly>
+      <MessagesScreen />
+    </ContactOnly>
+  );
+}
+
+function MessagesScreen() {
   const company = useCompany();
   const { services, membership } = useSession();
   const manager = isManagerRole(membership?.role);

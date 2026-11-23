@@ -58,7 +58,12 @@ export default async function InvoicesPage({ searchParams }: PageProps<"/invoice
     unpaid: i.amount_paid_cents === 0,
     total: i.total_cents,
     paid: i.amount_paid_cents,
-    contact: { email: i.customerEmail, phone: i.customerPhone, texting: line?.status === "active" },
+    contact: {
+      email: i.customerEmail,
+      phone: i.customerPhone,
+      texting: line?.status === "active",
+      onFile: !office.canContact,
+    },
   });
   const open = all.filter((i) => i.status === "sent" || i.status === "partially_paid");
   const owed = open.reduce((sum, i) => sum + invoiceBalance(i), 0);

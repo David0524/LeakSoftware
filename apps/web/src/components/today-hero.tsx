@@ -65,6 +65,11 @@ export interface HeroJob {
   notes: string | null;
   /** Where Message goes: the company number's conversation, else the phone's own texts. */
   textHref: string | null;
+  /**
+   * No Call or blank text: a tech without Text and Call Customers (owner, 2026-11-23). On My
+   * Way still goes out.
+   */
+  noContact?: boolean;
   driveMin: number | null;
   done: boolean;
   /** A maintenance visit (completing it completes the job). */
@@ -541,12 +546,12 @@ function Contact({ job, message }: { job: HeroJob; message?: React.ReactNode }) 
   return (
     <span className="flex max-w-full shrink-0 flex-wrap gap-2">
       {message ??
-        (job.phone && job.textHref ? (
+        (job.phone && job.textHref && !job.noContact ? (
           <a href={job.textHref} aria-label={`Text ${job.customer}`} className={ROUND}>
             <MessageIcon />
           </a>
         ) : null)}
-      {job.phone ? (
+      {job.phone && !job.noContact ? (
         <a href={`tel:${job.phone}`} aria-label={`Call ${job.customer}`} className={ROUND}>
           <PhoneIcon />
         </a>

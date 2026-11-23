@@ -34,6 +34,10 @@ vi.mock("@/server/bearer", () => ({
   jsonError: (message: string, status: number) => Response.json({ error: message }, { status }),
 }));
 vi.mock("@/server/reports", () => ({ sendReport: (...a: unknown[]) => sendReport(...a) }));
+// Everyone here may contact customers: what was typed goes through.
+vi.mock("@/server/contact-on-file", () => ({
+  recipientFor: async (_db: unknown, _ref: unknown, typed: string | null) => typed,
+}));
 vi.mock("@/lib/origin", () => ({ siteOrigin: async () => "https://sundeckpro.test" }));
 
 const route = await import("../src/app/api/reports/[id]/send/route");

@@ -311,6 +311,8 @@ public struct SettingsTeamMember: Identifiable, Equatable, Sendable {
     /// When they were turned off (`membership.disabled_at`).
     public var disabledAt: String?
     public var color: TechColor = .slate
+    /// Text and Call Customers (`membership.can_contact_customers`; owner, 2026-11-23).
+    public var canContact: Bool = true
 }
 
 extension SettingsTeamMember: TeamOrdered {
@@ -335,7 +337,8 @@ public func teamMembers(_ store: LocalStore, kv: KeyValue, companyId: String, me
                 id: m.id, userId: user, name: profile?.displayName ?? "Teammate", email: profile?.email,
                 value: roleLabel(m["role"]?.string) + (off ? " · Turned off" : ""),
                 isMe: user == me, role: m["role"]?.string ?? "tech", active: !off,
-                disabledAt: m["disabled_at"]?.string, color: colors[user] ?? .slate)
+                disabledAt: m["disabled_at"]?.string, color: colors[user] ?? .slate,
+                canContact: m["can_contact_customers"]?.bool != false)
         }
         .sorted { $0.name.localizedCaseInsensitiveCompare($1.name) == .orderedAscending }
 }
@@ -364,6 +367,20 @@ public enum TeamText {
     public static func turnOffQuestion(_ name: String) -> String {
         "Turn off \(name)? They can’t sign in, and their coming jobs stay as they are."
     }
+
+    /// Making someone an owner from the list's role pop-up asks first (owner, 2026-11-23).
+    public static func makeOwnerQuestion(_ name: String) -> String {
+        "Make \(name) an owner? Owners can change billing, payments, and everyone’s role."
+    }
+    public static let makeOwner = "Make Owner"
+
+    /// The shop keeps one active owner (the database refuses it too).
+    public static let lastOwner = "The shop needs at least one active owner. Make someone else an owner first."
+
+    /// After a role change: "Sam Rivera is now an admin."
+    public static func roleChanged(_ name: String, _ role: String) -> String {
+        "\(name) is now \(role == "tech" ? "a" : "an") \(roleLabel(role).lowercased())."
+    }
 }
 
 /// Settings › Team's writes on a membership, through the sync layer (owners and admins; only
@@ -374,6 +391,16 @@ public enum TeamWrites {
     public static func setActive(_ sync: SyncService, companyId: String, membershipId: String, _ on: Bool) throws {
         try sync.write(
             "membership", id: membershipId, companyId: companyId, ["status": .string(on ? "active" : "disabled")])
+    }
+
+    /// Text and Call Customers on a tech's profile (owner, 2026-11-23); saves at once.
+    public static func setContact(_ sync: SyncService, companyId: String, membershipId: String, _ on: Bool) throws {
+        try sync.write("membership", id: membershipId, companyId: companyId, ["can_contact_customers": .bool(on)])
+    }
+
+    /// Whether changing this person's role would leave the shop without an active owner.
+    public static func lastOwner(_ member: SettingsTeamMember, in team: [SettingsTeamMember]) -> Bool {
+        member.role == "owner" && member.active && team.filter { $0.role == "owner" && $0.active }.count < 2
     }
 
     /// Role and Color from a member's profile; nil leaves that one as it is.

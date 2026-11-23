@@ -82,7 +82,8 @@ export default async function CustomersPage({ searchParams }: PageProps<"/custom
               customer={{
                 id: c.id,
                 name: c.name,
-                phone: c.phone ?? null,
+                // Call and Text only with Text and Call Customers (owner, 2026-11-23).
+                phone: office.canContact ? (c.phone ?? null) : null,
                 inboxHref: line?.status === "active" ? `/messages/new?customer=${c.id}` : null,
                 address: c.properties[0] ? formatAddress(c.properties[0]) : null,
                 location: c.properties[0] ? propertyLocation(c.properties[0]) : null,

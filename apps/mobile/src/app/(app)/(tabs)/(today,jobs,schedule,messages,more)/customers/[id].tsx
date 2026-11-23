@@ -38,7 +38,7 @@ import { PoolForm } from "../../../../../features/pool/PoolForm";
 import { getServices } from "../../../../../lib/services";
 import { openDirections, useDirectionsChoice } from "../../../../../state/directions";
 import { CustomerFeedback } from "../../../../../features/feedback/CustomerFeedback";
-import { useCompany, useSession } from "../../../../../state/session";
+import { useCanContact, useCompany, useSession } from "../../../../../state/session";
 import {
   Button,
   FieldGroup,
@@ -70,6 +70,9 @@ export default function CustomerPage() {
   const company = useCompany();
   const { membership } = useSession();
   const manager = isManagerRole(membership?.role);
+  // Numbers, emails, and the buttons that use them only with Text and Call Customers (owner,
+  // 2026-11-23).
+  const canContact = useCanContact();
   const { customers, properties, plans, jobs } = useCustomerData(company.id);
   const team = useTeam(company.id);
   // Each pool's latest chemical log entry (owner, 2026-10-19), as the website.
@@ -145,7 +148,7 @@ export default function CustomerPage() {
     <>
       <Screen title={customer.name} subtitle={subtitle || undefined}>
         {notice ? <Notice tone="success">{notice}</Notice> : null}
-        {customer.phone || customer.email ? (
+        {canContact && (customer.phone || customer.email) ? (
           <View style={styles.contact}>
             {customer.phone ? (
               <RoundButton
@@ -180,9 +183,16 @@ export default function CustomerPage() {
 
         <Section title="Contact">
           <Group>
-            <ListRow title="Phone" detail={customer.phone ? formatPhone(customer.phone) : "None"} />
-            <ListRow title="Email" detail={customer.email ?? "None"} />
-            {cc.length ? <ListRow title="Other emails" subtitle={cc.join(", ")} /> : null}
+            {canContact ? (
+              <>
+                <ListRow
+                  title="Phone"
+                  detail={customer.phone ? formatPhone(customer.phone) : "None"}
+                />
+                <ListRow title="Email" detail={customer.email ?? "None"} />
+                {cc.length ? <ListRow title="Other emails" subtitle={cc.join(", ")} /> : null}
+              </>
+            ) : null}
             <ListRow
               title={CUSTOMER_EMAILS_LABEL}
               detail={customer.marketing_opt_out ? "Off" : "On"}
@@ -388,6 +398,7 @@ type CustomerFields = ReturnType<typeof useCustomerData>["customers"][number];
 
 function ContactForm({ customer, onSaved }: { customer: CustomerFields; onSaved: () => void }) {
   const company = useCompany();
+  const canContact = useCanContact();
   const [f, setF] = useState({
     name: customer.name,
     kind: customer.kind as string,
@@ -432,9 +443,10 @@ function ContactForm({ customer, onSaved }: { customer: CustomerFields; onSaved:
       name: f.name.trim(),
       kind: f.kind,
       company_name: f.company_name.trim() || null,
-      phone: f.phone.trim() || null,
-      email: f.email.trim() || null,
-      cc_emails: cc,
+      // Without Text and Call Customers the form has none of these (the server keeps them).
+      ...(canContact
+        ? { phone: f.phone.trim() || null, email: f.email.trim() || null, cc_emails: cc }
+        : {}),
       notes: f.notes.trim() || null,
       marketing_opt_out: f.optOut,
     } as Record<string, JsonValue>);
@@ -454,20 +466,24 @@ function ContactForm({ customer, onSaved }: { customer: CustomerFields; onSaved:
           onChangeText={set("company_name")}
           placeholder="Optional"
         />
-        <FieldRow
-          label="Phone"
-          value={f.phone}
-          onChangeText={set("phone")}
-          keyboardType="phone-pad"
-        />
-        <FieldRow
-          label="Email"
-          value={f.email}
-          onChangeText={set("email")}
-          keyboardType="email-address"
-          autoCapitalize="none"
-          error={errors.email}
-        />
+        {canContact ? (
+          <FieldRow
+            label="Phone"
+            value={f.phone}
+            onChangeText={set("phone")}
+            keyboardType="phone-pad"
+          />
+        ) : null}
+        {canContact ? (
+          <FieldRow
+            label="Email"
+            value={f.email}
+            onChangeText={set("email")}
+            keyboardType="email-address"
+            autoCapitalize="none"
+            error={errors.email}
+          />
+        ) : null}
       </FieldGroup>
       <Select
         label="Type"
@@ -475,17 +491,19 @@ function ContactForm({ customer, onSaved }: { customer: CustomerFields; onSaved:
         onChange={set("kind")}
         options={Object.entries(KIND_LABELS).map(([value, label]) => ({ value, label }))}
       />
-      <FieldGroup footer="They get reports too. Separate with spaces.">
-        <FieldRow
-          label="Other emails"
-          layout="stacked"
-          value={f.cc}
-          onChangeText={set("cc")}
-          autoCapitalize="none"
-          keyboardType="email-address"
-          error={errors.cc}
-        />
-      </FieldGroup>
+      {canContact ? (
+        <FieldGroup footer="They get reports too. Separate with spaces.">
+          <FieldRow
+            label="Other emails"
+            layout="stacked"
+            value={f.cc}
+            onChangeText={set("cc")}
+            autoCapitalize="none"
+            keyboardType="email-address"
+            error={errors.cc}
+          />
+        </FieldGroup>
+      ) : null}
       <FieldGroup>
         <FieldRow label="Notes" value={f.notes} onChangeText={set("notes")} multiline />
         <Toggle

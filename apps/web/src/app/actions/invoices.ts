@@ -1,5 +1,6 @@
 "use server";
 
+import { customerOnFile } from "@/server/contact-on-file";
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import {
@@ -132,19 +133,24 @@ export async function sendInvoiceAction(
   _: SendInvoiceState,
   form: FormData,
 ): Promise<SendInvoiceState> {
-  await getOffice();
+  const office = await getOffice();
   const channel = text(form, "channel") === "email" ? "email" : "link";
+  // Without Text and Call Customers: the email on file, never one typed (owner, 2026-11-23).
+  const to = office.canContact
+    ? text(form, "to")
+    : ((await customerOnFile(await createClient(), { invoice: text(form, "invoice") })).email ??
+      "");
   try {
     const r = await sendInvoiceWithAutopay(await createClient(), text(form, "invoice"), {
       channel,
-      to: text(form, "to") || null,
+      to: to || null,
       origin: await siteOrigin(),
     });
     refresh(form);
     return {
       message:
         (r.emailed
-          ? `Sent to ${text(form, "to")}${r.reportLink ? ", with the month’s service report" : ""}.`
+          ? `Sent to ${office.canContact ? to : "the customer’s email on file"}${r.reportLink ? ", with the month’s service report" : ""}.`
           : r.reportLink
             ? "Invoice sent with the month’s service report. Copy the link for the customer; the invoice page links the report."
             : "Invoice sent. Copy the link for the customer.") + autopaySentNote(r.autopay),
@@ -199,10 +205,15 @@ export async function recordPaymentAction(
 export async function sendReceiptAction(_: FormState, form: FormData): Promise<FormState> {
   const office = await getOffice();
   const channel: ReceiptChannel = text(form, "channel") === "text" ? "text" : "email";
+  // Without Text and Call Customers: the customer's own email or number on file.
+  const onFile = office.canContact
+    ? null
+    : await customerOnFile(await createClient(), { invoice: text(form, "invoice") });
+  const to = onFile ? ((channel === "text" ? onFile.phone : onFile.email) ?? "") : text(form, "to");
   try {
     await sendPaymentReceipt(await createClient(), office.user.id, text(form, "invoice"), {
       channel,
-      to: text(form, "to"),
+      to,
       paymentId: text(form, "payment") || null,
       origin: await siteOrigin(),
     });
@@ -211,7 +222,9 @@ export async function sendReceiptAction(_: FormState, form: FormData): Promise<F
     return { fields: { to: friendlyError(e) } };
   }
   refresh(form);
-  return { message: receiptSentMessage(channel, text(form, "to")) };
+  return {
+    message: onFile ? "Receipt sent to the customer." : receiptSentMessage(channel, to),
+  };
 }
 
 export async function voidInvoiceAction(_: FormState, form: FormData): Promise<FormState> {

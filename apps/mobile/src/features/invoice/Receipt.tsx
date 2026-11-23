@@ -23,7 +23,9 @@ import {
   type ManualPaymentMethod,
   type ReceiptChannel,
   friendlyError,
+  ON_FILE_NOTE,
 } from "@leakbook/core";
+import { useCanContact } from "../../state/session";
 import { ReportServerError, call } from "../../data/reports";
 import { getServices } from "../../lib/services";
 import { useUnsavedChanges, ModalSheet } from "../../ui/ModalSheet";
@@ -198,6 +200,9 @@ export function SendReceiptSheet({
   onClose: () => void;
   onSent: (message: string) => void;
 }) {
+  // Without Text and Call Customers: to the customer's own email or number on file (owner,
+  // 2026-11-23), never one typed.
+  const canContact = useCanContact();
   const [channel, setChannel] = useState<ReceiptChannel>(
     !contact.email && contact.texting && contact.phone ? "text" : "email",
   );
@@ -210,14 +215,14 @@ export function SendReceiptSheet({
   const to = channel === "email" ? email : phone;
 
   async function send() {
-    const problem = receiptRecipientError(channel, to);
+    const problem = canContact ? receiptRecipientError(channel, to) : null;
     if (problem) return setError(problem);
     setBusy(true);
     setError(null);
     try {
       await sendReceipt(invoiceId, channel, to, paymentId);
       haptics.success();
-      onSent(receiptSentMessage(channel, to));
+      onSent(canContact ? receiptSentMessage(channel, to) : "Receipt sent to the customer.");
     } catch (e) {
       setError(
         e instanceof ReportServerError && e.status === null && /connection/i.test(e.message)
@@ -253,7 +258,11 @@ export function SendReceiptSheet({
             }}
           />
         ) : null}
-        {channel === "email" ? (
+        {!canContact ? (
+          <T variant="secondary" muted>
+            {channel === "email" ? ON_FILE_NOTE : "Goes to the customer’s number on file."}
+          </T>
+        ) : channel === "email" ? (
           <Field
             key="email"
             label={RECEIPT_EMAIL_LABEL}

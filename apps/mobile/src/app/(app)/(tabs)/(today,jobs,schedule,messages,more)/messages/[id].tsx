@@ -1,4 +1,5 @@
 import { router, useLocalSearchParams } from "expo-router";
+import { ContactOnly } from "../../../../../features/messages/ContactOnly";
 import { formatPhone, friendlyError } from "@leakbook/core";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Alert, Animated, Text, View } from "react-native";
@@ -33,7 +34,16 @@ import { color, space, type } from "../../../../../ui/theme";
  * the view starting at the newest, and the composer docked above the tab bar. Calls ring my
  * phone first, then connect from the company number. Opening it marks it read for the team.
  */
+// Only with Text and Call Customers (owner, 2026-11-23).
 export default function Conversation() {
+  return (
+    <ContactOnly>
+      <ConversationScreen />
+    </ContactOnly>
+  );
+}
+
+function ConversationScreen() {
   const params = useLocalSearchParams<{
     id: string;
     omw?: string;

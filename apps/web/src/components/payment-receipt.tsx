@@ -19,6 +19,7 @@ import {
   toE164,
   type ManualPaymentMethod,
   type ReceiptChannel,
+  ON_FILE_NOTE,
 } from "@leakbook/core";
 import { recordPaymentAction, sendReceiptAction } from "@/app/actions/invoices";
 import { buzz } from "@/lib/haptics";
@@ -37,6 +38,11 @@ export interface ReceiptContact {
   phone: string | null;
   /** The shop has a working company number. */
   texting: boolean;
+  /**
+   * Without Text and Call Customers (owner, 2026-11-23): no address fields; the server sends it
+   * to the customer's email or number on file.
+   */
+  onFile?: boolean;
 }
 
 /** Record Payment's fields: amount, Paid by (Cash | Check | Other), and a check's number. */
@@ -137,7 +143,7 @@ export function SendReceiptSheet({
   const to = channel === "email" ? email : phone;
 
   function send() {
-    const problem = receiptRecipientError(channel, to);
+    const problem = contact.onFile ? null : receiptRecipientError(channel, to);
     if (problem) return setError(problem);
     if (typeof navigator !== "undefined" && !navigator.onLine) return setError(RECEIPT_OFFLINE);
     const form = new FormData();
@@ -183,7 +189,11 @@ export function SendReceiptSheet({
             }}
           />
         ) : null}
-        {channel === "email" ? (
+        {contact.onFile ? (
+          <p className="text-[0.9375rem] text-text-muted">
+            {channel === "email" ? ON_FILE_NOTE : "Goes to the customer’s number on file."}
+          </p>
+        ) : channel === "email" ? (
           <Field
             key="email"
             label={RECEIPT_EMAIL_LABEL}

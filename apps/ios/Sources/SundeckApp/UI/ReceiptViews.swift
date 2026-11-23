@@ -38,6 +38,7 @@
         var done: (String?) -> Void
         @Environment(SyncService.self) private var sync
         @Environment(AppEnvironment.self) private var app
+        @Environment(Session.self) private var session
 
         var body: some View {
             NavigationStack {
@@ -63,7 +64,10 @@
                                     title: "Send by", fillsWidth: true)
                             }
                         }
-                        if form.channel == .email {
+                        if form.onFile {
+                            Text(form.channel == .email ? onFileNote : "Goes to the customer’s number on file.")
+                                .textRole(.secondary).foregroundStyle(Color.textMuted)
+                        } else if form.channel == .email {
                             CommitField(
                                 label: ReceiptText.emailLabel, text: $form.email,
                                 hint: "Their other emails get it too.",
@@ -104,6 +108,7 @@
                     ToolbarItem(placement: .cancellationAction) { Button("Cancel") { done(nil) } }
                 }
                 .onChange(of: form.channel) { form.error = nil }
+                .onAppear { form.onFile = !(session.company?.canContact ?? true) }
             }
             .sheetPresentation(detents: [.medium, .large])
         }

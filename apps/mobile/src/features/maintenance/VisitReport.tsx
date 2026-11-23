@@ -7,13 +7,14 @@ import {
   type Customer,
   type Job,
   friendlyError,
+  ON_FILE_NOTE,
 } from "@leakbook/core";
 import { call, reportsOnline, useJobReports } from "../../data/reports";
 import { useLine } from "../../data/texting";
 import { API_URL } from "../../lib/config";
 import { getServices } from "../../lib/services";
 import { watchVisitReports, type VisitSendResult } from "../../lib/visitReports";
-import { useCompany } from "../../state/session";
+import { useCanContact, useCompany } from "../../state/session";
 import { Button, Card, Field, Notice, T } from "../../ui/components";
 import { haptic } from "../../ui/haptics";
 import { space } from "../../ui/theme";
@@ -53,6 +54,7 @@ export function VisitReport({
   const latest = versions.find((v) => v.status === "sent");
   const [to, setTo] = useState<string | null>(null);
   const email = (to ?? customer?.email ?? "").trim();
+  const canContact = useCanContact();
   const [busy, setBusy] = useState<"email" | "text" | null>(null);
   const [result, setResult] = useState<{ tone: "success" | "error"; text: string } | null>(null);
   // Require a Photo (owner, 2026-10-25): why it can't be sent yet, with Add Photo.
@@ -128,23 +130,30 @@ export function VisitReport({
           <ReportPhotoNotice jobId={job.id} />
         ) : (
           <>
-            <Field
-              label="Customer email"
-              value={to ?? customer?.email ?? ""}
-              onChangeText={setTo}
-              keyboardType="email-address"
-              autoCapitalize="none"
-              autoCorrect={false}
-              spellCheck={false}
-              autoComplete="off"
-              textContentType="none"
-            />
+            {/* Without Text and Call Customers: the email on file (owner, 2026-11-23). */}
+            {canContact ? (
+              <Field
+                label="Customer email"
+                value={to ?? customer?.email ?? ""}
+                onChangeText={setTo}
+                keyboardType="email-address"
+                autoCapitalize="none"
+                autoCorrect={false}
+                spellCheck={false}
+                autoComplete="off"
+                textContentType="none"
+              />
+            ) : (
+              <T variant="secondary" muted>
+                {ON_FILE_NOTE}
+              </T>
+            )}
             <View style={styles.row}>
               <Button
                 title={
                   busy === "email" ? "Sending…" : latest ? "Send Again by Email" : "Send by Email"
                 }
-                disabled={busy !== null || !email}
+                disabled={busy !== null || !(email || !canContact)}
                 onPress={() => void send("email")}
               />
               <Button

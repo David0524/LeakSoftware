@@ -53,6 +53,7 @@ export * from "./route-path";
 export * from "./service-days";
 export * from "./download";
 export * from "./team";
+export * from "./contact";
 export * from "./logo-colors";
 export * from "./png";
 export * from "./sample";
