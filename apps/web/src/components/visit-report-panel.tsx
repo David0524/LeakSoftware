@@ -2,7 +2,7 @@
 
 import { useActionState, useEffect, useState } from "react";
 import { flushSync } from "react-dom";
-import { REPORT_PHOTO_TEXT, dateFormat } from "@leakbook/core";
+import { ON_FILE_NOTE, REPORT_PHOTO_TEXT, dateFormat } from "@leakbook/core";
 import { sendVisitReportAction } from "@/app/actions/reports";
 import { buzz } from "@/lib/haptics";
 import { orOffline } from "@/lib/offline";
@@ -25,6 +25,7 @@ export function VisitReportPanel({
   versions,
   timeZone,
   photoNeeded = false,
+  onFile = false,
 }: {
   jobId: string;
   /** The shop sends them by itself when a visit is completed. */
@@ -44,6 +45,8 @@ export function VisitReportPanel({
   timeZone: string;
   /** Require a Photo (owner, 2026-10-25): the shop requires one and the visit has none. */
   photoNeeded?: boolean;
+  /** Without Text and Call Customers: no address field; it goes to the email on file. */
+  onFile?: boolean;
 }) {
   const [state, action, sending] = useActionState(orOffline(sendVisitReportAction), {});
   // The report went out: a tap you can feel (owner, 2026-10-26).
@@ -51,6 +54,8 @@ export function VisitReportPanel({
     if (state.message && !state.error) buzz("reportSent");
   }, [state]);
   const [to, setTo] = useState(customerEmail ?? "");
+  // Without Text and Call Customers the server sends to the email on file (owner, 2026-11-23).
+  const ready = onFile || !!to.trim();
   // Which button sent the form (set on click, so it doesn't depend on the submitter).
   const [channel, setChannel] = useState("email");
   const latest = versions.find((v) => v.current);
@@ -97,22 +102,26 @@ export function VisitReportPanel({
         <form action={action} className="space-y-3">
           <input type="hidden" name="job" value={jobId} />
           <input type="hidden" name="channel" value={channel} />
-          <label className="block space-y-1">
-            <span className="font-medium">Customer email</span>
-            <input
-              name="to"
-              type="email"
-              autoComplete="off"
-              value={to}
-              onChange={(e) => setTo(e.target.value)}
-              className="block min-h-11 w-full rounded-[10px] border border-control-border bg-surface px-3"
-            />
-          </label>
+          {onFile ? (
+            <p className="text-[0.9375rem] text-text-muted">{ON_FILE_NOTE}</p>
+          ) : (
+            <label className="block space-y-1">
+              <span className="font-medium">Customer email</span>
+              <input
+                name="to"
+                type="email"
+                autoComplete="off"
+                value={to}
+                onChange={(e) => setTo(e.target.value)}
+                className="block min-h-11 w-full rounded-[10px] border border-control-border bg-surface px-3"
+              />
+            </label>
+          )}
           <div className="flex flex-wrap gap-3">
             <Button
               type="submit"
               onClick={() => flushSync(() => setChannel("email"))}
-              disabled={sending || !emailReady || !to.trim()}
+              disabled={sending || !emailReady || !ready}
             >
               {sending ? "Sending…" : latest ? "Send Again by Email" : "Send by Email"}
             </Button>

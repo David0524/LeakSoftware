@@ -296,6 +296,11 @@ export interface Membership extends Base {
    * Null: never placed. Read with scheduleOrder.
    */
   schedule_order?: number | null;
+  /**
+   * Text and Call Customers (owner, 2026-11-23): off, a tech has no Messages and no call, text
+   * or email buttons for customers. Read with canContactCustomers (owners and admins always).
+   */
+  can_contact_customers?: boolean | null;
 }
 
 /**

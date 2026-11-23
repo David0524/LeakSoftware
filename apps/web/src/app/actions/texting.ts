@@ -145,6 +145,7 @@ export async function sendMessage(_: SendState, form: FormData): Promise<SendSta
         jobId: text(form, "job_id") || null,
         // Sending the same message twice (a double tap, a retry) sends it once.
         requestId: text(form, "request_id") || undefined,
+        freeForm: true,
       },
       await siteOrigin(),
     );

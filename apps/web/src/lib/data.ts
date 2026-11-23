@@ -52,6 +52,7 @@ import {
   type UsualVisit,
 } from "@leakbook/core";
 import type { Office } from "./auth";
+import { blankContact } from "./contact";
 import { createClient } from "./supabase/server";
 import { isUuid } from "./uuid";
 
@@ -82,6 +83,8 @@ export interface TeamMember {
   disabled_at: string | null;
   /** Their place on the Schedule (Reorder Techs); read with core scheduleOrder. */
   schedule_order: number | null;
+  /** Text and Call Customers (owner, 2026-11-23); read with core canContactCustomers. */
+  can_contact_customers: boolean;
 }
 
 /** Cached per request: several parts of a page ask for the team. */
@@ -92,7 +95,7 @@ export const getTeam = cache(async (office: Office): Promise<TeamMember[]> => {
     await supabase
       .from("membership")
       .select(
-        "id, user_id, role, status, color, disabled_at, schedule_order, profile:profile!membership_user_profile_fkey(id, full_name, email)",
+        "id, user_id, role, status, color, disabled_at, schedule_order, can_contact_customers, profile:profile!membership_user_profile_fkey(id, full_name, email)",
       )
       .eq("company_id", office.company.id)
       .is("deleted_at", null),
@@ -104,6 +107,7 @@ export const getTeam = cache(async (office: Office): Promise<TeamMember[]> => {
     color: string | null;
     disabled_at: string | null;
     schedule_order?: number | null;
+    can_contact_customers?: boolean | null;
     profile: { id: string; full_name: string | null; email: string | null } | null;
   }[];
   const profiles = members.flatMap((m) => (m.profile ? [m.profile] : []));
@@ -121,6 +125,7 @@ export const getTeam = cache(async (office: Office): Promise<TeamMember[]> => {
         color: techColor(m.color),
         disabled_at: m.disabled_at ?? null,
         schedule_order: m.schedule_order ?? null,
+        can_contact_customers: m.can_contact_customers !== false,
       };
     })
     .sort((a, b) => a.name.localeCompare(b.name));
@@ -157,6 +162,11 @@ function preloadTeam(office: Office) {
 }
 
 async function attach(office: Office, jobs: EmbeddedJob[]): Promise<JobRow[]> {
+  // Customers' numbers and emails only with Text and Call Customers (lib/contact.ts).
+  return blankContact(office.canContact, await attachAll(office, jobs));
+}
+
+async function attachAll(office: Office, jobs: EmbeddedJob[]): Promise<JobRow[]> {
   // Jobs loaded with JOB_SELECT carry their pool and customers: only the team is left.
   if (jobs.every((j) => j.property !== undefined)) {
     const team = await getTeam(office);
@@ -634,7 +644,11 @@ export async function listCustomers(
     })
     .limit(500);
   const term = customerTerm(search);
-  if (term) q = q.or(`name.ilike.%${term}%,email.ilike.%${term}%,phone.ilike.%${term}%`);
+  // Without Text and Call Customers, by name only: not a way to look up a number.
+  if (term)
+    q = office.canContact
+      ? q.or(`name.ilike.%${term}%,email.ilike.%${term}%,phone.ilike.%${term}%`)
+      : q.ilike("name", `%${term}%`);
   if (!["all", "plan", "no_plan"].includes(show)) q = q.eq("kind", show);
   const customers = must(await q) as Customer[];
   const ids = customers.map((c) => c.id);
@@ -702,7 +716,7 @@ export async function listCustomers(
             ? 1
             : byName(a, b),
     );
-  return rows.slice(0, 300);
+  return blankContact(office.canContact, rows.slice(0, 300));
 }
 
 export async function getCustomer(office: Office, id: string) {
@@ -760,7 +774,12 @@ export async function getCustomer(office: Office, id: string) {
             ? 1
             : b.scheduled_start.localeCompare(a.scheduled_start),
     );
-  return { customer: customer as Customer, properties, plans, jobs: await attach(office, jobs) };
+  return blankContact(office.canContact, {
+    customer: customer as Customer,
+    properties,
+    plans,
+    jobs: await attach(office, jobs),
+  });
 }
 
 /**
@@ -1356,7 +1375,10 @@ export async function listReports(
       ).data ?? []) as { token: string; report_id: string }[])
     : [];
   const tokenOf = new Map(links.map((l) => [l.report_id, l.token]));
-  return reports.map((r) => ({ ...r, token: tokenOf.get(r.id) ?? null }));
+  return blankContact(
+    office.canContact,
+    reports.map((r) => ({ ...r, token: tokenOf.get(r.id) ?? null })),
+  );
 }
 
 /**

@@ -114,7 +114,11 @@ async function PhoneTabs() {
     unreadCount(office),
     activityUnread(office),
   ]);
-  return <TabBar links={officeLinks(office.isManager, company.settings, unread, dot)} />;
+  return (
+    <TabBar
+      links={officeLinks(office.isManager, company.settings, unread, dot, office.canContact)}
+    />
+  );
 }
 
 /** Trial ending, payment failed, or read-only (M10 billing). */
@@ -157,7 +161,7 @@ async function OfficeNav() {
     mayMakeJobs(office),
     activityUnread(office),
   ]);
-  const links = officeLinks(office.isManager, company.settings, unread, dot);
+  const links = officeLinks(office.isManager, company.settings, unread, dot, office.canContact);
   // On a computer the Dashboard leads for owners (owner, 2026-10-16); phones keep Today first.
   const dashboard = links.find((l) => l.href === "/dashboard");
   const desktop = dashboard ? [dashboard, ...links.filter((l) => l !== dashboard)] : links;

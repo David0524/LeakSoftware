@@ -8,6 +8,7 @@ import {
   type SearchResults,
 } from "@leakbook/core";
 import { getOffice } from "@/lib/auth";
+import { blankContact } from "@/lib/contact";
 import { createClient } from "@/lib/supabase/server";
 
 const GROUPS: SearchGroupKey[] = ["customers", "pools", "jobs", "quotes", "invoices"];
@@ -37,5 +38,7 @@ export async function searchOffice(query: string, group?: SearchGroupKey): Promi
     digits: parsed.digits,
   });
   if (error) throw new Error(error.message);
-  return searchShop(q, (data ?? {}) as SearchRecords, options);
+  // Without Text and Call Customers, numbers and emails are blank before matching, so they
+  // neither show nor match (a customer found only by their number drops out).
+  return searchShop(q, blankContact(office.canContact, (data ?? {}) as SearchRecords), options);
 }

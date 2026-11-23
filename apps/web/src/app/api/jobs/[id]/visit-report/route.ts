@@ -2,6 +2,7 @@ import { siteOrigin } from "@/lib/origin";
 import { bearerSession, jsonError } from "@/server/bearer";
 import { failureMessage, failureStatus } from "@/server/failures";
 import { sendVisitReport, type VisitChannel } from "@/server/visit-reports";
+import { recipientFor } from "@/server/contact-on-file";
 
 export const maxDuration = 60;
 
@@ -31,7 +32,13 @@ export async function POST(request: Request, ctx: RouteContext<"/api/jobs/[id]/v
       await sendVisitReport(session.db, id, {
         automatic: body.automatic === true,
         channel,
-        to: typeof body.to === "string" ? body.to : null,
+        // Without Text and Call Customers: the customer's email on file (owner, 2026-11-23).
+        to:
+          (await recipientFor(
+            session.db,
+            { job: id },
+            typeof body.to === "string" ? body.to : "",
+          )) || null,
         origin: await siteOrigin(),
         userId: session.userId,
       }),

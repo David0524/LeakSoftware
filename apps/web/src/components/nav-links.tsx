@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useRef, useState, type ReactNode } from "react";
-import type { OfficeLink } from "@/lib/nav";
+import { phoneNav, type OfficeLink } from "@/lib/nav";
 import { cx } from "./ui";
 
 /** Whether the page at `path` is in this section (or one it holds, like Messages). */
@@ -150,16 +150,16 @@ function TabIcon({ href, selected }: { href: string; selected: boolean }) {
 }
 
 /**
- * Phones: the main sections as a tab bar along the bottom (iOS convention). With more than
- * five, the first four show and the rest are under More. As on iOS, the selected tab is the
+ * Phones: the main sections as a tab bar along the bottom (iOS convention): Today, Jobs,
+ * Schedule and Messages (phoneNav), and the rest under More. As on iOS, the selected tab is the
  * filled symbol in the tint color; there is no highlight behind it.
  */
 export function TabBar({ links: all }: { links: OfficeLink[] }) {
   const path = usePathname();
-  const overflow = all.length > 5 ? all.slice(4) : [];
+  const { tabs, more: overflow } = phoneNav(all);
   const links: OfficeLink[] = overflow.length
-    ? [...all.slice(0, 4), { href: "/more", label: "More", dot: overflow.some((o) => o.dot) }]
-    : all;
+    ? [...tabs, { href: "/more", label: "More", dot: overflow.some((o) => o.dot) }]
+    : tabs;
   return (
     // The full-width layer under the floating bar catches taps that miss it (the margins
     // beside it and the strip below it), so they never reach the page underneath. Its own

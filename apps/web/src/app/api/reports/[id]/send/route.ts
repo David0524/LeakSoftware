@@ -2,6 +2,7 @@ import { clientFromRequest, jsonError } from "@/server/bearer";
 import { failureMessage, failureStatus } from "@/server/failures";
 import { siteOrigin } from "@/lib/origin";
 import { sendReport } from "@/server/reports";
+import { recipientFor } from "@/server/contact-on-file";
 
 export const maxDuration = 120;
 
@@ -14,7 +15,8 @@ export async function POST(request: Request, ctx: RouteContext<"/api/reports/[id
   try {
     const result = await sendReport(db, id, {
       channel: body.channel === "email" ? "email" : "sms_device",
-      to: body.to ?? null,
+      // Without Text and Call Customers: the email on file (owner, 2026-11-23).
+      to: await recipientFor(db, { report: id }, body.to ?? null),
       origin: await siteOrigin(),
     });
     return Response.json(result);

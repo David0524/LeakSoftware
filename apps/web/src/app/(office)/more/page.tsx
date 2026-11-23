@@ -14,7 +14,7 @@ import { AppearanceChoice } from "@/components/theme-toggle";
 import { Grouped, PageHeader, Row } from "@/components/ui";
 import { getOffice } from "@/lib/auth";
 import { getCompany } from "@/lib/data";
-import { officeLinks } from "@/lib/nav";
+import { officeLinks, phoneNav } from "@/lib/nav";
 import { activityUnread } from "@/lib/activity";
 import { Dot } from "@/components/nav-links";
 import { createClient } from "@/lib/supabase/server";
@@ -40,7 +40,9 @@ export default async function MorePage() {
       .maybeSingle(),
     memberStartOf(db, office.company.id, office.user.id),
   ]);
-  const rest = officeLinks(office.isManager, company.settings, 0, dot).slice(4);
+  const rest = phoneNav(
+    officeLinks(office.isManager, company.settings, 0, dot, office.canContact),
+  ).more;
   const twoStep = Boolean(profile?.two_step);
   const saved = (await cookies()).get("lb_maps")?.value;
   const maps = saved === "apple" || saved === "google" ? saved : "auto";

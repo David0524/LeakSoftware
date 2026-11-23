@@ -2,7 +2,12 @@ import "server-only";
 import { connect } from "node:http2";
 import { createPrivateKey, sign } from "node:crypto";
 import type { SupabaseClient } from "@supabase/supabase-js";
-import { notificationOn, type NotificationKind, type NotificationText } from "@leakbook/core";
+import {
+  canContactCustomers,
+  notificationOn,
+  type NotificationKind,
+  type NotificationText,
+} from "@leakbook/core";
 
 // Push notifications (owner, 2026-10-19; docs/plans/live-activities-and-notifications.md):
 // the iPhone app through Apple's push service (APNs), the Android app through Expo's.
@@ -181,6 +186,29 @@ export async function shopManagers(db: SupabaseClient, companyId: string): Promi
     .eq("status", "active")
     .is("deleted_at", null);
   return (data ?? []).map((m) => m.user_id as string);
+}
+
+/**
+ * Of these people, the ones who may contact this shop's customers (Text and Call Customers,
+ * owner 2026-11-23; core contact.ts).
+ */
+export async function contactUsers(
+  db: SupabaseClient,
+  companyId: string,
+  userIds: string[],
+): Promise<string[]> {
+  if (!userIds.length) return [];
+  const { data } = await db
+    .from("membership")
+    .select("user_id, role, can_contact_customers")
+    .eq("company_id", companyId)
+    .in("user_id", userIds);
+  const ok = new Set(
+    ((data ?? []) as { user_id: string; role: string; can_contact_customers: boolean | null }[])
+      .filter((m) => canContactCustomers(m.role, m.can_contact_customers))
+      .map((m) => m.user_id),
+  );
+  return userIds.filter((id) => ok.has(id));
 }
 
 /** A job's techs (the tech and the second tech). */

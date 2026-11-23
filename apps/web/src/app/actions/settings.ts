@@ -514,6 +514,47 @@ export async function updateMember(_: FormState, form: FormData): Promise<FormSt
 }
 
 /**
+ * A teammate's role from the Team list's pop-up (owner, 2026-11-23: "this screen is where the
+ * owner can set what role each user is"). Owners only; the database keeps one active owner.
+ */
+export async function setMemberRole(input: { id: string; role: string }): Promise<FormState> {
+  const { office, supabase } = await owner();
+  if (!office.isOwner) return { error: OWNER_ONLY };
+  const role = input.role === "owner" || input.role === "admin" ? input.role : "tech";
+  const { error } = await supabase
+    .from("membership")
+    .update({ role })
+    .eq("company_id", office.company.id)
+    .eq("id", input.id);
+  if (error)
+    return {
+      error: friendlyDbError(error.message).includes("at least one")
+        ? "The shop needs at least one active owner. Make someone else an owner first."
+        : error.message.includes("Only the shop owner")
+          ? OWNER_ONLY
+          : friendlyDbError(error.message),
+    };
+  revalidatePath("/", "layout");
+  return { message: "Role changed." };
+}
+
+/**
+ * Text and Call Customers for a tech (owner, 2026-11-23; core contact.ts). Owners and admins;
+ * owners and admins always have it, so it's only stored for techs.
+ */
+export async function setMemberContact(input: { id: string; on: boolean }): Promise<FormState> {
+  const { office, supabase } = await owner();
+  const { error } = await supabase
+    .from("membership")
+    .update({ can_contact_customers: input.on === true })
+    .eq("company_id", office.company.id)
+    .eq("id", input.id);
+  if (error) return failed(error);
+  revalidatePath("/settings/team");
+  return { message: "Saved." };
+}
+
+/**
  * A teammate's color (Settings › Team, owner 2026-10-20): one of the palette's keys. Owners and
  * admins.
  */

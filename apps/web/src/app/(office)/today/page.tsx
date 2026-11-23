@@ -223,6 +223,7 @@ export default async function TodayPage({ searchParams }: PageProps<"/today">) {
             .map((n) => n?.trim())
             .filter(Boolean)
             .join(" · ") || null,
+        noContact: !office.canContact,
         textHref: j.customer?.phone
           ? line?.status === "active" && j.customer.id
             ? `/messages/new?customer=${j.customer.id}&job=${j.id}`
@@ -364,7 +365,7 @@ export default async function TodayPage({ searchParams }: PageProps<"/today">) {
               ) : null}
               {done ? null : (
                 <span className="ml-auto flex max-w-full min-w-0 gap-2">
-                  {j.customer?.phone ? (
+                  {j.customer?.phone && office.canContact ? (
                     <a
                       href={`tel:${j.customer.phone}`}
                       aria-label={`Call ${j.customer.name ?? "the customer"}`}
