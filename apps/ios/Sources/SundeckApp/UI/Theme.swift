@@ -73,6 +73,11 @@
         static let navy = Color(uiColor: Tokens.Brand.navy.uiColor)
         /// Safety orange: the brand accent, and the day map's stop you're on.
         static let safety = Color(uiColor: Tokens.Brand.safety.uiColor)
+        /// Behind white glyphs where orange is wanted (white on `safety` is too faint).
+        static let safetyDeep = Color(uiColor: Tokens.Brand.safetyDeep.uiColor)
+        static let paper = Color(uiColor: Tokens.Brand.paper.uiColor)
+        /// More's Refer a Pool Company row: the brand accent, softly (owner, 2026-11-23).
+        static let safetyTint = Color.safety.opacity(0.12)
 
         // Tints.
         static let tinted = Color(tint: .tinted)

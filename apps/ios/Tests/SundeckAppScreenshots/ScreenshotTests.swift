@@ -1145,11 +1145,10 @@
 
         @Test func more() async throws {
             let env = try sampleEnvironment()
-            try await snapshot(
-                "43-more-owner", height: 2000, NavigationStack { MoreScreen(showReauth: {}) }.app(env))
-            try await snapshot(
-                "43-more-owner-dark", dark: true, height: 2000,
-                NavigationStack { MoreScreen(showReauth: {}) }.app(env))
+            // Refer a Pool Company (owner, 2026-11-23): owners see it once the shop's code is known.
+            let more = { NavigationStack { MoreScreen(showReauth: {}, referralPreview: "BLUEWAVEPOOLS") } }
+            try await snapshot("43-more-owner", height: 2000, more().app(env))
+            try await snapshot("43-more-owner-dark", dark: true, height: 2000, more().app(env))
             let tech = try sampleEnvironment()
             try tech.session.sync.store.applyPage(
                 PullPage(
@@ -1161,8 +1160,8 @@
                             ])
                     ], done: true, cursor: [:], serverHLC: "1760000000009-0000-srv"))
             tech.session.reloadCompanies()
-            try await snapshot(
-                "43-more-tech", height: 2000, NavigationStack { MoreScreen(showReauth: {}) }.app(tech))
+            // A tech never sees it, even with a code at hand.
+            try await snapshot("43-more-tech", height: 2000, more().app(tech))
             try await snapshot("48-sync", NavigationStack { SettingsView(showReauth: {}) }.app(env))
         }
 

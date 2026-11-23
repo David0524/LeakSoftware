@@ -18,6 +18,7 @@ import { API_URL } from "../../../../../lib/config";
 import { useMemberStart } from "../../../../../data/memberStarts";
 import { useSession, useSyncStatus } from "../../../../../state/session";
 import { FeatureRequestRow } from "../../../../../features/more/FeatureRequest";
+import { ReferRow, useReferShare } from "../../../../../features/more/ReferRow";
 import { useDirectionsChoice, type DirectionsChoice } from "../../../../../state/directions";
 import {
   Button,
@@ -66,6 +67,8 @@ export default function More() {
   const me = team.find((t) => t.id === user?.id);
   const { prefs: notificationPrefs } = useNotificationPrefs();
   const activityDot = useActivityUnread(company?.id ?? "");
+  // Owners only; nothing until the server gives the shop's code (owner, 2026-11-23).
+  const refer = useReferShare(company?.id ?? "", membership?.role);
 
   function confirmSignOut() {
     const changes = status.pending + status.problems.length;
@@ -116,6 +119,9 @@ export default function More() {
         ) : null}
         {manager ? <ListRow title="Settings" onPress={() => router.push("/settings")} /> : null}
       </Group>
+
+      {/* Refer a Pool Company, in the brand's orange so it stands apart (owner, 2026-11-23). */}
+      {refer ? <ReferRow share={refer} /> : null}
 
       <Section title="Your account">
         <Group>
