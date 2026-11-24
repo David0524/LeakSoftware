@@ -404,8 +404,8 @@
                 PulledRow(
                     table: "payment", xid: "5",
                     row: [
-                        "id": "pay2", "company_id": "c1", "invoice_id": "i1", "amount_cents": 27400, "method": "other",
-                        "status": "succeeded", "paid_at": "2026-10-15T18:00:00.000Z",
+                        "id": "pay2", "company_id": "c1", "invoice_id": "i1", "amount_cents": 27400, "method": "card",
+                        "status": "succeeded", "paid_at": "2026-10-15T18:00:00.000Z", "refunded_cents": 5000,
                     ]),
                 PulledRow(
                     table: "share_link", xid: "5",
