@@ -1,5 +1,6 @@
 "use server";
 
+import { createHash } from "node:crypto";
 import { revalidatePath, updateTag } from "next/cache";
 import { unstable_rethrow } from "next/navigation";
 import {
@@ -217,12 +218,12 @@ export async function giveFreeMonths(_: AdminState, form: FormData): Promise<Adm
     const subscribed = text(form, "subscribed") === "1";
     let message: string;
     if (subscribed) {
-      // One credit per request: the form's own key stops a double tap crediting twice.
+      // The same request again within the minute (a double tap) is the same credit.
       const cents = await creditFreeMonths(
         b.companyId,
         months,
         `${months} free month${months === 1 ? "" : "s"} from Sundeck Pro`,
-        `staff_months_${b.companyId}_${text(form, "nonce", 40)}`,
+        `staff_months_${b.companyId}_${months}_${createHash("sha256").update(b.reason).digest("hex").slice(0, 16)}_${Math.floor(Date.now() / 60_000)}`,
       );
       message = `${formatCents(cents)} credit added. The next bills use it up.`;
     } else {

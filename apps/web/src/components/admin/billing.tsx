@@ -215,13 +215,10 @@ export function ApplyCode({ companyId }: { companyId: string }) {
 /** Free months: a longer trial, or a Stripe credit once Stripe bills the shop. */
 export function FreeMonths({ companyId, subscribed }: { companyId: string; subscribed: boolean }) {
   const [months, setMonths] = useState<"1" | "2" | "3" | "6" | "12">("1");
-  // One credit per sheet: a second tap of Give is the same credit.
-  const [nonce] = useState(() => crypto.randomUUID());
   return (
     <SheetAction label="Give Free Months" action={giveFreeMonths} submit="Give Free Months">
       <input type="hidden" name="company_id" value={companyId} />
       <input type="hidden" name="subscribed" value={subscribed ? "1" : "0"} />
-      <input type="hidden" name="nonce" value={nonce} />
       <Explain>
         {subscribed
           ? "Stripe bills this shop: the months are a credit at its current price, which its next bills use up."
