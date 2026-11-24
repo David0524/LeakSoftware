@@ -277,6 +277,8 @@ export async function payInvoice(_: PayState, form: FormData): Promise<PayState>
   } catch (e) {
     if (e instanceof CheckoutRefused || e instanceof PaymentsNotConfigured)
       return { error: e.message };
+    // The customer sees a plain retry message; the cause (often Stripe's) goes to the logs.
+    console.error("invoice checkout failed", e);
     return { error: "Couldn’t start the payment. Please try again in a moment." };
   }
   // Embedded: the page shows Stripe's form in place. Otherwise, off to Stripe's page.

@@ -1,11 +1,12 @@
 import Stripe from "stripe";
 import type { SupabaseClient } from "@supabase/supabase-js";
-import { describe, expect, it } from "vitest";
+import { beforeEach, describe, expect, it } from "vitest";
 import {
   BadSignature,
   CheckoutRefused,
   applyEvent,
   depositCheckout,
+  forgetPayLater,
   invoiceCheckout,
   onboardingLink,
   registerPaymentDomain,
@@ -290,10 +291,17 @@ describe("deposit checkout", () => {
     deposit_paid: false,
   };
 
-  function fakeStripe() {
+  beforeEach(() => forgetPayLater());
+
+  function fakeStripe(link = true) {
     const created: { params: Stripe.Checkout.SessionCreateParams; opts: Stripe.RequestOptions }[] =
       [];
     const stripe = {
+      accounts: {
+        async retrieve() {
+          return { capabilities: link ? { link_payments: "active" } : {} };
+        },
+      },
       checkout: {
         sessions: {
           async create(params: Stripe.Checkout.SessionCreateParams, opts: Stripe.RequestOptions) {
@@ -365,6 +373,24 @@ describe("deposit checkout", () => {
         null,
       ),
     ).rejects.toThrow(CheckoutRefused);
+  });
+
+  it("leaves Link out when the shop's account doesn't have it on (Checkout fails with it)", async () => {
+    const plain = fakeStripe(false);
+    await depositCheckout("tok", "https://app.test", plain.stripe, fakeDb(details).db, null);
+    expect(plain.created[0]!.params.payment_method_types).toEqual(["card", "us_bank_account"]);
+
+    forgetPayLater();
+    const card = fakeStripe(false);
+    await depositCheckout(
+      "tok",
+      "https://app.test",
+      card.stripe,
+      fakeDb(details, { card_fee_bps: 290 }).db,
+      null,
+      "card",
+    );
+    expect(card.created[0]!.params.payment_method_types).toEqual(["card"]);
   });
 
   it("with a publishable key, shows Checkout on our page and returns to it", async () => {

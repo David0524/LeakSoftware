@@ -161,7 +161,11 @@ beforeEach(() => forgetPayLater());
 describe("Pay Over Time", () => {
   it("adds Affirm and Klarna only when Stripe has them on and the amount qualifies", async () => {
     const f = fakeStripe({
-      capabilities: { affirm_payments: "active", klarna_payments: "pending" },
+      capabilities: {
+        affirm_payments: "active",
+        klarna_payments: "pending",
+        link_payments: "active",
+      },
     });
     await invoiceCheckout(
       "tok",
@@ -180,7 +184,9 @@ describe("Pay Over Time", () => {
     ]);
 
     forgetPayLater();
-    const small = fakeStripe({ capabilities: { affirm_payments: "active" } });
+    const small = fakeStripe({
+      capabilities: { affirm_payments: "active", link_payments: "active" },
+    });
     await invoiceCheckout(
       "tok",
       "https://app.test",
@@ -199,7 +205,11 @@ describe("Pay Over Time", () => {
 
   it("never offers them when the shop turned Pay Over Time off, or Stripe can't be asked", async () => {
     const off = fakeStripe({
-      capabilities: { affirm_payments: "active", klarna_payments: "active" },
+      capabilities: {
+        affirm_payments: "active",
+        klarna_payments: "active",
+        link_payments: "active",
+      },
     });
     await depositCheckout(
       "tok",
@@ -230,6 +240,7 @@ describe("Pay Over Time", () => {
       "us_bank_account",
     ]);
 
+    forgetPayLater();
     const down = fakeStripe();
     await invoiceCheckout(
       "tok",
@@ -240,11 +251,8 @@ describe("Pay Over Time", () => {
       }).db,
       null,
     );
-    expect(down.sessions[0]!.params.payment_method_types).toEqual([
-      "card",
-      "link",
-      "us_bank_account",
-    ]);
+    // Link too: it is only sent once Stripe says the account has it on.
+    expect(down.sessions[0]!.params.payment_method_types).toEqual(["card", "us_bank_account"]);
   });
 
   it("with the card fee on, Pay Over Time is its own choice without the fee", async () => {

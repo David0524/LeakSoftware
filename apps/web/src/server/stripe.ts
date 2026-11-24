@@ -187,8 +187,6 @@ export type CheckoutStart =
   | { kind: "page"; url: string }
   | { kind: "embedded"; clientSecret: string; account: string; publishableKey: string };
 
-const PAYMENT_METHODS = ["card", "link", "us_bank_account"] as const;
-
 /**
  * How the customer chose to pay when the shop passes on the card fee: card, bank, or (Pay Over
  * Time) Affirm or Klarna, which carry no fee.
@@ -196,9 +194,10 @@ const PAYMENT_METHODS = ["card", "link", "us_bank_account"] as const;
 export type PayMethod = "card" | "bank" | "later";
 
 // ---------------------------------------------------------------------------
-// Pay Over Time (docs/design/2026-11-16-autopay.md): Affirm and Klarna, only once Stripe has
-// them on for the shop's account. Sending a method that isn't active makes Checkout fail, so
-// the account's capabilities are read first, and kept for ten minutes.
+// Methods a shop's account may not have on: Link, and (Pay Over Time,
+// docs/design/2026-11-16-autopay.md) Affirm and Klarna. Sending a method that isn't active makes
+// Checkout fail outright (2026-11-24: a shop without Link couldn't take cards at all), so the
+// account's capabilities are read first, and kept for ten minutes.
 // ---------------------------------------------------------------------------
 
 export interface PayLaterActive {
@@ -206,11 +205,15 @@ export interface PayLaterActive {
   klarna: boolean;
 }
 
-const LATER_TTL_MS = 10 * 60 * 1000;
-const laterCache = new Map<string, { at: number; active: PayLaterActive }>();
+interface AccountMethods extends PayLaterActive {
+  link: boolean;
+}
 
-/** Which of Affirm and Klarna are active on the shop's account. Never throws. */
-export async function payLaterActive(stripe: Stripe, account: string): Promise<PayLaterActive> {
+const LATER_TTL_MS = 10 * 60 * 1000;
+const laterCache = new Map<string, { at: number; active: AccountMethods }>();
+
+/** Which optional methods are active on the shop's account. Never throws. */
+async function accountMethods(stripe: Stripe, account: string): Promise<AccountMethods> {
   const hit = laterCache.get(account);
   if (hit && Date.now() - hit.at < LATER_TTL_MS) return hit.active;
   try {
@@ -219,13 +222,28 @@ export async function payLaterActive(stripe: Stripe, account: string): Promise<P
     const active = {
       affirm: caps.affirm_payments === "active",
       klarna: caps.klarna_payments === "active",
+      link: caps.link_payments === "active",
     };
     laterCache.set(account, { at: Date.now(), active });
     return active;
   } catch {
-    // Not kept: the next page or payment asks Stripe again.
-    return { affirm: false, klarna: false };
+    // Not kept: the next page or payment asks Stripe again. Card and bank still work.
+    return { affirm: false, klarna: false, link: false };
   }
+}
+
+/** Which of Affirm and Klarna are active on the shop's account. Never throws. */
+export async function payLaterActive(stripe: Stripe, account: string): Promise<PayLaterActive> {
+  const { affirm, klarna } = await accountMethods(stripe, account);
+  return { affirm, klarna };
+}
+
+/** Card, with Link beside it only when the shop's account has Link on. */
+async function cardMethods(
+  stripe: Stripe,
+  account: string,
+): Promise<Stripe.Checkout.SessionCreateParams.PaymentMethodType[]> {
+  return (await accountMethods(stripe, account)).link ? ["card", "link"] : ["card"];
 }
 
 /** For tests: forget what Stripe said. */
@@ -333,11 +351,17 @@ async function payTerms(
   }
   if (bps === 0) {
     const later = await payLaterFor(stripe, settings, account, amountCents);
-    return { methods: [...PAYMENT_METHODS, ...later], feeCents: 0, bps, settings };
+    const card = await cardMethods(stripe, account);
+    return { methods: [...card, "us_bank_account", ...later], feeCents: 0, bps, settings };
   }
   if (method === "bank") return { methods: ["us_bank_account"], feeCents: 0, bps, settings };
   if (method === "card")
-    return { methods: ["card", "link"], feeCents: cardFeeCents(amountCents, bps), bps, settings };
+    return {
+      methods: await cardMethods(stripe, account),
+      feeCents: cardFeeCents(amountCents, bps),
+      bps,
+      settings,
+    };
   throw new CheckoutRefused("Choose card or bank account.");
 }
 
@@ -419,7 +443,7 @@ export async function startCheckout(
   const { methods, mode = "payment", back = "paid=1", ...rest } = params;
   const base = {
     mode,
-    payment_method_types: methods ?? [...PAYMENT_METHODS],
+    payment_method_types: methods ?? ["card", "us_bank_account"],
     ...rest,
   };
   if (key) {
