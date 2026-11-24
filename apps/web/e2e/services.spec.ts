@@ -73,9 +73,9 @@ test("the chemical calculator says what to add", async ({ page }) => {
   // gallons first and fluid ounces under them.
   await expect(doses.getByRole("listitem")).toHaveCount(2);
   await expect(doses.getByRole("listitem").nth(0)).toContainText("½ gallon");
-  await expect(doses.getByRole("listitem").nth(0)).toContainText("About 65 fl oz");
+  await expect(doses.getByRole("listitem").nth(0)).toContainText("About 64 fl oz");
   await expect(doses.getByRole("listitem").nth(0)).toContainText("Muriatic acid 31.45%");
-  await expect(doses.getByRole("listitem").nth(1)).toContainText("About 64 fl oz");
+  await expect(doses.getByRole("listitem").nth(1)).toContainText("About 60 fl oz");
   await expect(doses.getByRole("listitem").nth(1)).toContainText("Liquid chlorine 12.5%");
 
   // Aiming higher than the recommended level doses more (owner, 2026-10-18).

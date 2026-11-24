@@ -30,7 +30,7 @@ export const team: ChapterDef = {
     leak: "Jake needs a way in, with the right amount of it. Dana invites him, gives him a role, and decides what a tech can see.",
   },
   learn: [
-    "Invite people and send the link yourself",
+    "Invite people by email",
     "What an owner, an admin and a tech can each do",
     "Decide what techs see, and whether they can make jobs",
     "Turn someone off without losing their jobs",
@@ -49,12 +49,11 @@ export const team: ChapterDef = {
         </p>
       </Scene>
 
-      <Section kicker="Inviting" title="A link, sent by you">
+      <Section kicker="Inviting" title="An email with a link">
         <Meta who={["Owner", "Admin"]} where={["Website"]} />
         <p>
-          Sundeck Pro doesn’t email invitations. It makes a link, and you send it the way you
-          already talk to your people: a text, an email, a message. The link works once and expires
-          in 14 days.
+          Sundeck Pro emails the invitation for you, with a link to join. The same link waits under{" "}
+          <Ui>Open invites</Ui> if you’d rather text it too. It works once and expires in 14 days.
         </p>
         <Steps>
           <Step title="Open the Team page">
@@ -69,10 +68,11 @@ export const team: ChapterDef = {
               <Ui>Tech</Ui>. Tech is the default, and an admin can only invite techs.
             </p>
           </Step>
-          <Step title="Create Invite, then Copy Link">
+          <Step title="Press Send Invite">
             <p>
-              Paste the link into a text. Press <Ui>Revoke Invite</Ui> if you sent it to the wrong
-              person.
+              The email goes out at once, with replies coming to you. To text the link as well, open
+              the invite under <Ui>Open invites</Ui> and press <Ui>Copy Link</Ui>. Press{" "}
+              <Ui>Revoke Invite</Ui> if you sent it to the wrong person.
             </p>
           </Step>
           <Step title="They open it">

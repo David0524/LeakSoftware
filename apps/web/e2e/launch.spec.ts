@@ -35,7 +35,7 @@ test("a tech deletes their account and can't sign in again", async ({ page, brow
   await page.getByRole("button", { name: "Invite Someone", exact: true }).click();
   const invite = page.getByRole("dialog", { name: "Invite Someone" });
   await invite.getByLabel("Email").fill(email);
-  await invite.getByRole("button", { name: "Create Invite" }).click();
+  await invite.getByRole("button", { name: "Send Invite" }).click();
   await page.getByTestId("invite").filter({ hasText: email }).getByRole("button").click();
   const link = await page
     .getByRole("dialog", { name: email })

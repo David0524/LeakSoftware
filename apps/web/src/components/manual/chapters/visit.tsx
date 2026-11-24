@@ -153,7 +153,9 @@ export const visit: ChapterDef = {
             As soon as a reading is off, a suggestion appears under it, with a number for the order
             to add things: “Suggested ⅓ gal muriatic acid.” The order is always alkalinity, pH,
             calcium, stabilizer, salt, then chlorine, the way a careful tech already does it. When
-            everything is in range, the card says “Balanced. Nothing to add.”
+            one dose fixes two readings, like acid for high alkalinity and high pH, it comes once,
+            and the other reading says “With alkalinity.” When everything is in range, the card says
+            “Balanced. Nothing to add.”
           </p>
           <p>
             Amounts come in the units you pour: gallons and quarts, cups, pounds, bags. Acid

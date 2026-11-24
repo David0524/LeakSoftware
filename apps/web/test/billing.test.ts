@@ -110,6 +110,8 @@ function priceDb(services: string, people: number, teamSize?: number) {
   const saved: unknown[] = [];
   return {
     saved,
+    // The shop's price list and own price: none, so the default prices.
+    rpc: async () => ({ data: null, error: null }),
     from(table: string) {
       const q = {
         select: () => q,

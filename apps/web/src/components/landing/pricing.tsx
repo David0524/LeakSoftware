@@ -2,17 +2,17 @@
 
 import { useState } from "react";
 import {
-  BOTH_ADDON_CENTS,
   competitorPrices,
   COMPETITORS_CHECKED,
   extraUsers,
   formatCents,
   monthlyPriceCents,
   planTier,
-  PLANS,
   servicesPriceCents,
   TEAM_SIZE_MAX,
+  type Plan,
   type PlanId,
+  type PriceList,
 } from "@leakbook/core";
 import { TeamSizeStepper } from "../team-size";
 import { ButtonLink } from "../ui";
@@ -46,14 +46,14 @@ const BLURB: Record<PlanId, string> = {
   maintenance: "For cleaning and repair routes.",
 };
 
-export function Pricing() {
+export function Pricing({ prices }: { prices: PriceList }) {
   const { pkg } = usePackage();
   // Each package starts at its lowest price (owner, 2026-10-18): 2 people for Pool
   // Maintenance, 1 for Leak Detection. Each keeps its own count when switching.
   const [team, setTeam] = useState<Record<PlanId, number>>({ maintenance: 2, leak: 1 });
   const users = team[pkg];
   const setUsers = (next: (u: number) => number) => setTeam((t) => ({ ...t, [pkg]: next(t[pkg]) }));
-  const plan = PLANS[pkg];
+  const plan = prices[pkg];
   const total = monthlyPriceCents(plan, users);
   const tier = planTier(plan, users);
   const extra = extraUsers(plan, users);
@@ -126,10 +126,10 @@ export function Pricing() {
       {/* Shops that do both (owner, 2026-10-19). */}
       <p className="mx-auto mt-6 max-w-xl text-center" data-testid="both-price">
         <strong>Do pool care and leak detection?</strong> Pick Both when you sign up: Pool
-        Maintenance for your team plus {dollars(BOTH_ADDON_CENTS)} a month for leak detection (
-        {dollars(servicesPriceCents("both", users))} a month for {people(users)}).
+        Maintenance for your team plus {dollars(prices.bothAddonCents)} a month for leak detection (
+        {dollars(servicesPriceCents("both", users, prices))} a month for {people(users)}).
       </p>
-      {pkg === "maintenance" ? <Compare users={users} /> : null}
+      {pkg === "maintenance" ? <Compare users={users} plan={prices.maintenance} /> : null}
       <p className="mt-6 text-center text-[0.9375rem] text-text-muted">
         30 days free, then billed monthly; cancel any time. Customer payments go to your own Stripe
         account at Stripe’s usual fees.
@@ -146,9 +146,9 @@ const people = (n: number) => (n === 1 ? "1 person" : `${n} people`);
  * route size chosen here. Sundeck Pro's price never depends on pools; Skimmer's does. Prices are
  * the competitors' public pricing, dated in the fine print.
  */
-function Compare({ users }: { users: number }) {
+function Compare({ users, plan }: { users: number; plan: Plan }) {
   const [pools, setPools] = useState(150);
-  const ours = monthlyPriceCents(PLANS.maintenance, users);
+  const ours = monthlyPriceCents(plan, users);
   const rows = [
     { name: "Sundeck Pro", basis: "Flat price, unlimited pools", monthlyCents: ours, us: true },
     ...competitorPrices(users, pools).map((c) => ({ ...c, us: false })),

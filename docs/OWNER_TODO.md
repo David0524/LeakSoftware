@@ -3,6 +3,13 @@
 Owner, 2026-10-22: "a list of things you need from me. I'll knock them out later." Newest
 first. Tick an item off by deleting it (and tell Claude, so it can check the result).
 
+## From 2026-11-24: refunds
+
+1. **Add `charge.refunded` to the live "Sundeck Pro Customers" webhook** (Developers ›
+   Webhooks › Sundeck Pro Customers, the Connected accounts one › Add events). Refunds made with
+   the new Refund button show on the invoice without it; this is for refunds a shop makes in its
+   own Stripe dashboard. Claude can't reach Stripe's settings from here.
+
 ## From 2026-11-16: Stripe live mode
 
 **Done (2026-11-16):** sundeckpro.com runs on Stripe live mode (live keys and both live webhooks;

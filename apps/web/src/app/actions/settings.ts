@@ -33,6 +33,7 @@ import { OWNER_ONLY, requireManager, requireOwner } from "@/lib/auth";
 import { friendlyDbError, isWebUrl } from "@/lib/limits";
 import { createClient } from "@/lib/supabase/server";
 import { logPriceSyncError, syncSubscriptionPrice } from "@/server/billing";
+import { createAndSendInvite } from "@/server/invites";
 import { locateCompany } from "@/server/route-days";
 import type { FormState } from "./auth";
 
@@ -340,13 +341,15 @@ export async function inviteMember(_: FormState, form: FormData): Promise<FormSt
   const role = chosenRole(form);
   if (role !== "tech" && !office.isOwner) return { error: OWNER_ONLY };
   if (!/^\S+@\S+\.\S+$/.test(email)) return { fields: { email: "Enter a valid email." } };
-  const { error } = await supabase.rpc("create_invite", {
-    target_company: office.company.id,
-    invite_email: email,
-    invite_role: role,
+  // Makes the invite and emails the link (owner, 2026-11-24).
+  const result = await createAndSendInvite(supabase, {
+    companyId: office.company.id,
+    userId: office.user.id,
+    email,
+    role,
   });
-  if (error) return failed(error);
-  return done("/settings/team", `Invite created for ${email}. Copy the link below and send it.`);
+  if (!result.ok) return failed(result.error ? { message: result.error } : null);
+  return done("/settings/team", result.message);
 }
 
 export async function revokeInvite(_: FormState, form: FormData): Promise<FormState> {

@@ -2,7 +2,14 @@ import type { Cents } from "./money";
 import { centsToDollars, toCsv } from "./invoice";
 import { companyServices, type Services } from "./models";
 import { heardFromText } from "./heard-from";
-import { billedTeamSize, chosenTeamSize, servicesPriceCents } from "./plans";
+import {
+  billedTeamSize,
+  chosenTeamSize,
+  overriddenCents,
+  overrideFromRow,
+  priceListFromJson,
+  servicesPriceCents,
+} from "./plans";
 
 // The Admin portal's numbers (owner, 2026-10-22: "Analytics, customer data, finances"). Shops
 // come from public.admin_shops(), subscription history from public.admin_metrics(). Prices
@@ -69,6 +76,16 @@ export interface AdminShop {
   referral_reward_cents?: number | null;
   /** How many shops used its referral code. */
   referrals?: number;
+  /** The price list the shop is billed under (its own when subscribed, else the newest). */
+  price_list?: unknown;
+  /** Staff's own price for this shop (Admin › the shop › Price), if any. */
+  custom_price_kind?: "fixed" | "percent" | null;
+  custom_price_cents?: number | null;
+  custom_percent_off?: number | null;
+  custom_price_until?: string | null;
+  custom_price_note?: string | null;
+  /** The shop's today (YYYY-MM-DD in its time zone), for when its own price ends. */
+  today?: string;
 }
 
 /**
@@ -106,10 +123,35 @@ const services = (v: string): Services => companyServices({ services: v });
  * What the shop's package costs a month for its team size or active people, whichever is more,
  * as Stripe bills it (whatever its standing).
  */
-export function shopPriceCents(s: Pick<AdminShop, "services" | "people" | "team_size">): Cents {
+export function shopPriceCents(
+  s: Pick<
+    AdminShop,
+    | "services"
+    | "people"
+    | "team_size"
+    | "price_list"
+    | "custom_price_kind"
+    | "custom_price_cents"
+    | "custom_percent_off"
+    | "custom_price_until"
+    | "today"
+  >,
+): Cents {
+  return overriddenCents(
+    standardPriceCents(s),
+    overrideFromRow(s),
+    s.today ?? new Date().toISOString().slice(0, 10),
+  );
+}
+
+/** The shop's price before staff's own price for it: its package, team and price list. */
+export function standardPriceCents(
+  s: Pick<AdminShop, "services" | "people" | "team_size" | "price_list">,
+): Cents {
   return servicesPriceCents(
     services(s.services),
     billedTeamSize(s.people, chosenTeamSize({ team_size: s.team_size })),
+    priceListFromJson(s.price_list),
   );
 }
 

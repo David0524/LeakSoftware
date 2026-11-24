@@ -101,6 +101,8 @@ export interface PaymentRow {
   check_number?: string | null;
   status: string;
   stripe_payment_intent_id?: string | null;
+  /** Refunded so far through Stripe (0 or missing when none); amount_cents is what's kept. */
+  refunded_cents?: number | null;
   deleted_at?: string | null;
 }
 

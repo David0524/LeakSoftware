@@ -1,0 +1,623 @@
+{
+  "constants": [
+    {
+      "args": [],
+      "result": {
+        "REFUNDABLE_METHODS": [
+          "card",
+          "ach"
+        ],
+        "REFUND_BUTTON": "Refund",
+        "REFUND_TITLE": "Refund Payment",
+        "REFUND_FULL": "Refund Full",
+        "REFUND_PART": "Refund Part",
+        "REFUND_AMOUNT_LABEL": "Amount",
+        "REFUND_OFFLINE": "Refunds need a signal."
+      }
+    }
+  ],
+  "refundableCents": [
+    {
+      "args": [
+        {
+          "amount_cents": 8000,
+          "method": "card",
+          "status": "succeeded",
+          "refunded_cents": 0
+        }
+      ],
+      "result": 8000
+    },
+    {
+      "args": [
+        {
+          "amount_cents": 8000,
+          "method": "ach",
+          "status": "succeeded",
+          "refunded_cents": 0
+        }
+      ],
+      "result": 8000
+    },
+    {
+      "args": [
+        {
+          "amount_cents": 8000,
+          "method": "cash",
+          "status": "succeeded",
+          "refunded_cents": 0
+        }
+      ],
+      "result": 0
+    },
+    {
+      "args": [
+        {
+          "amount_cents": 8000,
+          "method": "check",
+          "status": "succeeded",
+          "refunded_cents": 0
+        }
+      ],
+      "result": 0
+    },
+    {
+      "args": [
+        {
+          "amount_cents": 8000,
+          "method": "other",
+          "status": "succeeded",
+          "refunded_cents": 0
+        }
+      ],
+      "result": 0
+    },
+    {
+      "args": [
+        {
+          "amount_cents": 8000,
+          "method": "card",
+          "status": "pending",
+          "refunded_cents": 0
+        }
+      ],
+      "result": 0
+    },
+    {
+      "args": [
+        {
+          "amount_cents": 8000,
+          "method": "card",
+          "status": "failed",
+          "refunded_cents": 0
+        }
+      ],
+      "result": 0
+    },
+    {
+      "args": [
+        {
+          "amount_cents": 8000,
+          "method": "card",
+          "status": "refunded",
+          "refunded_cents": 8000
+        }
+      ],
+      "result": 0
+    },
+    {
+      "args": [
+        {
+          "amount_cents": 6000,
+          "method": "card",
+          "status": "succeeded",
+          "refunded_cents": 2000
+        }
+      ],
+      "result": 6000
+    },
+    {
+      "args": [
+        {
+          "amount_cents": 0,
+          "method": "card",
+          "status": "succeeded",
+          "refunded_cents": 8000
+        }
+      ],
+      "result": 0
+    },
+    {
+      "args": [
+        {
+          "amount_cents": 8000,
+          "method": "card",
+          "status": "succeeded"
+        }
+      ],
+      "result": 8000
+    }
+  ],
+  "canRefund": [
+    {
+      "args": [
+        "owner",
+        "paid",
+        {
+          "amount_cents": 8000,
+          "method": "card",
+          "status": "succeeded",
+          "refunded_cents": 0
+        }
+      ],
+      "result": true
+    },
+    {
+      "args": [
+        "admin",
+        "partially_paid",
+        {
+          "amount_cents": 8000,
+          "method": "card",
+          "status": "succeeded",
+          "refunded_cents": 0
+        }
+      ],
+      "result": true
+    },
+    {
+      "args": [
+        "owner",
+        "sent",
+        {
+          "amount_cents": 8000,
+          "method": "ach",
+          "status": "succeeded",
+          "refunded_cents": 0
+        }
+      ],
+      "result": true
+    },
+    {
+      "args": [
+        "tech",
+        "paid",
+        {
+          "amount_cents": 8000,
+          "method": "card",
+          "status": "succeeded",
+          "refunded_cents": 0
+        }
+      ],
+      "result": false
+    },
+    {
+      "args": [
+        "viewer",
+        "paid",
+        {
+          "amount_cents": 8000,
+          "method": "card",
+          "status": "succeeded",
+          "refunded_cents": 0
+        }
+      ],
+      "result": false
+    },
+    {
+      "args": [
+        null,
+        "paid",
+        {
+          "amount_cents": 8000,
+          "method": "card",
+          "status": "succeeded",
+          "refunded_cents": 0
+        }
+      ],
+      "result": false
+    },
+    {
+      "args": [
+        "owner",
+        "void",
+        {
+          "amount_cents": 8000,
+          "method": "card",
+          "status": "succeeded",
+          "refunded_cents": 0
+        }
+      ],
+      "result": false
+    },
+    {
+      "args": [
+        "owner",
+        "draft",
+        {
+          "amount_cents": 8000,
+          "method": "card",
+          "status": "succeeded",
+          "refunded_cents": 0
+        }
+      ],
+      "result": false
+    },
+    {
+      "args": [
+        "owner",
+        "paid",
+        {
+          "amount_cents": 8000,
+          "method": "cash",
+          "status": "succeeded",
+          "refunded_cents": 0
+        }
+      ],
+      "result": false
+    },
+    {
+      "args": [
+        "owner",
+        "paid",
+        {
+          "amount_cents": 8000,
+          "method": "card",
+          "status": "refunded",
+          "refunded_cents": 8000
+        }
+      ],
+      "result": false
+    },
+    {
+      "args": [
+        "owner",
+        "paid",
+        {
+          "amount_cents": 0,
+          "method": "card",
+          "status": "succeeded",
+          "refunded_cents": 8000
+        }
+      ],
+      "result": false
+    },
+    {
+      "args": [
+        "owner",
+        "sent",
+        {
+          "amount_cents": 6000,
+          "method": "card",
+          "status": "succeeded",
+          "refunded_cents": 2000
+        }
+      ],
+      "result": true
+    }
+  ],
+  "refundAmount": [
+    {
+      "args": [
+        false,
+        "",
+        8000
+      ],
+      "result": {
+        "cents": 8000
+      }
+    },
+    {
+      "args": [
+        false,
+        "abc",
+        8000
+      ],
+      "result": {
+        "cents": 8000
+      }
+    },
+    {
+      "args": [
+        true,
+        "20",
+        8000
+      ],
+      "result": {
+        "cents": 2000
+      }
+    },
+    {
+      "args": [
+        true,
+        "$80.00",
+        8000
+      ],
+      "result": {
+        "cents": 8000
+      }
+    },
+    {
+      "args": [
+        true,
+        " 12.5 ",
+        8000
+      ],
+      "result": {
+        "cents": 1250
+      }
+    },
+    {
+      "args": [
+        true,
+        "1,000",
+        200000
+      ],
+      "result": {
+        "cents": 100000
+      }
+    },
+    {
+      "args": [
+        true,
+        "80.01",
+        8000
+      ],
+      "result": {
+        "error": "Refund $80.00 or less."
+      }
+    },
+    {
+      "args": [
+        true,
+        "0",
+        8000
+      ],
+      "result": {
+        "error": "Enter an amount, like 25.00."
+      }
+    },
+    {
+      "args": [
+        true,
+        "-5",
+        8000
+      ],
+      "result": {
+        "error": "Enter an amount, like 25.00."
+      }
+    },
+    {
+      "args": [
+        true,
+        "",
+        8000
+      ],
+      "result": {
+        "error": "Enter an amount, like 25.00."
+      }
+    },
+    {
+      "args": [
+        true,
+        "abc",
+        8000
+      ],
+      "result": {
+        "error": "Enter an amount, like 25.00."
+      }
+    },
+    {
+      "args": [
+        true,
+        "1.234",
+        8000
+      ],
+      "result": {
+        "error": "Enter an amount, like 25.00."
+      }
+    },
+    {
+      "args": [
+        false,
+        "",
+        0
+      ],
+      "result": {
+        "error": "Nothing is left to refund on this payment."
+      }
+    },
+    {
+      "args": [
+        true,
+        "5",
+        0
+      ],
+      "result": {
+        "error": "Nothing is left to refund on this payment."
+      }
+    }
+  ],
+  "refundExplainer": [
+    {
+      "args": [
+        "card"
+      ],
+      "result": "The money goes back to the customer’s card through your Stripe account. It takes 5 to 10 business days to show. A refund can’t be undone."
+    },
+    {
+      "args": [
+        "ach"
+      ],
+      "result": "The money goes back to the customer’s bank account through your Stripe account. It takes 5 to 10 business days to show. A refund can’t be undone."
+    },
+    {
+      "args": [
+        "cash"
+      ],
+      "result": "The money goes back to the customer’s card through your Stripe account. It takes 5 to 10 business days to show. A refund can’t be undone."
+    }
+  ],
+  "refundButtonText": [
+    {
+      "args": [
+        2000
+      ],
+      "result": "Refund $20.00"
+    },
+    {
+      "args": [
+        8000
+      ],
+      "result": "Refund $80.00"
+    },
+    {
+      "args": [
+        123456
+      ],
+      "result": "Refund $1,234.56"
+    },
+    {
+      "args": [
+        5
+      ],
+      "result": "Refund $0.05"
+    }
+  ],
+  "refundDoneText": [
+    {
+      "args": [
+        2000
+      ],
+      "result": "Refunded $20.00."
+    },
+    {
+      "args": [
+        123456
+      ],
+      "result": "Refunded $1,234.56."
+    }
+  ],
+  "refundedText": [
+    {
+      "args": [
+        {
+          "amount_cents": 8000,
+          "method": "card",
+          "status": "succeeded",
+          "refunded_cents": 0
+        }
+      ],
+      "result": null
+    },
+    {
+      "args": [
+        {
+          "amount_cents": 8000,
+          "method": "ach",
+          "status": "succeeded",
+          "refunded_cents": 0
+        }
+      ],
+      "result": null
+    },
+    {
+      "args": [
+        {
+          "amount_cents": 8000,
+          "method": "cash",
+          "status": "succeeded",
+          "refunded_cents": 0
+        }
+      ],
+      "result": null
+    },
+    {
+      "args": [
+        {
+          "amount_cents": 8000,
+          "method": "check",
+          "status": "succeeded",
+          "refunded_cents": 0
+        }
+      ],
+      "result": null
+    },
+    {
+      "args": [
+        {
+          "amount_cents": 8000,
+          "method": "other",
+          "status": "succeeded",
+          "refunded_cents": 0
+        }
+      ],
+      "result": null
+    },
+    {
+      "args": [
+        {
+          "amount_cents": 8000,
+          "method": "card",
+          "status": "pending",
+          "refunded_cents": 0
+        }
+      ],
+      "result": null
+    },
+    {
+      "args": [
+        {
+          "amount_cents": 8000,
+          "method": "card",
+          "status": "failed",
+          "refunded_cents": 0
+        }
+      ],
+      "result": null
+    },
+    {
+      "args": [
+        {
+          "amount_cents": 8000,
+          "method": "card",
+          "status": "refunded",
+          "refunded_cents": 8000
+        }
+      ],
+      "result": null
+    },
+    {
+      "args": [
+        {
+          "amount_cents": 6000,
+          "method": "card",
+          "status": "succeeded",
+          "refunded_cents": 2000
+        }
+      ],
+      "result": "Refunded $20.00"
+    },
+    {
+      "args": [
+        {
+          "amount_cents": 0,
+          "method": "card",
+          "status": "succeeded",
+          "refunded_cents": 8000
+        }
+      ],
+      "result": "Refunded $80.00"
+    },
+    {
+      "args": [
+        {
+          "amount_cents": 8000,
+          "method": "card",
+          "status": "succeeded"
+        }
+      ],
+      "result": null
+    }
+  ]
+}
