@@ -27,7 +27,8 @@
             ScreenScroll {
                 Segmented(
                     selection: $segment, options: QuoteSegment.allCases, label: \.label, title: "Show",
-                    fillsWidth: true)
+                    // Four equal segments: 8 a side so Accepted and Declined fit unshrunk.
+                    fillsWidth: true, segmentPadding: 8)
                 if !loaded {
                     SkeletonRows(count: 4, dot: false, label: "Loading quotes")
                 } else if shown.isEmpty {
