@@ -2,6 +2,14 @@
 
 Newest first. Each entry: date, decision, reason.
 
+## 2026-11-24 (owner: "Is there a way to transfer those over without the customer resigning up?" about a shop's PayThePoolMan autopay customers; "Yes build it and then a nice little card to share with the owner with instructions")
+- **Import Saved Cards** (Settings › Payments and Deposits › Moving from other software, once the shop takes payments). The shop copies its customers from its old Stripe account to its Sundeck Pro account with Stripe's own Copy Customers (cards and US bank accounts copy; customer IDs stay the same). The page then lists the copied customers with a card and matches each to a Sundeck customer by email, then phone, then a person's or company's name, only when exactly one fits. Stronger matches win a customer; ties and misses go to Needs a Match, where the owner chooses the customer or leaves them out. Expired cards and customers who already have a card are listed but off by default. Turn On Autopay (after a confirmation) saves each card through the same path as Save for Autopay (`autopay_save_method`, then `stripe_save_customer`), with the card read again from Stripe on the server. No new table. Words and matching in core `card-import.ts`.
+- **Website only, reached from all four platforms:** the iPhone's Payments and Deposits already opens the website page, and Android's Payments screen gets an Import Saved Cards row that opens it (shown when `/api/payments/status` says `ready`), as Stripe setup and Import Customers are. Reason: a one-time job with long lists, like importing customers.
+- **PayThePoolMan charges saved cards itself** (on a set day, against the latest unpaid invoice), not through Stripe subscriptions. So the shop turns off autopay there before its first billing here; the page says so.
+
+## 2026-11-24 (first live shop: "Couldn't start the payment" on Pay by Card)
+- **Link only when the shop's Stripe account has it on.** Card checkouts always asked for `["card", "link"]`, and Stripe refuses the whole session when Link isn't active on the connected account. Link now follows the same capability check (`link_payments`) as Affirm and Klarna; failed checkouts log Stripe's error.
+
 ## 2026-11-24 (owner: "Let's add Tech specific stats in the dashboard"; chose jobs, money, and customer feedback, as a "By Tech" list)
 - **The Dashboard has a By tech list on all four platforms**, below Jobs by Status: one row per tech with their team color, over the same six months. Each row: jobs done and open, invoiced, collected (on the right), thumbs up and down, and average time on site. Most collected first. Quotes and close rate per tech were offered and not chosen. Migration `20261022005500_dashboard_techs.sql` (`owner_dashboard` returns `techs`).
 - **A job counts for its assigned tech only**, not the second tech, so money is never counted twice (Claude's call).

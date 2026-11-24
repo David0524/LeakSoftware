@@ -43,9 +43,11 @@ export async function autopayAction(
 
 /**
  * Settings › Payments and Deposits: whether Affirm and Klarna are on in the shop's Stripe
- * account (the server asks Stripe), or null offline.
+ * account (the server asks Stripe), and whether it takes payments; null offline.
  */
-export async function payOverTimeStatusLine(companyId: string): Promise<string | null> {
+export async function paymentsStatus(
+  companyId: string,
+): Promise<{ payOverTime: string | null; ready: boolean } | null> {
   if (!API_URL) return null;
   const token = await getServices().sync.accessToken();
   if (!token) return null;
@@ -55,7 +57,8 @@ export async function payOverTimeStatusLine(companyId: string): Promise<string |
       { headers: { authorization: `Bearer ${token}` } },
     );
     if (!res.ok) return null;
-    return ((await res.json()) as { payOverTime?: string }).payOverTime ?? null;
+    const body = (await res.json()) as { payOverTime?: string; ready?: boolean };
+    return { payOverTime: body.payOverTime ?? null, ready: body.ready === true };
   } catch {
     return null;
   }
