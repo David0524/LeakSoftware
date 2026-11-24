@@ -1,0 +1,2622 @@
+{
+  "QUOTE_TEXTS": [
+    {
+      "args": [],
+      "result": {
+        "QUOTE_SEGMENTS": [
+          {
+            "key": "draft",
+            "label": "Draft"
+          },
+          {
+            "key": "sent",
+            "label": "Sent"
+          },
+          {
+            "key": "accepted",
+            "label": "Accepted"
+          },
+          {
+            "key": "declined",
+            "label": "Declined"
+          }
+        ],
+        "DEFAULT_QUOTE_SEGMENT": "sent",
+        "QUOTE_NEEDS_POOL": "Accepted. Add a pool to schedule the repair.",
+        "QUOTES_EMPTY": {
+          "draft": "No draft quotes.",
+          "sent": "No quotes waiting on a customer.",
+          "accepted": "No accepted quotes yet.",
+          "declined": "No declined or expired quotes."
+        },
+        "QUOTES_EMPTY_SEARCH": "No quotes match your search."
+      }
+    }
+  ],
+  "isQuoteJob": [
+    {
+      "args": [
+        "unscheduled"
+      ],
+      "result": false
+    },
+    {
+      "args": [
+        "scheduled"
+      ],
+      "result": false
+    },
+    {
+      "args": [
+        "in_progress"
+      ],
+      "result": false
+    },
+    {
+      "args": [
+        "report_sent"
+      ],
+      "result": false
+    },
+    {
+      "args": [
+        "quote_sent"
+      ],
+      "result": false
+    },
+    {
+      "args": [
+        "quote_accepted"
+      ],
+      "result": false
+    },
+    {
+      "args": [
+        "invoiced"
+      ],
+      "result": false
+    },
+    {
+      "args": [
+        "paid"
+      ],
+      "result": false
+    },
+    {
+      "args": [
+        "canceled"
+      ],
+      "result": false
+    },
+    {
+      "args": [
+        "done"
+      ],
+      "result": false
+    },
+    {
+      "args": [
+        "skipped"
+      ],
+      "result": false
+    },
+    {
+      "args": [
+        "quote"
+      ],
+      "result": true
+    },
+    {
+      "args": [
+        "bogus"
+      ],
+      "result": false
+    },
+    {
+      "args": [
+        ""
+      ],
+      "result": false
+    }
+  ],
+  "quoteSegment": [
+    {
+      "args": [
+        "draft"
+      ],
+      "result": "draft"
+    },
+    {
+      "args": [
+        "sent"
+      ],
+      "result": "sent"
+    },
+    {
+      "args": [
+        "accepted"
+      ],
+      "result": "accepted"
+    },
+    {
+      "args": [
+        "declined"
+      ],
+      "result": "declined"
+    },
+    {
+      "args": [
+        "expired"
+      ],
+      "result": "declined"
+    }
+  ],
+  "quoteWaitingForPool": [
+    {
+      "args": [
+        "draft",
+        "quote"
+      ],
+      "result": false
+    },
+    {
+      "args": [
+        "draft",
+        "unscheduled"
+      ],
+      "result": false
+    },
+    {
+      "args": [
+        "draft",
+        "scheduled"
+      ],
+      "result": false
+    },
+    {
+      "args": [
+        "sent",
+        "quote"
+      ],
+      "result": false
+    },
+    {
+      "args": [
+        "sent",
+        "unscheduled"
+      ],
+      "result": false
+    },
+    {
+      "args": [
+        "sent",
+        "scheduled"
+      ],
+      "result": false
+    },
+    {
+      "args": [
+        "accepted",
+        "quote"
+      ],
+      "result": true
+    },
+    {
+      "args": [
+        "accepted",
+        "unscheduled"
+      ],
+      "result": false
+    },
+    {
+      "args": [
+        "accepted",
+        "scheduled"
+      ],
+      "result": false
+    },
+    {
+      "args": [
+        "declined",
+        "quote"
+      ],
+      "result": false
+    },
+    {
+      "args": [
+        "declined",
+        "unscheduled"
+      ],
+      "result": false
+    },
+    {
+      "args": [
+        "declined",
+        "scheduled"
+      ],
+      "result": false
+    },
+    {
+      "args": [
+        "expired",
+        "quote"
+      ],
+      "result": false
+    },
+    {
+      "args": [
+        "expired",
+        "unscheduled"
+      ],
+      "result": false
+    },
+    {
+      "args": [
+        "expired",
+        "scheduled"
+      ],
+      "result": false
+    }
+  ],
+  "filterQuotes": [
+    {
+      "args": [
+        [
+          {
+            "number": 1001,
+            "status": "sent",
+            "total_cents": 125000,
+            "customer": "Jane Diaz",
+            "jobStatus": "quote"
+          },
+          {
+            "number": 1002,
+            "status": "draft",
+            "total_cents": 125000,
+            "customer": "Jane Diaz",
+            "jobStatus": "quote"
+          },
+          {
+            "number": 1003,
+            "status": "sent",
+            "total_cents": 125000,
+            "customer": "Bo Lee",
+            "jobStatus": "unscheduled",
+            "jobNumber": 1050
+          },
+          {
+            "number": null,
+            "status": "draft",
+            "total_cents": 125000,
+            "customer": null,
+            "jobStatus": "quote"
+          },
+          {
+            "number": 1004,
+            "status": "expired",
+            "total_cents": 125000,
+            "customer": "Ana Ruiz",
+            "jobStatus": "quote"
+          },
+          {
+            "number": 1005,
+            "status": "declined",
+            "total_cents": 125000,
+            "customer": "ANA RUIZ",
+            "jobStatus": "quote"
+          },
+          {
+            "number": 1006,
+            "status": "accepted",
+            "total_cents": 125000,
+            "customer": "Jane Diaz",
+            "jobStatus": "quote"
+          },
+          {
+            "number": 1007,
+            "status": "accepted",
+            "total_cents": 125000,
+            "customer": "Jane Diaz",
+            "jobStatus": "unscheduled",
+            "jobNumber": 1060
+          }
+        ],
+        null,
+        null
+      ],
+      "result": [
+        1001,
+        1003
+      ]
+    },
+    {
+      "args": [
+        [
+          {
+            "number": 1001,
+            "status": "sent",
+            "total_cents": 125000,
+            "customer": "Jane Diaz",
+            "jobStatus": "quote"
+          },
+          {
+            "number": 1002,
+            "status": "draft",
+            "total_cents": 125000,
+            "customer": "Jane Diaz",
+            "jobStatus": "quote"
+          },
+          {
+            "number": 1003,
+            "status": "sent",
+            "total_cents": 125000,
+            "customer": "Bo Lee",
+            "jobStatus": "unscheduled",
+            "jobNumber": 1050
+          },
+          {
+            "number": null,
+            "status": "draft",
+            "total_cents": 125000,
+            "customer": null,
+            "jobStatus": "quote"
+          },
+          {
+            "number": 1004,
+            "status": "expired",
+            "total_cents": 125000,
+            "customer": "Ana Ruiz",
+            "jobStatus": "quote"
+          },
+          {
+            "number": 1005,
+            "status": "declined",
+            "total_cents": 125000,
+            "customer": "ANA RUIZ",
+            "jobStatus": "quote"
+          },
+          {
+            "number": 1006,
+            "status": "accepted",
+            "total_cents": 125000,
+            "customer": "Jane Diaz",
+            "jobStatus": "quote"
+          },
+          {
+            "number": 1007,
+            "status": "accepted",
+            "total_cents": 125000,
+            "customer": "Jane Diaz",
+            "jobStatus": "unscheduled",
+            "jobNumber": 1060
+          }
+        ],
+        "draft",
+        null
+      ],
+      "result": [
+        1002,
+        null
+      ]
+    },
+    {
+      "args": [
+        [
+          {
+            "number": 1001,
+            "status": "sent",
+            "total_cents": 125000,
+            "customer": "Jane Diaz",
+            "jobStatus": "quote"
+          },
+          {
+            "number": 1002,
+            "status": "draft",
+            "total_cents": 125000,
+            "customer": "Jane Diaz",
+            "jobStatus": "quote"
+          },
+          {
+            "number": 1003,
+            "status": "sent",
+            "total_cents": 125000,
+            "customer": "Bo Lee",
+            "jobStatus": "unscheduled",
+            "jobNumber": 1050
+          },
+          {
+            "number": null,
+            "status": "draft",
+            "total_cents": 125000,
+            "customer": null,
+            "jobStatus": "quote"
+          },
+          {
+            "number": 1004,
+            "status": "expired",
+            "total_cents": 125000,
+            "customer": "Ana Ruiz",
+            "jobStatus": "quote"
+          },
+          {
+            "number": 1005,
+            "status": "declined",
+            "total_cents": 125000,
+            "customer": "ANA RUIZ",
+            "jobStatus": "quote"
+          },
+          {
+            "number": 1006,
+            "status": "accepted",
+            "total_cents": 125000,
+            "customer": "Jane Diaz",
+            "jobStatus": "quote"
+          },
+          {
+            "number": 1007,
+            "status": "accepted",
+            "total_cents": 125000,
+            "customer": "Jane Diaz",
+            "jobStatus": "unscheduled",
+            "jobNumber": 1060
+          }
+        ],
+        "sent",
+        ""
+      ],
+      "result": [
+        1001,
+        1003
+      ]
+    },
+    {
+      "args": [
+        [
+          {
+            "number": 1001,
+            "status": "sent",
+            "total_cents": 125000,
+            "customer": "Jane Diaz",
+            "jobStatus": "quote"
+          },
+          {
+            "number": 1002,
+            "status": "draft",
+            "total_cents": 125000,
+            "customer": "Jane Diaz",
+            "jobStatus": "quote"
+          },
+          {
+            "number": 1003,
+            "status": "sent",
+            "total_cents": 125000,
+            "customer": "Bo Lee",
+            "jobStatus": "unscheduled",
+            "jobNumber": 1050
+          },
+          {
+            "number": null,
+            "status": "draft",
+            "total_cents": 125000,
+            "customer": null,
+            "jobStatus": "quote"
+          },
+          {
+            "number": 1004,
+            "status": "expired",
+            "total_cents": 125000,
+            "customer": "Ana Ruiz",
+            "jobStatus": "quote"
+          },
+          {
+            "number": 1005,
+            "status": "declined",
+            "total_cents": 125000,
+            "customer": "ANA RUIZ",
+            "jobStatus": "quote"
+          },
+          {
+            "number": 1006,
+            "status": "accepted",
+            "total_cents": 125000,
+            "customer": "Jane Diaz",
+            "jobStatus": "quote"
+          },
+          {
+            "number": 1007,
+            "status": "accepted",
+            "total_cents": 125000,
+            "customer": "Jane Diaz",
+            "jobStatus": "unscheduled",
+            "jobNumber": 1060
+          }
+        ],
+        "accepted",
+        null
+      ],
+      "result": [
+        1006,
+        1007
+      ]
+    },
+    {
+      "args": [
+        [
+          {
+            "number": 1001,
+            "status": "sent",
+            "total_cents": 125000,
+            "customer": "Jane Diaz",
+            "jobStatus": "quote"
+          },
+          {
+            "number": 1002,
+            "status": "draft",
+            "total_cents": 125000,
+            "customer": "Jane Diaz",
+            "jobStatus": "quote"
+          },
+          {
+            "number": 1003,
+            "status": "sent",
+            "total_cents": 125000,
+            "customer": "Bo Lee",
+            "jobStatus": "unscheduled",
+            "jobNumber": 1050
+          },
+          {
+            "number": null,
+            "status": "draft",
+            "total_cents": 125000,
+            "customer": null,
+            "jobStatus": "quote"
+          },
+          {
+            "number": 1004,
+            "status": "expired",
+            "total_cents": 125000,
+            "customer": "Ana Ruiz",
+            "jobStatus": "quote"
+          },
+          {
+            "number": 1005,
+            "status": "declined",
+            "total_cents": 125000,
+            "customer": "ANA RUIZ",
+            "jobStatus": "quote"
+          },
+          {
+            "number": 1006,
+            "status": "accepted",
+            "total_cents": 125000,
+            "customer": "Jane Diaz",
+            "jobStatus": "quote"
+          },
+          {
+            "number": 1007,
+            "status": "accepted",
+            "total_cents": 125000,
+            "customer": "Jane Diaz",
+            "jobStatus": "unscheduled",
+            "jobNumber": 1060
+          }
+        ],
+        "declined",
+        null
+      ],
+      "result": [
+        1004,
+        1005
+      ]
+    },
+    {
+      "args": [
+        [
+          {
+            "number": 1001,
+            "status": "sent",
+            "total_cents": 125000,
+            "customer": "Jane Diaz",
+            "jobStatus": "quote"
+          },
+          {
+            "number": 1002,
+            "status": "draft",
+            "total_cents": 125000,
+            "customer": "Jane Diaz",
+            "jobStatus": "quote"
+          },
+          {
+            "number": 1003,
+            "status": "sent",
+            "total_cents": 125000,
+            "customer": "Bo Lee",
+            "jobStatus": "unscheduled",
+            "jobNumber": 1050
+          },
+          {
+            "number": null,
+            "status": "draft",
+            "total_cents": 125000,
+            "customer": null,
+            "jobStatus": "quote"
+          },
+          {
+            "number": 1004,
+            "status": "expired",
+            "total_cents": 125000,
+            "customer": "Ana Ruiz",
+            "jobStatus": "quote"
+          },
+          {
+            "number": 1005,
+            "status": "declined",
+            "total_cents": 125000,
+            "customer": "ANA RUIZ",
+            "jobStatus": "quote"
+          },
+          {
+            "number": 1006,
+            "status": "accepted",
+            "total_cents": 125000,
+            "customer": "Jane Diaz",
+            "jobStatus": "quote"
+          },
+          {
+            "number": 1007,
+            "status": "accepted",
+            "total_cents": 125000,
+            "customer": "Jane Diaz",
+            "jobStatus": "unscheduled",
+            "jobNumber": 1060
+          }
+        ],
+        "bogus",
+        null
+      ],
+      "result": [
+        1001,
+        1003
+      ]
+    },
+    {
+      "args": [
+        [
+          {
+            "number": 1001,
+            "status": "sent",
+            "total_cents": 125000,
+            "customer": "Jane Diaz",
+            "jobStatus": "quote"
+          },
+          {
+            "number": 1002,
+            "status": "draft",
+            "total_cents": 125000,
+            "customer": "Jane Diaz",
+            "jobStatus": "quote"
+          },
+          {
+            "number": 1003,
+            "status": "sent",
+            "total_cents": 125000,
+            "customer": "Bo Lee",
+            "jobStatus": "unscheduled",
+            "jobNumber": 1050
+          },
+          {
+            "number": null,
+            "status": "draft",
+            "total_cents": 125000,
+            "customer": null,
+            "jobStatus": "quote"
+          },
+          {
+            "number": 1004,
+            "status": "expired",
+            "total_cents": 125000,
+            "customer": "Ana Ruiz",
+            "jobStatus": "quote"
+          },
+          {
+            "number": 1005,
+            "status": "declined",
+            "total_cents": 125000,
+            "customer": "ANA RUIZ",
+            "jobStatus": "quote"
+          },
+          {
+            "number": 1006,
+            "status": "accepted",
+            "total_cents": 125000,
+            "customer": "Jane Diaz",
+            "jobStatus": "quote"
+          },
+          {
+            "number": 1007,
+            "status": "accepted",
+            "total_cents": 125000,
+            "customer": "Jane Diaz",
+            "jobStatus": "unscheduled",
+            "jobNumber": 1060
+          }
+        ],
+        "sent",
+        "diaz"
+      ],
+      "result": [
+        1001
+      ]
+    },
+    {
+      "args": [
+        [
+          {
+            "number": 1001,
+            "status": "sent",
+            "total_cents": 125000,
+            "customer": "Jane Diaz",
+            "jobStatus": "quote"
+          },
+          {
+            "number": 1002,
+            "status": "draft",
+            "total_cents": 125000,
+            "customer": "Jane Diaz",
+            "jobStatus": "quote"
+          },
+          {
+            "number": 1003,
+            "status": "sent",
+            "total_cents": 125000,
+            "customer": "Bo Lee",
+            "jobStatus": "unscheduled",
+            "jobNumber": 1050
+          },
+          {
+            "number": null,
+            "status": "draft",
+            "total_cents": 125000,
+            "customer": null,
+            "jobStatus": "quote"
+          },
+          {
+            "number": 1004,
+            "status": "expired",
+            "total_cents": 125000,
+            "customer": "Ana Ruiz",
+            "jobStatus": "quote"
+          },
+          {
+            "number": 1005,
+            "status": "declined",
+            "total_cents": 125000,
+            "customer": "ANA RUIZ",
+            "jobStatus": "quote"
+          },
+          {
+            "number": 1006,
+            "status": "accepted",
+            "total_cents": 125000,
+            "customer": "Jane Diaz",
+            "jobStatus": "quote"
+          },
+          {
+            "number": 1007,
+            "status": "accepted",
+            "total_cents": 125000,
+            "customer": "Jane Diaz",
+            "jobStatus": "unscheduled",
+            "jobNumber": 1060
+          }
+        ],
+        "sent",
+        "  DIAZ  "
+      ],
+      "result": [
+        1001
+      ]
+    },
+    {
+      "args": [
+        [
+          {
+            "number": 1001,
+            "status": "sent",
+            "total_cents": 125000,
+            "customer": "Jane Diaz",
+            "jobStatus": "quote"
+          },
+          {
+            "number": 1002,
+            "status": "draft",
+            "total_cents": 125000,
+            "customer": "Jane Diaz",
+            "jobStatus": "quote"
+          },
+          {
+            "number": 1003,
+            "status": "sent",
+            "total_cents": 125000,
+            "customer": "Bo Lee",
+            "jobStatus": "unscheduled",
+            "jobNumber": 1050
+          },
+          {
+            "number": null,
+            "status": "draft",
+            "total_cents": 125000,
+            "customer": null,
+            "jobStatus": "quote"
+          },
+          {
+            "number": 1004,
+            "status": "expired",
+            "total_cents": 125000,
+            "customer": "Ana Ruiz",
+            "jobStatus": "quote"
+          },
+          {
+            "number": 1005,
+            "status": "declined",
+            "total_cents": 125000,
+            "customer": "ANA RUIZ",
+            "jobStatus": "quote"
+          },
+          {
+            "number": 1006,
+            "status": "accepted",
+            "total_cents": 125000,
+            "customer": "Jane Diaz",
+            "jobStatus": "quote"
+          },
+          {
+            "number": 1007,
+            "status": "accepted",
+            "total_cents": 125000,
+            "customer": "Jane Diaz",
+            "jobStatus": "unscheduled",
+            "jobNumber": 1060
+          }
+        ],
+        "sent",
+        "#1003"
+      ],
+      "result": [
+        1003
+      ]
+    },
+    {
+      "args": [
+        [
+          {
+            "number": 1001,
+            "status": "sent",
+            "total_cents": 125000,
+            "customer": "Jane Diaz",
+            "jobStatus": "quote"
+          },
+          {
+            "number": 1002,
+            "status": "draft",
+            "total_cents": 125000,
+            "customer": "Jane Diaz",
+            "jobStatus": "quote"
+          },
+          {
+            "number": 1003,
+            "status": "sent",
+            "total_cents": 125000,
+            "customer": "Bo Lee",
+            "jobStatus": "unscheduled",
+            "jobNumber": 1050
+          },
+          {
+            "number": null,
+            "status": "draft",
+            "total_cents": 125000,
+            "customer": null,
+            "jobStatus": "quote"
+          },
+          {
+            "number": 1004,
+            "status": "expired",
+            "total_cents": 125000,
+            "customer": "Ana Ruiz",
+            "jobStatus": "quote"
+          },
+          {
+            "number": 1005,
+            "status": "declined",
+            "total_cents": 125000,
+            "customer": "ANA RUIZ",
+            "jobStatus": "quote"
+          },
+          {
+            "number": 1006,
+            "status": "accepted",
+            "total_cents": 125000,
+            "customer": "Jane Diaz",
+            "jobStatus": "quote"
+          },
+          {
+            "number": 1007,
+            "status": "accepted",
+            "total_cents": 125000,
+            "customer": "Jane Diaz",
+            "jobStatus": "unscheduled",
+            "jobNumber": 1060
+          }
+        ],
+        "sent",
+        "1050"
+      ],
+      "result": [
+        1003
+      ]
+    },
+    {
+      "args": [
+        [
+          {
+            "number": 1001,
+            "status": "sent",
+            "total_cents": 125000,
+            "customer": "Jane Diaz",
+            "jobStatus": "quote"
+          },
+          {
+            "number": 1002,
+            "status": "draft",
+            "total_cents": 125000,
+            "customer": "Jane Diaz",
+            "jobStatus": "quote"
+          },
+          {
+            "number": 1003,
+            "status": "sent",
+            "total_cents": 125000,
+            "customer": "Bo Lee",
+            "jobStatus": "unscheduled",
+            "jobNumber": 1050
+          },
+          {
+            "number": null,
+            "status": "draft",
+            "total_cents": 125000,
+            "customer": null,
+            "jobStatus": "quote"
+          },
+          {
+            "number": 1004,
+            "status": "expired",
+            "total_cents": 125000,
+            "customer": "Ana Ruiz",
+            "jobStatus": "quote"
+          },
+          {
+            "number": 1005,
+            "status": "declined",
+            "total_cents": 125000,
+            "customer": "ANA RUIZ",
+            "jobStatus": "quote"
+          },
+          {
+            "number": 1006,
+            "status": "accepted",
+            "total_cents": 125000,
+            "customer": "Jane Diaz",
+            "jobStatus": "quote"
+          },
+          {
+            "number": 1007,
+            "status": "accepted",
+            "total_cents": 125000,
+            "customer": "Jane Diaz",
+            "jobStatus": "unscheduled",
+            "jobNumber": 1060
+          }
+        ],
+        "sent",
+        "105"
+      ],
+      "result": []
+    },
+    {
+      "args": [
+        [
+          {
+            "number": 1001,
+            "status": "sent",
+            "total_cents": 125000,
+            "customer": "Jane Diaz",
+            "jobStatus": "quote"
+          },
+          {
+            "number": 1002,
+            "status": "draft",
+            "total_cents": 125000,
+            "customer": "Jane Diaz",
+            "jobStatus": "quote"
+          },
+          {
+            "number": 1003,
+            "status": "sent",
+            "total_cents": 125000,
+            "customer": "Bo Lee",
+            "jobStatus": "unscheduled",
+            "jobNumber": 1050
+          },
+          {
+            "number": null,
+            "status": "draft",
+            "total_cents": 125000,
+            "customer": null,
+            "jobStatus": "quote"
+          },
+          {
+            "number": 1004,
+            "status": "expired",
+            "total_cents": 125000,
+            "customer": "Ana Ruiz",
+            "jobStatus": "quote"
+          },
+          {
+            "number": 1005,
+            "status": "declined",
+            "total_cents": 125000,
+            "customer": "ANA RUIZ",
+            "jobStatus": "quote"
+          },
+          {
+            "number": 1006,
+            "status": "accepted",
+            "total_cents": 125000,
+            "customer": "Jane Diaz",
+            "jobStatus": "quote"
+          },
+          {
+            "number": 1007,
+            "status": "accepted",
+            "total_cents": 125000,
+            "customer": "Jane Diaz",
+            "jobStatus": "unscheduled",
+            "jobNumber": 1060
+          }
+        ],
+        "declined",
+        "ana"
+      ],
+      "result": [
+        1004,
+        1005
+      ]
+    },
+    {
+      "args": [
+        [
+          {
+            "number": 1001,
+            "status": "sent",
+            "total_cents": 125000,
+            "customer": "Jane Diaz",
+            "jobStatus": "quote"
+          },
+          {
+            "number": 1002,
+            "status": "draft",
+            "total_cents": 125000,
+            "customer": "Jane Diaz",
+            "jobStatus": "quote"
+          },
+          {
+            "number": 1003,
+            "status": "sent",
+            "total_cents": 125000,
+            "customer": "Bo Lee",
+            "jobStatus": "unscheduled",
+            "jobNumber": 1050
+          },
+          {
+            "number": null,
+            "status": "draft",
+            "total_cents": 125000,
+            "customer": null,
+            "jobStatus": "quote"
+          },
+          {
+            "number": 1004,
+            "status": "expired",
+            "total_cents": 125000,
+            "customer": "Ana Ruiz",
+            "jobStatus": "quote"
+          },
+          {
+            "number": 1005,
+            "status": "declined",
+            "total_cents": 125000,
+            "customer": "ANA RUIZ",
+            "jobStatus": "quote"
+          },
+          {
+            "number": 1006,
+            "status": "accepted",
+            "total_cents": 125000,
+            "customer": "Jane Diaz",
+            "jobStatus": "quote"
+          },
+          {
+            "number": 1007,
+            "status": "accepted",
+            "total_cents": 125000,
+            "customer": "Jane Diaz",
+            "jobStatus": "unscheduled",
+            "jobNumber": 1060
+          }
+        ],
+        "accepted",
+        "1060"
+      ],
+      "result": [
+        1007
+      ]
+    },
+    {
+      "args": [
+        [
+          {
+            "number": 1001,
+            "status": "sent",
+            "total_cents": 125000,
+            "customer": "Jane Diaz",
+            "jobStatus": "quote"
+          },
+          {
+            "number": 1002,
+            "status": "draft",
+            "total_cents": 125000,
+            "customer": "Jane Diaz",
+            "jobStatus": "quote"
+          },
+          {
+            "number": 1003,
+            "status": "sent",
+            "total_cents": 125000,
+            "customer": "Bo Lee",
+            "jobStatus": "unscheduled",
+            "jobNumber": 1050
+          },
+          {
+            "number": null,
+            "status": "draft",
+            "total_cents": 125000,
+            "customer": null,
+            "jobStatus": "quote"
+          },
+          {
+            "number": 1004,
+            "status": "expired",
+            "total_cents": 125000,
+            "customer": "Ana Ruiz",
+            "jobStatus": "quote"
+          },
+          {
+            "number": 1005,
+            "status": "declined",
+            "total_cents": 125000,
+            "customer": "ANA RUIZ",
+            "jobStatus": "quote"
+          },
+          {
+            "number": 1006,
+            "status": "accepted",
+            "total_cents": 125000,
+            "customer": "Jane Diaz",
+            "jobStatus": "quote"
+          },
+          {
+            "number": 1007,
+            "status": "accepted",
+            "total_cents": 125000,
+            "customer": "Jane Diaz",
+            "jobStatus": "unscheduled",
+            "jobNumber": 1060
+          }
+        ],
+        "draft",
+        "#"
+      ],
+      "result": [
+        1002,
+        null
+      ]
+    },
+    {
+      "args": [
+        [
+          {
+            "number": 1001,
+            "status": "sent",
+            "total_cents": 125000,
+            "customer": "Jane Diaz",
+            "jobStatus": "quote"
+          },
+          {
+            "number": 1002,
+            "status": "draft",
+            "total_cents": 125000,
+            "customer": "Jane Diaz",
+            "jobStatus": "quote"
+          },
+          {
+            "number": 1003,
+            "status": "sent",
+            "total_cents": 125000,
+            "customer": "Bo Lee",
+            "jobStatus": "unscheduled",
+            "jobNumber": 1050
+          },
+          {
+            "number": null,
+            "status": "draft",
+            "total_cents": 125000,
+            "customer": null,
+            "jobStatus": "quote"
+          },
+          {
+            "number": 1004,
+            "status": "expired",
+            "total_cents": 125000,
+            "customer": "Ana Ruiz",
+            "jobStatus": "quote"
+          },
+          {
+            "number": 1005,
+            "status": "declined",
+            "total_cents": 125000,
+            "customer": "ANA RUIZ",
+            "jobStatus": "quote"
+          },
+          {
+            "number": 1006,
+            "status": "accepted",
+            "total_cents": 125000,
+            "customer": "Jane Diaz",
+            "jobStatus": "quote"
+          },
+          {
+            "number": 1007,
+            "status": "accepted",
+            "total_cents": 125000,
+            "customer": "Jane Diaz",
+            "jobStatus": "unscheduled",
+            "jobNumber": 1060
+          }
+        ],
+        "draft",
+        "jane"
+      ],
+      "result": [
+        1002
+      ]
+    },
+    {
+      "args": [
+        [
+          {
+            "number": 1001,
+            "status": "sent",
+            "total_cents": 125000,
+            "customer": "Jane Diaz",
+            "jobStatus": "quote"
+          },
+          {
+            "number": 1002,
+            "status": "draft",
+            "total_cents": 125000,
+            "customer": "Jane Diaz",
+            "jobStatus": "quote"
+          },
+          {
+            "number": 1003,
+            "status": "sent",
+            "total_cents": 125000,
+            "customer": "Bo Lee",
+            "jobStatus": "unscheduled",
+            "jobNumber": 1050
+          },
+          {
+            "number": null,
+            "status": "draft",
+            "total_cents": 125000,
+            "customer": null,
+            "jobStatus": "quote"
+          },
+          {
+            "number": 1004,
+            "status": "expired",
+            "total_cents": 125000,
+            "customer": "Ana Ruiz",
+            "jobStatus": "quote"
+          },
+          {
+            "number": 1005,
+            "status": "declined",
+            "total_cents": 125000,
+            "customer": "ANA RUIZ",
+            "jobStatus": "quote"
+          },
+          {
+            "number": 1006,
+            "status": "accepted",
+            "total_cents": 125000,
+            "customer": "Jane Diaz",
+            "jobStatus": "quote"
+          },
+          {
+            "number": 1007,
+            "status": "accepted",
+            "total_cents": 125000,
+            "customer": "Jane Diaz",
+            "jobStatus": "unscheduled",
+            "jobNumber": 1060
+          }
+        ],
+        "sent",
+        "nobody"
+      ],
+      "result": []
+    },
+    {
+      "args": [
+        [],
+        null,
+        null
+      ],
+      "result": []
+    }
+  ],
+  "quoteSegmentCounts": [
+    {
+      "args": [
+        [
+          {
+            "number": 1001,
+            "status": "sent",
+            "total_cents": 125000,
+            "customer": "Jane Diaz",
+            "jobStatus": "quote"
+          },
+          {
+            "number": 1002,
+            "status": "draft",
+            "total_cents": 125000,
+            "customer": "Jane Diaz",
+            "jobStatus": "quote"
+          },
+          {
+            "number": 1003,
+            "status": "sent",
+            "total_cents": 125000,
+            "customer": "Bo Lee",
+            "jobStatus": "unscheduled",
+            "jobNumber": 1050
+          },
+          {
+            "number": null,
+            "status": "draft",
+            "total_cents": 125000,
+            "customer": null,
+            "jobStatus": "quote"
+          },
+          {
+            "number": 1004,
+            "status": "expired",
+            "total_cents": 125000,
+            "customer": "Ana Ruiz",
+            "jobStatus": "quote"
+          },
+          {
+            "number": 1005,
+            "status": "declined",
+            "total_cents": 125000,
+            "customer": "ANA RUIZ",
+            "jobStatus": "quote"
+          },
+          {
+            "number": 1006,
+            "status": "accepted",
+            "total_cents": 125000,
+            "customer": "Jane Diaz",
+            "jobStatus": "quote"
+          },
+          {
+            "number": 1007,
+            "status": "accepted",
+            "total_cents": 125000,
+            "customer": "Jane Diaz",
+            "jobStatus": "unscheduled",
+            "jobNumber": 1060
+          }
+        ]
+      ],
+      "result": {
+        "draft": 2,
+        "sent": 2,
+        "accepted": 2,
+        "declined": 2
+      }
+    },
+    {
+      "args": [
+        []
+      ],
+      "result": {
+        "draft": 0,
+        "sent": 0,
+        "accepted": 0,
+        "declined": 0
+      }
+    }
+  ],
+  "quoteTitle": [
+    {
+      "args": [
+        1043
+      ],
+      "result": "Quote #1043"
+    },
+    {
+      "args": [
+        null
+      ],
+      "result": "Quote"
+    },
+    {
+      "args": [
+        0
+      ],
+      "result": "Quote #0"
+    },
+    {
+      "args": [
+        1038
+      ],
+      "result": "Quote #1038"
+    }
+  ],
+  "quoteRowDetail": [
+    {
+      "args": [
+        1043,
+        125000
+      ],
+      "result": "Quote #1043 · $1,250.00"
+    },
+    {
+      "args": [
+        null,
+        0
+      ],
+      "result": "Quote · $0.00"
+    },
+    {
+      "args": [
+        1038,
+        123456789
+      ],
+      "result": "Quote #1038 · $1,234,567.89"
+    },
+    {
+      "args": [
+        7,
+        5
+      ],
+      "result": "Quote #7 · $0.05"
+    }
+  ],
+  "validateNewQuote": [
+    {
+      "args": [
+        {
+          "customerName": "",
+          "customerPhone": "",
+          "customerEmail": "",
+          "addressLine1": "",
+          "city": "",
+          "state": "",
+          "postalCode": ""
+        }
+      ],
+      "result": {
+        "customerName": "Enter the customer's name."
+      }
+    },
+    {
+      "args": [
+        {
+          "customerName": "   ",
+          "customerPhone": "",
+          "customerEmail": "",
+          "addressLine1": "",
+          "city": "",
+          "state": "",
+          "postalCode": ""
+        }
+      ],
+      "result": {
+        "customerName": "Enter the customer's name."
+      }
+    },
+    {
+      "args": [
+        {
+          "customerName": " Jane Diaz ",
+          "customerPhone": " 602-555-0100 ",
+          "customerEmail": " ",
+          "addressLine1": "",
+          "city": "",
+          "state": "",
+          "postalCode": ""
+        }
+      ],
+      "result": {}
+    },
+    {
+      "args": [
+        {
+          "customerName": "Jane",
+          "customerPhone": "",
+          "customerEmail": "jane@",
+          "addressLine1": "",
+          "city": "",
+          "state": "",
+          "postalCode": ""
+        }
+      ],
+      "result": {
+        "customerEmail": "Check the email address."
+      }
+    },
+    {
+      "args": [
+        {
+          "customerName": "Jane",
+          "customerPhone": "",
+          "customerEmail": " jane@example.com ",
+          "addressLine1": "",
+          "city": "",
+          "state": "",
+          "postalCode": ""
+        }
+      ],
+      "result": {}
+    },
+    {
+      "args": [
+        {
+          "customerName": "",
+          "customerPhone": "",
+          "customerEmail": "not an email",
+          "addressLine1": "",
+          "city": "",
+          "state": "",
+          "postalCode": "",
+          "customerId": "c1"
+        }
+      ],
+      "result": {}
+    },
+    {
+      "args": [
+        {
+          "customerName": "",
+          "customerPhone": "",
+          "customerEmail": "",
+          "addressLine1": "",
+          "city": "",
+          "state": "",
+          "postalCode": "",
+          "customerId": ""
+        }
+      ],
+      "result": {
+        "customerName": "Enter the customer's name."
+      }
+    },
+    {
+      "args": [
+        {
+          "customerName": "Jane",
+          "customerPhone": "",
+          "customerEmail": "",
+          "addressLine1": "",
+          "city": "Phoenix",
+          "state": "",
+          "postalCode": ""
+        }
+      ],
+      "result": {
+        "addressLine1": "Enter the street address, or leave the address blank."
+      }
+    },
+    {
+      "args": [
+        {
+          "customerName": "Jane",
+          "customerPhone": "",
+          "customerEmail": "",
+          "addressLine1": "",
+          "city": "",
+          "state": " az ",
+          "postalCode": "85016"
+        }
+      ],
+      "result": {
+        "addressLine1": "Enter the street address, or leave the address blank."
+      }
+    },
+    {
+      "args": [
+        {
+          "customerName": "Jane",
+          "customerPhone": "",
+          "customerEmail": "",
+          "addressLine1": "",
+          "city": "Phoenix",
+          "state": "",
+          "postalCode": "",
+          "propertyId": "p1"
+        }
+      ],
+      "result": {}
+    },
+    {
+      "args": [
+        {
+          "customerName": "Jane",
+          "customerPhone": "",
+          "customerEmail": "",
+          "addressLine1": "",
+          "city": "",
+          "state": "",
+          "postalCode": "85016",
+          "propertyId": ""
+        }
+      ],
+      "result": {
+        "addressLine1": "Enter the street address, or leave the address blank."
+      }
+    },
+    {
+      "args": [
+        {
+          "customerName": "Jane",
+          "customerPhone": "",
+          "customerEmail": "",
+          "addressLine1": " 1423 Palm Ct ",
+          "city": " Phoenix ",
+          "state": " az ",
+          "postalCode": " 85016 "
+        }
+      ],
+      "result": {}
+    },
+    {
+      "args": [
+        {
+          "customerName": "Jane",
+          "customerPhone": "",
+          "customerEmail": "",
+          "addressLine1": "1423 Palm Ct",
+          "city": "",
+          "state": "",
+          "postalCode": ""
+        }
+      ],
+      "result": {}
+    },
+    {
+      "args": [
+        {
+          "customerName": "",
+          "customerPhone": "",
+          "customerEmail": "",
+          "addressLine1": "1423 Palm Ct",
+          "city": "",
+          "state": "",
+          "postalCode": "",
+          "customerId": "c1",
+          "propertyId": "p1"
+        }
+      ],
+      "result": {}
+    }
+  ],
+  "newQuoteRecords": [
+    {
+      "args": [
+        {
+          "customerName": "",
+          "customerPhone": "",
+          "customerEmail": "",
+          "addressLine1": "",
+          "city": "",
+          "state": "",
+          "postalCode": ""
+        },
+        null
+      ],
+      "result": {
+        "customer": {
+          "kind": "homeowner",
+          "name": "",
+          "phone": null,
+          "email": null
+        },
+        "property": null,
+        "job": {
+          "type": "repair",
+          "status": "quote",
+          "assigned_user_id": null
+        },
+        "quote": {
+          "discount_cents": 0
+        }
+      }
+    },
+    {
+      "args": [
+        {
+          "customerName": "",
+          "customerPhone": "",
+          "customerEmail": "",
+          "addressLine1": "",
+          "city": "",
+          "state": "",
+          "postalCode": ""
+        },
+        "u1"
+      ],
+      "result": {
+        "customer": {
+          "kind": "homeowner",
+          "name": "",
+          "phone": null,
+          "email": null
+        },
+        "property": null,
+        "job": {
+          "type": "repair",
+          "status": "quote",
+          "assigned_user_id": "u1"
+        },
+        "quote": {
+          "discount_cents": 0
+        }
+      }
+    },
+    {
+      "args": [
+        {
+          "customerName": "   ",
+          "customerPhone": "",
+          "customerEmail": "",
+          "addressLine1": "",
+          "city": "",
+          "state": "",
+          "postalCode": ""
+        },
+        null
+      ],
+      "result": {
+        "customer": {
+          "kind": "homeowner",
+          "name": "",
+          "phone": null,
+          "email": null
+        },
+        "property": null,
+        "job": {
+          "type": "repair",
+          "status": "quote",
+          "assigned_user_id": null
+        },
+        "quote": {
+          "discount_cents": 0
+        }
+      }
+    },
+    {
+      "args": [
+        {
+          "customerName": "   ",
+          "customerPhone": "",
+          "customerEmail": "",
+          "addressLine1": "",
+          "city": "",
+          "state": "",
+          "postalCode": ""
+        },
+        "u1"
+      ],
+      "result": {
+        "customer": {
+          "kind": "homeowner",
+          "name": "",
+          "phone": null,
+          "email": null
+        },
+        "property": null,
+        "job": {
+          "type": "repair",
+          "status": "quote",
+          "assigned_user_id": "u1"
+        },
+        "quote": {
+          "discount_cents": 0
+        }
+      }
+    },
+    {
+      "args": [
+        {
+          "customerName": " Jane Diaz ",
+          "customerPhone": " 602-555-0100 ",
+          "customerEmail": " ",
+          "addressLine1": "",
+          "city": "",
+          "state": "",
+          "postalCode": ""
+        },
+        null
+      ],
+      "result": {
+        "customer": {
+          "kind": "homeowner",
+          "name": "Jane Diaz",
+          "phone": "602-555-0100",
+          "email": null
+        },
+        "property": null,
+        "job": {
+          "type": "repair",
+          "status": "quote",
+          "assigned_user_id": null
+        },
+        "quote": {
+          "discount_cents": 0
+        }
+      }
+    },
+    {
+      "args": [
+        {
+          "customerName": " Jane Diaz ",
+          "customerPhone": " 602-555-0100 ",
+          "customerEmail": " ",
+          "addressLine1": "",
+          "city": "",
+          "state": "",
+          "postalCode": ""
+        },
+        "u1"
+      ],
+      "result": {
+        "customer": {
+          "kind": "homeowner",
+          "name": "Jane Diaz",
+          "phone": "602-555-0100",
+          "email": null
+        },
+        "property": null,
+        "job": {
+          "type": "repair",
+          "status": "quote",
+          "assigned_user_id": "u1"
+        },
+        "quote": {
+          "discount_cents": 0
+        }
+      }
+    },
+    {
+      "args": [
+        {
+          "customerName": "Jane",
+          "customerPhone": "",
+          "customerEmail": "jane@",
+          "addressLine1": "",
+          "city": "",
+          "state": "",
+          "postalCode": ""
+        },
+        null
+      ],
+      "result": {
+        "customer": {
+          "kind": "homeowner",
+          "name": "Jane",
+          "phone": null,
+          "email": "jane@"
+        },
+        "property": null,
+        "job": {
+          "type": "repair",
+          "status": "quote",
+          "assigned_user_id": null
+        },
+        "quote": {
+          "discount_cents": 0
+        }
+      }
+    },
+    {
+      "args": [
+        {
+          "customerName": "Jane",
+          "customerPhone": "",
+          "customerEmail": "jane@",
+          "addressLine1": "",
+          "city": "",
+          "state": "",
+          "postalCode": ""
+        },
+        "u1"
+      ],
+      "result": {
+        "customer": {
+          "kind": "homeowner",
+          "name": "Jane",
+          "phone": null,
+          "email": "jane@"
+        },
+        "property": null,
+        "job": {
+          "type": "repair",
+          "status": "quote",
+          "assigned_user_id": "u1"
+        },
+        "quote": {
+          "discount_cents": 0
+        }
+      }
+    },
+    {
+      "args": [
+        {
+          "customerName": "Jane",
+          "customerPhone": "",
+          "customerEmail": " jane@example.com ",
+          "addressLine1": "",
+          "city": "",
+          "state": "",
+          "postalCode": ""
+        },
+        null
+      ],
+      "result": {
+        "customer": {
+          "kind": "homeowner",
+          "name": "Jane",
+          "phone": null,
+          "email": "jane@example.com"
+        },
+        "property": null,
+        "job": {
+          "type": "repair",
+          "status": "quote",
+          "assigned_user_id": null
+        },
+        "quote": {
+          "discount_cents": 0
+        }
+      }
+    },
+    {
+      "args": [
+        {
+          "customerName": "Jane",
+          "customerPhone": "",
+          "customerEmail": " jane@example.com ",
+          "addressLine1": "",
+          "city": "",
+          "state": "",
+          "postalCode": ""
+        },
+        "u1"
+      ],
+      "result": {
+        "customer": {
+          "kind": "homeowner",
+          "name": "Jane",
+          "phone": null,
+          "email": "jane@example.com"
+        },
+        "property": null,
+        "job": {
+          "type": "repair",
+          "status": "quote",
+          "assigned_user_id": "u1"
+        },
+        "quote": {
+          "discount_cents": 0
+        }
+      }
+    },
+    {
+      "args": [
+        {
+          "customerName": "",
+          "customerPhone": "",
+          "customerEmail": "not an email",
+          "addressLine1": "",
+          "city": "",
+          "state": "",
+          "postalCode": "",
+          "customerId": "c1"
+        },
+        null
+      ],
+      "result": {
+        "customer": null,
+        "property": null,
+        "job": {
+          "type": "repair",
+          "status": "quote",
+          "assigned_user_id": null
+        },
+        "quote": {
+          "discount_cents": 0
+        }
+      }
+    },
+    {
+      "args": [
+        {
+          "customerName": "",
+          "customerPhone": "",
+          "customerEmail": "not an email",
+          "addressLine1": "",
+          "city": "",
+          "state": "",
+          "postalCode": "",
+          "customerId": "c1"
+        },
+        "u1"
+      ],
+      "result": {
+        "customer": null,
+        "property": null,
+        "job": {
+          "type": "repair",
+          "status": "quote",
+          "assigned_user_id": "u1"
+        },
+        "quote": {
+          "discount_cents": 0
+        }
+      }
+    },
+    {
+      "args": [
+        {
+          "customerName": "",
+          "customerPhone": "",
+          "customerEmail": "",
+          "addressLine1": "",
+          "city": "",
+          "state": "",
+          "postalCode": "",
+          "customerId": ""
+        },
+        null
+      ],
+      "result": {
+        "customer": {
+          "kind": "homeowner",
+          "name": "",
+          "phone": null,
+          "email": null
+        },
+        "property": null,
+        "job": {
+          "type": "repair",
+          "status": "quote",
+          "assigned_user_id": null
+        },
+        "quote": {
+          "discount_cents": 0
+        }
+      }
+    },
+    {
+      "args": [
+        {
+          "customerName": "",
+          "customerPhone": "",
+          "customerEmail": "",
+          "addressLine1": "",
+          "city": "",
+          "state": "",
+          "postalCode": "",
+          "customerId": ""
+        },
+        "u1"
+      ],
+      "result": {
+        "customer": {
+          "kind": "homeowner",
+          "name": "",
+          "phone": null,
+          "email": null
+        },
+        "property": null,
+        "job": {
+          "type": "repair",
+          "status": "quote",
+          "assigned_user_id": "u1"
+        },
+        "quote": {
+          "discount_cents": 0
+        }
+      }
+    },
+    {
+      "args": [
+        {
+          "customerName": "Jane",
+          "customerPhone": "",
+          "customerEmail": "",
+          "addressLine1": "",
+          "city": "Phoenix",
+          "state": "",
+          "postalCode": ""
+        },
+        null
+      ],
+      "result": {
+        "customer": {
+          "kind": "homeowner",
+          "name": "Jane",
+          "phone": null,
+          "email": null
+        },
+        "property": null,
+        "job": {
+          "type": "repair",
+          "status": "quote",
+          "assigned_user_id": null
+        },
+        "quote": {
+          "discount_cents": 0
+        }
+      }
+    },
+    {
+      "args": [
+        {
+          "customerName": "Jane",
+          "customerPhone": "",
+          "customerEmail": "",
+          "addressLine1": "",
+          "city": "Phoenix",
+          "state": "",
+          "postalCode": ""
+        },
+        "u1"
+      ],
+      "result": {
+        "customer": {
+          "kind": "homeowner",
+          "name": "Jane",
+          "phone": null,
+          "email": null
+        },
+        "property": null,
+        "job": {
+          "type": "repair",
+          "status": "quote",
+          "assigned_user_id": "u1"
+        },
+        "quote": {
+          "discount_cents": 0
+        }
+      }
+    },
+    {
+      "args": [
+        {
+          "customerName": "Jane",
+          "customerPhone": "",
+          "customerEmail": "",
+          "addressLine1": "",
+          "city": "",
+          "state": " az ",
+          "postalCode": "85016"
+        },
+        null
+      ],
+      "result": {
+        "customer": {
+          "kind": "homeowner",
+          "name": "Jane",
+          "phone": null,
+          "email": null
+        },
+        "property": null,
+        "job": {
+          "type": "repair",
+          "status": "quote",
+          "assigned_user_id": null
+        },
+        "quote": {
+          "discount_cents": 0
+        }
+      }
+    },
+    {
+      "args": [
+        {
+          "customerName": "Jane",
+          "customerPhone": "",
+          "customerEmail": "",
+          "addressLine1": "",
+          "city": "",
+          "state": " az ",
+          "postalCode": "85016"
+        },
+        "u1"
+      ],
+      "result": {
+        "customer": {
+          "kind": "homeowner",
+          "name": "Jane",
+          "phone": null,
+          "email": null
+        },
+        "property": null,
+        "job": {
+          "type": "repair",
+          "status": "quote",
+          "assigned_user_id": "u1"
+        },
+        "quote": {
+          "discount_cents": 0
+        }
+      }
+    },
+    {
+      "args": [
+        {
+          "customerName": "Jane",
+          "customerPhone": "",
+          "customerEmail": "",
+          "addressLine1": "",
+          "city": "Phoenix",
+          "state": "",
+          "postalCode": "",
+          "propertyId": "p1"
+        },
+        null
+      ],
+      "result": {
+        "customer": {
+          "kind": "homeowner",
+          "name": "Jane",
+          "phone": null,
+          "email": null
+        },
+        "property": null,
+        "job": {
+          "type": "repair",
+          "status": "quote",
+          "assigned_user_id": null
+        },
+        "quote": {
+          "discount_cents": 0
+        }
+      }
+    },
+    {
+      "args": [
+        {
+          "customerName": "Jane",
+          "customerPhone": "",
+          "customerEmail": "",
+          "addressLine1": "",
+          "city": "Phoenix",
+          "state": "",
+          "postalCode": "",
+          "propertyId": "p1"
+        },
+        "u1"
+      ],
+      "result": {
+        "customer": {
+          "kind": "homeowner",
+          "name": "Jane",
+          "phone": null,
+          "email": null
+        },
+        "property": null,
+        "job": {
+          "type": "repair",
+          "status": "quote",
+          "assigned_user_id": "u1"
+        },
+        "quote": {
+          "discount_cents": 0
+        }
+      }
+    },
+    {
+      "args": [
+        {
+          "customerName": "Jane",
+          "customerPhone": "",
+          "customerEmail": "",
+          "addressLine1": "",
+          "city": "",
+          "state": "",
+          "postalCode": "85016",
+          "propertyId": ""
+        },
+        null
+      ],
+      "result": {
+        "customer": {
+          "kind": "homeowner",
+          "name": "Jane",
+          "phone": null,
+          "email": null
+        },
+        "property": null,
+        "job": {
+          "type": "repair",
+          "status": "quote",
+          "assigned_user_id": null
+        },
+        "quote": {
+          "discount_cents": 0
+        }
+      }
+    },
+    {
+      "args": [
+        {
+          "customerName": "Jane",
+          "customerPhone": "",
+          "customerEmail": "",
+          "addressLine1": "",
+          "city": "",
+          "state": "",
+          "postalCode": "85016",
+          "propertyId": ""
+        },
+        "u1"
+      ],
+      "result": {
+        "customer": {
+          "kind": "homeowner",
+          "name": "Jane",
+          "phone": null,
+          "email": null
+        },
+        "property": null,
+        "job": {
+          "type": "repair",
+          "status": "quote",
+          "assigned_user_id": "u1"
+        },
+        "quote": {
+          "discount_cents": 0
+        }
+      }
+    },
+    {
+      "args": [
+        {
+          "customerName": "Jane",
+          "customerPhone": "",
+          "customerEmail": "",
+          "addressLine1": " 1423 Palm Ct ",
+          "city": " Phoenix ",
+          "state": " az ",
+          "postalCode": " 85016 "
+        },
+        null
+      ],
+      "result": {
+        "customer": {
+          "kind": "homeowner",
+          "name": "Jane",
+          "phone": null,
+          "email": null
+        },
+        "property": {
+          "address_line1": "1423 Palm Ct",
+          "city": "Phoenix",
+          "state": "AZ",
+          "postal_code": "85016",
+          "has_pool": true
+        },
+        "job": {
+          "type": "repair",
+          "status": "quote",
+          "assigned_user_id": null
+        },
+        "quote": {
+          "discount_cents": 0
+        }
+      }
+    },
+    {
+      "args": [
+        {
+          "customerName": "Jane",
+          "customerPhone": "",
+          "customerEmail": "",
+          "addressLine1": " 1423 Palm Ct ",
+          "city": " Phoenix ",
+          "state": " az ",
+          "postalCode": " 85016 "
+        },
+        "u1"
+      ],
+      "result": {
+        "customer": {
+          "kind": "homeowner",
+          "name": "Jane",
+          "phone": null,
+          "email": null
+        },
+        "property": {
+          "address_line1": "1423 Palm Ct",
+          "city": "Phoenix",
+          "state": "AZ",
+          "postal_code": "85016",
+          "has_pool": true
+        },
+        "job": {
+          "type": "repair",
+          "status": "quote",
+          "assigned_user_id": "u1"
+        },
+        "quote": {
+          "discount_cents": 0
+        }
+      }
+    },
+    {
+      "args": [
+        {
+          "customerName": "Jane",
+          "customerPhone": "",
+          "customerEmail": "",
+          "addressLine1": "1423 Palm Ct",
+          "city": "",
+          "state": "",
+          "postalCode": ""
+        },
+        null
+      ],
+      "result": {
+        "customer": {
+          "kind": "homeowner",
+          "name": "Jane",
+          "phone": null,
+          "email": null
+        },
+        "property": {
+          "address_line1": "1423 Palm Ct",
+          "city": null,
+          "state": null,
+          "postal_code": null,
+          "has_pool": true
+        },
+        "job": {
+          "type": "repair",
+          "status": "quote",
+          "assigned_user_id": null
+        },
+        "quote": {
+          "discount_cents": 0
+        }
+      }
+    },
+    {
+      "args": [
+        {
+          "customerName": "Jane",
+          "customerPhone": "",
+          "customerEmail": "",
+          "addressLine1": "1423 Palm Ct",
+          "city": "",
+          "state": "",
+          "postalCode": ""
+        },
+        "u1"
+      ],
+      "result": {
+        "customer": {
+          "kind": "homeowner",
+          "name": "Jane",
+          "phone": null,
+          "email": null
+        },
+        "property": {
+          "address_line1": "1423 Palm Ct",
+          "city": null,
+          "state": null,
+          "postal_code": null,
+          "has_pool": true
+        },
+        "job": {
+          "type": "repair",
+          "status": "quote",
+          "assigned_user_id": "u1"
+        },
+        "quote": {
+          "discount_cents": 0
+        }
+      }
+    },
+    {
+      "args": [
+        {
+          "customerName": "",
+          "customerPhone": "",
+          "customerEmail": "",
+          "addressLine1": "1423 Palm Ct",
+          "city": "",
+          "state": "",
+          "postalCode": "",
+          "customerId": "c1",
+          "propertyId": "p1"
+        },
+        null
+      ],
+      "result": {
+        "customer": null,
+        "property": null,
+        "job": {
+          "type": "repair",
+          "status": "quote",
+          "assigned_user_id": null
+        },
+        "quote": {
+          "discount_cents": 0
+        }
+      }
+    },
+    {
+      "args": [
+        {
+          "customerName": "",
+          "customerPhone": "",
+          "customerEmail": "",
+          "addressLine1": "1423 Palm Ct",
+          "city": "",
+          "state": "",
+          "postalCode": "",
+          "customerId": "c1",
+          "propertyId": "p1"
+        },
+        "u1"
+      ],
+      "result": {
+        "customer": null,
+        "property": null,
+        "job": {
+          "type": "repair",
+          "status": "quote",
+          "assigned_user_id": "u1"
+        },
+        "quote": {
+          "discount_cents": 0
+        }
+      }
+    }
+  ]
+}

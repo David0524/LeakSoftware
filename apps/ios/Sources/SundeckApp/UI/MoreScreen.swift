@@ -11,6 +11,8 @@
         case customersFiltered(String)
         case customer(String)
         case invoices
+        /// Every quote in the shop (standalone quotes, 2026-11-24).
+        case quotes
         /// Chemical; a visit or a customer's pool opens it for that pool (Submit and its log).
         case chemicals(ChemicalTarget?)
         case settings
@@ -48,6 +50,7 @@
             case .customersFiltered(let show): CustomersScreen(show: show)
             case .customer(let id): CustomerScreen(customerId: id)
             case .invoices: InvoicesScreen()
+            case .quotes: QuotesScreen()
             case .chemicals(let target): ChemicalsScreen(target: target)
             case .settings: ShopSettingsScreen()
             case .settingsPage(.company): CompanySettingsScreen()
@@ -267,6 +270,7 @@
             case .dashboard: .dashboard
             case .customers: .customers
             case .invoices: .invoices
+            case .quotes: .quotes
             case .activity: .activity
             case .chemicals: .chemicals(nil)
             case .settings: .settings

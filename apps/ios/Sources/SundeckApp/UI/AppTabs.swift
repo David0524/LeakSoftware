@@ -235,9 +235,10 @@
         /// The screen a route opens.
         @ViewBuilder private func destination(_ route: Route) -> some View {
             switch route {
-            case .job(let id): JobScreen(jobId: id).zoomDestination(id)
+            // A standalone quote's job opens its Quote screen (an old link, Activity, search).
+            case .job(let id): JobOrQuoteScreen(jobId: id).zoomDestination(id)
             case .jobSection(let id, let section):
-                JobScreen(jobId: id, section: section).zoomDestination(id)
+                JobOrQuoteScreen(jobId: id, section: section).zoomDestination(id)
             case .sync:
                 SettingsView(showReauth: { showReauth = true })
             case .messages(let route): MessagesDestination(route: route)
@@ -248,6 +249,8 @@
             case .review(let jobId): ReviewScreen(jobId: jobId)
             case .newJob(let back): NewJobRoute(back: back)
             case .issue(let id): IssueScreen(issueId: id)
+            case .newQuote(let back, let customerId): NewQuoteRoute(back: back, customerId: customerId)
+            case .quote(let id): QuoteScreen(quoteId: id)
             }
         }
     }

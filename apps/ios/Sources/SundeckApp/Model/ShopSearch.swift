@@ -33,18 +33,25 @@ public func searchRecords(_ store: LocalStore, companyId: String, userId: String
 
     var jobCustomer: [String: String] = [:]
     var jobs: [SearchJob] = []
+    // A standalone quote's job (status quote) isn't in the Jobs group; its quote stays in Quotes
+    // and opens the Quote screen (2026-11-24).
+    var quoteJobs: Set<String> = []
     for j in (try? store.list("job", companyId: companyId)) ?? [] {
         if !seesAll, ![text(j["assigned_user_id"]), text(j["second_tech_id"])].contains(userId) { continue }
         let customerId = text(j["bill_to_customer_id"]) ?? text(j["property_id"]).flatMap { propertyCustomer[$0] }
         let customer = customerId.flatMap { names[$0] }
         if let customer { jobCustomer[j.id] = customer }
+        if isQuoteJob(status: text(j["status"]) ?? "") {
+            if text(j["deleted_at"]) == nil { quoteJobs.insert(j.id) }
+            continue
+        }
         jobs.append(
             SearchJob(
                 id: j.id, number: int(j["number"]), type: text(j["type"]) ?? "detection", status: text(j["status"]),
                 scheduledStart: text(j["scheduled_start"]), createdAt: text(j["created_at"]), customerName: customer,
                 deletedAt: text(j["deleted_at"])))
     }
-    let shown = Set(jobs.filter { $0.deletedAt == nil }.map(\.id))
+    let shown = Set(jobs.filter { $0.deletedAt == nil }.map(\.id)).union(quoteJobs)
 
     let quotes = ((try? store.list("quote", companyId: companyId)) ?? []).compactMap { q -> SearchQuote? in
         guard let jobId = text(q["job_id"]), shown.contains(jobId) else { return nil }

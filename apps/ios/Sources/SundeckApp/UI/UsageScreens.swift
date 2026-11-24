@@ -32,6 +32,8 @@
             case .review: "/jobs/:id/review"
             case .newJob: "/jobs/new"
             case .issue: "/jobs/issues/:id"
+            case .newQuote: "/quotes/new"
+            case .quote: "/quotes/:id"
             }
         }
     }
@@ -52,6 +54,7 @@
             case .customers, .customersFiltered: "/customers"
             case .customer: "/customers/:id"
             case .invoices, .invoicesFiltered: "/invoices"
+            case .quotes: "/quotes"
             case .billingMonth: "/invoices/month/:month"
             case .chemicals: "/chemicals"
             case .settings: "/settings"
