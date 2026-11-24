@@ -45,7 +45,7 @@
                 } compactTrailing: {
                     LiveStopIsland.compact(content)
                 } minimal: {
-                    LiveStopIsland.mark(logo: logo)
+                    LiveStopIsland.minimal(logo: logo)
                 }
                 .widgetURL(LiveStopLink.job(context.state.jobId))
                 .keylineTint(LiveStopStyle.keyline)

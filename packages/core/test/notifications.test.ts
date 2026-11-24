@@ -10,6 +10,7 @@ import {
   reportOpenedNotification,
   textNotification,
   weeklySummaryOn,
+  type LiveStopPhase,
 } from "../src";
 
 describe("feedback notifications (owner, 2026-10-22)", () => {
@@ -109,9 +110,13 @@ describe("liveStopContent", () => {
       headline: "On the way to Smith",
       figure: "3 of 7",
       figureLabel: "Stop",
-      detail: "Stop 3 of 7 · 123 Palm Ln",
+      detail: "123 Palm Ln",
       next: "Then: Jones",
-      progress: 2 / 7,
+      // Two stops done and this one under way (owner, 2026-11-24: a bit already filled).
+      progress: 2.45 / 7,
+      name: "Smith",
+      step: "On the way",
+      stops: 7,
       compact: "3/7",
       spoken: "On the way to Smith. Stop 3 of 7.",
       access: null,
@@ -125,26 +130,29 @@ describe("liveStopContent", () => {
     expect(c.figure).toBe("4 of 9");
     expect(c.figureLabel).toBe("Checklist");
     expect(c.compact).toBe("4/9");
-    // Stops done of all (owner, 2026-10-22): the two before this one.
-    expect(c.progress).toBeCloseTo(2 / 7);
+    expect(c.step).toBe("Checklist");
+    // The two stops before this one, and this one half done plus 4 of 9 of the rest.
+    expect(c.progress).toBeCloseTo((2 + 0.5 + 0.45 * (4 / 9)) / 7);
     expect(c.spoken).toBe("At Smith. Checklist 4 of 9. Stop 3 of 7. Then: Jones.");
   });
 
   it("fills the bar with the stops done, in any order", () => {
     // Stop 3 of 7 with four done (two later stops marked complete first).
     expect(liveStopContent({ ...base, phase: "on_site", doneStops: 4 }).progress).toBeCloseTo(
-      4 / 7,
+      (4 + 0.5 + 0.45 * (4 / 9)) / 7,
     );
   });
 
   it("done: the next stop, or the end of the day", () => {
     const c = liveStopContent({ ...base, phase: "done" });
-    expect([c.headline, c.figure, c.figureLabel, c.next, c.progress]).toEqual([
+    expect([c.headline, c.figure, c.figureLabel, c.detail, c.next, c.progress, c.step]).toEqual([
       "Smith done",
       "✓",
       "Next stop",
+      "Stop 3 of 7",
       "Then: Jones",
       3 / 7,
+      "Done",
     ]);
     const last = liveStopContent({ ...base, phase: "done", stop: 7, next: null });
     expect([last.figureLabel, last.next, last.progress]).toEqual([
@@ -152,7 +160,22 @@ describe("liveStopContent", () => {
       "That was the last stop today.",
       1,
     ]);
-    expect(liveStopContent({ ...base, phase: "driving", stops: 0 }).figure).toBe("On the way");
+    const unknown = liveStopContent({ ...base, phase: "driving", stops: 0 });
+    expect([unknown.figure, unknown.step, unknown.progress]).toEqual(["On the way", "", 0]);
+    expect(liveStopContent({ ...base, phase: "driving", address: null }).detail).toBe(
+      "Stop 3 of 7",
+    );
+  });
+
+  it("never shows an empty bar while a stop is left", () => {
+    const first = { ...base, stop: 1, stops: 3, checklistDone: 0 };
+    const at = (phase: LiveStopPhase, done = 0) =>
+      liveStopContent({ ...first, phase, checklistDone: done }).progress * 3;
+    expect(at("ahead")).toBeCloseTo(0.25);
+    expect(at("driving")).toBeCloseTo(0.45);
+    expect(at("on_site")).toBeCloseTo(0.5);
+    expect(at("on_site", 9)).toBeCloseTo(0.95);
+    expect(at("done")).toBeCloseTo(1);
   });
 });
 
@@ -175,9 +198,12 @@ describe("the workday's Live Activity", () => {
       headline: "Up next: Smith",
       figure: "1 of 5",
       figureLabel: "Stop",
-      detail: "Stop 1 of 5 · 123 Palm Ln",
+      detail: "123 Palm Ln",
       next: "Then: Jones",
-      progress: 0,
+      progress: 0.25 / 5,
+      name: "Smith",
+      step: "Up next",
+      stops: 5,
       compact: "1/5",
       spoken: "Up next: Smith. Stop 1 of 5.",
       access: null,
