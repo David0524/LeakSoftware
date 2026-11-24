@@ -26,7 +26,7 @@ export interface DashboardTech {
   active: boolean;
   /** Jobs finished in the months shown. */
   jobs_done: number;
-  /** Jobs not yet finished in the field, as of now. */
+  /** Jobs due by today and not finished, as of now (not a plan's visits ahead). */
   jobs_open: number;
   invoiced_cents: number;
   collected_cents: number;

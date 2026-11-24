@@ -88,7 +88,7 @@ public struct DashboardTech: Codable, Equatable, Sendable, Identifiable {
     public var active: Bool
     /// Jobs finished in the months shown.
     public var jobsDone: Int
-    /// Jobs not yet finished in the field, as of now.
+    /// Jobs due by today and not finished, as of now (not a plan's visits ahead).
     public var jobsOpen: Int
     public var invoicedCents: Cents
     public var collectedCents: Cents

@@ -2,7 +2,8 @@
 -- owner_dashboard also returns `techs`, one entry per tech over the same months, each job
 -- counting for its assigned tech (not the second tech, so money isn't counted twice):
 --   jobs_done        jobs finished in that time (not canceled or skipped)
---   jobs_open        jobs not yet finished in the field, as of now
+--   jobs_open        jobs due by today and not finished (in progress, or set for today or
+--                    earlier, or with no time yet), as of now
 --   invoiced_cents   invoices sent on their jobs (not void)
 --   collected_cents  payments received on their jobs (deposits included)
 --   thumbs_up/_down  customer feedback on their jobs
@@ -17,6 +18,7 @@ declare
   tz text;
   first_month date;
   since timestamptz;
+  due_by timestamptz;
   techs jsonb;
 begin
   if not app.is_manager(target_company) then
@@ -26,10 +28,12 @@ begin
   first_month := (date_trunc('month', now() at time zone tz)
                   - make_interval(months => greatest(least(months, 24), 1) - 1))::date;
   since := first_month::timestamp at time zone tz;
+  -- The end of today in the shop's time zone.
+  due_by := (date_trunc('day', now() at time zone tz) + interval '1 day') at time zone tz;
 
   -- By tech: each job counts for its assigned tech, over the same months.
   with jobs as (
-    select id, assigned_user_id as uid, status, started_at, completed_at,
+    select id, assigned_user_id as uid, status, started_at, completed_at, scheduled_start,
            completed_at >= since and status not in ('canceled', 'skipped') as done
     from public.job
     where company_id = target_company and deleted_at is null and not sample
@@ -37,7 +41,11 @@ begin
   per_job as (
     select uid,
       count(*) filter (where done) as jobs_done,
-      count(*) filter (where status in ('unscheduled', 'scheduled', 'in_progress')) as jobs_open,
+      -- Due and not finished: in progress, or not started and set for today or earlier (or
+      -- with no time yet). A plan's visits for the months ahead aren't open yet.
+      count(*) filter (where status = 'in_progress'
+        or (status in ('unscheduled', 'scheduled')
+            and (scheduled_start is null or scheduled_start < due_by))) as jobs_open,
       -- Start to finish on the jobs done. A job left running for 12 hours or more (overnight)
       -- isn't time on site, so it's left out.
       round(avg(extract(epoch from completed_at - started_at) / 60) filter (

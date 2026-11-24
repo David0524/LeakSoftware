@@ -46,9 +46,24 @@ select is((select jsonb_array_length(j -> 'techs') from d), 1,
   'by tech: the owner, with no jobs, is left out');
 reset role;
 
+-- A visit set for next month isn't open yet; one set for yesterday is.
+insert into job (company_id, property_id, bill_to_customer_id, status, assigned_user_id,
+                 scheduled_start, scheduled_end)
+select company_id, property_id, bill_to_customer_id, 'scheduled', assigned_user_id, s, s
+from job, (values (now() + interval '40 days'), (now() - interval '1 day')) v(s)
+where company_id = (select ca from ids) limit 2;
+select tests.authenticate_as((select owner_a from ids));
+select is(
+  (select (t ->> 'jobs_open')::int
+   from jsonb_array_elements(owner_dashboard((select ca from ids), 6) -> 'techs') t
+   where t ->> 'user_id' = (select tech_a::text from ids)),
+  2, 'by tech: open counts jobs due by today, not visits ahead');
+reset role;
+update job set deleted_at = now() where company_id = (select ca from ids) and status = 'scheduled';
+
 -- The job done in an hour and a half, and an hour on another job left running overnight.
 update job set status = 'done', started_at = now() - interval '90 minutes', completed_at = now()
-where company_id = (select ca from ids);
+where company_id = (select ca from ids) and deleted_at is null;
 create temp table late as
 with j as (
   insert into job (company_id, property_id, bill_to_customer_id, status, assigned_user_id,
