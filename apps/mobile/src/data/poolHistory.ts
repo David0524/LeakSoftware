@@ -1,5 +1,6 @@
 import { useMemo } from "react";
 import {
+  isQuoteJob,
   lastOtherReading,
   lastVisitNote,
   readingHints,
@@ -32,6 +33,7 @@ interface AdditionRow {
 }
 interface JobRow {
   id: string;
+  status: string;
   property_id: string | null;
   summary_notes?: string | null;
   scheduled_start?: string | null;
@@ -61,7 +63,13 @@ export function usePoolHistory(
       note: lastVisitNote({
         jobId,
         jobs: jobs
-          .filter((j) => j.property_id === propertyId && !j.deleted_at && j.summary_notes?.trim())
+          .filter(
+            (j) =>
+              j.property_id === propertyId &&
+              !j.deleted_at &&
+              !isQuoteJob(j) &&
+              j.summary_notes?.trim(),
+          )
           .map((j) => ({
             id: j.id,
             summary_notes: j.summary_notes,

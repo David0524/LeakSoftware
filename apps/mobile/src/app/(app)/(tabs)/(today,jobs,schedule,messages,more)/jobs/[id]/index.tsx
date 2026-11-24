@@ -35,12 +35,13 @@ import {
   checklistReady,
   checklistTallyText,
   inspectionTallyText,
+  isQuoteJob,
   visitReportBar,
   visitReportMode,
 } from "@leakbook/core";
 import * as WebBrowser from "expo-web-browser";
 import type { JsonValue } from "@leakbook/sync";
-import { useRow, useRows } from "../../../../../../data/hooks";
+import { useJobRows, useRow, useRows } from "../../../../../../data/hooks";
 import { JobRepairs } from "../../../../../../features/job/Repairs";
 import { JobIssues } from "../../../../../../features/issues/Issues";
 import { useJobReports } from "../../../../../../data/reports";
@@ -154,6 +155,26 @@ const lastSection = new Map<string, JobSection>();
  * (owner, 2026-10-20: one-handed use, item 1), and the sync bar stays pinned under the bar.
  */
 export default function JobDetail() {
+  const { id } = useLocalSearchParams<{ id: string }>();
+  const company = useCompany();
+  const job = useRow<Job>("job", id);
+  const quotes = useJobRows<{ id: string; job_id: string; deleted_at?: string | null }>(
+    "quote",
+    company.id,
+    id,
+  );
+  // A standalone quote's job isn't a job yet: an old link or Activity opens its Quote screen
+  // (docs/design/2026-11-24-standalone-quotes.md).
+  const quoteJob = job != null && isQuoteJob(job);
+  const quoteId = quoteJob ? quotes.find((q) => q.job_id === id && !q.deleted_at)?.id : undefined;
+  useEffect(() => {
+    if (quoteId) router.replace(`/quotes/${quoteId}`);
+  }, [quoteId]);
+  if (quoteJob) return <Screen title="Quote">{null}</Screen>;
+  return <JobPage />;
+}
+
+function JobPage() {
   const { id, section: asked } = useLocalSearchParams<{ id: string; section?: string }>();
   const company = useCompany();
   const { services } = useSession();

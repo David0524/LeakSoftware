@@ -81,7 +81,7 @@ public struct DashboardStatusRow: Identifiable, Equatable, Sendable {
     public var filter: JobFilter {
         switch status {
         case .reportSent, .quoteSent, .quoteAccepted, .invoiced: .followUp
-        case .unscheduled: .unscheduled
+        case .unscheduled, .quote: .unscheduled
         case .scheduled: .scheduled
         case .inProgress: .inProgress
         case .paid: .paid
@@ -95,6 +95,8 @@ public struct DashboardStatusRow: Identifiable, Equatable, Sendable {
 /// The statuses with jobs, in JOB_STATUSES order.
 public func dashboardStatusRows(_ data: DashboardData) -> [DashboardStatusRow] {
     JobStatus.allCases.compactMap { s in
+        // A quote job isn't a job yet (standalone quotes, 2026-11-24); the server leaves it out.
+        guard s != .quote else { return nil }
         let n = data.statuses[s.rawValue] ?? 0
         return n > 0 ? DashboardStatusRow(status: s, count: n) : nil
     }

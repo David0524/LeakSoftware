@@ -38,7 +38,7 @@ import { completeSendPrompt } from "@/lib/next-step";
 import { JobActions, type JobRowData } from "@/components/list-actions";
 import { RowMenuButton } from "@/components/row-actions";
 import { JobsTabs } from "@/components/jobs-tabs";
-import { NavPlus } from "@/components/nav-bar";
+import { NewMenuPlus } from "@/components/new-menu";
 import { SortMenu } from "@/components/sort-menu";
 import { PhoneSearch } from "@/components/shop-search";
 
@@ -126,7 +126,7 @@ export default async function JobsPage({ searchParams }: PageProps<"/jobs">) {
     <>
       <PageHeader
         title="Jobs"
-        navAction={canAdd ? <NavPlus href="/jobs/new" label="New Job" /> : undefined}
+        navAction={canAdd ? <NewMenuPlus /> : undefined}
         subtitle={<span className="hidden sm:inline">{office.company.name}</span>}
         actions={canAdd ? <ButtonLink href="/jobs/new">New Job</ButtonLink> : undefined}
         // Phones use the "+" in the navigation bar instead.

@@ -15,6 +15,9 @@ export const JOB_STATUSES = [
   "canceled",
   "done",
   "skipped",
+  // A standalone quote's job (20261022005700_standalone_quotes.sql): hidden from every job
+  // list until the customer accepts and it becomes the unscheduled repair job.
+  "quote",
 ] as const;
 
 export type JobStatus = (typeof JOB_STATUSES)[number];
@@ -36,6 +39,8 @@ export const JOB_STATUS_TRANSITIONS: Record<JobStatus, readonly JobStatus[]> = {
   done: ["in_progress", "invoiced"],
   // Back on (Undo Skip, or a new day), off the calendar, or called off.
   skipped: ["scheduled", "unscheduled", "in_progress", "canceled"],
+  // Only the server moves it on, when its quote is accepted (and it has a pool).
+  quote: ["unscheduled"],
 };
 
 /** Statuses only the server sets, after sending, acceptance, invoicing, or payment. */
@@ -52,6 +57,7 @@ export const JOB_SERVER_STATUSES: readonly JobStatus[] = [
  * how a maintenance visit ends; leak detection and repairs end with a report or invoice.
  */
 export function userTransitions(from: JobStatus, type?: string): JobStatus[] {
+  if (from === "quote") return [];
   // A skipped visit is put back with Undo Skip (Scheduled) or a new day (Reschedule), or called
   // off: not started or unscheduled by a status button (20261022004500_skip_visit.sql).
   if (from === "skipped")
@@ -110,4 +116,13 @@ export const JOB_STATUS_LABELS: Record<JobStatus, string> = {
   canceled: "Canceled",
   done: "Done",
   skipped: "Skipped",
+  quote: "Quote",
 };
+
+/**
+ * A standalone quote's job (New Quote, 2026-11-24): not a job yet. Every job list, count and
+ * search leaves it out; the Quotes list and the quote screen show it.
+ */
+export function isQuoteJob(job: { status: string }): boolean {
+  return job.status === "quote";
+}

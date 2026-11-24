@@ -93,6 +93,13 @@ const ICONS: Record<string, Icon> = {
     shape: "M6 3h12v18l-3-2-3 2-3-2-3 2z",
     cut: "M9 8h6M9 12h6M9 16h3",
   },
+  "/quotes": {
+    line: (
+      <path d="M7 3h7l4 4v13a1 1 0 0 1-1 1H7a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1zM14 3v4h4M9 12h6M9 16h4" />
+    ),
+    shape: "M7 3h7l4 4v13a1 1 0 0 1-1 1H7a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1z",
+    cut: "M9 12h6M9 16h4",
+  },
   "/dashboard": { line: <path d="M4 20V10M10 20V4M16 20v-7M22 20H2" /> },
   "/activity": {
     line: <path d="M3 12h4l3-8 4 16 3-8h4" />,

@@ -25,6 +25,11 @@
         case newJob(back: String)
         /// An issue reported on a visit (docs/design/2026-11-16-service-issues.md).
         case issue(String)
+        /// New Quote, pushed like New Job (docs/design/2026-11-24-standalone-quotes.md); from a
+        /// customer's page with that customer picked.
+        case newQuote(back: String, customerId: String? = nil)
+        /// A quote's screen: Customer, Pool and Job, then the quote builder or sent card.
+        case quote(String)
     }
 
     /// The editors that open as sheets over the job (S4).
@@ -48,7 +53,8 @@
         @Entry var openEditor: (EditorSheet) -> Void = { _ in }
     }
 
-    /// The "+" New Job in the navigation bar, when this person may make jobs (spec 3.1, 4.3).
+    /// The "+" in the navigation bar, when this person may make jobs (spec 3.1, 4.3): a menu with
+    /// New Job and New Quote (standalone quotes, 2026-11-24).
     struct NewJobToolbar: ToolbarContent {
         var back: String
         @Environment(Session.self) private var session
@@ -57,7 +63,20 @@
         var body: some ToolbarContent {
             ToolbarItem(placement: .topBarTrailing) {
                 if let company = session.company, canMakeJobs(company.role, company.settings) {
-                    BarIconButton(systemImage: "plus", label: "New Job") { openRoute(.newJob(back: back)) }
+                    Menu {
+                        Button("New Job", systemImage: "wrench.and.screwdriver") { openRoute(.newJob(back: back)) }
+                        Button(QuotesText.newQuote, systemImage: "doc.text") {
+                            openRoute(.newQuote(back: back))
+                        }
+                    } label: {
+                        Image(systemName: "plus")
+                            .font(.system(size: 20, weight: .medium))
+                            .foregroundStyle(Color.link)
+                            .frame(width: minTarget, height: minTarget)
+                            .contentShape(Circle())
+                    }
+                    .accessibilityLabel("New")
+                    .accessibilityHint("New Job or New Quote")
                 }
             }
         }

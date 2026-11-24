@@ -127,7 +127,8 @@ public struct QuoteBuilderModel: Equatable, Sendable {
 
 /// What the Quotes part shows for one job.
 public struct QuoteSectionModel: Equatable, Sendable {
-    /// Leak detection and maintenance jobs have quotes; a repair job is the quote's work.
+    /// Leak detection and maintenance jobs have quotes; a repair job is the quote's work, except
+    /// one made from a standalone quote, which shows that quote (its job_id is the job itself).
     public var shows: Bool
     /// "No quote yet. Start one…" with Start Quote, while there's no draft or accepted quote.
     public var showsStart: Bool
@@ -147,11 +148,14 @@ public struct QuoteSectionModel: Equatable, Sendable {
         store: LocalStore, companyId: String, settings: JSONValue?, role: String?, job: JobView,
         timeZone: String, webURL: URL? = AppConfig.webURL
     ) {
-        // Every job but a repair (pool inspections too, 2026-10-20), as the website.
-        shows = job.type != .repair
+        // Every job but a repair (pool inspections too, 2026-10-20), as the website. A repair job
+        // from a standalone quote shows that quote, read-only (2026-11-24), and never Start Quote.
         isManager = isManagerRole(role)
         let quotes = jobQuotes(store, companyId: companyId, jobId: job.id)
-        showsStart = !quotes.contains { $0.quote.status == .draft || $0.quote.status == .accepted }
+        shows = job.type != .repair || !quotes.isEmpty
+        showsStart =
+            job.type != .repair && !isQuoteJob(status: job.job["status"]?.string ?? "")
+            && !quotes.contains { $0.quote.status == .draft || $0.quote.status == .accepted }
         startLine = quotes.isEmpty ? Self.startText : Self.anotherText
         let pricing = QuotePricing(settings ?? [:])
         let payments = decodeRows(store, "payment", companyId, as: PaymentRecord.self)
@@ -192,7 +196,8 @@ public struct QuoteSectionModel: Equatable, Sendable {
             if quote.status == .accepted {
                 let on = quote.acceptedAt.map { " on " + mediumDate($0, timeZone: timeZone) } ?? ""
                 card.acceptedText = "Accepted by \(quote.acceptedByName ?? "the customer")\(on)."
-                if let repair = quote.repairJobId {
+                // A standalone quote becomes its own repair job: no link to the page it's on.
+                if let repair = quote.repairJobId, repair != quote.jobId {
                     card.repairJobId = repair
                     card.repairJobLabel = "Repair job" + (repairNumbers[repair].map { " #\($0)" } ?? "")
                 }

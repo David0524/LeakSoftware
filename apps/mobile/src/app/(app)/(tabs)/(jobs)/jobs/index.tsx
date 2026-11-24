@@ -66,7 +66,6 @@ import {
   Chevron,
   Empty,
   FilterPills,
-  HeaderButton,
   Segmented,
   StatusChip,
   T,
@@ -85,6 +84,7 @@ import { MenuButton, useMenu } from "../../../../../ui/Select";
 import { SwipeActions } from "../../../../../ui/SwipeRow";
 import { SyncBar } from "../../../../../ui/SyncBar";
 import { color, shape, space } from "../../../../../ui/theme";
+import { NewMenuButton } from "../../../../../features/quote/NewMenuButton";
 
 const OPEN: JobStatus[] = [
   "unscheduled",
@@ -308,10 +308,7 @@ export default function Jobs() {
 
   const { header, ref, scrollProps, contentContainerStyle } = useScreenChrome({
     title: view === "jobs" ? "Jobs" : view === "reports" ? "Reports" : "Issues",
-    headerRight:
-      canAdd && view === "jobs"
-        ? () => <HeaderButton title="New Job" icon="add" onPress={() => router.push("/jobs/new")} />
-        : () => null,
+    headerRight: canAdd && view === "jobs" ? () => <NewMenuButton /> : () => null,
   });
 
   async function refresh() {

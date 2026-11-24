@@ -99,6 +99,8 @@ export async function sendQuoteAction(_: SendQuoteState, form: FormData): Promis
   });
   if (error) return { error: friendlyDbError(error.message) };
   revalidatePath(`/jobs/${text(form, "job")}`);
+  revalidatePath(`/quotes/${text(form, "quote")}`);
+  revalidatePath("/quotes");
   return {
     message: "Quote sent. Copy the link for the customer.",
     link: `${await siteOrigin()}/q/${(data as { token: string }).token}`,

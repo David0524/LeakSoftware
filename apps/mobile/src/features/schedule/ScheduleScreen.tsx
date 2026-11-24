@@ -73,7 +73,6 @@ import { useCompany, useSession } from "../../state/session";
 import {
   Button,
   FilterPills,
-  HeaderButton,
   Notice,
   RoundButton,
   Screen,
@@ -104,6 +103,7 @@ import { WeekDay } from "./WeekBoard";
 import { useTeamSync } from "../today/TeamToday";
 import { SwipePager } from "../../ui/SwipeNav";
 import { WeekStrip } from "./WeekStrip";
+import { NewMenuButton } from "../quote/NewMenuButton";
 
 const VIEW_NAMES = { day: "Day", week: "Week", month: "Month" } as const;
 
@@ -927,9 +927,7 @@ export function ScheduleScreen() {
       onChange={setView}
     />
   );
-  const newJob = canAdd
-    ? () => <HeaderButton title="New Job" icon="add" onPress={() => router.push("/jobs/new")} />
-    : undefined;
+  const newJob = canAdd ? () => <NewMenuButton /> : undefined;
 
   return (
     <DragScope api={drag.api} hover={drag.hover}>

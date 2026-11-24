@@ -92,6 +92,7 @@ import {
   tint,
   type,
 } from "../../../../ui/theme";
+import { NewMenuButton } from "../../../../features/quote/NewMenuButton";
 
 /**
  * Today (spec 5.1): your day stop by stop, from the jobs on this phone. Stops are in route
@@ -456,13 +457,7 @@ export default function Today() {
                       }}
                     />
                   ) : null}
-                  {canAdd ? (
-                    <HeaderButton
-                      title="New Job"
-                      icon="add"
-                      onPress={() => router.push("/jobs/new")}
-                    />
-                  ) : null}
+                  {canAdd ? <NewMenuButton /> : null}
                 </View>
               )
             : undefined

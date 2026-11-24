@@ -15,6 +15,7 @@ export * from "./settings";
 export * from "./report";
 export * from "./signature";
 export * from "./quote";
+export * from "./quote-list";
 export * from "./invoice";
 export * from "./feedback";
 export * from "./followups";

@@ -605,8 +605,9 @@ function SentQuote({ job, quote }: { job: Job; quote: JobQuote }) {
               ? ` on ${new Date(quote.accepted_at).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}`
               : ""
           }.`}
-          {quote.repair_job_id ? " " : null}
-          {quote.repair_job_id ? (
+          {/* A standalone quote's job became the repair job itself: no link to this page. */}
+          {quote.repair_job_id && quote.repair_job_id !== job.id ? " " : null}
+          {quote.repair_job_id && quote.repair_job_id !== job.id ? (
             <Text
               accessibilityRole="link"
               onPress={() => router.push(`/jobs/${quote.repair_job_id}`)}

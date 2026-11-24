@@ -572,6 +572,7 @@ const STATUS_STYLE: Record<JobStatus, string> = {
   canceled: "bg-status-excluded",
   done: "bg-status-pass",
   skipped: "bg-status-warning",
+  quote: "bg-status-excluded",
 };
 
 /** A small status label. Fill colors come from the status tokens; text uses on-status. */

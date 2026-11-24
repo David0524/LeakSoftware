@@ -33,6 +33,8 @@ export function officeLinks(
     ...(canContact ? [{ href: "/messages", label: "Messages", badge: unread }] : []),
     { href: "/customers", label: "Customers" },
     { href: "/invoices", label: "Invoices" },
+    // Every quote in the shop, right after Invoices (docs/design/2026-11-24-standalone-quotes.md).
+    { href: "/quotes", label: "Quotes" },
     { href: "/activity", label: "Activity", dot: activityDot },
     ...(isOwner ? [{ href: "/dashboard", label: "Dashboard" }] : []),
     ...(offersPool(settings) ? [{ href: "/chemicals", label: "Chemicals" }] : []),
@@ -52,11 +54,11 @@ export function phoneNav(links: OfficeLink[]): { tabs: OfficeLink[]; more: Offic
 }
 
 /** On a computer these sit in the More menu instead of the bar (owner, 2026-10-18). */
-const DESKTOP_MORE = ["/customers", "/invoices", "/activity", "/chemicals"];
+const DESKTOP_MORE = ["/customers", "/invoices", "/quotes", "/activity", "/chemicals"];
 
 /**
- * The desktop header: the main sections in the bar, Customers, Invoices, Activity, and
- * Chemicals under a More menu, and Settings as a gear (owner, 2026-10-18).
+ * The desktop header: the main sections in the bar, Customers, Invoices, Quotes, Activity,
+ * and Chemicals under a More menu, and Settings as a gear (owner, 2026-10-18).
  */
 export function desktopNav(links: OfficeLink[]): {
   main: OfficeLink[];

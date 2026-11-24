@@ -40,6 +40,7 @@ func poolHistory(_ store: LocalStore, companyId: String, propertyId: String, job
     let jobs = ((try? store.list("job", companyId: companyId)) ?? [])
         .filter {
             $0["property_id"]?.string == propertyId && $0["deleted_at"]?.string == nil
+                && !isQuoteJob(status: $0["status"]?.string ?? "")
                 && !($0["summary_notes"]?.string ?? "").isEmpty
         }
         .map {

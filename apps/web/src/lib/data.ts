@@ -30,6 +30,8 @@ import type {
 import {
   canMakeJobs,
   chargeItems,
+  isQuoteJob,
+  type QuoteListItem,
   invoiceTotals,
   checklistTally,
   countCustomers,
@@ -279,6 +281,8 @@ export async function listJobs(
   const filtered = <Q>(q: Q): Q => {
     // Typed loosely: the same filters on two selects.
     let r = (q as unknown as JobQuery).eq("company_id", office.company.id).is("deleted_at", null);
+    // A standalone quote's job is listed under Quotes, never with the jobs (isQuoteJob).
+    r = r.neq("status", "quote");
     if (statuses) r = r.in("status", statuses);
     // The Type menu (owner, 2026-10-22).
     if (opts.type && opts.type !== "all") r = r.eq("type", opts.type);
@@ -358,6 +362,7 @@ export async function listJobs(
 /** The filters listJobs puts on its selects. */
 interface JobQuery {
   eq(column: string, value: unknown): JobQuery;
+  neq(column: string, value: unknown): JobQuery;
   is(column: string, value: null): JobQuery;
   in(column: string, values: readonly unknown[]): JobQuery;
   or(filters: string): JobQuery;
@@ -666,7 +671,8 @@ export async function listCustomers(
           .select("bill_to_customer_id, scheduled_start, completed_at")
           .in("bill_to_customer_id", ids)
           .is("deleted_at", null)
-          .neq("status", "canceled")
+          // A quote job is no visit (isQuoteJob).
+          .not("status", "in", "(canceled,quote)")
           .lte("scheduled_start", new Date().toISOString())
           .order("scheduled_start", { ascending: false })
           .limit(5000),
@@ -760,10 +766,13 @@ export async function getCustomer(office: Office, id: string) {
     .sort((a, b) => (a.starts_on ?? "").localeCompare(b.starts_on ?? ""));
   const jobs: EmbeddedJob[] = pools
     .flatMap((p) =>
-      p.jobs.map((j) => ({
-        ...j,
-        property: { ...properties.find((x) => x.id === p.id)!, owner: customer as Customer },
-      })),
+      // A standalone quote's job is under Quotes, not the customer's visits (isQuoteJob).
+      p.jobs
+        .filter((j) => !isQuoteJob(j))
+        .map((j) => ({
+          ...j,
+          property: { ...properties.find((x) => x.id === p.id)!, owner: customer as Customer },
+        })),
     )
     // Newest first, unscheduled at the top.
     .sort((a, b) =>
@@ -1017,6 +1026,96 @@ export const getQuotes = cache(async function getQuotes(
       )?.number ?? null,
   }));
 });
+
+/** A row of the Quotes list (core QuoteListItem), with what opens it. */
+export interface QuoteListRow extends QuoteListItem {
+  id: string;
+  jobId: string;
+  created_at: string;
+}
+
+/**
+ * Every quote in the shop, standalone and on jobs, newest first (docs/design/
+ * 2026-11-24-standalone-quotes.md), with its customer and its job's status and number.
+ */
+export async function listQuotes(office: Office): Promise<QuoteListRow[]> {
+  const supabase = await db();
+  const quotes = must(
+    await supabase
+      .from("quote")
+      .select("id, job_id, number, status, total_cents, created_at")
+      .eq("company_id", office.company.id)
+      .is("deleted_at", null)
+      .order("created_at", { ascending: false })
+      .limit(500),
+  ) as {
+    id: string;
+    job_id: string;
+    number: number | null;
+    status: QuoteListItem["status"];
+    total_cents: number | null;
+    created_at: string;
+  }[];
+  const jobIds = [...new Set(quotes.map((q) => q.job_id))];
+  // With their pool and customers embedded: a quote job may have no pool yet.
+  const jobs = jobIds.length
+    ? (must(
+        await supabase
+          .from("job")
+          .select(JOB_SELECT)
+          .eq("company_id", office.company.id)
+          .in("id", jobIds)
+          .is("deleted_at", null),
+      ) as EmbeddedJob[])
+    : [];
+  const byId = new Map((await attach(office, jobs)).map((j) => [j.id, j]));
+  return quotes.flatMap((q) => {
+    const job = byId.get(q.job_id);
+    // A deleted job's quotes go with it.
+    if (!job) return [];
+    return [
+      {
+        id: q.id,
+        jobId: q.job_id,
+        number: q.number,
+        status: q.status,
+        total_cents: q.total_cents ?? 0,
+        created_at: q.created_at,
+        customer: job.customer?.name ?? null,
+        jobStatus: job.status,
+        jobNumber: job.number ?? null,
+      },
+    ];
+  });
+}
+
+/** The Quote screen's quote: which job it's on. Null for a mistyped or deleted one. */
+export async function getQuoteJobId(office: Office, quoteId: string): Promise<string | null> {
+  if (!isUuid(quoteId)) return null;
+  const supabase = await db();
+  const { data } = await supabase
+    .from("quote")
+    .select("job_id")
+    .eq("company_id", office.company.id)
+    .eq("id", quoteId)
+    .is("deleted_at", null)
+    .maybeSingle();
+  return (data?.job_id as string | undefined) ?? null;
+}
+
+/** A customer's pools, for a quote job's Add Pool. */
+export async function customerPools(office: Office, customerId: string): Promise<Property[]> {
+  const supabase = await db();
+  return must(
+    await supabase
+      .from("property")
+      .select("*")
+      .eq("company_id", office.company.id)
+      .eq("customer_id", customerId)
+      .is("deleted_at", null)
+      .order("created_at", { ascending: false }),
+  ) as Property[];
+}
 
 export interface PaymentAccountState {
   stripe_account_id: string;
@@ -1490,6 +1589,7 @@ export async function getPoolHistory(office: Office, propertyId: string, jobId: 
       .eq("company_id", office.company.id)
       .eq("property_id", propertyId)
       .neq("id", jobId)
+      .neq("status", "quote")
       .not("summary_notes", "is", null)
       .is("deleted_at", null)
       .order("scheduled_start", { ascending: false, nullsFirst: false })

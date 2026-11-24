@@ -71,7 +71,7 @@ import {
 import { getLine } from "@/lib/messages";
 import { loadRoutes, routeContext, routeKey, shopToday, upcomingStops } from "@/server/route-days";
 import { NextDay } from "@/components/next-day";
-import { NavPlus } from "@/components/nav-bar";
+import { NewMenuPlus } from "@/components/new-menu";
 import { GettingStarted } from "@/components/getting-started";
 import { LiveRefresh } from "@/components/live-refresh";
 
@@ -560,7 +560,7 @@ export default async function TodayPage({ searchParams }: PageProps<"/today">) {
       <TodayDays
         days={dayIds.map(dayFor)}
         initial={techId}
-        navAction={canAdd ? <NavPlus href="/jobs/new" label="New Job" /> : undefined}
+        navAction={canAdd ? <NewMenuPlus /> : undefined}
         subtitle={
           <span className="flex flex-wrap items-center gap-x-3 gap-y-1">
             {formatDay(ctx.today, "long")}

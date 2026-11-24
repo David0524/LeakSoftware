@@ -11,6 +11,9 @@ public enum JobStatus: String, Codable, CaseIterable, Sendable {
     case canceled
     case done
     case skipped
+    /// A standalone quote's job (20261022005700_standalone_quotes.sql): hidden from every job
+    /// list until the customer accepts and it becomes the unscheduled repair job.
+    case quote
 
     public var transitions: [JobStatus] {
         switch self {
@@ -30,6 +33,8 @@ public enum JobStatus: String, Codable, CaseIterable, Sendable {
         case .done: [.inProgress, .invoiced]
         // Back on (Undo Skip, or a new day), off the calendar, or called off.
         case .skipped: [.scheduled, .unscheduled, .inProgress, .canceled]
+        // Only the server moves it on, when its quote is accepted (and it has a pool).
+        case .quote: [.unscheduled]
         }
     }
 
@@ -50,6 +55,7 @@ public enum JobStatus: String, Codable, CaseIterable, Sendable {
         case .canceled: "Canceled"
         case .done: "Done"
         case .skipped: "Skipped"
+        case .quote: "Quote"
         }
     }
 }
@@ -81,6 +87,7 @@ public func isBackwardMove(from: JobStatus, to: JobStatus) -> Bool {
 /// Next statuses a person (not the server) can pick. Done is how a maintenance visit ends;
 /// leak detection and repairs end with a report or invoice.
 public func userTransitions(from: JobStatus, type: String? = nil) -> [JobStatus] {
+    if from == .quote { return [] }
     // A skipped visit is put back with Undo Skip (Scheduled) or a new day (Reschedule), or called
     // off: not started or unscheduled by a status button.
     if from == .skipped { return from.transitions.filter { $0 == .scheduled || $0 == .canceled } }
@@ -91,3 +98,7 @@ public func userTransitions(from: JobStatus, type: String? = nil) -> [JobStatus]
             && ($0 != .skipped || type == "maintenance") && !(from == .unscheduled && $0 == .scheduled)
     }
 }
+
+/// A standalone quote's job (New Quote, 2026-11-24): not a job yet. Every job list, count and
+/// search leaves it out; the Quotes list and the quote screen show it. Port of core's.
+public func isQuoteJob(status: String) -> Bool { status == JobStatus.quote.rawValue }

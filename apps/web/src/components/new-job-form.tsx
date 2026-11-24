@@ -44,8 +44,19 @@ interface CustomerOption {
   }[];
 }
 
-/** A group of fields, as iOS forms draw them: a small gray header over a rounded block. */
-function Section({ title, children }: { title: string; children: React.ReactNode }) {
+/**
+ * A group of fields, as iOS forms draw them: a small gray header over a rounded block, and an
+ * optional footer under it. New Quote uses it too.
+ */
+export function Section({
+  title,
+  footer,
+  children,
+}: {
+  title: string;
+  footer?: string;
+  children: React.ReactNode;
+}) {
   const id = `section-${title.toLowerCase().replace(/[^a-z0-9]+/g, "-")}`;
   return (
     <section aria-labelledby={id} className="pt-3">
@@ -53,6 +64,7 @@ function Section({ title, children }: { title: string; children: React.ReactNode
         <span id={id}>{title}</span>
       </SectionTitle>
       <div className="space-y-4 card p-4">{children}</div>
+      {footer ? <p className="mt-2 px-4 text-[0.8125rem] text-text-muted">{footer}</p> : null}
     </section>
   );
 }

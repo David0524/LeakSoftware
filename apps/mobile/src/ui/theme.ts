@@ -311,6 +311,7 @@ export function jobStatusColor(status: JobStatus): string {
   switch (status) {
     case "unscheduled":
     case "canceled":
+    case "quote":
       return color.excluded;
     case "scheduled":
       return color.text;
@@ -342,6 +343,7 @@ export const JOB_STATUS_COLOR: Record<JobStatus, string> = {
   canceled: tokens.color.status.excluded,
   done: tokens.color.status.pass,
   skipped: tokens.color.status.warning,
+  quote: tokens.color.status.excluded,
 };
 
 /** Status pills on the Quote tab. */

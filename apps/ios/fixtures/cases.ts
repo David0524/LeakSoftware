@@ -50,6 +50,7 @@ import { skipVisit } from "./cases/skip-visit";
 import { feedback } from "./cases/feedback";
 import { autopay } from "./cases/autopay";
 import { refer } from "./cases/refer";
+import { quoteList } from "./cases/quote-list";
 
 /** One fixture file per entry: apps/ios/Tests/Fixtures/<name>.json. */
 export const modules: Record<string, ModuleCases> = {
@@ -104,4 +105,5 @@ export const modules: Record<string, ModuleCases> = {
   "chemistry-trends": chemistryTrends,
   "skip-visit": skipVisit,
   refer,
+  "quote-list": quoteList,
 };
