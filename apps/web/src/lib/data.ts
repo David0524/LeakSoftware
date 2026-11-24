@@ -953,6 +953,8 @@ export interface QuoteRow {
     check_number?: string | null;
     status: string;
     paid_at: string | null;
+    /** Refunded so far (2026-11-24); invoices only. */
+    refunded_cents?: number;
   }[];
   token: string | null;
   repairNumber: number | null;
@@ -1104,7 +1106,7 @@ export const getInvoices = cache(async function getInvoices(
       .order("sort_order"),
     supabase
       .from("payment")
-      .select("id, invoice_id, amount_cents, method, check_number, status, paid_at")
+      .select("id, invoice_id, amount_cents, method, check_number, status, paid_at, refunded_cents")
       .in("invoice_id", ids)
       .is("deleted_at", null)
       .order("created_at"),

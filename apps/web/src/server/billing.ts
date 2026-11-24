@@ -1,6 +1,7 @@
 import "server-only";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type Stripe from "stripe";
+import { cacheLife, cacheTag } from "next/cache";
 import {
   billedTeamSize,
   checkoutTrialEnd,
@@ -17,6 +18,12 @@ import {
   servicesPriceCents,
   TEAM_SIZE_MAX,
   type Services,
+  DEFAULT_PRICES,
+  overriddenCents,
+  overrideFromRow,
+  priceListFromJson,
+  type PriceList,
+  type PriceOverride,
 } from "@leakbook/core";
 import { adminClient } from "./admin";
 import { stripeClient, stripePublishableKey } from "./stripe";
@@ -61,8 +68,11 @@ export async function activePeople(db: SupabaseClient, companyId: string): Promi
   return Math.max(1, count ?? 1);
 }
 
-/** The shop's monthly price and the plan's name for the invoice line. */
-async function shopPrice(
+/**
+ * The shop's monthly price and the plan's name for the invoice line: its package and people
+ * under its price list (`standard`), then staff's own price for it, if any (`cents`).
+ */
+export async function shopPrice(
   db: SupabaseClient,
   companyId: string,
 ): Promise<{
@@ -70,6 +80,10 @@ async function shopPrice(
   people: number;
   active: number;
   cents: number;
+  standard: number;
+  override: PriceOverride | null;
+  prices: PriceList;
+  today: string;
   name: string;
 }> {
   const { data, error } = await db.from("company").select("settings").eq("id", companyId).single();
@@ -82,7 +96,67 @@ async function shopPrice(
     services === "both"
       ? `Sundeck Pro ${PLANS.maintenance.name} + ${PLANS.leak.name}`
       : `Sundeck Pro ${planForServices(services).name}`;
-  return { services, people, active, cents: servicesPriceCents(services, people), name };
+  // The price list the shop pays under, and staff's own price for it (owner, 2026-11-24).
+  const billing = await shopBillingPrice(db, companyId);
+  const standard = servicesPriceCents(services, people, billing.prices);
+  const cents = overriddenCents(standard, billing.override, billing.today);
+  return {
+    services,
+    people,
+    active,
+    cents,
+    standard,
+    override: billing.override,
+    prices: billing.prices,
+    today: billing.today,
+    name,
+  };
+}
+
+/**
+ * A shop's price list, its own price from staff, and its today. A database without the
+ * 2026-11-24 migration answers with the default prices and no override.
+ */
+export async function shopBillingPrice(
+  db: SupabaseClient,
+  companyId: string,
+): Promise<{ prices: PriceList; override: PriceOverride | null; today: string }> {
+  const { data, error } = await db.rpc("shop_billing_price", { target_company: companyId });
+  if (error || !data) {
+    if (error) console.error("[billing] shop_billing_price:", error.message);
+    return { prices: DEFAULT_PRICES, override: null, today: new Date().toISOString().slice(0, 10) };
+  }
+  const row = data as Record<string, unknown>;
+  return {
+    prices: priceListFromJson(row.price_list),
+    override: overrideFromRow(row as Parameters<typeof overrideFromRow>[0]),
+    today: String(row.today ?? new Date().toISOString().slice(0, 10)),
+  };
+}
+
+/**
+ * The prices new shops pay (the newest list staff saved), for the home page, sign-up and the
+ * trial page. Any client may read them; without a database, the default prices.
+ */
+/** The tag Admin › Pricing refreshes when staff save a list. */
+export const PRICES_TAG = "prices";
+
+/** `currentPrices`, cached for the public pages until staff save new prices. */
+export async function publishedPrices(): Promise<PriceList> {
+  "use cache";
+  cacheLife("minutes");
+  cacheTag(PRICES_TAG);
+  return currentPrices();
+}
+
+export async function currentPrices(db: SupabaseClient | null = adminClient()): Promise<PriceList> {
+  if (!db) return DEFAULT_PRICES;
+  const { data, error } = await db.rpc("current_prices");
+  if (error) {
+    console.error("[billing] current_prices:", error.message);
+    return DEFAULT_PRICES;
+  }
+  return priceListFromJson(data);
 }
 
 /**
@@ -559,6 +633,10 @@ export async function currentPrice(companyId: string): Promise<{
   /** The active people: the fewest the owner can pick. */
   active: number;
   cents: number;
+  /** The price list the shop pays under, staff's own price for it, and its today. */
+  prices: PriceList;
+  override: PriceOverride | null;
+  today: string;
   problem: string | null;
 } | null> {
   const db = adminClient();

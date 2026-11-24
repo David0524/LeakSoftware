@@ -21,6 +21,9 @@ import {
   friendlyError,
   ON_FILE_NOTE,
   ON_FILE_SENT,
+  REFUND_BUTTON,
+  canRefund,
+  refundedText,
 } from "@leakbook/core";
 import {
   createJobInvoice,
@@ -48,6 +51,7 @@ import { useLine } from "../../data/texting";
 import { RecordPayment, SendReceiptSheet } from "./Receipt";
 import { shareLink } from "../../lib/shareLink";
 import { InvoiceAutopay } from "../autopay/AutopayGroup";
+import { RefundSheet } from "./Refund";
 
 const INVOICEABLE = ["in_progress", "report_sent", "quote_sent", "quote_accepted", "invoiced"];
 
@@ -150,6 +154,8 @@ function InvoiceCard({ invoice, customer }: { invoice: JobInvoice; customer?: Cu
   } | null>(null);
   const line = useLine(company.id);
   const [sent, setSent] = useState<string | null>(null);
+  // Refund (owners and admins, 2026-11-24): the payment whose Refund Payment sheet is open.
+  const [refunding, setRefunding] = useState<JobInvoice["payments"][number] | null>(null);
 
   function removeLine(id: string) {
     services.sync.write("invoice_line_item", id, company.id, {
@@ -245,16 +251,44 @@ function InvoiceCard({ invoice, customer }: { invoice: JobInvoice; customer?: Cu
         <View style={styles.stack}>
           {invoice.payments.length ? (
             <View style={{ gap: 4 }}>
-              {invoice.payments.map((p) => (
-                <T key={p.id} variant="secondary">
-                  {`${formatCents(p.amount_cents)} · ${paymentMethodLabel(p.method, p.check_number, "office")} · ${PAYMENT_STATUS[p.status] ?? p.status}${
-                    p.paid_at
-                      ? ` · ${new Date(p.paid_at).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}`
-                      : ""
-                  }`}
-                </T>
-              ))}
+              {invoice.payments.map((p) => {
+                const refunded = refundedText(p);
+                const method = paymentMethodLabel(p.method, p.check_number, "office");
+                return (
+                  <View key={p.id} style={styles.payment}>
+                    <T variant="secondary" style={{ flex: 1 }}>
+                      {`${formatCents(p.amount_cents)} · ${method} · ${PAYMENT_STATUS[p.status] ?? p.status}${
+                        p.paid_at
+                          ? ` · ${new Date(p.paid_at).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}`
+                          : ""
+                      }${refunded ? ` · ${refunded}` : ""}`}
+                    </T>
+                    {canRefund(membership?.role, invoice, p) ? (
+                      <Button
+                        title={REFUND_BUTTON}
+                        kind="secondary"
+                        small
+                        accessibilityLabel={`${REFUND_BUTTON} ${formatCents(p.amount_cents)} ${method}`}
+                        onPress={() => {
+                          setSent(null);
+                          setRefunding(p);
+                        }}
+                      />
+                    ) : null}
+                  </View>
+                );
+              })}
             </View>
+          ) : null}
+          {refunding ? (
+            <RefundSheet
+              payment={refunding}
+              onClose={() => setRefunding(null)}
+              onRefunded={(message) => {
+                setRefunding(null);
+                setSent(message);
+              }}
+            />
           ) : null}
           <InvoiceAutopay
             invoice={invoice}
@@ -636,6 +670,7 @@ const styles = StyleSheet.create({
     paddingVertical: space["2"],
   },
   totals: { gap: 4 },
+  payment: { flexDirection: "row", alignItems: "center", gap: space["2"] },
   amount: { flexDirection: "row", justifyContent: "space-between", gap: space["4"] },
   pair: { flexDirection: "row", gap: space["3"] },
   row: { flexDirection: "row", flexWrap: "wrap", alignItems: "center", gap: space["3"] },

@@ -14,6 +14,7 @@ import {
 } from "@leakbook/core";
 import { adminClient } from "./admin";
 import { applyBillingEvent, finishOnboarding } from "./billing";
+import { recordChargeRefund } from "./refunds";
 
 // Payments (BUILD_PLAN 6.4): Stripe Connect with Standard accounts and direct charges, so
 // the shop is the merchant of record. Deposits and invoices are Checkout Sessions on the
@@ -797,6 +798,14 @@ export async function applyEvent(
         outcome = "applied";
         if (status === "succeeded") await notifyPaid(d, { sessionId: s.id });
       }
+      break;
+    }
+    // A refund on a shop's charge, from the Refund button or Stripe's dashboard (owner,
+    // 2026-11-24). Only on the payment's own shop's account; others are ignored.
+    case "charge.refunded": {
+      if (!event.account) break;
+      const r = await recordChargeRefund(d, event.data.object as Stripe.Charge, event.account);
+      if (r) outcome = "applied";
       break;
     }
     case "account.updated": {

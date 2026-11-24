@@ -93,7 +93,8 @@ default and tell me which it is.
    - Endpoint URL: `https://sundeckpro.com/api/stripe/webhook`
    - Events: `account.updated`, `checkout.session.completed`,
      `checkout.session.async_payment_succeeded`, `checkout.session.async_payment_failed`,
-     `payment_intent.succeeded`, `payment_intent.payment_failed`
+     `payment_intent.succeeded`, `payment_intent.payment_failed`, `charge.refunded` (refunds made in
+     Stripe's dashboard show on the invoice, 2026-11-24)
 
 For each, copy its ID (`we_…`), status, API version, and event list. Don't open the signing
 secret.

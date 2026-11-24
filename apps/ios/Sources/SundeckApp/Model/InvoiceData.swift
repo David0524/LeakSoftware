@@ -58,6 +58,8 @@ public struct PaymentRecord: Decodable, Equatable, Sendable, Identifiable {
     public var checkNumber: String?
     public var status: String
     public var paidAt: String?
+    /// Refunded so far (owner, 2026-11-24); `amountCents` is what's still kept.
+    public var refundedCents: Cents = 0
 
     enum CodingKeys: String, CodingKey {
         case id, method, status
@@ -66,12 +68,35 @@ public struct PaymentRecord: Decodable, Equatable, Sendable, Identifiable {
         case amountCents = "amount_cents"
         case checkNumber = "check_number"
         case paidAt = "paid_at"
+        case refundedCents = "refunded_cents"
     }
 
     /// As the receipt rules take it.
     public var receipt: ReceiptPayment {
         ReceiptPayment(
             id: id, amountCents: amountCents, method: method, checkNumber: checkNumber, status: status, paidAt: paidAt)
+    }
+
+    /// As the refund rules take it.
+    public var refund: RefundablePayment {
+        RefundablePayment(amountCents: amountCents, method: method, status: status, refundedCents: refundedCents)
+    }
+}
+
+extension PaymentRecord {
+    /// Rows synced before refunds have no `refunded_cents`: none refunded.
+    public init(from decoder: Decoder) throws {
+        let c = try decoder.container(keyedBy: CodingKeys.self)
+        self.init(
+            id: try c.decode(String.self, forKey: .id),
+            invoiceId: try c.decodeIfPresent(String.self, forKey: .invoiceId),
+            quoteId: try c.decodeIfPresent(String.self, forKey: .quoteId),
+            amountCents: try c.decode(Cents.self, forKey: .amountCents),
+            method: try c.decode(String.self, forKey: .method),
+            checkNumber: try c.decodeIfPresent(String.self, forKey: .checkNumber),
+            status: try c.decode(String.self, forKey: .status),
+            paidAt: try c.decodeIfPresent(String.self, forKey: .paidAt),
+            refundedCents: try c.decodeIfPresent(Cents.self, forKey: .refundedCents) ?? 0)
     }
 }
 

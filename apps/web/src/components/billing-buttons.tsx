@@ -5,9 +5,14 @@ import {
   discountedCents,
   discountNote,
   formatCents,
+  overriddenCents,
+  overrideActive,
+  overrideText,
   servicesPriceCents,
   TEAM_SIZE_MAX,
   type CodeOffer,
+  type PriceList,
+  type PriceOverride,
   type Services,
 } from "@leakbook/core";
 import { manageBilling, setTeamSize, subscribe } from "@/app/actions/billing";
@@ -80,6 +85,7 @@ export function BillingPlan({
   subscribed,
   publishableKey,
   offer = null,
+  pricing = null,
 }: {
   name: string;
   services: Services;
@@ -91,6 +97,8 @@ export function BillingPlan({
   publishableKey: string | null;
   /** A promo code's percent off (owner, 2026-11-23), shown in the price. */
   offer?: CodeOffer | null;
+  /** The shop's price list and staff's own price for it (owner, 2026-11-24). */
+  pricing?: { prices: PriceList; override: PriceOverride | null; today: string } | null;
 }) {
   const [team, setTeam] = useState(Math.max(active, billed));
   const settled = useSettledTeamSize(team);
@@ -104,8 +112,15 @@ export function BillingPlan({
       (e) => setError(isNoConnection(e) ? NO_CONNECTION : "Couldn’t save. Try again."),
     );
   }, [settled, subscribed]);
-  const fullCents = servicesPriceCents(services, team);
+  const fullCents = pricing
+    ? overriddenCents(
+        servicesPriceCents(services, team, pricing.prices),
+        pricing.override,
+        pricing.today,
+      )
+    : servicesPriceCents(services, team);
   const discount = discountNote(fullCents, offer);
+  const own = pricing && overrideActive(pricing.override, pricing.today) ? pricing.override : null;
   return (
     <>
       <div>
@@ -116,6 +131,9 @@ export function BillingPlan({
           </span>
         </p>
         {discount ? <p className="mt-1 text-[0.9375rem] text-text-muted">{discount}</p> : null}
+        {own ? (
+          <p className="mt-1 text-[0.9375rem] text-text-muted">Your price: {overrideText(own)}.</p>
+        ) : null}
       </div>
       <div>
         <div className="flex items-center justify-between gap-2">

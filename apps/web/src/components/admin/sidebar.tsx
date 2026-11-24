@@ -12,6 +12,7 @@ const SECTIONS: { title?: string; links: { href: string; label: string }[] }[] =
       { href: "/k4cs4uxrntb27z/people", label: "People" },
       { href: "/k4cs4uxrntb27z/usage", label: "Usage" },
       { href: "/k4cs4uxrntb27z/finances", label: "Finances" },
+      { href: "/k4cs4uxrntb27z/pricing", label: "Pricing" },
     ],
   },
   {

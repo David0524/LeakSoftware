@@ -77,6 +77,8 @@ function rewardDb(referrer: Record<string, unknown> | null, referred: Record<str
       return q;
     },
     rpc: async (name: string, args: Record<string, unknown>) => {
+      // The shop's price list and own price: none, so the default prices.
+      if (name === "shop_billing_price") return { data: null, error: null };
       rpcs.push({ name, args });
       return { data: true, error: null };
     },

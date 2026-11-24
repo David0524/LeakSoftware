@@ -1,7 +1,7 @@
 "use client";
 
 import type { ReactNode } from "react";
-import type { PlanId } from "@leakbook/core";
+import type { PlanId, PriceList } from "@leakbook/core";
 import { CONTACT_EMAIL, CONTACT_PHONE, CONTACT_PHONE_URL } from "@/lib/site";
 import { ButtonLink } from "../ui";
 import {
@@ -29,17 +29,17 @@ import { Pricing } from "./pricing";
 // closes on water like it opens (owner, 2026-10-18: "a tad more interesting", not busy): the
 // 3D mark over the night sea.
 
-export function Landing() {
+export function Landing({ prices }: { prices: PriceList }) {
   return (
     <PackageProvider>
       <Hero />
       <Facts />
-      <Body />
+      <Body prices={prices} />
     </PackageProvider>
   );
 }
 
-function Body() {
+function Body({ prices }: { prices: PriceList }) {
   const { pkg } = usePackage();
   const leak = pkg === "leak";
   return (
@@ -159,7 +159,7 @@ function Body() {
         title="One simple price."
         sub="The field app, the office, and getting paid, for your whole team."
       >
-        <Pricing />
+        <Pricing prices={prices} />
       </Section>
 
       <Section id="faq" tone="tint" eyebrow="Questions" title="Good to know.">

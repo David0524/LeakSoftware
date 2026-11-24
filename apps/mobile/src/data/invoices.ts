@@ -19,6 +19,8 @@ interface PaymentRow {
   check_number?: string | null;
   status: string;
   paid_at: string | null;
+  /** Refunded so far through Stripe (0 or missing when none); amount_cents is what's kept. */
+  refunded_cents?: number | null;
 }
 
 interface ShareLinkRow {
@@ -84,5 +86,26 @@ export async function sendJobInvoice(
     { channel, to },
   );
   await sync.syncNow();
+  return r;
+}
+
+/** The refund request's body: an amount for part, nothing for all that's left. */
+export function refundRequestBody(cents: number | null): { amount_cents?: number } {
+  return cents === null ? {} : { amount_cents: cents };
+}
+
+/**
+ * Refund (owners and admins): the server sends a card or bank payment back through the shop's
+ * Stripe account, all that's left (null) or part; the payment's change syncs down.
+ */
+export async function refundPayment(
+  paymentId: string,
+  cents: number | null,
+): Promise<{ refunded_cents: number; status: string; message: string }> {
+  const r = await call<{ refunded_cents: number; status: string; message: string }>(
+    `/api/payments/${paymentId}/refund`,
+    refundRequestBody(cents),
+  );
+  void getServices().sync.syncNow();
   return r;
 }
