@@ -2,6 +2,13 @@
 
 Newest first. Each entry: date, decision, reason.
 
+## 2026-11-24 (owner: "Let's add Tech specific stats in the dashboard"; chose jobs, money, and customer feedback, as a "By Tech" list)
+- **The Dashboard has a By tech list on all four platforms**, below Jobs by Status: one row per tech with their team color, over the same six months. Each row: jobs done and open, invoiced, collected (on the right), thumbs up and down, and average time on site. Most collected first. Quotes and close rate per tech were offered and not chosen. Migration `20261022005500_dashboard_techs.sql` (`owner_dashboard` returns `techs`).
+- **A job counts for its assigned tech only**, not the second tech, so money is never counted twice (Claude's call).
+- **Open means due by today and not finished**: in progress, or set for today or earlier, or with no time yet. A plan's visits for the months ahead aren't open (the demo shop showed 221 open per tech otherwise).
+- **Time on site** is start to finish on jobs done; a job left running 12 hours or more is left out of the average.
+- **Who's listed:** every active tech, even with zeros; owners and turned-off techs only when they have numbers (a turned-off tech says "Turned off").
+
 ## 2026-11-24 (owner: "In our admin panel, we should have full control over pricing, deals, etc. also switching account settings from leak detection, maintenance, both"; "how would we reverse a charge?"; "Build all 6"; on existing shops and price changes: "your call"; staff refunding a shop's customers: no, "ok agreed")
 - **Replaces "Money actions in the portal are Extend Trial and Make Demo Shop / End Demo … refunds and plan changes stay in the Stripe dashboard" (2026-10-22).** The Admin portal now does all of it, each with a reason in the Activity Log. Migration `20261022005600_admin_billing_control.sql`.
 - **Prices are database rows, edited in Admin › Pricing** (`public.price_list`; each save is a new list, the newest is what new shops pay). The home page, sign-up's trial page and the JSON-LD read it (cached, refreshed when staff save). The prices in `plans.ts` are now only the fallback and the launch list.
