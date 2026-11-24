@@ -40,8 +40,8 @@ export function NewMenuPill() {
         type="button"
         aria-haspopup="menu"
         aria-expanded={at != null}
-        aria-label="New Job or New Quote"
-        title="New Job or New Quote"
+        aria-label="New"
+        title="New"
         data-testid="new-menu"
         onClick={(e) => {
           const r = e.currentTarget.getBoundingClientRect();
@@ -89,7 +89,7 @@ export function NewMenuPlus() {
   return (
     <>
       <NavPlus
-        label="New Job or New Quote"
+        label="New"
         onClick={async () => {
           const key = await choose({
             title: "New",

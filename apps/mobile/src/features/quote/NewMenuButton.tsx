@@ -15,7 +15,7 @@ export const NEW_MENU = [
 export function NewMenuButton() {
   return (
     <HeaderButton
-      title="New Job or Quote"
+      title="New"
       icon="add"
       onPress={() =>
         chooseAction({
