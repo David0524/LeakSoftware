@@ -90,6 +90,8 @@
         @State private var lineKept = DraftHandle()
         @State private var detailsKept = DraftHandle()
         @State private var detailsLoaded = false
+        /// Refund Payment's sheet, for the payment whose Refund was tapped (owner, 2026-11-24).
+        @State private var refunding: RefundStart?
 
         private var server: MoneyServer { MoneyServer(sync: sync, api: app.api) }
         private var rpc: any RPCClient { LenientRPC(client: app.client) }
@@ -127,6 +129,10 @@
                 $flow.receipt, email: card.customerEmail, phone: card.customerPhone,
                 texting: companyLine(sync.store, companyId: companyId)?.status == "active"
             ) { sent in flow.message = sent }
+            .refundSheet($refunding) { refunded in
+                flow.error = nil
+                flow.message = refunded
+            }
             .onAppear {
                 resetDetails()
                 detailsLoaded = true
@@ -338,9 +344,9 @@
         // MARK: Sent
 
         @ViewBuilder private var sentParts: some View {
-            if !card.payments.isEmpty {
+            if !card.paymentLines.isEmpty {
                 VStack(alignment: .leading, spacing: 4) {
-                    ForEach(card.payments, id: \.self) { Text($0).textRole(.secondary).foregroundStyle(Color.text) }
+                    ForEach(card.paymentLines) { paymentRow($0) }
                 }
             }
             InvoiceAutopayRows(
@@ -388,6 +394,32 @@
                     .buttonStyle(.danger)
                     .disabled(flow.busy != nil)
             }
+        }
+
+        /// A payment's line, with Refund at its end for owners and admins on a card or bank payment
+        /// (also in the line's long-press menu).
+        @ViewBuilder private func paymentRow(_ line: InvoicePaymentLine) -> some View {
+            if let refund = line.refund {
+                HStack(spacing: 12) {
+                    Text(line.text).textRole(.secondary).foregroundStyle(Color.text)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                    Button(RefundText.button) { startRefund(refund) }
+                        .buttonStyle(.secondary(size: .small))
+                        .disabled(flow.busy != nil)
+                        .accessibilityLabel("\(RefundText.button), \(line.text)")
+                }
+                .contextMenu {
+                    Button(RefundText.button, systemImage: "arrow.uturn.backward") { startRefund(refund) }
+                }
+            } else {
+                Text(line.text).textRole(.secondary).foregroundStyle(Color.text)
+            }
+        }
+
+        private func startRefund(_ refund: RefundStart) {
+            flow.message = nil
+            flow.error = nil
+            refunding = refund
         }
 
         private var unsaved: Bool {

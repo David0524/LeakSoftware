@@ -5,12 +5,14 @@ import {
   INVOICE_STATUS_LABELS,
   SEND_RECEIPT,
   canRecordPayment,
+  canRefund,
   canSendReceipt,
   formatCents,
   latestReceiptPayment,
   parseDollars,
   paymentMethodLabel,
   receiptSummary,
+  refundedText,
   invoiceBalance,
   invoiceTotals,
   lineTotal,
@@ -30,6 +32,7 @@ import { CopyLink, SField, STextArea, SettingsForm } from "./settings-forms";
 import { Button, Checkbox, Field, Notice } from "./ui";
 import { Draft } from "./draft-keeper";
 import { InvoiceAutopay } from "./autopay";
+import { RefundPayment } from "./refund-sheet";
 import { orOffline } from "@/lib/offline";
 import {
   RecordPaymentFields,
@@ -148,6 +151,7 @@ export function InvoicePanel({
   autopay?: { method: SavedMethod | null; feeBps: number; customer: string } | null;
 }) {
   const [sendState, sendAction, sending] = useActionState(orOffline(sendInvoiceAction), {});
+  const [refundMessage, setRefundMessage] = useState<string | null>(null);
   const draft = invoice.status === "draft";
   const live = invoice.lines.filter((l) => l.kind === "item");
   const totals = draft ? invoiceTotals(invoice.lines, invoice.discount_cents, taxRateBps) : invoice;
@@ -299,18 +303,33 @@ export function InvoicePanel({
         <div className="mt-4 space-y-4">
           {invoice.payments.length ? (
             <ul className="space-y-1 text-[0.9375rem]">
-              {invoice.payments.map((p) => (
-                <li key={p.id}>
-                  {formatCents(p.amount_cents)} ·{" "}
-                  {paymentMethodLabel(p.method, p.check_number, "office")} ·{" "}
-                  {PAYMENT_STATUS[p.status] ?? p.status}
-                  {p.paid_at
-                    ? ` · ${new Date(p.paid_at).toLocaleDateString("en-US", { dateStyle: "medium" })}`
-                    : ""}
-                </li>
-              ))}
+              {invoice.payments.map((p) => {
+                const refunded = refundedText(p);
+                return (
+                  <li key={p.id} className="flex min-h-11 items-center justify-between gap-3">
+                    <span>
+                      {formatCents(p.amount_cents)} ·{" "}
+                      {paymentMethodLabel(p.method, p.check_number, "office")} ·{" "}
+                      {PAYMENT_STATUS[p.status] ?? p.status}
+                      {p.paid_at
+                        ? ` · ${new Date(p.paid_at).toLocaleDateString("en-US", { dateStyle: "medium" })}`
+                        : ""}
+                      {refunded ? ` · ${refunded}` : ""}
+                    </span>
+                    {canRefund(role, invoice, p) ? (
+                      <RefundPayment
+                        payment={p}
+                        invoiceId={invoice.id}
+                        jobId={jobId}
+                        onDone={setRefundMessage}
+                      />
+                    ) : null}
+                  </li>
+                );
+              })}
             </ul>
           ) : null}
+          {refundMessage ? <Notice tone="success">{refundMessage}</Notice> : null}
           <InvoiceAutopay
             invoice={invoice}
             jobId={jobId}

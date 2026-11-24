@@ -7,6 +7,7 @@ import {
   checkNumberError,
   parseDollars,
   receiptSentMessage,
+  refundAmount,
   type ReceiptChannel,
   friendlyError,
 } from "@leakbook/core";
@@ -18,6 +19,8 @@ import { createClient } from "@/lib/supabase/server";
 import { EmailNotConfigured } from "@/server/email";
 import { autopaySentNote, sendInvoiceWithAutopay } from "@/server/autopay";
 import { createInvoice, sendPaymentReceipt } from "@/server/invoices";
+import { failureMessage } from "@/server/failures";
+import { refundPayment } from "@/server/refunds";
 import {
   CheckoutRefused,
   PaymentsNotConfigured,
@@ -225,6 +228,29 @@ export async function sendReceiptAction(_: FormState, form: FormData): Promise<F
   return {
     message: onFile ? "Receipt sent to the customer." : receiptSentMessage(channel, to),
   };
+}
+
+/**
+ * Refund: all of a card or bank payment that's left, or part (owner, 2026-11-24). Owners and
+ * admins; the database refuses anyone else and staff support sessions.
+ */
+export async function refundPaymentAction(_: FormState, form: FormData): Promise<FormState> {
+  await getOffice();
+  const part = text(form, "part") === "1";
+  const refundable = Number(text(form, "refundable"));
+  const amount = refundAmount(part, text(form, "amount"), refundable);
+  if ("error" in amount) return { error: amount.error };
+  try {
+    const r = await refundPayment(
+      await createClient(),
+      text(form, "payment"),
+      part ? amount.cents : null,
+    );
+    return done(form, r.message);
+  } catch (e) {
+    if (e instanceof PaymentsNotConfigured) return { error: e.message };
+    return { error: failureMessage(e) };
+  }
 }
 
 export async function voidInvoiceAction(_: FormState, form: FormData): Promise<FormState> {

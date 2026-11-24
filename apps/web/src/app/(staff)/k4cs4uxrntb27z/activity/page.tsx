@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { Suspense } from "react";
 import { fmtTime, TABLE, TwoStepNeeded } from "@/components/admin/kit";
+import { servicesLabel } from "@leakbook/core";
 import { Empty, PageHeader } from "@/components/ui";
 import { loadStaffActions, staffGate, type StaffActionKind } from "@/server/staff";
 
@@ -25,6 +26,15 @@ const ACTION: Record<StaffActionKind, string> = {
   promo_add: "Made a promo code",
   promo_on: "Turned on a promo code",
   promo_off: "Turned off a promo code",
+  services_change: "Changed the package",
+  price_change: "Set the shop's price",
+  code_apply: "Applied a code",
+  free_months: "Gave free months",
+  refund: "Refunded a charge",
+  cancel_change: "Changed the subscription",
+  pause_on: "Paused billing",
+  pause_off: "Resumed billing",
+  prices_change: "Changed the prices",
 };
 
 function detail(details: Record<string, unknown>): string {
@@ -33,6 +43,9 @@ function detail(details: Record<string, unknown>): string {
   if (details.access) parts.push(details.access === "view" ? "View Only" : "Can Make Changes");
   if (details.minutes) parts.push(`${details.minutes} min`);
   if (details.days) parts.push(`+${details.days} days`);
+  if (details.months) parts.push(`+${details.months} months`);
+  if (details.to) parts.push(`to ${servicesLabel(String(details.to))}`);
+  if (details.when) parts.push(String(details.when).replace("_", " "));
   if (details.list) parts.push(`${details.list}, ${details.rows} rows`);
   return parts.join(" · ");
 }

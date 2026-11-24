@@ -557,6 +557,62 @@ private func invoiceRows(status: String, paid: Int = 0) -> [(String, JSONValue)]
         #expect(admin.card?.canVoid == true)
     }
 
+    /// Refund on a card or bank payment, owners and admins only (owner, 2026-11-24).
+    @Test func ownersRefundCardAndBankPayments() throws {
+        let payments: [(String, JSONValue)] = [
+            (
+                "payment",
+                [
+                    "id": "pay1", "company_id": "c1", "invoice_id": "i1", "amount_cents": 6000, "method": "card",
+                    "status": "succeeded", "refunded_cents": 2000, "paid_at": "2026-10-15T18:00:00.000Z",
+                ]
+            ),
+            (
+                "payment",
+                [
+                    "id": "pay2", "company_id": "c1", "invoice_id": "i1", "amount_cents": 4000, "method": "cash",
+                    "status": "succeeded", "paid_at": "2026-10-15T18:00:00.000Z",
+                ]
+            ),
+            (
+                "payment",
+                [
+                    "id": "pay3", "company_id": "c1", "invoice_id": "i1", "amount_cents": 5000, "method": "ach",
+                    "status": "refunded", "refunded_cents": 5000, "paid_at": "2026-10-15T18:00:00.000Z",
+                ]
+            ),
+        ]
+        let owner = try MoneyJob(role: "owner")
+        try owner.pull(invoiceRows(status: "partially_paid", paid: 10000))
+        try owner.pull(payments)
+        let card = try #require(owner.card)
+        let lines = Dictionary(uniqueKeysWithValues: card.paymentLines.map { ($0.id, $0) })
+        #expect(lines["pay1"]?.text == "$60.00 · Card · received · Oct 15, 2026 · Refunded $20.00")
+        let start = RefundStart(paymentId: "pay1", invoiceId: "i1", method: "card", refundableCents: 6000)
+        #expect(lines["pay1"]?.refund == start)
+        // Cash isn't refunded here; a refunded payment has nothing left.
+        #expect(lines["pay2"]?.refund == nil && lines["pay2"]?.text.contains("Refunded") == false)
+        #expect(lines["pay3"]?.refund == nil && lines["pay3"]?.text.contains("Refunded") == false)
+
+        // Techs never see Refund.
+        let tech = try MoneyJob()
+        try tech.pull(invoiceRows(status: "partially_paid", paid: 10000))
+        try tech.pull(payments)
+        #expect(try #require(tech.card).paymentLines.allSatisfy { $0.refund == nil })
+    }
+
+    @Test func refundPaymentsSheetWords() {
+        let form = RefundForm(
+            start: RefundStart(paymentId: "pay1", invoiceId: "i1", method: "card", refundableCents: 8000))
+        #expect(form.buttonText == "Refund $80.00" && form.fieldError == nil)
+        form.part = true
+        #expect(form.buttonText == "Refund" && form.fieldError == nil)
+        form.typed = "80.01"
+        #expect(form.buttonText == "Refund" && form.fieldError == "Refund $80.00 or less.")
+        form.typed = "20"
+        #expect(form.buttonText == "Refund $20.00" && form.amount == .cents(2000))
+    }
+
     @Test func voidedInvoicesAreListedUnderTheSection() throws {
         let s = try MoneyJob()
         var rows = invoiceRows(status: "void")

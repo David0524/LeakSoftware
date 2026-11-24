@@ -18,6 +18,15 @@ public struct InvoiceLineText: Equatable, Sendable, Identifiable {
     public var removable: Bool
 }
 
+/// One payment on the invoice card: "$60.00 · Card · received · Oct 15, 2026 · Refunded $20.00",
+/// and Refund for owners and admins on a card or bank payment with something left (owner,
+/// 2026-11-24).
+public struct InvoicePaymentLine: Equatable, Sendable, Identifiable {
+    public var id: String
+    public var text: String
+    public var refund: RefundStart?
+}
+
 /// The invoice card (spec 5.4 Invoice).
 public struct InvoiceCardModel: Equatable, Sendable {
     public var invoice: JobInvoice
@@ -28,8 +37,10 @@ public struct InvoiceCardModel: Equatable, Sendable {
     /// Subtotal, Discount, Tax, Deposit paid, Total; then Paid and Balance due once sent.
     public var totalRows: [MoneyRow]
     public var isDraft: Bool
-    /// "$375.00 · Card · received · Oct 15, 2026"
-    public var payments: [String]
+    /// "$375.00 · Card · received · Oct 15, 2026", with Refund where it can be.
+    public var paymentLines: [InvoicePaymentLine]
+    /// The payment lines' words.
+    public var payments: [String] { paymentLines.map(\.text) }
     public var link: URL?
     /// Managers: "Amount received ($)" and Record Payment while something is owed.
     public var canRecordPayment: Bool
@@ -158,11 +169,20 @@ public struct InvoiceSectionModel: Equatable, Sendable {
                     removable: draft && l.kind == .item)
             },
             totalRows: rows, isDraft: draft,
-            payments: inv.payments.map { p in
-                [
-                    formatCents(p.amountCents), paymentMethodLabel(p.method, checkNumber: p.checkNumber, office: true),
-                    paymentStatus(p.status),
-                ].joined(separator: " · ") + (p.paidAt.map { " · " + mediumDate($0, timeZone: timeZone) } ?? "")
+            paymentLines: inv.payments.map { p in
+                var parts = [formatCents(p.amountCents)]
+                parts.append(paymentMethodLabel(p.method, checkNumber: p.checkNumber, office: true))
+                parts.append(paymentStatus(p.status))
+                if let paidAt = p.paidAt { parts.append(mediumDate(paidAt, timeZone: timeZone)) }
+                // "Refunded $20.00", or "Refunded" when all of it (owner, 2026-11-24).
+                if let refunded = refundedText(p.refund) { parts.append(refunded) }
+                var refund: RefundStart?
+                if canRefund(role: role, invoiceStatus: invoice.status.rawValue, p.refund) {
+                    refund = RefundStart(
+                        paymentId: p.id, invoiceId: invoice.id, method: p.method,
+                        refundableCents: refundableCents(p.refund))
+                }
+                return InvoicePaymentLine(id: p.id, text: parts.joined(separator: " · "), refund: refund)
             },
             link: live ? inv.token.flatMap { token in webURL.map { invoiceURL($0, token) } } : nil,
             canRecordPayment: rules.canRecordPayment,
@@ -495,6 +515,74 @@ public final class ReceiptForm {
             return onFile ? "Receipt sent to the customer." : receiptSentMessage(channel, to)
         } catch let failure as WebAPI.Failure {
             error = failure.offline ? ReceiptText.offline : failure.description
+        } catch {
+            self.error = userMessage(error)
+        }
+        return nil
+    }
+}
+
+/// Refund Payment's sheet: which payment, how it was paid, and what's left to refund.
+public struct RefundStart: Equatable, Sendable, Identifiable {
+    public var paymentId: String
+    public var invoiceId: String
+    public var method: String
+    public var refundableCents: Cents
+    public var id: String { paymentId }
+
+    public init(paymentId: String, invoiceId: String, method: String, refundableCents: Cents) {
+        self.paymentId = paymentId
+        self.invoiceId = invoiceId
+        self.method = method
+        self.refundableCents = refundableCents
+    }
+}
+
+/// Refund Payment's form (owner, 2026-11-24: "how would we reverse a charge?"): Refund Full or
+/// Refund Part with an amount, then the website's POST /api/payments/{id}/refund, called like
+/// Charge Card on File. The same words as the website and Android (core refund.ts). Linux-tested.
+@MainActor @Observable
+public final class RefundForm {
+    public let start: RefundStart
+    public var part = false
+    public var typed = ""
+    public var busy = false
+    public var error: String?
+
+    public init(start: RefundStart) {
+        self.start = start
+    }
+
+    public var amount: RefundAmount {
+        refundAmount(part: part, typed: typed, refundable: start.refundableCents)
+    }
+
+    /// "Refund $80.00"; for part, the amount typed once it's valid, else "Refund".
+    public var buttonText: String { amount.cents.map(refundButtonText) ?? RefundText.button }
+
+    /// Under the Amount field, once something is typed.
+    public var fieldError: String? {
+        part && !typed.trimmingCharacters(in: .whitespaces).isEmpty ? amount.error : nil
+    }
+
+    /// Refunds it; returns the server's line ("Refunded $20.00.") or nil with `error` set.
+    public func refund(_ api: WebAPI, sync: SyncService) async -> String? {
+        guard !busy else { return nil }
+        guard let cents = amount.cents else {
+            error = amount.error
+            return nil
+        }
+        busy = true
+        error = nil
+        defer { busy = false }
+        do {
+            // Part: the amount; Refund Full: nothing, so the server refunds all that's left.
+            let body: JSONValue = part ? ["amount_cents": .number(Double(cents))] : [:]
+            let reply = try await api.post("api/payments/\(start.paymentId)/refund", body)
+            Task { await sync.syncNow() }
+            return reply["message"]?.string ?? refundDoneText(cents)
+        } catch let failure as WebAPI.Failure {
+            error = failure.offline ? RefundText.offline : failure.description
         } catch {
             self.error = userMessage(error)
         }

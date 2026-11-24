@@ -9,9 +9,22 @@ import {
   referralRewardText,
   servicesLabel,
   shopCodeText,
+  overrideFromRow,
+  overrideText,
   shopPriceCents,
   shopStanding,
+  standardPriceCents,
 } from "@leakbook/core";
+import {
+  ApplyCode,
+  CancelSubscription,
+  ChangePackage,
+  FreeMonths,
+  PauseBilling,
+  RefundCharge,
+  SetPrice,
+} from "@/components/admin/billing";
+import { shopStripeBilling, type ShopStripeBilling } from "@/server/billing-admin";
 import { DemoToggle, ExtendTrial, OpenShop, ShopNoteForm } from "@/components/admin/actions";
 import { InternalToggle } from "@/components/admin/costs";
 import {
@@ -93,6 +106,16 @@ async function Shop({
   const s = d.shop;
   const standing = shopStanding(s);
   const stripeBills = Boolean(s.stripe_subscription_id);
+  // What Stripe has now: charges to refund, a pause or a cancel (owner, 2026-11-24).
+  let live: ShopStripeBilling | null = null;
+  let liveError = false;
+  try {
+    live = await shopStripeBilling(s.stripe_customer_id, s.stripe_subscription_id);
+  } catch (e) {
+    console.error("[admin] Stripe billing:", e);
+    liveError = true;
+  }
+  const own = overrideFromRow(s);
   const address = [
     s.address_line1,
     s.address_line2,
@@ -217,6 +240,22 @@ async function Shop({
             rows={[
               ["Standing", <StandingPill key="s" standing={standing} />],
               ["Price", `${formatCents(shopPriceCents(s))} a month`],
+              [
+                "Own price",
+                own
+                  ? `${overrideText(own)}${s.custom_price_note ? ` · ${s.custom_price_note}` : ""}`
+                  : null,
+              ],
+              [
+                "Billing",
+                live?.paused
+                  ? `Paused${live.resumesAt ? ` until ${fmtDate(live.resumesAt)}` : ""}`
+                  : live?.cancelAt
+                    ? `Ends ${fmtDate(live.cancelAt)}`
+                    : null,
+              ],
+              ["Credit", live?.creditCents ? formatCents(live.creditCents) : null],
+              ["Discounts", live?.discounts.length ? live.discounts.join(", ") : null],
               ["Trial ends", s.trial_ends_at ? fmtDate(s.trial_ends_at) : null],
               ["Paid through", s.current_period_end ? fmtDate(s.current_period_end) : null],
               ["Demo code", s.access_code],
@@ -279,12 +318,117 @@ async function Shop({
               ],
             ]}
           />
-          {stripeBills ? (
-            <p className="mt-3 text-[0.8125rem] text-text-muted">
-              Stripe bills this shop: change its trial or plan in the Stripe dashboard.
+          <div className="mt-4 flex flex-wrap gap-2">
+            <ChangePackage companyId={s.id} services={s.services} />
+            <SetPrice
+              companyId={s.id}
+              standardCents={standardPriceCents(s)}
+              current={{
+                kind: own?.kind ?? null,
+                cents: own?.cents ?? null,
+                percent: own?.percent ?? null,
+                until: own?.until ?? null,
+              }}
+            />
+            {standing !== "demo" && standing !== "canceled" ? (
+              <>
+                <ApplyCode companyId={s.id} />
+                <FreeMonths companyId={s.id} subscribed={stripeBills} />
+              </>
+            ) : null}
+            {stripeBills && live && live.status !== "canceled" ? (
+              <>
+                <PauseBilling companyId={s.id} paused={live.paused} />
+                <CancelSubscription companyId={s.id} ending={Boolean(live.cancelAt)} />
+              </>
+            ) : null}
+          </div>
+          {liveError ? (
+            <p className="mt-3 text-[0.8125rem] text-status-fail">
+              Stripe didn’t answer, so its charges and billing state aren’t shown.
             </p>
           ) : null}
         </Panel>
+
+        {live ? (
+          <Panel
+            title="Charges"
+            className="col-span-3"
+            subtitle="Sundeck Pro’s charges to this shop, newest first"
+          >
+            {live.charges.length ? (
+              <table className={TABLE}>
+                <thead className="border-b border-border text-text-muted">
+                  <tr>
+                    <th scope="col" className="px-3 py-2 font-semibold">
+                      Date
+                    </th>
+                    <th scope="col" className="px-3 py-2 font-semibold">
+                      For
+                    </th>
+                    <th scope="col" className="px-3 py-2 text-right font-semibold">
+                      Amount
+                    </th>
+                    <th scope="col" className="px-3 py-2 text-right font-semibold">
+                      Refunded
+                    </th>
+                    <th scope="col" className="px-3 py-2 font-semibold">
+                      Status
+                    </th>
+                    <th scope="col" className="px-3 py-2">
+                      <span className="sr-only">Actions</span>
+                    </th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {live.charges.map((c) => (
+                    <tr key={c.id} className="border-b border-border last:border-0">
+                      <td className="px-3 py-2 whitespace-nowrap">{fmtDate(c.created)}</td>
+                      <td className="px-3 py-2">
+                        {c.receiptUrl ? (
+                          <a
+                            href={c.receiptUrl}
+                            target="_blank"
+                            rel="noreferrer"
+                            className="text-link hover:underline"
+                          >
+                            {c.description}
+                          </a>
+                        ) : (
+                          c.description
+                        )}
+                      </td>
+                      <td className="px-3 py-2 text-right tabular-nums">{formatCents(c.amount)}</td>
+                      <td className="px-3 py-2 text-right tabular-nums">
+                        {c.refunded ? formatCents(c.refunded) : "—"}
+                      </td>
+                      <td className="px-3 py-2">
+                        {c.status === "succeeded"
+                          ? c.refunded >= c.amount
+                            ? "Refunded"
+                            : "Paid"
+                          : c.status === "failed"
+                            ? "Failed"
+                            : "Pending"}
+                      </td>
+                      <td className="px-3 py-2 text-right">
+                        {c.status === "succeeded" && c.refunded < c.amount ? (
+                          <RefundCharge
+                            companyId={s.id}
+                            chargeId={c.id}
+                            leftCents={c.amount - c.refunded}
+                          />
+                        ) : null}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            ) : (
+              <p className="text-[0.9375rem] text-text-muted">No charges yet.</p>
+            )}
+          </Panel>
+        ) : null}
 
         <Panel
           title="Team"

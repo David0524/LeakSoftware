@@ -15,6 +15,9 @@ import {
   trialTerms,
   trialPackage,
   type CodeOffer,
+  overriddenCents,
+  type PriceList,
+  type PriceOverride,
   type Services,
 } from "@leakbook/core";
 import type { SubscribeState } from "@/app/actions/auth";
@@ -49,6 +52,7 @@ export function TrialOffer({
   offer = null,
   canEnterCode = true,
   refusedCode = null,
+  pricing = null,
 }: {
   services: Services;
   /** Active people on the team: the fewest the owner can pick. */
@@ -68,6 +72,8 @@ export function TrialOffer({
   canEnterCode?: boolean;
   /** A sign-up link's code that couldn't be applied, shown in the open field with why. */
   refusedCode?: { code: string; error: string } | null;
+  /** The prices the shop will pay and staff's own price for it (owner, 2026-11-24). */
+  pricing?: { prices: PriceList; override: PriceOverride | null; today: string } | null;
 }) {
   const pkg = TRIAL_OFFER[trialPackage(services)];
   const terms = trialTerms(heardFrom, offer);
@@ -79,8 +85,13 @@ export function TrialOffer({
     orOffline((_: SubscribeState, form: FormData) => startCheckout(Number(form.get("team_size")))),
     {},
   );
-  const tier = planTier(planForServices(services), team);
-  const fullCents = servicesPriceCents(services, team);
+  const prices = pricing?.prices;
+  const tier = planTier(planForServices(services, prices), team);
+  const fullCents = overriddenCents(
+    servicesPriceCents(services, team, prices),
+    pricing?.override ?? null,
+    pricing?.today ?? "",
+  );
   const price = dollars(discountedCents(fullCents, offer?.percentOff));
   const discount = discountNote(fullCents, offer);
   // Every new shop comes to this payment page (owner, 2026-10-16). Without Stripe on the
@@ -153,7 +164,7 @@ export function TrialOffer({
               2026-10-19). */}
             {services === "both" ? (
               <ul className="mt-3 space-y-1 text-[0.9375rem]" data-testid="onboarding-price-lines">
-                {servicesPriceLines(services, team).map((l) => (
+                {servicesPriceLines(services, team, prices).map((l) => (
                   <li key={l.label} className="flex justify-between gap-3">
                     <span>{l.label}</span>
                     <span className="tabular-nums">{dollars(l.cents)}</span>

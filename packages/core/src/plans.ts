@@ -48,6 +48,169 @@ export const BOTH_ADDON_CENTS: Cents = 4_900;
 
 const people = (users: number) => Math.max(1, Math.floor(users));
 
+// ---------------------------------------------------------------------------
+// Prices staff set in the Admin portal (owner, 2026-11-24: "full control over pricing")
+// ---------------------------------------------------------------------------
+
+/**
+ * The whole price list: both packages' tiers and the Both add-on. Staff edit it in Admin ›
+ * Pricing; each save is a new row of public.price_list, and the newest is what new shops pay.
+ * A shop keeps the list it subscribed under (owner: existing shops keep their price).
+ */
+export interface PriceList {
+  maintenance: Plan;
+  leak: Plan;
+  bothAddonCents: Cents;
+}
+
+/** The prices before staff set any (and the fallback when the database has none). */
+export const DEFAULT_PRICES: PriceList = {
+  maintenance: PLANS.maintenance,
+  leak: PLANS.leak,
+  bothAddonCents: BOTH_ADDON_CENTS,
+};
+
+/** The most a tier, the per-person price, or the add-on can be ($10,000 a month). */
+export const PRICE_MAX_CENTS = 1_000_000;
+
+const PLAN_IDS: PlanId[] = ["maintenance", "leak"];
+
+const centsOk = (v: unknown): v is number =>
+  typeof v === "number" && Number.isInteger(v) && v >= 0 && v <= PRICE_MAX_CENTS;
+
+/**
+ * Why a price list can't be saved, or null when it can: each package needs 1 to 6 tiers with
+ * a name, more people than the one before, and a price above the one before (whole cents,
+ * $10,000 at most); the per-person and add-on prices are whole cents too.
+ */
+export function priceListProblem(p: PriceList): string | null {
+  for (const id of PLAN_IDS) {
+    const plan = p[id];
+    const label = DEFAULT_PRICES[id].name;
+    if (!plan || !Array.isArray(plan.tiers) || plan.tiers.length < 1 || plan.tiers.length > 6)
+      return `${label} needs 1 to 6 tiers.`;
+    let upTo = 0;
+    let price = 0;
+    for (const t of plan.tiers) {
+      const name = typeof t.name === "string" ? t.name.trim() : "";
+      if (!name || name.length > 30) return `Give each ${label} tier a name (up to 30 letters).`;
+      if (!Number.isInteger(t.upTo) || t.upTo <= upTo || t.upTo > 500)
+        return `Each ${label} tier is for more people than the one before.`;
+      if (!centsOk(t.priceCents) || t.priceCents <= 0) return `Each ${label} tier needs a price.`;
+      if (t.priceCents <= price) return `Each ${label} tier costs more than the one before.`;
+      upTo = t.upTo;
+      price = t.priceCents;
+    }
+    if (!centsOk(plan.perExtraCents)) return `${label}’s price per extra person isn’t valid.`;
+  }
+  if (!centsOk(p.bothAddonCents)) return "The Both add-on price isn’t valid.";
+  return null;
+}
+
+/** A price list as public.price_list stores it (snake_case JSON). */
+export function priceListToJson(p: PriceList): Record<string, unknown> {
+  const plan = (x: Plan) => ({
+    tiers: x.tiers.map((t) => ({ name: t.name.trim(), up_to: t.upTo, price_cents: t.priceCents })),
+    per_extra_cents: x.perExtraCents,
+  });
+  return {
+    maintenance: plan(p.maintenance),
+    leak: plan(p.leak),
+    both_addon_cents: p.bothAddonCents,
+  };
+}
+
+/** A stored price list, or the default prices when it is missing or not valid. */
+export function priceListFromJson(json: unknown): PriceList {
+  if (!json || typeof json !== "object") return DEFAULT_PRICES;
+  const o = json as Record<string, unknown>;
+  const plan = (id: PlanId): Plan | null => {
+    const x = o[id] as { tiers?: unknown; per_extra_cents?: unknown } | undefined;
+    if (!x || !Array.isArray(x.tiers)) return null;
+    return {
+      id,
+      name: DEFAULT_PRICES[id].name,
+      tiers: (x.tiers as { name?: unknown; up_to?: unknown; price_cents?: unknown }[]).map((t) => ({
+        name: String(t?.name ?? ""),
+        upTo: Number(t?.up_to),
+        priceCents: Number(t?.price_cents),
+      })),
+      perExtraCents: Number(x.per_extra_cents),
+    };
+  };
+  const maintenance = plan("maintenance");
+  const leak = plan("leak");
+  if (!maintenance || !leak) return DEFAULT_PRICES;
+  const list = { maintenance, leak, bothAddonCents: Number(o.both_addon_cents) };
+  return priceListProblem(list) === null ? list : DEFAULT_PRICES;
+}
+
+/**
+ * One shop's own price (Admin › the shop › Price): a fixed monthly amount or a percent off
+ * its standard price, through a date (the last day it applies, in the shop's time zone) or
+ * for good. It sets the Stripe subscription's amount; the daily run ends it on time.
+ */
+export interface PriceOverride {
+  kind: "fixed" | "percent";
+  /** Fixed: the monthly price in cents. */
+  cents: Cents | null;
+  /** Percent: 1 to 100. */
+  percent: number | null;
+  /** YYYY-MM-DD, the last day; null for good. */
+  until: string | null;
+}
+
+/** A shop's override from its subscription row's columns, or null when it has none. */
+export function overrideFromRow(row: {
+  custom_price_kind?: string | null;
+  custom_price_cents?: number | null;
+  custom_percent_off?: number | null;
+  custom_price_until?: string | null;
+}): PriceOverride | null {
+  const until = row.custom_price_until ?? null;
+  if (row.custom_price_kind === "fixed" && centsOk(row.custom_price_cents))
+    return { kind: "fixed", cents: row.custom_price_cents, percent: null, until };
+  const pct = row.custom_percent_off;
+  if (
+    row.custom_price_kind === "percent" &&
+    typeof pct === "number" &&
+    Number.isInteger(pct) &&
+    pct >= 1 &&
+    pct <= 100
+  )
+    return { kind: "percent", cents: null, percent: pct, until };
+  return null;
+}
+
+/** True while the override applies on `today` (YYYY-MM-DD in the shop's time zone). */
+export function overrideActive(o: PriceOverride | null, today: string): o is PriceOverride {
+  return o !== null && (o.until === null || today <= o.until);
+}
+
+/** The monthly price after a shop's own price, when it applies today. */
+export function overriddenCents(standard: Cents, o: PriceOverride | null, today: string): Cents {
+  if (!overrideActive(o, today)) return standard;
+  if (o.kind === "fixed") return o.cents ?? standard;
+  return Math.round((standard * (100 - (o.percent ?? 0))) / 100);
+}
+
+/** The override in words for the portal: "$99.00 a month through Mar 31, 2027". */
+export function overrideText(o: PriceOverride): string {
+  const what =
+    o.kind === "fixed"
+      ? `$${((o.cents ?? 0) / 100).toFixed(2)} a month`
+      : `${o.percent}% off the standard price`;
+  if (!o.until) return what;
+  const [y, m, d] = o.until.split("-").map(Number);
+  const date = new Date(Date.UTC(y!, m! - 1, d!)).toLocaleDateString("en-US", {
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+    timeZone: "UTC",
+  });
+  return `${what} through ${date}`;
+}
+
 /** The tier a team of `users` people is on (the largest tier past the top one). */
 export function planTier(plan: Plan, users: number): Tier {
   return plan.tiers.find((t) => people(users) <= t.upTo) ?? plan.tiers[plan.tiers.length - 1]!;
@@ -106,16 +269,23 @@ export function competitorPrices(users: number, pools: number): CompetitorPrice[
   ];
 }
 
-/** The plan a shop's services put it on: Both is Pool Maintenance plus `BOTH_ADDON_CENTS`. */
-export function planForServices(services: "pool" | "leak" | "both"): Plan {
-  return services === "leak" ? PLANS.leak : PLANS.maintenance;
+/** The plan a shop's services put it on: Both is Pool Maintenance plus the add-on. */
+export function planForServices(
+  services: "pool" | "leak" | "both",
+  prices: PriceList = DEFAULT_PRICES,
+): Plan {
+  return services === "leak" ? prices.leak : prices.maintenance;
 }
 
 /** What a shop pays a month for its services and number of people (Sundeck Pro billing). */
-export function servicesPriceCents(services: "pool" | "leak" | "both", users: number): Cents {
+export function servicesPriceCents(
+  services: "pool" | "leak" | "both",
+  users: number,
+  prices: PriceList = DEFAULT_PRICES,
+): Cents {
   return (
-    monthlyPriceCents(planForServices(services), users) +
-    (services === "both" ? BOTH_ADDON_CENTS : 0)
+    monthlyPriceCents(planForServices(services, prices), users) +
+    (services === "both" ? prices.bothAddonCents : 0)
   );
 }
 
@@ -127,15 +297,17 @@ export function servicesPriceCents(services: "pool" | "leak" | "both", users: nu
 export function servicesPriceLines(
   services: "pool" | "leak" | "both",
   users: number,
+  prices: PriceList = DEFAULT_PRICES,
 ): { label: string; cents: Cents }[] {
-  const plan = planForServices(services);
+  const plan = planForServices(services, prices);
   const lines = [
     {
       label: `${plan.name} · ${planTier(plan, users).name}`,
       cents: monthlyPriceCents(plan, users),
     },
   ];
-  if (services === "both") lines.push({ label: "Leak Detection add-on", cents: BOTH_ADDON_CENTS });
+  if (services === "both")
+    lines.push({ label: "Leak Detection add-on", cents: prices.bothAddonCents });
   return lines;
 }
 
