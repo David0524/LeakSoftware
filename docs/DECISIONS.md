@@ -2,6 +2,10 @@
 
 Newest first. Each entry: date, decision, reason.
 
+## 2026-11-24 (owner: "It's more about having the ability to send quotes more often. Also instead of creating a full job, we should be able to just create a quote for a new/existing customer")
+- **Standalone quotes** (`docs/design/2026-11-24-standalone-quotes.md`), all four platforms: **New Quote** in the + menu (beside New Job), on the customer page, and in a new **Quotes** list in More (Draft | Sent | Accepted | Declined). Owner's choices: stored as a hidden quote-only job (status `quote`, type repair) rather than a quote with no job; the pool is optional; no customer Decline button for now.
+- The quote job has no job number and appears in no job list, count or search until the customer accepts. Then it becomes the unscheduled repair job itself, using its pool or the customer's newest. With no pool anywhere it waits under Quotes ("Accepted. Add a pool to schedule the repair.") until the office adds one. Migration `20261022005400_standalone_quotes.sql`.
+
 ## 2026-11-23 (owner: "Referral links should be more visible. Add it in the more section but in a color that differs from all of the other buttons there. Maybe a slight design too"; "Your recommendation is fine")
 - **Refer a Pool Company on the apps' More tab** (iPhone and Android), owners only (the people `referral_summary` answers), right under the first group of links: its own row on the brand's orange tint (`safety` at 12%) with a round `safetyDeep` icon and a `safetyDeep` share glyph, unlike every other row there. Subtitle "Share Sundeck Pro with another pool company." Tapping it opens the system share sheet with "Try Sundeck Pro for your pool business: https://sundeckpro.com/sign-up?code=<CODE>"; the website's sign-up page shows the offer and applies the code. Words in core `REFER_COPY` (`refer.ts`), Swift `ReferCopy`, checked by the `refer` fixtures.
 - **Nothing about money in the apps** (App Store rules 3.1.1 and 3.1.3(f)): no free month, price, trial or subscribing in the row, its subtitle, the share message or the accessibility label. The website's Give a Month, Get a Month card says the offer.
