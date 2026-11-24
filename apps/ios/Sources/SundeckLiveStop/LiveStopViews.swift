@@ -153,99 +153,6 @@
         }
     }
 
-    /// The compact island's ring: the same pieces as the bar, around a circle, in the island's
-    /// light blue (owner, 2026-11-24: a larger compact island).
-    public struct LiveStopRing: View {
-        public var value: Double
-        public var stops: Int
-
-        public init(value: Double, stops: Int) {
-            self.value = value
-            self.stops = stops
-        }
-
-        public var body: some View {
-            let count = (2...12).contains(stops) ? stops : 1
-            let parts = count == 1 ? [min(1, max(0, value))] : liveStopPieces(value, stops: count)
-            let gap = count == 1 ? 0 : 0.045
-            let size = 1 / Double(count)
-            ZStack {
-                ForEach(0..<count, id: \.self) { i in
-                    let start = Double(i) * size + gap / 2
-                    let end = Double(i + 1) * size - gap / 2
-                    ring(start, end).stroke(LiveStopStyle.island.opacity(0.35), style: line)
-                    if parts[i] > 0 {
-                        ring(start, start + (end - start) * parts[i]).stroke(LiveStopStyle.island, style: line)
-                    }
-                }
-            }
-            .rotationEffect(.degrees(-90))
-            .padding(1.5)
-            .frame(width: 20, height: 20)
-            .accessibilityHidden(true)
-        }
-
-        private var line: StrokeStyle { StrokeStyle(lineWidth: 3, lineCap: .round) }
-
-        private func ring(_ from: Double, _ to: Double) -> some Shape {
-            Circle().trim(from: from, to: to)
-        }
-    }
-
-    /// The stop's access notes on one line with a key (owner, 2026-10-20: gate code, which gate,
-    /// dogs), with a light amber key on the water blue.
-    public struct LiveStopAccess: View {
-        public var text: String
-
-        public init(text: String) { self.text = text }
-
-        public var body: some View {
-            HStack(spacing: 6) {
-                Image(systemName: "key.fill")
-                    .font(LiveStopStyle.small(.semibold))
-                    .foregroundStyle(Color(red: 1, green: 0.84, blue: 0.48))
-                Text(text)
-                    .font(LiveStopStyle.small(.medium))
-                    .foregroundStyle(LiveStopStyle.text)
-                    .lineLimit(1)
-            }
-            .accessibilityHidden(true)
-        }
-    }
-
-    /// The visit's cleanings (owner, 2026-10-20: "The filter/salt cell cleaning alert needs to be
-    /// on the new Today tile and the live activity"): each one's icon and a few words ("Overdue",
-    /// "Today", "3 days"), soonest first, on one line; overdue is a white pill with water-blue
-    /// text, like Today's card, so no new color. VoiceOver hears them in `content.spoken`.
-    public struct LiveStopCleanings: View {
-        public var cleanings: [CleaningBadge]
-
-        public init(cleanings: [CleaningBadge]) { self.cleanings = cleanings }
-
-        public var body: some View {
-            HStack(spacing: 10) {
-                ForEach(Array(cleanings.enumerated()), id: \.offset) { _, badge in
-                    HStack(spacing: 4) {
-                        CleaningGlyphIcon(kind: badge.kind, size: 16)
-                            .foregroundStyle(LiveStopStyle.text)
-                        Text(badge.label)
-                            .font(LiveStopStyle.small(badge.overdue ? .semibold : .medium))
-                            .foregroundStyle(badge.overdue ? LiveStopStyle.background : LiveStopStyle.text)
-                            .lineLimit(1)
-                            .padding(.horizontal, badge.overdue ? 7 : 0)
-                            .padding(.vertical, badge.overdue ? 1 : 0)
-                            .background {
-                                if badge.overdue { Capsule().fill(Color.white) }
-                            }
-                    }
-                    .fixedSize()
-                }
-            }
-            .lineLimit(1)
-            .accessibilityHidden(true)
-        }
-    }
-
     /// The large figure ("9:42 AM", "4 of 9", or the check) over its small label.
     public struct LiveStopFigure: View {
         public var content: LiveStopContent
@@ -438,21 +345,17 @@
             }
         }
 
-        /// Compact trailing: the day's ring and the few characters ("4/9", "✓"), larger (owner,
-        /// 2026-11-24: "we can make it bigger"; the island's height is the camera's, so the type
-        /// and ring grow, not the island).
+        /// Compact trailing: the few characters ("1/3", "4/9", "✓"), larger (owner, 2026-11-24:
+        /// "we can make it bigger"; the island's height is the camera's, so the type grows, not
+        /// the island). No ring beside it: it would say the same as the count (owner).
         public static func compact(_ content: LiveStopContent) -> some View {
-            HStack(spacing: 5) {
-                if content.compact != "✓" { LiveStopRing(value: content.progress, stops: content.stops) }
-                Text(content.compact)
-                    .font(LiveStopStyle.display(18))
-                    .monospacedDigit()
-                    .foregroundStyle(LiveStopStyle.island)
-                    .lineLimit(1)
-                    .fixedSize()
-            }
-            .accessibilityElement(children: .ignore)
-            .accessibilityLabel(content.spoken)
+            Text(content.compact)
+                .font(LiveStopStyle.display(18))
+                .monospacedDigit()
+                .foregroundStyle(LiveStopStyle.island)
+                .lineLimit(1)
+                .fixedSize()
+                .accessibilityLabel(content.spoken)
         }
 
         /// Compact leading: the mark, larger (owner, 2026-11-24).
