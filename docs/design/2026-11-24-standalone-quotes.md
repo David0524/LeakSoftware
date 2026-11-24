@@ -10,7 +10,7 @@ page and in a new Quotes list; pool optional; no customer Decline button for now
 Ships on all four platforms with the same words and behavior. Words and rules live in
 `packages/core/src/quote-list.ts` (Swift copy `SundeckCore/QuoteList.swift`).
 
-## Data (migration `20261022005400_standalone_quotes.sql`)
+## Data (migration `20261022005700_standalone_quotes.sql`)
 
 - A standalone quote is a **quote job** plus its quote: `job.type = 'repair'`,
   `job.status = 'quote'`, the customer in `bill_to_customer_id`, `property_id` optional (null

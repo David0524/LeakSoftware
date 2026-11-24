@@ -1,4 +1,4 @@
--- Standalone quotes (20261022005400_standalone_quotes.sql): a quote-only job is hidden, has no
+-- Standalone quotes (20261022005700_standalone_quotes.sql): a quote-only job is hidden, has no
 -- job number, needs no pool, and becomes the repair job when the customer accepts.
 begin;
 set search_path = public, extensions;

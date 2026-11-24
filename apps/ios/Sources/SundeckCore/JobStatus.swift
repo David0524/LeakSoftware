@@ -11,7 +11,7 @@ public enum JobStatus: String, Codable, CaseIterable, Sendable {
     case canceled
     case done
     case skipped
-    /// A standalone quote's job (20261022005400_standalone_quotes.sql): hidden from every job
+    /// A standalone quote's job (20261022005700_standalone_quotes.sql): hidden from every job
     /// list until the customer accepts and it becomes the unscheduled repair job.
     case quote
 
