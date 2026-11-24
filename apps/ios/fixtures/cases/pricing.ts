@@ -173,6 +173,13 @@ const readingSets: Readings[] = [
   { ph: 7.5, ta: 100, ch: 300, cya: 40 },
   { ph: 7.5, ta: 30, ch: 300, cya: 120 },
   { ph: 7.6, ta: 90, ch: 250, cya: 50, salt: 3200, fc: 3 },
+  // One step for two readings (owner, 2026-11-24).
+  { ph: 7.9, ta: 150 },
+  { ph: 8.8, ta: 121 },
+  { ph: 7.1, ta: 150 },
+  { ph: 7.9, ta: 100 },
+  { ch: 600, cya: 100, salt: 4000 },
+  { ch: 150, cya: 100, salt: 2400, fc: 1 },
   { fc: 0, ph: 6.8, ta: 40, ch: 120, cya: 10, salt: 1500 },
   { fc: 2.37, ph: 7.25, ta: 87, ch: 333, cya: 47, salt: 2911 },
   { fc: null, ph: null, ta: 75 },

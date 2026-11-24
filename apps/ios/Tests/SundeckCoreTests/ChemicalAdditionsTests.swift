@@ -13,7 +13,8 @@ import Testing
                 "CHEMICAL_KEYS", "UNIT_STEPS", "CHARGE_CHEMICALS_TEXT", "gallonQuantity", "dryQuantity",
                 "formatQuantity", "additionLabel", "unitPriceLabel", "stepQuantity", "convertQuantity",
                 "chargesChemicals", "chargeChemicalsSettings", "chemicalItems", "itemForChemical", "suggestionText",
-                "suggestedAddition", "itemAddition", "chemicalRows", "openSuggestions", "additionsCents",
+                "suggestedAddition", "itemAddition", "chemicalRows", "coveredText", "isAcidStep", "openSuggestions",
+                "additionsCents",
                 "chemicalCardLine", "chemicalTotals", "monthName", "monthlyUsage", "reportAddedRows",
                 "reportAddedTotal",
             ])
@@ -96,6 +97,10 @@ import Testing
         let visitAdds = try Fixtures.cases(module, "additionsCents")[0].arg(0, as: [ChemicalAddition].self)
         checkRule(module, "chemicalRows") { c in
             chemicalRows(calculateChemistry(try c.arg(0, as: ChemistryInput.self)), visitAdds, items)
+        }
+        checkRule(module, "coveredText") { c in coveredText(try c.arg(0)) }
+        checkRule(module, "isAcidStep") { c in
+            calculateChemistry(try c.arg(0, as: ChemistryInput.self)).steps.map(isAcidStep)
         }
         checkRule(module, "openSuggestions") { c in
             let none: Bool = try c.arg(1)

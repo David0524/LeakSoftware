@@ -9,6 +9,8 @@ import {
   chemicalItems,
   chemicalRows,
   chemicalTotals,
+  coveredText,
+  isAcidStep,
   convertQuantity,
   formatQuantity,
   gallonQuantity,
@@ -127,7 +129,7 @@ const add = (o: Partial<ChemicalAddition>): ChemicalAddition => ({
 describe("dose steps carry what to add, in the unit it's sold by", () => {
   it("gallons as the measure reads, pounds and bags by its steps", () => {
     expect(visit.steps.map((s) => [s.key, s.chemical, s.quantity, s.unit])).toEqual([
-      ["ph", "muriatic_acid", 0.25, "gal"],
+      ["ph", "muriatic_acid", 0.33, "gal"],
       ["cya", "stabilizer", 1.5, "lb"],
       ["fc", "liquid_chlorine", 0.5, "gal"],
     ]);
@@ -230,7 +232,7 @@ describe("suggestions become additions", () => {
       price_book_item_id: null,
       name: "Muriatic acid",
       unit: "gal",
-      quantity: 0.25,
+      quantity: 0.33,
       unit_price_cents: 0,
     });
   });
@@ -292,6 +294,26 @@ describe("the visit's rows", () => {
     expect(additionsCents([add({ customer_supplied: true })])).toBe(0);
     expect(chemicalCardLine("FC 1 · pH 7.8", added)).toBe("3 added · FC 1 · pH 7.8");
     expect(chemicalCardLine("", [])).toBe("Add today’s readings");
+  });
+});
+
+describe("one step for two readings (owner, 2026-11-24)", () => {
+  it("pH's row says With Alkalinity and suggests nothing, so the acid goes in once", () => {
+    const both = calculateChemistry({
+      gallons: 20000,
+      readings: { ph: 7.9, ta: 150 },
+      chlorine: "liquid12",
+      acid: "muriatic31",
+    });
+    const { rows } = chemicalRows(both, [], items);
+    const ph = rows.find((r) => r.key === "ph")!;
+    const ta = rows.find((r) => r.key === "ta")!;
+    expect([ph.order, ph.coveredBy, ph.suggestion]).toEqual([1, "ta", null]);
+    expect([ta.order, ta.coveredBy, ta.suggestion?.quantity]).toEqual([1, null, 2.5]);
+    expect(openSuggestions(rows)).toHaveLength(1);
+    expect(coveredText("ta")).toBe("With alkalinity");
+    expect(coveredText("ph")).toBe("With pH");
+    expect(isAcidStep(ta.step!)).toBe(true);
   });
 });
 
