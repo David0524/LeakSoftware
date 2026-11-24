@@ -153,6 +153,60 @@
         }
     }
 
+    /// The stop's access notes on one line with a key (owner, 2026-10-20: gate code, which gate,
+    /// dogs), with a light amber key on the water blue.
+    public struct LiveStopAccess: View {
+        public var text: String
+
+        public init(text: String) { self.text = text }
+
+        public var body: some View {
+            HStack(spacing: 6) {
+                Image(systemName: "key.fill")
+                    .font(LiveStopStyle.small(.semibold))
+                    .foregroundStyle(Color(red: 1, green: 0.84, blue: 0.48))
+                Text(text)
+                    .font(LiveStopStyle.small(.medium))
+                    .foregroundStyle(LiveStopStyle.text)
+                    .lineLimit(1)
+            }
+            .accessibilityHidden(true)
+        }
+    }
+
+    /// The visit's cleanings (owner, 2026-10-20: "The filter/salt cell cleaning alert needs to be
+    /// on the new Today tile and the live activity"): each one's icon and a few words ("Overdue",
+    /// "Today", "3 days"), soonest first, on one line; overdue is a white pill with water-blue
+    /// text, like Today's card, so no new color. VoiceOver hears them in `content.spoken`.
+    public struct LiveStopCleanings: View {
+        public var cleanings: [CleaningBadge]
+
+        public init(cleanings: [CleaningBadge]) { self.cleanings = cleanings }
+
+        public var body: some View {
+            HStack(spacing: 10) {
+                ForEach(Array(cleanings.enumerated()), id: \.offset) { _, badge in
+                    HStack(spacing: 4) {
+                        CleaningGlyphIcon(kind: badge.kind, size: 16)
+                            .foregroundStyle(LiveStopStyle.text)
+                        Text(badge.label)
+                            .font(LiveStopStyle.small(badge.overdue ? .semibold : .medium))
+                            .foregroundStyle(badge.overdue ? LiveStopStyle.background : LiveStopStyle.text)
+                            .lineLimit(1)
+                            .padding(.horizontal, badge.overdue ? 7 : 0)
+                            .padding(.vertical, badge.overdue ? 1 : 0)
+                            .background {
+                                if badge.overdue { Capsule().fill(Color.white) }
+                            }
+                    }
+                    .fixedSize()
+                }
+            }
+            .lineLimit(1)
+            .accessibilityHidden(true)
+        }
+    }
+
     /// The large figure ("9:42 AM", "4 of 9", or the check) over its small label.
     public struct LiveStopFigure: View {
         public var content: LiveStopContent
