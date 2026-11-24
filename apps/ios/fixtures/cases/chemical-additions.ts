@@ -10,6 +10,8 @@ import {
   chemicalCardLine,
   chemicalItems,
   chemicalRows,
+  coveredText,
+  isAcidStep,
   chemicalTotals,
   convertQuantity,
   dryQuantity,
@@ -210,6 +212,13 @@ const items: ChemicalItem[] = [
 ];
 
 const inputs: ChemistryInput[] = [
+  // One acid dose for alkalinity and pH; one drain for calcium and stabilizer (owner, 2026-11-24).
+  {
+    gallons: 20000,
+    readings: { fc: 2, ph: 7.9, ta: 150, ch: 700, cya: 110 },
+    chlorine: "liquid12",
+    acid: "muriatic31",
+  },
   {
     gallons: 20000,
     readings: { fc: 1, ph: 7.8, ta: 90, ch: 260, cya: 30 },
@@ -554,6 +563,11 @@ export const chemicalAdditions: ModuleCases = {
   ),
   chemicalRows: rule(
     (input: ChemistryInput) => chemicalRows(calculateChemistry(input), visitAdds, items),
+    inputs.map((i) => [i] as [ChemistryInput]),
+  ),
+  coveredText: rule((key: ReadingKey) => coveredText(key), [["ta"], ["ph"], ["ch"], ["fc"]]),
+  isAcidStep: rule(
+    (input: ChemistryInput) => calculateChemistry(input).steps.map(isAcidStep),
     inputs.map((i) => [i] as [ChemistryInput]),
   ),
   openSuggestions: rule(

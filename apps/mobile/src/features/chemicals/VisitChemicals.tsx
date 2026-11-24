@@ -39,6 +39,8 @@ import {
   readingSummary,
   stepQuantity,
   suggestionText,
+  coveredText,
+  isAcidStep,
   targets,
   unitPriceLabel,
   type AcidProduct,
@@ -798,14 +800,14 @@ const ReadingRow = memo(
                       large && { textAlign: "left" },
                     ]}
                   >
-                    {suggestionText(row.step)}
+                    {row.coveredBy ? coveredText(row.coveredBy) : suggestionText(row.step)}
                   </T>
                 </View>
-                {row.step.note && row.key === "ph" ? (
+                {row.suggestion && isAcidStep(row.step) ? (
                   <T variant="secondary" muted>
                     Acid to water, never water to acid.
                   </T>
-                ) : row.step.note && !row.suggestion ? (
+                ) : row.step.note && !row.suggestion && !row.coveredBy ? (
                   <T variant="secondary" muted>
                     {row.step.note}
                   </T>
