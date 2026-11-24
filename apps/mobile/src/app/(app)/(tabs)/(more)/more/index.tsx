@@ -102,6 +102,8 @@ export default function More() {
         {manager ? <ListRow title="Dashboard" onPress={() => router.push("/dashboard")} /> : null}
         <ListRow title="Customers" onPress={() => router.push("/customers")} />
         <ListRow title="Invoices" onPress={() => router.push("/invoices")} />
+        {/* Standalone quotes and quotes on jobs (docs/design/2026-11-24-standalone-quotes.md). */}
+        <ListRow title="Quotes" onPress={() => router.push("/quotes" as never)} />
         {/* What happened in the shop, with a dot when there's something new (owner, 2026-10-20). */}
         <ListRow
           title={ACTIVITY_TITLE}

@@ -1,7 +1,13 @@
 import { router } from "expo-router";
 import { useEffect, useState, useSyncExternalStore } from "react";
 import { Linking, Pressable, StyleSheet, Text, View } from "react-native";
-import { companyServices, gettingStarted, type Company, type StartStep } from "@leakbook/core";
+import {
+  companyServices,
+  gettingStarted,
+  isQuoteJob,
+  type Company,
+  type StartStep,
+} from "@leakbook/core";
 import { useRows } from "../../data/hooks";
 import { API_URL } from "../../lib/config";
 import { NATIVE_PAGES } from "../settings/SettingsIndex";
@@ -74,13 +80,16 @@ export function GettingStarted({ company }: { company: Company }) {
   const members = useRows<{ status: string }>("membership", company.id);
   const customers = useRows<{ id: string; deleted_at?: string | null }>("customer", company.id);
   const plans = useRows<{ deleted_at?: string | null }>("service_plan", company.id);
-  const jobs = useRows<{
+  const jobRows = useRows<{
     id: string;
     type: string;
+    status: string;
     sample?: boolean;
     bill_to_customer_id?: string | null;
     deleted_at?: string | null;
   }>("job", company.id);
+  // A standalone quote's job isn't a job yet, so it counts for nothing here.
+  const jobs = jobRows.filter((j) => !isQuoteJob(j));
   const reports = useRows<{ sent_at: string | null; job_id: string }>("report", company.id);
   const messages = useRows<{ job_id: string | null; channel: string; status: string }>(
     "message",

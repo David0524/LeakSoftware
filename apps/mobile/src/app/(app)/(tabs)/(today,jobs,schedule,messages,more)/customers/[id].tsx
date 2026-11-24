@@ -4,6 +4,7 @@ import { useDraft } from "../../../../../ui/useDraft";
 import {
   CUSTOMER_EMAILS_LABEL,
   CUSTOMER_EMAILS_OFF_LABEL,
+  canMakeJobs,
   JOB_TYPE_LABELS,
   poolSummary,
   formatAddress,
@@ -178,6 +179,18 @@ export default function CustomerPage() {
             <T variant="secondary" muted numberOfLines={1} style={{ flex: 1 }}>
               {customer.phone ? formatPhone(customer.phone) : customer.email}
             </T>
+          </View>
+        ) : null}
+
+        {/* New Quote for this customer (docs/design/2026-11-24-standalone-quotes.md). */}
+        {canMakeJobs(membership?.role, company.settings) ? (
+          <View style={styles.newQuote}>
+            <Button
+              title="New Quote"
+              kind="secondary"
+              icon="plus"
+              onPress={() => router.push(`/quotes/new?customer=${customer.id}`)}
+            />
           </View>
         ) : null}
 
@@ -520,4 +533,5 @@ function ContactForm({ customer, onSaved }: { customer: CustomerFields; onSaved:
 
 const styles = StyleSheet.create({
   contact: { flexDirection: "row", alignItems: "center", gap: space["2"] },
+  newQuote: { flexDirection: "row" },
 });

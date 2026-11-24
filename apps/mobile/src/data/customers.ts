@@ -4,6 +4,7 @@ import {
   countCustomers,
   customersAddedSince,
   customersOnPlan,
+  isQuoteJob,
   localDate,
   type Customer,
   type CustomerCounts,
@@ -75,7 +76,9 @@ export function useCustomerData(companyId: string) {
   const customers = useRows<CustomerRow>("customer", companyId);
   const properties = useRows<Property & { deleted_at?: string | null }>("property", companyId);
   const plans = useRows<ServicePlanRow>("service_plan", companyId);
-  const jobs = useRows<Job & { deleted_at?: string | null }>("job", companyId);
+  const rows = useRows<Job & { deleted_at?: string | null }>("job", companyId);
+  // A standalone quote's job isn't a visit: no customer history or last visit counts it.
+  const jobs = useMemo(() => rows.filter((j) => !isQuoteJob(j)), [rows]);
   return { customers, properties, plans, jobs };
 }
 

@@ -1,4 +1,5 @@
 import {
+  isQuoteJob,
   parseRecent,
   rememberRecent,
   searchShop,
@@ -67,7 +68,8 @@ export interface LocalSearchRows {
 /**
  * The phone's rows as search records, joined as the website's search_candidates joins them:
  * a job's customer is its bill-to customer, else the pool's owner; quotes and invoices of a
- * deleted (or missing) job don't show.
+ * deleted (or missing) job don't show. A standalone quote's job (status quote) isn't in Jobs,
+ * but its quote is in Quotes.
  */
 export function searchRecords(rows: LocalSearchRows): SearchRecords {
   const live = <T extends Kept>(list: T[]) => list.filter((r) => !r.deleted_at);
@@ -96,15 +98,17 @@ export function searchRecords(rows: LocalSearchRows): SearchRecords {
       city: p.city ?? null,
       customer_name: customers.get(p.customer_id ?? "")?.name ?? null,
     })),
-    jobs: jobs.map((j) => ({
-      id: j.id,
-      number: j.number ?? null,
-      type: j.type ?? "",
-      status: j.status ?? null,
-      scheduled_start: j.scheduled_start ?? null,
-      created_at: j.created_at ?? null,
-      customer_name: customerName(j),
-    })),
+    jobs: jobs
+      .filter((j) => !isQuoteJob({ status: j.status ?? "" }))
+      .map((j) => ({
+        id: j.id,
+        number: j.number ?? null,
+        type: j.type ?? "",
+        status: j.status ?? null,
+        scheduled_start: j.scheduled_start ?? null,
+        created_at: j.created_at ?? null,
+        customer_name: customerName(j),
+      })),
     quotes: live(rows.quotes)
       .filter((q) => jobById.has(q.job_id))
       .map((q) => ({

@@ -3,6 +3,7 @@ import {
   addDays,
   NEXT_DAY_LOOKAHEAD,
   estimateDriveMinutes,
+  isQuoteJob,
   localDate,
   localMinutes,
   lockColumns,
@@ -107,7 +108,7 @@ export function routesFor(jobs: JobView[], dates: string[], timeZone: string) {
   const routes = new Map<string, JobView[]>();
   const unassigned = new Map<string, JobView[]>();
   for (const j of jobs) {
-    if (j.deleted_at || j.status === "canceled" || !j.scheduled_start) continue;
+    if (j.deleted_at || j.status === "canceled" || isQuoteJob(j) || !j.scheduled_start) continue;
     const date = localDate(new Date(j.scheduled_start), timeZone);
     if (!wanted.has(date)) continue;
     if (!j.assigned_user_id) {
@@ -159,10 +160,11 @@ export function takeScheduleDay(): string | null {
 
 /**
  * Needs a Time: jobs without a time, oldest first, then booked jobs from today on with
- * nobody assigned, soonest first (the website's needsScheduling).
+ * nobody assigned, soonest first (the website's needsScheduling). A standalone quote's job is
+ * never one of them, whatever list it's handed.
  */
 export function needsATime(jobs: JobView[], today: string, timeZone: string): JobView[] {
-  const live = jobs.filter((j) => !j.deleted_at);
+  const live = jobs.filter((j) => !j.deleted_at && !isQuoteJob(j));
   const waiting = live
     .filter((j) => j.status === "unscheduled")
     .sort((a, b) => (a.created_at ?? "").localeCompare(b.created_at ?? ""));

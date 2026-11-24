@@ -1,5 +1,5 @@
 import { router } from "expo-router";
-import { useMemo, useRef, useState } from "react";
+import { useRef, useState } from "react";
 import { StyleSheet, View } from "react-native";
 import {
   POOL_TYPE_LABELS,
@@ -59,15 +59,14 @@ import {
 import { PlanRepeat } from "../../../../../features/maintenance/PlanRepeat";
 import { ChipToggles } from "../../../../../features/inspection/ChoicePills";
 import { Select } from "../../../../../ui/Select";
+import { CustomerPicker } from "../../../../../features/job/CustomerPicker";
 import { AddRepairButton, RepairFields, repairItemsOf } from "../../../../../features/job/Repairs";
-import { useCanContact, useCompany, useSession } from "../../../../../state/session";
+import { useCompany, useSession } from "../../../../../state/session";
 import {
   Button,
   Card,
   Choice,
   Field,
-  Group,
-  ListRow,
   Notice,
   Screen,
   Section,
@@ -105,7 +104,6 @@ export default function NewJob() {
 function NewJobForm() {
   const company = useCompany();
   const { services, user, membership } = useSession();
-  const canContact = useCanContact();
   const seesAll = seesAllJobs(membership?.role, company.settings);
   const customers = useRows<Customer>("customer", company.id);
   const properties = useRows<Property>("property", company.id);
@@ -267,13 +265,6 @@ function NewJobForm() {
   const set = (k: keyof NewJobInput) => (v: string) => setForm((f) => ({ ...f, [k]: v }));
   const selectedCustomer = customers.find((c) => c.id === customerId);
   const customerProperties = properties.filter((p) => p.customer_id === customerId);
-  const matches = useMemo(() => {
-    const q = search.trim().toLowerCase();
-    if (!q) return [];
-    return customers
-      .filter((c) => [c.name, c.phone, c.email].some((v) => v?.toLowerCase().includes(q)))
-      .slice(0, 6);
-  }, [customers, search]);
 
   const [{ today, tomorrow }] = useState(() => {
     const now = new Date();
@@ -591,77 +582,24 @@ function NewJobForm() {
         compact={jobTypes.length > 3}
       />
       <Section title="Customer">
-        {selectedCustomer ? (
-          <Card>
-            <T variant="strong">{selectedCustomer.name}</T>
-            {selectedCustomer.phone ? <T variant="muted">{selectedCustomer.phone}</T> : null}
-            <Button
-              title="Change Customer"
-              kind="quiet"
-              onPress={() => {
-                setCustomerId(undefined);
-                pickPool(undefined);
-              }}
-            />
-          </Card>
-        ) : (
-          <>
-            {customers.length > 0 ? (
-              <Field
-                label="Find an existing customer"
-                value={search}
-                onChangeText={setSearch}
-                placeholder="Name, phone, or email"
-              />
-            ) : null}
-            {matches.length > 0 ? (
-              <Group>
-                {matches.map((c) => (
-                  <ListRow
-                    key={c.id}
-                    chevron={false}
-                    onPress={() => {
-                      setCustomerId(c.id);
-                      setSearch("");
-                      const props = properties.filter((p) => p.customer_id === c.id);
-                      pickPool(props.length === 1 ? props[0]!.id : undefined);
-                    }}
-                  >
-                    <T variant="strong">{c.name}</T>
-                    {/* Numbers and emails only with Text and Call Customers (2026-11-23). */}
-                    {canContact ? (
-                      <T variant="muted">
-                        {[c.phone, c.email].filter(Boolean).join(" · ") || "No contact details"}
-                      </T>
-                    ) : null}
-                  </ListRow>
-                ))}
-              </Group>
-            ) : null}
-            <T variant="muted">Or add a new customer:</T>
-            <Field
-              label="Name"
-              value={form.customerName}
-              onChangeText={set("customerName")}
-              error={errors.customerName}
-              autoCapitalize="words"
-            />
-            <Field
-              label="Phone"
-              value={form.customerPhone}
-              onChangeText={set("customerPhone")}
-              keyboardType="phone-pad"
-            />
-            <Field
-              label="Email"
-              value={form.customerEmail}
-              onChangeText={set("customerEmail")}
-              error={errors.customerEmail}
-              keyboardType="email-address"
-              autoCapitalize="none"
-            />
-          </>
-        )}
+        <CustomerPicker
+          customers={customers}
+          selectedId={customerId}
+          search={search}
+          onSearch={setSearch}
+          onPick={(c) => {
+            setCustomerId(c.id);
+            const props = properties.filter((p) => p.customer_id === c.id);
+            pickPool(props.length === 1 ? props[0]!.id : undefined);
+          }}
+          onClear={() => {
+            setCustomerId(undefined);
+            pickPool(undefined);
+          }}
+          fields={form}
+          onField={set}
+          errors={errors}
+        />
       </Section>
 
       {(leak || inspection) && questions.length ? (
