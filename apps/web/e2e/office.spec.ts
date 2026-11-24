@@ -39,6 +39,10 @@ test("owners land on the Dashboard on a computer, and on Today on a phone", asyn
   await page.getByRole("button", { name: "Sign In", exact: true }).click();
   await page.waitForURL((url) => url.pathname === "/dashboard");
   await expect(page.getByRole("heading", { level: 1, name: "Dashboard" })).toBeVisible();
+  // By tech (owner, 2026-11-24): every active tech, with their jobs, money, and feedback.
+  const byTech = page.locator("section", { has: page.getByRole("heading", { name: "By tech" }) });
+  await expect(byTech.getByText("Tony Tech")).toBeVisible();
+  await expect(byTech.getByText(/\d+ jobs? done · \d+ open/).first()).toBeVisible();
   // The Dashboard leads the header; the logo comes back to it.
   const nav = page.getByRole("navigation", { name: "Main" });
   await expect(nav.getByRole("link").first()).toHaveText("Dashboard");
