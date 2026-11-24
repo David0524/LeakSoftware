@@ -16,7 +16,7 @@ export interface AccountEmail {
   html: string;
 }
 
-function page(input: {
+export function accountPage(input: {
   subject: string;
   preview: string;
   title: string;
@@ -59,7 +59,7 @@ export function passwordResetEmail(link: string): AccountEmail {
   return {
     subject,
     text: [subject, "", intro, action, "", `Choose a New Password: ${link}`, "", ignore].join("\n"),
-    html: page({
+    html: accountPage({
       subject,
       preview: "Choose a new password. The link works for an hour.",
       title: "Reset your password",
@@ -82,7 +82,7 @@ export function confirmEmail(link: string): AccountEmail {
   return {
     subject,
     text: [subject, "", intro, action, "", `Confirm Email: ${link}`, "", ignore].join("\n"),
-    html: page({
+    html: accountPage({
       subject,
       preview: "Confirm your email to finish signing up.",
       title: "Confirm your email",
@@ -102,7 +102,7 @@ export function signInLinkEmail(link: string): AccountEmail {
   return {
     subject,
     text: [subject, "", intro, action, "", `Sign In: ${link}`, "", ignore].join("\n"),
-    html: page({
+    html: accountPage({
       subject,
       preview: "Your link to sign in. It works for an hour.",
       title: "Sign in",
@@ -136,7 +136,7 @@ export function passwordChangedEmail(input: {
   return {
     subject,
     text: [subject, "", what, "", notYou, "", `Sign in: ${input.signInUrl}`].join("\n"),
-    html: page({
+    html: accountPage({
       subject,
       preview: "Every other device was signed out.",
       title: "Password changed",

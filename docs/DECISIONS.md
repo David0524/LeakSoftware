@@ -2,6 +2,11 @@
 
 Newest first. Each entry: date, decision, reason.
 
+## 2026-11-24 (owner: "When adding a tech with an invite link, we should have it automatically send them an email")
+- **Invites are emailed.** Invite Someone's button is now **Send Invite** (was Create Invite), on the website (desktop and mobile) and the Android app. The server makes the invite and emails the person a link: "Join {Shop} on Sundeck Pro", from "{Shop} via Sundeck Pro", replies to the person who invited them, with an Accept Invite button. It counts toward the shop's daily email allowance and isn't sent while the shop is read-only. Replaces "Sundeck Pro doesn't email invitations" (manual, The team).
+- The link still shows under Open invites to copy or share. If the email can't go, the invite is still made and the message says to send the link yourself.
+- The Android app now asks the website (`POST /api/invites`) instead of calling `create_invite` itself, so both send the same email. The iPhone app doesn't make invites (its Team page sends people to the website), so it has nothing to change.
+
 ## 2026-11-24 (owner: "The disclaimer text is too large on the report. Also set this as the default disclaimer. Remove any proper nouns.")
 - **Report terms are fine print:** 12 px (was 15 on leak reports, 13 centered on visit and monthly reports), left-aligned, on the leak, visit and monthly reports.
 - **Default disclaimer:** the owner's leak detection terms, with the shop's name replaced by "the company that performed the leak detection" and "Court"/"County" lowercased. "Any legal action against itself" reads "against us". It is `company.report_disclaimer`'s column default (migration `20261022005400_default_disclaimer.sql`), so new shops start with it and see it in Settings › Report Terms on all four platforms, where they can change or clear it. Shops that offer leak detection and had no disclaimer get it now; shops with their own text keep it; existing pool-only shops aren't given it (they don't see Report Terms). A new shop gets it before choosing its services, so a new pool-only shop has it too (open question for the owner). Reports already sent keep their text.
