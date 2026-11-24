@@ -23,7 +23,7 @@ public enum JobStatus: String, Codable, CaseIterable, Sendable {
         case .quoteSent: [.reportSent, .quoteAccepted, .invoiced, .canceled]
         case .quoteAccepted: [.invoiced, .canceled]
         case .invoiced: [.paid, .canceled]
-        // A refund that leaves the invoice owed again (20261022005400_admin_billing_control.sql).
+        // A refund that leaves the invoice owed again (20261022005600_admin_billing_control.sql).
         case .paid: [.invoiced]
         case .canceled: [.unscheduled]
         // Maintenance visits (20261012002400_maintenance.sql).

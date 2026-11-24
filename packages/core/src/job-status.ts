@@ -29,7 +29,7 @@ export const JOB_STATUS_TRANSITIONS: Record<JobStatus, readonly JobStatus[]> = {
   quote_sent: ["report_sent", "quote_accepted", "invoiced", "canceled"],
   quote_accepted: ["invoiced", "canceled"],
   invoiced: ["paid", "canceled"],
-  // A refund that leaves the invoice owed again (20261022005400_admin_billing_control.sql).
+  // A refund that leaves the invoice owed again (20261022005600_admin_billing_control.sql).
   paid: ["invoiced"],
   canceled: ["unscheduled"],
   // Maintenance visits (20261012002400_maintenance.sql).
