@@ -7,6 +7,9 @@ import {
   CUSTOMER_TRACKER_LABELS,
   acceptanceRate,
   customersAddedNote,
+  DASHBOARD_TECH_TURNED_OFF,
+  DASHBOARD_TECHS_EMPTY,
+  DASHBOARD_TECHS_TITLE,
   dashboardTotals,
   FEEDBACK_TITLE,
   formatCents,
@@ -14,8 +17,12 @@ import {
   monthLabel,
   offersPool,
   onPlanShareNote,
+  techFeedbackNote,
+  techInvoicedNote,
+  techJobsNote,
   type Dashboard,
 } from "@leakbook/core";
+import { TechDot } from "@/components/tech-dot";
 import { Card, Empty, Grouped, PageHeader, Row } from "@/components/ui";
 import { getOffice } from "@/lib/auth";
 import { customerCounts, getCompany } from "@/lib/data";
@@ -218,6 +225,48 @@ export default async function DashboardPage() {
           )}
         </Card>
       </div>
+
+      {/* By tech (owner, 2026-11-24: "Tech specific stats in the dashboard"): each job counts
+          for its assigned tech, over the same months; most collected first. */}
+      {d.techs ? (
+        <Grouped title={DASHBOARD_TECHS_TITLE} className="mt-6">
+          {d.techs.length === 0 ? (
+            <Row label={<span className="text-text-muted">{DASHBOARD_TECHS_EMPTY}</span>} />
+          ) : (
+            d.techs.map((t) => (
+              <Row
+                key={t.user_id}
+                label={
+                  <span className="flex flex-wrap items-center gap-x-2">
+                    <TechDot color={t.color} />
+                    <span className="font-semibold">{t.name}</span>
+                    {t.active ? null : (
+                      <span className="text-[0.8125rem] text-text-muted">
+                        {DASHBOARD_TECH_TURNED_OFF}
+                      </span>
+                    )}
+                  </span>
+                }
+                detail={
+                  <>
+                    <span className="block">{techJobsNote(t)}</span>
+                    <span className="block">{techInvoicedNote(t)}</span>
+                    <span className="block">{techFeedbackNote(t)}</span>
+                  </>
+                }
+                value={
+                  <span className="block">
+                    <span className="block font-semibold text-text tabular-nums">
+                      {formatCents(t.collected_cents)}
+                    </span>
+                    <span className="block text-[0.8125rem]">collected</span>
+                  </span>
+                }
+              />
+            ))
+          )}
+        </Grouped>
+      ) : null}
 
       {/* Phones: each month as a row of an inset grouped list; wider: the table. */}
       <Grouped title="By month" className="mt-6 sm:hidden">

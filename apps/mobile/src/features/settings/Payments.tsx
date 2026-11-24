@@ -5,6 +5,7 @@ import {
   AUTOPAY_RETRY_DAY_CHOICES,
   AUTOPAY_TEXT,
   AUTO_SEND_FOOTER,
+  CARD_IMPORT_TEXT,
   AUTO_SEND_LABEL,
   autopaySettings,
   payOverTimeOn,
@@ -17,12 +18,21 @@ import {
   shopInvoiceDay,
 } from "@leakbook/core";
 import type { JsonValue } from "@leakbook/sync";
-import { payOverTimeStatusLine } from "../../data/autopay";
+import { paymentsStatus } from "../../data/autopay";
 import { formChanged } from "../../lib/discard";
 import { API_URL } from "../../lib/config";
 import { getServices } from "../../lib/services";
 import { useCompany } from "../../state/session";
-import { Button, Group, Notice, Screen, Section, SwitchControl, T } from "../../ui/components";
+import {
+  Button,
+  Group,
+  ListRow,
+  Notice,
+  Screen,
+  Section,
+  SwitchControl,
+  T,
+} from "../../ui/components";
 import { haptics } from "../../ui/haptics";
 import { useUnsavedChanges } from "../../ui/ModalSheet";
 import { Select } from "../../ui/Select";
@@ -56,8 +66,40 @@ function PaymentsPage() {
         />
       ) : null}
       <AutopaySettings />
+      <ImportSavedCards />
       {offersPool(company.settings) ? <InvoiceDay /> : null}
     </Screen>
+  );
+}
+
+/**
+ * Moving from other software › Import Saved Cards (core card-import.ts), once the shop takes
+ * payments: the matching happens on the website, as Stripe setup and Import Customers do.
+ */
+function ImportSavedCards() {
+  const company = useCompany();
+  const [ready, setReady] = useState(false);
+  useEffect(() => {
+    let live = true;
+    void paymentsStatus(company.id).then((r) => live && setReady(r?.ready === true));
+    return () => {
+      live = false;
+    };
+  }, [company.id]);
+  if (!ready || !API_URL) return null;
+  const url = `${API_URL}/settings/payments/import-cards`;
+  return (
+    <Section title="Moving from other software" footer={CARD_IMPORT_TEXT.footer}>
+      <Group>
+        <ListRow
+          title={CARD_IMPORT_TEXT.title}
+          subtitle={CARD_IMPORT_TEXT.rowDetail}
+          chevron
+          accessibilityHint="Opens on the website"
+          onPress={() => void Linking.openURL(url)}
+        />
+      </Group>
+    </Section>
   );
 }
 
@@ -112,7 +154,7 @@ function AutopaySettings() {
   useUnsavedChanges(formChanged(start, f));
   useEffect(() => {
     let live = true;
-    void payOverTimeStatusLine(company.id).then((line) => live && setStatus(line));
+    void paymentsStatus(company.id).then((r) => live && setStatus(r?.payOverTime ?? null));
     return () => {
       live = false;
     };

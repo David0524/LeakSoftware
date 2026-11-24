@@ -13,7 +13,7 @@
 
     /// More › Dashboard (owners and admins; owner, 2026-10-20: "Dashboard should be in the apps";
     /// website app/(office)/dashboard): four stat cards, collected by month as a chart, jobs by
-    /// status (each opens Jobs on it), and each month in a grouped list. From the
+    /// status (each opens Jobs on it), each tech, and each month in a grouped list. From the
     /// `owner_dashboard` RPC, so it needs a connection. Activity is a button at the trailing side
     /// of the navigation bar (owner, 2026-10-21: "make activity a dropdown on the right side at
     /// the same level as the title text"), opening a sheet with the latest events and See All.
@@ -185,6 +185,7 @@
             }
             collectedChart(d)
             jobsByStatus(d)
+            byTech(d)
             Grouped(label: DashboardText.byMonth) {
                 ForEach(d.months.reversed(), id: \.month) { m in
                     HStack(alignment: .top, spacing: 12) {
@@ -196,6 +197,44 @@
                         Spacer(minLength: 0)
                         VStack(alignment: .trailing, spacing: 2) {
                             Text(formatCents(m.collectedCents)).textRole(.bodyEmphasis).monospacedDigit()
+                                .foregroundStyle(Color.text)
+                            Text("collected").textRole(.footnote).foregroundStyle(Color.textMuted)
+                        }
+                    }
+                    .padding(.horizontal, CGFloat(Spacing.rowHorizontal))
+                    .padding(.vertical, CGFloat(Spacing.rowVertical))
+                    .accessibilityElement(children: .combine)
+                }
+            }
+        }
+
+        /// By tech (owner, 2026-11-24: "Tech specific stats in the dashboard"): each tech with
+        /// their color, jobs, money, and feedback over the months shown; most collected first.
+        private func byTech(_ d: DashboardData) -> some View {
+            Grouped(label: dashboardTechsTitle) {
+                if d.techs.isEmpty {
+                    Text(dashboardTechsEmpty).textRole(.body).foregroundStyle(Color.textMuted)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .padding(.horizontal, CGFloat(Spacing.rowHorizontal))
+                        .padding(.vertical, CGFloat(Spacing.rowVertical))
+                }
+                ForEach(d.techs) { t in
+                    HStack(alignment: .top, spacing: 12) {
+                        VStack(alignment: .leading, spacing: 2) {
+                            HStack(spacing: 8) {
+                                TechName(name: t.name, color: techColor(t.color))
+                                    .textRole(.bodyEmphasis).foregroundStyle(Color.text)
+                                if !t.active {
+                                    Text(dashboardTechTurnedOff).textRole(.footnote).foregroundStyle(Color.textMuted)
+                                }
+                            }
+                            Text(techJobsNote(t)).textRole(.secondary).foregroundStyle(Color.textMuted)
+                            Text(techInvoicedNote(t)).textRole(.secondary).foregroundStyle(Color.textMuted)
+                            Text(techFeedbackNote(t)).textRole(.secondary).foregroundStyle(Color.textMuted)
+                        }
+                        Spacer(minLength: 0)
+                        VStack(alignment: .trailing, spacing: 2) {
+                            Text(formatCents(t.collectedCents)).textRole(.bodyEmphasis).monospacedDigit()
                                 .foregroundStyle(Color.text)
                             Text("collected").textRole(.footnote).foregroundStyle(Color.textMuted)
                         }

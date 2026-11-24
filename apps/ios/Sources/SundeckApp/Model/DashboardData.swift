@@ -10,16 +10,29 @@ public struct DashboardData: Decodable, Equatable, Sendable {
     public var statuses: [String: Int]
     public var outstandingCents: Cents
     public var months: [DashboardMonth]
+    /// By tech, most collected first (owner, 2026-11-24); empty before the database has it.
+    public var techs: [DashboardTech]
 
     enum CodingKeys: String, CodingKey {
-        case statuses, months
+        case statuses, months, techs
         case outstandingCents = "outstanding_cents"
     }
 
-    public init(statuses: [String: Int], outstandingCents: Cents, months: [DashboardMonth]) {
+    public init(
+        statuses: [String: Int], outstandingCents: Cents, months: [DashboardMonth], techs: [DashboardTech] = []
+    ) {
         self.statuses = statuses
         self.outstandingCents = outstandingCents
         self.months = months
+        self.techs = techs
+    }
+
+    public init(from decoder: Decoder) throws {
+        let c = try decoder.container(keyedBy: CodingKeys.self)
+        statuses = try c.decode([String: Int].self, forKey: .statuses)
+        outstandingCents = try c.decode(Cents.self, forKey: .outstandingCents)
+        months = try c.decode([DashboardMonth].self, forKey: .months)
+        techs = try c.decodeIfPresent([DashboardTech].self, forKey: .techs) ?? []
     }
 }
 

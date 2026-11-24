@@ -421,7 +421,7 @@ export function methodSummary(pm: Stripe.PaymentMethod): {
   return null;
 }
 
-async function saveMethod(
+export async function saveMethod(
   stripe: Stripe,
   db: SupabaseClient,
   account: string,
