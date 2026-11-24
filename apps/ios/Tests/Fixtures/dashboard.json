@@ -1,0 +1,278 @@
+{
+  "techJobsNote": [
+    {
+      "args": [
+        {
+          "user_id": "u1",
+          "name": "Maria Lopez",
+          "color": "blue",
+          "active": true,
+          "jobs_done": 14,
+          "jobs_open": 3,
+          "invoiced_cents": 500000,
+          "collected_cents": 1248000,
+          "thumbs_up": 9,
+          "thumbs_down": 1,
+          "on_site_minutes": 95
+        }
+      ],
+      "result": "14 jobs done · 3 open"
+    },
+    {
+      "args": [
+        {
+          "user_id": "u1",
+          "name": "Maria Lopez",
+          "color": "blue",
+          "active": true,
+          "jobs_done": 1,
+          "jobs_open": 0,
+          "invoiced_cents": 0,
+          "collected_cents": 1248000,
+          "thumbs_up": 0,
+          "thumbs_down": 0,
+          "on_site_minutes": 95
+        }
+      ],
+      "result": "1 job done · 0 open"
+    },
+    {
+      "args": [
+        {
+          "user_id": "u1",
+          "name": "Maria Lopez",
+          "color": "blue",
+          "active": true,
+          "jobs_done": 14,
+          "jobs_open": 3,
+          "invoiced_cents": 500000,
+          "collected_cents": 1248000,
+          "thumbs_up": 0,
+          "thumbs_down": 2,
+          "on_site_minutes": null
+        }
+      ],
+      "result": "14 jobs done · 3 open"
+    },
+    {
+      "args": [
+        {
+          "user_id": "u1",
+          "name": "Maria Lopez",
+          "color": "blue",
+          "active": true,
+          "jobs_done": 0,
+          "jobs_open": 3,
+          "invoiced_cents": 500000,
+          "collected_cents": 1248000,
+          "thumbs_up": 0,
+          "thumbs_down": 0,
+          "on_site_minutes": null
+        }
+      ],
+      "result": "0 jobs done · 3 open"
+    },
+    {
+      "args": [
+        {
+          "user_id": "u1",
+          "name": "Maria Lopez",
+          "color": "blue",
+          "active": true,
+          "jobs_done": 14,
+          "jobs_open": 3,
+          "invoiced_cents": 1999,
+          "collected_cents": 1248000,
+          "thumbs_up": 9,
+          "thumbs_down": 1,
+          "on_site_minutes": 60
+        }
+      ],
+      "result": "14 jobs done · 3 open"
+    }
+  ],
+  "techInvoicedNote": [
+    {
+      "args": [
+        {
+          "user_id": "u1",
+          "name": "Maria Lopez",
+          "color": "blue",
+          "active": true,
+          "jobs_done": 14,
+          "jobs_open": 3,
+          "invoiced_cents": 500000,
+          "collected_cents": 1248000,
+          "thumbs_up": 9,
+          "thumbs_down": 1,
+          "on_site_minutes": 95
+        }
+      ],
+      "result": "Invoiced $5,000.00"
+    },
+    {
+      "args": [
+        {
+          "user_id": "u1",
+          "name": "Maria Lopez",
+          "color": "blue",
+          "active": true,
+          "jobs_done": 1,
+          "jobs_open": 0,
+          "invoiced_cents": 0,
+          "collected_cents": 1248000,
+          "thumbs_up": 0,
+          "thumbs_down": 0,
+          "on_site_minutes": 95
+        }
+      ],
+      "result": "Invoiced $0.00"
+    },
+    {
+      "args": [
+        {
+          "user_id": "u1",
+          "name": "Maria Lopez",
+          "color": "blue",
+          "active": true,
+          "jobs_done": 14,
+          "jobs_open": 3,
+          "invoiced_cents": 500000,
+          "collected_cents": 1248000,
+          "thumbs_up": 0,
+          "thumbs_down": 2,
+          "on_site_minutes": null
+        }
+      ],
+      "result": "Invoiced $5,000.00"
+    },
+    {
+      "args": [
+        {
+          "user_id": "u1",
+          "name": "Maria Lopez",
+          "color": "blue",
+          "active": true,
+          "jobs_done": 0,
+          "jobs_open": 3,
+          "invoiced_cents": 500000,
+          "collected_cents": 1248000,
+          "thumbs_up": 0,
+          "thumbs_down": 0,
+          "on_site_minutes": null
+        }
+      ],
+      "result": "Invoiced $5,000.00"
+    },
+    {
+      "args": [
+        {
+          "user_id": "u1",
+          "name": "Maria Lopez",
+          "color": "blue",
+          "active": true,
+          "jobs_done": 14,
+          "jobs_open": 3,
+          "invoiced_cents": 1999,
+          "collected_cents": 1248000,
+          "thumbs_up": 9,
+          "thumbs_down": 1,
+          "on_site_minutes": 60
+        }
+      ],
+      "result": "Invoiced $19.99"
+    }
+  ],
+  "techFeedbackNote": [
+    {
+      "args": [
+        {
+          "user_id": "u1",
+          "name": "Maria Lopez",
+          "color": "blue",
+          "active": true,
+          "jobs_done": 14,
+          "jobs_open": 3,
+          "invoiced_cents": 500000,
+          "collected_cents": 1248000,
+          "thumbs_up": 9,
+          "thumbs_down": 1,
+          "on_site_minutes": 95
+        }
+      ],
+      "result": "9 thumbs up · 1 thumbs down · 1 hr 35 min avg on site"
+    },
+    {
+      "args": [
+        {
+          "user_id": "u1",
+          "name": "Maria Lopez",
+          "color": "blue",
+          "active": true,
+          "jobs_done": 1,
+          "jobs_open": 0,
+          "invoiced_cents": 0,
+          "collected_cents": 1248000,
+          "thumbs_up": 0,
+          "thumbs_down": 0,
+          "on_site_minutes": 95
+        }
+      ],
+      "result": "No feedback yet · 1 hr 35 min avg on site"
+    },
+    {
+      "args": [
+        {
+          "user_id": "u1",
+          "name": "Maria Lopez",
+          "color": "blue",
+          "active": true,
+          "jobs_done": 14,
+          "jobs_open": 3,
+          "invoiced_cents": 500000,
+          "collected_cents": 1248000,
+          "thumbs_up": 0,
+          "thumbs_down": 2,
+          "on_site_minutes": null
+        }
+      ],
+      "result": "0 thumbs up · 2 thumbs down"
+    },
+    {
+      "args": [
+        {
+          "user_id": "u1",
+          "name": "Maria Lopez",
+          "color": "blue",
+          "active": true,
+          "jobs_done": 0,
+          "jobs_open": 3,
+          "invoiced_cents": 500000,
+          "collected_cents": 1248000,
+          "thumbs_up": 0,
+          "thumbs_down": 0,
+          "on_site_minutes": null
+        }
+      ],
+      "result": "No feedback yet"
+    },
+    {
+      "args": [
+        {
+          "user_id": "u1",
+          "name": "Maria Lopez",
+          "color": "blue",
+          "active": true,
+          "jobs_done": 14,
+          "jobs_open": 3,
+          "invoiced_cents": 1999,
+          "collected_cents": 1248000,
+          "thumbs_up": 9,
+          "thumbs_down": 1,
+          "on_site_minutes": 60
+        }
+      ],
+      "result": "9 thumbs up · 1 thumbs down · 1 hr avg on site"
+    }
+  ]
+}

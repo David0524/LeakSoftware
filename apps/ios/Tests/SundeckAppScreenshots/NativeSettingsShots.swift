@@ -50,11 +50,25 @@
             }
             let data = DashboardData(
                 statuses: ["scheduled": 6, "in_progress": 2, "report_sent": 3, "invoiced": 4, "paid": 21],
-                outstandingCents: 82_500, months: months)
+                outstandingCents: 82_500, months: months,
+                techs: [
+                    DashboardTech(
+                        userId: "t1", name: "Tony Reyes", color: "green", active: true, jobsDone: 41, jobsOpen: 5,
+                        invoicedCents: 1_120_000, collectedCents: 985_000, thumbsUp: 18, thumbsDown: 1,
+                        onSiteMinutes: 95),
+                    DashboardTech(
+                        userId: "t2", name: "Maria Lopez", color: "purple", active: true, jobsDone: 27,
+                        jobsOpen: 3, invoicedCents: 640_000, collectedCents: 590_500, thumbsUp: 11, thumbsDown: 0,
+                        onSiteMinutes: 80),
+                    DashboardTech(
+                        userId: "t3", name: "Dan Ruiz", color: "orange", active: false, jobsDone: 6, jobsOpen: 0,
+                        invoicedCents: 98_000, collectedCents: 98_000, thumbsUp: 0, thumbsDown: 0,
+                        onSiteMinutes: nil),
+                ])
             try await snapshot(
-                "70-dashboard", height: 2400, NavigationStack { DashboardScreen(data: data) }.app(env))
+                "70-dashboard", height: 3000, NavigationStack { DashboardScreen(data: data) }.app(env))
             try await snapshot(
-                "70-dashboard-dark", dark: true, height: 2400, NavigationStack { DashboardScreen(data: data) }.app(env))
+                "70-dashboard-dark", dark: true, height: 3000, NavigationStack { DashboardScreen(data: data) }.app(env))
             // Activity opens as a sheet from the bar's Activity button (owner, 2026-10-21).
             let now = Date()
             let iso = { (minutes: Double) in ISO8601DateFormatter().string(from: now.addingTimeInterval(-minutes * 60))
