@@ -420,18 +420,18 @@
                                         .fixedSize()
                                 }
                                 if !large { Spacer(minLength: 8) }
-                                Text(suggestionText(step))
+                                Text(row.coveredBy.map(coveredText) ?? suggestionText(step))
                                     .font(.role(.secondary).weight(.medium))
                                     .foregroundStyle(Color.text)
                                     .multilineTextAlignment(large ? .leading : .trailing)
                             }
                             .accessibilityElement(children: .combine)
-                            if key == .ph, step.note != nil {
+                            if row.suggestion != nil, isAcidStep(step) {
                                 Text("Acid to water, never water to acid.")
                                     .textRole(.secondary)
                                     .foregroundStyle(Color.textMuted)
                                     .padding(.top, 4)
-                            } else if row.suggestion == nil, let note = step.note {
+                            } else if row.suggestion == nil, row.coveredBy == nil, let note = step.note {
                                 Text(note).textRole(.secondary).foregroundStyle(Color.textMuted).padding(.top, 4)
                             }
                         }

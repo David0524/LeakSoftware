@@ -126,14 +126,15 @@ public enum ChlorineProduct: String, Codable, CaseIterable, Sendable {
         }
     }
 
-    /// Fluid ounces (liquids) or ounces (solids) per 10,000 gallons for +1 ppm free chlorine
-    /// (stoichiometry: 10.2 fl oz of 12.5%; charts say 10.6 to 10.7).
+    /// Fluid ounces (liquids) or ounces (solids) per 10,000 gallons for +1 ppm free chlorine: the
+    /// Pool Nerd's 10 fl oz of 12.5% and 2 oz of 68% cal-hypo, scaled by strength (owner,
+    /// 2026-11-24: "Just copy this").
     var per10k: Double {
         switch self {
-        case .liquid12: 10.7
-        case .liquid10: 13.4
-        case .calhypo65: 2.0
-        case .calhypo73: 1.8
+        case .liquid12: 10
+        case .liquid10: 12.5
+        case .calhypo65: 2.1
+        case .calhypo73: 1.9
         }
     }
 
@@ -152,22 +153,23 @@ public enum AcidProduct: String, Codable, CaseIterable, Sendable {
         }
     }
 
-    /// Per 10,000 gallons for -0.2 pH at 100 ppm alkalinity (labels say 12 to 16 fl oz of
-    /// 31.45%; this stays near the low end, since too much acid is the worse mistake).
+    /// Per 10,000 gallons for -0.2 pH: the Pool Nerd's 12.8 fl oz of 31.45% and 19.2 oz of dry
+    /// acid; 14.5% takes 2.35 times the 31.45% amount.
     var perPh: Double {
         switch self {
-        case .muriatic31: 13
-        case .muriatic145: 30.5
-        case .dryacid: 17.3
+        case .muriatic31: 12.8
+        case .muriatic145: 30.1
+        case .dryacid: 19.2
         }
     }
 
-    /// Per 10,000 gallons for -10 ppm total alkalinity (7.6 mol of acid).
+    /// Per 10,000 gallons for -10 ppm total alkalinity: the Pool Nerd's 32 fl oz of 31.45%; the
+    /// others in the same ratios.
     var perTa: Double {
         switch self {
-        case .muriatic31: 25.6
-        case .muriatic145: 60
-        case .dryacid: 34
+        case .muriatic31: 32
+        case .muriatic145: 75.2
+        case .dryacid: 48
         }
     }
 
@@ -176,9 +178,9 @@ public enum AcidProduct: String, Codable, CaseIterable, Sendable {
 
 // Per 10,000 gallons, in ounces by weight.
 private let sodaAshPh = 6.0  // +0.2 pH
-private let bakingSodaTa = 22.4  // +10 ppm TA (1.4 lb)
-private let calciumChlorideCh = 19.3  // +10 ppm CH (1.2 lb of 77%)
-private let cyaUp = 13.3  // +10 ppm CYA
+private let bakingSodaTa = 24.0  // +10 ppm TA (1.5 lb)
+private let calciumChlorideCh = 19.2  // +10 ppm CH (1.2 lb of 77%)
+private let cyaUp = 13.0  // +10 ppm CYA
 private let saltUp = 133.4  // +100 ppm salt (8.34 lb)
 
 // MARK: - The calculation
@@ -193,9 +195,12 @@ public struct DoseStep: Codable, Equatable, Sendable {
     /// The same amount the way a tech measures it on the deck: "A splash", "2 cups",
     /// "½ gallon", "3½ lb", "2 bags".
     public var measure: String?
-    /// Why, in words: "pH 8.0 → 7.5".
+    /// Why, in words: "pH 8.0 → 7.5", or "Alkalinity 150 → 100 · pH 7.9 → 7.5" for two.
     public var why: String
     public var note: String?
+    /// The other readings this step also takes care of (owner, 2026-11-24): one acid dose for
+    /// high alkalinity and high pH, one drain for high calcium, stabilizer, and salt.
+    public var also: [ReadingKey] = []
     /// The chemical the step adds, as the price book knows it (`chemicalKeys`); nil for an
     /// action (drain, hold off on chlorine). Owner, 2026-10-24: added chemicals.
     public var chemical: String?
@@ -438,60 +443,82 @@ public func calculateChemistry(_ input: ChemistryInput) -> ChemistryResult {
     }
     func step(
         _ key: ReadingKey, _ product: String, _ dose: Dose?, _ why: String,
-        note: String? = nil
+        note: String? = nil, also: [ReadingKey] = []
     ) -> DoseStep {
         DoseStep(
             key: key, product: product, amount: dose?.amount, measure: dose?.measure, why: why, note: note,
-            chemical: dose?.chemical, quantity: dose?.quantity, unit: dose?.unit)
+            also: also, chemical: dose?.chemical, quantity: dose?.quantity, unit: dose?.unit)
     }
-    func drain(_ key: ReadingKey, _ from: Double, _ to: Double) -> DoseStep {
-        let percent = min(90, (((from - to) / from) * 20).rounded(.up) * 5)
-        return step(
-            key, "Drain and refill about \(ECMA.numberString(percent))%", nil, why(key, from, to),
-            note: "Nothing added lowers it; fresh water does.")
+    /// "Alkalinity 150 → 100 · pH 7.9 → 7.5": each reading a step takes care of.
+    func whyAll(_ list: [ReadingStatus]) -> String {
+        list.map { why($0.key, $0.value, $0.range.target) }.joined(separator: " · ")
     }
 
-    // Alkalinity first: it steadies pH.
+    // Alkalinity first: it steadies pH. Acid lowers both, so one acid dose takes care of high
+    // alkalinity and high pH together: the larger of the two amounts. pH that falls too far
+    // comes back up with air, which leaves alkalinity alone.
     let ta = st(.ta)
-    var taAfter = ta?.value ?? 100
+    let ph = st(.ph)
+    var phDone = false
     if let ta, ta.status != .ok {
         let d = ta.range.target - ta.value
+        let big = abs(d) > 40
         if d > 0 {
             steps.append(
                 step(
                     .ta, "Baking soda", dose((d / 10) * bakingSodaTa * k, false, "baking_soda"),
-                    why(.ta, ta.value, ta.range.target)))
+                    why(.ta, ta.value, ta.range.target),
+                    note: big ? "Big change: raise it 20 to 30 ppm at a time, a day apart." : nil))
         } else {
-            let amt = (-d / 10) * input.acid.perTa * k
+            let phHigh = ph?.status == .high
+            let forTa = (-d / 10) * input.acid.perTa
+            let forPh = ph.map { phHigh ? (($0.value - $0.range.target) / 0.2) * input.acid.perPh : 0 } ?? 0
             steps.append(
                 step(
-                    .ta, input.acid.label, dose(amt, input.acid.isLiquid, input.acid.chemical),
-                    why(.ta, ta.value, ta.range.target),
-                    note:
-                        "Add in two or three doses a few hours apart, running the pump, and aerate to bring pH back up."
-                ))
+                    .ta, input.acid.label, dose(max(forTa, forPh) * k, input.acid.isLiquid, input.acid.chemical),
+                    whyAll(phHigh ? [ta, ph!] : [ta]),
+                    note: big
+                        ? "Big change: lower it 20 to 30 ppm at a time, a day apart, with the pump running. Aerate afterward to bring pH back up."
+                        : "Add in two or three doses a few hours apart, with the pump running. Aerate afterward to bring pH back up.",
+                    also: phHigh ? [.ph] : []))
+            if let ph, ph.status == .low {
+                // Soda ash would raise the alkalinity the acid just lowered.
+                steps.append(
+                    step(
+                        .ph, "Aerate to raise pH", nil, why(.ph, ph.value, ph.range.target),
+                        note:
+                            "Point the returns up and run any water features. Soda ash would raise the alkalinity again. Retest tomorrow."
+                    ))
+            }
+            phDone = true
         }
-        taAfter = ta.range.target
     }
 
-    // pH, scaled by alkalinity (more buffer takes more to move).
-    if let ph = st(.ph), ph.status != .ok {
-        let buffer = min(2, max(0.5, taAfter / 100))
+    if let ph, ph.status != .ok, !phDone {
         let d = ph.range.target - ph.value
+        let big =
+            ECMA.round(abs(d) * 10) / 10 > 0.4 ? " Big change: move pH 0.2 to 0.4 at a time, 4 to 6 hours apart." : ""
         if d > 0 {
             steps.append(
                 step(
-                    .ph, "Soda ash", dose((d / 0.2) * sodaAshPh * buffer * k, false, "soda_ash"),
-                    why(.ph, ph.value, ph.range.target)))
+                    .ph, "Soda ash", dose((d / 0.2) * sodaAshPh * k, false, "soda_ash"),
+                    why(.ph, ph.value, ph.range.target),
+                    note: big.isEmpty ? nil : String(big.dropFirst())))
         } else {
-            let amt = (-d / 0.2) * input.acid.perPh * buffer * k
             steps.append(
                 step(
-                    .ph, input.acid.label, dose(amt, input.acid.isLiquid, input.acid.chemical),
+                    .ph, input.acid.label,
+                    dose((-d / 0.2) * input.acid.perPh * k, input.acid.isLiquid, input.acid.chemical),
                     why(.ph, ph.value, ph.range.target),
-                    note: "Pour into the deep end with the pump running. Add acid to water, never water to acid."))
+                    note: "Pour into the deep end with the pump running. Add acid to water, never water to acid.\(big)")
+            )
         }
     }
+
+    // Calcium, stabilizer, and salt go up by product and come down only with fresh water: one
+    // drain for all the high ones, as much as the highest needs, before any of them is added.
+    var high: [ReadingStatus] = []
+    let drainAt = steps.count
 
     if let ch = st(.ch) {
         if ch.status == .low {
@@ -501,7 +528,7 @@ public func calculateChemistry(_ input: ChemistryInput) -> ChemistryResult {
                     dose(((ch.range.target - ch.value) / 10) * calciumChlorideCh * k, false, "calcium_chloride"),
                     why(.ch, ch.value, ch.range.target)))
         } else if ch.status == .high {
-            steps.append(drain(.ch, ch.value, ch.range.target))
+            high.append(ch)
         }
     }
 
@@ -514,7 +541,7 @@ public func calculateChemistry(_ input: ChemistryInput) -> ChemistryResult {
                     why(.cya, cya.value, cya.range.target),
                     note: "Dissolves slowly; put it in a sock in the skimmer basket. Retest in a week."))
         } else if cya.status == .high {
-            steps.append(drain(.cya, cya.value, cya.range.target))
+            high.append(cya)
         }
     }
 
@@ -526,8 +553,19 @@ public func calculateChemistry(_ input: ChemistryInput) -> ChemistryResult {
                     why(.salt, salt.value, salt.range.target),
                     note: "Brush it toward the main drain until it dissolves."))
         } else if salt.status == .high {
-            steps.append(drain(.salt, salt.value, salt.range.target))
+            high.append(salt)
         }
+    }
+
+    if let first = high.first {
+        let share = high.map { ($0.value - $0.range.target) / $0.value }.max() ?? 0
+        let percent = min(90, (share * 20).rounded(.up) * 5)
+        steps.insert(
+            step(
+                first.key, "Drain and refill about \(ECMA.numberString(percent))%", nil, whyAll(high),
+                note: "Nothing added lowers \(high.count > 1 ? "them" : "it"); fresh water does.",
+                also: high.dropFirst().map(\.key)),
+            at: drainAt)
     }
 
     // Chlorine last.

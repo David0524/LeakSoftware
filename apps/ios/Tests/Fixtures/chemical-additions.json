@@ -778,6 +778,27 @@
         {
           "gallons": 20000,
           "readings": {
+            "fc": 2,
+            "ph": 7.9,
+            "ta": 150,
+            "ch": 700,
+            "cya": 110
+          },
+          "chlorine": "liquid12",
+          "acid": "muriatic31"
+        }
+      ],
+      "result": [
+        "2½ gal muriatic acid",
+        "Drain and refill about 65%",
+        "1¼ gal liquid chlorine"
+      ]
+    },
+    {
+      "args": [
+        {
+          "gallons": 20000,
+          "readings": {
             "fc": 1,
             "ph": 7.8,
             "ta": 90,
@@ -793,7 +814,7 @@
         }
       ],
       "result": [
-        "¼ gal muriatic acid",
+        "⅓ gal muriatic acid",
         "1½ lb stabilizer",
         "½ gal liquid chlorine"
       ]
@@ -815,7 +836,7 @@
         }
       ],
       "result": [
-        "8½ lb baking soda",
+        "9 lb baking soda",
         "1½ lb soda ash",
         "27 lb calcium chloride",
         "3½ lb stabilizer",
@@ -838,8 +859,7 @@
         }
       ],
       "result": [
-        "2 gal muriatic acid",
-        "⅔ gal muriatic acid",
+        "2¼ gal muriatic acid",
         "Drain and refill about 70%",
         "Hold off on chlorine"
       ]
@@ -868,6 +888,82 @@
         {
           "gallons": 20000,
           "readings": {
+            "fc": 2,
+            "ph": 7.9,
+            "ta": 150,
+            "ch": 700,
+            "cya": 110
+          },
+          "chlorine": "liquid12",
+          "acid": "muriatic31"
+        },
+        true
+      ],
+      "result": [
+        {
+          "price_book_item_id": "acid",
+          "name": "Muriatic acid",
+          "unit": "gal",
+          "reading_key": "ta",
+          "suggested_quantity": 2.5,
+          "quantity": 2.5,
+          "unit_price_cents": 1500
+        },
+        null,
+        {
+          "price_book_item_id": "cl",
+          "name": "Liquid chlorine",
+          "unit": "gal",
+          "reading_key": "fc",
+          "suggested_quantity": 1.25,
+          "quantity": 1.25,
+          "unit_price_cents": 800
+        }
+      ]
+    },
+    {
+      "args": [
+        {
+          "gallons": 20000,
+          "readings": {
+            "fc": 2,
+            "ph": 7.9,
+            "ta": 150,
+            "ch": 700,
+            "cya": 110
+          },
+          "chlorine": "liquid12",
+          "acid": "muriatic31"
+        },
+        false
+      ],
+      "result": [
+        {
+          "price_book_item_id": null,
+          "name": "Muriatic acid",
+          "unit": "gal",
+          "reading_key": "ta",
+          "suggested_quantity": 2.5,
+          "quantity": 2.5,
+          "unit_price_cents": 0
+        },
+        null,
+        {
+          "price_book_item_id": null,
+          "name": "Liquid chlorine",
+          "unit": "gal",
+          "reading_key": "fc",
+          "suggested_quantity": 1.25,
+          "quantity": 1.25,
+          "unit_price_cents": 0
+        }
+      ]
+    },
+    {
+      "args": [
+        {
+          "gallons": 20000,
+          "readings": {
             "fc": 1,
             "ph": 7.8,
             "ta": 90,
@@ -889,8 +985,8 @@
           "name": "Muriatic acid",
           "unit": "gal",
           "reading_key": "ph",
-          "suggested_quantity": 0.25,
-          "quantity": 0.25,
+          "suggested_quantity": 0.33,
+          "quantity": 0.33,
           "unit_price_cents": 1500
         },
         {
@@ -939,8 +1035,8 @@
           "name": "Muriatic acid",
           "unit": "gal",
           "reading_key": "ph",
-          "suggested_quantity": 0.25,
-          "quantity": 0.25,
+          "suggested_quantity": 0.33,
+          "quantity": 0.33,
           "unit_price_cents": 0
         },
         {
@@ -986,8 +1082,8 @@
           "name": "Baking soda",
           "unit": "lb",
           "reading_key": "ta",
-          "suggested_quantity": 8.5,
-          "quantity": 8.5,
+          "suggested_quantity": 9,
+          "quantity": 9,
           "unit_price_cents": 300
         },
         {
@@ -1060,8 +1156,8 @@
           "name": "Baking soda",
           "unit": "lb",
           "reading_key": "ta",
-          "suggested_quantity": 8.5,
-          "quantity": 8.5,
+          "suggested_quantity": 9,
+          "quantity": 9,
           "unit_price_cents": 0
         },
         {
@@ -1132,17 +1228,8 @@
           "name": "Muriatic acid",
           "unit": "gal",
           "reading_key": "ta",
-          "suggested_quantity": 2,
-          "quantity": 2,
-          "unit_price_cents": 1500
-        },
-        {
-          "price_book_item_id": "acid",
-          "name": "Muriatic acid",
-          "unit": "gal",
-          "reading_key": "ph",
-          "suggested_quantity": 0.67,
-          "quantity": 0.67,
+          "suggested_quantity": 2.25,
+          "quantity": 2.25,
           "unit_price_cents": 1500
         },
         null,
@@ -1170,17 +1257,8 @@
           "name": "Muriatic acid",
           "unit": "gal",
           "reading_key": "ta",
-          "suggested_quantity": 2,
-          "quantity": 2,
-          "unit_price_cents": 0
-        },
-        {
-          "price_book_item_id": null,
-          "name": "Muriatic acid",
-          "unit": "gal",
-          "reading_key": "ph",
-          "suggested_quantity": 0.67,
-          "quantity": 0.67,
+          "suggested_quantity": 2.25,
+          "quantity": 2.25,
           "unit_price_cents": 0
         },
         null,
@@ -1307,6 +1385,251 @@
         {
           "gallons": 20000,
           "readings": {
+            "fc": 2,
+            "ph": 7.9,
+            "ta": 150,
+            "ch": 700,
+            "cya": 110
+          },
+          "chlorine": "liquid12",
+          "acid": "muriatic31"
+        }
+      ],
+      "result": {
+        "rows": [
+          {
+            "key": "fc",
+            "step": {
+              "key": "fc",
+              "product": "Liquid chlorine 12.5%",
+              "amount": "1 gal 22 fl oz",
+              "measure": "1¼ gallons",
+              "chemical": "liquid_chlorine",
+              "quantity": 1.25,
+              "unit": "gal",
+              "why": "Free chlorine 2 → 9.5",
+              "also": []
+            },
+            "order": 3,
+            "coveredBy": null,
+            "suggestion": {
+              "price_book_item_id": "cl",
+              "name": "Liquid chlorine",
+              "unit": "gal",
+              "reading_key": "fc",
+              "suggested_quantity": 1.25,
+              "quantity": 1.25,
+              "unit_price_cents": 800
+            },
+            "added": [
+              {
+                "id": "1",
+                "job_id": "j",
+                "property_id": "p",
+                "price_book_item_id": "cl",
+                "name": "Liquid chlorine",
+                "unit": "gal",
+                "reading_key": "fc",
+                "suggested_quantity": 0.5,
+                "quantity": 0.5,
+                "customer_supplied": false,
+                "note": null,
+                "unit_price_cents": 800,
+                "taxable": true,
+                "billed_invoice_id": null,
+                "added_at": "2026-10-23T14:00:00Z",
+                "sort_order": 0,
+                "deleted_at": null
+              },
+              {
+                "id": "6",
+                "job_id": "j",
+                "property_id": "p",
+                "price_book_item_id": "cl",
+                "name": "Liquid chlorine",
+                "unit": "gal",
+                "reading_key": "fc",
+                "suggested_quantity": 0.5,
+                "quantity": 0.25,
+                "customer_supplied": false,
+                "note": null,
+                "unit_price_cents": 800,
+                "taxable": true,
+                "billed_invoice_id": null,
+                "added_at": "2026-10-23T13:00:00Z",
+                "sort_order": 1,
+                "deleted_at": null
+              }
+            ]
+          },
+          {
+            "key": "ph",
+            "step": {
+              "key": "ta",
+              "product": "Muriatic acid 31.45%",
+              "amount": "2 gal 64 fl oz",
+              "measure": "2½ gallons",
+              "chemical": "muriatic_acid",
+              "quantity": 2.5,
+              "unit": "gal",
+              "why": "Alkalinity 150 → 100 · pH 7.9 → 7.5",
+              "also": [
+                "ph"
+              ],
+              "note": "Big change: lower it 20 to 30 ppm at a time, a day apart, with the pump running. Aerate afterward to bring pH back up."
+            },
+            "order": 1,
+            "coveredBy": "ta",
+            "suggestion": null,
+            "added": [
+              {
+                "id": "2",
+                "job_id": "j",
+                "property_id": "p",
+                "price_book_item_id": "acid",
+                "name": "Muriatic acid",
+                "unit": "gal",
+                "reading_key": "ph",
+                "suggested_quantity": 0.5,
+                "quantity": 0.25,
+                "customer_supplied": false,
+                "note": null,
+                "unit_price_cents": 1500,
+                "taxable": true,
+                "billed_invoice_id": null,
+                "added_at": "2026-10-23T14:00:00Z",
+                "sort_order": 1,
+                "deleted_at": null
+              }
+            ]
+          },
+          {
+            "key": "ta",
+            "step": {
+              "key": "ta",
+              "product": "Muriatic acid 31.45%",
+              "amount": "2 gal 64 fl oz",
+              "measure": "2½ gallons",
+              "chemical": "muriatic_acid",
+              "quantity": 2.5,
+              "unit": "gal",
+              "why": "Alkalinity 150 → 100 · pH 7.9 → 7.5",
+              "also": [
+                "ph"
+              ],
+              "note": "Big change: lower it 20 to 30 ppm at a time, a day apart, with the pump running. Aerate afterward to bring pH back up."
+            },
+            "order": 1,
+            "coveredBy": null,
+            "suggestion": {
+              "price_book_item_id": "acid",
+              "name": "Muriatic acid",
+              "unit": "gal",
+              "reading_key": "ta",
+              "suggested_quantity": 2.5,
+              "quantity": 2.5,
+              "unit_price_cents": 1500
+            },
+            "added": []
+          },
+          {
+            "key": "ch",
+            "step": {
+              "key": "ch",
+              "product": "Drain and refill about 65%",
+              "amount": null,
+              "measure": null,
+              "why": "Calcium 700 → 300 · Stabilizer 110 → 40",
+              "also": [
+                "cya"
+              ],
+              "note": "Nothing added lowers them; fresh water does.",
+              "chemical": null,
+              "quantity": null,
+              "unit": null
+            },
+            "order": 2,
+            "coveredBy": null,
+            "suggestion": null,
+            "added": []
+          },
+          {
+            "key": "cya",
+            "step": {
+              "key": "ch",
+              "product": "Drain and refill about 65%",
+              "amount": null,
+              "measure": null,
+              "why": "Calcium 700 → 300 · Stabilizer 110 → 40",
+              "also": [
+                "cya"
+              ],
+              "note": "Nothing added lowers them; fresh water does.",
+              "chemical": null,
+              "quantity": null,
+              "unit": null
+            },
+            "order": 2,
+            "coveredBy": "ch",
+            "suggestion": null,
+            "added": []
+          },
+          {
+            "key": "salt",
+            "step": null,
+            "order": null,
+            "coveredBy": null,
+            "suggestion": null,
+            "added": []
+          }
+        ],
+        "extras": [
+          {
+            "id": "3",
+            "job_id": "j",
+            "property_id": "p",
+            "price_book_item_id": "tabs",
+            "name": "Chlorine tabs (3″)",
+            "unit": "tab",
+            "reading_key": null,
+            "suggested_quantity": 0.5,
+            "quantity": 3,
+            "customer_supplied": false,
+            "note": "In the floater",
+            "unit_price_cents": 250,
+            "taxable": true,
+            "billed_invoice_id": null,
+            "added_at": "2026-10-23T14:00:00Z",
+            "sort_order": 2,
+            "deleted_at": null
+          },
+          {
+            "id": "4",
+            "job_id": "j",
+            "property_id": "p",
+            "price_book_item_id": "algae",
+            "name": "Algaecide",
+            "unit": "qt",
+            "reading_key": null,
+            "suggested_quantity": 0.5,
+            "quantity": 1,
+            "customer_supplied": true,
+            "note": null,
+            "unit_price_cents": 1500,
+            "taxable": true,
+            "billed_invoice_id": null,
+            "added_at": "2026-10-23T14:00:00Z",
+            "sort_order": 3,
+            "deleted_at": null
+          }
+        ]
+      }
+    },
+    {
+      "args": [
+        {
+          "gallons": 20000,
+          "readings": {
             "fc": 1,
             "ph": 7.8,
             "ta": 90,
@@ -1328,14 +1651,16 @@
             "step": {
               "key": "fc",
               "product": "Liquid chlorine 12.5%",
-              "amount": "64 fl oz",
+              "amount": "60 fl oz",
               "measure": "½ gallon",
               "chemical": "liquid_chlorine",
               "quantity": 0.5,
               "unit": "gal",
-              "why": "Free chlorine 1 → 4"
+              "why": "Free chlorine 1 → 4",
+              "also": []
             },
             "order": 3,
+            "coveredBy": null,
             "suggestion": {
               "price_book_item_id": "cl",
               "name": "Liquid chlorine",
@@ -1391,22 +1716,24 @@
             "step": {
               "key": "ph",
               "product": "Muriatic acid 31.45%",
-              "amount": "35 fl oz",
-              "measure": "¼ gallon",
+              "amount": "38 fl oz",
+              "measure": "⅓ gallon",
               "chemical": "muriatic_acid",
-              "quantity": 0.25,
+              "quantity": 0.33,
               "unit": "gal",
               "why": "pH 7.8 → 7.5",
+              "also": [],
               "note": "Pour into the deep end with the pump running. Add acid to water, never water to acid."
             },
             "order": 1,
+            "coveredBy": null,
             "suggestion": {
               "price_book_item_id": "acid",
               "name": "Muriatic acid",
               "unit": "gal",
               "reading_key": "ph",
-              "suggested_quantity": 0.25,
-              "quantity": 0.25,
+              "suggested_quantity": 0.33,
+              "quantity": 0.33,
               "unit_price_cents": 1500
             },
             "added": [
@@ -1435,6 +1762,7 @@
             "key": "ta",
             "step": null,
             "order": null,
+            "coveredBy": null,
             "suggestion": null,
             "added": []
           },
@@ -1442,6 +1770,7 @@
             "key": "ch",
             "step": null,
             "order": null,
+            "coveredBy": null,
             "suggestion": null,
             "added": []
           },
@@ -1450,15 +1779,17 @@
             "step": {
               "key": "cya",
               "product": "Stabilizer (cyanuric acid)",
-              "amount": "1.7 lb",
+              "amount": "1.6 lb",
               "measure": "1½ lb",
               "chemical": "stabilizer",
               "quantity": 1.5,
               "unit": "lb",
               "why": "Stabilizer 30 → 40",
+              "also": [],
               "note": "Dissolves slowly; put it in a sock in the skimmer basket. Retest in a week."
             },
             "order": 2,
+            "coveredBy": null,
             "suggestion": {
               "price_book_item_id": "cya",
               "name": "Stabilizer (CYA)",
@@ -1474,6 +1805,7 @@
             "key": "salt",
             "step": null,
             "order": null,
+            "coveredBy": null,
             "suggestion": null,
             "added": []
           }
@@ -1549,9 +1881,11 @@
               "quantity": 0.5,
               "unit": "lb",
               "why": "Free chlorine 1 → 3",
+              "also": [],
               "note": "Also raises calcium a little. Pre-dissolve in a bucket of pool water."
             },
             "order": 6,
+            "coveredBy": null,
             "suggestion": {
               "price_book_item_id": "hypo",
               "name": "Shock (cal-hypo)",
@@ -1612,9 +1946,12 @@
               "chemical": "soda_ash",
               "quantity": 1.5,
               "unit": "lb",
-              "why": "pH 7.0 → 7.5"
+              "why": "pH 7.0 → 7.5",
+              "also": [],
+              "note": "Big change: move pH 0.2 to 0.4 at a time, 4 to 6 hours apart."
             },
             "order": 2,
+            "coveredBy": null,
             "suggestion": {
               "price_book_item_id": "ash",
               "name": "Soda ash",
@@ -1651,21 +1988,23 @@
             "step": {
               "key": "ta",
               "product": "Baking soda",
-              "amount": "8.4 lb",
-              "measure": "8½ lb",
+              "amount": "9 lb",
+              "measure": "9 lb",
               "chemical": "baking_soda",
-              "quantity": 8.5,
+              "quantity": 9,
               "unit": "lb",
-              "why": "Alkalinity 60 → 100"
+              "why": "Alkalinity 60 → 100",
+              "also": []
             },
             "order": 1,
+            "coveredBy": null,
             "suggestion": {
               "price_book_item_id": "soda",
               "name": "Baking soda",
               "unit": "lb",
               "reading_key": "ta",
-              "suggested_quantity": 8.5,
-              "quantity": 8.5,
+              "suggested_quantity": 9,
+              "quantity": 9,
               "unit_price_cents": 300
             },
             "added": []
@@ -1680,9 +2019,11 @@
               "chemical": "calcium_chloride",
               "quantity": 27,
               "unit": "lb",
-              "why": "Calcium 150 → 300"
+              "why": "Calcium 150 → 300",
+              "also": []
             },
             "order": 3,
+            "coveredBy": null,
             "suggestion": {
               "price_book_item_id": "jug",
               "name": "Calcium, jug",
@@ -1705,9 +2046,11 @@
               "quantity": 3.5,
               "unit": "lb",
               "why": "Stabilizer 10 → 40",
+              "also": [],
               "note": "Dissolves slowly; put it in a sock in the skimmer basket. Retest in a week."
             },
             "order": 4,
+            "coveredBy": null,
             "suggestion": {
               "price_book_item_id": "cya",
               "name": "Stabilizer (CYA)",
@@ -1730,9 +2073,11 @@
               "quantity": 2.5,
               "unit": "bag",
               "why": "Salt 2400 → 3200",
+              "also": [],
               "note": "Brush it toward the main drain until it dissolves."
             },
             "order": 5,
+            "coveredBy": null,
             "suggestion": {
               "price_book_item_id": "salt",
               "name": "Salt, 40 lb bag",
@@ -1814,9 +2159,11 @@
               "quantity": null,
               "unit": null,
               "why": "Free chlorine 12 → 4",
+              "also": [],
               "note": "Sun and time bring it down. Don't swim above 10 ppm."
             },
-            "order": 4,
+            "order": 3,
+            "coveredBy": null,
             "suggestion": null,
             "added": [
               {
@@ -1862,26 +2209,22 @@
           {
             "key": "ph",
             "step": {
-              "key": "ph",
+              "key": "ta",
               "product": "Muriatic acid 14.5%",
-              "amount": "85 fl oz",
-              "measure": "⅔ gallon",
+              "amount": "2 gal 45 fl oz",
+              "measure": "2¼ gallons",
               "chemical": "muriatic_acid",
-              "quantity": 0.67,
+              "quantity": 2.25,
               "unit": "gal",
-              "why": "pH 8.2 → 7.5",
-              "note": "Pour into the deep end with the pump running. Add acid to water, never water to acid."
+              "why": "Alkalinity 150 → 100 · pH 8.2 → 7.5",
+              "also": [
+                "ph"
+              ],
+              "note": "Big change: lower it 20 to 30 ppm at a time, a day apart, with the pump running. Aerate afterward to bring pH back up."
             },
-            "order": 2,
-            "suggestion": {
-              "price_book_item_id": "acid",
-              "name": "Muriatic acid",
-              "unit": "gal",
-              "reading_key": "ph",
-              "suggested_quantity": 0.67,
-              "quantity": 0.67,
-              "unit_price_cents": 1500
-            },
+            "order": 1,
+            "coveredBy": "ta",
+            "suggestion": null,
             "added": [
               {
                 "id": "2",
@@ -1909,22 +2252,26 @@
             "step": {
               "key": "ta",
               "product": "Muriatic acid 14.5%",
-              "amount": "1 gal 112 fl oz",
-              "measure": "2 gallons",
+              "amount": "2 gal 45 fl oz",
+              "measure": "2¼ gallons",
               "chemical": "muriatic_acid",
-              "quantity": 2,
+              "quantity": 2.25,
               "unit": "gal",
-              "why": "Alkalinity 150 → 100",
-              "note": "Add in two or three doses a few hours apart, running the pump, and aerate to bring pH back up."
+              "why": "Alkalinity 150 → 100 · pH 8.2 → 7.5",
+              "also": [
+                "ph"
+              ],
+              "note": "Big change: lower it 20 to 30 ppm at a time, a day apart, with the pump running. Aerate afterward to bring pH back up."
             },
             "order": 1,
+            "coveredBy": null,
             "suggestion": {
               "price_book_item_id": "acid",
               "name": "Muriatic acid",
               "unit": "gal",
               "reading_key": "ta",
-              "suggested_quantity": 2,
-              "quantity": 2,
+              "suggested_quantity": 2.25,
+              "quantity": 2.25,
               "unit_price_cents": 1500
             },
             "added": []
@@ -1937,12 +2284,14 @@
               "amount": null,
               "measure": null,
               "why": "Calcium 900 → 300",
+              "also": [],
               "note": "Nothing added lowers it; fresh water does.",
               "chemical": null,
               "quantity": null,
               "unit": null
             },
-            "order": 3,
+            "order": 2,
+            "coveredBy": null,
             "suggestion": null,
             "added": []
           },
@@ -1950,6 +2299,7 @@
             "key": "cya",
             "step": null,
             "order": null,
+            "coveredBy": null,
             "suggestion": null,
             "added": []
           },
@@ -1957,6 +2307,7 @@
             "key": "salt",
             "step": null,
             "order": null,
+            "coveredBy": null,
             "suggestion": null,
             "added": []
           }
@@ -2024,6 +2375,7 @@
             "key": "fc",
             "step": null,
             "order": null,
+            "coveredBy": null,
             "suggestion": null,
             "added": [
               {
@@ -2070,6 +2422,7 @@
             "key": "ph",
             "step": null,
             "order": null,
+            "coveredBy": null,
             "suggestion": null,
             "added": [
               {
@@ -2097,6 +2450,7 @@
             "key": "ta",
             "step": null,
             "order": null,
+            "coveredBy": null,
             "suggestion": null,
             "added": []
           },
@@ -2104,6 +2458,7 @@
             "key": "ch",
             "step": null,
             "order": null,
+            "coveredBy": null,
             "suggestion": null,
             "added": []
           },
@@ -2111,6 +2466,7 @@
             "key": "cya",
             "step": null,
             "order": null,
+            "coveredBy": null,
             "suggestion": null,
             "added": []
           },
@@ -2118,6 +2474,7 @@
             "key": "salt",
             "step": null,
             "order": null,
+            "coveredBy": null,
             "suggestion": null,
             "added": []
           }
@@ -2165,7 +2522,208 @@
       }
     }
   ],
+  "coveredText": [
+    {
+      "args": [
+        "ta"
+      ],
+      "result": "With alkalinity"
+    },
+    {
+      "args": [
+        "ph"
+      ],
+      "result": "With pH"
+    },
+    {
+      "args": [
+        "ch"
+      ],
+      "result": "With calcium"
+    },
+    {
+      "args": [
+        "fc"
+      ],
+      "result": "With free chlorine"
+    }
+  ],
+  "isAcidStep": [
+    {
+      "args": [
+        {
+          "gallons": 20000,
+          "readings": {
+            "fc": 2,
+            "ph": 7.9,
+            "ta": 150,
+            "ch": 700,
+            "cya": 110
+          },
+          "chlorine": "liquid12",
+          "acid": "muriatic31"
+        }
+      ],
+      "result": [
+        true,
+        false,
+        false
+      ]
+    },
+    {
+      "args": [
+        {
+          "gallons": 20000,
+          "readings": {
+            "fc": 1,
+            "ph": 7.8,
+            "ta": 90,
+            "ch": 260,
+            "cya": 30
+          },
+          "chlorine": "liquid12",
+          "acid": "muriatic31",
+          "goals": {
+            "fc": 4,
+            "cya": 40
+          }
+        }
+      ],
+      "result": [
+        true,
+        false,
+        false
+      ]
+    },
+    {
+      "args": [
+        {
+          "gallons": 15000,
+          "readings": {
+            "fc": 1,
+            "ph": 7,
+            "ta": 60,
+            "ch": 150,
+            "cya": 10,
+            "salt": 2400
+          },
+          "chlorine": "calhypo65",
+          "acid": "dryacid"
+        }
+      ],
+      "result": [
+        false,
+        false,
+        false,
+        false,
+        false,
+        false
+      ]
+    },
+    {
+      "args": [
+        {
+          "gallons": 8000,
+          "readings": {
+            "ph": 8.2,
+            "ta": 150,
+            "ch": 900,
+            "fc": 12
+          },
+          "chlorine": "liquid10",
+          "acid": "muriatic145"
+        }
+      ],
+      "result": [
+        true,
+        false,
+        false
+      ]
+    },
+    {
+      "args": [
+        {
+          "gallons": 20000,
+          "readings": {
+            "fc": 4,
+            "ph": 7.5,
+            "ta": 100,
+            "ch": 300,
+            "cya": 40
+          },
+          "chlorine": "liquid12",
+          "acid": "muriatic31"
+        }
+      ],
+      "result": []
+    }
+  ],
   "openSuggestions": [
+    {
+      "args": [
+        {
+          "gallons": 20000,
+          "readings": {
+            "fc": 2,
+            "ph": 7.9,
+            "ta": 150,
+            "ch": 700,
+            "cya": 110
+          },
+          "chlorine": "liquid12",
+          "acid": "muriatic31"
+        },
+        true
+      ],
+      "result": [
+        {
+          "price_book_item_id": "cl",
+          "name": "Liquid chlorine",
+          "unit": "gal",
+          "reading_key": "fc",
+          "suggested_quantity": 1.25,
+          "quantity": 1.25,
+          "unit_price_cents": 800
+        },
+        {
+          "price_book_item_id": "acid",
+          "name": "Muriatic acid",
+          "unit": "gal",
+          "reading_key": "ta",
+          "suggested_quantity": 2.5,
+          "quantity": 2.5,
+          "unit_price_cents": 1500
+        }
+      ]
+    },
+    {
+      "args": [
+        {
+          "gallons": 20000,
+          "readings": {
+            "fc": 2,
+            "ph": 7.9,
+            "ta": 150,
+            "ch": 700,
+            "cya": 110
+          },
+          "chlorine": "liquid12",
+          "acid": "muriatic31"
+        },
+        false
+      ],
+      "result": [
+        {
+          "price_book_item_id": "acid",
+          "name": "Muriatic acid",
+          "unit": "gal",
+          "reading_key": "ta",
+          "suggested_quantity": 2.5,
+          "quantity": 2.5,
+          "unit_price_cents": 1500
+        }
+      ]
+    },
     {
       "args": [
         {
@@ -2201,8 +2759,8 @@
           "name": "Muriatic acid",
           "unit": "gal",
           "reading_key": "ph",
-          "suggested_quantity": 0.25,
-          "quantity": 0.25,
+          "suggested_quantity": 0.33,
+          "quantity": 0.33,
           "unit_price_cents": 1500
         },
         {
@@ -2289,8 +2847,8 @@
           "name": "Baking soda",
           "unit": "lb",
           "reading_key": "ta",
-          "suggested_quantity": 8.5,
-          "quantity": 8.5,
+          "suggested_quantity": 9,
+          "quantity": 9,
           "unit_price_cents": 300
         },
         {
@@ -2345,8 +2903,8 @@
           "name": "Baking soda",
           "unit": "lb",
           "reading_key": "ta",
-          "suggested_quantity": 8.5,
-          "quantity": 8.5,
+          "suggested_quantity": 9,
+          "quantity": 9,
           "unit_price_cents": 300
         },
         {
@@ -2398,18 +2956,9 @@
           "price_book_item_id": "acid",
           "name": "Muriatic acid",
           "unit": "gal",
-          "reading_key": "ph",
-          "suggested_quantity": 0.67,
-          "quantity": 0.67,
-          "unit_price_cents": 1500
-        },
-        {
-          "price_book_item_id": "acid",
-          "name": "Muriatic acid",
-          "unit": "gal",
           "reading_key": "ta",
-          "suggested_quantity": 2,
-          "quantity": 2,
+          "suggested_quantity": 2.25,
+          "quantity": 2.25,
           "unit_price_cents": 1500
         }
       ]
@@ -2435,8 +2984,8 @@
           "name": "Muriatic acid",
           "unit": "gal",
           "reading_key": "ta",
-          "suggested_quantity": 2,
-          "quantity": 2,
+          "suggested_quantity": 2.25,
+          "quantity": 2.25,
           "unit_price_cents": 1500
         }
       ]

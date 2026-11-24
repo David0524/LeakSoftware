@@ -323,7 +323,9 @@ export function VisitReportView({
 
       <footer className="mt-10 text-center text-[0.8125rem] text-text-muted">
         {s.company.disclaimer ? (
-          <p className="mb-2 whitespace-pre-line">{s.company.disclaimer}</p>
+          <p className="mb-3 text-left text-[0.75rem] leading-snug whitespace-pre-line">
+            {s.company.disclaimer}
+          </p>
         ) : null}
         <p>Powered by Sundeck Pro</p>
       </footer>

@@ -70,24 +70,23 @@ export const ACID_PRODUCTS: Record<AcidProduct, string> = {
   dryacid: "Dry acid (sodium bisulfate)",
 };
 
-// Amounts per 10,000 gallons. Liquids in fluid ounces, solids in ounces by weight. Checked
-// against the chemistry and published charts and labels (owner, 2026-10-16: "confirm that
-// your calculator is in line with others"); see docs/DECISIONS.md.
+// Amounts per 10,000 gallons. Liquids in fluid ounces, solids in ounces by weight. The Pool
+// Nerd's calculator's amounts (owner, 2026-11-24: "Just copy this",
+// thepoolnerd.com/pool-chemistry-calculator); products it doesn't list follow by strength.
+// See docs/DECISIONS.md.
 const PER_10K = {
-  // +1 ppm free chlorine (stoichiometry: 10.2 fl oz of 12.5%; charts say 10.6 to 10.7)
-  chlorine: { liquid12: 10.7, liquid10: 13.4, calhypo65: 2.0, calhypo73: 1.8 },
-  // -0.2 pH at 100 ppm alkalinity (more alkalinity takes more acid). Labels say 12 to 16 fl oz
-  // of 31.45%; this stays near the low end, since too much acid is the worse mistake.
-  // 14.5% and dry acid follow from the alkalinity ratios below.
-  acidPh: { muriatic31: 13, muriatic145: 30.5, dryacid: 17.3 },
-  // -10 ppm total alkalinity: 7.6 mol of acid. 31.45% muriatic (1.16 g/mL) 25.6 fl oz;
-  // 14.5% (1.07 g/mL) 60 fl oz; dry acid (94.5% sodium bisulfate) 34 oz.
-  acidTa: { muriatic31: 25.6, muriatic145: 60, dryacid: 34 },
+  // +1 ppm free chlorine: 10 fl oz of 12.5%; 2 oz of 68% cal-hypo, scaled to 65% and 73%.
+  chlorine: { liquid12: 10, liquid10: 12.5, calhypo65: 2.1, calhypo73: 1.9 },
+  // -0.2 pH: 12.8 fl oz of 31.45% muriatic, 19.2 oz of dry acid. 14.5% muriatic takes 2.35
+  // times the 31.45% amount (strength and density: 31.45% × 1.16 g/mL against 14.5% × 1.07).
+  acidPh: { muriatic31: 12.8, muriatic145: 30.1, dryacid: 19.2 },
+  // -10 ppm total alkalinity: 32 fl oz of 31.45% muriatic; the others in the same ratios.
+  acidTa: { muriatic31: 32, muriatic145: 75.2, dryacid: 48 },
   sodaAshPh: 6, // +0.2 pH, oz
-  bakingSodaTa: 22.4, // +10 ppm TA, oz (1.4 lb)
-  calciumChlorideCh: 19.3, // +10 ppm CH, oz (1.2 lb of 77%)
-  cyaUp: 13.3, // +10 ppm CYA, oz
-  saltUp: 133.4, // +100 ppm salt, oz (8.34 lb)
+  bakingSodaTa: 24, // +10 ppm TA, oz (1.5 lb)
+  calciumChlorideCh: 19.2, // +10 ppm CH, oz (1.2 lb of 77%)
+  cyaUp: 13, // +10 ppm CYA, oz
+  saltUp: 133.4, // +100 ppm salt, oz (8.34 lb; the Pool Nerd has no salt amount)
 } as const;
 
 const isLiquid = (p: ChlorineProduct | AcidProduct) =>
@@ -109,9 +108,15 @@ export interface DoseStep {
    * differ from state to state.
    */
   measure: string | null;
-  /** Why, in words: "pH 8.0 → 7.5". */
+  /** Why, in words: "pH 8.0 → 7.5", or "Alkalinity 150 → 100 · pH 7.9 → 7.5" for two. */
   why: string;
   note?: string;
+  /**
+   * The other readings this step also takes care of (owner, 2026-11-24: "when two different
+   * readings require the same solution, combine them"): one acid dose for high alkalinity and
+   * high pH, one drain for high calcium, stabilizer, and salt. Empty for most steps.
+   */
+  also: ReadingKey[];
   /**
    * The chemical the step adds, as the price book knows it (price_book_item.chemical; owner,
    * 2026-10-24: added chemicals): null for an action (drain, hold off on chlorine).
@@ -171,7 +176,11 @@ export interface ReadingStatus {
 
 export interface ChemistryResult {
   statuses: ReadingStatus[];
-  /** In the order to add them: alkalinity, pH, calcium, stabilizer, salt, chlorine. */
+  /**
+   * In the order to add them: alkalinity, pH, calcium, stabilizer, salt, chlorine. A step that
+   * takes care of two readings comes once, in the first one's place; a drain comes before
+   * calcium, stabilizer, and salt are added.
+   */
   steps: DoseStep[];
   /** Langelier saturation index (water balance), when pH, TA, and CH are known. */
   lsi: number | null;
@@ -413,65 +422,92 @@ export function calculateChemistry(input: ChemistryInput): ChemistryResult {
   const st = (key: ReadingKey) => statuses.find((s) => s.key === key);
   const why = (key: ReadingKey, from: number, to: number) =>
     `${LABELS[key]} ${fmt(from, key)} → ${fmt(to, key)}`;
-  const drain = (key: ReadingKey, from: number, to: number): DoseStep => ({
-    key,
-    product: `Drain and refill about ${Math.min(90, Math.ceil(((from - to) / from) * 20) * 5)}%`,
-    amount: null,
-    measure: null,
-    why: why(key, from, to),
-    note: "Nothing added lowers it; fresh water does.",
-    ...NO_DOSE,
-  });
+  /** "Alkalinity 150 → 100 · pH 7.9 → 7.5": each reading a step takes care of. */
+  const whyAll = (list: ReadingStatus[]) =>
+    list.map((s) => why(s.key, s.value, s.range.target)).join(" · ");
 
-  // Alkalinity first: it steadies pH.
+  // Alkalinity first: it steadies pH. Acid lowers both, so one acid dose takes care of high
+  // alkalinity and high pH together: the larger of the two amounts, since the acid that
+  // brings alkalinity down brings pH down with it. pH that falls too far comes back up with
+  // air, which leaves alkalinity alone.
   const ta = st("ta");
-  let taAfter = ta?.value ?? 100;
+  const ph = st("ph");
+  let phDone = false;
   if (ta && ta.status !== "ok") {
     const d = ta.range.target - ta.value;
+    const big = Math.abs(d) > 40;
     if (d > 0) {
       steps.push({
         key: "ta",
         product: "Baking soda",
         ...dose((d / 10) * PER_10K.bakingSodaTa * k, false, "baking_soda"),
         why: why("ta", ta.value, ta.range.target),
+        also: [],
+        ...(big ? { note: "Big change: raise it 20 to 30 ppm at a time, a day apart." } : {}),
       });
     } else {
-      const amt = (-d / 10) * PER_10K.acidTa[acid] * k;
+      const phHigh = ph?.status === "high";
+      const forTa = (-d / 10) * PER_10K.acidTa[acid];
+      const forPh = phHigh ? ((ph.value - ph.range.target) / 0.2) * PER_10K.acidPh[acid] : 0;
       steps.push({
         key: "ta",
         product: ACID_PRODUCTS[acid],
-        ...dose(amt, isLiquid(acid), ACID_CHEMICAL[acid]),
-        why: why("ta", ta.value, ta.range.target),
-        note: "Add in two or three doses a few hours apart, running the pump, and aerate to bring pH back up.",
+        ...dose(Math.max(forTa, forPh) * k, isLiquid(acid), ACID_CHEMICAL[acid]),
+        why: whyAll(phHigh ? [ta, ph] : [ta]),
+        also: phHigh ? ["ph"] : [],
+        note: big
+          ? "Big change: lower it 20 to 30 ppm at a time, a day apart, with the pump running. Aerate afterward to bring pH back up."
+          : "Add in two or three doses a few hours apart, with the pump running. Aerate afterward to bring pH back up.",
       });
+      if (ph?.status === "low") {
+        // Soda ash would raise the alkalinity the acid just lowered.
+        steps.push({
+          key: "ph",
+          product: "Aerate to raise pH",
+          amount: null,
+          measure: null,
+          ...NO_DOSE,
+          why: why("ph", ph.value, ph.range.target),
+          also: [],
+          note: "Point the returns up and run any water features. Soda ash would raise the alkalinity again. Retest tomorrow.",
+        });
+      }
+      phDone = true;
     }
-    taAfter = ta.range.target;
   }
 
-  // pH, scaled by alkalinity (more buffer takes more to move).
-  const ph = st("ph");
-  if (ph && ph.status !== "ok") {
-    const buffer = Math.min(2, Math.max(0.5, taAfter / 100));
+  if (ph && ph.status !== "ok" && !phDone) {
     const d = ph.range.target - ph.value;
+    const big =
+      Math.round(Math.abs(d) * 10) / 10 > 0.4
+        ? " Big change: move pH 0.2 to 0.4 at a time, 4 to 6 hours apart."
+        : "";
     if (d > 0) {
       steps.push({
         key: "ph",
         product: "Soda ash",
-        ...dose((d / 0.2) * PER_10K.sodaAshPh * buffer * k, false, "soda_ash"),
+        ...dose((d / 0.2) * PER_10K.sodaAshPh * k, false, "soda_ash"),
         why: why("ph", ph.value, ph.range.target),
+        also: [],
+        ...(big ? { note: big.trim() } : {}),
       });
     } else {
-      const amt = (-d / 0.2) * PER_10K.acidPh[acid] * buffer * k;
       steps.push({
         key: "ph",
         product: ACID_PRODUCTS[acid],
-        ...dose(amt, isLiquid(acid), ACID_CHEMICAL[acid]),
+        ...dose((-d / 0.2) * PER_10K.acidPh[acid] * k, isLiquid(acid), ACID_CHEMICAL[acid]),
         why: why("ph", ph.value, ph.range.target),
-        note: "Pour into the deep end with the pump running. Add acid to water, never water to acid.",
+        also: [],
+        note: `Pour into the deep end with the pump running. Add acid to water, never water to acid.${big}`,
       });
     }
   }
 
+  // Calcium, stabilizer, and salt go up by product and come down only with fresh water: one
+  // drain for all the high ones, as much as the highest needs, before any of them is added
+  // (draining after would pour the new calcium or stabilizer out).
+  const high: ReadingStatus[] = [];
+  const drainAt = steps.length;
   const ch = st("ch");
   if (ch?.status === "low") {
     steps.push({
@@ -483,9 +519,10 @@ export function calculateChemistry(input: ChemistryInput): ChemistryResult {
         "calcium_chloride",
       ),
       why: why("ch", ch.value, ch.range.target),
+      also: [],
     });
   } else if (ch?.status === "high") {
-    steps.push(drain("ch", ch.value, ch.range.target));
+    high.push(ch);
   }
 
   const cya = st("cya");
@@ -495,10 +532,11 @@ export function calculateChemistry(input: ChemistryInput): ChemistryResult {
       product: "Stabilizer (cyanuric acid)",
       ...dose(((cya.range.target - cya.value) / 10) * PER_10K.cyaUp * k, false, "stabilizer"),
       why: why("cya", cya.value, cya.range.target),
+      also: [],
       note: "Dissolves slowly; put it in a sock in the skimmer basket. Retest in a week.",
     });
   } else if (cya?.status === "high") {
-    steps.push(drain("cya", cya.value, cya.range.target));
+    high.push(cya);
   }
 
   const salt = st("salt");
@@ -508,10 +546,25 @@ export function calculateChemistry(input: ChemistryInput): ChemistryResult {
       product: "Pool salt",
       ...dose(((salt.range.target - salt.value) / 100) * PER_10K.saltUp * k, false, "salt", 40),
       why: why("salt", salt.value, salt.range.target),
+      also: [],
       note: "Brush it toward the main drain until it dissolves.",
     });
   } else if (salt?.status === "high") {
-    steps.push(drain("salt", salt.value, salt.range.target));
+    high.push(salt);
+  }
+
+  if (high.length) {
+    const share = Math.max(...high.map((s) => (s.value - s.range.target) / s.value));
+    steps.splice(drainAt, 0, {
+      key: high[0]!.key,
+      product: `Drain and refill about ${Math.min(90, Math.ceil(share * 20) * 5)}%`,
+      amount: null,
+      measure: null,
+      why: whyAll(high),
+      also: high.slice(1).map((s) => s.key),
+      note: `Nothing added lowers ${high.length > 1 ? "them" : "it"}; fresh water does.`,
+      ...NO_DOSE,
+    });
   }
 
   // Chlorine last.
@@ -523,6 +576,7 @@ export function calculateChemistry(input: ChemistryInput): ChemistryResult {
       product: CHLORINE_PRODUCTS[chlorine],
       ...dose(amt, isLiquid(chlorine), CHLORINE_CHEMICAL[chlorine]),
       why: why("fc", fc.value, fc.range.target),
+      also: [],
       ...(chlorine.startsWith("calhypo")
         ? { note: "Also raises calcium a little. Pre-dissolve in a bucket of pool water." }
         : {}),
@@ -535,6 +589,7 @@ export function calculateChemistry(input: ChemistryInput): ChemistryResult {
       measure: null,
       ...NO_DOSE,
       why: why("fc", fc.value, fc.range.target),
+      also: [],
       note: "Sun and time bring it down. Don't swim above 10 ppm.",
     });
   }

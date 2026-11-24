@@ -207,6 +207,17 @@ export function unitPriceLabel(cents: number, unit: string): string {
 // Suggestions and the visit's rows
 // ---------------------------------------------------------------------------
 
+/** A row whose reading another row's step takes care of: "With alkalinity". */
+export function coveredText(key: ReadingKey): string {
+  const label = READING_LABELS[key];
+  return `With ${label === "pH" ? label : label.toLowerCase()}`;
+}
+
+/** Acid goes in with a safety line on the visit: acid to water, never water to acid. */
+export function isAcidStep(step: DoseStep): boolean {
+  return step.chemical === "muriatic_acid" || step.chemical === "dry_acid";
+}
+
 /** What a step suggests, in words: "½ gal liquid chlorine". */
 export function suggestionText(step: DoseStep): string {
   if (step.quantity === null || step.unit === null) return step.product;
@@ -268,6 +279,12 @@ export interface ChemicalRow {
   /** The step for this reading, with its place in the order to add (1, 2, 3), if any. */
   step: DoseStep | null;
   order: number | null;
+  /**
+   * The reading whose row carries the suggestion when one step takes care of both (owner,
+   * 2026-11-24): pH's row under one acid dose for alkalinity and pH says "With alkalinity"
+   * and suggests nothing of its own, so the acid is added once.
+   */
+  coveredBy: ReadingKey | null;
   /** What the suggestion would add, for "Not added yet" and the one-tap add. */
   suggestion: AdditionDraft | null;
   /** What was added for this reading. */
@@ -289,13 +306,15 @@ export function chemicalRows(
     (a, b) => a.sort_order - b.sort_order || a.added_at.localeCompare(b.added_at),
   );
   const rows = order.map((key) => {
-    const i = result.steps.findIndex((s) => s.key === key);
+    const i = result.steps.findIndex((s) => s.key === key || s.also.includes(key));
     const step = i >= 0 ? result.steps[i]! : null;
+    const coveredBy = step && step.key !== key ? step.key : null;
     return {
       key,
       step,
       order: i >= 0 ? i + 1 : null,
-      suggestion: step ? suggestedAddition(step, items) : null,
+      coveredBy,
+      suggestion: step && !coveredBy ? suggestedAddition(step, items) : null,
       added: added.filter((a) => a.reading_key === key),
     };
   });
