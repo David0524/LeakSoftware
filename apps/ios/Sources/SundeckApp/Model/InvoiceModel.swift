@@ -174,6 +174,7 @@ public struct InvoiceSectionModel: Equatable, Sendable {
                 parts.append(paymentMethodLabel(p.method, checkNumber: p.checkNumber, office: true))
                 parts.append(paymentStatus(p.status))
                 if let paidAt = p.paidAt { parts.append(mediumDate(paidAt, timeZone: timeZone)) }
+                if let fee = cardFeeText(p.feeCents) { parts.append(fee) }
                 // "Refunded $20.00", or "Refunded" when all of it (owner, 2026-11-24).
                 if let refunded = refundedText(p.refund) { parts.append(refunded) }
                 var refund: RefundStart?

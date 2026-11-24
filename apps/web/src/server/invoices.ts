@@ -12,6 +12,7 @@ import {
   type ReceiptPayment,
 } from "@leakbook/core";
 import { adminClient } from "./admin";
+import { fillCardFees } from "./stripe";
 import { EmailNotConfigured, emailConfigured, fromAddress, sendEmail } from "./email";
 import { ccList, emailRefusal } from "./usage";
 import { Fault, Refusal, dbFailure } from "./failures";
@@ -224,7 +225,15 @@ export async function sendReceipt(
     const { data: job } = await db.from("job").select("company_id").eq("id", d.job_id).single();
     if (!job) return false;
     const greeting = d.customer?.name ? `Hi ${d.customer.name},` : "Hello,";
-    const what = `We received your payment. Invoice${d.number ? ` #${d.number}` : ""} for ${formatCents(d.total_cents)} is paid in full.`;
+    // The card fees charged with its payments (owner, 2026-11-24: customers see the fee).
+    const { data: paid } = await db
+      .from("payment")
+      .select("fee_cents")
+      .eq("invoice_id", invoiceId)
+      .eq("status", "succeeded")
+      .is("deleted_at", null);
+    const fees = (paid ?? []).reduce((n, p) => n + Math.max(Number(p.fee_cents ?? 0), 0), 0);
+    const what = `We received your payment. Invoice${d.number ? ` #${d.number}` : ""} for ${formatCents(d.total_cents)} is paid in full.${fees > 0 ? ` A ${formatCents(fees)} card fee was charged with your payment.` : ""}`;
     const email = await sendEmail({
       companyId: job.company_id as string,
       from: fromAddress(shop),
@@ -295,11 +304,16 @@ export async function sendPaymentReceipt(
     throw new Refusal("Send the invoice before sending a receipt.");
   const { data: rows, error } = await db
     .from("payment")
-    .select("id, amount_cents, method, check_number, status, paid_at, company_id")
+    .select("id, amount_cents, method, check_number, status, paid_at, company_id, fee_cents")
     .eq("invoice_id", invoiceId)
     .is("deleted_at", null);
   if (error) throw dbFailure(error);
   const payments = (rows ?? []) as (ReceiptPayment & { company_id: string })[];
+  // A card payment from before receipts showed the card fee: read its fee from Stripe once.
+  if (payments.some((p) => p.method === "card" && p.fee_cents === null)) {
+    const fees = await fillCardFees(invoiceId);
+    for (const p of payments) if (p.id in fees) p.fee_cents = fees[p.id];
+  }
   const payment = opts.paymentId
     ? payments.find((p) => p.id === opts.paymentId && p.status === "succeeded")
     : latestReceiptPayment(payments);

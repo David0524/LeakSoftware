@@ -782,11 +782,23 @@ export async function applyEvent(
         // connected account (security audit, 2026-10-17).
         paid_account: event.account ?? null,
       };
+      // The card fee, kept beside the payment for the receipt (owner, 2026-11-24).
+      const fee = cardFeeOf(s);
+      const saveFee = () =>
+        fee > 0
+          ? rpc(d, "stripe_record_card_fee", {
+              session_id: s.id,
+              intent_id: null,
+              fee,
+              paid_account: payment.paid_account,
+            })
+          : null;
       if (s.metadata?.kind === "quote_deposit" && s.metadata.quote_id) {
         await rpc(d, "stripe_record_quote_payment", {
           target_quote: s.metadata.quote_id,
           ...payment,
         });
+        await saveFee();
         outcome = "applied";
         if (status === "succeeded") await notifyPaid(d, { sessionId: s.id });
       } else if (s.metadata?.kind === "invoice_payment" && s.metadata.invoice_id) {
@@ -794,6 +806,7 @@ export async function applyEvent(
           target_invoice: s.metadata.invoice_id,
           ...payment,
         });
+        await saveFee();
         if (r.paid_now && onInvoicePaid) await onInvoicePaid(s.metadata.invoice_id);
         outcome = "applied";
         if (status === "succeeded") await notifyPaid(d, { sessionId: s.id });
@@ -824,4 +837,63 @@ export async function applyEvent(
   if (extra && (await extra(event, d))) outcome = "applied";
   await rpc(d, "stripe_claim_event", { event_id: event.id, event_type: event.type });
   return outcome;
+}
+
+/**
+ * Card payments taken before the receipt showed the card fee (fee_cents null): reads each one's
+ * fee from Stripe once and saves it (owner, 2026-11-24). Returns the fees found by payment id;
+ * a payment Stripe can't answer for stays unknown and is tried again next time. Never throws.
+ */
+export async function fillCardFees(
+  invoiceId: string,
+  deps?: { stripe?: Stripe | null; db?: SupabaseClient | null },
+): Promise<Record<string, number>> {
+  const found: Record<string, number> = {};
+  const stripe = deps?.stripe === undefined ? stripeClient() : deps.stripe;
+  const db = deps?.db === undefined ? adminClient() : deps.db;
+  if (!stripe || !db) return found;
+  try {
+    const { data: rows } = await db
+      .from("payment")
+      .select("id, company_id, stripe_checkout_session_id, stripe_payment_intent_id")
+      .eq("invoice_id", invoiceId)
+      .eq("method", "card")
+      .is("fee_cents", null);
+    if (!rows?.length) return found;
+    const { data: account } = await db
+      .from("stripe_account")
+      .select("stripe_account_id")
+      .eq("company_id", rows[0]!.company_id)
+      .maybeSingle();
+    const stripeAccount = account?.stripe_account_id as string | undefined;
+    if (!stripeAccount) return found;
+    for (const p of rows) {
+      try {
+        const sessionId = p.stripe_checkout_session_id as string | null;
+        const intentId = p.stripe_payment_intent_id as string | null;
+        let fee = 0;
+        if (sessionId) {
+          fee = cardFeeOf(
+            await stripe.checkout.sessions.retrieve(sessionId, {}, { stripeAccount }),
+          );
+        } else if (intentId) {
+          const pi = await stripe.paymentIntents.retrieve(intentId, {}, { stripeAccount });
+          const n = Number(pi.metadata?.card_fee_cents ?? 0);
+          fee = Number.isInteger(n) && n > 0 ? n : 0;
+        } else continue;
+        const saved = await rpc<number | null>(db, "stripe_record_card_fee", {
+          session_id: sessionId,
+          intent_id: sessionId ? null : intentId,
+          fee,
+          paid_account: stripeAccount,
+        });
+        if (saved !== null) found[p.id as string] = saved;
+      } catch {
+        // Stripe or the database didn't answer: try again the next time the receipt opens.
+      }
+    }
+  } catch {
+    // As above.
+  }
+  return found;
 }

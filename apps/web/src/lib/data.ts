@@ -964,6 +964,8 @@ export interface QuoteRow {
     paid_at: string | null;
     /** Refunded so far (2026-11-24); invoices only. */
     refunded_cents?: number;
+    /** The card fee charged with it (shown with the payment, 2026-11-24). */
+    fee_cents?: number | null;
   }[];
   token: string | null;
   repairNumber: number | null;
@@ -1205,7 +1207,9 @@ export const getInvoices = cache(async function getInvoices(
       .order("sort_order"),
     supabase
       .from("payment")
-      .select("id, invoice_id, amount_cents, method, check_number, status, paid_at, refunded_cents")
+      .select(
+        "id, invoice_id, amount_cents, method, check_number, status, paid_at, refunded_cents, fee_cents",
+      )
       .in("invoice_id", ids)
       .is("deleted_at", null)
       .order("created_at"),

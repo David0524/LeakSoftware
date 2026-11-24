@@ -218,6 +218,15 @@ export async function chargeInvoice(
     paid_account: d.stripe_account_id,
   });
 
+  // The card fee, kept beside the payment for the receipt (owner, 2026-11-24).
+  if (feeCents > 0 && intent && outcome !== "failed")
+    await rpc(db, "stripe_record_card_fee", {
+      session_id: null,
+      intent_id: intent.id,
+      fee: feeCents,
+      paid_account: d.stripe_account_id,
+    });
+
   if (outcome === "succeeded") {
     if (recorded.paid_now) await sendReceipt(d.invoice_id, opts.origin, db);
     if (intent) await notifyPaidIntent(db, intent.id);

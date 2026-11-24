@@ -13,6 +13,8 @@ import {
   SEND_RECEIPT,
   canRecordPayment,
   canSendReceipt,
+  cardFeeText,
+  chargedCents,
   checkNumberError,
   cleanCheckNumber,
   latestReceiptPayment,
@@ -57,6 +59,13 @@ const partly = {
   status: "partially_paid",
   total_cents: 64900,
   amount_paid_cents: 20000,
+};
+const card: ReceiptPayment = {
+  ...check,
+  id: "p4",
+  method: "card",
+  check_number: null,
+  fee_cents: 1947,
 };
 const paid = { number: null, status: "paid", total_cents: 64900, amount_paid_cents: 64900 };
 
@@ -183,6 +192,20 @@ export const receipts: ModuleCases = {
     [
       ["Blue Wave Pools", check, partly],
       ["Blue Wave Pools", cash, paid],
+      // The card fee the customer paid with it (owner, 2026-11-24).
+      ["Blue Wave Pools", card, paid],
+    ],
+  ),
+  cardFeeText: rule(
+    (fee: number | null) => cardFeeText({ fee_cents: fee }),
+    [[3], [1950], [0], [null]],
+  ),
+  chargedCents: rule(
+    (amount: number, fee: number | null) => chargedCents({ amount_cents: amount, fee_cents: fee }),
+    [
+      [100, 3],
+      [64900, 0],
+      [64900, null],
     ],
   ),
 };

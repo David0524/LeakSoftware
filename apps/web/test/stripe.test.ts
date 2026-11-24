@@ -117,6 +117,18 @@ describe("Stripe webhooks: the card fee", () => {
     expect(calls.find((c) => c.fn === "stripe_record_quote_payment")?.args.amount).toBe(
       65_730 - 1_914,
     );
+    // Kept beside the payment, for the receipt (owner, 2026-11-24).
+    const fee = calls.find((c) => c.fn === "stripe_record_card_fee");
+    expect(fee?.args).toMatchObject({ session_id: "cs_fee", intent_id: null, fee: 1_914 });
+    expect(calls.indexOf(fee!)).toBeGreaterThan(
+      calls.findIndex((c) => c.fn === "stripe_record_quote_payment"),
+    );
+  });
+
+  it("saves no card fee when there was none", async () => {
+    const { db, calls } = fakeDb();
+    await applyEvent(session("cs_nofee", "paid", "checkout.session.completed", "evt_nofee"), db);
+    expect(calls.some((c) => c.fn === "stripe_record_card_fee")).toBe(false);
   });
 
   it("never takes off more than the 3% cap", async () => {

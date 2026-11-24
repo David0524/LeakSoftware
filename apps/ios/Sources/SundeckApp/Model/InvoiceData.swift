@@ -60,6 +60,8 @@ public struct PaymentRecord: Decodable, Equatable, Sendable, Identifiable {
     public var paidAt: String?
     /// Refunded so far (owner, 2026-11-24); `amountCents` is what's still kept.
     public var refundedCents: Cents = 0
+    /// The card fee charged with it (shown with the payment, 2026-11-24).
+    public var feeCents: Cents?
 
     enum CodingKeys: String, CodingKey {
         case id, method, status
@@ -69,12 +71,14 @@ public struct PaymentRecord: Decodable, Equatable, Sendable, Identifiable {
         case checkNumber = "check_number"
         case paidAt = "paid_at"
         case refundedCents = "refunded_cents"
+        case feeCents = "fee_cents"
     }
 
     /// As the receipt rules take it.
     public var receipt: ReceiptPayment {
         ReceiptPayment(
-            id: id, amountCents: amountCents, method: method, checkNumber: checkNumber, status: status, paidAt: paidAt)
+            id: id, amountCents: amountCents, method: method, checkNumber: checkNumber, status: status,
+            paidAt: paidAt, feeCents: feeCents)
     }
 
     /// As the refund rules take it.
@@ -96,7 +100,8 @@ extension PaymentRecord {
             checkNumber: try c.decodeIfPresent(String.self, forKey: .checkNumber),
             status: try c.decode(String.self, forKey: .status),
             paidAt: try c.decodeIfPresent(String.self, forKey: .paidAt),
-            refundedCents: try c.decodeIfPresent(Cents.self, forKey: .refundedCents) ?? 0)
+            refundedCents: try c.decodeIfPresent(Cents.self, forKey: .refundedCents) ?? 0,
+            feeCents: try c.decodeIfPresent(Cents.self, forKey: .feeCents))
     }
 }
 
