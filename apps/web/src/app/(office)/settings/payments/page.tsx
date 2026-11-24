@@ -12,6 +12,7 @@ import {
   INVOICE_DAYS,
   INVOICE_DAY_FOOTER,
   bpsToPercent,
+  CARD_IMPORT_TEXT,
   cardFeeBps,
   offersPool,
   ordinalDay,
@@ -33,7 +34,7 @@ import {
   SettingsForm,
   SettingsSection,
 } from "@/components/settings-forms";
-import { PageHeader } from "@/components/ui";
+import { Grouped, PageHeader, Row } from "@/components/ui";
 import { OWNER_ONLY, getOffice } from "@/lib/auth";
 import { getCompany, getPaymentAccount } from "@/lib/data";
 import { siteOrigin } from "@/lib/origin";
@@ -196,6 +197,17 @@ export default async function PaymentsSettingsPage({
             />
           </SettingsForm>
         </SettingsSection>
+
+        {/* Moving from other software: its customers' saved cards (core card-import.ts). */}
+        {paymentsConfigured() && account?.charges_enabled ? (
+          <Grouped title="Moving from other software" footer={CARD_IMPORT_TEXT.footer}>
+            <Row
+              href="/settings/payments/import-cards"
+              label={CARD_IMPORT_TEXT.title}
+              detail={CARD_IMPORT_TEXT.rowDetail}
+            />
+          </Grouped>
+        ) : null}
 
         <SettingsSection title="Deposits, tax, and discounts">
           <SettingsForm action={savePayments} full>
