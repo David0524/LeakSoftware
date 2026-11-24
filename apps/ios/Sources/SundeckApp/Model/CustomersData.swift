@@ -134,7 +134,9 @@ public func customerList(
     let nowISO = isoTimestamp(milliseconds: now.timeIntervalSince1970 * 1000)
     var lastVisit: [String: String] = [:]
     for job in (try? store.list("job", companyId: companyId)) ?? [] {
-        guard job["status"]?.string != "canceled", let customer = job["bill_to_customer_id"]?.string,
+        // A standalone quote's job isn't a visit (2026-11-24).
+        guard job["status"]?.string != "canceled", !isQuoteJob(status: job["status"]?.string ?? ""),
+            let customer = job["bill_to_customer_id"]?.string,
             let start = job["scheduled_start"]?.string, start <= nowISO
         else { continue }
         let at = job["completed_at"]?.string ?? start
@@ -281,7 +283,10 @@ public func customerDetail(
     timeZone: String
 ) -> CustomerDetail? {
     guard let c = try? store.get("customer", customerId), c["deleted_at"]?.string == nil else { return nil }
-    let jobs = ((try? store.list("job", companyId: companyId)) ?? [])
+    // A standalone quote's job isn't a job yet: the customer's Quotes have it (2026-11-24).
+    let jobs = ((try? store.list("job", companyId: companyId)) ?? []).filter {
+        !isQuoteJob(status: $0["status"]?.string ?? "")
+    }
     let plans = (try? store.list("service_plan", companyId: companyId)) ?? []
     let cleanings = planCleanings(store, companyId: companyId, planIds: Set(plans.map(\.id)))
     let today = (try? localDate(now, timeZone)) ?? ""

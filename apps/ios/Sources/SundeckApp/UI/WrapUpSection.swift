@@ -59,6 +59,11 @@
                         .buttonStyle(.plain)
                         .padding(.horizontal, 16)
                     }
+                    // A repair job made from a standalone quote shows that quote here, read-only (its
+                    // job_id is the job itself; docs/design/2026-11-24-standalone-quotes.md).
+                    if job.type == .repair, !jobQuotes(sync.store, companyId: company.id, jobId: job.id).isEmpty {
+                        QuoteSection(job: job).padding(.top, 16)
+                    }
                 }
                 .frame(maxWidth: .infinity, alignment: .leading)
                 .sheet(item: $open) { step in

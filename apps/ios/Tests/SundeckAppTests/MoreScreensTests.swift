@@ -57,14 +57,14 @@ import Testing
 
 @Suite @MainActor struct MoreModelTests {
     @Test func moreListFollowsRoleAndPackage() {
-        #expect(moreLinks(role: "tech", services: .leak) == [.customers, .invoices, .activity])
+        #expect(moreLinks(role: "tech", services: .leak) == [.customers, .invoices, .quotes, .activity])
         #expect(
             moreLinks(role: "owner", services: .both) == [
-                .dashboard, .customers, .invoices, .activity, .chemicals, .settings,
+                .dashboard, .customers, .invoices, .quotes, .activity, .chemicals, .settings,
             ])
         #expect(
             moreLinks(role: "admin", services: .pool) == [
-                .dashboard, .customers, .invoices, .activity, .chemicals, .settings,
+                .dashboard, .customers, .invoices, .quotes, .activity, .chemicals, .settings,
             ])
     }
 

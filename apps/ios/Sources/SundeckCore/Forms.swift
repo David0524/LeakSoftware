@@ -40,7 +40,7 @@ public struct NewJobInput: Codable, Equatable, Sendable {
 private func present(_ id: String?) -> Bool { !(id ?? "").isEmpty }
 
 /// `^[^\s@]+@[^\s@]+\.[^\s@]+$`: no spaces, one @, and a dot with text on both sides after it.
-private func looksLikeEmail(_ text: String) -> Bool {
+func looksLikeEmail(_ text: String) -> Bool {
     let s = Array(text.unicodeScalars)
     guard !s.contains(where: ECMA.isWhitespace), s.filter({ $0 == "@" }).count == 1,
         let at = s.firstIndex(of: "@"), at > 0

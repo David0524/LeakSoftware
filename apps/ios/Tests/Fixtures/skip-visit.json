@@ -192,6 +192,15 @@
     {
       "args": [
         {
+          "type": "maintenance",
+          "status": "quote"
+        }
+      ],
+      "result": false
+    },
+    {
+      "args": [
+        {
           "type": "detection",
           "status": "unscheduled"
         }
@@ -291,6 +300,15 @@
     {
       "args": [
         {
+          "type": "detection",
+          "status": "quote"
+        }
+      ],
+      "result": false
+    },
+    {
+      "args": [
+        {
           "type": "repair",
           "status": "unscheduled"
         }
@@ -390,6 +408,15 @@
     {
       "args": [
         {
+          "type": "repair",
+          "status": "quote"
+        }
+      ],
+      "result": false
+    },
+    {
+      "args": [
+        {
           "type": "inspection",
           "status": "unscheduled"
         }
@@ -482,6 +509,15 @@
         {
           "type": "inspection",
           "status": "skipped"
+        }
+      ],
+      "result": false
+    },
+    {
+      "args": [
+        {
+          "type": "inspection",
+          "status": "quote"
         }
       ],
       "result": false
@@ -672,6 +708,15 @@
     {
       "args": [
         {
+          "type": "maintenance",
+          "status": "quote"
+        }
+      ],
+      "result": false
+    },
+    {
+      "args": [
+        {
           "type": "detection",
           "status": "unscheduled"
         }
@@ -771,6 +816,15 @@
     {
       "args": [
         {
+          "type": "detection",
+          "status": "quote"
+        }
+      ],
+      "result": false
+    },
+    {
+      "args": [
+        {
           "type": "repair",
           "status": "unscheduled"
         }
@@ -870,6 +924,15 @@
     {
       "args": [
         {
+          "type": "repair",
+          "status": "quote"
+        }
+      ],
+      "result": false
+    },
+    {
+      "args": [
+        {
           "type": "inspection",
           "status": "unscheduled"
         }
@@ -965,6 +1028,15 @@
         }
       ],
       "result": true
+    },
+    {
+      "args": [
+        {
+          "type": "inspection",
+          "status": "quote"
+        }
+      ],
+      "result": false
     },
     {
       "args": [
@@ -1098,6 +1170,15 @@
     {
       "args": [
         {
+          "type": "maintenance",
+          "status": "quote"
+        }
+      ],
+      "result": null
+    },
+    {
+      "args": [
+        {
           "type": "detection",
           "status": "unscheduled"
         }
@@ -1197,6 +1278,15 @@
     {
       "args": [
         {
+          "type": "detection",
+          "status": "quote"
+        }
+      ],
+      "result": null
+    },
+    {
+      "args": [
+        {
           "type": "repair",
           "status": "unscheduled"
         }
@@ -1296,6 +1386,15 @@
     {
       "args": [
         {
+          "type": "repair",
+          "status": "quote"
+        }
+      ],
+      "result": null
+    },
+    {
+      "args": [
+        {
           "type": "inspection",
           "status": "unscheduled"
         }
@@ -1391,6 +1490,15 @@
         }
       ],
       "result": "Skipped"
+    },
+    {
+      "args": [
+        {
+          "type": "inspection",
+          "status": "quote"
+        }
+      ],
+      "result": null
     },
     {
       "args": [
@@ -1733,6 +1841,34 @@
     {
       "args": [
         {
+          "type": "maintenance",
+          "status": "quote"
+        },
+        true
+      ],
+      "result": {
+        "reschedule": false,
+        "dismiss": false,
+        "undo": false
+      }
+    },
+    {
+      "args": [
+        {
+          "type": "maintenance",
+          "status": "quote"
+        },
+        false
+      ],
+      "result": {
+        "reschedule": false,
+        "dismiss": false,
+        "undo": false
+      }
+    },
+    {
+      "args": [
+        {
           "type": "detection",
           "status": "unscheduled"
         },
@@ -2041,6 +2177,34 @@
     {
       "args": [
         {
+          "type": "detection",
+          "status": "quote"
+        },
+        true
+      ],
+      "result": {
+        "reschedule": false,
+        "dismiss": false,
+        "undo": false
+      }
+    },
+    {
+      "args": [
+        {
+          "type": "detection",
+          "status": "quote"
+        },
+        false
+      ],
+      "result": {
+        "reschedule": false,
+        "dismiss": false,
+        "undo": false
+      }
+    },
+    {
+      "args": [
+        {
           "type": "repair",
           "status": "unscheduled"
         },
@@ -2349,6 +2513,34 @@
     {
       "args": [
         {
+          "type": "repair",
+          "status": "quote"
+        },
+        true
+      ],
+      "result": {
+        "reschedule": false,
+        "dismiss": false,
+        "undo": false
+      }
+    },
+    {
+      "args": [
+        {
+          "type": "repair",
+          "status": "quote"
+        },
+        false
+      ],
+      "result": {
+        "reschedule": false,
+        "dismiss": false,
+        "undo": false
+      }
+    },
+    {
+      "args": [
+        {
           "type": "inspection",
           "status": "unscheduled"
         },
@@ -2652,6 +2844,34 @@
         "reschedule": false,
         "dismiss": false,
         "undo": true
+      }
+    },
+    {
+      "args": [
+        {
+          "type": "inspection",
+          "status": "quote"
+        },
+        true
+      ],
+      "result": {
+        "reschedule": false,
+        "dismiss": false,
+        "undo": false
+      }
+    },
+    {
+      "args": [
+        {
+          "type": "inspection",
+          "status": "quote"
+        },
+        false
+      ],
+      "result": {
+        "reschedule": false,
+        "dismiss": false,
+        "undo": false
       }
     },
     {
@@ -2951,6 +3171,12 @@
         "skipped"
       ],
       "result": "scheduled"
+    },
+    {
+      "args": [
+        "quote"
+      ],
+      "result": "quote"
     },
     {
       "args": [

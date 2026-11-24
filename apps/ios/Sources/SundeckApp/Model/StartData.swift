@@ -30,7 +30,10 @@ public func shopProgress(_ store: LocalStore, company: CompanyContext, invites: 
         paymentsReady: payments,
         customers: rows("customer").filter { sampleCustomer == nil || $0["id"]?.string != sampleCustomer }.count,
         visitPlans: rows("service_plan").count,
-        leakJobs: rows("job").filter { $0["type"]?.string == "detection" && $0["sample"]?.bool != true }.count,
+        leakJobs: rows("job").filter {
+            $0["type"]?.string == "detection" && $0["sample"]?.bool != true
+                && !isQuoteJob(status: $0["status"]?.string ?? "")
+        }.count,
         reportsSent: rows("report").filter {
             $0["sent_at"]?.string != nil && (sampleId == nil || $0["job_id"]?.string != sampleId)
         }.count,

@@ -241,6 +241,17 @@
                         Text(c.subtitle).textRole(.body).foregroundStyle(Color.textMuted)
                     }
                     contactButtons(c)
+                    // New Quote for this customer (standalone quotes, 2026-11-24), as a pill under
+                    // the contact buttons; same rule as New Job.
+                    if let company = session.company, canMakeJobs(company.role, company.settings) {
+                        Button {
+                            openRoute(.newQuote(back: c.name, customerId: c.id))
+                        } label: {
+                            Label(QuotesText.newQuote, systemImage: "plus")
+                        }
+                        .buttonStyle(.secondary)
+                        .fixedSize()
+                    }
                 }
                 if let saved { Notice(kind: .success, text: saved) }
                 Grouped(label: "Contact") {

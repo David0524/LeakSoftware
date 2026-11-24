@@ -263,11 +263,24 @@ extension JobStatus {
     /// The chip's fill (spec 3.6). The label is always shown with it; color is never alone.
     public var tone: Tone {
         switch self {
-        case .unscheduled, .canceled: .excluded
+        case .unscheduled, .canceled, .quote: .excluded
         case .scheduled: .text
         case .inProgress, .reportSent, .quoteSent: .info
         case .quoteAccepted, .invoiced, .skipped: .warning
         case .paid, .done: .pass
+        }
+    }
+}
+
+extension QuoteStatus {
+    /// A quote's status pill (the Quotes list): draft and expired gray, sent blue, accepted
+    /// green, declined red, as the Android app's QUOTE_STATUS_COLOR.
+    public var tone: Tone {
+        switch self {
+        case .draft, .expired: .excluded
+        case .sent: .info
+        case .accepted: .pass
+        case .declined: .fail
         }
     }
 }

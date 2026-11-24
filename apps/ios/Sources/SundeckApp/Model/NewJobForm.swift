@@ -339,12 +339,7 @@ public final class NewJobForm {
     public var newPool: Bool { mode == .new || propertyId == nil }
 
     /// "Maria Lopez (602-555-0101 · maria@example.com)"
-    public func customerLabel(_ c: Row) -> String {
-        let detail = [c["phone"]?.string, c["email"]?.string].compactMap { $0 }.filter { !$0.isEmpty }
-            .joined(separator: " · ")
-        let name = c["name"]?.string ?? "Customer"
-        return detail.isEmpty ? name : "\(name) (\(detail))"
-    }
+    public func customerLabel(_ c: Row) -> String { customerPickerLabel(c) }
 
     /// The price book's active Detection items, in order.
     public var feeItems: [FeeItem] {

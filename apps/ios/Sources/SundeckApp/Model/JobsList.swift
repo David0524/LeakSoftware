@@ -32,13 +32,15 @@ public struct JobView: Identifiable, Equatable, Sendable {
 }
 
 /// Every job of the company on this phone, with its property and customer (the bill-to customer,
-/// else the property's).
-public func jobViews(_ store: LocalStore, companyId: String) throws -> [JobView] {
+/// else the property's). A standalone quote's job (status `quote`) isn't a job yet: every job list
+/// leaves it out; the Quotes list and the Quote screen ask for it (`includeQuoteJobs`).
+public func jobViews(_ store: LocalStore, companyId: String, includeQuoteJobs: Bool = false) throws -> [JobView] {
     let properties = Dictionary(
         try store.list("property", companyId: companyId).map { ($0.id, $0) }, uniquingKeysWith: { a, _ in a })
     let customers = Dictionary(
         try store.list("customer", companyId: companyId).map { ($0.id, $0) }, uniquingKeysWith: { a, _ in a })
-    return try store.list("job", companyId: companyId).map { job in
+    return try store.list("job", companyId: companyId).compactMap { job in
+        if !includeQuoteJobs && isQuoteJob(status: job["status"]?.string ?? "") { return nil }
         let property = job["property_id"]?.string.flatMap { properties[$0] }
         let customerId = job["bill_to_customer_id"]?.string ?? property?["customer_id"]?.string
         return JobView(id: job.id, job: job, property: property, customer: customerId.flatMap { customers[$0] })
