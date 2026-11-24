@@ -120,16 +120,17 @@ https://sundeckpro.com/
 
 ### 1.9 What's New in This Version (4,000)
 
-1.0.0 (the first release) had none. This is **1.0.5**'s; the App Store workflow's `submit`
+1.0.0 (the first release) had none. This is **1.0.6**'s; the App Store workflow's `submit`
 sends it, so replace it for each update (raise `CFBundleShortVersionString` in
 `apps/ios/Info.plist` and `apps/ios/LiveActivity-Info.plist` together).
 
 <!-- field:whats-new limit:4000 -->
 ```text
-- End My Day At: choose where your day starts and where it ends, the shop or home, each on its own. Routes, drive times, and Optimize finish where you do.
-- Text and Call Customers: owners and admins choose, for each tech, whether they can text, call, and email customers and see customers' phone numbers and emails.
-- Roles on Team: owners change someone's role (Owner, Admin, or Tech) right from the Team list.
-- Clearer buttons: Save buttons are solid blue, and Team rows have a single switch.
+- Quotes on their own: start a New Quote from the + on Jobs, Schedule, and Today, or from a customer. More › Quotes lists draft, sent, accepted, and declined quotes, and an accepted quote becomes a repair job.
+- Refunds: refund a customer's card or bank payment, all or part, from the invoice.
+- Dashboard by tech: each tech's jobs, money collected, and customer feedback.
+- Chemical calculator: updated dose amounts, and one step when two readings need the same chemical.
+- Refer a Pool Company: owners share the shop's referral link from More.
 ```
 
 ### 1.10 Build

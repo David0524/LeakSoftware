@@ -2,6 +2,9 @@
 
 Newest first. Each entry: date, decision, reason.
 
+## 2026-11-24 (owner: "Push the latest app version for release on the App Store")
+- **iPhone 1.0.6 is submitted to App Review** (App Store workflow `submit`) with the TestFlight build of `a0732fd` (TestFlight run 100), which carries everything since 1.0.5: standalone quotes, refunds from the invoice, Dashboard by tech, the Pool Nerd chemical doses, and Refer a Pool Company for owners. It releases automatically once approved (2026-11-18). What's New: `docs/release/APP_STORE.md` § 1.9. Backend stays the dev project.
+
 ## 2026-11-24 (owner: "It's more about having the ability to send quotes more often. Also instead of creating a full job, we should be able to just create a quote for a new/existing customer")
 - **Standalone quotes** (`docs/design/2026-11-24-standalone-quotes.md`), all four platforms: **New Quote** in the + menu (beside New Job), on the customer page, and in a new **Quotes** list in More (Draft | Sent | Accepted | Declined). Owner's choices: stored as a hidden quote-only job (status `quote`, type repair) rather than a quote with no job; the pool is optional; no customer Decline button for now.
 - The quote job has no job number and appears in no job list, count or search until the customer accepts. Then it becomes the unscheduled repair job itself, using its pool or the customer's newest. With no pool anywhere it waits under Quotes ("Accepted. Add a pool to schedule the repair.") until the office adds one. Migration `20261022005700_standalone_quotes.sql`.
