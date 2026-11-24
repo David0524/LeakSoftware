@@ -32,6 +32,55 @@ select results_eq(
   'this month: one quote sent and accepted, $185 invoiced, $50 collected, $135 owed');
 select is((select (j ->> 'outstanding_cents')::int from d), 13500, 'outstanding in total');
 select ok((select (select sum(value::int) from jsonb_each_text(j -> 'statuses')) from d) >= 1, 'jobs by status');
+
+-- By tech: the tech's job is in progress, $185 invoiced, $50 paid, one thumbs down.
+select results_eq(
+  $$ select (t ->> 'jobs_done')::int, (t ->> 'jobs_open')::int, (t ->> 'invoiced_cents')::int,
+            (t ->> 'collected_cents')::int, (t ->> 'thumbs_up')::int, (t ->> 'thumbs_down')::int,
+            t ->> 'on_site_minutes', (t ->> 'active')::boolean
+     from d, jsonb_array_elements(j -> 'techs') t
+     where t ->> 'user_id' = (select tech_a::text from ids) $$,
+  $$ values (0, 1, 18500, 5000, 0, 1, null::text, true) $$,
+  'by tech: one job open, $185 invoiced, $50 collected, one thumbs down');
+select is((select jsonb_array_length(j -> 'techs') from d), 1,
+  'by tech: the owner, with no jobs, is left out');
+reset role;
+
+-- A visit set for next month isn't open yet; one set for yesterday is.
+insert into job (company_id, property_id, bill_to_customer_id, status, assigned_user_id,
+                 scheduled_start, scheduled_end)
+select company_id, property_id, bill_to_customer_id, 'scheduled', assigned_user_id, s, s
+from job, (values (now() + interval '40 days'), (now() - interval '1 day')) v(s)
+where company_id = (select ca from ids) limit 2;
+select tests.authenticate_as((select owner_a from ids));
+select is(
+  (select (t ->> 'jobs_open')::int
+   from jsonb_array_elements(owner_dashboard((select ca from ids), 6) -> 'techs') t
+   where t ->> 'user_id' = (select tech_a::text from ids)),
+  2, 'by tech: open counts jobs due by today, not visits ahead');
+reset role;
+update job set deleted_at = now() where company_id = (select ca from ids) and status = 'scheduled';
+
+-- The job done in an hour and a half, and an hour on another job left running overnight.
+update job set status = 'done', started_at = now() - interval '90 minutes', completed_at = now()
+where company_id = (select ca from ids) and deleted_at is null;
+create temp table late as
+with j as (
+  insert into job (company_id, property_id, bill_to_customer_id, status, assigned_user_id,
+                   started_at)
+  select company_id, property_id, bill_to_customer_id, 'in_progress', assigned_user_id,
+         now() - interval '20 hours'
+  from job where company_id = (select ca from ids) limit 1
+  returning id)
+select id from j;
+update job set status = 'done', completed_at = now() where id = (select id from late);
+select tests.authenticate_as((select owner_a from ids));
+select results_eq(
+  $$ select (t ->> 'jobs_done')::int, (t ->> 'jobs_open')::int, (t ->> 'on_site_minutes')::int
+     from jsonb_array_elements(owner_dashboard((select ca from ids), 6) -> 'techs') t
+     where t ->> 'user_id' = (select tech_a::text from ids) $$,
+  $$ values (2, 0, 90) $$,
+  'by tech: two jobs done, 90 minutes on site (the overnight one left out of the average)');
 reset role;
 
 select tests.authenticate_as((select tech_a from ids));

@@ -14,6 +14,9 @@ import {
   activityButtonLabel,
   activityRow,
   customersAddedNote,
+  DASHBOARD_TECH_TURNED_OFF,
+  DASHBOARD_TECHS_EMPTY,
+  DASHBOARD_TECHS_TITLE,
   dashboardTotals,
   FEEDBACK_TITLE,
   formatCents,
@@ -21,6 +24,9 @@ import {
   monthLabel,
   offersPool,
   onPlanShareNote,
+  techFeedbackNote,
+  techInvoicedNote,
+  techJobsNote,
   type ActivityEvent,
   type Dashboard,
 } from "@leakbook/core";
@@ -36,6 +42,7 @@ import { Button, Card, Empty, Group, ListRow, Notice, Screen, T } from "../../..
 import { ModalSheet } from "../../../../ui/ModalSheet";
 import { WebIcon } from "../../../../ui/WebIcon";
 import { SkeletonDashboard } from "../../../../ui/Skeleton";
+import { TechDot } from "../../../../ui/TechDot";
 import { color, face, minTap, space, tabular } from "../../../../ui/theme";
 
 // Dashboard (owner, 2026-10-20: "Dashboard should be in the apps"; reverses decision 12), as
@@ -290,6 +297,30 @@ function DashboardBody({ d }: { d: Dashboard }) {
           </View>
         )}
       </Card>
+
+      {/* By tech (owner, 2026-11-24: "Tech specific stats in the dashboard"): each job counts
+          for its assigned tech, over the same months; most collected first. */}
+      {d.techs ? (
+        <View style={{ gap: space["2"] }}>
+          <T variant="sectionLabel">{DASHBOARD_TECHS_TITLE}</T>
+          <Group>
+            {d.techs.length === 0 ? (
+              <ListRow title={DASHBOARD_TECHS_EMPTY} chevron={false} />
+            ) : (
+              d.techs.map((t) => (
+                <ListRow
+                  key={t.user_id}
+                  leading={<TechDot tech={t.color} />}
+                  title={t.active ? t.name : `${t.name} · ${DASHBOARD_TECH_TURNED_OFF}`}
+                  subtitle={`${techJobsNote(t)}\n${techInvoicedNote(t)}\n${techFeedbackNote(t)}`}
+                  detail={`${formatCents(t.collected_cents)} collected`}
+                  chevron={false}
+                />
+              ))
+            )}
+          </Group>
+        </View>
+      ) : null}
 
       <View style={{ gap: space["2"] }}>
         <T variant="sectionLabel">By month</T>
