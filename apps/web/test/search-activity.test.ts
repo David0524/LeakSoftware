@@ -121,6 +121,7 @@ describe("Activity", () => {
       "/messages",
       "/customers",
       "/invoices",
+      "/quotes",
       "/activity",
       "/dashboard",
       "/chemicals",
@@ -130,6 +131,7 @@ describe("Activity", () => {
     expect(desktopNav(links).more.map((l) => l.href)).toEqual([
       "/customers",
       "/invoices",
+      "/quotes",
       "/activity",
       "/chemicals",
     ]);

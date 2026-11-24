@@ -43,7 +43,7 @@ import {
 } from "@/components/settings-forms";
 import { SheetNotices, SheetRow } from "@/components/settings-list";
 import { ContactButtons } from "@/components/contact-buttons";
-import { Empty, Grouped, PageHeader, Row } from "@/components/ui";
+import { ButtonLink, Empty, Grouped, PageHeader, Row } from "@/components/ui";
 import { CustomerIssues } from "@/components/issues";
 import { customerIssues } from "@/lib/issues";
 import { Draft } from "@/components/draft-keeper";
@@ -56,6 +56,7 @@ import {
   getSavedMethod,
   getTeam,
   listConfig,
+  mayMakeJobs,
   type ComponentType,
 } from "@/lib/data";
 import { feedbackList } from "@/lib/feedback";
@@ -78,24 +79,36 @@ export default async function CustomerPage({ params }: PageProps<"/customers/[id
   if (!isUuid(id)) notFound();
   const office = await getOffice();
   // All three at once: each used to wait for the one before.
-  const [data, team, company, line, componentTypes, priceBook, feedback, savedMethod, issues] =
-    await Promise.all([
-      getCustomer(office, id),
-      getTeam(office),
-      getCompany(office),
-      getLine(office),
-      listConfig<ComponentType>(office, "component_type"),
-      listConfig<{ component_type_key: string | null; price_cents: number }>(
-        office,
-        "price_book_item",
-      ),
-      // Owners and admins see what this customer told the shop (owner's competitor notes,
-      // 2026-11-16).
-      office.isManager ? feedbackList(office.company.id, id) : Promise.resolve(null),
-      // Autopay (docs/design/2026-11-16-autopay.md): owners and admins only.
-      office.isManager ? getSavedMethod(office, id) : null,
-      customerIssues(office, id),
-    ]);
+  const [
+    data,
+    team,
+    company,
+    line,
+    componentTypes,
+    priceBook,
+    feedback,
+    savedMethod,
+    issues,
+    canQuote,
+  ] = await Promise.all([
+    getCustomer(office, id),
+    getTeam(office),
+    getCompany(office),
+    getLine(office),
+    listConfig<ComponentType>(office, "component_type"),
+    listConfig<{ component_type_key: string | null; price_cents: number }>(
+      office,
+      "price_book_item",
+    ),
+    // Owners and admins see what this customer told the shop (owner's competitor notes,
+    // 2026-11-16).
+    office.isManager ? feedbackList(office.company.id, id) : Promise.resolve(null),
+    // Autopay (docs/design/2026-11-16-autopay.md): owners and admins only.
+    office.isManager ? getSavedMethod(office, id) : null,
+    customerIssues(office, id),
+    // New Quote: the same people who can make jobs.
+    mayMakeJobs(office),
+  ]);
   if (!data) notFound();
   // Checklist items done on a schedule, for a plan's Regular Cleanings (owner, 2026-10-18),
   // plus any a plan still uses after the item was changed.
@@ -161,16 +174,24 @@ export default async function CustomerPage({ params }: PageProps<"/customers/[id
         subtitle={[KIND[customer.kind], customer.company_name].filter(Boolean).join(" · ")}
       />
       {/* Call, text and email only with Text and Call Customers (owner, 2026-11-23). */}
-      {office.canContact ? (
-        <div className="-mt-2 mb-6">
-          <ContactButtons
-            name={customer.name}
-            phone={customer.phone}
-            email={customer.email}
-            textHref={
-              line?.status === "active" ? `/messages/new?customer=${customer.id}` : undefined
-            }
-          />
+      {office.canContact || canQuote ? (
+        <div className="-mt-2 mb-6 space-y-4">
+          {office.canContact ? (
+            <ContactButtons
+              name={customer.name}
+              phone={customer.phone}
+              email={customer.email}
+              textHref={
+                line?.status === "active" ? `/messages/new?customer=${customer.id}` : undefined
+              }
+            />
+          ) : null}
+          {/* A quote without making a job (docs/design/2026-11-24-standalone-quotes.md). */}
+          {canQuote ? (
+            <ButtonLink kind="secondary" href={`/quotes/new?customer=${customer.id}`}>
+              New Quote
+            </ButtonLink>
+          ) : null}
         </div>
       ) : null}
       <div className="grid items-start gap-8 lg:grid-cols-3">

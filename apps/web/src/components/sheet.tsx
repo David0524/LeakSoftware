@@ -274,6 +274,7 @@ const TINTED_RED = "bg-status-fail/12 text-status-fail hover:bg-status-fail/18";
 
 function DialogFrame({
   title,
+  hideTitle = false,
   message,
   onDismiss,
   initialFocus,
@@ -281,6 +282,8 @@ function DialogFrame({
   children,
 }: {
   title: string;
+  /** The title for screen readers only: an action sheet whose choices say it all. */
+  hideTitle?: boolean;
   message?: string;
   onDismiss: () => void;
   initialFocus: RefObject<HTMLButtonElement | null>;
@@ -317,7 +320,10 @@ function DialogFrame({
         data-testid={testId}
         className="relative w-full max-w-[26.25rem] rounded-[1.25rem] bg-surface p-6 shadow-2xl motion-safe:animate-[sheet-up_0.25s_cubic-bezier(0.32,0.72,0,1)] sm:motion-safe:animate-[fade-in_0.2s_ease-out]"
       >
-        <h2 id={titleId} className="font-display text-[1.625rem] leading-tight">
+        <h2
+          id={titleId}
+          className={hideTitle ? "sr-only" : "font-display text-[1.625rem] leading-tight"}
+        >
           {title}
         </h2>
         {message ? (
@@ -325,7 +331,12 @@ function DialogFrame({
             {message}
           </p>
         ) : null}
-        <div className="mt-6 flex flex-col-reverse gap-2.5 sm:flex-row sm:flex-wrap sm:justify-end">
+        <div
+          className={cx(
+            "flex flex-col-reverse gap-2.5 sm:flex-row sm:flex-wrap sm:justify-end",
+            !hideTitle && "mt-6",
+          )}
+        >
           {children}
         </div>
       </div>
@@ -383,6 +394,8 @@ export interface ChoiceOptions<K extends string> {
   message?: string;
   /** The buttons, top to bottom; Cancel is added under them. */
   choices: readonly { key: K; label: string; destructive?: boolean }[];
+  /** The title for screen readers only (an action sheet whose choices say it all). */
+  hideTitle?: boolean;
 }
 
 /**
@@ -415,6 +428,7 @@ export function useChoice<K extends string>(): [
 
 function ChoiceSheet<K extends string>({
   title,
+  hideTitle,
   message,
   choices,
   onDone,
@@ -424,6 +438,7 @@ function ChoiceSheet<K extends string>({
   return (
     <DialogFrame
       title={title}
+      hideTitle={hideTitle}
       message={message}
       onDismiss={dismiss}
       initialFocus={first}

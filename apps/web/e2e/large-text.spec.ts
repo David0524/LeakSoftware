@@ -153,7 +153,7 @@ for (const [name, viewport, fontSize] of [
       if (path === "/today") await expect(page.getByTestId("today-hero")).toBeVisible();
       expect(await sideways(page), `${path} scrolls sideways once loaded`).toBeLessThanOrEqual(0);
       // The large title never runs into the "+" (on these pages it sits under the bar).
-      const plus = page.locator(".nav-main").getByRole("link", { name: "New Job" });
+      const plus = page.locator(".nav-main").getByRole("button", { name: "New Job or New Quote" });
       if (await plus.count()) {
         const plusBox = (await plus.boundingBox())!;
         // The text itself: the heading's box runs under the "+" as its padding.

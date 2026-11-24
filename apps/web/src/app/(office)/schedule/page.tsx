@@ -56,7 +56,7 @@ import {
   type DayRoute,
   type RouteContext,
 } from "@/server/route-days";
-import { NavPlus } from "@/components/nav-bar";
+import { NewMenuPlus } from "@/components/new-menu";
 import { scheduleDate } from "@/lib/limits";
 import { redirect } from "next/navigation";
 import { loadRouteCustomers } from "@/app/actions/service-days";
@@ -414,7 +414,7 @@ export default async function SchedulePage({ searchParams }: PageProps<"/schedul
       <LiveRefresh from={live.from} to={live.to} />
       <PageHeader
         title="Schedule"
-        navAction={canAdd ? <NavPlus href="/jobs/new" label="New Job" /> : undefined}
+        navAction={canAdd ? <NewMenuPlus /> : undefined}
         actions={<div className="flex flex-wrap items-center gap-2">{controls(false)}</div>}
         actionsClassName="max-sm:hidden"
         subtitle={

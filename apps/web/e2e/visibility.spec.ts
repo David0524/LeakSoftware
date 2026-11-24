@@ -92,6 +92,7 @@ test("owners choose whether techs can make new jobs", async ({ browser }) => {
     await signIn(techPage, TECH, "/jobs");
     await expect(techPage.getByRole("heading", { level: 1, name: "Jobs" })).toBeVisible();
     await expect(techPage.getByRole("link", { name: "New Job" })).toHaveCount(0);
+    await expect(techPage.getByRole("button", { name: "New Job or New Quote" })).toHaveCount(0);
     await techPage.goto("/jobs/new");
     await expect(techPage.getByText("Your office makes new jobs.")).toBeVisible();
     await techPage.context().close();

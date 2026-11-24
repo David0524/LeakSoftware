@@ -81,6 +81,9 @@ async function saveTotals(
     .eq("id", quoteId);
   if (error) return { ok: false, error: friendlyDbError(error.message) };
   revalidatePath(`/jobs/${jobId}`);
+  // The Quote screen and the Quotes list show it too (docs/design/2026-11-24-standalone-quotes.md).
+  revalidatePath(`/quotes/${quoteId}`);
+  revalidatePath("/quotes");
   return { ok: true };
 }
 
@@ -94,6 +97,7 @@ export async function startQuote(jobId: string): Promise<Result> {
   });
   if (error) return { ok: false, error: friendlyDbError(error.message) };
   revalidatePath(`/jobs/${jobId}`);
+  revalidatePath("/quotes");
   return { ok: true };
 }
 
