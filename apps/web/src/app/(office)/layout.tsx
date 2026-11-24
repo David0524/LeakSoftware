@@ -17,6 +17,7 @@ import { getAccess, getCompany, mayMakeJobs } from "@/lib/data";
 import { unreadCount } from "@/lib/messages";
 import { activityUnread } from "@/lib/activity";
 import { DesktopSearch } from "@/components/shop-search";
+import { NewMenuPill } from "@/components/new-menu";
 import { desktopNav, officeLinks } from "@/lib/nav";
 import { onboardingAvailable } from "@/server/billing";
 import { referralOfferFor } from "@/server/referral";
@@ -176,29 +177,8 @@ async function OfficeNav() {
           <>
             {/* Search across the shop, before New Job; ⌘K or Ctrl+K opens it anywhere. */}
             <DesktopSearch userId={office.user.id} />
-            {newJob ? (
-              <Link
-                href="/jobs/new"
-                className="inline-flex min-h-11 items-center"
-                aria-label="New Job"
-                title="New Job"
-              >
-                <span className="inline-flex h-9 items-center gap-1.5 rounded-full bg-primary px-3.5 text-[0.9375rem] font-semibold text-on-primary max-lg:px-2.5">
-                  <svg
-                    viewBox="0 0 24 24"
-                    className="size-4"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="2.6"
-                    strokeLinecap="round"
-                    aria-hidden="true"
-                  >
-                    <path d="M12 5v14M5 12h14" />
-                  </svg>
-                  <span className="max-lg:sr-only">New Job</span>
-                </span>
-              </Link>
-            ) : null}
+            {/* New Job and New Quote (docs/design/2026-11-24-standalone-quotes.md). */}
+            {newJob ? <NewMenuPill /> : null}
           </>
         }
       />

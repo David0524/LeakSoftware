@@ -61,9 +61,16 @@ export function ContextMenu({
   entries,
   at,
   touch = false,
+  hideTitle = false,
   onClose,
 }: {
   title: string;
+  /**
+   * The title for screen readers only: a button's own menu (New Job and New Quote under the
+   * "+"), where the items say what it's about (pull-down-buttons.md: a title only if it adds
+   * meaning).
+   */
+  hideTitle?: boolean;
   /** A line above the title (a schedule stop's kind of visit: "Repair"). */
   kicker?: string;
   entries: readonly MenuEntry[];
@@ -211,13 +218,15 @@ export function ContextMenu({
         )}
       >
         {/* The row's name, so the menu says what it acts on (gestures.md section 12). */}
-        <div
-          aria-hidden="true"
-          className="border-b-[0.5px] border-separator px-4 pt-1.5 pb-2 text-[0.8125rem] font-semibold text-text-muted"
-        >
-          {kicker ? <span className="block truncate font-normal">{kicker}</span> : null}
-          <span className="block truncate">{title}</span>
-        </div>
+        {hideTitle ? null : (
+          <div
+            aria-hidden="true"
+            className="border-b-[0.5px] border-separator px-4 pt-1.5 pb-2 text-[0.8125rem] font-semibold text-text-muted"
+          >
+            {kicker ? <span className="block truncate font-normal">{kicker}</span> : null}
+            <span className="block truncate">{title}</span>
+          </div>
+        )}
         {shown.map((e, i) => {
           if (e === "separator")
             return (

@@ -96,8 +96,8 @@ export function QuotePanel({
           {quote.accepted_at
             ? ` on ${new Date(quote.accepted_at).toLocaleDateString("en-US", { dateStyle: "medium" })}`
             : ""}
-          .
-          {quote.repair_job_id ? (
+          .{/* Not on the repair job a standalone quote became: that's this job. */}
+          {quote.repair_job_id && quote.repair_job_id !== jobId ? (
             <>
               {" "}
               <Link

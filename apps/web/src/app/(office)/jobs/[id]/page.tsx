@@ -2,7 +2,7 @@ import { RememberRecent } from "@/components/remember-recent";
 import type { Metadata } from "next";
 import { TechDot } from "@/components/tech-dot";
 import Link from "next/link";
-import { notFound } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 import { Suspense } from "react";
 import {
   cardFeeBps,
@@ -41,7 +41,6 @@ import {
   formatDuration,
   formatSchedule,
   parseMarkup,
-  suggestItems,
   timeline,
   type CompanySettings,
   type SkipReason,
@@ -65,6 +64,7 @@ import {
   visitReportBar,
   reportPhotoBlock,
   jobRepairLines,
+  isQuoteJob,
   type JobRepair,
   customItemType,
   takesCustomItems,
@@ -126,8 +126,7 @@ import { getCustomerThread, getLine } from "@/lib/messages";
 import { siteOrigin } from "@/lib/origin";
 import { completeSendPrompt } from "@/lib/next-step";
 import { CreateInvoice, InvoicePanel } from "@/components/invoice-panel";
-import { QuoteBuilder, StartQuote } from "@/components/quote-builder";
-import { QuotePanel } from "@/components/quote-panel";
+import { JobQuotes } from "@/components/job-quotes";
 import { RemoveSignature } from "@/components/remove-signature";
 import { ReportPanel } from "@/components/report-panel";
 import { VisitReportPanel } from "@/components/visit-report-panel";
@@ -170,6 +169,15 @@ export default async function JobPage({ params, searchParams }: PageProps<"/jobs
   ]);
   if (!detail) notFound();
   const { job } = detail;
+  // A standalone quote's job has no job page: an old link or Activity opens its Quote screen
+  // (docs/design/2026-11-24-standalone-quotes.md).
+  if (isQuoteJob(job)) {
+    const quote = (await getQuotes(office, id))[0];
+    if (!quote) notFound();
+    redirect(`/quotes/${quote.id}`);
+  }
+  // A repair job's own quotes: one made from a standalone quote keeps it (its job_id).
+  const ownQuotes = job.type === "repair" ? await getQuotes(office, id) : [];
   const wrap = jobHasWrapUp(job.type) && !job.sample ? await wrapUpOf(office, detail) : null;
   const visit = job.type === "maintenance" ? await visitReportOf(office, detail) : null;
   // Skip Visit's reasons (Settings › Skip Reasons) and who skipped this one.
@@ -559,14 +567,17 @@ export default async function JobPage({ params, searchParams }: PageProps<"/jobs
                   </section>
                 ) : null}
 
-                {jobHasWrapUp(job.type) ? null : (
+                {/* A repair job made from its own standalone quote shows that quote here,
+                    read-only (docs/design/2026-11-24-standalone-quotes.md): Wrap-Up lists no
+                    quotes on a repair job. */}
+                {!jobHasWrapUp(job.type) || ownQuotes.length ? (
                   <section className="mt-8 max-w-3xl" aria-labelledby="quotes">
                     <h2 id="quotes" className="mb-3 font-display text-2xl font-bold">
-                      Quotes
+                      {jobHasWrapUp(job.type) && ownQuotes.length === 1 ? "Quote" : "Quotes"}
                     </h2>
-                    <Quotes detail={detail} />
+                    <JobQuotes detail={detail} readOnly={jobHasWrapUp(job.type)} />
                   </section>
-                )}
+                ) : null}
 
                 <div className="mt-8">
                   <JobStatusActions jobId={job.id} status={job.status} jobType={job.type} cancel />
@@ -696,7 +707,7 @@ export default async function JobPage({ params, searchParams }: PageProps<"/jobs
                       quotes={Object.fromEntries(
                         wrap.quoteIds.map((id) => [
                           id,
-                          <Quotes key={id} detail={detail} only={id} />,
+                          <JobQuotes key={id} detail={detail} only={id} />,
                         ]),
                       )}
                       invoices={Object.fromEntries(
@@ -1323,85 +1334,6 @@ async function visitReportOf(office: Office, detail: JobDetail) {
       />
     ),
   };
-}
-
-async function Quotes({ detail, only }: { detail: JobDetail; only?: string }) {
-  const office = await getOffice();
-  const [quotes, account, origin, company, priceBook] = await Promise.all([
-    getQuotes(office, detail.job.id),
-    office.isManager ? getPaymentAccount(office) : Promise.resolve(null),
-    siteOrigin(),
-    getCompany(office),
-    listConfig<PriceBookItem>(office, "price_book_item"),
-  ]);
-  const settings = company.settings as Partial<CompanySettings>;
-  const live = priceBook.filter((i) => i.active);
-  const typeKey = (componentId: string | null | undefined) => {
-    const comp = detail.components.find((c) => c.id === componentId);
-    return comp ? detail.componentTypes.get(comp.component_type_id)?.key : undefined;
-  };
-  const findings = detail.findings
-    .filter((f) => f.status !== "repaired")
-    .map((f) => ({
-      id: f.id,
-      title: f.title,
-      items: suggestItems(live, typeKey(f.job_component_id)).map((i) => ({
-        id: i.id,
-        name: i.name,
-        price_cents: i.price_cents,
-      })),
-    }));
-  const hasDraft = quotes.some((q) => q.status === "draft");
-  const hasAccepted = quotes.some((q) => q.status === "accepted");
-  // Wrap-Up shows one quote per sheet; its list has New Quote.
-  const shown = only ? quotes.filter((q) => q.id === only) : quotes;
-  return (
-    <div className="space-y-4">
-      {office.isManager && !account?.charges_enabled && quotes.some((q) => q.status !== "draft") ? (
-        <Notice tone="warning">
-          Customers can accept quotes but can’t pay deposits online until payments are set up.{" "}
-          <Link
-            href="/settings/payments"
-            className="inline-flex min-h-11 items-center font-semibold text-link underline"
-          >
-            Set up payments
-          </Link>
-        </Notice>
-      ) : null}
-      {!only && !hasDraft && !hasAccepted ? (
-        <StartQuote jobId={detail.job.id} another={quotes.length > 0} />
-      ) : null}
-      {shown.length ? (
-        <div className={only ? "grid grid-cols-1 gap-5" : "grid grid-cols-1 gap-5 xl:grid-cols-2"}>
-          {shown.map((q) => (
-            <QuotePanel key={q.id} quote={q} jobId={detail.job.id} origin={origin}>
-              {q.status === "draft" ? (
-                <QuoteBuilder
-                  quote={q}
-                  findings={findings}
-                  priceBook={live.map((i) => ({
-                    id: i.id,
-                    name: i.name,
-                    price_cents: i.price_cents,
-                  }))}
-                  settings={{
-                    tax_rate_bps: settings.tax_rate_bps ?? 0,
-                    deposit: settings.deposit ?? {
-                      type: "percent",
-                      value_bps: 0,
-                      minimum_cents: 0,
-                    },
-                    tech_discount_limit_bps: settings.tech_discount_limit_bps ?? 0,
-                  }}
-                  isOwner={office.isManager}
-                />
-              ) : null}
-            </QuotePanel>
-          ))}
-        </div>
-      ) : null}
-    </div>
-  );
 }
 
 const INVOICEABLE = ["in_progress", "report_sent", "quote_sent", "quote_accepted", "invoiced"];
