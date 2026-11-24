@@ -34,6 +34,8 @@ import {
   readingSummary,
   stepQuantity,
   suggestionText,
+  coveredText,
+  isAcidStep,
   targets,
   unitPriceLabel,
   uuidv7,
@@ -832,13 +834,15 @@ const ReadingRow = memo(
                     </span>
                   ) : null}
                   <span className="text-text-muted">Suggested</span>
-                  <span className="ml-auto text-right font-medium">{suggestionText(row.step)}</span>
+                  <span className="ml-auto text-right font-medium">
+                    {row.coveredBy ? coveredText(row.coveredBy) : suggestionText(row.step)}
+                  </span>
                 </div>
-                {row.step.note && row.key === "ph" ? (
+                {row.suggestion && isAcidStep(row.step) ? (
                   <p className="mt-1 text-[0.9375rem] text-text-muted">
                     Acid to water, never water to acid.
                   </p>
-                ) : row.step.note && !row.suggestion ? (
+                ) : row.step.note && !row.suggestion && !row.coveredBy ? (
                   <p className="mt-1 text-[0.9375rem] text-text-muted">{row.step.note}</p>
                 ) : null}
               </>

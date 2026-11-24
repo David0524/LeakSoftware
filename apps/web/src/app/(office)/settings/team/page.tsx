@@ -295,7 +295,7 @@ export default async function TeamSettingsPage() {
         // Under the open invites, where the new one appears (owner, 2026-10-16).
         inList: true,
         form: (
-          <SettingsForm action={inviteMember} submit="Create Invite" full>
+          <SettingsForm action={inviteMember} submit="Send Invite" full>
             <SettingsFields labelWidth="4.5rem">
               <SField label="Email" name="email" type="email" autoComplete="off" required />
             </SettingsFields>

@@ -114,7 +114,7 @@ test("a tech records what was added, priced when the shop charges, and the repor
     await card.getByLabel("Stabilizer reading").fill("30");
     await card.getByLabel(/^Stabilizer: aim for/).fill("40");
     await expect(card.getByTestId("reading-fc")).toContainText("½ gal liquid chlorine");
-    await expect(card.getByTestId("reading-ph")).toContainText("¼ gal muriatic acid");
+    await expect(card.getByTestId("reading-ph")).toContainText("⅓ gal muriatic acid");
     await expect(card.getByTestId("reading-cya")).toContainText("1½ lb stabilizer");
     await expect(card.getByTestId("reading-ta")).toContainText("In range");
     await expect(card).toContainText("Water balance");
@@ -124,8 +124,8 @@ test("a tech records what was added, priced when the shop charges, and the repor
     await expect(card.getByTestId("reading-fc")).toContainText("Added");
     await card.getByRole("button", { name: "Mark All Added" }).click();
     await expect(card.getByRole("button", { name: "Mark All Added" })).toHaveCount(0);
-    // ½ gal × $8 + ¼ gal × $15 + 1½ lb × $9
-    await expect(card.getByTestId("chemicals-today")).toHaveText("$21.25");
+    // ½ gal × $8 + ⅓ gal (0.33) × $15 + 1½ lb × $9
+    await expect(card.getByTestId("chemicals-today")).toHaveText("$22.45");
 
     // Added on its own: three tabs.
     await card.getByRole("button", { name: "Add Chemical" }).click();
@@ -136,7 +136,7 @@ test("a tech records what was added, priced when the shop charges, and the repor
     await expect(sheet.getByTestId("amount")).toHaveValue("3");
     await sheet.getByRole("button", { name: "Add", exact: true }).click();
     await expect(card.getByTestId("also-added")).toContainText("3 tabs Chlorine tabs");
-    await expect(card.getByTestId("chemicals-today")).toHaveText("$28.75");
+    await expect(card.getByTestId("chemicals-today")).toHaveText("$29.95");
 
     // Saved: after a reload it's all still there.
     await page.reload();

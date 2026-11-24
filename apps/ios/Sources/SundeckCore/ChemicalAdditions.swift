@@ -286,6 +286,17 @@ private func plainProduct(_ product: String) -> String {
     product.replacing(/\ \d+(\.\d+)?%/, with: "", maxReplacements: 1)
 }
 
+/// A row whose reading another row's step takes care of: "With alkalinity" (`coveredText`).
+public func coveredText(_ key: ReadingKey) -> String {
+    let label = key.label
+    return "With \(label == "pH" ? label : ECMA.lowercase(label))"
+}
+
+/// Acid goes in with a safety line on the visit: acid to water, never water to acid.
+public func isAcidStep(_ step: DoseStep) -> Bool {
+    step.chemical == "muriatic_acid" || step.chemical == "dry_acid"
+}
+
 /// What a step suggests, in words: "½ gal liquid chlorine".
 public func suggestionText(_ step: DoseStep) -> String {
     guard let q = step.quantity, let unit = step.unit else { return step.product }
@@ -320,13 +331,20 @@ public struct ChemicalRow: Codable, Equatable, Sendable {
     public var step: DoseStep?
     /// Its place in the order to add (1, 2, 3).
     public var order: Int?
+    /// The reading whose row carries the suggestion when one step takes care of both (owner,
+    /// 2026-11-24): pH's row under one acid dose says "With alkalinity" and suggests nothing.
+    public var coveredBy: ReadingKey?
     public var suggestion: AdditionDraft?
     public var added: [ChemicalAddition]
 
-    public init(key: ReadingKey, step: DoseStep?, order: Int?, suggestion: AdditionDraft?, added: [ChemicalAddition]) {
+    public init(
+        key: ReadingKey, step: DoseStep?, order: Int?, coveredBy: ReadingKey? = nil, suggestion: AdditionDraft?,
+        added: [ChemicalAddition]
+    ) {
         self.key = key
         self.step = step
         self.order = order
+        self.coveredBy = coveredBy
         self.suggestion = suggestion
         self.added = added
     }
@@ -361,10 +379,12 @@ public func chemicalRows(_ result: ChemistryResult, _ additions: [ChemicalAdditi
 {
     let added = liveSorted(additions)
     let rows = ReadingKey.allCases.map { key -> ChemicalRow in
-        let i = result.steps.firstIndex { $0.key == key }
+        let i = result.steps.firstIndex { $0.key == key || $0.also.contains(key) }
         let step = i.map { result.steps[$0] }
+        let coveredBy = step.flatMap { $0.key != key ? $0.key : nil }
         return ChemicalRow(
-            key: key, step: step, order: i.map { $0 + 1 }, suggestion: step.flatMap { suggestedAddition($0, items) },
+            key: key, step: step, order: i.map { $0 + 1 }, coveredBy: coveredBy,
+            suggestion: coveredBy == nil ? step.flatMap { suggestedAddition($0, items) } : nil,
             added: added.filter { $0.readingKey == key })
     }
     return ChemicalRows(rows: rows, extras: added.filter { $0.readingKey == nil })

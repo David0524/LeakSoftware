@@ -13,6 +13,7 @@ import {
 } from "./helpers";
 import { signedInClient } from "./backend";
 import { solidPng } from "./png";
+import { lastEmailTo } from "./outbox";
 
 test.describe.configure({ mode: "serial" });
 
@@ -221,9 +222,9 @@ test("owner invites a tech, who joins and cannot reach settings", async ({ page,
   await page.getByRole("button", { name: "Invite Someone", exact: true }).click();
   const invite = page.getByRole("dialog", { name: "Invite Someone" });
   await invite.getByLabel("Email").fill(email);
-  await invite.getByRole("button", { name: "Create Invite" }).click();
+  await invite.getByRole("button", { name: "Send Invite" }).click();
   await expect(
-    page.getByRole("status").filter({ hasText: `Invite created for ${email}` }),
+    page.getByRole("status").filter({ hasText: `Invite emailed to ${email}` }),
   ).toBeVisible();
 
   // The open invite is a row; its sheet holds the link.
@@ -233,6 +234,10 @@ test("owner invites a tech, who joins and cannot reach settings", async ({ page,
     .getByRole("dialog", { name: email })
     .getByLabel("Invite link")
     .inputValue();
+  // The invite was emailed with the same link (owner, 2026-11-24).
+  const mail = await lastEmailTo(email);
+  expect(mail?.subject).toMatch(/^Join .+ on Sundeck Pro$/);
+  expect(mail?.text).toContain(link);
   expect(link).toMatch(/\/invite\/[0-9a-f]{48}$/);
 
   // The invitee opens the link in a fresh browser.
@@ -848,9 +853,9 @@ test("an owner invites an admin, who edits the price book but not billing or pay
   const invite = page.getByRole("dialog", { name: "Invite Someone" });
   await invite.getByLabel("Email").fill(email);
   await invite.getByRole("radio", { name: "Admin" }).click();
-  await invite.getByRole("button", { name: "Create Invite" }).click();
+  await invite.getByRole("button", { name: "Send Invite" }).click();
   await expect(
-    page.getByRole("status").filter({ hasText: `Invite created for ${email}` }),
+    page.getByRole("status").filter({ hasText: `Invite emailed to ${email}` }),
   ).toBeVisible();
   const card = page.getByTestId("invite").filter({ hasText: email });
   await expect(card).toContainText("Admin");

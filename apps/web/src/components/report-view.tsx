@@ -652,7 +652,7 @@ export function ReportView(p: ReportViewProps) {
       <>
         {s.company.disclaimer ? (
           <section
-            className="report-disclaimer mt-10 text-[0.9375rem] whitespace-pre-line text-text-muted"
+            className="report-disclaimer mt-10 text-[0.75rem] leading-snug whitespace-pre-line text-text-muted"
             aria-label="Terms"
           >
             {s.company.disclaimer}

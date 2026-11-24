@@ -18,7 +18,7 @@ export const HOW_TO: HowToGroup[] = [
         to: "s-make-it-look-like-canyon-state",
       },
       { task: "Get the app on your techs’ phones", to: "s-put-the-app-on-the-phones" },
-      { task: "Invite a tech or office person", to: "s-a-link-sent-by-you" },
+      { task: "Invite a tech or office person", to: "s-an-email-with-a-link" },
       { task: "Choose what techs can see and do", to: "s-three-roles-three-jobs" },
       { task: "Turn someone off", to: "s-turn-off-dont-delete" },
       { task: "Choose your notifications", to: "s-notifications-each-persons-own" },
