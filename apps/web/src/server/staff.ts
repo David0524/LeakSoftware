@@ -71,7 +71,16 @@ export type StaffActionKind =
   | "cost_delete"
   | "promo_add"
   | "promo_on"
-  | "promo_off";
+  | "promo_off"
+  | "services_change"
+  | "price_change"
+  | "code_apply"
+  | "free_months"
+  | "refund"
+  | "cancel_change"
+  | "pause_on"
+  | "pause_off"
+  | "prices_change";
 
 /** Writes the staff log (public.staff_action), which no one can change afterwards. */
 export async function logStaffAction(
@@ -469,4 +478,19 @@ export async function loadUsage(
     ...u,
     errors: u.errors.map((e) => ({ ...e, detail: reportedErrorText(e.detail, "reported error") })),
   };
+}
+
+/** One saved price list, with how many subscribed shops pay under it (Admin › Pricing). */
+export interface PriceListRow {
+  id: number;
+  prices: unknown;
+  note: string | null;
+  created_by: string | null;
+  created_at: string;
+  shops: number;
+}
+
+/** Every price list, newest first (the newest is what new shops pay). */
+export async function loadPriceLists(): Promise<PriceListRow[]> {
+  return rpc<PriceListRow[]>("admin_price_lists");
 }

@@ -7,7 +7,13 @@ import { getOffice } from "@/lib/auth";
 import { getAccess, getCompany } from "@/lib/data";
 import { createClient } from "@/lib/supabase/server";
 import { adminClient } from "@/server/admin";
-import { appliedCode, billingConfigured, finishOnboarding } from "@/server/billing";
+import {
+  appliedCode,
+  billingConfigured,
+  finishOnboarding,
+  publishedPrices,
+  shopBillingPrice,
+} from "@/server/billing";
 import { applySignUpCode } from "@/server/sign-up-code";
 import { stripePublishableKey } from "@/server/stripe";
 
@@ -39,7 +45,8 @@ async function WelcomeBody() {
     if (admin) await finishOnboarding(admin, office.company.id);
     redirect("/welcome/done");
   }
-  const [{ data: sub }, { count }, code] = await Promise.all([
+  const server = adminClient();
+  const [{ data: sub }, { count }, code, pricing] = await Promise.all([
     supabase
       .from("subscription")
       .select("trial_ends_at, heard_from")
@@ -54,6 +61,10 @@ async function WelcomeBody() {
     // The code used, if any (owner, 2026-11-23); the owner's own client reads it without the
     // server key, just not the referring shop's name.
     appliedCode(office.company.id, adminClient() ?? supabase),
+    // What the shop will pay: the newest prices, or staff's own price for it (owner, 2026-11-24).
+    server
+      ? shopBillingPrice(server, office.company.id)
+      : publishedPrices().then((prices) => ({ prices, override: null, today: "" })),
   ]);
   const people = Math.max(1, count ?? 1);
   return (
@@ -66,6 +77,7 @@ async function WelcomeBody() {
       billing={billingConfigured()}
       publishableKey={stripePublishableKey()}
       offer={code.offer}
+      pricing={pricing}
       canEnterCode={code.canEnter}
       refusedCode={
         signUpCode.kind === "refused" ? { code: signUpCode.code, error: signUpCode.error } : null

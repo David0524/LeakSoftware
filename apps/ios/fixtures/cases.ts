@@ -28,6 +28,7 @@ import { massEmail } from "./cases/mass-email";
 import { customerCounts } from "./cases/customer-counts";
 import { dashboard } from "./cases/dashboard";
 import { receipts } from "./cases/receipts";
+import { refunds } from "./cases/refunds";
 import { signedOut } from "./cases/signed-out";
 import { heardFrom } from "./cases/heard-from";
 import { termsConsent } from "./cases/terms-consent";
@@ -83,6 +84,7 @@ export const modules: Record<string, ModuleCases> = {
   "customer-counts": customerCounts,
   dashboard,
   receipts,
+  refunds,
   "signed-out": signedOut,
   "heard-from": heardFrom,
   "pool-equipment": poolEquipment,

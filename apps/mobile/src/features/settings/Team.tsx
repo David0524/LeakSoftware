@@ -31,6 +31,7 @@ import { saveMemberStart, useMemberStart } from "../../data/memberStarts";
 import { startForm, startWrite, type StartForm } from "../../lib/memberStart";
 import { StartFromFields } from "./StartFrom";
 import { API_URL } from "../../lib/config";
+import { call, ReportServerError } from "../../data/reports";
 import { getServices } from "../../lib/services";
 import { useCompany, useSession } from "../../state/session";
 import {
@@ -426,7 +427,7 @@ function TeamPage() {
   );
 }
 
-/** A new invite: email and role, made on the server (create_invite); then share its link. */
+/** A new invite: email and role, made on the server, which emails the link (/api/invites). */
 function InviteForm({ owner, onDone }: { owner: boolean; onDone: (message: string) => void }) {
   const company = useCompany();
   const roles = assignableRoles(owner ? "owner" : "admin");
@@ -444,15 +445,17 @@ function InviteForm({ owner, onDone }: { owner: boolean; onDone: (message: strin
     setError(undefined);
     setBusy(true);
     try {
-      const { error: rpcError } = await getServices().supabase.rpc("create_invite", {
-        target_company: company.id,
-        invite_email: address,
-        invite_role: role,
+      // The website makes the invite and emails the link (owner, 2026-11-24).
+      const r = await call<{ message: string; emailed: boolean }>("/api/invites", {
+        company_id: company.id,
+        email: address,
+        role,
       });
-      if (rpcError) return setError(friendlyError(rpcError.message));
-      onDone(`Invite created for ${address}. Tap it under Open invites to share the link.`);
-    } catch {
-      setError("You’re offline. Invites need a connection.");
+      onDone(r.message);
+    } catch (e) {
+      setError(
+        e instanceof ReportServerError ? e.message : "You’re offline. Invites need a connection.",
+      );
     } finally {
       setBusy(false);
     }
@@ -482,7 +485,7 @@ function InviteForm({ owner, onDone }: { owner: boolean; onDone: (message: strin
           </T>
         </View>
       ) : null}
-      <Button title="Create Invite" wide loading={busy} onPress={() => void create()} />
+      <Button title="Send Invite" wide loading={busy} onPress={() => void create()} />
     </View>
   );
 }

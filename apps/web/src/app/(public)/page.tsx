@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Landing } from "@/components/landing/landing";
 import { sharePreview } from "@/lib/share-preview";
 import { StructuredData } from "@/components/landing/structured-data";
+import { publishedPrices } from "@/server/billing";
 
 // The public home page: what Sundeck Pro does, shown with small working demos of the app, and
 // the packages' prices (owner, 2026-10-15). Pool Maintenance shows first; Leak Detection is
@@ -20,11 +21,13 @@ export const metadata: Metadata = {
   ),
 };
 
-export default function Home() {
+export default async function Home() {
+  // The prices staff set in Admin › Pricing (owner, 2026-11-24), cached until they change.
+  const prices = await publishedPrices();
   return (
     <main>
-      <Landing />
-      <StructuredData />
+      <Landing prices={prices} />
+      <StructuredData prices={prices} />
     </main>
   );
 }

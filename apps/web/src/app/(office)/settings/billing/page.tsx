@@ -85,6 +85,7 @@ export default async function BillingPage({ searchParams }: PageProps<"/settings
                     subscribed={access.subscribed}
                     publishableKey={stripePublishableKey()}
                     offer={code?.offer}
+                    pricing={{ prices: price.prices, override: price.override, today: price.today }}
                   />
                 ) : access.subscribed ? (
                   <BillingButton kind="manage" />
