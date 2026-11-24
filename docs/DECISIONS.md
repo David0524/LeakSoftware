@@ -2,6 +2,14 @@
 
 Newest first. Each entry: date, decision, reason.
 
+## 2026-11-24 (owner: "Consider our Dynamic Island. Is there anything worth changing. From my understanding we can make it bigger"; "Consider the psychological principle where progress bars begin with a bit of it filled"; "Don't label the buttons"; "Don't overdo it"; "The count and the ring say the same thing though")
+- **The Live Activity's progress starts partly filled (endowed progress).** One piece of the bar per stop (one plain bar past 12 stops). The current stop's piece fills as the tech works through it: a quarter when it's up next, 45% after On My Way, half on arrival rising to 95% with the checklist, and full when the stop is done. Every part shown was really taken. Core `liveStopContent.progress`, TypeScript and Swift.
+- **Small (compact) island:** the island's height is set by the camera, so the content grows instead: the mark goes from 20 to 25 pt, "1/3" from 15 to 18 pt. Nothing else is added (owner: "Don't overdo it", keep the logo); a progress ring beside the count was dropped because it said the same thing (owner). Minimal stays at 20 pt.
+- **Expanded island:** the stop count is shown once, as the figure, with the step ("Up next", "On the way", "Checklist", "Done") under it instead of "Stop". The customer's name stands alone, larger (21 pt) and left-aligned. The line under it is the address only (`detail`), which also removes Android's repeated "Stop 1 of 3". The buttons stay round icons with no labels (owner).
+
+## 2026-11-24 (owner: "Looks good. Go to TestFlight." about the Dynamic Island)
+- **iPhone 1.0.7:** Apple approved 1.0.6, which closes it to new TestFlight builds, so the version moves to 1.0.7. The first 1.0.7 build carries the Dynamic Island changes.
+
 ## 2026-11-24 (owner: "Push the latest app version for release on the App Store")
 - **iPhone 1.0.6 is submitted to App Review** (App Store workflow `submit`) with the TestFlight build of `a0732fd` (TestFlight run 100), which carries everything since 1.0.5: standalone quotes, refunds from the invoice, Dashboard by tech, the Pool Nerd chemical doses, and Refer a Pool Company for owners. It releases automatically once approved (2026-11-18). What's New: `docs/release/APP_STORE.md` § 1.9. Backend stays the dev project.
 

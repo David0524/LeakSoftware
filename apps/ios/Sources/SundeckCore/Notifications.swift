@@ -233,11 +233,15 @@ public struct LiveStopContent: Codable, Equatable, Sendable {
     public var figure: String
     /// Under the figure: "Stop", "Checklist", "Next stop".
     public var figureLabel: String
-    /// "Stop 3 of 7 · 123 Palm Ln"
+    /// The address ("123 Palm Ln"); "Stop 3 of 7" when there's none, and once the stop is done.
+    /// The stop's place is the figure, so it isn't repeated here (owner, 2026-11-24).
     public var detail: String
     /// "Then: Jones", or nil when this is the last stop.
     public var next: String?
-    /// 0..1: the day's stops done of all, for the progress bar.
+    /// 0..1: the day's progress, for the bar. Stops done, plus the part of the current stop
+    /// taken so far (up next a quarter, on the way 45%, on site half and up with the checklist),
+    /// so the bar is never empty while there's a stop to do (owner, 2026-11-24: progress bars
+    /// that begin with a bit filled). Every part shown was really taken.
     public var progress: Double
     /// The compact Dynamic Island's few characters: "9:42", "4/9", "✓".
     public var compact: String
@@ -249,6 +253,13 @@ public struct LiveStopContent: Codable, Equatable, Sendable {
     /// The cleanings on this visit (owner, 2026-10-20: "The filter/salt cell cleaning alert needs
     /// to be on the new Today tile and the live activity"), soonest first, until the stop is done.
     public var cleanings: [CleaningBadge] = []
+    /// The customer's name, alone: the expanded Dynamic Island's title.
+    public var name: String = ""
+    /// In the expanded Dynamic Island, under the figure, where the name has no "Up next:": "Up
+    /// next", "On the way", "Checklist", "Done"; empty when the figure already says it.
+    public var step: String = ""
+    /// The day's stops, for one piece of the bar each; 0 when unknown.
+    public var stops: Int = 0
 }
 
 /// Access notes as one short line: spaces and line breaks collapsed, at most 90 characters.
@@ -279,12 +290,40 @@ private func liveStopBase(_ s: LiveStopInput) -> LiveStopContent {
     // place in the day, and the next stop is named without a time. `eta` and `scheduled` are
     // ignored.
     let of = "Stop \(s.stop) of \(s.stops)"
-    let detail = [of, s.address].compactMap { $0 }.filter { !$0.isEmpty }.joined(separator: " · ")
+    let detail = s.address.flatMap { $0.isEmpty ? nil : $0 } ?? of
     let next = s.next.map { "Then: \($0.customer)" }
     let doneStops = s.doneStops ?? (s.phase == .done ? s.stop : s.stop - 1)
-    let progress = s.stops > 0 ? min(1, max(0, Double(doneStops) / Double(s.stops))) : 0
+    let progress = s.stops > 0 ? min(1, max(0, (Double(doneStops) + stopPart(s)) / Double(s.stops))) : 0
     let place = s.stops > 0 ? "\(s.stop) of \(s.stops)" : ""
     let compactPlace = place.isEmpty ? "…" : "\(s.stop)/\(s.stops)"
+    var content = liveStopPhaseContent(
+        s, of: of, detail: detail, next: next, progress: progress, place: place, compactPlace: compactPlace)
+    content.name = s.customer
+    content.stops = max(0, s.stops)
+    switch s.phase {
+    case .ahead: content.step = "Up next"
+    case .driving: content.step = place.isEmpty ? "" : "On the way"
+    case .onSite: content.step = s.checklistTotal > 0 ? "Checklist" : ""
+    case .done: content.step = "Done"
+    }
+    return content
+}
+
+/// How much of the current stop is taken: see `LiveStopContent.progress`.
+private func stopPart(_ s: LiveStopInput) -> Double {
+    switch s.phase {
+    case .ahead: 0.25
+    case .driving: 0.45
+    case .onSite:
+        0.5 + 0.45 * (s.checklistTotal > 0 ? min(1, Double(s.checklistDone) / Double(s.checklistTotal)) : 0)
+    case .done: 0
+    }
+}
+
+private func liveStopPhaseContent(
+    _ s: LiveStopInput, of: String, detail: String, next: String?, progress: Double, place: String,
+    compactPlace: String
+) -> LiveStopContent {
     switch s.phase {
     case .ahead:
         return LiveStopContent(

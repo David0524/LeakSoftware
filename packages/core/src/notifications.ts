@@ -293,12 +293,29 @@ export interface LiveStopContent {
   figure: string;
   /** Under the figure: "Arriving", "Checklist", "Next stop". */
   figureLabel: string;
-  /** "Stop 3 of 7 · 123 Palm Ln" */
+  /**
+   * The address ("123 Palm Ln"); "Stop 3 of 7" when there's none, and once the stop is done.
+   * The stop's place is the figure, so it isn't repeated here (owner, 2026-11-24).
+   */
   detail: string;
   /** "Then: Jones at 10:30 AM", or null when this is the last stop. */
   next: string | null;
-  /** 0..1: the day's stops done of all, for the progress bar. */
+  /**
+   * 0..1: the day's progress, for the bar. Stops done, plus the part of the current stop taken
+   * so far (up next a quarter, on the way 45%, on site half and up with the checklist), so the
+   * bar is never empty while there's a stop to do (owner, 2026-11-24: progress bars that begin
+   * with a bit filled). Every part shown was really taken.
+   */
   progress: number;
+  /** The customer's name, alone: the expanded Dynamic Island's title. */
+  name: string;
+  /**
+   * In the expanded Dynamic Island, under the figure, where the name has no "Up next:": "Up
+   * next", "On the way", "Checklist", "Done"; empty when the figure already says it.
+   */
+  step: string;
+  /** The day's stops, for one piece of the bar each; 0 when unknown. */
+  stops: number;
   /** The compact Dynamic Island's few characters: "9:42", "4/9", "✓". */
   compact: string;
   /** One sentence for VoiceOver and TalkBack. */
@@ -354,11 +371,12 @@ function liveStopBase(s: LiveStopInput): Omit<LiveStopContent, "access" | "clean
   // aren't really scheduled for a certain time"): before arriving, the figure is the stop's place
   // in the day, and the next stop is named without a time. `eta` and `scheduled` are ignored.
   const of = `Stop ${s.stop} of ${s.stops}`;
-  const detail = [of, s.address].filter(Boolean).join(" · ");
+  const detail = s.address || of;
   const next = s.next ? `Then: ${s.next.customer}` : null;
   const doneStops = s.doneStops ?? (s.phase === "done" ? s.stop : s.stop - 1);
-  const progress = s.stops > 0 ? Math.min(1, Math.max(0, doneStops / s.stops)) : 0;
+  const progress = s.stops > 0 ? Math.min(1, Math.max(0, (doneStops + stopPart(s)) / s.stops)) : 0;
   const place = s.stops > 0 ? `${s.stop} of ${s.stops}` : "";
+  const day = { name: s.customer, stops: Math.max(0, s.stops), progress };
   if (s.phase === "ahead") {
     return {
       headline: `Up next: ${s.customer}`,
@@ -366,7 +384,8 @@ function liveStopBase(s: LiveStopInput): Omit<LiveStopContent, "access" | "clean
       figureLabel: place ? "Stop" : "",
       detail,
       next,
-      progress,
+      ...day,
+      step: "Up next",
       compact: place ? `${s.stop}/${s.stops}` : "…",
       spoken: `Up next: ${s.customer}. ${of}.`,
     };
@@ -378,7 +397,8 @@ function liveStopBase(s: LiveStopInput): Omit<LiveStopContent, "access" | "clean
       figureLabel: place ? "Stop" : "",
       detail,
       next,
-      progress,
+      ...day,
+      step: place ? "On the way" : "",
       compact: place ? `${s.stop}/${s.stops}` : "…",
       spoken: `On the way to ${s.customer}. ${of}.`,
     };
@@ -391,7 +411,8 @@ function liveStopBase(s: LiveStopInput): Omit<LiveStopContent, "access" | "clean
       figureLabel: list ? "Checklist" : "",
       detail,
       next,
-      progress,
+      ...day,
+      step: list ? "Checklist" : "",
       compact: s.checklistTotal > 0 ? `${s.checklistDone}/${s.checklistTotal}` : "•",
       spoken: `At ${s.customer}.${list ? ` Checklist ${list}.` : ""} ${of}.${next ? ` ${next}.` : ""}`,
     };
@@ -402,10 +423,22 @@ function liveStopBase(s: LiveStopInput): Omit<LiveStopContent, "access" | "clean
     figureLabel: next ? "Next stop" : "Last stop",
     detail: of,
     next: next ?? "That was the last stop today.",
-    progress,
+    ...day,
+    step: "Done",
     compact: "✓",
     spoken: `${s.customer} done. ${next ? `${next}.` : "That was the last stop today."}`,
   };
+}
+
+/** How much of the current stop is taken: see `LiveStopContent.progress`. */
+function stopPart(s: LiveStopInput): number {
+  if (s.phase === "ahead") return 0.25;
+  if (s.phase === "driving") return 0.45;
+  if (s.phase === "on_site") {
+    const list = s.checklistTotal > 0 ? Math.min(1, s.checklistDone / s.checklistTotal) : 0;
+    return 0.5 + 0.45 * list;
+  }
+  return 0;
 }
 
 /**

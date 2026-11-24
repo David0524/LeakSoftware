@@ -207,7 +207,8 @@ private func dayHero(stops: [HeroStop], today: String, timeZone: String, justDon
                 content: LiveStopContent(
                     headline: n == 1 ? "The stop is done" : "All \(n) stops done", figure: "✓",
                     figureLabel: "Day done", detail: "", next: nil, progress: 1, compact: "✓",
-                    spoken: "All \(n) \(n == 1 ? "stop" : "stops") done today.", access: nil, cleanings: []),
+                    spoken: "All \(n) \(n == 1 ? "stop" : "stops") done today.", access: nil, cleanings: [],
+                    name: "", step: "Day done", stops: n),
                 segments: stops.map { _ in .done }, doneCount: doneCount, currentId: nil)
         }
         let s = stops[at]
