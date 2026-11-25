@@ -12,7 +12,7 @@ import {
   type ReceiptPayment,
 } from "@leakbook/core";
 import { adminClient } from "./admin";
-import { fillCardFees } from "./stripe";
+import { cardFeeNotInDatabase, fillCardFees } from "./stripe";
 import { EmailNotConfigured, emailConfigured, fromAddress, sendEmail } from "./email";
 import { ccList, emailRefusal } from "./usage";
 import { Fault, Refusal, dbFailure } from "./failures";
@@ -228,11 +228,17 @@ export async function sendReceipt(
     // The card fees charged with its payments (owner, 2026-11-24: customers see the fee).
     const { data: paid } = await db
       .from("payment")
-      .select("fee_cents")
+      .select("id, method, fee_cents")
       .eq("invoice_id", invoiceId)
       .eq("status", "succeeded")
       .is("deleted_at", null);
-    const fees = (paid ?? []).reduce((n, p) => n + Math.max(Number(p.fee_cents ?? 0), 0), 0);
+    const rows = (paid ?? []) as { id: string; method: string; fee_cents: number | null }[];
+    // Fees the database doesn't know (or doesn't keep yet) come from Stripe.
+    const unknown = !paid || rows.some((p) => p.method === "card" && p.fee_cents == null);
+    const fromStripe = unknown ? await fillCardFees(invoiceId) : {};
+    const fees = paid
+      ? rows.reduce((n, p) => n + Math.max(Number(p.fee_cents ?? fromStripe[p.id] ?? 0), 0), 0)
+      : Object.values(fromStripe).reduce((n, f) => n + f, 0);
     const what = `We received your payment. Invoice${d.number ? ` #${d.number}` : ""} for ${formatCents(d.total_cents)} is paid in full.${fees > 0 ? ` A ${formatCents(fees)} card fee was charged with your payment.` : ""}`;
     const email = await sendEmail({
       companyId: job.company_id as string,
@@ -302,15 +308,20 @@ export async function sendPaymentReceipt(
   const d = await rpc<MailDetails>(db, "invoice_mail_details", { target_invoice: invoiceId });
   if (!d.token || d.status === "draft" || d.status === "void")
     throw new Refusal("Send the invoice before sending a receipt.");
-  const { data: rows, error } = await db
-    .from("payment")
-    .select("id, amount_cents, method, check_number, status, paid_at, company_id, fee_cents")
-    .eq("invoice_id", invoiceId)
-    .is("deleted_at", null);
+  const cols = "id, amount_cents, method, check_number, status, paid_at, company_id";
+  const read = (withFee: boolean) =>
+    db
+      .from("payment")
+      .select(withFee ? `${cols}, fee_cents` : cols)
+      .eq("invoice_id", invoiceId)
+      .is("deleted_at", null);
+  let { data: rows, error } = await read(true);
+  // The database doesn't keep card fees yet: Stripe has them (below).
+  if (cardFeeNotInDatabase(error)) ({ data: rows, error } = await read(false));
   if (error) throw dbFailure(error);
-  const payments = (rows ?? []) as (ReceiptPayment & { company_id: string })[];
-  // A card payment from before receipts showed the card fee: read its fee from Stripe once.
-  if (payments.some((p) => p.method === "card" && p.fee_cents === null)) {
+  const payments = (rows ?? []) as unknown as (ReceiptPayment & { company_id: string })[];
+  // A card payment whose fee the database doesn't know: read it from Stripe.
+  if (payments.some((p) => p.method === "card" && p.fee_cents == null)) {
     const fees = await fillCardFees(invoiceId);
     for (const p of payments) if (p.id in fees) p.fee_cents = fees[p.id];
   }

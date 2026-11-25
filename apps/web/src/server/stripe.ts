@@ -786,7 +786,7 @@ export async function applyEvent(
       const fee = cardFeeOf(s);
       const saveFee = () =>
         fee > 0
-          ? rpc(d, "stripe_record_card_fee", {
+          ? saveCardFee(d, {
               session_id: s.id,
               intent_id: null,
               fee,
@@ -840,9 +840,42 @@ export async function applyEvent(
 }
 
 /**
- * Card payments taken before the receipt showed the card fee (fee_cents null): reads each one's
- * fee from Stripe once and saves it (owner, 2026-11-24). Returns the fees found by payment id;
- * a payment Stripe can't answer for stays unknown and is tried again next time. Never throws.
+ * True when an error says the database doesn't have the card fee yet (payment.fee_cents and
+ * stripe_record_card_fee come with 20261022005800_card_fee_on_receipts.sql). Until it's applied,
+ * receipts read each card payment's fee from Stripe instead (owner, 2026-11-25).
+ */
+export function cardFeeNotInDatabase(
+  error: { code?: string; message?: string } | null | undefined,
+): boolean {
+  if (!error) return false;
+  return (
+    ["42703", "42883", "PGRST202", "PGRST204"].includes(error.code ?? "") ||
+    /fee_cents|stripe_record_card_fee/.test(error.message ?? "")
+  );
+}
+
+/** Saves a payment's card fee; null when the database doesn't keep card fees yet. */
+export async function saveCardFee(
+  db: SupabaseClient,
+  args: {
+    session_id: string | null;
+    intent_id: string | null;
+    fee: number;
+    paid_account: string | null;
+  },
+): Promise<number | null> {
+  const { data, error } = await db.rpc("stripe_record_card_fee", args);
+  if (cardFeeNotInDatabase(error)) return null;
+  if (error) throw new Error(error.message);
+  return data as number | null;
+}
+
+/**
+ * The card fees on an invoice's card payments that the database doesn't know (owner,
+ * 2026-11-24): payments from before receipts showed the fee (fee_cents null), or every card
+ * payment while the database doesn't keep fees yet. Reads each from Stripe and saves it when it
+ * can, so a saved fee is read from Stripe only once. Returns the fees found by payment id; a
+ * payment Stripe can't answer for is left out. Never throws.
  */
 export async function fillCardFees(
   invoiceId: string,
@@ -853,13 +886,17 @@ export async function fillCardFees(
   const db = deps?.db === undefined ? adminClient() : deps.db;
   if (!stripe || !db) return found;
   try {
-    const { data: rows } = await db
-      .from("payment")
-      .select("id, company_id, stripe_checkout_session_id, stripe_payment_intent_id")
-      .eq("invoice_id", invoiceId)
-      .eq("method", "card")
-      .is("fee_cents", null);
-    if (!rows?.length) return found;
+    const cols = "id, company_id, stripe_checkout_session_id, stripe_payment_intent_id";
+    const card = () =>
+      db
+        .from("payment")
+        .select(cols)
+        .eq("invoice_id", invoiceId)
+        .eq("method", "card")
+        .is("deleted_at", null);
+    let { data: rows, error } = await card().is("fee_cents", null);
+    if (cardFeeNotInDatabase(error)) ({ data: rows, error } = await card());
+    if (error || !rows?.length) return found;
     const { data: account } = await db
       .from("stripe_account")
       .select("stripe_account_id")
@@ -867,31 +904,35 @@ export async function fillCardFees(
       .maybeSingle();
     const stripeAccount = account?.stripe_account_id as string | undefined;
     if (!stripeAccount) return found;
-    for (const p of rows) {
-      try {
-        const sessionId = p.stripe_checkout_session_id as string | null;
-        const intentId = p.stripe_payment_intent_id as string | null;
-        let fee = 0;
-        if (sessionId) {
-          fee = cardFeeOf(
-            await stripe.checkout.sessions.retrieve(sessionId, {}, { stripeAccount }),
-          );
-        } else if (intentId) {
-          const pi = await stripe.paymentIntents.retrieve(intentId, {}, { stripeAccount });
-          const n = Number(pi.metadata?.card_fee_cents ?? 0);
-          fee = Number.isInteger(n) && n > 0 ? n : 0;
-        } else continue;
-        const saved = await rpc<number | null>(db, "stripe_record_card_fee", {
-          session_id: sessionId,
-          intent_id: sessionId ? null : intentId,
-          fee,
-          paid_account: stripeAccount,
-        });
-        if (saved !== null) found[p.id as string] = saved;
-      } catch {
-        // Stripe or the database didn't answer: try again the next time the receipt opens.
-      }
-    }
+    await Promise.all(
+      rows.map(async (p) => {
+        try {
+          const sessionId = p.stripe_checkout_session_id as string | null;
+          const intentId = p.stripe_payment_intent_id as string | null;
+          let fee = 0;
+          if (sessionId) {
+            fee = cardFeeOf(
+              await stripe.checkout.sessions.retrieve(sessionId, {}, { stripeAccount }),
+            );
+          } else if (intentId) {
+            const pi = await stripe.paymentIntents.retrieve(intentId, {}, { stripeAccount });
+            const n = Number(pi.metadata?.card_fee_cents ?? 0);
+            const total = pi.amount ?? 0;
+            const cap = Math.ceil((total * CARD_FEE_MAX_BPS) / (10_000 + CARD_FEE_MAX_BPS));
+            fee = Number.isInteger(n) && n > 0 ? Math.min(n, cap) : 0;
+          } else return;
+          const saved = await saveCardFee(db, {
+            session_id: sessionId,
+            intent_id: sessionId ? null : intentId,
+            fee,
+            paid_account: stripeAccount,
+          });
+          found[p.id as string] = saved ?? fee;
+        } catch {
+          // Stripe or the database didn't answer: try again the next time the receipt opens.
+        }
+      }),
+    );
   } catch {
     // As above.
   }

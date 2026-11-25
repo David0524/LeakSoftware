@@ -19,7 +19,7 @@ import { EmailNotConfigured, emailConfigured, fromAddress, sendEmail } from "./e
 import { Refusal, dbFailure } from "./failures";
 import { sendInvoice, sendReceipt, type MailDetails, type SendInvoiceResult } from "./invoices";
 import { notifyAutopayFailed, notifyPaidIntent } from "./notify-events";
-import { PaymentsNotConfigured, stripeClient } from "./stripe";
+import { PaymentsNotConfigured, saveCardFee, stripeClient } from "./stripe";
 import { TextingError, sendCompanyText } from "./texting";
 import { emailRefusal } from "./usage";
 
@@ -220,7 +220,7 @@ export async function chargeInvoice(
 
   // The card fee, kept beside the payment for the receipt (owner, 2026-11-24).
   if (feeCents > 0 && intent && outcome !== "failed")
-    await rpc(db, "stripe_record_card_fee", {
+    await saveCardFee(db, {
       session_id: null,
       intent_id: intent.id,
       fee: feeCents,

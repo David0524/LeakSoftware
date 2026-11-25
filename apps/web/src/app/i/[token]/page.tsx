@@ -92,7 +92,7 @@ interface TokenInvoice {
     check_number: string | null;
     status: string;
     paid_at: string | null;
-    /** The card fee charged with it; null for a card payment not yet read from Stripe. */
+    /** The card fee charged with it; null or missing for a card payment not yet read from Stripe. */
     fee_cents?: number | null;
   }[];
   can_pay: boolean;
@@ -125,9 +125,9 @@ async function InvoicePage({ params, searchParams }: PageProps<"/i/[token]">) {
   });
   const i = data as TokenInvoice | null;
   if (!i) notFound();
-  // A card payment from before the receipt showed the card fee: read its fee from Stripe once
-  // (owner, 2026-11-24).
-  if (i.payments.some((p) => p.method === "card" && p.fee_cents === null)) {
+  // A card payment whose fee the database doesn't know (from before the receipt showed it, or
+  // before the database kept fees at all): read it from Stripe (owner, 2026-11-24).
+  if (i.payments.some((p) => p.method === "card" && p.fee_cents == null)) {
     const fees = await fillCardFees(i.invoice_id);
     for (const p of i.payments) if (p.id in fees) p.fee_cents = fees[p.id];
   }
