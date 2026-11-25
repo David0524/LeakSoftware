@@ -14,6 +14,7 @@ import {
   type Job,
   type PriceBookItem,
   friendlyError,
+  cardFeeText,
 } from "@leakbook/core";
 import { useRow, useRows } from "../../data/hooks";
 import { useInspectionConfig, useJobInspection } from "../../data/inspection";
@@ -59,6 +60,8 @@ interface PaymentRow {
   amount_cents: number;
   method: string;
   status: string;
+  /** The card fee charged with it (2026-11-25). */
+  fee_cents?: number | null;
 }
 
 /**
@@ -593,7 +596,9 @@ function SentQuote({ job, quote }: { job: Job; quote: JobQuote }) {
       <T variant="secondary" muted>
         {`Deposit ${formatCents(quote.deposit_cents)}${
           deposit
-            ? ` · ${PAYMENT_LABELS[deposit.status]} (${deposit.method === "ach" ? "bank" : "card"})`
+            ? ` · ${PAYMENT_LABELS[deposit.status]} (${deposit.method === "ach" ? "bank" : "card"})${
+                cardFeeText(deposit) ? ` · ${cardFeeText(deposit)}` : ""
+              }`
             : ""
         }`}
       </T>

@@ -1001,7 +1001,7 @@ export const getQuotes = cache(async function getQuotes(
       .order("sort_order"),
     supabase
       .from("payment")
-      .select("id, quote_id, amount_cents, method, status, paid_at")
+      .select("id, quote_id, amount_cents, method, status, paid_at, fee_cents")
       .in("quote_id", ids)
       .is("deleted_at", null),
     supabase

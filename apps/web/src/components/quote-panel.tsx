@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useActionState, type ReactNode } from "react";
-import { QUOTE_STATUS_LABELS, formatCents, lineTotal } from "@leakbook/core";
+import { QUOTE_STATUS_LABELS, cardFeeText, formatCents, lineTotal } from "@leakbook/core";
 import { sendQuoteAction } from "@/app/actions/quotes";
 import type { QuoteRow } from "@/lib/data";
 import { CopyLink } from "./settings-forms";
@@ -65,6 +65,7 @@ export function QuotePanel({
           {deposit
             ? ` · ${PAYMENT_LABELS[deposit.status]} (${deposit.method === "ach" ? "bank" : "card"})`
             : ""}
+          {deposit && cardFeeText(deposit) ? ` · ${cardFeeText(deposit)}` : ""}
         </p>
       ) : null}
 
