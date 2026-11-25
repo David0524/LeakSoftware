@@ -877,8 +877,54 @@ export async function saveCardFee(
  * can, so a saved fee is read from Stripe only once. Returns the fees found by payment id; a
  * payment Stripe can't answer for is left out. Never throws.
  */
-export async function fillCardFees(
+export function fillCardFees(
   invoiceId: string,
+  deps?: { stripe?: Stripe | null; db?: SupabaseClient | null },
+): Promise<Record<string, number>> {
+  return fillFees("invoice_id", invoiceId, deps);
+}
+
+/** As fillCardFees, for a quote's deposit payments. */
+export function fillQuoteCardFees(
+  quoteId: string,
+  deps?: { stripe?: Stripe | null; db?: SupabaseClient | null },
+): Promise<Record<string, number>> {
+  return fillFees("quote_id", quoteId, deps);
+}
+
+/**
+ * The card fee the customer paid with a quote's deposit (owner, 2026-11-25: "do both"): the
+ * fees on its received card payments, from Stripe for any the database doesn't know. 0 when
+ * none or unknown. Never throws.
+ */
+export async function quoteDepositCardFee(
+  quoteId: string,
+  deps?: { stripe?: Stripe | null; db?: SupabaseClient | null },
+): Promise<number> {
+  const db = deps?.db === undefined ? adminClient() : deps.db;
+  if (!db) return 0;
+  try {
+    const { data, error } = await db
+      .from("payment")
+      .select("id, fee_cents")
+      .eq("quote_id", quoteId)
+      .eq("method", "card")
+      .eq("status", "succeeded")
+      .is("deleted_at", null);
+    if (error || !data?.length) return 0;
+    const rows = data as { id: string; fee_cents: number | null }[];
+    const fromStripe = rows.some((p) => p.fee_cents == null)
+      ? await fillQuoteCardFees(quoteId, { ...deps, db })
+      : {};
+    return rows.reduce((n, p) => n + Math.max(p.fee_cents ?? fromStripe[p.id] ?? 0, 0), 0);
+  } catch {
+    return 0;
+  }
+}
+
+async function fillFees(
+  column: "invoice_id" | "quote_id",
+  id: string,
   deps?: { stripe?: Stripe | null; db?: SupabaseClient | null },
 ): Promise<Record<string, number>> {
   const found: Record<string, number> = {};
@@ -888,12 +934,7 @@ export async function fillCardFees(
   try {
     const cols = "id, company_id, stripe_checkout_session_id, stripe_payment_intent_id";
     const card = () =>
-      db
-        .from("payment")
-        .select(cols)
-        .eq("invoice_id", invoiceId)
-        .eq("method", "card")
-        .is("deleted_at", null);
+      db.from("payment").select(cols).eq(column, id).eq("method", "card").is("deleted_at", null);
     let { data: rows, error } = await card().is("fee_cents", null);
     if (cardFeeNotInDatabase(error)) ({ data: rows, error } = await card());
     if (error || !rows?.length) return found;

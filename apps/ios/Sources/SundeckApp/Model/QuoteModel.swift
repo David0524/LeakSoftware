@@ -192,6 +192,7 @@ public struct QuoteSectionModel: Equatable, Sendable {
                     "Deposit \(formatCents(quote.depositCents))"
                     + (deposit.map { " · \(depositStatus($0.status)) (\($0.method == "ach" ? "bank" : "card"))" }
                         ?? "")
+                    + (deposit.flatMap { cardFeeText($0.feeCents) }.map { " · \($0)" } ?? "")
             }
             if quote.status == .accepted {
                 let on = quote.acceptedAt.map { " on " + mediumDate($0, timeZone: timeZone) } ?? ""

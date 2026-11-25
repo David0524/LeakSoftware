@@ -1,7 +1,12 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type Stripe from "stripe";
 import { describe, expect, it } from "vitest";
-import { cardFeeNotInDatabase, fillCardFees, saveCardFee } from "../src/server/stripe";
+import {
+  cardFeeNotInDatabase,
+  fillCardFees,
+  quoteDepositCardFee,
+  saveCardFee,
+} from "../src/server/stripe";
 
 // The card fee on receipts (owner, 2026-11-24), before and after the database keeps it
 // (20261022005800_card_fee_on_receipts.sql): receipts read fees from Stripe until then.
@@ -109,5 +114,54 @@ describe("card fees on receipts", () => {
     } as unknown as SupabaseClient;
     const args = { session_id: "cs_1", intent_id: null, fee: 3, paid_account: "acct_shop" };
     await expect(saveCardFee(db, args)).rejects.toThrow("permission denied");
+  });
+
+  it("a quote's deposit: the saved fee, or Stripe's when the database doesn't know it", async () => {
+    const deposit = (fee: number | null) => {
+      const lookups: string[] = [];
+      const db = {
+        from() {
+          let feeFilter = false;
+          const q = {
+            select: () => q,
+            eq: () => q,
+            is(col: string) {
+              if (col === "fee_cents") feeFilter = true;
+              return q;
+            },
+            maybeSingle: async () => ({ data: { stripe_account_id: "acct_shop" }, error: null }),
+            then(resolve: (r: unknown) => void) {
+              if (feeFilter) {
+                lookups.push("stripe");
+                return resolve({
+                  data: [
+                    {
+                      id: "d1",
+                      company_id: "c1",
+                      stripe_checkout_session_id: "cs_d",
+                      stripe_payment_intent_id: null,
+                    },
+                  ],
+                  error: null,
+                });
+              }
+              resolve({ data: [{ id: "d1", fee_cents: fee }], error: null });
+            },
+          };
+          return q;
+        },
+        rpc: async (_fn: string, args: Record<string, unknown>) => ({
+          data: args.fee,
+          error: null,
+        }),
+      } as unknown as SupabaseClient;
+      return { db, lookups };
+    };
+    const saved = deposit(1875);
+    expect(await quoteDepositCardFee("q1", { stripe, db: saved.db })).toBe(1875);
+    expect(saved.lookups).toEqual([]);
+    const unknown = deposit(null);
+    expect(await quoteDepositCardFee("q1", { stripe, db: unknown.db })).toBe(3);
+    expect(unknown.lookups).toEqual(["stripe"]);
   });
 });

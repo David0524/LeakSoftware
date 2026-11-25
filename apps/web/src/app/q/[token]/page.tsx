@@ -14,7 +14,12 @@ import { tokens } from "@leakbook/tokens";
 import { AcceptForm, PayDepositForm } from "@/components/quote-actions";
 import { cx } from "@/components/ui";
 import { publicClient } from "@/server/reports";
-import { cardFeeFor, payLaterOffer, paymentsConfigured } from "@/server/stripe";
+import {
+  cardFeeFor,
+  payLaterOffer,
+  paymentsConfigured,
+  quoteDepositCardFee,
+} from "@/server/stripe";
 import { ContactLine } from "@/components/contact-line";
 import {
   Banner,
@@ -120,6 +125,8 @@ async function QuotePage({ params, searchParams }: PageProps<"/q/[token]">) {
   const onBrand = textOnBrand(c.brand_primary, tokens.color.brand.navy, tokens.color.brand.paper);
   const live = q.payments.filter((p) => p.status === "succeeded" || p.status === "pending");
   const paidDeposit = live.find((p) => p.status === "succeeded");
+  // The card fee paid with the deposit (owner, 2026-11-25).
+  const depositFee = paidDeposit?.method === "card" ? await quoteDepositCardFee(q.quote_id) : 0;
   const processing = live.find((p) => p.status === "pending");
   const total = formatCents(q.total_cents);
 
@@ -268,7 +275,9 @@ async function QuotePage({ params, searchParams }: PageProps<"/q/[token]">) {
             </p>
             {paidDeposit ? (
               <Banner tone="success" print={isPrint}>
-                Deposit of {formatCents(paidDeposit.amount_cents)} received. Thank you!
+                Deposit of {formatCents(paidDeposit.amount_cents + depositFee)} received
+                {depositFee > 0 ? `, including a ${formatCents(depositFee)} card fee` : ""}. Thank
+                you!
               </Banner>
             ) : processing ? (
               <Banner print={isPrint}>
