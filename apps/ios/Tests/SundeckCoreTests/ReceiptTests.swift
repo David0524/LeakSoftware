@@ -13,6 +13,7 @@ import Testing
                 "constants", "cleanCheckNumber", "checkNumberError", "paymentMethodLabel", "latestReceiptPayment",
                 "canSendReceipt", "canRecordPayment", "receiptBalanceText", "receiptSummary", "receiptPrompt",
                 "receiptRecipientError", "receiptSentMessage", "receiptTextMessage",
+                "cardFeeText", "chargedCents",
             ])
     }
 
@@ -86,5 +87,7 @@ import Testing
                 shop: try c.arg(0), payment: try c.arg(1), number: inv.number, totalCents: inv.totalCents,
                 amountPaidCents: inv.amountPaidCents, link: "https://x/i/t")
         }
+        checkRule(module, "cardFeeText") { c in cardFeeText(try c.arg(0)) }
+        checkRule(module, "chargedCents") { c in chargedCents(amountCents: try c.arg(0), feeCents: try c.arg(1)) }
     }
 }

@@ -964,6 +964,8 @@ export interface QuoteRow {
     paid_at: string | null;
     /** Refunded so far (2026-11-24); invoices only. */
     refunded_cents?: number;
+    /** The card fee charged with it (shown with the payment, 2026-11-24). */
+    fee_cents?: number | null;
   }[];
   token: string | null;
   repairNumber: number | null;
@@ -1016,7 +1018,10 @@ export const getQuotes = cache(async function getQuotes(
   return quotes.map((q) => ({
     ...q,
     lines: by(must(lines) as (QuoteRow["lines"][number] & { quote_id: string })[], q.id),
-    payments: by(must(payments) as (QuoteRow["payments"][number] & { quote_id: string })[], q.id),
+    payments: by(
+      must(payments) as unknown as (QuoteRow["payments"][number] & { quote_id: string })[],
+      q.id,
+    ),
     token:
       (must(links) as { token: string; quote_id: string }[]).find((l) => l.quote_id === q.id)
         ?.token ?? null,
@@ -1203,12 +1208,7 @@ export const getInvoices = cache(async function getInvoices(
       .in("invoice_id", ids)
       .is("deleted_at", null)
       .order("sort_order"),
-    supabase
-      .from("payment")
-      .select("id, invoice_id, amount_cents, method, check_number, status, paid_at, refunded_cents")
-      .in("invoice_id", ids)
-      .is("deleted_at", null)
-      .order("created_at"),
+    invoicePayments(supabase, ids),
     supabase
       .from("share_link")
       .select("token, invoice_id")
@@ -1223,7 +1223,10 @@ export const getInvoices = cache(async function getInvoices(
       ...l,
       quantity: Number(l.quantity),
     })),
-    payments: by(must(payments) as (QuoteRow["payments"][number] & { invoice_id: string })[], i.id),
+    payments: by(
+      must(payments) as unknown as (QuoteRow["payments"][number] & { invoice_id: string })[],
+      i.id,
+    ),
     token:
       (must(links) as { token: string; invoice_id: string }[]).find((l) => l.invoice_id === i.id)
         ?.token ?? null,
@@ -1253,6 +1256,24 @@ export interface InvoiceListRow {
 
 /** Every invoice in the company, newest first, with its job number and customer. */
 /** Drafts' totals from their lines, discount and the shop's tax rate. */
+/**
+ * The invoices' payments with their card fees (2026-11-24). Until the database keeps card fees
+ * (20261022005800_card_fee_on_receipts.sql), the same without them.
+ */
+async function invoicePayments(supabase: Db, ids: string[]) {
+  const read = (cols: string) =>
+    supabase
+      .from("payment")
+      .select(cols)
+      .in("invoice_id", ids)
+      .is("deleted_at", null)
+      .order("created_at");
+  const cols =
+    "id, invoice_id, amount_cents, method, check_number, status, paid_at, refunded_cents";
+  const r = await read(`${cols}, fee_cents`);
+  return r.error && /fee_cents/.test(r.error.message) ? await read(cols) : r;
+}
+
 async function draftTotals(office: Office, ids: string[]): Promise<Map<string, number>> {
   if (ids.length === 0) return new Map();
   const supabase = await db();

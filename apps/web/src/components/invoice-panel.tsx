@@ -10,6 +10,7 @@ import {
   formatCents,
   latestReceiptPayment,
   parseDollars,
+  cardFeeText,
   paymentMethodLabel,
   receiptSummary,
   refundedText,
@@ -305,6 +306,7 @@ export function InvoicePanel({
             <ul className="space-y-1 text-[0.9375rem]">
               {invoice.payments.map((p) => {
                 const refunded = refundedText(p);
+                const fee = cardFeeText(p);
                 return (
                   <li key={p.id} className="flex min-h-11 items-center justify-between gap-3">
                     <span>
@@ -314,6 +316,7 @@ export function InvoicePanel({
                       {p.paid_at
                         ? ` · ${new Date(p.paid_at).toLocaleDateString("en-US", { dateStyle: "medium" })}`
                         : ""}
+                      {fee ? ` · ${fee}` : ""}
                       {refunded ? ` · ${refunded}` : ""}
                     </span>
                     {canRefund(role, invoice, p) ? (

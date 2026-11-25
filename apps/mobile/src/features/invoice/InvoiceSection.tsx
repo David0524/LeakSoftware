@@ -6,6 +6,7 @@ import {
   canSendReceipt,
   formatCents,
   latestReceiptPayment,
+  cardFeeText,
   paymentMethodLabel,
   parseDollars,
   receiptSummary,
@@ -253,6 +254,7 @@ function InvoiceCard({ invoice, customer }: { invoice: JobInvoice; customer?: Cu
             <View style={{ gap: 4 }}>
               {invoice.payments.map((p) => {
                 const refunded = refundedText(p);
+                const fee = cardFeeText(p);
                 const method = paymentMethodLabel(p.method, p.check_number, "office");
                 return (
                   <View key={p.id} style={styles.payment}>
@@ -261,7 +263,7 @@ function InvoiceCard({ invoice, customer }: { invoice: JobInvoice; customer?: Cu
                         p.paid_at
                           ? ` · ${new Date(p.paid_at).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}`
                           : ""
-                      }${refunded ? ` · ${refunded}` : ""}`}
+                      }${fee ? ` · ${fee}` : ""}${refunded ? ` · ${refunded}` : ""}`}
                     </T>
                     {canRefund(membership?.role, invoice, p) ? (
                       <Button

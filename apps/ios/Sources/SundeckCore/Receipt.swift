@@ -78,17 +78,21 @@ public struct ReceiptPayment: Codable, Equatable, Sendable {
     public var checkNumber: String?
     public var status: String
     public var paidAt: String?
+    /// The card fee charged with it (owner, 2026-11-24); the shop keeps it, never part of
+    /// `amountCents`. nil: none known.
+    public var feeCents: Cents?
 
     enum CodingKeys: String, CodingKey {
         case id, method, status
         case amountCents = "amount_cents"
         case checkNumber = "check_number"
         case paidAt = "paid_at"
+        case feeCents = "fee_cents"
     }
 
     public init(
         id: String, amountCents: Cents, method: String, checkNumber: String? = nil, status: String,
-        paidAt: String? = nil
+        paidAt: String? = nil, feeCents: Cents? = nil
     ) {
         self.id = id
         self.amountCents = amountCents
@@ -96,7 +100,22 @@ public struct ReceiptPayment: Codable, Equatable, Sendable {
         self.checkNumber = checkNumber
         self.status = status
         self.paidAt = paidAt
+        self.feeCents = feeCents
     }
+}
+
+/// The card fee's label on the receipt and the invoice's payment lines.
+public let cardFeeLabel = "Card fee"
+
+/// What the customer was charged for a payment: the payment and its card fee.
+public func chargedCents(amountCents: Cents, feeCents: Cents?) -> Cents {
+    amountCents + max(feeCents ?? 0, 0)
+}
+
+/// "Card fee $0.03" for the invoice's payment lines, or nil without a fee.
+public func cardFeeText(_ feeCents: Cents?) -> String? {
+    let fee = feeCents ?? 0
+    return fee > 0 ? "\(cardFeeLabel) \(formatCents(fee))" : nil
 }
 
 /// The payment a receipt is for when none is named: the latest received one.
@@ -164,8 +183,12 @@ public func receiptTextMessage(
 ) -> String {
     let balance = max(totalCents - amountPaidCents, 0)
     let what = "Invoice" + (number.map { $0 != 0 ? " #\($0)" : "" } ?? "")
+    let fee = payment.feeCents ?? 0
+    let how = paymentMethodLabel(payment.method, checkNumber: payment.checkNumber)
+    let charged = chargedCents(amountCents: payment.amountCents, feeCents: payment.feeCents)
+    let paidWith = fee > 0 ? "\(how), including a \(formatCents(fee)) card fee" : how
     return [
-        "\(shop): Thank you for your \(formatCents(payment.amountCents)) payment (\(paymentMethodLabel(payment.method, checkNumber: payment.checkNumber))).",
+        "\(shop): Thank you for your \(formatCents(charged)) payment (\(paidWith)).",
         balance > 0 ? "Balance remaining on \(what): \(formatCents(balance))." : "\(what) is paid in full.",
         "Your receipt: \(link)",
     ].joined(separator: " ")
