@@ -44,6 +44,12 @@ import {
   type JobType,
   type PlanRepeat as Repeat,
   friendlyError,
+  businessChoices,
+  businessIdentity,
+  hasSecondBusiness,
+  jobBusiness,
+  SECOND_BUSINESS_TEXT,
+  type Business,
 } from "@leakbook/core";
 import { useRows, useSyncStatus } from "../../../../../data/hooks";
 import { AddressSuggestions } from "../../../../../features/address/AddressSuggestions";
@@ -58,7 +64,7 @@ import {
 } from "../../../../../features/maintenance/plan";
 import { PlanRepeat } from "../../../../../features/maintenance/PlanRepeat";
 import { ChipToggles } from "../../../../../features/inspection/ChoicePills";
-import { Select } from "../../../../../ui/Select";
+import { Select, useMenu } from "../../../../../ui/Select";
 import { CustomerPicker } from "../../../../../features/job/CustomerPicker";
 import { AddRepairButton, RepairFields, repairItemsOf } from "../../../../../features/job/Repairs";
 import { useCompany, useSession } from "../../../../../state/session";
@@ -67,6 +73,8 @@ import {
   Card,
   Choice,
   Field,
+  Group,
+  ListRow,
   Notice,
   Screen,
   Section,
@@ -120,6 +128,12 @@ function NewJobForm() {
   const repair = jobType === "repair";
   // From the Customer asks this job type's own questions (a pool inspection its features).
   const questions = intakeQuestionsFor(company.settings.intake_questions ?? [], jobType);
+  // Which of the shop's two businesses the job uses (Services = Both with a second business;
+  // docs/design/2026-11-26-second-business-and-tech-photos.md). It follows the job type until
+  // the person picks one; only a picked one is saved on the job (null = automatic).
+  const [business, setBusiness] = useState<Business | null>(null);
+  const businessMenu = useMenu();
+  const shownBusiness = jobBusiness(company, { type: jobType, business }, null);
   // Owners and admins can start a maintenance plan here: visits that repeat (website's New Job).
   const canPlan = isManagerRole(membership?.role);
   const [repeat, setRepeat] = useState<Repeat | "0">("0");
@@ -288,6 +302,7 @@ function NewJobForm() {
     repairNotes.trim() ||
     Boolean(gallonsTyped?.text) ||
     repeat !== "0" ||
+    business !== null ||
     planForm.price.trim() ||
     planForm.invoiceDay ||
     planForm.notes.trim() ||
@@ -530,6 +545,7 @@ function NewJobForm() {
               ? { [REPAIR_ITEM_KEY]: bookedName }
               : {},
         ...(repair && repairNotes.trim() ? { summary_notes: repairNotes.trim() } : {}),
+        ...(business && hasSecondBusiness(company) ? { business } : {}),
       });
       // Each repair is its own row, with the job (offline too).
       booked.forEach((r, i) =>
@@ -581,6 +597,29 @@ function NewJobForm() {
         options={jobTypes}
         compact={jobTypes.length > 3}
       />
+      {/* Hidden while starting a plan that repeats: its visits are pool care, automatic. */}
+      {hasSecondBusiness(company) && !plan ? (
+        <Section title="">
+          <Group>
+            <ListRow
+              title={SECOND_BUSINESS_TEXT.jobRow}
+              detail={businessIdentity(company, shownBusiness).name}
+              accessibilityHint="Choose the business name this job's customer sees."
+              onPress={() =>
+                businessMenu.open({
+                  title: SECOND_BUSINESS_TEXT.jobRow,
+                  items: businessChoices(company).map((c) => ({
+                    label: c.label,
+                    checked: c.value === shownBusiness,
+                    onPress: () => setBusiness(c.value),
+                  })),
+                })
+              }
+            />
+          </Group>
+        </Section>
+      ) : null}
+      {businessMenu.element}
       <Section title="Customer">
         <CustomerPicker
           customers={customers}

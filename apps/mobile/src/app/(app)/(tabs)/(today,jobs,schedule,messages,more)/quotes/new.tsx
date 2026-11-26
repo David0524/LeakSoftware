@@ -1,9 +1,14 @@
 import { router, useLocalSearchParams } from "expo-router";
 import { useRef, useState } from "react";
 import {
+  businessChoices,
+  businessIdentity,
   canMakeJobs,
   formatAddress,
+  hasSecondBusiness,
+  SECOND_BUSINESS_TEXT,
   validateNewQuote,
+  type Business,
   type Customer,
   type NewQuoteInput,
   type Property,
@@ -14,9 +19,20 @@ import { CustomerPicker } from "../../../../../features/job/CustomerPicker";
 import { AddressFields } from "../../../../../features/quote/AddressFields";
 import { locateAfterSync } from "../../../../../lib/locate";
 import { useCompany, useSession } from "../../../../../state/session";
-import { Button, Card, Choice, Notice, Screen, Section, T } from "../../../../../ui/components";
+import {
+  Button,
+  Card,
+  Choice,
+  Group,
+  ListRow,
+  Notice,
+  Screen,
+  Section,
+  T,
+} from "../../../../../ui/components";
 import { useDiscardChanges } from "../../../../../ui/discard";
 import { haptics } from "../../../../../ui/haptics";
+import { useMenu } from "../../../../../ui/Select";
 
 /**
  * New Quote (docs/design/2026-11-24-standalone-quotes.md): a customer, new or picked, and an
@@ -65,6 +81,12 @@ function NewQuoteForm() {
     postalCode: "",
   });
   const [errors, setErrors] = useState<ReturnType<typeof validateNewQuote>>({});
+  // Which of the shop's two businesses the quote uses (Services = Both with a second business;
+  // docs/design/2026-11-26-second-business-and-tech-photos.md). A standalone quote starts on
+  // the main one; only a business the person picks is saved on the quote job.
+  const [business, setBusiness] = useState<Business | null>(null);
+  const businessMenu = useMenu();
+  const shownBusiness: Business = business ?? "main";
   const created = useRef(false);
   const set = (k: keyof typeof form) => (v: string) => setForm((f) => ({ ...f, [k]: v }));
   const pools = poolsOf(customerId);
@@ -72,12 +94,18 @@ function NewQuoteForm() {
   const dirty = Boolean(
     (customerId && customerId !== asked) ||
     search.trim() ||
+    business !== null ||
     Object.values(form).some((v) => v.trim()),
   );
   const leave = useDiscardChanges(dirty);
 
   function save() {
-    const input: NewQuoteInput = { ...form, customerId, propertyId };
+    const input: NewQuoteInput = {
+      ...form,
+      customerId,
+      propertyId,
+      ...(business && hasSecondBusiness(company) ? { business } : {}),
+    };
     const e = validateNewQuote(input);
     setErrors(e);
     if (Object.keys(e).length > 0) return;
@@ -114,6 +142,29 @@ function NewQuoteForm() {
           errors={errors}
         />
       </Section>
+
+      {hasSecondBusiness(company) ? (
+        <Section title="">
+          <Group>
+            <ListRow
+              title={SECOND_BUSINESS_TEXT.jobRow}
+              detail={businessIdentity(company, shownBusiness).name}
+              accessibilityHint="Choose the business name this quote's customer sees."
+              onPress={() =>
+                businessMenu.open({
+                  title: SECOND_BUSINESS_TEXT.jobRow,
+                  items: businessChoices(company).map((c) => ({
+                    label: c.label,
+                    checked: c.value === shownBusiness,
+                    onPress: () => setBusiness(c.value),
+                  })),
+                })
+              }
+            />
+          </Group>
+        </Section>
+      ) : null}
+      {businessMenu.element}
 
       <Section title="Pool (Optional)" footer="Leave the address blank to quote without one.">
         {pools.length > 0 ? (

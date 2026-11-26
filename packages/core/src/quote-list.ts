@@ -2,6 +2,7 @@ import type { Cents } from "./money";
 import { formatCents } from "./money";
 import type { QuoteStatus } from "./quote";
 import type { FormErrors } from "./forms";
+import type { Business } from "./business";
 
 // Standalone quotes and the Quotes list (owner, 2026-11-24: "It's more about having the
 // ability to send quotes more often. Also instead of creating a full job, we should be able to
@@ -106,6 +107,11 @@ export interface NewQuoteInput {
   city: string;
   state: string;
   postalCode: string;
+  /**
+   * The business the person picked on New Quote (shops with a second business). Left out, the
+   * job has none and follows the automatic rule (`jobBusiness`).
+   */
+  business?: Business | null;
 }
 
 const EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -162,7 +168,14 @@ export function newQuoteRecords(
   return {
     customer,
     property,
-    job: { type: "repair", status: "quote", assigned_user_id: assignedUserId },
+    job: {
+      type: "repair",
+      status: "quote",
+      assigned_user_id: assignedUserId,
+      ...(input.business === "main" || input.business === "second"
+        ? { business: input.business }
+        : {}),
+    },
     quote: { discount_cents: 0 },
   };
 }

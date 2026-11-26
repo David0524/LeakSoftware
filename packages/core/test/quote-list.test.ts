@@ -90,6 +90,18 @@ describe("New Quote", () => {
     expect(withPool.property).toMatchObject({ address_line1: "1 Main", state: "AZ" });
   });
 
+  it("saves the business only when the person picked one", () => {
+    const picked = newQuoteRecords({ ...blank, customerId: "c1", business: "second" }, null);
+    expect(picked.job).toEqual({
+      type: "repair",
+      status: "quote",
+      assigned_user_id: null,
+      business: "second",
+    });
+    const automatic = newQuoteRecords({ ...blank, customerId: "c1", business: null }, null);
+    expect(automatic.job).not.toHaveProperty("business");
+  });
+
   it("keeps a quote job out of people's status buttons", () => {
     expect(isQuoteJob({ status: "quote" })).toBe(true);
     expect(userTransitions("quote", "repair")).toEqual([]);
