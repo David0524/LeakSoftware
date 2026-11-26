@@ -149,14 +149,14 @@ export const BUSINESS_WORK_LABELS: Record<BusinessWork, string> = {
 };
 
 export const SECOND_BUSINESS_TEXT = {
-  header: "Second Business",
-  name: "Business Name",
+  header: "Second business",
+  name: "Business name",
   logo: "Logo",
   phone: "Phone",
   email: "Email",
-  reviewUrl: "Review Link",
-  color: "Main Color",
-  useFor: "Use For",
+  reviewUrl: "Review link",
+  color: "Main color",
+  useFor: "Use for",
   footer:
     "Jobs of this kind, and repairs that come from them, show this name, logo and contact info on reports, quotes, invoices, texts and emails. Everything else uses your main business. Leave the name blank to turn it off.",
   /** The job page's row. */

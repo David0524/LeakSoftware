@@ -186,14 +186,14 @@ public func businessChoices(_ company: BusinessCompany) -> [BusinessChoice] {
 
 /// `SECOND_BUSINESS_TEXT`
 public enum SecondBusinessText {
-    public static let header = "Second Business"
-    public static let name = "Business Name"
+    public static let header = "Second business"
+    public static let name = "Business name"
     public static let logo = "Logo"
     public static let phone = "Phone"
     public static let email = "Email"
-    public static let reviewUrl = "Review Link"
-    public static let color = "Main Color"
-    public static let useFor = "Use For"
+    public static let reviewUrl = "Review link"
+    public static let color = "Main color"
+    public static let useFor = "Use for"
     public static let footer =
         "Jobs of this kind, and repairs that come from them, show this name, logo and contact info on reports, quotes, invoices, texts and emails. Everything else uses your main business. Leave the name blank to turn it off."
     /// The job page's row.
