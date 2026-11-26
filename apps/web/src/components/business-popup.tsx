@@ -44,7 +44,7 @@ export function BusinessPopUp({
           const r = e.currentTarget.getBoundingClientRect();
           setAt({ x: r.left, y: r.bottom + 4 });
         }}
-        className="-my-1.5 inline-flex min-h-11 max-w-full items-center gap-1 rounded-lg text-right text-link focus-visible:outline-3 focus-visible:outline-focus"
+        className="-my-1.5 inline-flex min-h-11 min-w-0 items-center justify-end gap-1 rounded-lg text-right text-link focus-visible:outline-3 focus-visible:outline-focus"
       >
         <span className="min-w-0 break-words">{label}</span>
         <svg

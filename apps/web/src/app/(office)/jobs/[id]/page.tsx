@@ -509,16 +509,14 @@ export default async function JobPage({ params, searchParams }: PageProps<"/jobs
 
                     {bizChoices.length ? (
                       <Grouped>
-                        <Row
-                          label={SECOND_BUSINESS_TEXT.jobRow}
-                          value={
-                            <BusinessPopUp
-                              jobId={job.id}
-                              current={jobBusiness(biz, job, parentJob)}
-                              choices={bizChoices}
-                            />
-                          }
-                        />
+                        <li className="flex min-h-11 items-center justify-between gap-3 px-4 py-1.5">
+                          <span className="shrink-0">{SECOND_BUSINESS_TEXT.jobRow}</span>
+                          <BusinessPopUp
+                            jobId={job.id}
+                            current={jobBusiness(biz, job, parentJob)}
+                            choices={bizChoices}
+                          />
+                        </li>
                       </Grouped>
                     ) : null}
 

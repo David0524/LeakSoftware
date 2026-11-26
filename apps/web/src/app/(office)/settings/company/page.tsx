@@ -221,7 +221,7 @@ export default async function CompanySettingsPage() {
         {/* A second business name for one line of work (2026-11-26), for shops doing both. */}
         {both ? (
           <SettingsSection title={SECOND_BUSINESS_TEXT.header}>
-            <SettingsFields labelWidth="7.5rem" className="sm:grid sm:grid-cols-2 sm:gap-4">
+            <SettingsFields labelWidth="8.5rem" className="sm:grid sm:grid-cols-2 sm:gap-4">
               <SField
                 label={SECOND_BUSINESS_TEXT.name}
                 name="second_name"
@@ -248,8 +248,7 @@ export default async function CompanySettingsPage() {
                 className="sm:col-span-2"
               />
             </SettingsFields>
-            <div className="mt-4 space-y-2 px-4 sm:px-0">
-              <p className="text-[0.9375rem] text-text-muted">{SECOND_BUSINESS_TEXT.useFor}</p>
+            <div className="mt-4 px-4 sm:px-0">
               <SecondBusinessWork initial={secondBusinessWork(company as BusinessCompany)} />
             </div>
             <SettingsFields className="mt-4 sm:space-y-6">

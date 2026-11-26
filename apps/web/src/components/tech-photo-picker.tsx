@@ -73,7 +73,7 @@ export function TechPhotoPicker({
   return (
     <section aria-label={label} data-testid="tech-photo-picker">
       <ul className="grouped">
-        <li className="flex min-h-11 items-center gap-3 py-2">
+        <li className="flex min-h-11 items-center gap-3 px-4 py-2">
           <TechPhoto url={preview} name={name} color={color} size={56} />
           <span className="min-w-0 flex-1 font-medium">{label}</span>
           <div className="flex flex-wrap justify-end gap-2">
