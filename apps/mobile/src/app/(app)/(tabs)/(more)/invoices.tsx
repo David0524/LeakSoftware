@@ -57,6 +57,7 @@ import { useMenu } from "../../../../ui/Select";
 import { WebIcon } from "../../../../ui/WebIcon";
 import { color, face, MAX_TEXT_SCALE, minTap, space, tabular, type } from "../../../../ui/theme";
 import { shareLink } from "../../../../lib/shareLink";
+import { businessNameForJobId } from "../../../../lib/business";
 
 /**
  * Invoices (spec 5.10): what's owed, then the invoices, newest first. Filter pills with counts,
@@ -209,7 +210,8 @@ export default function Invoices() {
     const name = `Invoice #${i.number ?? ""}`;
     const run = (id: InvoiceActionId) => {
       if (id === "open") openInvoice(i);
-      if (id === "share" && link) void shareLink(invoiceShareText(company.name, link));
+      if (id === "share" && link)
+        void shareLink(invoiceShareText(businessNameForJobId(company, i.job_id), link));
       if (id === "record") setPaying(i);
       if (id === "receipt") {
         const p = latestReceiptPayment(

@@ -71,6 +71,8 @@ export interface HeroJob {
    */
   noContact?: boolean;
   driveMin: number | null;
+  /** The business the customer knows for this job (2026-11-26); else On My Way's shop. */
+  shop?: string;
   done: boolean;
   /** A maintenance visit (completing it completes the job). */
   maintenance: boolean;
@@ -216,6 +218,7 @@ export function TodayHeroCard({
           actions.onMyWay && job.phone ? (
             <OnMyWayMessage
               {...onMyWay}
+              shop={job.shop ?? onMyWay.shop}
               phone={job.phone}
               customer={job.customer}
               driveMin={job.driveMin ?? 0}

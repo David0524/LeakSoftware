@@ -539,3 +539,22 @@ export async function createJobAction(_: FormState, form: FormData): Promise<For
   revalidatePath("/schedule");
   redirect(`/jobs/${data as string}`);
 }
+
+/** The job page's Business row (2026-11-26): which of the shop's businesses the job uses. */
+export async function setJobBusiness(input: {
+  jobId: string;
+  business: "main" | "second";
+}): Promise<FormState> {
+  const office = await getOffice();
+  if (!isUuid(input.jobId)) return { error: "Couldn’t find this job." };
+  const business = input.business === "second" ? "second" : "main";
+  const supabase = await createClient();
+  const { error } = await supabase
+    .from("job")
+    .update({ business })
+    .eq("company_id", office.company.id)
+    .eq("id", input.jobId);
+  if (error) return { error: friendlyDbError(error.message) };
+  revalidatePath(`/jobs/${input.jobId}`);
+  return {};
+}

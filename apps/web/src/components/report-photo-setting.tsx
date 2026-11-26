@@ -1,8 +1,8 @@
 "use client";
 
 import { useActionState, useRef, useState } from "react";
-import { REPORT_PHOTO_TEXT } from "@leakbook/core";
-import { saveReportPhoto } from "@/app/actions/settings";
+import { REPORT_PHOTO_TEXT, TECH_CARD_TEXT } from "@leakbook/core";
+import { saveReportPhoto, saveTechOnReports } from "@/app/actions/settings";
 import { orOffline } from "@/lib/offline";
 
 /**
@@ -33,6 +33,41 @@ export function ReportPhotoSwitch({ initial, hint }: { initial: boolean; hint: s
         />
       </label>
       <p className="text-[0.9375rem] text-text-muted">{hint}</p>
+      {state.error ? (
+        <p role="alert" className="pt-1 text-[0.9375rem] text-status-fail">
+          {state.error}
+        </p>
+      ) : null}
+    </form>
+  );
+}
+
+/**
+ * Settings › Report Templates › Show the Tech on Reports (2026-11-26): reports end with the
+ * tech's photo and "Your pool was serviced by Brian". Saves when flipped, like Require a Photo.
+ */
+export function TechOnReportsSwitch({ initial }: { initial: boolean }) {
+  const [on, setOn] = useState(initial);
+  const [state, action, pending] = useActionState(orOffline(saveTechOnReports), {});
+  const form = useRef<HTMLFormElement>(null);
+  return (
+    <form ref={form} action={action} data-testid="tech-on-reports" className="px-4 sm:px-0">
+      <label className="flex min-h-11 cursor-pointer items-center justify-between gap-3">
+        <span className="font-medium">{TECH_CARD_TEXT.label}</span>
+        <input
+          type="checkbox"
+          role="switch"
+          name="tech_on_reports"
+          className="ios-switch"
+          checked={on}
+          disabled={pending}
+          onChange={(e) => {
+            setOn(e.target.checked);
+            setTimeout(() => form.current?.requestSubmit(), 0);
+          }}
+        />
+      </label>
+      <p className="text-[0.9375rem] text-text-muted">{TECH_CARD_TEXT.footer}</p>
       {state.error ? (
         <p role="alert" className="pt-1 text-[0.9375rem] text-status-fail">
           {state.error}

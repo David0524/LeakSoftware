@@ -60,6 +60,8 @@ export interface TeamMember {
   schedule_order: number | null;
   /** Text and Call Customers (owner, 2026-11-23); read with core canContactCustomers. */
   can_contact_customers: boolean;
+  /** Their photo in this shop (company-assets), shown on reports when the shop turns it on. */
+  photo_path: string | null;
 }
 
 /** The shop's people (memberships with their names), by name, as the website lists them. */
@@ -73,6 +75,7 @@ export function useTeam(companyId: string): TeamMember[] {
     disabled_at?: string | null;
     schedule_order?: number | null;
     can_contact_customers?: boolean | null;
+    photo_path?: string | null;
     deleted_at?: string | null;
   }>("membership", companyId);
   const profiles = getServices().sync.team();
@@ -93,6 +96,7 @@ export function useTeam(companyId: string): TeamMember[] {
           disabled_at: m.disabled_at ?? null,
           schedule_order: typeof m.schedule_order === "number" ? m.schedule_order : null,
           can_contact_customers: m.can_contact_customers !== false,
+          photo_path: m.photo_path ?? null,
         };
       })
       .sort((a, b) => a.name.localeCompare(b.name));

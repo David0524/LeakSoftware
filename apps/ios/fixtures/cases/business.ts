@@ -71,7 +71,9 @@ export const business: ModuleCases = {
   ),
   workBusiness: rule(
     (c: BusinessCompany, w: BusinessWork) => workBusiness(c, w),
-    companies.flatMap((c) => (["leak", "pool"] as BusinessWork[]).map((w) => [c, w])),
+    companies.flatMap((c) =>
+      (["leak", "pool"] as BusinessWork[]).map((w) => [c, w] as [BusinessCompany, BusinessWork]),
+    ),
   ),
   jobBusiness: rule(
     (c: BusinessCompany, j: BusinessJob, p: BusinessJob | null) => jobBusiness(c, j, p),
@@ -81,7 +83,9 @@ export const business: ModuleCases = {
   ),
   businessIdentity: rule(
     (c: BusinessCompany, b: Business) => businessIdentity(c, b),
-    companies.flatMap((c) => (["main", "second"] as Business[]).map((b) => [c, b])),
+    companies.flatMap((c) =>
+      (["main", "second"] as Business[]).map((b) => [c, b] as [BusinessCompany, Business]),
+    ),
   ),
   jobBusinessName: rule(
     (c: BusinessCompany, j: BusinessJob | null, p: BusinessJob | null) => jobBusinessName(c, j, p),

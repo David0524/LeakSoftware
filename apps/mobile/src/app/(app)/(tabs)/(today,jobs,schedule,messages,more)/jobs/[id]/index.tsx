@@ -38,6 +38,10 @@ import {
   isQuoteJob,
   visitReportBar,
   visitReportMode,
+  SECOND_BUSINESS_TEXT,
+  businessChoices,
+  hasSecondBusiness,
+  jobBusiness,
 } from "@leakbook/core";
 import * as WebBrowser from "expo-web-browser";
 import type { JsonValue } from "@leakbook/sync";
@@ -79,6 +83,7 @@ import {
   useScreenChrome,
 } from "../../../../../../ui/components";
 import { useMenu } from "../../../../../../ui/Select";
+import { businessNameFor, parentJobOf } from "../../../../../../lib/business";
 import { BAR_HEIGHT, barState, setBarStill } from "../../../../../../ui/Bar";
 import { confirmDestructive } from "../../../../../../ui/confirm";
 import { Glass } from "../../../../../../ui/Glass";
@@ -815,6 +820,7 @@ function Details({
   });
   useEffect(() => () => flush.current(), []);
 
+  const businessMenu = useMenu();
   const team = services.sync.team();
   const members = useTeam(company.id);
   const colorOf = (uid: string) => members.find((m) => m.user_id === uid)?.color ?? null;
@@ -1049,6 +1055,34 @@ function Details({
           {/* The fee is edited under On site, so it isn't repeated here. */}
         </Group>
       </Section>
+
+      {/* Which of the shop's two businesses the customer sees (Services = Both with a second
+          business; docs/design/2026-11-26-second-business-and-tech-photos.md). */}
+      {hasSecondBusiness(company) ? (
+        <Section title="">
+          <Group>
+            <ListRow
+              title={SECOND_BUSINESS_TEXT.jobRow}
+              detail={businessNameFor(company, job)}
+              accessibilityHint="Choose the business name this job's customer sees."
+              onPress={() => {
+                const current = jobBusiness(company, job, parentJobOf(job));
+                businessMenu.open({
+                  title: SECOND_BUSINESS_TEXT.jobRow,
+                  items: businessChoices(company).map((c) => ({
+                    label: c.label,
+                    checked: c.value === current,
+                    onPress: () => {
+                      if (c.value !== current) update({ business: c.value });
+                    },
+                  })),
+                });
+              }}
+            />
+          </Group>
+        </Section>
+      ) : null}
+      {businessMenu.element}
 
       {/* A repair job's repairs and its price (owner, 2026-10-22). */}
       {repair ? <JobRepairs job={job} priceBook={priceBook} /> : null}

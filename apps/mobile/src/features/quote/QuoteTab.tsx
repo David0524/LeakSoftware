@@ -46,6 +46,7 @@ import { DraftNote } from "../../ui/DraftNote";
 import { useUnsavedChanges } from "../../ui/ModalSheet";
 import { useDraft } from "../../ui/useDraft";
 import { shareLink } from "../../lib/shareLink";
+import { businessNameFor } from "../../lib/business";
 
 const PAYMENT_LABELS: Record<string, string> = {
   pending: "processing",
@@ -262,7 +263,7 @@ function QuoteBuilder({ job, quote }: { job: Job; quote: JobQuote }) {
     setError(null);
     setSending(true);
     try {
-      const r = await sendQuoteFromPhone(quote, company.name);
+      const r = await sendQuoteFromPhone(quote, businessNameFor(company, job));
       await shareLink(r.message);
     } catch (e) {
       setError(friendlyError(e));
@@ -602,7 +603,9 @@ function SentQuote({ job, quote }: { job: Job; quote: JobQuote }) {
             : ""
         }`}
       </T>
-      {link ? <LinkRow url={link} message={quoteShareText(company.name, link)} /> : null}
+      {link ? (
+        <LinkRow url={link} message={quoteShareText(businessNameFor(company, job), link)} />
+      ) : null}
       {quote.status === "accepted" ? (
         <T>
           {`Accepted by ${quote.accepted_by_name ?? "the customer"}${

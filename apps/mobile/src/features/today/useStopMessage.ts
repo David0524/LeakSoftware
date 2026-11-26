@@ -22,7 +22,8 @@ export function useStopMessage(input: {
   today: string;
   timeZone: string;
   tech: string;
-  shop: string;
+  /** The business name the job's customer sees (lib/business.ts); keep it stable. */
+  shop: (job: JobView) => string;
   windowMin: number;
   via: OnMyWayVia;
 }): (job: JobView, driveMin: number) => void {
@@ -49,7 +50,7 @@ export function useStopMessage(input: {
               body: onMyWayMessage({
                 customer: job.customer?.name ?? null,
                 tech,
-                shop,
+                shop: shop(job),
                 driveMin,
                 windowMin,
                 timeZone,

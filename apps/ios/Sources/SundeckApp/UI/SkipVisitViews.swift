@@ -127,7 +127,9 @@
                 let tech = me?.fullName?.trimmingCharacters(in: .whitespaces)
                 textBody = skipCustomerText(
                     customer: job.customer?["name"]?.string, tech: tech?.isEmpty == false ? tech! : "your technician",
-                    shop: company.name, reason: reason)
+                    shop: customerBusinessName(
+                        sync.store, companyId: company.id, fallbackName: company.name, job: job.job),
+                    reason: reason)
             } else {
                 dismiss()
             }

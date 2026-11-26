@@ -28,7 +28,10 @@ import {
   endOfDay,
   nextDayCard,
   type UpcomingStop,
+  type BusinessCompany,
 } from "@leakbook/core";
+import { createClient } from "@/lib/supabase/server";
+import { jobBusinessNames } from "@/server/business";
 import { TodayHeroCard, type HeroJob } from "@/components/today-hero";
 import { TodayDays } from "@/components/today-days";
 import { NotOnMapTag } from "@/components/not-on-map";
@@ -162,6 +165,13 @@ export default async function TodayPage({ searchParams }: PageProps<"/today">) {
       }));
   };
 
+  // Each stop's business name for On My Way (2026-11-26).
+  const shopOf = await jobBusinessNames(
+    await createClient(),
+    company as unknown as BusinessCompany,
+    allJobs,
+  );
+
   /** One tech's day: the card, then the stops in order with the driving between them. */
   const dayFor = (dayTech: string) => {
     const tech = team.find((t) => t.user_id === dayTech);
@@ -234,6 +244,7 @@ export default async function TodayPage({ searchParams }: PageProps<"/today">) {
         maintenance: j.type === "maintenance",
         undo: todayUndo(j, ctx.today)?.label ?? null,
         prompt: completeSendPrompt({ jobType: j.type, reportMode, customer: j.customer?.name }),
+        shop: shopOf.get(j.id),
       };
     };
     const doneJobs = jobs.filter((j) => stopDone(j, ctx.today));
@@ -379,7 +390,7 @@ export default async function TodayPage({ searchParams }: PageProps<"/today">) {
                       phone={j.customer?.phone ?? null}
                       customer={j.customer?.name ?? null}
                       tech={office.user.name ?? tech?.name ?? "your tech"}
-                      shop={ctx.shopName}
+                      shop={shopOf.get(j.id) ?? ctx.shopName}
                       driveMin={leg}
                       windowMin={ctx.settings.windowMin}
                       timeZone={ctx.timeZone}

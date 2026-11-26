@@ -249,8 +249,10 @@
             guard let company = session.company else { return }
             guard
                 let current = ReviewSummary(
-                    sync.store, companyId: company.id, companyName: company.name, settings: company.settings,
-                    jobId: jobId)
+                    sync.store, companyId: company.id,
+                    companyName: customerBusinessName(
+                        sync.store, companyId: company.id, fallbackName: company.name, jobId: jobId),
+                    settings: company.settings, jobId: jobId)
             else {
                 missing = true
                 return

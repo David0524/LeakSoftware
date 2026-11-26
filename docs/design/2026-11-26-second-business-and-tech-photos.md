@@ -59,7 +59,7 @@ Everything the customer sees about a job:
   and review requests (the business's review link); the feedback page; the Stripe checkout
   line ("Invoice #1042 · Southern Nevada Leak Detection").
 - Texts the phones and website write for a job: the report, quote and invoice share texts,
-  On My Way, and the signature statement.
+  On My Way, Skip Visit, and the signature statement.
 - Things not tied to one job use the business for pool care work, since they are about the
   service account: Request Card on File and autopay. Mass email, the shop's texting line,
   Stripe's own account name (it shows on card statements) and Sundeck Pro billing stay the

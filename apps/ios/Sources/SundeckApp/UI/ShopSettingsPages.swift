@@ -67,14 +67,25 @@
         @State private var savedBranding = BrandingForm(nil)
         @State private var savedDisclaimer = ""
         @State private var savedNextNumber = ""
+        /// Second Business (2026-11-26), for shops whose Services are Both.
+        @State private var second = SecondBusinessForm()
+        @State private var savedSecond = SecondBusinessForm()
+        @State private var secondLogo: UIImage?
+        @State private var shownSecondLogoPath: String?
+        @State private var pendingSecondLogo: (data: Data, type: String)?
+        @State private var secondLogoColors: [String] = []
+        /// Which logo the photo picker is choosing.
+        @State private var pickingSecond = false
 
         private var numberChanged: Bool { textChanged(nextNumber, from: savedNextNumber) }
+        private var secondChanged: Bool { second != savedSecond || pendingSecondLogo != nil }
 
         /// Something on the page differs from what's saved: Save is on.
         private var changed: Bool {
             loaded
                 && (profile != savedProfile || followups != savedFollowups || branding != savedBranding
-                    || textChanged(disclaimer, from: savedDisclaimer) || numberChanged || pendingLogo != nil)
+                    || textChanged(disclaimer, from: savedDisclaimer) || numberChanged || pendingLogo != nil
+                    || secondChanged)
         }
 
         /// Something the owner changed is unsaved: Back asks "Discard changes?". A main color the
@@ -84,7 +95,8 @@
             if let suggestedPrimary, branding.primary == suggestedPrimary { baseline.primary = suggestedPrimary }
             return loaded
                 && (profile != savedProfile || followups != savedFollowups || branding != baseline
-                    || textChanged(disclaimer, from: savedDisclaimer) || numberChanged || pendingLogo != nil)
+                    || textChanged(disclaimer, from: savedDisclaimer) || numberChanged || pendingLogo != nil
+                    || secondChanged)
         }
 
         var body: some View {
@@ -95,6 +107,7 @@
                 if offersLeak(session.company?.settings) { reportTerms }
                 jobNumbers
                 brandingSection
+                if session.company?.services == .both { secondBusinessSection }
             }
             .navigationTitle(SettingsPage.company.title)
             .navigationBarTitleDisplayMode(.large)
@@ -104,11 +117,14 @@
             .sheet(isPresented: $choosingLogo) {
                 LibraryPicker(kind: .photo) { results in
                     choosingLogo = false
-                    if case .photo(let data)? = results.first { pickLogo(data) }
+                    if case .photo(let data)? = results.first {
+                        if pickingSecond { pickSecondLogo(data) } else { pickLogo(data) }
+                    }
                 }
                 .ignoresSafeArea()
             }
             .task(id: "logo|\(sync.revision)") { await loadLogo() }
+            .task(id: "logo2|\(second.logoPath ?? "")") { await loadSecondLogo() }
         }
 
         private var companyId: String { session.company?.id ?? "" }
@@ -128,6 +144,8 @@
             savedBranding = branding
             savedDisclaimer = disclaimer
             savedNextNumber = nextNumber
+            second = SecondBusinessForm(row)
+            savedSecond = second
             loaded = true
         }
 
@@ -228,8 +246,11 @@
                         Text("No logo yet. Reports show your company name instead.")
                             .textRole(.secondary).foregroundStyle(Color.textMuted)
                     }
-                    Button(logo == nil ? "Choose Logo" : "Change Logo") { choosingLogo = true }
-                        .buttonStyle(.secondary)
+                    Button(logo == nil ? "Choose Logo" : "Change Logo") {
+                        pickingSecond = false
+                        choosingLogo = true
+                    }
+                    .buttonStyle(.secondary)
                 }
                 .padding(.horizontal, CGFloat(Spacing.rowHorizontal))
                 .padding(.vertical, CGFloat(Spacing.rowVertical))
@@ -245,15 +266,66 @@
             }
         }
 
+        /// Second Business (2026-11-26): a second name, logo and contact info for one line of work.
+        private var secondBusinessSection: some View {
+            Grouped(label: SecondBusinessText.header, footer: SecondBusinessText.footer) {
+                LabeledFieldRow(label: SecondBusinessText.name, text: $second.name, labelWidth: 132)
+                VStack(alignment: .leading, spacing: 12) {
+                    Text(SecondBusinessText.logo).textRole(.body).foregroundStyle(Color.text)
+                    if let secondLogo {
+                        Image(uiImage: secondLogo).resizable().scaledToFit().frame(maxHeight: 80)
+                            .accessibilityLabel("\(second.name) logo")
+                    } else {
+                        Text("No logo yet. Reports show the business name instead.")
+                            .textRole(.secondary).foregroundStyle(Color.textMuted)
+                    }
+                    HStack(spacing: 12) {
+                        Button(secondLogo == nil ? "Choose Logo" : "Change Logo") {
+                            pickingSecond = true
+                            choosingLogo = true
+                        }
+                        .buttonStyle(.secondary)
+                        if secondLogo != nil {
+                            Button("Remove Logo", role: .destructive) { removeSecondLogo() }
+                                .buttonStyle(.destructiveSecondary)
+                        }
+                    }
+                }
+                .padding(.horizontal, CGFloat(Spacing.rowHorizontal))
+                .padding(.vertical, CGFloat(Spacing.rowVertical))
+                BrandColorRow(
+                    label: SecondBusinessText.color, hex: $second.primary, logoColors: secondLogoColors, optional: true)
+                LabeledFieldRow(
+                    label: SecondBusinessText.phone, text: $second.phone, keyboard: .phonePad, labelWidth: 132,
+                    contentType: .telephoneNumber)
+                LabeledFieldRow(
+                    label: SecondBusinessText.email, text: $second.email, keyboard: .emailAddress, labelWidth: 132,
+                    contentType: .emailAddress)
+                LabeledFieldRow(
+                    label: SecondBusinessText.reviewUrl, text: $second.reviewURL, keyboard: .URL, labelWidth: 132,
+                    contentType: .URL)
+                VStack(alignment: .leading, spacing: 8) {
+                    Text(SecondBusinessText.useFor).textRole(.body).foregroundStyle(Color.text)
+                    Segmented(
+                        selection: $second.useFor, options: BusinessWork.allCases, label: \.label,
+                        title: SecondBusinessText.useFor, fillsWidth: true)
+                }
+                .padding(.horizontal, CGFloat(Spacing.rowHorizontal))
+                .padding(.vertical, CGFloat(Spacing.rowVertical))
+            }
+        }
+
         // MARK: Save
 
         /// The first problem on the page, top to bottom (the website's field checks).
         private var problem: String? {
-            firstError(profile.errors, ["name", "timezone", "review_url"])
+            let main =
+                firstError(profile.errors, ["name", "timezone", "review_url"])
                 ?? firstError(followups.errors, ["quote_days", "invoice_days"])
                 ?? reportDisclaimerProblem(disclaimer)
                 ?? (numberChanged ? nextJobNumberProblem(nextNumber) : nil)
                 ?? firstError(branding.errors, ["brand_primary", "brand_secondary"])
+            return main ?? firstError(second.errors, ["second_review_url", "second_brand_primary"])
         }
 
         /// Saves every part that changed. The synced parts save on the phone, so offline too; the
@@ -292,11 +364,17 @@
                     savedBranding = branding
                     suggestedPrimary = nil
                 }
+                if second != savedSecond {
+                    try ShopSettingsWrites.saveSecondBusiness(sync, companyId: companyId, second)
+                    second = SecondBusinessForm(row)
+                    savedSecond = second
+                }
                 session.reloadCompanies()
             } catch {
                 failure = userMessage(error)
             }
             if failure == nil, let pendingLogo { failure = await uploadLogo(pendingLogo) }
+            if failure == nil, let pendingSecondLogo { failure = await uploadSecondLogo(pendingSecondLogo) }
             if failure == nil, numberChanged { failure = await saveNextNumber() }
             result = SaveBarResult(text: failure ?? "Saved.", error: failure != nil)
         }
@@ -389,6 +467,74 @@
             } catch {
                 let message = String(describing: error)
                 // The bucket's own limits, or a read-only shop (security review M2), in plain words.
+                if let refusal = UploadRefusal(status: nil, message: message) { return refusal.message(.logo) }
+                return isNetworkFailure(message) ? WebAPI.Failure.noConnection : friendlyError(message)
+            }
+        }
+
+        // MARK: Second business logo
+
+        /// A new second logo, checked like the main one; its colors fill the second main color.
+        private func pickSecondLogo(_ data: Data) {
+            let png = data.starts(with: [0x89, 0x50, 0x4E, 0x47])
+            guard let image = UIImage(data: data),
+                let encoded = png ? image.pngData() : image.jpegData(compressionQuality: 0.9)
+            else {
+                result = SaveBarResult(text: "Use a PNG, JPEG, or SVG file.", error: true)
+                return
+            }
+            let mime = png ? "image/png" : "image/jpeg"
+            if let e = logoFileProblem(contentType: mime, bytes: encoded.count).error {
+                result = SaveBarResult(text: e, error: true)
+                return
+            }
+            secondLogo = image
+            pendingSecondLogo = (encoded, mime)
+            result = nil
+            secondLogoColors = logoPalette(logoPixels(image))
+            if let next = suggestedBrandColor(secondLogoColors, current: second.primary, newLogo: true) {
+                second.primary = next
+            }
+        }
+
+        /// Remove Logo: saved with the page's Save (the file stays, for reports already sent).
+        private func removeSecondLogo() {
+            pendingSecondLogo = nil
+            second.logoPath = nil
+            shownSecondLogoPath = nil
+            secondLogo = nil
+            secondLogoColors = []
+        }
+
+        /// The stored second logo, read once per logo.
+        private func loadSecondLogo() async {
+            guard pendingSecondLogo == nil, let path = second.logoPath, path != shownSecondLogoPath,
+                let url = try? await app.client.storage.from("company-assets").createSignedURL(
+                    path: path, expiresIn: 3600),
+                let (data, _) = try? await URLSession.shared.data(from: url)
+            else { return }
+            shownSecondLogoPath = path
+            secondLogo = UIImage(data: data)
+            if let secondLogo { secondLogoColors = logoPalette(logoPixels(secondLogo)) }
+        }
+
+        /// A new name each time (`logo2-<ms>`), so reports already sent keep the old logo.
+        private func uploadSecondLogo(_ pending: (data: Data, type: String)) async -> String? {
+            let ext = pending.type == "image/png" ? "png" : "jpg"
+            let path = "\(companyId)/logo2-\(Int(Date().timeIntervalSince1970 * 1000)).\(ext)"
+            do {
+                try await app.client.storage.from("company-assets")
+                    .upload(path, data: pending.data, options: FileOptions(contentType: pending.type))
+                var saved = savedSecond
+                saved.logoPath = path
+                try sync.write("company", id: companyId, companyId: companyId, ["second_logo_path": .string(path)])
+                pendingSecondLogo = nil
+                shownSecondLogoPath = path
+                second.logoPath = path
+                savedSecond = saved
+                return nil
+            } catch {
+                let message = String(describing: error)
                 if let refusal = UploadRefusal(status: nil, message: message) { return refusal.message(.logo) }
                 return isNetworkFailure(message) ? WebAPI.Failure.noConnection : friendlyError(message)
             }
@@ -601,6 +747,7 @@
         @State private var items: [ReportTemplateItem] = []
         @State private var editing: ReportTemplateItem?
         @State private var notice: String?
+        @State private var techError: String?
 
         var body: some View {
             ScreenScroll {
@@ -621,6 +768,17 @@
                     }
                 }
                 VisitReportSettingGroup()
+                // Show the Tech on Reports (2026-11-26): saved at once.
+                VStack(alignment: .leading, spacing: 8) {
+                    Grouped(footer: TechCardText.footer) {
+                        SwitchRow(
+                            TechCardText.label,
+                            isOn: Binding(
+                                get: { showsTechOnReports(session.company?.settings) },
+                                set: { setTechOnReports($0) }))
+                    }
+                    if let techError { Notice(kind: .error, text: techError) }
+                }
                 if leak { SavedReportsGroup() }
             }
             .refreshable { await sync.syncNow() }
@@ -631,6 +789,17 @@
             }
             .sheet(item: $editing) { item in
                 ReportTemplateSheet(item: item) { notice = $0 }
+            }
+        }
+
+        private func setTechOnReports(_ on: Bool) {
+            guard let company = session.company else { return }
+            do {
+                try ShopSettingsWrites.saveTechOnReports(sync, companyId: company.id, settings: company.settings, on)
+                techError = nil
+                session.reloadCompanies()
+            } catch {
+                techError = userMessage(error)
             }
         }
     }

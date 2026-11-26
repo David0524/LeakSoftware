@@ -16,11 +16,16 @@
     /// Activity to the drive.
     @MainActor enum OnMyWay {
         /// "Hi Derek, this is Ana from Blue Water. I'm on my way and should arrive around 9:40 AM."
-        static func text(_ job: ScheduleJob, day: TodayDay, leg: Int) -> String {
+        /// The shop is the job's business (2026-11-26) when `store` is given.
+        static func text(_ job: ScheduleJob, day: TodayDay, leg: Int, store: LocalStore? = nil) -> String {
             let me = day.techs.first { $0.id == day.ctx.userId }?.name
+            var shop = day.ctx.shopName
+            if let store {
+                shop = customerBusinessName(store, companyId: day.ctx.companyId, fallbackName: shop, jobId: job.id)
+            }
             return onMyWayText(
                 customer: job.customerName == "Customer" ? nil : job.customerName,
-                tech: me == "Teammate" || me == nil ? "your tech" : me!, shop: day.ctx.shopName,
+                tech: me == "Teammate" || me == nil ? "your tech" : me!, shop: shop,
                 arriveMin: localMinutes(Date(), timeZone: day.ctx.timeZone) + max(5, leg),
                 windowMin: day.ctx.settings.windowMin)
         }
@@ -93,7 +98,7 @@
                 return
             }
             if OnMyWay.viaCompany(job, day: day), let customerId = job.customerId {
-                let body = OnMyWay.text(job, day: day, leg: leg)
+                let body = OnMyWay.text(job, day: day, leg: leg, store: sync.store)
                 Task {
                     do {
                         _ = try await TextingServer(sync: sync, api: app.api).send(
@@ -111,7 +116,7 @@
 
         private func fromPhone() {
             OnMyWay.record(job, day: day, leg: leg, session: session, app: app)
-            let body = OnMyWay.text(job, day: day, leg: leg)
+            let body = OnMyWay.text(job, day: day, leg: leg, store: sync.store)
             if let phone = job.customerPhone, let url = OnMyWay.smsURL(phone, body: body) {
                 openURL(url)
                 return
@@ -163,7 +168,7 @@
             }
             .onAppear {
                 guard original.isEmpty else { return }
-                original = OnMyWay.text(job, day: day, leg: leg)
+                original = OnMyWay.text(job, day: day, leg: leg, store: sync.store)
                 text = original
             }
         }

@@ -3,6 +3,7 @@ import { StyleSheet, View } from "react-native";
 import {
   REPORT_PHOTO_TEXT,
   SAVED_REPORT_SECTIONS,
+  TECH_CARD_TEXT,
   VISIT_REPORT_TEXT,
   VISIT_REPORT_TIMINGS,
   offersLeak,
@@ -10,6 +11,7 @@ import {
   reportPhotoHint,
   requiresReportPhoto,
   savedReportSections,
+  showsTechOnReports,
   visitReportMode,
   visitReportModeFor,
   visitReportTiming,
@@ -120,6 +122,8 @@ function TemplatesPage() {
         ) : null}
 
         {offersPool(company.settings) ? <VisitReportsSetting /> : null}
+
+        <TechOnReportsSetting />
 
         {/* Saved reports (owner, 2026-10-20): the shop's own wording, used word for word. */}
         {leak ? (
@@ -305,6 +309,37 @@ function VisitReportsSetting() {
           </View>
         ) : null}
       </View>
+    </Section>
+  );
+}
+
+/**
+ * Show the Tech on Reports (Cole via the owner, 2026-11-26;
+ * docs/design/2026-11-26-second-business-and-tech-photos.md): every report ends with the tech's
+ * photo and "Your pool was serviced by Brian". Saved at once as company.settings.tech_on_reports,
+ * as Require a Photo is.
+ */
+function TechOnReportsSetting() {
+  const company = useCompany();
+  const save = (on: boolean) => {
+    getServices().sync.write("company", company.id, company.id, {
+      settings: {
+        ...(company.settings as unknown as Record<string, JsonValue>),
+        tech_on_reports: on,
+      },
+    });
+    haptics.selection();
+  };
+  return (
+    <Section title="" footer={TECH_CARD_TEXT.footer}>
+      <Group>
+        <Toggle
+          inList
+          label={TECH_CARD_TEXT.label}
+          value={showsTechOnReports(company.settings)}
+          onChange={save}
+        />
+      </Group>
     </Section>
   );
 }

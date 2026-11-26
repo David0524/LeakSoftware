@@ -511,7 +511,7 @@
             let leg = day.leg(job)
             OnMyWay.record(job, day: day, leg: leg, session: session, app: app)
             StopText.open(
-                .phone(StopTextRoute.smsNumber(phone)), body: OnMyWay.text(job, day: day, leg: leg),
+                .phone(StopTextRoute.smsNumber(phone)), body: OnMyWay.text(job, day: day, leg: leg, store: sync.store),
                 openRoute: openRoute, openURL: openURL
             ) { phoneText = $0 }
         }

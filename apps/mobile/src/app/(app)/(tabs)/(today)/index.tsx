@@ -51,6 +51,7 @@ import {
 } from "../../../../lib/liveStop";
 import { todayList } from "../../../../lib/todayHero";
 import { useLocateMissing } from "../../../../lib/locate";
+import { businessNameFor } from "../../../../lib/business";
 import { useFirstLoad, useRows } from "../../../../data/hooks";
 import { SkeletonCards } from "../../../../ui/Skeleton";
 import { useCompany, useSession } from "../../../../state/session";
@@ -292,6 +293,8 @@ export default function Today() {
     (id: string | null) => setViewing(viewingFor(id, currentId)),
     [setViewing, currentId],
   );
+  // The business each stop's customer sees (its job's; lib/business.ts).
+  const shopFor = useCallback((j: JobView) => businessNameFor(company, j), [company]);
   // Message: the On My Way text before arriving on your own stop, else a blank text
   // (docs/design/2026-10-20-gestures.md section 2).
   const message = useStopMessage({
@@ -300,7 +303,7 @@ export default function Today() {
     today,
     timeZone: tz,
     tech: myName,
-    shop: company.name,
+    shop: shopFor,
     windowMin: settings.windowMin,
     via: onMyWayVia(company.settings),
   });
@@ -412,7 +415,7 @@ export default function Today() {
       customer={askedJob.customer?.name ?? null}
       customerId={askedJob.customer?.id ?? null}
       tech={myName}
-      shop={company.name}
+      shop={businessNameFor(company, askedJob)}
       driveMin={summary.legs[stops.indexOf(askedJob)] ?? 0}
       windowMin={settings.windowMin}
       timeZone={tz}

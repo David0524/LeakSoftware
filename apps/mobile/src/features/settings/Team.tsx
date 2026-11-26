@@ -6,6 +6,7 @@ import {
   NO_CONTACT_NOTE,
   ROLE_LABELS,
   TECH_COLORS,
+  TECH_CARD_TEXT,
   canContactCustomers,
   teamRoleLine,
   assignableRoles,
@@ -30,6 +31,7 @@ import { teamProfileValues, type TeamProfileForm } from "../../lib/teamProfile";
 import { saveMemberStart, useMemberStart } from "../../data/memberStarts";
 import { startForm, startWrite, type StartForm } from "../../lib/memberStart";
 import { StartFromFields } from "./StartFrom";
+import { MemberPhoto } from "./MemberPhoto";
 import { API_URL } from "../../lib/config";
 import { call, ReportServerError } from "../../data/reports";
 import { getServices } from "../../lib/services";
@@ -674,6 +676,8 @@ function ProfileForm({
             </View>
           ) : null}
           <ColorPicker value={tech} onChange={setTech} />
+          {/* Shown at the end of reports when the shop turns it on; saves at once. */}
+          <MemberPhoto membershipId={member.membership_id} title={TECH_CARD_TEXT.photo} />
           <StartFromFields
             others
             form={start}

@@ -723,6 +723,10 @@
 
         var body: some View {
             FormSheet(title: member.name, dirty: dirty) {
+                // The tech's photo on reports (2026-11-26): saved at once, online.
+                MemberPhotoGroup(
+                    label: TechCardText.photo, membershipId: member.id, userId: member.userId, name: member.name,
+                    color: color, photoPath: member.photoPath)
                 Grouped {
                     LabeledFieldRow(label: "Name", text: $form.name, labelWidth: 96)
                     LabeledFieldRow(label: "Phone", text: $form.phone, keyboard: .phonePad, labelWidth: 96)

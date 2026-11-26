@@ -87,6 +87,8 @@ export interface TeamMember {
   schedule_order: number | null;
   /** Text and Call Customers (owner, 2026-11-23); read with core canContactCustomers. */
   can_contact_customers: boolean;
+  /** Their photo in company-assets (2026-11-26), for reports; null without one. */
+  photo_path: string | null;
 }
 
 /** Cached per request: several parts of a page ask for the team. */
@@ -111,6 +113,7 @@ export const getTeam = cache(async (office: Office): Promise<TeamMember[]> => {
     disabled_at: string | null;
     schedule_order?: number | null;
     can_contact_customers?: boolean | null;
+    photo_path?: string | null;
     profile: { id: string; full_name: string | null; email: string | null } | null;
   }[];
   const profiles = members.flatMap((m) => (m.profile ? [m.profile] : []));
@@ -129,6 +132,7 @@ export const getTeam = cache(async (office: Office): Promise<TeamMember[]> => {
         disabled_at: m.disabled_at ?? null,
         schedule_order: m.schedule_order ?? null,
         can_contact_customers: m.can_contact_customers !== false,
+        photo_path: m.photo_path ?? null,
       };
     })
     .sort((a, b) => a.name.localeCompare(b.name));
@@ -510,6 +514,18 @@ export async function signedMediaUrls(paths: string[]): Promise<Map<string, stri
   if (paths.length === 0) return new Map();
   const supabase = await db();
   const { data } = await supabase.storage.from("media").createSignedUrls(paths, 3600);
+  return new Map(
+    (data ?? [])
+      .filter((d) => d.signedUrl && d.path)
+      .map((d) => [d.path as string, d.signedUrl as string]),
+  );
+}
+
+/** Signed URLs for the shop's own files (tech photos), keyed by path. */
+export async function signedAssetUrls(paths: string[]): Promise<Map<string, string>> {
+  if (paths.length === 0) return new Map();
+  const supabase = await db();
+  const { data } = await supabase.storage.from("company-assets").createSignedUrls(paths, 3600);
   return new Map(
     (data ?? [])
       .filter((d) => d.signedUrl && d.path)

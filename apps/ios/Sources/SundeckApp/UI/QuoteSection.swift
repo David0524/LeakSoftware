@@ -83,7 +83,10 @@
                         Button {
                             Task {
                                 await flow.send(
-                                    card.id, shopName: session.company?.name ?? "",
+                                    card.id,
+                                    shopName: customerBusinessName(
+                                        sync.store, companyId: session.company?.id ?? "",
+                                        fallbackName: session.company?.name ?? "", jobId: flow.jobId),
                                     server: MoneyServer(sync: sync, api: app.api))
                             }
                         } label: {

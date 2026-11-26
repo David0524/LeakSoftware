@@ -391,6 +391,10 @@ export interface Job extends Base {
   /** Detection fee in cents (M8.5). */
   fee_cents?: number | null;
   second_tech_id?: string | null;
+  /** The job a repair came from. */
+  parent_job_id?: string | null;
+  /** Which of the shop's businesses it uses (2026-11-26): null is automatic (business.ts). */
+  business?: "main" | "second" | null;
   intake?: Record<string, string | string[]> | null;
   location_marked?: boolean | null;
   /** Today's Mark Complete on a leak or repair job: the shop-local day its stop was done. */

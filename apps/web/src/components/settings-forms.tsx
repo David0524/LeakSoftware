@@ -40,6 +40,7 @@ import {
   Select,
   TextArea,
   cx,
+  buttonClass,
 } from "./ui";
 
 const WHITE = tokens.color.brand.paper;
@@ -422,6 +423,9 @@ export function BrandingFields({
   companyName,
   primary,
   secondary,
+  prefix = "",
+  accent = true,
+  removable = false,
 }: {
   logoUrl: string | null;
   /** The stored logo's file: its colors are read once per logo, not per signed address. */
@@ -429,10 +433,18 @@ export function BrandingFields({
   companyName: string;
   primary: string;
   secondary: string | null;
+  /** Field names' prefix: "second_" for the second business (2026-11-26). */
+  prefix?: string;
+  /** Whether to offer the accent color (the second business has none). */
+  accent?: boolean;
+  /** Offer Remove Logo (the second business's; posts `${prefix}logo_remove`). */
+  removable?: boolean;
 }) {
   const [preview, setPreview] = useState(logoUrl);
+  const [removed, setRemoved] = useState(false);
   const [palette, setPalette] = useState<string[]>([]);
   const [main, setMain] = useState(primary);
+  const logoField = `${prefix}logo`;
   const [picked, setPicked] = useState(false);
 
   function apply(colors: string[], newLogo: boolean) {
@@ -463,7 +475,7 @@ export function BrandingFields({
   return (
     <>
       <div className={cx("space-y-2", GROUP_ROW, "max-sm:py-2.5")}>
-        <label htmlFor="logo" className="block sm:font-medium">
+        <label htmlFor={logoField} className="block sm:font-medium">
           Logo
         </label>
         {preview ? (
@@ -477,8 +489,8 @@ export function BrandingFields({
           <p className="text-text-muted">No logo yet. Reports show your company name instead.</p>
         )}
         <input
-          id="logo"
-          name="logo"
+          id={logoField}
+          name={logoField}
           type="file"
           accept="image/png,image/jpeg,image/svg+xml"
           onChange={(e) => {
@@ -486,6 +498,7 @@ export function BrandingFields({
             if (!file) return;
             const url = URL.createObjectURL(file);
             setPreview(url);
+            setRemoved(false);
             void imagePalette(url).then((colors) => apply(colors, true));
           }}
           className="block w-full min-h-11 file:mr-3 file:min-h-11 file:rounded-full file:border-0 file:bg-link/12 file:px-4 file:font-semibold file:text-link"
@@ -493,10 +506,25 @@ export function BrandingFields({
         <p className="text-[0.9375rem] text-text-muted">
           PNG, JPEG, or SVG, under 2 MB. A wide logo works best.
         </p>
-        <FieldError name="logo" />
+        {removable && preview ? (
+          <button
+            type="button"
+            onClick={() => {
+              setPreview(null);
+              setRemoved(true);
+            }}
+            className={buttonClass("danger")}
+          >
+            Remove Logo
+          </button>
+        ) : null}
+        {removed && !preview ? (
+          <input type="hidden" name={`${logoField}_remove`} value="1" />
+        ) : null}
+        <FieldError name={logoField} />
       </div>
       <ColorField
-        name="brand_primary"
+        name={`${prefix}brand_primary`}
         label="Main color"
         value={main}
         onChange={(v) => {
@@ -506,13 +534,15 @@ export function BrandingFields({
         logoColors={palette}
         note={picked ? "Color picked from your logo." : undefined}
       />
-      <ColorField
-        name="brand_secondary"
-        label="Accent color"
-        defaultValue={secondary}
-        logoColors={palette}
-        optional
-      />
+      {accent ? (
+        <ColorField
+          name={`${prefix}brand_secondary`}
+          label="Accent color"
+          defaultValue={secondary}
+          logoColors={palette}
+          optional
+        />
+      ) : null}
     </>
   );
 }

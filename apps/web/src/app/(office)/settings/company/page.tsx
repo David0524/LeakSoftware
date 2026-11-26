@@ -13,13 +13,17 @@ import {
 } from "@/components/settings-forms";
 import { ReminderChannelChoice } from "@/components/reminder-channel";
 import { ServicesChoice } from "@/components/services-form";
+import { SecondBusinessWork } from "@/components/second-business-form";
 import { PageHeader } from "@/components/ui";
 import { getOffice } from "@/lib/auth";
 import { getCompany } from "@/lib/data";
 import { createClient } from "@/lib/supabase/server";
 import {
   FEEDBACK_WORDS,
+  SECOND_BUSINESS_TEXT,
   askFeedbackFirst,
+  secondBusinessWork,
+  type BusinessCompany,
   companyServices,
   offersLeak,
   reminderChannel,
@@ -41,14 +45,20 @@ export default async function CompanySettingsPage() {
   const office = await getOffice();
   const company = await getCompany(office);
   const str = (k: string) => (company[k] as string | null) ?? "";
-  let logoUrl: string | null = null;
-  if (company.logo_path) {
-    const supabase = await createClient();
-    const { data } = await supabase.storage
+  const sign = async (path: unknown) => {
+    if (typeof path !== "string" || !path) return null;
+    const { data } = await (
+      await createClient()
+    ).storage
       .from("company-assets")
-      .createSignedUrl(company.logo_path, 3600);
-    logoUrl = data?.signedUrl ?? null;
-  }
+      .createSignedUrl(path, 3600);
+    return data?.signedUrl ?? null;
+  };
+  const [logoUrl, secondLogoUrl] = await Promise.all([
+    sign(company.logo_path),
+    sign(company.second_logo_path),
+  ]);
+  const both = companyServices(company.settings) === "both";
   const { data: lastJob } = await (
     await createClient()
   )
@@ -206,6 +216,58 @@ export default async function CompanySettingsPage() {
             />
           </SettingsFields>
         </SettingsSection>
+
+        {/* A second business name for one line of work (2026-11-26), for shops doing both. */}
+        {both ? (
+          <SettingsSection title={SECOND_BUSINESS_TEXT.header}>
+            <SettingsFields labelWidth="7.5rem" className="sm:grid sm:grid-cols-2 sm:gap-4">
+              <SField
+                label={SECOND_BUSINESS_TEXT.name}
+                name="second_name"
+                defaultValue={str("second_name")}
+                className="sm:col-span-2"
+              />
+              <SField
+                label={SECOND_BUSINESS_TEXT.phone}
+                name="second_phone"
+                type="tel"
+                defaultValue={str("second_phone")}
+              />
+              <SField
+                label={SECOND_BUSINESS_TEXT.email}
+                name="second_email"
+                type="email"
+                defaultValue={str("second_email")}
+              />
+              <SField
+                label={SECOND_BUSINESS_TEXT.reviewUrl}
+                name="second_review_url"
+                type="url"
+                defaultValue={str("second_review_url")}
+                className="sm:col-span-2"
+              />
+            </SettingsFields>
+            <div className="mt-4 space-y-2 px-4 sm:px-0">
+              <p className="text-[0.9375rem] text-text-muted">{SECOND_BUSINESS_TEXT.useFor}</p>
+              <SecondBusinessWork initial={secondBusinessWork(company as BusinessCompany)} />
+            </div>
+            <SettingsFields className="mt-4 sm:space-y-6">
+              <BrandingFields
+                prefix="second_"
+                accent={false}
+                removable
+                logoUrl={secondLogoUrl}
+                logoPath={str("second_logo_path") || null}
+                companyName={str("second_name") || company.name}
+                primary={str("second_brand_primary") || company.brand_primary}
+                secondary={null}
+              />
+            </SettingsFields>
+            <p className="mt-3 px-4 text-[0.9375rem] text-text-muted sm:px-0">
+              {SECOND_BUSINESS_TEXT.footer}
+            </p>
+          </SettingsSection>
+        ) : null}
       </SettingsForm>
     </>
   );

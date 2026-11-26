@@ -115,6 +115,23 @@ export async function saveCompanySettings(_: FormState, form: FormData): Promise
     : undefined;
   if (logoFile && !ext) fields.logo = "Use a PNG, JPEG, or SVG file.";
   else if (logoFile && logoFile.size > 2 * 1024 * 1024) fields.logo = "Use a file under 2 MB.";
+  // The second business (2026-11-26): only on the page while Services is Both.
+  const hasSecond = form.has("second_name");
+  const secondReview = text(form, "second_review_url");
+  if (secondReview && !isWebUrl(secondReview))
+    fields.second_review_url = "Enter a web address that starts with https://.";
+  const secondPrimary = text(form, "second_brand_primary");
+  if (secondPrimary && !isHexColor(secondPrimary))
+    fields.second_brand_primary = "Use a color like #12263A.";
+  const secondLogo = form.get("second_logo");
+  const secondLogoFile = secondLogo instanceof File && secondLogo.size > 0 ? secondLogo : null;
+  const secondExt = secondLogoFile
+    ? { "image/png": "png", "image/jpeg": "jpg", "image/svg+xml": "svg" }[secondLogoFile.type]
+    : undefined;
+  if (secondLogoFile && !secondExt) fields.second_logo = "Use a PNG, JPEG, or SVG file.";
+  else if (secondLogoFile && secondLogoFile.size > 2 * 1024 * 1024)
+    fields.second_logo = "Use a file under 2 MB.";
+  if (text(form, "second_name").length > 120) fields.second_name = "Keep it under 120 characters.";
   const services = form.has("services") ? text(form, "services") : null;
   if (services !== null && services !== "pool" && services !== "leak" && services !== "both")
     return { error: "Pick what your shop does." };
@@ -158,6 +175,17 @@ export async function saveCompanySettings(_: FormState, form: FormData): Promise
     brand_primary: primary.toUpperCase(),
     brand_secondary: secondary ? secondary.toUpperCase() : null,
     ...(hasTerms ? { report_disclaimer: disclaimer || null } : {}),
+    ...(hasSecond
+      ? {
+          second_name: optional(form, "second_name"),
+          second_phone: optional(form, "second_phone"),
+          second_email: optional(form, "second_email"),
+          second_review_url: secondReview || null,
+          second_brand_primary: secondPrimary ? secondPrimary.toUpperCase() : null,
+          second_for: text(form, "second_for") === "pool" ? "pool" : "leak",
+          ...(form.get("second_logo_remove") === "1" ? { second_logo_path: null } : {}),
+        }
+      : {}),
   };
   if (logoFile && ext) {
     // A new name each time, so reports already sent keep pointing at the old logo.
@@ -172,6 +200,19 @@ export async function saveCompanySettings(_: FormState, form: FormData): Promise
       return failed(error);
     }
     update.logo_path = path;
+  }
+  if (hasSecond && secondLogoFile && secondExt) {
+    // As the main logo: a new name each time, so sent reports keep the old one.
+    const path = `${office.company.id}/logo2-${Date.now()}.${secondExt}`;
+    const { error } = await supabase.storage
+      .from("company-assets")
+      .upload(path, secondLogoFile, { contentType: secondLogoFile.type, upsert: false });
+    if (error) {
+      const refusal = uploadRefusal(null, error.message);
+      if (refusal) return { error: uploadRefusalMessage(refusal, "logo") };
+      return failed(error);
+    }
+    update.second_logo_path = path;
   }
   const { error } = await supabase.from("company").update(update).eq("id", office.company.id);
   if (error) return failed(error);
@@ -457,6 +498,25 @@ export async function saveReportPhoto(_: FormState, form: FormData): Promise<For
   const settings = {
     ...((company?.settings ?? {}) as Record<string, unknown>),
     require_report_photo: checked(form, "require_report_photo"),
+  };
+  const { error } = await supabase.from("company").update({ settings }).eq("id", office.company.id);
+  if (error) return failed(error);
+  revalidatePath("/", "layout");
+  return { message: "Saved." };
+}
+
+/** Settings › Report Templates › Show the Tech on Reports (2026-11-26), off by default. */
+export async function saveTechOnReports(_: FormState, form: FormData): Promise<FormState> {
+  const office = await requireManager();
+  const supabase = await createClient();
+  const { data: company } = await supabase
+    .from("company")
+    .select("settings")
+    .eq("id", office.company.id)
+    .single();
+  const settings = {
+    ...((company?.settings ?? {}) as Record<string, unknown>),
+    tech_on_reports: checked(form, "tech_on_reports"),
   };
   const { error } = await supabase.from("company").update({ settings }).eq("id", office.company.id);
   if (error) return failed(error);

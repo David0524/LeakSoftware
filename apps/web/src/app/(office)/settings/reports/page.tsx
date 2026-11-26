@@ -6,10 +6,11 @@ import {
   offersPool,
   reportPhotoHint,
   requiresReportPhoto,
+  showsTechOnReports,
   savedReportSections,
   visitReportMode,
 } from "@leakbook/core";
-import { ReportPhotoSwitch } from "@/components/report-photo-setting";
+import { ReportPhotoSwitch, TechOnReportsSwitch } from "@/components/report-photo-setting";
 import { VisitReportSetting } from "@/components/visit-report-setting";
 import { getCompany } from "@/lib/data";
 import { removeConfigRow, saveReportTemplate, saveSavedReport } from "@/app/actions/settings";
@@ -164,6 +165,13 @@ export default async function ReportTemplatesPage() {
           ) : null}
         </Grouped>
       ) : null}
+
+      {/* The tech's photo and name at the end of every report (2026-11-26). */}
+      <Grouped title="Your tech" className="mt-8">
+        <li className="py-3">
+          <TechOnReportsSwitch initial={showsTechOnReports(company.settings)} />
+        </li>
+      </Grouped>
 
       {leak ? (
         <Grouped title="Saved reports" className="mt-8">

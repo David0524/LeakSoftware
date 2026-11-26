@@ -19,6 +19,7 @@ import { ContactLine } from "./contact-line";
 import { PdfLink } from "./pdf-link";
 import { PHONE_CARD } from "./doc-ui";
 import { ReportLead } from "./report-lead";
+import { TechCard } from "./tech-photo";
 import { cx } from "./ui";
 
 // A maintenance visit's report for the customer (owner, 2026-10-20: "build a report with the
@@ -320,6 +321,8 @@ export function VisitReportView({
           </div>
         </Card>
       ) : null}
+
+      <TechCard card={s.tech_card} jobType={s.job.type} urls={urls} />
 
       <footer className="mt-10 text-center text-[0.8125rem] text-text-muted">
         {s.company.disclaimer ? (
