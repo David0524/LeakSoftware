@@ -1,0 +1,2872 @@
+{
+  "hasSecondBusiness": [
+    {
+      "args": [
+        {
+          "name": "All In Pool Solutions",
+          "phone": "702-555-0199",
+          "email": "office@allin.example",
+          "logo_path": "c/logo-1.png",
+          "brand_primary": "#12263A",
+          "review_url": "https://g.page/allin",
+          "settings": {
+            "services": "both"
+          },
+          "second_name": "Southern Nevada Leak Detection",
+          "second_phone": "702-555-0100",
+          "second_email": " ",
+          "second_logo_path": "c/logo2-1.png",
+          "second_brand_primary": null,
+          "second_review_url": null,
+          "second_for": "leak"
+        }
+      ],
+      "result": true
+    },
+    {
+      "args": [
+        {
+          "name": "All In Pool Solutions",
+          "phone": "702-555-0199",
+          "email": "office@allin.example",
+          "logo_path": "c/logo-1.png",
+          "brand_primary": "#12263A",
+          "review_url": "https://g.page/allin",
+          "settings": {
+            "services": "both"
+          },
+          "second_name": "Southern Nevada Leak Detection",
+          "second_phone": "702-555-0100",
+          "second_email": " ",
+          "second_logo_path": "c/logo2-1.png",
+          "second_brand_primary": "#0A5C8A",
+          "second_review_url": "https://x.y",
+          "second_for": "pool"
+        }
+      ],
+      "result": true
+    },
+    {
+      "args": [
+        {
+          "name": "All In Pool Solutions",
+          "phone": "702-555-0199",
+          "email": "office@allin.example",
+          "logo_path": "c/logo-1.png",
+          "brand_primary": "#12263A",
+          "review_url": "https://g.page/allin",
+          "settings": {
+            "services": "pool"
+          },
+          "second_name": "Southern Nevada Leak Detection",
+          "second_phone": "702-555-0100",
+          "second_email": " ",
+          "second_logo_path": "c/logo2-1.png",
+          "second_brand_primary": null,
+          "second_review_url": null,
+          "second_for": "leak"
+        }
+      ],
+      "result": false
+    },
+    {
+      "args": [
+        {
+          "name": "All In Pool Solutions",
+          "phone": "702-555-0199",
+          "email": "office@allin.example",
+          "logo_path": "c/logo-1.png",
+          "brand_primary": "#12263A",
+          "review_url": "https://g.page/allin",
+          "settings": null,
+          "second_name": "Southern Nevada Leak Detection",
+          "second_phone": "702-555-0100",
+          "second_email": " ",
+          "second_logo_path": "c/logo2-1.png",
+          "second_brand_primary": null,
+          "second_review_url": null,
+          "second_for": "leak"
+        }
+      ],
+      "result": true
+    },
+    {
+      "args": [
+        {
+          "name": "All In Pool Solutions",
+          "phone": "702-555-0199",
+          "email": "office@allin.example",
+          "logo_path": "c/logo-1.png",
+          "brand_primary": "#12263A",
+          "review_url": "https://g.page/allin",
+          "settings": {
+            "services": "both"
+          },
+          "second_name": "  ",
+          "second_phone": "702-555-0100",
+          "second_email": " ",
+          "second_logo_path": "c/logo2-1.png",
+          "second_brand_primary": null,
+          "second_review_url": null,
+          "second_for": "leak"
+        }
+      ],
+      "result": false
+    },
+    {
+      "args": [
+        {
+          "name": "Plain Pools",
+          "settings": {
+            "services": "both"
+          }
+        }
+      ],
+      "result": false
+    }
+  ],
+  "workBusiness": [
+    {
+      "args": [
+        {
+          "name": "All In Pool Solutions",
+          "phone": "702-555-0199",
+          "email": "office@allin.example",
+          "logo_path": "c/logo-1.png",
+          "brand_primary": "#12263A",
+          "review_url": "https://g.page/allin",
+          "settings": {
+            "services": "both"
+          },
+          "second_name": "Southern Nevada Leak Detection",
+          "second_phone": "702-555-0100",
+          "second_email": " ",
+          "second_logo_path": "c/logo2-1.png",
+          "second_brand_primary": null,
+          "second_review_url": null,
+          "second_for": "leak"
+        },
+        "leak"
+      ],
+      "result": "second"
+    },
+    {
+      "args": [
+        {
+          "name": "All In Pool Solutions",
+          "phone": "702-555-0199",
+          "email": "office@allin.example",
+          "logo_path": "c/logo-1.png",
+          "brand_primary": "#12263A",
+          "review_url": "https://g.page/allin",
+          "settings": {
+            "services": "both"
+          },
+          "second_name": "Southern Nevada Leak Detection",
+          "second_phone": "702-555-0100",
+          "second_email": " ",
+          "second_logo_path": "c/logo2-1.png",
+          "second_brand_primary": null,
+          "second_review_url": null,
+          "second_for": "leak"
+        },
+        "pool"
+      ],
+      "result": "main"
+    },
+    {
+      "args": [
+        {
+          "name": "All In Pool Solutions",
+          "phone": "702-555-0199",
+          "email": "office@allin.example",
+          "logo_path": "c/logo-1.png",
+          "brand_primary": "#12263A",
+          "review_url": "https://g.page/allin",
+          "settings": {
+            "services": "both"
+          },
+          "second_name": "Southern Nevada Leak Detection",
+          "second_phone": "702-555-0100",
+          "second_email": " ",
+          "second_logo_path": "c/logo2-1.png",
+          "second_brand_primary": "#0A5C8A",
+          "second_review_url": "https://x.y",
+          "second_for": "pool"
+        },
+        "leak"
+      ],
+      "result": "main"
+    },
+    {
+      "args": [
+        {
+          "name": "All In Pool Solutions",
+          "phone": "702-555-0199",
+          "email": "office@allin.example",
+          "logo_path": "c/logo-1.png",
+          "brand_primary": "#12263A",
+          "review_url": "https://g.page/allin",
+          "settings": {
+            "services": "both"
+          },
+          "second_name": "Southern Nevada Leak Detection",
+          "second_phone": "702-555-0100",
+          "second_email": " ",
+          "second_logo_path": "c/logo2-1.png",
+          "second_brand_primary": "#0A5C8A",
+          "second_review_url": "https://x.y",
+          "second_for": "pool"
+        },
+        "pool"
+      ],
+      "result": "second"
+    },
+    {
+      "args": [
+        {
+          "name": "All In Pool Solutions",
+          "phone": "702-555-0199",
+          "email": "office@allin.example",
+          "logo_path": "c/logo-1.png",
+          "brand_primary": "#12263A",
+          "review_url": "https://g.page/allin",
+          "settings": {
+            "services": "pool"
+          },
+          "second_name": "Southern Nevada Leak Detection",
+          "second_phone": "702-555-0100",
+          "second_email": " ",
+          "second_logo_path": "c/logo2-1.png",
+          "second_brand_primary": null,
+          "second_review_url": null,
+          "second_for": "leak"
+        },
+        "leak"
+      ],
+      "result": "main"
+    },
+    {
+      "args": [
+        {
+          "name": "All In Pool Solutions",
+          "phone": "702-555-0199",
+          "email": "office@allin.example",
+          "logo_path": "c/logo-1.png",
+          "brand_primary": "#12263A",
+          "review_url": "https://g.page/allin",
+          "settings": {
+            "services": "pool"
+          },
+          "second_name": "Southern Nevada Leak Detection",
+          "second_phone": "702-555-0100",
+          "second_email": " ",
+          "second_logo_path": "c/logo2-1.png",
+          "second_brand_primary": null,
+          "second_review_url": null,
+          "second_for": "leak"
+        },
+        "pool"
+      ],
+      "result": "main"
+    },
+    {
+      "args": [
+        {
+          "name": "All In Pool Solutions",
+          "phone": "702-555-0199",
+          "email": "office@allin.example",
+          "logo_path": "c/logo-1.png",
+          "brand_primary": "#12263A",
+          "review_url": "https://g.page/allin",
+          "settings": null,
+          "second_name": "Southern Nevada Leak Detection",
+          "second_phone": "702-555-0100",
+          "second_email": " ",
+          "second_logo_path": "c/logo2-1.png",
+          "second_brand_primary": null,
+          "second_review_url": null,
+          "second_for": "leak"
+        },
+        "leak"
+      ],
+      "result": "second"
+    },
+    {
+      "args": [
+        {
+          "name": "All In Pool Solutions",
+          "phone": "702-555-0199",
+          "email": "office@allin.example",
+          "logo_path": "c/logo-1.png",
+          "brand_primary": "#12263A",
+          "review_url": "https://g.page/allin",
+          "settings": null,
+          "second_name": "Southern Nevada Leak Detection",
+          "second_phone": "702-555-0100",
+          "second_email": " ",
+          "second_logo_path": "c/logo2-1.png",
+          "second_brand_primary": null,
+          "second_review_url": null,
+          "second_for": "leak"
+        },
+        "pool"
+      ],
+      "result": "main"
+    },
+    {
+      "args": [
+        {
+          "name": "All In Pool Solutions",
+          "phone": "702-555-0199",
+          "email": "office@allin.example",
+          "logo_path": "c/logo-1.png",
+          "brand_primary": "#12263A",
+          "review_url": "https://g.page/allin",
+          "settings": {
+            "services": "both"
+          },
+          "second_name": "  ",
+          "second_phone": "702-555-0100",
+          "second_email": " ",
+          "second_logo_path": "c/logo2-1.png",
+          "second_brand_primary": null,
+          "second_review_url": null,
+          "second_for": "leak"
+        },
+        "leak"
+      ],
+      "result": "main"
+    },
+    {
+      "args": [
+        {
+          "name": "All In Pool Solutions",
+          "phone": "702-555-0199",
+          "email": "office@allin.example",
+          "logo_path": "c/logo-1.png",
+          "brand_primary": "#12263A",
+          "review_url": "https://g.page/allin",
+          "settings": {
+            "services": "both"
+          },
+          "second_name": "  ",
+          "second_phone": "702-555-0100",
+          "second_email": " ",
+          "second_logo_path": "c/logo2-1.png",
+          "second_brand_primary": null,
+          "second_review_url": null,
+          "second_for": "leak"
+        },
+        "pool"
+      ],
+      "result": "main"
+    },
+    {
+      "args": [
+        {
+          "name": "Plain Pools",
+          "settings": {
+            "services": "both"
+          }
+        },
+        "leak"
+      ],
+      "result": "main"
+    },
+    {
+      "args": [
+        {
+          "name": "Plain Pools",
+          "settings": {
+            "services": "both"
+          }
+        },
+        "pool"
+      ],
+      "result": "main"
+    }
+  ],
+  "jobBusiness": [
+    {
+      "args": [
+        {
+          "name": "All In Pool Solutions",
+          "phone": "702-555-0199",
+          "email": "office@allin.example",
+          "logo_path": "c/logo-1.png",
+          "brand_primary": "#12263A",
+          "review_url": "https://g.page/allin",
+          "settings": {
+            "services": "both"
+          },
+          "second_name": "Southern Nevada Leak Detection",
+          "second_phone": "702-555-0100",
+          "second_email": " ",
+          "second_logo_path": "c/logo2-1.png",
+          "second_brand_primary": null,
+          "second_review_url": null,
+          "second_for": "leak"
+        },
+        {
+          "type": "detection"
+        },
+        null
+      ],
+      "result": "second"
+    },
+    {
+      "args": [
+        {
+          "name": "All In Pool Solutions",
+          "phone": "702-555-0199",
+          "email": "office@allin.example",
+          "logo_path": "c/logo-1.png",
+          "brand_primary": "#12263A",
+          "review_url": "https://g.page/allin",
+          "settings": {
+            "services": "both"
+          },
+          "second_name": "Southern Nevada Leak Detection",
+          "second_phone": "702-555-0100",
+          "second_email": " ",
+          "second_logo_path": "c/logo2-1.png",
+          "second_brand_primary": null,
+          "second_review_url": null,
+          "second_for": "leak"
+        },
+        {
+          "type": "inspection"
+        },
+        null
+      ],
+      "result": "second"
+    },
+    {
+      "args": [
+        {
+          "name": "All In Pool Solutions",
+          "phone": "702-555-0199",
+          "email": "office@allin.example",
+          "logo_path": "c/logo-1.png",
+          "brand_primary": "#12263A",
+          "review_url": "https://g.page/allin",
+          "settings": {
+            "services": "both"
+          },
+          "second_name": "Southern Nevada Leak Detection",
+          "second_phone": "702-555-0100",
+          "second_email": " ",
+          "second_logo_path": "c/logo2-1.png",
+          "second_brand_primary": null,
+          "second_review_url": null,
+          "second_for": "leak"
+        },
+        {
+          "type": "maintenance"
+        },
+        null
+      ],
+      "result": "main"
+    },
+    {
+      "args": [
+        {
+          "name": "All In Pool Solutions",
+          "phone": "702-555-0199",
+          "email": "office@allin.example",
+          "logo_path": "c/logo-1.png",
+          "brand_primary": "#12263A",
+          "review_url": "https://g.page/allin",
+          "settings": {
+            "services": "both"
+          },
+          "second_name": "Southern Nevada Leak Detection",
+          "second_phone": "702-555-0100",
+          "second_email": " ",
+          "second_logo_path": "c/logo2-1.png",
+          "second_brand_primary": null,
+          "second_review_url": null,
+          "second_for": "leak"
+        },
+        {
+          "type": "repair"
+        },
+        null
+      ],
+      "result": "main"
+    },
+    {
+      "args": [
+        {
+          "name": "All In Pool Solutions",
+          "phone": "702-555-0199",
+          "email": "office@allin.example",
+          "logo_path": "c/logo-1.png",
+          "brand_primary": "#12263A",
+          "review_url": "https://g.page/allin",
+          "settings": {
+            "services": "both"
+          },
+          "second_name": "Southern Nevada Leak Detection",
+          "second_phone": "702-555-0100",
+          "second_email": " ",
+          "second_logo_path": "c/logo2-1.png",
+          "second_brand_primary": null,
+          "second_review_url": null,
+          "second_for": "leak"
+        },
+        {
+          "type": "repair"
+        },
+        {
+          "type": "detection"
+        }
+      ],
+      "result": "second"
+    },
+    {
+      "args": [
+        {
+          "name": "All In Pool Solutions",
+          "phone": "702-555-0199",
+          "email": "office@allin.example",
+          "logo_path": "c/logo-1.png",
+          "brand_primary": "#12263A",
+          "review_url": "https://g.page/allin",
+          "settings": {
+            "services": "both"
+          },
+          "second_name": "Southern Nevada Leak Detection",
+          "second_phone": "702-555-0100",
+          "second_email": " ",
+          "second_logo_path": "c/logo2-1.png",
+          "second_brand_primary": null,
+          "second_review_url": null,
+          "second_for": "leak"
+        },
+        {
+          "type": "repair"
+        },
+        {
+          "type": "maintenance"
+        }
+      ],
+      "result": "main"
+    },
+    {
+      "args": [
+        {
+          "name": "All In Pool Solutions",
+          "phone": "702-555-0199",
+          "email": "office@allin.example",
+          "logo_path": "c/logo-1.png",
+          "brand_primary": "#12263A",
+          "review_url": "https://g.page/allin",
+          "settings": {
+            "services": "both"
+          },
+          "second_name": "Southern Nevada Leak Detection",
+          "second_phone": "702-555-0100",
+          "second_email": " ",
+          "second_logo_path": "c/logo2-1.png",
+          "second_brand_primary": null,
+          "second_review_url": null,
+          "second_for": "leak"
+        },
+        {
+          "type": "repair"
+        },
+        {
+          "type": "maintenance",
+          "business": "second"
+        }
+      ],
+      "result": "second"
+    },
+    {
+      "args": [
+        {
+          "name": "All In Pool Solutions",
+          "phone": "702-555-0199",
+          "email": "office@allin.example",
+          "logo_path": "c/logo-1.png",
+          "brand_primary": "#12263A",
+          "review_url": "https://g.page/allin",
+          "settings": {
+            "services": "both"
+          },
+          "second_name": "Southern Nevada Leak Detection",
+          "second_phone": "702-555-0100",
+          "second_email": " ",
+          "second_logo_path": "c/logo2-1.png",
+          "second_brand_primary": null,
+          "second_review_url": null,
+          "second_for": "leak"
+        },
+        {
+          "type": "repair",
+          "business": "second"
+        },
+        null
+      ],
+      "result": "second"
+    },
+    {
+      "args": [
+        {
+          "name": "All In Pool Solutions",
+          "phone": "702-555-0199",
+          "email": "office@allin.example",
+          "logo_path": "c/logo-1.png",
+          "brand_primary": "#12263A",
+          "review_url": "https://g.page/allin",
+          "settings": {
+            "services": "both"
+          },
+          "second_name": "Southern Nevada Leak Detection",
+          "second_phone": "702-555-0100",
+          "second_email": " ",
+          "second_logo_path": "c/logo2-1.png",
+          "second_brand_primary": null,
+          "second_review_url": null,
+          "second_for": "leak"
+        },
+        {
+          "type": "detection",
+          "business": "main"
+        },
+        null
+      ],
+      "result": "main"
+    },
+    {
+      "args": [
+        {
+          "name": "All In Pool Solutions",
+          "phone": "702-555-0199",
+          "email": "office@allin.example",
+          "logo_path": "c/logo-1.png",
+          "brand_primary": "#12263A",
+          "review_url": "https://g.page/allin",
+          "settings": {
+            "services": "both"
+          },
+          "second_name": "Southern Nevada Leak Detection",
+          "second_phone": "702-555-0100",
+          "second_email": " ",
+          "second_logo_path": "c/logo2-1.png",
+          "second_brand_primary": null,
+          "second_review_url": null,
+          "second_for": "leak"
+        },
+        {
+          "type": "detection",
+          "business": "other"
+        },
+        null
+      ],
+      "result": "second"
+    },
+    {
+      "args": [
+        {
+          "name": "All In Pool Solutions",
+          "phone": "702-555-0199",
+          "email": "office@allin.example",
+          "logo_path": "c/logo-1.png",
+          "brand_primary": "#12263A",
+          "review_url": "https://g.page/allin",
+          "settings": {
+            "services": "both"
+          },
+          "second_name": "Southern Nevada Leak Detection",
+          "second_phone": "702-555-0100",
+          "second_email": " ",
+          "second_logo_path": "c/logo2-1.png",
+          "second_brand_primary": "#0A5C8A",
+          "second_review_url": "https://x.y",
+          "second_for": "pool"
+        },
+        {
+          "type": "detection"
+        },
+        null
+      ],
+      "result": "main"
+    },
+    {
+      "args": [
+        {
+          "name": "All In Pool Solutions",
+          "phone": "702-555-0199",
+          "email": "office@allin.example",
+          "logo_path": "c/logo-1.png",
+          "brand_primary": "#12263A",
+          "review_url": "https://g.page/allin",
+          "settings": {
+            "services": "both"
+          },
+          "second_name": "Southern Nevada Leak Detection",
+          "second_phone": "702-555-0100",
+          "second_email": " ",
+          "second_logo_path": "c/logo2-1.png",
+          "second_brand_primary": "#0A5C8A",
+          "second_review_url": "https://x.y",
+          "second_for": "pool"
+        },
+        {
+          "type": "inspection"
+        },
+        null
+      ],
+      "result": "main"
+    },
+    {
+      "args": [
+        {
+          "name": "All In Pool Solutions",
+          "phone": "702-555-0199",
+          "email": "office@allin.example",
+          "logo_path": "c/logo-1.png",
+          "brand_primary": "#12263A",
+          "review_url": "https://g.page/allin",
+          "settings": {
+            "services": "both"
+          },
+          "second_name": "Southern Nevada Leak Detection",
+          "second_phone": "702-555-0100",
+          "second_email": " ",
+          "second_logo_path": "c/logo2-1.png",
+          "second_brand_primary": "#0A5C8A",
+          "second_review_url": "https://x.y",
+          "second_for": "pool"
+        },
+        {
+          "type": "maintenance"
+        },
+        null
+      ],
+      "result": "second"
+    },
+    {
+      "args": [
+        {
+          "name": "All In Pool Solutions",
+          "phone": "702-555-0199",
+          "email": "office@allin.example",
+          "logo_path": "c/logo-1.png",
+          "brand_primary": "#12263A",
+          "review_url": "https://g.page/allin",
+          "settings": {
+            "services": "both"
+          },
+          "second_name": "Southern Nevada Leak Detection",
+          "second_phone": "702-555-0100",
+          "second_email": " ",
+          "second_logo_path": "c/logo2-1.png",
+          "second_brand_primary": "#0A5C8A",
+          "second_review_url": "https://x.y",
+          "second_for": "pool"
+        },
+        {
+          "type": "repair"
+        },
+        null
+      ],
+      "result": "main"
+    },
+    {
+      "args": [
+        {
+          "name": "All In Pool Solutions",
+          "phone": "702-555-0199",
+          "email": "office@allin.example",
+          "logo_path": "c/logo-1.png",
+          "brand_primary": "#12263A",
+          "review_url": "https://g.page/allin",
+          "settings": {
+            "services": "both"
+          },
+          "second_name": "Southern Nevada Leak Detection",
+          "second_phone": "702-555-0100",
+          "second_email": " ",
+          "second_logo_path": "c/logo2-1.png",
+          "second_brand_primary": "#0A5C8A",
+          "second_review_url": "https://x.y",
+          "second_for": "pool"
+        },
+        {
+          "type": "repair"
+        },
+        {
+          "type": "detection"
+        }
+      ],
+      "result": "main"
+    },
+    {
+      "args": [
+        {
+          "name": "All In Pool Solutions",
+          "phone": "702-555-0199",
+          "email": "office@allin.example",
+          "logo_path": "c/logo-1.png",
+          "brand_primary": "#12263A",
+          "review_url": "https://g.page/allin",
+          "settings": {
+            "services": "both"
+          },
+          "second_name": "Southern Nevada Leak Detection",
+          "second_phone": "702-555-0100",
+          "second_email": " ",
+          "second_logo_path": "c/logo2-1.png",
+          "second_brand_primary": "#0A5C8A",
+          "second_review_url": "https://x.y",
+          "second_for": "pool"
+        },
+        {
+          "type": "repair"
+        },
+        {
+          "type": "maintenance"
+        }
+      ],
+      "result": "second"
+    },
+    {
+      "args": [
+        {
+          "name": "All In Pool Solutions",
+          "phone": "702-555-0199",
+          "email": "office@allin.example",
+          "logo_path": "c/logo-1.png",
+          "brand_primary": "#12263A",
+          "review_url": "https://g.page/allin",
+          "settings": {
+            "services": "both"
+          },
+          "second_name": "Southern Nevada Leak Detection",
+          "second_phone": "702-555-0100",
+          "second_email": " ",
+          "second_logo_path": "c/logo2-1.png",
+          "second_brand_primary": "#0A5C8A",
+          "second_review_url": "https://x.y",
+          "second_for": "pool"
+        },
+        {
+          "type": "repair"
+        },
+        {
+          "type": "maintenance",
+          "business": "second"
+        }
+      ],
+      "result": "second"
+    },
+    {
+      "args": [
+        {
+          "name": "All In Pool Solutions",
+          "phone": "702-555-0199",
+          "email": "office@allin.example",
+          "logo_path": "c/logo-1.png",
+          "brand_primary": "#12263A",
+          "review_url": "https://g.page/allin",
+          "settings": {
+            "services": "both"
+          },
+          "second_name": "Southern Nevada Leak Detection",
+          "second_phone": "702-555-0100",
+          "second_email": " ",
+          "second_logo_path": "c/logo2-1.png",
+          "second_brand_primary": "#0A5C8A",
+          "second_review_url": "https://x.y",
+          "second_for": "pool"
+        },
+        {
+          "type": "repair",
+          "business": "second"
+        },
+        null
+      ],
+      "result": "second"
+    },
+    {
+      "args": [
+        {
+          "name": "All In Pool Solutions",
+          "phone": "702-555-0199",
+          "email": "office@allin.example",
+          "logo_path": "c/logo-1.png",
+          "brand_primary": "#12263A",
+          "review_url": "https://g.page/allin",
+          "settings": {
+            "services": "both"
+          },
+          "second_name": "Southern Nevada Leak Detection",
+          "second_phone": "702-555-0100",
+          "second_email": " ",
+          "second_logo_path": "c/logo2-1.png",
+          "second_brand_primary": "#0A5C8A",
+          "second_review_url": "https://x.y",
+          "second_for": "pool"
+        },
+        {
+          "type": "detection",
+          "business": "main"
+        },
+        null
+      ],
+      "result": "main"
+    },
+    {
+      "args": [
+        {
+          "name": "All In Pool Solutions",
+          "phone": "702-555-0199",
+          "email": "office@allin.example",
+          "logo_path": "c/logo-1.png",
+          "brand_primary": "#12263A",
+          "review_url": "https://g.page/allin",
+          "settings": {
+            "services": "both"
+          },
+          "second_name": "Southern Nevada Leak Detection",
+          "second_phone": "702-555-0100",
+          "second_email": " ",
+          "second_logo_path": "c/logo2-1.png",
+          "second_brand_primary": "#0A5C8A",
+          "second_review_url": "https://x.y",
+          "second_for": "pool"
+        },
+        {
+          "type": "detection",
+          "business": "other"
+        },
+        null
+      ],
+      "result": "main"
+    },
+    {
+      "args": [
+        {
+          "name": "All In Pool Solutions",
+          "phone": "702-555-0199",
+          "email": "office@allin.example",
+          "logo_path": "c/logo-1.png",
+          "brand_primary": "#12263A",
+          "review_url": "https://g.page/allin",
+          "settings": {
+            "services": "pool"
+          },
+          "second_name": "Southern Nevada Leak Detection",
+          "second_phone": "702-555-0100",
+          "second_email": " ",
+          "second_logo_path": "c/logo2-1.png",
+          "second_brand_primary": null,
+          "second_review_url": null,
+          "second_for": "leak"
+        },
+        {
+          "type": "detection"
+        },
+        null
+      ],
+      "result": "main"
+    },
+    {
+      "args": [
+        {
+          "name": "All In Pool Solutions",
+          "phone": "702-555-0199",
+          "email": "office@allin.example",
+          "logo_path": "c/logo-1.png",
+          "brand_primary": "#12263A",
+          "review_url": "https://g.page/allin",
+          "settings": {
+            "services": "pool"
+          },
+          "second_name": "Southern Nevada Leak Detection",
+          "second_phone": "702-555-0100",
+          "second_email": " ",
+          "second_logo_path": "c/logo2-1.png",
+          "second_brand_primary": null,
+          "second_review_url": null,
+          "second_for": "leak"
+        },
+        {
+          "type": "inspection"
+        },
+        null
+      ],
+      "result": "main"
+    },
+    {
+      "args": [
+        {
+          "name": "All In Pool Solutions",
+          "phone": "702-555-0199",
+          "email": "office@allin.example",
+          "logo_path": "c/logo-1.png",
+          "brand_primary": "#12263A",
+          "review_url": "https://g.page/allin",
+          "settings": {
+            "services": "pool"
+          },
+          "second_name": "Southern Nevada Leak Detection",
+          "second_phone": "702-555-0100",
+          "second_email": " ",
+          "second_logo_path": "c/logo2-1.png",
+          "second_brand_primary": null,
+          "second_review_url": null,
+          "second_for": "leak"
+        },
+        {
+          "type": "maintenance"
+        },
+        null
+      ],
+      "result": "main"
+    },
+    {
+      "args": [
+        {
+          "name": "All In Pool Solutions",
+          "phone": "702-555-0199",
+          "email": "office@allin.example",
+          "logo_path": "c/logo-1.png",
+          "brand_primary": "#12263A",
+          "review_url": "https://g.page/allin",
+          "settings": {
+            "services": "pool"
+          },
+          "second_name": "Southern Nevada Leak Detection",
+          "second_phone": "702-555-0100",
+          "second_email": " ",
+          "second_logo_path": "c/logo2-1.png",
+          "second_brand_primary": null,
+          "second_review_url": null,
+          "second_for": "leak"
+        },
+        {
+          "type": "repair"
+        },
+        null
+      ],
+      "result": "main"
+    },
+    {
+      "args": [
+        {
+          "name": "All In Pool Solutions",
+          "phone": "702-555-0199",
+          "email": "office@allin.example",
+          "logo_path": "c/logo-1.png",
+          "brand_primary": "#12263A",
+          "review_url": "https://g.page/allin",
+          "settings": {
+            "services": "pool"
+          },
+          "second_name": "Southern Nevada Leak Detection",
+          "second_phone": "702-555-0100",
+          "second_email": " ",
+          "second_logo_path": "c/logo2-1.png",
+          "second_brand_primary": null,
+          "second_review_url": null,
+          "second_for": "leak"
+        },
+        {
+          "type": "repair"
+        },
+        {
+          "type": "detection"
+        }
+      ],
+      "result": "main"
+    },
+    {
+      "args": [
+        {
+          "name": "All In Pool Solutions",
+          "phone": "702-555-0199",
+          "email": "office@allin.example",
+          "logo_path": "c/logo-1.png",
+          "brand_primary": "#12263A",
+          "review_url": "https://g.page/allin",
+          "settings": {
+            "services": "pool"
+          },
+          "second_name": "Southern Nevada Leak Detection",
+          "second_phone": "702-555-0100",
+          "second_email": " ",
+          "second_logo_path": "c/logo2-1.png",
+          "second_brand_primary": null,
+          "second_review_url": null,
+          "second_for": "leak"
+        },
+        {
+          "type": "repair"
+        },
+        {
+          "type": "maintenance"
+        }
+      ],
+      "result": "main"
+    },
+    {
+      "args": [
+        {
+          "name": "All In Pool Solutions",
+          "phone": "702-555-0199",
+          "email": "office@allin.example",
+          "logo_path": "c/logo-1.png",
+          "brand_primary": "#12263A",
+          "review_url": "https://g.page/allin",
+          "settings": {
+            "services": "pool"
+          },
+          "second_name": "Southern Nevada Leak Detection",
+          "second_phone": "702-555-0100",
+          "second_email": " ",
+          "second_logo_path": "c/logo2-1.png",
+          "second_brand_primary": null,
+          "second_review_url": null,
+          "second_for": "leak"
+        },
+        {
+          "type": "repair"
+        },
+        {
+          "type": "maintenance",
+          "business": "second"
+        }
+      ],
+      "result": "main"
+    },
+    {
+      "args": [
+        {
+          "name": "All In Pool Solutions",
+          "phone": "702-555-0199",
+          "email": "office@allin.example",
+          "logo_path": "c/logo-1.png",
+          "brand_primary": "#12263A",
+          "review_url": "https://g.page/allin",
+          "settings": {
+            "services": "pool"
+          },
+          "second_name": "Southern Nevada Leak Detection",
+          "second_phone": "702-555-0100",
+          "second_email": " ",
+          "second_logo_path": "c/logo2-1.png",
+          "second_brand_primary": null,
+          "second_review_url": null,
+          "second_for": "leak"
+        },
+        {
+          "type": "repair",
+          "business": "second"
+        },
+        null
+      ],
+      "result": "main"
+    },
+    {
+      "args": [
+        {
+          "name": "All In Pool Solutions",
+          "phone": "702-555-0199",
+          "email": "office@allin.example",
+          "logo_path": "c/logo-1.png",
+          "brand_primary": "#12263A",
+          "review_url": "https://g.page/allin",
+          "settings": {
+            "services": "pool"
+          },
+          "second_name": "Southern Nevada Leak Detection",
+          "second_phone": "702-555-0100",
+          "second_email": " ",
+          "second_logo_path": "c/logo2-1.png",
+          "second_brand_primary": null,
+          "second_review_url": null,
+          "second_for": "leak"
+        },
+        {
+          "type": "detection",
+          "business": "main"
+        },
+        null
+      ],
+      "result": "main"
+    },
+    {
+      "args": [
+        {
+          "name": "All In Pool Solutions",
+          "phone": "702-555-0199",
+          "email": "office@allin.example",
+          "logo_path": "c/logo-1.png",
+          "brand_primary": "#12263A",
+          "review_url": "https://g.page/allin",
+          "settings": {
+            "services": "pool"
+          },
+          "second_name": "Southern Nevada Leak Detection",
+          "second_phone": "702-555-0100",
+          "second_email": " ",
+          "second_logo_path": "c/logo2-1.png",
+          "second_brand_primary": null,
+          "second_review_url": null,
+          "second_for": "leak"
+        },
+        {
+          "type": "detection",
+          "business": "other"
+        },
+        null
+      ],
+      "result": "main"
+    },
+    {
+      "args": [
+        {
+          "name": "All In Pool Solutions",
+          "phone": "702-555-0199",
+          "email": "office@allin.example",
+          "logo_path": "c/logo-1.png",
+          "brand_primary": "#12263A",
+          "review_url": "https://g.page/allin",
+          "settings": null,
+          "second_name": "Southern Nevada Leak Detection",
+          "second_phone": "702-555-0100",
+          "second_email": " ",
+          "second_logo_path": "c/logo2-1.png",
+          "second_brand_primary": null,
+          "second_review_url": null,
+          "second_for": "leak"
+        },
+        {
+          "type": "detection"
+        },
+        null
+      ],
+      "result": "second"
+    },
+    {
+      "args": [
+        {
+          "name": "All In Pool Solutions",
+          "phone": "702-555-0199",
+          "email": "office@allin.example",
+          "logo_path": "c/logo-1.png",
+          "brand_primary": "#12263A",
+          "review_url": "https://g.page/allin",
+          "settings": null,
+          "second_name": "Southern Nevada Leak Detection",
+          "second_phone": "702-555-0100",
+          "second_email": " ",
+          "second_logo_path": "c/logo2-1.png",
+          "second_brand_primary": null,
+          "second_review_url": null,
+          "second_for": "leak"
+        },
+        {
+          "type": "inspection"
+        },
+        null
+      ],
+      "result": "second"
+    },
+    {
+      "args": [
+        {
+          "name": "All In Pool Solutions",
+          "phone": "702-555-0199",
+          "email": "office@allin.example",
+          "logo_path": "c/logo-1.png",
+          "brand_primary": "#12263A",
+          "review_url": "https://g.page/allin",
+          "settings": null,
+          "second_name": "Southern Nevada Leak Detection",
+          "second_phone": "702-555-0100",
+          "second_email": " ",
+          "second_logo_path": "c/logo2-1.png",
+          "second_brand_primary": null,
+          "second_review_url": null,
+          "second_for": "leak"
+        },
+        {
+          "type": "maintenance"
+        },
+        null
+      ],
+      "result": "main"
+    },
+    {
+      "args": [
+        {
+          "name": "All In Pool Solutions",
+          "phone": "702-555-0199",
+          "email": "office@allin.example",
+          "logo_path": "c/logo-1.png",
+          "brand_primary": "#12263A",
+          "review_url": "https://g.page/allin",
+          "settings": null,
+          "second_name": "Southern Nevada Leak Detection",
+          "second_phone": "702-555-0100",
+          "second_email": " ",
+          "second_logo_path": "c/logo2-1.png",
+          "second_brand_primary": null,
+          "second_review_url": null,
+          "second_for": "leak"
+        },
+        {
+          "type": "repair"
+        },
+        null
+      ],
+      "result": "main"
+    },
+    {
+      "args": [
+        {
+          "name": "All In Pool Solutions",
+          "phone": "702-555-0199",
+          "email": "office@allin.example",
+          "logo_path": "c/logo-1.png",
+          "brand_primary": "#12263A",
+          "review_url": "https://g.page/allin",
+          "settings": null,
+          "second_name": "Southern Nevada Leak Detection",
+          "second_phone": "702-555-0100",
+          "second_email": " ",
+          "second_logo_path": "c/logo2-1.png",
+          "second_brand_primary": null,
+          "second_review_url": null,
+          "second_for": "leak"
+        },
+        {
+          "type": "repair"
+        },
+        {
+          "type": "detection"
+        }
+      ],
+      "result": "second"
+    },
+    {
+      "args": [
+        {
+          "name": "All In Pool Solutions",
+          "phone": "702-555-0199",
+          "email": "office@allin.example",
+          "logo_path": "c/logo-1.png",
+          "brand_primary": "#12263A",
+          "review_url": "https://g.page/allin",
+          "settings": null,
+          "second_name": "Southern Nevada Leak Detection",
+          "second_phone": "702-555-0100",
+          "second_email": " ",
+          "second_logo_path": "c/logo2-1.png",
+          "second_brand_primary": null,
+          "second_review_url": null,
+          "second_for": "leak"
+        },
+        {
+          "type": "repair"
+        },
+        {
+          "type": "maintenance"
+        }
+      ],
+      "result": "main"
+    },
+    {
+      "args": [
+        {
+          "name": "All In Pool Solutions",
+          "phone": "702-555-0199",
+          "email": "office@allin.example",
+          "logo_path": "c/logo-1.png",
+          "brand_primary": "#12263A",
+          "review_url": "https://g.page/allin",
+          "settings": null,
+          "second_name": "Southern Nevada Leak Detection",
+          "second_phone": "702-555-0100",
+          "second_email": " ",
+          "second_logo_path": "c/logo2-1.png",
+          "second_brand_primary": null,
+          "second_review_url": null,
+          "second_for": "leak"
+        },
+        {
+          "type": "repair"
+        },
+        {
+          "type": "maintenance",
+          "business": "second"
+        }
+      ],
+      "result": "second"
+    },
+    {
+      "args": [
+        {
+          "name": "All In Pool Solutions",
+          "phone": "702-555-0199",
+          "email": "office@allin.example",
+          "logo_path": "c/logo-1.png",
+          "brand_primary": "#12263A",
+          "review_url": "https://g.page/allin",
+          "settings": null,
+          "second_name": "Southern Nevada Leak Detection",
+          "second_phone": "702-555-0100",
+          "second_email": " ",
+          "second_logo_path": "c/logo2-1.png",
+          "second_brand_primary": null,
+          "second_review_url": null,
+          "second_for": "leak"
+        },
+        {
+          "type": "repair",
+          "business": "second"
+        },
+        null
+      ],
+      "result": "second"
+    },
+    {
+      "args": [
+        {
+          "name": "All In Pool Solutions",
+          "phone": "702-555-0199",
+          "email": "office@allin.example",
+          "logo_path": "c/logo-1.png",
+          "brand_primary": "#12263A",
+          "review_url": "https://g.page/allin",
+          "settings": null,
+          "second_name": "Southern Nevada Leak Detection",
+          "second_phone": "702-555-0100",
+          "second_email": " ",
+          "second_logo_path": "c/logo2-1.png",
+          "second_brand_primary": null,
+          "second_review_url": null,
+          "second_for": "leak"
+        },
+        {
+          "type": "detection",
+          "business": "main"
+        },
+        null
+      ],
+      "result": "main"
+    },
+    {
+      "args": [
+        {
+          "name": "All In Pool Solutions",
+          "phone": "702-555-0199",
+          "email": "office@allin.example",
+          "logo_path": "c/logo-1.png",
+          "brand_primary": "#12263A",
+          "review_url": "https://g.page/allin",
+          "settings": null,
+          "second_name": "Southern Nevada Leak Detection",
+          "second_phone": "702-555-0100",
+          "second_email": " ",
+          "second_logo_path": "c/logo2-1.png",
+          "second_brand_primary": null,
+          "second_review_url": null,
+          "second_for": "leak"
+        },
+        {
+          "type": "detection",
+          "business": "other"
+        },
+        null
+      ],
+      "result": "second"
+    },
+    {
+      "args": [
+        {
+          "name": "All In Pool Solutions",
+          "phone": "702-555-0199",
+          "email": "office@allin.example",
+          "logo_path": "c/logo-1.png",
+          "brand_primary": "#12263A",
+          "review_url": "https://g.page/allin",
+          "settings": {
+            "services": "both"
+          },
+          "second_name": "  ",
+          "second_phone": "702-555-0100",
+          "second_email": " ",
+          "second_logo_path": "c/logo2-1.png",
+          "second_brand_primary": null,
+          "second_review_url": null,
+          "second_for": "leak"
+        },
+        {
+          "type": "detection"
+        },
+        null
+      ],
+      "result": "main"
+    },
+    {
+      "args": [
+        {
+          "name": "All In Pool Solutions",
+          "phone": "702-555-0199",
+          "email": "office@allin.example",
+          "logo_path": "c/logo-1.png",
+          "brand_primary": "#12263A",
+          "review_url": "https://g.page/allin",
+          "settings": {
+            "services": "both"
+          },
+          "second_name": "  ",
+          "second_phone": "702-555-0100",
+          "second_email": " ",
+          "second_logo_path": "c/logo2-1.png",
+          "second_brand_primary": null,
+          "second_review_url": null,
+          "second_for": "leak"
+        },
+        {
+          "type": "inspection"
+        },
+        null
+      ],
+      "result": "main"
+    },
+    {
+      "args": [
+        {
+          "name": "All In Pool Solutions",
+          "phone": "702-555-0199",
+          "email": "office@allin.example",
+          "logo_path": "c/logo-1.png",
+          "brand_primary": "#12263A",
+          "review_url": "https://g.page/allin",
+          "settings": {
+            "services": "both"
+          },
+          "second_name": "  ",
+          "second_phone": "702-555-0100",
+          "second_email": " ",
+          "second_logo_path": "c/logo2-1.png",
+          "second_brand_primary": null,
+          "second_review_url": null,
+          "second_for": "leak"
+        },
+        {
+          "type": "maintenance"
+        },
+        null
+      ],
+      "result": "main"
+    },
+    {
+      "args": [
+        {
+          "name": "All In Pool Solutions",
+          "phone": "702-555-0199",
+          "email": "office@allin.example",
+          "logo_path": "c/logo-1.png",
+          "brand_primary": "#12263A",
+          "review_url": "https://g.page/allin",
+          "settings": {
+            "services": "both"
+          },
+          "second_name": "  ",
+          "second_phone": "702-555-0100",
+          "second_email": " ",
+          "second_logo_path": "c/logo2-1.png",
+          "second_brand_primary": null,
+          "second_review_url": null,
+          "second_for": "leak"
+        },
+        {
+          "type": "repair"
+        },
+        null
+      ],
+      "result": "main"
+    },
+    {
+      "args": [
+        {
+          "name": "All In Pool Solutions",
+          "phone": "702-555-0199",
+          "email": "office@allin.example",
+          "logo_path": "c/logo-1.png",
+          "brand_primary": "#12263A",
+          "review_url": "https://g.page/allin",
+          "settings": {
+            "services": "both"
+          },
+          "second_name": "  ",
+          "second_phone": "702-555-0100",
+          "second_email": " ",
+          "second_logo_path": "c/logo2-1.png",
+          "second_brand_primary": null,
+          "second_review_url": null,
+          "second_for": "leak"
+        },
+        {
+          "type": "repair"
+        },
+        {
+          "type": "detection"
+        }
+      ],
+      "result": "main"
+    },
+    {
+      "args": [
+        {
+          "name": "All In Pool Solutions",
+          "phone": "702-555-0199",
+          "email": "office@allin.example",
+          "logo_path": "c/logo-1.png",
+          "brand_primary": "#12263A",
+          "review_url": "https://g.page/allin",
+          "settings": {
+            "services": "both"
+          },
+          "second_name": "  ",
+          "second_phone": "702-555-0100",
+          "second_email": " ",
+          "second_logo_path": "c/logo2-1.png",
+          "second_brand_primary": null,
+          "second_review_url": null,
+          "second_for": "leak"
+        },
+        {
+          "type": "repair"
+        },
+        {
+          "type": "maintenance"
+        }
+      ],
+      "result": "main"
+    },
+    {
+      "args": [
+        {
+          "name": "All In Pool Solutions",
+          "phone": "702-555-0199",
+          "email": "office@allin.example",
+          "logo_path": "c/logo-1.png",
+          "brand_primary": "#12263A",
+          "review_url": "https://g.page/allin",
+          "settings": {
+            "services": "both"
+          },
+          "second_name": "  ",
+          "second_phone": "702-555-0100",
+          "second_email": " ",
+          "second_logo_path": "c/logo2-1.png",
+          "second_brand_primary": null,
+          "second_review_url": null,
+          "second_for": "leak"
+        },
+        {
+          "type": "repair"
+        },
+        {
+          "type": "maintenance",
+          "business": "second"
+        }
+      ],
+      "result": "main"
+    },
+    {
+      "args": [
+        {
+          "name": "All In Pool Solutions",
+          "phone": "702-555-0199",
+          "email": "office@allin.example",
+          "logo_path": "c/logo-1.png",
+          "brand_primary": "#12263A",
+          "review_url": "https://g.page/allin",
+          "settings": {
+            "services": "both"
+          },
+          "second_name": "  ",
+          "second_phone": "702-555-0100",
+          "second_email": " ",
+          "second_logo_path": "c/logo2-1.png",
+          "second_brand_primary": null,
+          "second_review_url": null,
+          "second_for": "leak"
+        },
+        {
+          "type": "repair",
+          "business": "second"
+        },
+        null
+      ],
+      "result": "main"
+    },
+    {
+      "args": [
+        {
+          "name": "All In Pool Solutions",
+          "phone": "702-555-0199",
+          "email": "office@allin.example",
+          "logo_path": "c/logo-1.png",
+          "brand_primary": "#12263A",
+          "review_url": "https://g.page/allin",
+          "settings": {
+            "services": "both"
+          },
+          "second_name": "  ",
+          "second_phone": "702-555-0100",
+          "second_email": " ",
+          "second_logo_path": "c/logo2-1.png",
+          "second_brand_primary": null,
+          "second_review_url": null,
+          "second_for": "leak"
+        },
+        {
+          "type": "detection",
+          "business": "main"
+        },
+        null
+      ],
+      "result": "main"
+    },
+    {
+      "args": [
+        {
+          "name": "All In Pool Solutions",
+          "phone": "702-555-0199",
+          "email": "office@allin.example",
+          "logo_path": "c/logo-1.png",
+          "brand_primary": "#12263A",
+          "review_url": "https://g.page/allin",
+          "settings": {
+            "services": "both"
+          },
+          "second_name": "  ",
+          "second_phone": "702-555-0100",
+          "second_email": " ",
+          "second_logo_path": "c/logo2-1.png",
+          "second_brand_primary": null,
+          "second_review_url": null,
+          "second_for": "leak"
+        },
+        {
+          "type": "detection",
+          "business": "other"
+        },
+        null
+      ],
+      "result": "main"
+    },
+    {
+      "args": [
+        {
+          "name": "Plain Pools",
+          "settings": {
+            "services": "both"
+          }
+        },
+        {
+          "type": "detection"
+        },
+        null
+      ],
+      "result": "main"
+    },
+    {
+      "args": [
+        {
+          "name": "Plain Pools",
+          "settings": {
+            "services": "both"
+          }
+        },
+        {
+          "type": "inspection"
+        },
+        null
+      ],
+      "result": "main"
+    },
+    {
+      "args": [
+        {
+          "name": "Plain Pools",
+          "settings": {
+            "services": "both"
+          }
+        },
+        {
+          "type": "maintenance"
+        },
+        null
+      ],
+      "result": "main"
+    },
+    {
+      "args": [
+        {
+          "name": "Plain Pools",
+          "settings": {
+            "services": "both"
+          }
+        },
+        {
+          "type": "repair"
+        },
+        null
+      ],
+      "result": "main"
+    },
+    {
+      "args": [
+        {
+          "name": "Plain Pools",
+          "settings": {
+            "services": "both"
+          }
+        },
+        {
+          "type": "repair"
+        },
+        {
+          "type": "detection"
+        }
+      ],
+      "result": "main"
+    },
+    {
+      "args": [
+        {
+          "name": "Plain Pools",
+          "settings": {
+            "services": "both"
+          }
+        },
+        {
+          "type": "repair"
+        },
+        {
+          "type": "maintenance"
+        }
+      ],
+      "result": "main"
+    },
+    {
+      "args": [
+        {
+          "name": "Plain Pools",
+          "settings": {
+            "services": "both"
+          }
+        },
+        {
+          "type": "repair"
+        },
+        {
+          "type": "maintenance",
+          "business": "second"
+        }
+      ],
+      "result": "main"
+    },
+    {
+      "args": [
+        {
+          "name": "Plain Pools",
+          "settings": {
+            "services": "both"
+          }
+        },
+        {
+          "type": "repair",
+          "business": "second"
+        },
+        null
+      ],
+      "result": "main"
+    },
+    {
+      "args": [
+        {
+          "name": "Plain Pools",
+          "settings": {
+            "services": "both"
+          }
+        },
+        {
+          "type": "detection",
+          "business": "main"
+        },
+        null
+      ],
+      "result": "main"
+    },
+    {
+      "args": [
+        {
+          "name": "Plain Pools",
+          "settings": {
+            "services": "both"
+          }
+        },
+        {
+          "type": "detection",
+          "business": "other"
+        },
+        null
+      ],
+      "result": "main"
+    }
+  ],
+  "businessIdentity": [
+    {
+      "args": [
+        {
+          "name": "All In Pool Solutions",
+          "phone": "702-555-0199",
+          "email": "office@allin.example",
+          "logo_path": "c/logo-1.png",
+          "brand_primary": "#12263A",
+          "review_url": "https://g.page/allin",
+          "settings": {
+            "services": "both"
+          },
+          "second_name": "Southern Nevada Leak Detection",
+          "second_phone": "702-555-0100",
+          "second_email": " ",
+          "second_logo_path": "c/logo2-1.png",
+          "second_brand_primary": null,
+          "second_review_url": null,
+          "second_for": "leak"
+        },
+        "main"
+      ],
+      "result": {
+        "business": "main",
+        "name": "All In Pool Solutions",
+        "phone": "702-555-0199",
+        "email": "office@allin.example",
+        "logoPath": "c/logo-1.png",
+        "brandPrimary": "#12263A",
+        "reviewUrl": "https://g.page/allin"
+      }
+    },
+    {
+      "args": [
+        {
+          "name": "All In Pool Solutions",
+          "phone": "702-555-0199",
+          "email": "office@allin.example",
+          "logo_path": "c/logo-1.png",
+          "brand_primary": "#12263A",
+          "review_url": "https://g.page/allin",
+          "settings": {
+            "services": "both"
+          },
+          "second_name": "Southern Nevada Leak Detection",
+          "second_phone": "702-555-0100",
+          "second_email": " ",
+          "second_logo_path": "c/logo2-1.png",
+          "second_brand_primary": null,
+          "second_review_url": null,
+          "second_for": "leak"
+        },
+        "second"
+      ],
+      "result": {
+        "business": "second",
+        "name": "Southern Nevada Leak Detection",
+        "phone": "702-555-0100",
+        "email": "office@allin.example",
+        "logoPath": "c/logo2-1.png",
+        "brandPrimary": "#12263A",
+        "reviewUrl": "https://g.page/allin"
+      }
+    },
+    {
+      "args": [
+        {
+          "name": "All In Pool Solutions",
+          "phone": "702-555-0199",
+          "email": "office@allin.example",
+          "logo_path": "c/logo-1.png",
+          "brand_primary": "#12263A",
+          "review_url": "https://g.page/allin",
+          "settings": {
+            "services": "both"
+          },
+          "second_name": "Southern Nevada Leak Detection",
+          "second_phone": "702-555-0100",
+          "second_email": " ",
+          "second_logo_path": "c/logo2-1.png",
+          "second_brand_primary": "#0A5C8A",
+          "second_review_url": "https://x.y",
+          "second_for": "pool"
+        },
+        "main"
+      ],
+      "result": {
+        "business": "main",
+        "name": "All In Pool Solutions",
+        "phone": "702-555-0199",
+        "email": "office@allin.example",
+        "logoPath": "c/logo-1.png",
+        "brandPrimary": "#12263A",
+        "reviewUrl": "https://g.page/allin"
+      }
+    },
+    {
+      "args": [
+        {
+          "name": "All In Pool Solutions",
+          "phone": "702-555-0199",
+          "email": "office@allin.example",
+          "logo_path": "c/logo-1.png",
+          "brand_primary": "#12263A",
+          "review_url": "https://g.page/allin",
+          "settings": {
+            "services": "both"
+          },
+          "second_name": "Southern Nevada Leak Detection",
+          "second_phone": "702-555-0100",
+          "second_email": " ",
+          "second_logo_path": "c/logo2-1.png",
+          "second_brand_primary": "#0A5C8A",
+          "second_review_url": "https://x.y",
+          "second_for": "pool"
+        },
+        "second"
+      ],
+      "result": {
+        "business": "second",
+        "name": "Southern Nevada Leak Detection",
+        "phone": "702-555-0100",
+        "email": "office@allin.example",
+        "logoPath": "c/logo2-1.png",
+        "brandPrimary": "#0A5C8A",
+        "reviewUrl": "https://x.y"
+      }
+    },
+    {
+      "args": [
+        {
+          "name": "All In Pool Solutions",
+          "phone": "702-555-0199",
+          "email": "office@allin.example",
+          "logo_path": "c/logo-1.png",
+          "brand_primary": "#12263A",
+          "review_url": "https://g.page/allin",
+          "settings": {
+            "services": "pool"
+          },
+          "second_name": "Southern Nevada Leak Detection",
+          "second_phone": "702-555-0100",
+          "second_email": " ",
+          "second_logo_path": "c/logo2-1.png",
+          "second_brand_primary": null,
+          "second_review_url": null,
+          "second_for": "leak"
+        },
+        "main"
+      ],
+      "result": {
+        "business": "main",
+        "name": "All In Pool Solutions",
+        "phone": "702-555-0199",
+        "email": "office@allin.example",
+        "logoPath": "c/logo-1.png",
+        "brandPrimary": "#12263A",
+        "reviewUrl": "https://g.page/allin"
+      }
+    },
+    {
+      "args": [
+        {
+          "name": "All In Pool Solutions",
+          "phone": "702-555-0199",
+          "email": "office@allin.example",
+          "logo_path": "c/logo-1.png",
+          "brand_primary": "#12263A",
+          "review_url": "https://g.page/allin",
+          "settings": {
+            "services": "pool"
+          },
+          "second_name": "Southern Nevada Leak Detection",
+          "second_phone": "702-555-0100",
+          "second_email": " ",
+          "second_logo_path": "c/logo2-1.png",
+          "second_brand_primary": null,
+          "second_review_url": null,
+          "second_for": "leak"
+        },
+        "second"
+      ],
+      "result": {
+        "business": "main",
+        "name": "All In Pool Solutions",
+        "phone": "702-555-0199",
+        "email": "office@allin.example",
+        "logoPath": "c/logo-1.png",
+        "brandPrimary": "#12263A",
+        "reviewUrl": "https://g.page/allin"
+      }
+    },
+    {
+      "args": [
+        {
+          "name": "All In Pool Solutions",
+          "phone": "702-555-0199",
+          "email": "office@allin.example",
+          "logo_path": "c/logo-1.png",
+          "brand_primary": "#12263A",
+          "review_url": "https://g.page/allin",
+          "settings": null,
+          "second_name": "Southern Nevada Leak Detection",
+          "second_phone": "702-555-0100",
+          "second_email": " ",
+          "second_logo_path": "c/logo2-1.png",
+          "second_brand_primary": null,
+          "second_review_url": null,
+          "second_for": "leak"
+        },
+        "main"
+      ],
+      "result": {
+        "business": "main",
+        "name": "All In Pool Solutions",
+        "phone": "702-555-0199",
+        "email": "office@allin.example",
+        "logoPath": "c/logo-1.png",
+        "brandPrimary": "#12263A",
+        "reviewUrl": "https://g.page/allin"
+      }
+    },
+    {
+      "args": [
+        {
+          "name": "All In Pool Solutions",
+          "phone": "702-555-0199",
+          "email": "office@allin.example",
+          "logo_path": "c/logo-1.png",
+          "brand_primary": "#12263A",
+          "review_url": "https://g.page/allin",
+          "settings": null,
+          "second_name": "Southern Nevada Leak Detection",
+          "second_phone": "702-555-0100",
+          "second_email": " ",
+          "second_logo_path": "c/logo2-1.png",
+          "second_brand_primary": null,
+          "second_review_url": null,
+          "second_for": "leak"
+        },
+        "second"
+      ],
+      "result": {
+        "business": "second",
+        "name": "Southern Nevada Leak Detection",
+        "phone": "702-555-0100",
+        "email": "office@allin.example",
+        "logoPath": "c/logo2-1.png",
+        "brandPrimary": "#12263A",
+        "reviewUrl": "https://g.page/allin"
+      }
+    },
+    {
+      "args": [
+        {
+          "name": "All In Pool Solutions",
+          "phone": "702-555-0199",
+          "email": "office@allin.example",
+          "logo_path": "c/logo-1.png",
+          "brand_primary": "#12263A",
+          "review_url": "https://g.page/allin",
+          "settings": {
+            "services": "both"
+          },
+          "second_name": "  ",
+          "second_phone": "702-555-0100",
+          "second_email": " ",
+          "second_logo_path": "c/logo2-1.png",
+          "second_brand_primary": null,
+          "second_review_url": null,
+          "second_for": "leak"
+        },
+        "main"
+      ],
+      "result": {
+        "business": "main",
+        "name": "All In Pool Solutions",
+        "phone": "702-555-0199",
+        "email": "office@allin.example",
+        "logoPath": "c/logo-1.png",
+        "brandPrimary": "#12263A",
+        "reviewUrl": "https://g.page/allin"
+      }
+    },
+    {
+      "args": [
+        {
+          "name": "All In Pool Solutions",
+          "phone": "702-555-0199",
+          "email": "office@allin.example",
+          "logo_path": "c/logo-1.png",
+          "brand_primary": "#12263A",
+          "review_url": "https://g.page/allin",
+          "settings": {
+            "services": "both"
+          },
+          "second_name": "  ",
+          "second_phone": "702-555-0100",
+          "second_email": " ",
+          "second_logo_path": "c/logo2-1.png",
+          "second_brand_primary": null,
+          "second_review_url": null,
+          "second_for": "leak"
+        },
+        "second"
+      ],
+      "result": {
+        "business": "main",
+        "name": "All In Pool Solutions",
+        "phone": "702-555-0199",
+        "email": "office@allin.example",
+        "logoPath": "c/logo-1.png",
+        "brandPrimary": "#12263A",
+        "reviewUrl": "https://g.page/allin"
+      }
+    },
+    {
+      "args": [
+        {
+          "name": "Plain Pools",
+          "settings": {
+            "services": "both"
+          }
+        },
+        "main"
+      ],
+      "result": {
+        "business": "main",
+        "name": "Plain Pools",
+        "phone": null,
+        "email": null,
+        "logoPath": null,
+        "brandPrimary": null,
+        "reviewUrl": null
+      }
+    },
+    {
+      "args": [
+        {
+          "name": "Plain Pools",
+          "settings": {
+            "services": "both"
+          }
+        },
+        "second"
+      ],
+      "result": {
+        "business": "main",
+        "name": "Plain Pools",
+        "phone": null,
+        "email": null,
+        "logoPath": null,
+        "brandPrimary": null,
+        "reviewUrl": null
+      }
+    }
+  ],
+  "jobBusinessName": [
+    {
+      "args": [
+        {
+          "name": "All In Pool Solutions",
+          "phone": "702-555-0199",
+          "email": "office@allin.example",
+          "logo_path": "c/logo-1.png",
+          "brand_primary": "#12263A",
+          "review_url": "https://g.page/allin",
+          "settings": {
+            "services": "both"
+          },
+          "second_name": "Southern Nevada Leak Detection",
+          "second_phone": "702-555-0100",
+          "second_email": " ",
+          "second_logo_path": "c/logo2-1.png",
+          "second_brand_primary": null,
+          "second_review_url": null,
+          "second_for": "leak"
+        },
+        null,
+        null
+      ],
+      "result": "All In Pool Solutions"
+    },
+    {
+      "args": [
+        {
+          "name": "All In Pool Solutions",
+          "phone": "702-555-0199",
+          "email": "office@allin.example",
+          "logo_path": "c/logo-1.png",
+          "brand_primary": "#12263A",
+          "review_url": "https://g.page/allin",
+          "settings": {
+            "services": "both"
+          },
+          "second_name": "Southern Nevada Leak Detection",
+          "second_phone": "702-555-0100",
+          "second_email": " ",
+          "second_logo_path": "c/logo2-1.png",
+          "second_brand_primary": null,
+          "second_review_url": null,
+          "second_for": "leak"
+        },
+        {
+          "type": "detection"
+        },
+        null
+      ],
+      "result": "Southern Nevada Leak Detection"
+    },
+    {
+      "args": [
+        {
+          "name": "All In Pool Solutions",
+          "phone": "702-555-0199",
+          "email": "office@allin.example",
+          "logo_path": "c/logo-1.png",
+          "brand_primary": "#12263A",
+          "review_url": "https://g.page/allin",
+          "settings": {
+            "services": "both"
+          },
+          "second_name": "Southern Nevada Leak Detection",
+          "second_phone": "702-555-0100",
+          "second_email": " ",
+          "second_logo_path": "c/logo2-1.png",
+          "second_brand_primary": null,
+          "second_review_url": null,
+          "second_for": "leak"
+        },
+        {
+          "type": "inspection"
+        },
+        null
+      ],
+      "result": "Southern Nevada Leak Detection"
+    },
+    {
+      "args": [
+        {
+          "name": "All In Pool Solutions",
+          "phone": "702-555-0199",
+          "email": "office@allin.example",
+          "logo_path": "c/logo-1.png",
+          "brand_primary": "#12263A",
+          "review_url": "https://g.page/allin",
+          "settings": {
+            "services": "both"
+          },
+          "second_name": "Southern Nevada Leak Detection",
+          "second_phone": "702-555-0100",
+          "second_email": " ",
+          "second_logo_path": "c/logo2-1.png",
+          "second_brand_primary": null,
+          "second_review_url": null,
+          "second_for": "leak"
+        },
+        {
+          "type": "maintenance"
+        },
+        null
+      ],
+      "result": "All In Pool Solutions"
+    },
+    {
+      "args": [
+        {
+          "name": "All In Pool Solutions",
+          "phone": "702-555-0199",
+          "email": "office@allin.example",
+          "logo_path": "c/logo-1.png",
+          "brand_primary": "#12263A",
+          "review_url": "https://g.page/allin",
+          "settings": {
+            "services": "both"
+          },
+          "second_name": "Southern Nevada Leak Detection",
+          "second_phone": "702-555-0100",
+          "second_email": " ",
+          "second_logo_path": "c/logo2-1.png",
+          "second_brand_primary": null,
+          "second_review_url": null,
+          "second_for": "leak"
+        },
+        {
+          "type": "repair"
+        },
+        null
+      ],
+      "result": "All In Pool Solutions"
+    },
+    {
+      "args": [
+        {
+          "name": "All In Pool Solutions",
+          "phone": "702-555-0199",
+          "email": "office@allin.example",
+          "logo_path": "c/logo-1.png",
+          "brand_primary": "#12263A",
+          "review_url": "https://g.page/allin",
+          "settings": {
+            "services": "both"
+          },
+          "second_name": "Southern Nevada Leak Detection",
+          "second_phone": "702-555-0100",
+          "second_email": " ",
+          "second_logo_path": "c/logo2-1.png",
+          "second_brand_primary": null,
+          "second_review_url": null,
+          "second_for": "leak"
+        },
+        {
+          "type": "repair"
+        },
+        {
+          "type": "detection"
+        }
+      ],
+      "result": "Southern Nevada Leak Detection"
+    },
+    {
+      "args": [
+        {
+          "name": "All In Pool Solutions",
+          "phone": "702-555-0199",
+          "email": "office@allin.example",
+          "logo_path": "c/logo-1.png",
+          "brand_primary": "#12263A",
+          "review_url": "https://g.page/allin",
+          "settings": {
+            "services": "both"
+          },
+          "second_name": "Southern Nevada Leak Detection",
+          "second_phone": "702-555-0100",
+          "second_email": " ",
+          "second_logo_path": "c/logo2-1.png",
+          "second_brand_primary": null,
+          "second_review_url": null,
+          "second_for": "leak"
+        },
+        {
+          "type": "repair"
+        },
+        {
+          "type": "maintenance"
+        }
+      ],
+      "result": "All In Pool Solutions"
+    },
+    {
+      "args": [
+        {
+          "name": "All In Pool Solutions",
+          "phone": "702-555-0199",
+          "email": "office@allin.example",
+          "logo_path": "c/logo-1.png",
+          "brand_primary": "#12263A",
+          "review_url": "https://g.page/allin",
+          "settings": {
+            "services": "both"
+          },
+          "second_name": "Southern Nevada Leak Detection",
+          "second_phone": "702-555-0100",
+          "second_email": " ",
+          "second_logo_path": "c/logo2-1.png",
+          "second_brand_primary": null,
+          "second_review_url": null,
+          "second_for": "leak"
+        },
+        {
+          "type": "repair"
+        },
+        {
+          "type": "maintenance",
+          "business": "second"
+        }
+      ],
+      "result": "Southern Nevada Leak Detection"
+    },
+    {
+      "args": [
+        {
+          "name": "All In Pool Solutions",
+          "phone": "702-555-0199",
+          "email": "office@allin.example",
+          "logo_path": "c/logo-1.png",
+          "brand_primary": "#12263A",
+          "review_url": "https://g.page/allin",
+          "settings": {
+            "services": "both"
+          },
+          "second_name": "Southern Nevada Leak Detection",
+          "second_phone": "702-555-0100",
+          "second_email": " ",
+          "second_logo_path": "c/logo2-1.png",
+          "second_brand_primary": null,
+          "second_review_url": null,
+          "second_for": "leak"
+        },
+        {
+          "type": "repair",
+          "business": "second"
+        },
+        null
+      ],
+      "result": "Southern Nevada Leak Detection"
+    },
+    {
+      "args": [
+        {
+          "name": "All In Pool Solutions",
+          "phone": "702-555-0199",
+          "email": "office@allin.example",
+          "logo_path": "c/logo-1.png",
+          "brand_primary": "#12263A",
+          "review_url": "https://g.page/allin",
+          "settings": {
+            "services": "both"
+          },
+          "second_name": "Southern Nevada Leak Detection",
+          "second_phone": "702-555-0100",
+          "second_email": " ",
+          "second_logo_path": "c/logo2-1.png",
+          "second_brand_primary": null,
+          "second_review_url": null,
+          "second_for": "leak"
+        },
+        {
+          "type": "detection",
+          "business": "main"
+        },
+        null
+      ],
+      "result": "All In Pool Solutions"
+    },
+    {
+      "args": [
+        {
+          "name": "All In Pool Solutions",
+          "phone": "702-555-0199",
+          "email": "office@allin.example",
+          "logo_path": "c/logo-1.png",
+          "brand_primary": "#12263A",
+          "review_url": "https://g.page/allin",
+          "settings": {
+            "services": "both"
+          },
+          "second_name": "Southern Nevada Leak Detection",
+          "second_phone": "702-555-0100",
+          "second_email": " ",
+          "second_logo_path": "c/logo2-1.png",
+          "second_brand_primary": null,
+          "second_review_url": null,
+          "second_for": "leak"
+        },
+        {
+          "type": "detection",
+          "business": "other"
+        },
+        null
+      ],
+      "result": "Southern Nevada Leak Detection"
+    }
+  ],
+  "businessChoices": [
+    {
+      "args": [
+        {
+          "name": "All In Pool Solutions",
+          "phone": "702-555-0199",
+          "email": "office@allin.example",
+          "logo_path": "c/logo-1.png",
+          "brand_primary": "#12263A",
+          "review_url": "https://g.page/allin",
+          "settings": {
+            "services": "both"
+          },
+          "second_name": "Southern Nevada Leak Detection",
+          "second_phone": "702-555-0100",
+          "second_email": " ",
+          "second_logo_path": "c/logo2-1.png",
+          "second_brand_primary": null,
+          "second_review_url": null,
+          "second_for": "leak"
+        }
+      ],
+      "result": [
+        {
+          "value": "main",
+          "label": "All In Pool Solutions"
+        },
+        {
+          "value": "second",
+          "label": "Southern Nevada Leak Detection"
+        }
+      ]
+    },
+    {
+      "args": [
+        {
+          "name": "All In Pool Solutions",
+          "phone": "702-555-0199",
+          "email": "office@allin.example",
+          "logo_path": "c/logo-1.png",
+          "brand_primary": "#12263A",
+          "review_url": "https://g.page/allin",
+          "settings": {
+            "services": "both"
+          },
+          "second_name": "Southern Nevada Leak Detection",
+          "second_phone": "702-555-0100",
+          "second_email": " ",
+          "second_logo_path": "c/logo2-1.png",
+          "second_brand_primary": "#0A5C8A",
+          "second_review_url": "https://x.y",
+          "second_for": "pool"
+        }
+      ],
+      "result": [
+        {
+          "value": "main",
+          "label": "All In Pool Solutions"
+        },
+        {
+          "value": "second",
+          "label": "Southern Nevada Leak Detection"
+        }
+      ]
+    },
+    {
+      "args": [
+        {
+          "name": "All In Pool Solutions",
+          "phone": "702-555-0199",
+          "email": "office@allin.example",
+          "logo_path": "c/logo-1.png",
+          "brand_primary": "#12263A",
+          "review_url": "https://g.page/allin",
+          "settings": {
+            "services": "pool"
+          },
+          "second_name": "Southern Nevada Leak Detection",
+          "second_phone": "702-555-0100",
+          "second_email": " ",
+          "second_logo_path": "c/logo2-1.png",
+          "second_brand_primary": null,
+          "second_review_url": null,
+          "second_for": "leak"
+        }
+      ],
+      "result": []
+    },
+    {
+      "args": [
+        {
+          "name": "All In Pool Solutions",
+          "phone": "702-555-0199",
+          "email": "office@allin.example",
+          "logo_path": "c/logo-1.png",
+          "brand_primary": "#12263A",
+          "review_url": "https://g.page/allin",
+          "settings": null,
+          "second_name": "Southern Nevada Leak Detection",
+          "second_phone": "702-555-0100",
+          "second_email": " ",
+          "second_logo_path": "c/logo2-1.png",
+          "second_brand_primary": null,
+          "second_review_url": null,
+          "second_for": "leak"
+        }
+      ],
+      "result": [
+        {
+          "value": "main",
+          "label": "All In Pool Solutions"
+        },
+        {
+          "value": "second",
+          "label": "Southern Nevada Leak Detection"
+        }
+      ]
+    },
+    {
+      "args": [
+        {
+          "name": "All In Pool Solutions",
+          "phone": "702-555-0199",
+          "email": "office@allin.example",
+          "logo_path": "c/logo-1.png",
+          "brand_primary": "#12263A",
+          "review_url": "https://g.page/allin",
+          "settings": {
+            "services": "both"
+          },
+          "second_name": "  ",
+          "second_phone": "702-555-0100",
+          "second_email": " ",
+          "second_logo_path": "c/logo2-1.png",
+          "second_brand_primary": null,
+          "second_review_url": null,
+          "second_for": "leak"
+        }
+      ],
+      "result": []
+    },
+    {
+      "args": [
+        {
+          "name": "Plain Pools",
+          "settings": {
+            "services": "both"
+          }
+        }
+      ],
+      "result": []
+    }
+  ],
+  "BUSINESS_WORK_LABELS": [
+    {
+      "args": [],
+      "result": {
+        "leak": "Leak Detection",
+        "pool": "Pool Care"
+      }
+    }
+  ],
+  "SECOND_BUSINESS_TEXT": [
+    {
+      "args": [],
+      "result": {
+        "header": "Second Business",
+        "name": "Business Name",
+        "logo": "Logo",
+        "phone": "Phone",
+        "email": "Email",
+        "reviewUrl": "Review Link",
+        "color": "Main Color",
+        "useFor": "Use For",
+        "footer": "Jobs of this kind, and repairs that come from them, show this name, logo and contact info on reports, quotes, invoices, texts and emails. Everything else uses your main business. Leave the name blank to turn it off.",
+        "jobRow": "Business"
+      }
+    }
+  ],
+  "showsTechOnReports": [
+    {
+      "args": [
+        null
+      ],
+      "result": false
+    },
+    {
+      "args": [
+        {}
+      ],
+      "result": false
+    },
+    {
+      "args": [
+        {
+          "tech_on_reports": true
+        }
+      ],
+      "result": true
+    },
+    {
+      "args": [
+        {
+          "tech_on_reports": "true"
+        }
+      ],
+      "result": false
+    },
+    {
+      "args": [
+        {
+          "tech_on_reports": false
+        }
+      ],
+      "result": false
+    }
+  ],
+  "TECH_CARD_TEXT": [
+    {
+      "args": [],
+      "result": {
+        "label": "Show the Tech on Reports",
+        "footer": "Reports end with “Your pool was serviced by Brian” and their photo. Add photos in Team.",
+        "photo": "Photo",
+        "myPhoto": "Your Photo",
+        "myPhotoFooter": "Customers see it on reports when your shop shows the tech.",
+        "addPhoto": "Add Photo",
+        "changePhoto": "Change Photo",
+        "removePhoto": "Remove Photo",
+        "size": 512
+      }
+    }
+  ],
+  "techInitial": [
+    {
+      "args": [
+        "Brian"
+      ],
+      "result": "B"
+    },
+    {
+      "args": [
+        " brian"
+      ],
+      "result": "B"
+    },
+    {
+      "args": [
+        ""
+      ],
+      "result": "?"
+    },
+    {
+      "args": [
+        null
+      ],
+      "result": "?"
+    },
+    {
+      "args": [
+        "Émile"
+      ],
+      "result": "É"
+    }
+  ],
+  "memberPhotoPath": [
+    {
+      "args": [
+        "c1",
+        "u1",
+        1764000000000
+      ],
+      "result": "c1/team/u1-1764000000000.jpg"
+    }
+  ]
+}
