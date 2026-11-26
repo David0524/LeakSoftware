@@ -56,3 +56,14 @@ export async function jobBusinessNameById(
   if (!company) return null;
   return (await jobBusinessNames(db, company, [rest])).get(rest.id) ?? company.name;
 }
+
+/** What New Job and New Quote need to show the Business row: names and the work only. */
+export function businessForForm(company: Record<string, unknown>): BusinessCompany {
+  const services = (company.settings as { services?: unknown } | null)?.services;
+  return {
+    name: String(company.name ?? ""),
+    settings: { services },
+    second_name: (company.second_name as string | null) ?? null,
+    second_for: (company.second_for as string | null) ?? null,
+  };
+}

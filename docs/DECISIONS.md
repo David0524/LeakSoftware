@@ -2,6 +2,11 @@
 
 Newest first. Each entry: date, decision, reason.
 
+## 2026-11-26 (owner: "Yeah add the picker"; "Default off"; "Whichever is latest")
+- **A Business row on New Job and New Quote** (all four platforms), with a second business: it starts on the automatic choice and saves only when picked. A new maintenance plan has none.
+- **Show the Tech on Reports stays off by default.**
+- **Sessions merge into `main`**, the branch with the newest work (GitHub's default, `claude/cool-keller-efjc00`, is older and is left alone).
+
 ## 2026-11-26 (owner: "Plan and implement these", Cole's two ideas for Nick's shop)
 - **A second business name** (`docs/design/2026-11-26-second-business-and-tech-photos.md`), all four platforms, for shops whose Services is Both: Settings › Company and Branding › Second Business (name, logo, main color, phone, email, review link, Use For: Leak Detection | Pool Care). Leaving the name blank turns it off. Migration `20261022005900_second_business.sql`.
 - **Which name a job uses (Claude's call, from Cole's texts):** leak detection and pool inspection jobs are leak work; pool visits are pool care; a repair follows the job it came from; a repair on its own (or a standalone quote) uses the main business. The job page's Business row changes it per job. The customer sees that business on reports (frozen when sent), quote and invoice pages, receipts, PDFs, link previews, emails ("{Business} via Sundeck Pro"), reminders, review requests (its review link), the feedback page, the Stripe checkout line, and the texts the apps write (On My Way, share texts, signature statements, Skip Visit). Request Card on File and autopay use pool care's. Mass email, the texting line, Stripe's account name on card statements and Sundeck Pro billing stay the main business.

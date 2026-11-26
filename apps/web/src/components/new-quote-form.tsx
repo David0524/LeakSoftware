@@ -4,6 +4,8 @@ import { useState } from "react";
 import { createQuoteAction } from "@/app/actions/standalone-quotes";
 import { AddressField } from "./address-field";
 import { Section } from "./new-job-form";
+import { BusinessField } from "./business-popup";
+import { businessChoices, hasSecondBusiness, type BusinessCompany } from "@leakbook/core";
 import { FieldError, SField, SettingsForm } from "./settings-forms";
 import { Segmented } from "./segmented";
 import { Select } from "./ui";
@@ -36,8 +38,11 @@ export function PoolAddressFields() {
 export function NewQuoteForm({
   customers,
   customerId: picked = "",
+  business = null,
 }: {
   customers: QuoteCustomerOption[];
+  /** The shop's two businesses (2026-11-26): a Business row when it has a second one. */
+  business?: BusinessCompany | null;
   /** Opened from a customer page: that customer, already picked. */
   customerId?: string;
 }) {
@@ -95,6 +100,15 @@ export function NewQuoteForm({
           </div>
         )}
       </Section>
+
+      {/* A quote on its own uses the main business unless picked (2026-11-26). */}
+      {business && hasSecondBusiness(business) ? (
+        <div className="pt-3">
+          <div className="card p-4">
+            <BusinessField auto="main" choices={businessChoices(business)} />
+          </div>
+        </div>
+      ) : null}
 
       <Section
         title="Pool (Optional)"

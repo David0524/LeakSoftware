@@ -17,6 +17,10 @@ import {
   PLAN_INVOICE_DAY_FOOTER,
   ordinalDay,
   planInvoiceDayLabel,
+  businessChoices,
+  hasSecondBusiness,
+  jobBusiness,
+  type BusinessCompany,
 } from "@leakbook/core";
 import { createJobAction } from "@/app/actions/jobs";
 import { NewJobRepairs } from "./job-repairs";
@@ -27,6 +31,7 @@ import type { RepeatChoice } from "@/lib/plan-repeat";
 import { PlanRepeat } from "./plan-repeat";
 import { Draft } from "./draft-keeper";
 import { Segmented } from "./segmented";
+import { BusinessField } from "./business-popup";
 import { MoreDetails } from "./more-details";
 import { ShapePicker } from "./shape-picker";
 import { Checkbox, ChipToggle, cx, SectionTitle, Select } from "./ui";
@@ -108,6 +113,7 @@ export function NewJobForm({
   repairItems = [],
   inspectionFee = null,
   shopInvoiceDay = 1,
+  business = null,
 }: {
   /** Settings › Payments › Invoice Day: a new plan's default. */
   shopInvoiceDay?: number;
@@ -127,6 +133,8 @@ export function NewJobForm({
   canPlan?: boolean;
   /** Settings › Scheduling: a maintenance visit's length. */
   visitMinutes?: number;
+  /** The shop's two businesses (2026-11-26): a Business row when it has a second one. */
+  business?: BusinessCompany | null;
 }) {
   const [mode, setMode] = useState<"new" | "existing">("new");
   const [customerId, setCustomerId] = useState("");
@@ -295,6 +303,12 @@ export function NewJobForm({
               }}
               options={newJobTypes(services)}
             />
+            {business && hasSecondBusiness(business) && !plan ? (
+              <BusinessField
+                auto={jobBusiness(business, { type: kind })}
+                choices={businessChoices(business)}
+              />
+            ) : null}
             {maintenance && canPlan ? <PlanRepeat initial="0" once onChange={setRepeat} /> : null}
             {plan ? (
               <div className="grid grid-cols-2 gap-4 sm:grid-cols-3">

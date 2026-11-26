@@ -80,8 +80,11 @@ export async function createQuoteAction(_: FormState, form: FormData): Promise<F
     newPool = records.property
       ? await insert("property", { ...records.property, customer_id: customerId })
       : null;
+    const business = String(form.get("business") ?? "");
     const jobId = await insert("job", {
       ...records.job,
+      // New Quote's Business row (2026-11-26), only when picked.
+      ...(business === "main" || business === "second" ? { business } : {}),
       property_id: newPool ?? input.propertyId ?? null,
       bill_to_customer_id: customerId,
     });

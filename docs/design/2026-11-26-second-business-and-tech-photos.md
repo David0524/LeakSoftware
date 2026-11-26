@@ -104,7 +104,12 @@ Two techs: "Brian and Cole". No printable name (an email as the name): no card.
   Photo / Remove Photo. The photo is cropped square in the center and saved at 512 px.
 - **More › My Profile** (everyone): **Your Photo**, same actions, footer `MY_PHOTO_FOOTER`.
 
+## New Job and New Quote (owner, 2026-11-26: "Yeah add the picker")
+- With a second business, New Job has a **Business** row right after the job type, and New
+  Quote one right after the customer, built like the job page's row. It starts on the automatic
+  choice (New Job: by the picked job type, following it until the person picks; New Quote: the
+  main business) and saves `job.business` only when the person picks one, so an untouched job
+  stays automatic. A maintenance plan (repeating visits) has no row: its visits are pool care.
+
 ## Not now
-- A Business choice on New Job and on a standalone quote (automatic covers Cole's cases; the
-  job page can change it after).
 - Separate Stripe accounts or texting numbers per business.

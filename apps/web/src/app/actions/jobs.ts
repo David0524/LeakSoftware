@@ -515,6 +515,15 @@ export async function createJobAction(_: FormState, form: FormData): Promise<For
     components,
   });
   if (error) return { error: friendlyDbError(error.message) };
+  // New Job's Business row (2026-11-26), only when picked: otherwise the job stays automatic.
+  const business = text(form, "business");
+  if (business === "main" || business === "second") {
+    const { error: businessError } = await supabase
+      .from("job")
+      .update({ business })
+      .eq("id", data as string);
+    if (businessError) return { error: friendlyDbError(businessError.message) };
+  }
   // Coordinates for routing, from the address (when the routing service is set up).
   const { data: made } = await supabase
     .from("job")
