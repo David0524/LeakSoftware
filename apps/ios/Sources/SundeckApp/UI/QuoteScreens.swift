@@ -372,6 +372,13 @@
             ScreenScroll(spacing: 16) {
                 if form.canMakeJobs {
                     customerCard
+                    // Which business the customer sees (2026-11-26): the main one unless picked.
+                    if form.showsBusiness {
+                        BusinessField(choices: form.businessOptions, current: form.shownBusiness) {
+                            form.business = $0
+                        }
+                        .card()
+                    }
                     poolCard
                     if !form.errors.isEmpty { Notice(kind: .error, text: "Fix the highlighted fields.") }
                     Button(QuotesText.createQuote, action: save).buttonStyle(.primary)

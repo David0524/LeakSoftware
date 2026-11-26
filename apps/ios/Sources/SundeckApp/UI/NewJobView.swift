@@ -234,6 +234,10 @@
                             fillsWidth: true, segmentPadding: 8)
                     }
                 }
+                // Which business the customer sees (2026-11-26), with a second business only.
+                if form.showsBusiness {
+                    BusinessField(choices: form.businessOptions, current: form.shownBusiness) { form.business = $0 }
+                }
                 if form.showsRepeat {
                     PlanRepeatPicker(
                         choice: $form.repeatChoice, days: $form.plan.days, once: true,
@@ -644,6 +648,40 @@
                         timeZone: form.company.timeZone) ?? Date()
                 },
                 set: { form.input.scheduleTime = minutesToClock(localMinutes($0, timeZone: form.company.timeZone)) })
+        }
+    }
+
+    /// New Job's and New Quote's Business row (2026-11-26): "Business" and the business's name;
+    /// tapping offers both, a check on the current one, as on the job page. The website's BusinessField.
+    struct BusinessField: View {
+        var choices: [BusinessChoice]
+        var current: Business
+        var pick: (Business) -> Void
+
+        var body: some View {
+            let name = choices.first { $0.value == current }?.label ?? ""
+            HStack(spacing: CGFloat(Spacing.rowItems)) {
+                Text(SecondBusinessText.jobRow).textRole(.body).foregroundStyle(Color.text)
+                Spacer(minLength: 0)
+                Menu {
+                    ForEach(choices, id: \.value) { choice in
+                        Button {
+                            pick(choice.value)
+                        } label: {
+                            if choice.value == current {
+                                Label(choice.label, systemImage: "checkmark")
+                            } else {
+                                Text(choice.label)
+                            }
+                        }
+                    }
+                } label: {
+                    MenuValue(text: name)
+                }
+                .accessibilityLabel(SecondBusinessText.jobRow)
+                .accessibilityValue(name)
+            }
+            .frame(maxWidth: .infinity, minHeight: minTarget, alignment: .leading)
         }
     }
 
