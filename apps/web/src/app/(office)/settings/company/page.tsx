@@ -58,7 +58,8 @@ export default async function CompanySettingsPage() {
     sign(company.logo_path),
     sign(company.second_logo_path),
   ]);
-  const both = companyServices(company.settings) === "both";
+  // Shown once the database has the second business (migration 20261022005900).
+  const both = companyServices(company.settings) === "both" && "second_for" in company;
   const { data: lastJob } = await (
     await createClient()
   )

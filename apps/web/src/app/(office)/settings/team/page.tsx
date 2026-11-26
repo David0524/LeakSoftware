@@ -177,6 +177,8 @@ export default async function TeamSettingsPage() {
     loadStarts(supabase, office.company.id, { userId: office.user.id, manager: true }),
   ]);
   const startOf = new Map(starts.map((s) => [s.user_id, s]));
+  // Tech photos, once the database has them (migration 20261022005900).
+  const photosReady = "second_for" in company;
   const photoUrls = await signedAssetUrls(
     team.map((m) => m.photo_path).filter((p): p is string => !!p),
   );
@@ -271,12 +273,14 @@ export default async function TeamSettingsPage() {
           {m.role === "tech" ? (
             <ContactSwitch id={m.membership_id} name={name} on={m.can_contact_customers} />
           ) : null}
-          <TechPhotoPicker
-            memberId={m.membership_id}
-            url={m.photo_path ? (photoUrls.get(m.photo_path) ?? null) : null}
-            name={name}
-            color={m.color}
-          />
+          {photosReady ? (
+            <TechPhotoPicker
+              memberId={m.membership_id}
+              url={m.photo_path ? (photoUrls.get(m.photo_path) ?? null) : null}
+              name={name}
+              color={m.color}
+            />
+          ) : null}
           <ColorPicker id={m.membership_id} name={name} color={m.color} />
           <ul className="grouped">
             <li>

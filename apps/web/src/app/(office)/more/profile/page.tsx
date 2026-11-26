@@ -4,7 +4,7 @@ import { StartFromForm } from "@/components/start-from";
 import { TechPhotoPicker } from "@/components/tech-photo-picker";
 import { PageHeader } from "@/components/ui";
 import { getOffice } from "@/lib/auth";
-import { getTeam, signedAssetUrls } from "@/lib/data";
+import { getCompany, getTeam, signedAssetUrls } from "@/lib/data";
 import { createClient } from "@/lib/supabase/server";
 import { memberStartOf } from "@/server/member-start";
 
@@ -21,6 +21,8 @@ export default async function MyProfilePage() {
     memberStartOf(await createClient(), office.company.id, office.user.id),
     getTeam(office),
   ]);
+  // Tech photos, once the database has them (migration 20261022005900).
+  const photosReady = "second_for" in (await getCompany(office));
   const me = team.find((m) => m.user_id === office.user.id);
   const photo = me?.photo_path ? (await signedAssetUrls([me.photo_path])).get(me.photo_path) : null;
   return (
@@ -31,7 +33,7 @@ export default async function MyProfilePage() {
         subtitle={office.user.name ?? office.user.email}
       />
       <div className="max-w-xl space-y-6">
-        {me ? (
+        {me && photosReady ? (
           <TechPhotoPicker
             memberId={me.membership_id}
             url={photo ?? null}
