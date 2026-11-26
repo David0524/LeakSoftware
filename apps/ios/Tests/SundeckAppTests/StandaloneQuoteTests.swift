@@ -167,7 +167,7 @@ import Testing
                         row: [
                             "id": "c1", "company_id": "c1", "name": "Demo Leak Co.", "timezone": "America/Phoenix",
                             "settings": ["services": "both"], "second_name": "Demo Pool Care", "second_for": "pool",
-                        ]),
+                        ])
                 ], done: true, cursor: [:], serverHLC: "1760000000005-0000-srv"))
         let f = form(customerId: "cu2")
         #expect(f.showsBusiness)

@@ -434,7 +434,7 @@ import Testing
                         row: [
                             "id": .string(Self.company), "company_id": .string(Self.company), "name": "Desert Leak",
                             "settings": ["services": "both"], "second_name": "Southern Nevada Leak Detection",
-                        ]),
+                        ])
                 ], done: true, cursor: [:], serverHLC: "1800000000002-0000-server"))
         #expect(f.showsBusiness)
         #expect(f.businessOptions.map(\.label) == ["Desert Leak", "Southern Nevada Leak Detection"])
