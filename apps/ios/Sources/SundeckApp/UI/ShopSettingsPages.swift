@@ -696,6 +696,11 @@
         @State private var onMyWay = OnMyWayChoice.messages
         @State private var confirmCancel = false
 
+        /// `model`: a page already filled (screenshots); otherwise it loads from the server.
+        init(model: PhoneSettingsModel? = nil) {
+            _model = State(initialValue: model)
+        }
+
         var body: some View {
             let manager = isManagerRole(session.company?.role)
             ScreenScroll {
@@ -727,6 +732,7 @@
             .task(id: session.company?.id) {
                 guard let company = session.company else { return }
                 onMyWay = OnMyWayChoice(company.settings)
+                if self.model?.loaded == true { return }
                 let model = PhoneSettingsModel(api: app.api, companyId: company.id)
                 self.model = model
                 await model.load()

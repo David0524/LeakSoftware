@@ -1025,6 +1025,77 @@
                 NavigationStack { CompanySettingsScreen() }.app(env))
         }
 
+        private let registrationDetail =
+            "Phone companies are reviewing your business. This usually takes about a week. Calls to the number already work."
+
+        /// Settings › Phone and Texting: getting a number with the business details phone companies
+        /// review (texting registration, owner 2026-11-27), and a registration under way and sent back.
+        @Test func phoneAndTexting() async throws {
+            let env = try sampleEnvironment()
+            func page(_ reply: JSONValue, _ change: (PhoneSettingsModel) -> Void = { _ in }) -> PhoneSettingsModel {
+                let model = PhoneSettingsModel(
+                    api: WebAPI(baseURL: URL(string: "https://sundeckpro.test")!) { "token" }, companyId: "c1")
+                model.apply(reply)
+                model.loaded = true
+                change(model)
+                return model
+            }
+            let team: JSONValue = [
+                ["user_id": "u1", "name": "Dana Tech", "role": "owner", "phone": "+14805550100", "rings": true]
+            ]
+            try await snapshot(
+                "80-phone-setup", height: 2600,
+                NavigationStack {
+                    PhoneSettingsScreen(
+                        model: page(["configured": true, "line": .null, "registration": .null, "team": team]))
+                }.app(env))
+            try await snapshot(
+                "80-phone-setup-own", height: 2600,
+                NavigationStack {
+                    PhoneSettingsScreen(
+                        model: page(["configured": true, "line": .null, "registration": .null, "team": team]) {
+                            $0.kind = .own
+                            $0.ownNumber = "(702) 381-1966"
+                            $0.business["legal_name"] = "Blue Wave Pools LLC"
+                        })
+                }.app(env))
+            let line: JSONValue = [
+                "number": "+18885550100", "status": "pending", "pictures": true, "ring_user_ids": [],
+                "voicemail_greeting": .null,
+            ]
+            try await snapshot(
+                "80-phone-registering", height: 1800,
+                NavigationStack {
+                    PhoneSettingsScreen(
+                        model: page([
+                            "configured": true, "line": line, "team": team, "my_phone": "+14805550100",
+                            "registration": [
+                                "kind": "toll_free", "stage": "registering", "title": "Registering…",
+                                "detail": registrationDetail, "tone": "info", "business": [:], "ein_last4": "6789",
+                            ],
+                        ]))
+                }.app(env))
+            try await snapshot(
+                "80-phone-needs-changes", height: 3000,
+                NavigationStack {
+                    PhoneSettingsScreen(
+                        model: page([
+                            "configured": true, "line": line, "team": team,
+                            "registration": [
+                                "kind": "toll_free", "stage": "needs_changes", "title": "Needs Changes",
+                                "detail":
+                                    "The phone companies said: “Website doesn’t match the business name”. Edit your business details and we’ll send them again.",
+                                "tone": "error",
+                                "business": [
+                                    "legal_name": "Blue Wave Pools LLC", "business_type": "llc", "ein": "",
+                                    "website": "https://bluewavepools.com",
+                                ],
+                                "ein_last4": "6789",
+                            ],
+                        ]) { $0.startEditing() })
+                }.app(env))
+        }
+
         @Test func code() async throws {
             let env = try sampleEnvironment()
             try await snapshot("07-code", CodeView().app(env))

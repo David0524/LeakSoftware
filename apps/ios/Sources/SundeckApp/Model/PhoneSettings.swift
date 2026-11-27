@@ -83,7 +83,8 @@ public struct FoundNumber: Equatable, Sendable, Identifiable {
 
 @MainActor @Observable
 public final class PhoneSettingsModel {
-    public private(set) var loaded = false
+    /// Settable inside the app module for screenshots, which fill the page without a server.
+    public internal(set) var loaded = false
     public private(set) var configured = true
     public private(set) var line: PhoneLineView?
     public private(set) var registration: RegistrationView?
