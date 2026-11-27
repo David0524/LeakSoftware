@@ -2,6 +2,13 @@
 
 Newest first. Each entry: date, decision, reason.
 
+## 2026-11-27 (owner: "Do it", texting registration)
+- **Built on all four platforms** (`docs/plans/texting-registration.md`): Settings › Phone and Texting offers Get a Toll-Free Number, Get a Local Number, or Use My Own Number, then the Business Details form; the status line says Registering…, Needs Changes (with Edit Business Details and Send Again), or the number when it's ready. Older apps' "take"/"keep" are asked to update.
+- **Each shop gets its own Twilio subaccount** (Twilio's ISV setup registers as the sending account). The server files the secondary business profile, A2P profile, Low-Volume brand, Messaging Service and campaign (or the toll-free verification), saves every Twilio id at once so a retry never pays twice, and checks every 30 minutes (`/api/cron/texting`). Webhooks from a subaccount are checked with that subaccount's token, read from Twilio, never stored.
+- **Use My Own Number needs one step by hand:** Twilio's hosted-number API is a private preview "not intended for use by new customers", so staff start the Hosted SMS order in the shop's subaccount (Admin › Texting shows when); the server notices the number and finishes.
+- **The live site never fakes a number:** without Twilio keys, a shop's details are saved and wait; anywhere else (dev, CI) demo mode makes it ready at once. Phone and Texting says "Texting isn't switched on for Sundeck Pro yet", and the Health page shows Texting "Not set up" (it showed nothing before, which is how the missing keys went unnoticed).
+- iPhone 1.0.7: Apple approved 1.0.6, so TestFlight needs a new version.
+
 ## 2026-11-27 (owner: "Let's do A and C. Some shops will want their own number")
 - **Shops get texting three ways:** a toll-free number (free verification), a local number, or their own number (hosted SMS). Local and own numbers register a Low-Volume A2P brand and campaign for the shop. **Sundeck Pro pays for all of it** (owner's choice), about $20 once and $3 a month for a local or own number, about $2 a month for toll-free.
 - **Registrations go to Twilio automatically** (owner's choice over submitting by hand). Plan: `docs/plans/texting-registration.md`, waiting on the owner's go. Needs Sundeck Pro's Twilio Business Profile (ISV) first.
