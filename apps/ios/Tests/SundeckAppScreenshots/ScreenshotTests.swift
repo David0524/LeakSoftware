@@ -1071,7 +1071,8 @@
                             "configured": true, "line": line, "team": team, "my_phone": "+14805550100",
                             "registration": [
                                 "kind": "toll_free", "stage": "registering", "title": "Registering…",
-                                "detail": .string(registrationDetail), "tone": "info", "business": [:], "ein_last4": "6789",
+                                "detail": .string(registrationDetail), "tone": "info", "business": [:],
+                                "ein_last4": "6789",
                             ],
                         ]))
                 }.app(env))
