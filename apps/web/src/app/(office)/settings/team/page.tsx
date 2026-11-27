@@ -310,7 +310,7 @@ export default async function TeamSettingsPage() {
         inList: true,
         form: (
           <SettingsForm action={inviteMember} submit="Send Invite" full>
-            <SettingsFields labelWidth="4.5rem">
+            <SettingsFields labelWidth="4.5rem" labelInside>
               <SField label="Email" name="email" type="email" autoComplete="off" required />
             </SettingsFields>
             <div className="mt-4 px-4 sm:px-0">

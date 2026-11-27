@@ -52,7 +52,6 @@ import {
   type Business,
 } from "@leakbook/core";
 import { useRows, useSyncStatus } from "../../../../../data/hooks";
-import { AddressSuggestions } from "../../../../../features/address/AddressSuggestions";
 import { locateAfterSync } from "../../../../../lib/locate";
 import { useTeam } from "../../../../../data/schedule";
 import {
@@ -66,6 +65,7 @@ import { PlanRepeat } from "../../../../../features/maintenance/PlanRepeat";
 import { ChipToggles } from "../../../../../features/inspection/ChoicePills";
 import { Select, useMenu } from "../../../../../ui/Select";
 import { CustomerPicker } from "../../../../../features/job/CustomerPicker";
+import { AddressFields } from "../../../../../features/quote/AddressFields";
 import { AddRepairButton, RepairFields, repairItemsOf } from "../../../../../features/job/Repairs";
 import { useCompany, useSession } from "../../../../../state/session";
 import {
@@ -753,47 +753,13 @@ function NewJobForm() {
             <T variant="small">{formatAddress(properties.find((p) => p.id === propertyId)!)}</T>
           </Card>
         ) : (
-          <>
-            <Field
-              label="Street address"
-              value={form.addressLine1}
-              onChangeText={set("addressLine1")}
-              error={errors.addressLine1}
-            />
-            <AddressSuggestions
-              street={form.addressLine1}
-              onPick={(s) =>
-                setForm((f) => ({
-                  ...f,
-                  addressLine1: s.line1,
-                  city: s.city,
-                  state: s.state,
-                  postalCode: s.postal_code,
-                }))
-              }
-            />
-            <View style={styles.cols}>
-              <View style={{ flex: 2 }}>
-                <Field label="City" value={form.city} onChangeText={set("city")} />
-              </View>
-              <View style={{ flex: 1 }}>
-                <Field
-                  label="State"
-                  value={form.state}
-                  onChangeText={set("state")}
-                  autoCapitalize="characters"
-                  maxLength={2}
-                />
-              </View>
-            </View>
-            <Field
-              label="ZIP"
-              value={form.postalCode}
-              onChangeText={set("postalCode")}
-              keyboardType="number-pad"
-              maxLength={10}
-            />
-          </>
+          <AddressFields
+            form={form}
+            set={set}
+            setForm={setForm}
+            error={errors.addressLine1}
+            labelsInside
+          />
         )}
       </Section>
 

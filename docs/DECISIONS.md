@@ -3,7 +3,7 @@
 Newest first. Each entry: date, decision, reason.
 
 ## 2026-11-27 (owner: "Make our text boxes look more iOS", with Calendar's New Event; chose "New and sign-in forms" and "Phones only")
-- **Text fields in forms that make something new and in signing in show their name as the gray hint inside, with no label beside them** (phones: mobile website, iPhone, Android): sign in, forgot and new password, sign up, setup, joining by invite, the two-step code, Sign In Again, and New Job's and New Quote's customer and address fields. Rows sit in one inset grouped card with hairlines between them. Screen readers still read each field's name.
+- **Text fields in forms that make something new and in signing in show their name as the gray hint inside, with no label beside them** (phones: mobile website, iPhone, Android): sign in, forgot and new password, sign up, setup, joining by invite, the two-step code, Sign In Again, Invite Someone's email, and New Job's and New Quote's customer and address fields. Rows sit in one inset grouped card with hairlines between them. Screen readers still read each field's name.
 - **Settings and edit pages keep their labels on the left**, as Apple's Settings does, so a saved value is never mistaken for another (a sketch showed "Desert Leak Co." vs "Desert Leak Co. LLC" without labels). Dates, times, pickers, switches, segmented controls, long booking questions, and More Details keep their labels too. The desktop website keeps labels above its outlined fields.
 - On phones, State and ZIP are now separate rows (they shared one).
 

@@ -182,7 +182,13 @@ function NewQuoteForm() {
             <T variant="small">{formatAddress(properties.find((p) => p.id === propertyId)!)}</T>
           </Card>
         ) : (
-          <AddressFields form={form} set={set} setForm={setForm} error={errors.addressLine1} />
+          <AddressFields
+            form={form}
+            set={set}
+            setForm={setForm}
+            error={errors.addressLine1}
+            labelsInside
+          />
         )}
       </Section>
 

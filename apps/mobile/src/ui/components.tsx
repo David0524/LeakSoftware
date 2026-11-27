@@ -914,23 +914,35 @@ function PillButton({
 // Fields (spec 3.14)
 // ---------------------------------------------------------------------------
 
-/** An outlined field: the label above, the box, a hint or error under it. */
+/**
+ * An outlined field: the label above, the box, a hint or error under it. `labelInside` (forms
+ * that fill in something new): a one-row grouped card instead, its label the placeholder
+ * (FieldRow's `labelInside`).
+ */
 export function Field({
   label,
   error,
   hint,
   ref,
+  labelInside = false,
   ...input
 }: TextInputProps & {
   label: string;
   error?: string;
   hint?: string;
   ref?: Ref<TextInput>;
+  labelInside?: boolean;
 }) {
   const [focused, setFocused] = useState(false);
   // Typing and selecting text never change the job section (owner, 2026-10-20).
   const noSwipe = useNoSwipe();
   const phone = usePhoneTyping(input);
+  if (labelInside)
+    return (
+      <Group>
+        <FieldRow {...input} ref={ref} label={label} error={error} hint={hint} labelInside />
+      </Group>
+    );
   return (
     <View style={styles.field}>
       <T variant="bodyMedium">{label}</T>
@@ -1678,11 +1690,14 @@ export function ListRow({
 
 /** Width of the leading labels in a FieldGroup, so the fields line up. */
 const LabelWidth = createContext(112);
+/** A FieldGroup whose text rows name themselves with their placeholder (`labelsInside`). */
+const LabelsInside = createContext(false);
 
 export function FieldGroup({
   title,
   footer,
   labelWidth = 112,
+  labelsInside = false,
   children,
 }: {
   /** The section label above the block. */
@@ -1691,13 +1706,21 @@ export function FieldGroup({
   footer?: string;
   /** Width of the rows' leading labels (at the default text size). */
   labelWidth?: number;
+  /**
+   * Forms that fill in something new or sign in (owner, 2026-11-27: "Make our text boxes look
+   * more iOS"): as Calendar's New Event, each text row's label is its gray placeholder, with
+   * no label beside it. Pickers and other rows in the group keep theirs.
+   */
+  labelsInside?: boolean;
   children: ReactNode;
 }) {
   return (
     <View style={styles.section}>
       {title ? <T variant="sectionLabel">{title}</T> : null}
       <LabelWidth.Provider value={labelWidth}>
-        <Group>{children}</Group>
+        <LabelsInside.Provider value={labelsInside}>
+          <Group>{children}</Group>
+        </LabelsInside.Provider>
       </LabelWidth.Provider>
       {footer ? (
         <View style={styles.footer}>
@@ -1743,6 +1766,9 @@ const NUMERIC_KEYBOARDS = new Set(["decimal-pad", "number-pad", "numeric", "phon
  * - "stacked": the label in small type above the field, for long labels or placeholders.
  * - "full": no visible label; the field fills the row and the label is its placeholder (or
  *   the group's header names it). Multiline fields default to this.
+ * `labelInside` (or a FieldGroup with `labelsInside`): as Calendar's New Event, no label beside
+ * the field and the label, not `placeholder`, is the gray placeholder, gone once typing starts.
+ * The row stays one 44 pt line; put anything the placeholder said beyond the name in `hint`.
  * At the largest text sizes inline rows stack, so labels never squeeze the field.
  * `next` moves to that field on Return (or the Next button above an iPhone number pad).
  */
@@ -1751,6 +1777,7 @@ export function FieldRow({
   error,
   hint,
   layout,
+  labelInside,
   next,
   wrap = false,
   ref,
@@ -1759,6 +1786,8 @@ export function FieldRow({
   ...input
 }: TextInputProps & {
   label: string;
+  /** The label is the placeholder, with none beside the field (see above). */
+  labelInside?: boolean;
   error?: string;
   hint?: string;
   /** A control at the end of an inline row (a password's Show button). */
@@ -1783,6 +1812,7 @@ export function FieldRow({
   );
   const accessoryId = `field-${useId().replace(/[^a-zA-Z0-9_-]/g, "")}`;
   const labelWidth = useContext(LabelWidth);
+  const inside = useContext(LabelsInside) || Boolean(labelInside);
   const { fontScale } = useWindowDimensions();
 
   const flow: TextInputProps = next
@@ -1794,7 +1824,7 @@ export function FieldRow({
     : {};
 
   const multiline = Boolean(input.multiline);
-  const mode = layout ?? (multiline ? "full" : "inline");
+  const mode = inside ? "full" : (layout ?? (multiline ? "full" : "inline"));
   const shown = mode === "inline" && fontScale >= 1.35 ? "stacked" : mode;
   const numeric = ios && NUMERIC_KEYBOARDS.has(String(input.keyboardType ?? ""));
   const scaledWidth = labelWidth * Math.min(fontScale, 1.35);
@@ -1813,13 +1843,13 @@ export function FieldRow({
       {...(wrap ? { multiline: true, submitBehavior: "blurAndSubmit" as const } : null)}
       {...input}
       {...phone}
-      placeholder={input.placeholder ?? (shown === "full" ? label : undefined)}
+      placeholder={inside ? label : (input.placeholder ?? (shown === "full" ? label : undefined))}
       accessibilityLabel={label}
       accessibilityHint={error ?? hint}
       style={[
         styles.rowInput,
         { color: color.text },
-        shown !== "inline" && styles.rowInputBlock,
+        shown !== "inline" && !accessory && styles.rowInputBlock,
         shown === "stacked" && styles.rowInputStacked,
         multiline && styles.rowMultiline,
         wrap && shown !== "stacked" && styles.rowWrap,
@@ -1834,7 +1864,7 @@ export function FieldRow({
       accessible={false}
       style={[
         styles.formRow,
-        shown !== "inline" && styles.formRowStacked,
+        shown !== "inline" && (inside ? styles.formRowInside : styles.formRowStacked),
         (error || hint) && styles.formRowNote,
       ]}
     >
@@ -2313,6 +2343,7 @@ const styles = StyleSheet.create({
   amount: { textAlign: "right" },
   formRow: { paddingHorizontal: space["4"], minHeight: minTap, justifyContent: "center" },
   formRowStacked: { paddingTop: 10, paddingBottom: 6, gap: 2 },
+  formRowInside: { gap: 2 },
   formRowNote: { paddingBottom: 10 },
   formInline: { flexDirection: "row", alignItems: "center", gap: space["3"] },
   rowInput: {

@@ -464,7 +464,7 @@ function InviteForm({ owner, onDone }: { owner: boolean; onDone: (message: strin
   }
   return (
     <View style={{ gap: space["4"] }}>
-      <FieldGroup labelWidth={80}>
+      <FieldGroup labelsInside>
         <FieldRow
           label="Email"
           value={email}

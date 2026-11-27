@@ -1,7 +1,7 @@
 import { useMemo } from "react";
 import type { Customer } from "@leakbook/core";
 import { useCanContact } from "../../state/session";
-import { Button, Card, Field, Group, ListRow, T } from "../../ui/components";
+import { Button, Card, Field, FieldGroup, FieldRow, Group, ListRow, T } from "../../ui/components";
 
 export interface NewCustomerFields {
   customerName: string;
@@ -56,10 +56,11 @@ export function CustomerPicker({
     <>
       {customers.length > 0 ? (
         <Field
+          labelInside
           label="Find an existing customer"
           value={search}
           onChangeText={onSearch}
-          placeholder="Name, phone, or email"
+          hint="Search by name, phone, or email."
         />
       ) : null}
       {matches.length > 0 ? (
@@ -85,27 +86,29 @@ export function CustomerPicker({
         </Group>
       ) : null}
       <T variant="muted">Or add a new customer:</T>
-      <Field
-        label="Name"
-        value={fields.customerName}
-        onChangeText={onField("customerName")}
-        error={errors.customerName}
-        autoCapitalize="words"
-      />
-      <Field
-        label="Phone"
-        value={fields.customerPhone}
-        onChangeText={onField("customerPhone")}
-        keyboardType="phone-pad"
-      />
-      <Field
-        label="Email"
-        value={fields.customerEmail}
-        onChangeText={onField("customerEmail")}
-        error={errors.customerEmail}
-        keyboardType="email-address"
-        autoCapitalize="none"
-      />
+      <FieldGroup labelsInside>
+        <FieldRow
+          label="Name"
+          value={fields.customerName}
+          onChangeText={onField("customerName")}
+          error={errors.customerName}
+          autoCapitalize="words"
+        />
+        <FieldRow
+          label="Phone"
+          value={fields.customerPhone}
+          onChangeText={onField("customerPhone")}
+          keyboardType="phone-pad"
+        />
+        <FieldRow
+          label="Email"
+          value={fields.customerEmail}
+          onChangeText={onField("customerEmail")}
+          error={errors.customerEmail}
+          keyboardType="email-address"
+          autoCapitalize="none"
+        />
+      </FieldGroup>
     </>
   );
 }

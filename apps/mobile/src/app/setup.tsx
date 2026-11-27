@@ -90,12 +90,11 @@ export default function Setup() {
           title="Join Your Team"
           note={`Use the invite code your owner sent to ${user?.email ?? ""}.`}
         >
-          <FieldGroup labelWidth={132}>
+          <FieldGroup labelsInside>
             <FieldRow
               label="Invite code"
               value={inviteCode}
               onChangeText={setInviteCode}
-              placeholder={ios ? "From your email" : undefined}
               autoCapitalize="none"
               autoCorrect={false}
               spellCheck={false}

@@ -36,12 +36,11 @@ export default function ForgotPassword() {
         </Text>
       }
     >
-      <FieldGroup labelWidth={96}>
+      <FieldGroup labelsInside>
         <FieldRow
           label="Email"
           value={email}
           onChangeText={setEmail}
-          placeholder="name@example.com"
           autoCapitalize="none"
           autoCorrect={false}
           spellCheck={false}

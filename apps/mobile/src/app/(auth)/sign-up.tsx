@@ -57,12 +57,11 @@ export default function SignUp() {
           Check your email and tap the link to confirm your account, then sign in.
         </Notice>
       ) : null}
-      <FieldGroup labelWidth={104}>
+      <FieldGroup labelsInside>
         <FieldRow
           label="Your name"
           value={name}
           onChangeText={setName}
-          placeholder="Required"
           autoCapitalize="words"
           autoCorrect={false}
           autoComplete="name"
@@ -74,7 +73,6 @@ export default function SignUp() {
           label="Email"
           value={email}
           onChangeText={setEmail}
-          placeholder="name@example.com"
           autoCapitalize="none"
           autoCorrect={false}
           spellCheck={false}
@@ -88,7 +86,6 @@ export default function SignUp() {
           label="Password"
           value={password}
           onChangeText={setPassword}
-          placeholder="Required"
           autoComplete="new-password"
           textContentType="newPassword"
           // Suggested passwords follow the rules; their symbols are ones Supabase counts.
