@@ -11,17 +11,12 @@ public enum PhoneText {
     public static let title = "Phone and Texting"
     public static let needsNumber =
         "Texting needs a company number: a local number that texts, sends photos, and takes calls. Included with Sundeck Pro. Your own mobile number, below, is only where calls ring."
-    public static let newNumber = "Get a New Number"
     public static let areaCode = "Area code"
     public static let search = "Search"
     public static let searching = "Searching…"
-    public static let useThis = "Use This Number"
-    public static let keepTitle = "Use Your Shop’s Number"
-    public static let keepHint = "Sundeck Pro registers it for texting. It takes a few days."
-    public static let keepButton = "Set Up My Number"
+    public static let notSwitchedOn = "Texting isn’t switched on for Sundeck Pro yet."
     public static let companyNumber = "Company number"
     public static let active = "Working. Texts and calls show up in Messages."
-    public static let pending = "Your own number is being set up for texting. It usually takes a few days."
     public static let cancel = "Cancel Setup"
     public static let cancelConfirm = "Stop setting up this number?"
     public static let textsAndCalls = "Texts and calls"
@@ -56,6 +51,17 @@ public struct PhoneLineView: Equatable, Sendable {
     public var voicemailGreeting: String?
 }
 
+/// The shop's texting registration as the server words it (server/texting-registration.ts).
+public struct RegistrationView: Equatable, Sendable {
+    public var kind: RegistrationKind
+    /// registering, verify_number, needs_changes, or ready.
+    public var stage: String
+    public var title: String
+    public var detail: String
+    public var business: [String: String]
+    public var einLast4: String
+}
+
 public struct PhoneTeamMember: Equatable, Sendable, Identifiable {
     public var id: String
     public var name: String
@@ -80,6 +86,9 @@ public final class PhoneSettingsModel {
     public private(set) var loaded = false
     public private(set) var configured = true
     public private(set) var line: PhoneLineView?
+    public private(set) var registration: RegistrationView?
+    /// Editing the business details after a review came back.
+    public var editing = false
     public private(set) var team: [PhoneTeamMember] = []
     public private(set) var numbers: [FoundNumber] = []
     public private(set) var busy: String?
@@ -89,7 +98,13 @@ public final class PhoneSettingsModel {
 
     // The forms.
     public var areaCode = ""
-    public var keepNumber = ""
+    public var kind = RegistrationKind.tollFree
+    /// The local number picked from the search.
+    public var picked: String?
+    /// The shop's own number (Use My Own Number).
+    public var ownNumber = ""
+    /// The business details being typed, by core's field keys.
+    public var business: [String: String] = ["business_type": "llc"]
     public var pictures = true
     public var greeting = ""
     public var rings: Set<String> = []
@@ -108,8 +123,14 @@ public final class PhoneSettingsModel {
     /// Changed here and not saved yet: leaving the page asks first (owner, 2026-10-20).
     public var isDirty: Bool {
         loaded
-            && (pictures != saved.pictures || textChanged(greeting, from: saved.greeting) || rings != saved.rings
+            && (businessTyped
+                || pictures != saved.pictures || textChanged(greeting, from: saved.greeting) || rings != saved.rings
                 || textChanged(myPhone, from: saved.myPhone))
+    }
+
+    /// Business details typed and not sent yet (the type alone doesn't count).
+    private var businessTyped: Bool {
+        business.contains { $0.key != "business_type" && !$0.value.trimmingCharacters(in: .whitespaces).isEmpty }
     }
 
     private let api: WebAPI
@@ -141,6 +162,24 @@ public final class PhoneSettingsModel {
                 ringUserIds: ids, voicemailGreeting: l["voicemail_greeting"]?.string)
         } else {
             line = nil
+        }
+        if let r = reply["registration"], case .object(let fields) = r,
+            let kind = r["kind"]?.string.flatMap({ RegistrationKind(rawValue: $0) })
+        {
+            var details: [String: String] = [:]
+            if case .object(let b)? = fields["business"] {
+                for (k, v) in b { if let text = v.string { details[k] = text } }
+            }
+            registration = RegistrationView(
+                kind: kind, stage: r["stage"]?.string ?? "registering", title: r["title"]?.string ?? "",
+                detail: r["detail"]?.string ?? "", business: details, einLast4: r["ein_last4"]?.string ?? "")
+        } else {
+            registration = nil
+        }
+        // A number entered before registrations (still pending): Use My Own Number, filled in.
+        if registration == nil, let l = line, l.status != "active" {
+            kind = .own
+            ownNumber = formatPhone(l.number)
         }
         if case .array(let list)? = reply["team"] {
             team = list.compactMap { m in
@@ -179,16 +218,40 @@ public final class PhoneSettingsModel {
         }
     }
 
-    public func take(_ number: String) async {
-        await run("take", ["action": "take", "number": .string(number)])
+    private var businessJSON: JSONValue {
+        .object(business.mapValues { .string($0) })
     }
 
-    public func keep() async {
-        guard toE164(keepNumber) != nil else {
-            fieldErrors = ["number": "Enter a US phone number."]
-            return
+    /// Send the number and business details to be registered (Sundeck Pro submits and pays).
+    public func register() async {
+        var body: [String: JSONValue] = ["action": "register", "kind": .string(kind.rawValue), "business": businessJSON]
+        switch kind {
+        case .local: body["number"] = .string(picked ?? "")
+        case .own: body["number"] = .string(ownNumber)
+        case .tollFree: break
         }
-        await run("keep", ["action": "keep", "number": .string(keepNumber)])
+        await run("register", body)
+        if result?.error == false { business = ["business_type": "llc"] }
+    }
+
+    /// Open the business details again, as they were sent (the EIN stays unless retyped).
+    public func startEditing() {
+        var details = registration?.business ?? [:]
+        details["ein"] = ""
+        if let phone = details["phone"], let e164 = toE164(phone) { details["phone"] = formatPhone(e164) }
+        if details["business_type"] == nil { details["business_type"] = "llc" }
+        business = details
+        fieldErrors = [:]
+        editing = true
+    }
+
+    /// New details after a review came back: sent, and the reviews start again.
+    public func sendAgain() async {
+        await run("update", ["action": "update", "business": businessJSON])
+        if result?.error == false {
+            editing = false
+            business = ["business_type": "llc"]
+        }
     }
 
     public func cancel() async { await run("cancel", ["action": "cancel"]) }

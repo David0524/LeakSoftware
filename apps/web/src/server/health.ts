@@ -2,6 +2,7 @@ import "server-only";
 import { supabaseAnonKey, supabaseUrl } from "@/lib/supabase/config";
 import { emailConfigured } from "./email";
 import { paymentsConfigured } from "./stripe";
+import { twilioConfigured } from "./twilio";
 
 export interface Health {
   ok: boolean;
@@ -52,6 +53,13 @@ export async function checkHealth(): Promise<Health> {
       name: "Card payments",
       ok: paymentsConfigured(),
       detail: paymentsConfigured() ? "Set up" : "Not set up (Stripe keys missing)",
+    },
+    {
+      // Company texting: shops' numbers, texts and calls (owner, 2026-11-27: it showed nowhere
+      // that Twilio was never connected).
+      name: "Texting",
+      ok: twilioConfigured(),
+      detail: twilioConfigured() ? "Set up" : "Not set up (Twilio keys missing)",
     },
   ];
   return {

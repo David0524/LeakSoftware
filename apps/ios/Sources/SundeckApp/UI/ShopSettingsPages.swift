@@ -702,14 +702,14 @@
                 if let model {
                     if let result = model.result { Notice(kind: result.error ? .error : .success, text: result.text) }
                     if model.loaded {
+                        if !model.configured { Notice(kind: .info, text: PhoneText.notSwitchedOn) }
                         if manager {
-                            if let line = model.line {
-                                companyNumber(model, line)
-                                textsAndCalls(model)
+                            if model.line?.status == "active" || model.registration != nil {
+                                companyNumber(model)
                             } else {
-                                getNumber(model)
-                                keepNumber(model)
+                                numberSetup(model)
                             }
+                            if model.line != nil { textsAndCalls(model) }
                             onMyWaySection
                         } else if model.line == nil {
                             Notice(kind: .info, text: "\(PhoneText.needsNumber) Ask an owner to set one up.")
@@ -736,14 +736,25 @@
             }
         }
 
-        private func companyNumber(_ model: PhoneSettingsModel, _ line: PhoneLineView) -> some View {
+        private func companyNumber(_ model: PhoneSettingsModel) -> some View {
             VStack(alignment: .leading, spacing: 8) {
                 SectionLabel(PhoneText.companyNumber)
                 VStack(alignment: .leading, spacing: 4) {
-                    Text(formatPhone(line.number)).textRole(.sectionHeading).foregroundStyle(Color.text)
-                    Text(line.status == "active" ? PhoneText.active : PhoneText.pending)
-                        .textRole(.body).foregroundStyle(Color.textMuted)
-                    if line.status == "pending" {
+                    if let line = model.line {
+                        Text(formatPhone(line.number)).textRole(.sectionHeading).foregroundStyle(Color.text)
+                    }
+                    if model.line?.status == "active" {
+                        Text(PhoneText.active).textRole(.body).foregroundStyle(Color.textMuted)
+                    } else if let reg = model.registration {
+                        Text(reg.title).textRole(.bodyEmphasis).foregroundStyle(Color.text)
+                        Text(reg.detail).textRole(.body).foregroundStyle(Color.textMuted)
+                    }
+                    if model.registration?.stage == "needs_changes" && !model.editing {
+                        Button(RegistrationText.edit) { model.startEditing() }
+                            .buttonStyle(.primary(fullWidth: false, size: .field))
+                            .padding(.top, 8)
+                    }
+                    if model.line?.status != "active" {
                         Button(PhoneText.cancel, role: .destructive) { confirmCancel = true }
                             .buttonStyle(.danger(fullWidth: false, size: .field))
                             .padding(.top, 8)
@@ -751,14 +762,82 @@
                 }
                 .frame(maxWidth: .infinity, alignment: .leading)
                 .card()
+                if model.editing, let reg = model.registration {
+                    businessForm(model, einLast4: reg.einLast4)
+                    Button {
+                        Task { await model.sendAgain() }
+                    } label: {
+                        BusyButtonLabel(
+                            RegistrationText.sendAgain, busy: model.busy == "update", busyTitle: "Saving…")
+                    }
+                    .buttonStyle(.primary(fullWidth: true, size: .field))
+                    .disabled(model.busy != nil)
+                }
             }
         }
 
-        private func getNumber(_ model: PhoneSettingsModel) -> some View {
+        /// A row in a list of choices, with a checkmark on the chosen one (iOS Settings).
+        private func choiceRow(_ title: String, detail: String?, on: Bool, action: @escaping () -> Void) -> some View {
+            Button(action: action) {
+                HStack(spacing: 12) {
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text(title).textRole(.body).foregroundStyle(Color.text)
+                        if let detail {
+                            Text(detail).textRole(.secondary).foregroundStyle(Color.textMuted)
+                        }
+                    }
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    if on {
+                        Image(systemName: "checkmark")
+                            .font(.system(size: 17, weight: .semibold))
+                            .foregroundStyle(Color.link)
+                            .accessibilityHidden(true)
+                    }
+                }
+                .padding(.horizontal, CGFloat(Spacing.rowHorizontal))
+                .padding(.vertical, 8)
+                .frame(minHeight: minTarget)
+                .contentShape(Rectangle())
+            }
+            .buttonStyle(.row)
+            .accessibilityAddTraits(on ? .isSelected : [])
+        }
+
+        /// No number yet: choose how to get one, then the business details.
+        private func numberSetup(_ model: PhoneSettingsModel) -> some View {
+            @Bindable var model = model
+            return VStack(alignment: .leading, spacing: 16) {
+                Grouped(label: RegistrationText.getNumber, footer: RegistrationText.getNumberFooter) {
+                    ForEach(RegistrationKind.allCases) { k in
+                        choiceRow(k.title, detail: k.detail, on: model.kind == k) {
+                            model.kind = k
+                            model.picked = nil
+                        }
+                    }
+                }
+                if model.kind == .local { localPicker(model) }
+                if model.kind == .own {
+                    Grouped(label: RegistrationText.yourNumber, footer: RegistrationText.yourNumberHint) {
+                        LabeledFieldRow(
+                            label: "Number", text: $model.ownNumber, placeholder: "(702) 555-0100", keyboard: .phonePad)
+                    }
+                }
+                if let e = model.fieldErrors["number"] { Notice(kind: .error, text: e) }
+                businessForm(model, einLast4: nil)
+                Button {
+                    Task { await model.register() }
+                } label: {
+                    BusyButtonLabel(RegistrationText.register, busy: model.busy == "register", busyTitle: "Saving…")
+                }
+                .buttonStyle(.primary(fullWidth: true, size: .field))
+                .disabled(model.busy != nil)
+            }
+        }
+
+        private func localPicker(_ model: PhoneSettingsModel) -> some View {
             @Bindable var model = model
             return VStack(alignment: .leading, spacing: 12) {
-                SectionLabel(PhoneText.newNumber)
-                Text(PhoneText.needsNumber).textRole(.body).foregroundStyle(Color.textMuted)
+                SectionLabel(RegistrationText.chooseNumber)
                 Grouped {
                     LabeledFieldRow(
                         label: PhoneText.areaCode, text: $model.areaCode, placeholder: "480", keyboard: .numberPad)
@@ -775,21 +854,9 @@
                 if !model.numbers.isEmpty {
                     Grouped {
                         ForEach(model.numbers) { n in
-                            HStack(spacing: 12) {
-                                VStack(alignment: .leading, spacing: 2) {
-                                    Text(formatPhone(n.number)).textRole(.bodyEmphasis).foregroundStyle(Color.text)
-                                    if let place = n.place {
-                                        Text(place).textRole(.secondary).foregroundStyle(Color.textMuted)
-                                    }
-                                }
-                                Spacer()
-                                Button(PhoneText.useThis) { Task { await model.take(n.number) } }
-                                    .buttonStyle(.secondary)
-                                    .disabled(model.busy != nil)
+                            choiceRow(formatPhone(n.number), detail: n.place, on: model.picked == n.number) {
+                                model.picked = n.number
                             }
-                            .padding(.horizontal, CGFloat(Spacing.rowHorizontal))
-                            .padding(.vertical, CGFloat(Spacing.rowVertical))
-                            .frame(minHeight: minTarget)
                         }
                     }
                     .accessibilityLabel("Numbers you can take")
@@ -797,22 +864,78 @@
             }
         }
 
-        private func keepNumber(_ model: PhoneSettingsModel) -> some View {
-            @Bindable var model = model
-            return VStack(alignment: .leading, spacing: 12) {
-                Grouped(label: PhoneText.keepTitle, footer: PhoneText.keepHint) {
-                    LabeledFieldRow(
-                        label: "Number", text: $model.keepNumber, placeholder: "(480) 555-0100", keyboard: .phonePad)
-                }
-                if let e = model.fieldErrors["number"] { Notice(kind: .error, text: e) }
-                Button {
-                    Task { await model.keep() }
-                } label: {
-                    BusyButtonLabel(PhoneText.keepButton, busy: model.busy == "keep", busyTitle: "Saving…")
-                }
-                .buttonStyle(.secondary)
-                .disabled(model.busy != nil)
+        private static func keyboard(_ k: BusinessKeyboard) -> UIKeyboardType {
+            switch k {
+            case .text: .default
+            case .number: .numberPad
+            case .email: .emailAddress
+            case .phone: .phonePad
+            case .url: .URL
             }
+        }
+
+        /// The business details phone companies review, in their two groups.
+        private func businessForm(_ model: PhoneSettingsModel, einLast4: String?) -> some View {
+            @Bindable var model = model
+            return VStack(alignment: .leading, spacing: 16) {
+                ForEach(businessSections, id: \.title) { section in
+                    Grouped(label: section.title) {
+                        ForEach(section.keys, id: \.self) { key in
+                            if key == "business_type" {
+                                businessTypeRow(model)
+                            } else if let f = businessFields.first(where: { $0.key == key }) {
+                                LabeledFieldRow(
+                                    label: f.label,
+                                    text: Binding(
+                                        get: { model.business[key] ?? "" },
+                                        set: { model.business[key] = $0 }),
+                                    placeholder: key == "ein" && einLast4 != nil
+                                        ? RegistrationText.savedEIN(einLast4!) : f.placeholder,
+                                    keyboard: Self.keyboard(f.keyboard))
+                                .textInputAutocapitalization(
+                                    f.keyboard == .email || f.keyboard == .url
+                                        ? .never : key == "state" ? .characters : .words
+                                )
+                                .autocorrectionDisabled()
+                                if let e = model.fieldErrors[key] {
+                                    Text(e).textRole(.secondary).foregroundStyle(Color.fail)
+                                        .padding(.horizontal, CGFloat(Spacing.rowHorizontal))
+                                        .padding(.bottom, 8)
+                                }
+                            }
+                        }
+                    }
+                }
+                Text(businessFooter).textRole(.secondary).foregroundStyle(Color.textMuted)
+            }
+        }
+
+        private func businessTypeRow(_ model: PhoneSettingsModel) -> some View {
+            @Bindable var model = model
+            let current = model.business["business_type"] ?? "llc"
+            let label = businessTypes.first { $0.value == current }?.label ?? "LLC"
+            return Menu {
+                Picker(
+                    RegistrationText.type,
+                    selection: Binding(
+                        get: { model.business["business_type"] ?? "llc" },
+                        set: { model.business["business_type"] = $0 })
+                ) {
+                    ForEach(businessTypes, id: \.value) { Text($0.label).tag($0.value) }
+                }
+            } label: {
+                HStack(spacing: 12) {
+                    Text(RegistrationText.type).textRole(.body).foregroundStyle(Color.text)
+                    Spacer()
+                    Text(label).textRole(.body).foregroundStyle(Color.textMuted)
+                    Image(systemName: "chevron.up.chevron.down").font(.footnote).foregroundStyle(Color.textMuted)
+                }
+                .padding(.horizontal, CGFloat(Spacing.rowHorizontal))
+                .padding(.vertical, CGFloat(Spacing.rowVertical))
+                .frame(minHeight: minTarget)
+                .contentShape(Rectangle())
+            }
+            .accessibilityLabel("\(RegistrationText.type), \(label)")
         }
 
         private func textsAndCalls(_ model: PhoneSettingsModel) -> some View {

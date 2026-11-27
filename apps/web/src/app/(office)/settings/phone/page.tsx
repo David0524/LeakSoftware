@@ -11,11 +11,12 @@ import {
   SettingsForm,
   SettingsSection,
 } from "@/components/settings-forms";
-import { Checkbox, PageHeader } from "@/components/ui";
+import { Checkbox, Notice, PageHeader } from "@/components/ui";
 import { getOffice } from "@/lib/auth";
 import { getCompany, getTeam } from "@/lib/data";
 import { getLine, myPhone } from "@/lib/messages";
 import { createClient } from "@/lib/supabase/server";
+import { phoneConfigured } from "@/server/phone-line";
 import { currentRegistration, registrationView } from "@/server/texting-registration";
 
 export const metadata: Metadata = { title: "Phone and Texting · Sundeck Pro" };
@@ -54,6 +55,9 @@ export default async function PhoneSettingsPage() {
     <>
       <PageHeader back={{ href: "/settings", label: "Settings" }} title="Phone and Texting" />
       <div className="max-w-2xl space-y-6">
+        {!phoneConfigured() ? (
+          <Notice tone="info">Texting isn’t switched on for Sundeck Pro yet.</Notice>
+        ) : null}
         {line?.status === "active" || registration ? (
           <SettingsSection title="Company number" boxed>
             {line ? (

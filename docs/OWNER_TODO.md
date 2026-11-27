@@ -3,6 +3,28 @@
 Owner, 2026-10-22: "a list of things you need from me. I'll knock them out later." Newest
 first. Tick an item off by deleting it (and tell Claude, so it can check the result).
 
+## From 2026-11-27: connect Twilio (texting has never been live)
+
+Texting was built in October but Twilio was never connected: no keys on Vercel, no Business
+Profile, no numbers. Until these are done every "sent" text is demo mode, and the Health page
+shows Texting "Not set up". Shops can already send their business details; they wait until then.
+
+1. **Twilio Business Profile (ISV)** for Sundeck Pro, LLC (Trust Hub › Profiles › Business
+   Profile, "ISV"): EIN, the LLC's street address, a representative (name, title, email, phone),
+   a social media URL, notifications to office@sundeckpro.com. Use the legal name exactly as on
+   the EIN letter (CP 575). Claude in Chrome can fill it in; Twilio approves in a few days.
+2. **Vercel › web project › Environment Variables (Production)**, then Redeploy:
+   `TWILIO_ACCOUNT_SID`, `TWILIO_AUTH_TOKEN` (Twilio Console › Account Info), and
+   `TWILIO_PRIMARY_PROFILE_SID` (the approved profile's BU… id). Leave
+   `TWILIO_MESSAGING_SERVICE_SID` empty: each shop gets its own.
+3. **Twilio › Messaging › Settings › Geo permissions:** United States and Canada only.
+4. **Use My Own Number shops** (first: Southern Nevada Leak Detection, (702) 381-1966): once Admin
+   › Texting shows "Waiting for the number to be hosted", start a Hosted SMS order for the number
+   in that shop's subaccount (Twilio Console › switch to the subaccount › Phone Numbers › Port &
+   Host › Host numbers). The shop owner signs the authorization email and answers Twilio's
+   verification call. The app notices the number and finishes by itself. (Twilio's hosting API
+   is preview-only, so this one step is by hand.)
+
 ## From 2026-11-24: refunds
 
 1. **Add `charge.refunded` to the live "Sundeck Pro Customers" webhook** (Developers ›

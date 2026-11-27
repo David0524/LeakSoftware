@@ -291,6 +291,20 @@ describe("without Twilio (demo)", () => {
     expect(one("texting_registration").stage).toBe("ready");
   });
 
+  it("waits on the live site until Twilio is connected", async () => {
+    vi.stubEnv("TWILIO_ACCOUNT_SID", "");
+    vi.stubEnv("VERCEL_ENV", "production");
+    expect(
+      await reg.startRegistration(owner, "c1", "u1", { kind: "toll_free", business }, ORIGIN),
+    ).toEqual({ message: expect.stringContaining("shortly") });
+    expect(one("texting_registration")).toMatchObject({ stage: "registering", step: "start" });
+    expect(tables.phone_line ?? []).toHaveLength(0);
+    // Connected later: the next check starts the work.
+    vi.stubEnv("TWILIO_ACCOUNT_SID", "AC_main");
+    await cron();
+    expect(one("texting_registration").step).toBe("tf_wait");
+  });
+
   it("checks the details first", async () => {
     vi.stubEnv("TWILIO_ACCOUNT_SID", "");
     const r = await reg.startRegistration(

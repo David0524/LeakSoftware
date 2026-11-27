@@ -2,12 +2,24 @@ import { router } from "expo-router";
 import { useCallback, useEffect, useState } from "react";
 import { StyleSheet, Text, View } from "react-native";
 import {
+  BUSINESS_FIELDS,
+  BUSINESS_FOOTER,
+  BUSINESS_SECTIONS,
+  BUSINESS_TYPES,
+  BUSINESS_TYPE_LABEL,
+  KIND_DETAIL,
+  KIND_TITLE,
   ON_MY_WAY_LABELS,
+  REGISTRATION_KINDS,
   formatPhone,
   friendlyError,
   onMyWayVia,
   toE164,
+  type BusinessDetails,
+  type BusinessField,
+  type BusinessType,
   type OnMyWayVia,
+  type RegistrationKind,
 } from "@leakbook/core";
 import type { JsonValue } from "@leakbook/sync";
 import { API_URL } from "../../lib/config";
@@ -18,6 +30,7 @@ import {
   FieldGroup,
   FieldRow,
   Group,
+  PickerRow,
   ListRow,
   Notice,
   Screen,
@@ -35,7 +48,9 @@ import { useUnsavedChanges } from "../../ui/ModalSheet";
 import { SkeletonRows } from "../../ui/Skeleton";
 
 // Settings › Phone and Texting (the website's settings/phone): a company number is needed to
-// text customers. Get a new one (area code, then pick), or use the shop's own; then the line's
+// text customers. Get a toll-free one, a local one (area code, then pick), or use the shop's own,
+// with the business details phone companies review first (texting registration, owner
+// 2026-11-27; docs/plans/texting-registration.md); then the line's
 // settings (photos, voicemail greeting, whose phones ring), where On My Way texts go out from,
 // and each person's own mobile number. The number lives on the server (/api/phone), so this
 // screen needs a connection; On My Way is a synced shop setting.
@@ -47,6 +62,15 @@ interface Line {
   voicemail_greeting: string | null;
   ring_user_ids: string[];
 }
+interface Registration {
+  kind: RegistrationKind;
+  stage: "registering" | "verify_number" | "needs_changes" | "ready";
+  title: string;
+  detail: string;
+  tone: "info" | "warning" | "success" | "error";
+  business: Partial<BusinessDetails>;
+  ein_last4: string;
+}
 interface Teammate {
   user_id: string;
   name: string;
@@ -57,6 +81,7 @@ interface Teammate {
 interface PhoneState {
   configured: boolean;
   line: Line | null;
+  registration: Registration | null;
   my_phone: string | null;
   team: Teammate[];
 }
@@ -136,17 +161,19 @@ function PhonePage() {
       {state && !state.configured ? (
         <Notice tone="info">Texting isn’t switched on for Sundeck Pro yet.</Notice>
       ) : null}
-      {state?.line ? (
-        <CompanyNumber line={state.line} onCancel={() => void act("cancel")} />
+      {state && (state.line?.status === "active" || state.registration) ? (
+        <CompanyNumber
+          line={state.line}
+          registration={state.registration}
+          act={act}
+          onCancel={() => void act("cancel")}
+        />
       ) : state ? (
-        <>
-          <Notice tone="info">
-            A company number is needed to text customers from Sundeck Pro. Get a new one, or use
-            your shop’s own.
-          </Notice>
-          <NewNumber act={act} />
-          <KeepNumber act={act} />
-        </>
+        // A number entered before registrations (still pending): Use My Own Number, filled in.
+        <NumberSetup
+          act={act}
+          ownNumber={state.line ? formatPhone(state.line.number) : undefined}
+        />
       ) : null}
       {state?.line ? <LineSettings line={state.line} team={state.team} act={act} /> : null}
       <OnMyWaySetting />
@@ -165,19 +192,41 @@ function PhonePage() {
   );
 }
 
-function CompanyNumber({ line, onCancel }: { line: Line; onCancel: () => void }) {
+function CompanyNumber({
+  line,
+  registration,
+  act,
+  onCancel,
+}: {
+  line: Line | null;
+  registration: Registration | null;
+  act: Act;
+  onCancel: () => void;
+}) {
+  const [editing, setEditing] = useState(false);
   return (
     <Section title="Company number">
       <View style={[styles.box, { backgroundColor: color.surface }]}>
-        <Text style={[styles.number, { color: color.text }]} maxFontSizeMultiplier={MAX_TEXT_SCALE}>
-          {formatPhone(line.number)}
-        </Text>
-        <T muted>
-          {line.status === "active"
-            ? "Working. Texts and calls show up in Messages."
-            : "Your own number is being set up for texting. It usually takes a few days."}
-        </T>
-        {line.status === "pending" ? (
+        {line ? (
+          <Text
+            style={[styles.number, { color: color.text }]}
+            maxFontSizeMultiplier={MAX_TEXT_SCALE}
+          >
+            {formatPhone(line.number)}
+          </Text>
+        ) : null}
+        {line?.status === "active" ? (
+          <T muted>Working. Texts and calls show up in Messages.</T>
+        ) : registration ? (
+          <>
+            <T variant="bodyMedium">{registration.title}</T>
+            <T muted>{registration.detail}</T>
+          </>
+        ) : null}
+        {registration?.stage === "needs_changes" && !editing ? (
+          <Button title="Edit Business Details" onPress={() => setEditing(true)} />
+        ) : null}
+        {line?.status !== "active" ? (
           <Button
             title="Cancel Setup"
             kind="danger"
@@ -192,13 +241,216 @@ function CompanyNumber({ line, onCancel }: { line: Line; onCancel: () => void })
           />
         ) : null}
       </View>
+      {editing && registration ? (
+        <EditBusiness registration={registration} act={act} onDone={() => setEditing(false)} />
+      ) : null}
     </Section>
   );
 }
 
 type Act = (action: string, values?: object) => Promise<Result>;
+type Values = Partial<Record<BusinessField, string>>;
 
-function NewNumber({ act }: { act: Act }) {
+const KEYBOARD = {
+  text: "default",
+  number: "number-pad",
+  email: "email-address",
+  phone: "phone-pad",
+  url: "url",
+} as const;
+
+/** What was sent before, ready to edit (the EIN isn't sent back: left empty, it stays). */
+function savedValues(b: Partial<BusinessDetails>): Values {
+  return {
+    ...b,
+    ein: "",
+    phone: b.phone ? formatPhone(b.phone) : "",
+    business_type: b.business_type ?? "llc",
+  } as Values;
+}
+
+/** The business details phone companies review, in their two groups. */
+function BusinessForm({
+  values,
+  onChange,
+  errors,
+  einLast4,
+}: {
+  values: Values;
+  onChange: (v: Values) => void;
+  errors: Record<string, string>;
+  einLast4?: string;
+}) {
+  return (
+    <>
+      {BUSINESS_SECTIONS.map((section) => (
+        <Section key={section.title} title={section.title}>
+          <FieldGroup labelWidth={110}>
+            {section.keys.map((key) => {
+              if (key === "business_type")
+                return (
+                  <PickerRow<BusinessType>
+                    key={key}
+                    label="Type"
+                    value={(values.business_type as BusinessType) ?? "llc"}
+                    onChange={(v) => onChange({ ...values, business_type: v })}
+                    options={BUSINESS_TYPES.map((t) => ({
+                      value: t,
+                      label: BUSINESS_TYPE_LABEL[t],
+                    }))}
+                    error={errors.business_type}
+                  />
+                );
+              const f = BUSINESS_FIELDS.find((x) => x.key === key)!;
+              return (
+                <FieldRow
+                  key={key}
+                  label={f.label}
+                  value={values[key] ?? ""}
+                  onChangeText={(v) => onChange({ ...values, [key]: v })}
+                  keyboardType={KEYBOARD[f.keyboard]}
+                  autoCapitalize={
+                    f.keyboard === "email" || f.keyboard === "url"
+                      ? "none"
+                      : key === "state"
+                        ? "characters"
+                        : "words"
+                  }
+                  autoCorrect={false}
+                  placeholder={
+                    key === "ein" && einLast4 ? `Saved (ends in ${einLast4})` : f.placeholder
+                  }
+                  error={errors[key]}
+                />
+              );
+            })}
+          </FieldGroup>
+        </Section>
+      ))}
+      <T variant="secondary" muted>
+        {BUSINESS_FOOTER}
+      </T>
+    </>
+  );
+}
+
+/** No number yet: choose how to get one, then the business details. */
+function NumberSetup({ act, ownNumber }: { act: Act; ownNumber?: string }) {
+  const [kind, setKind] = useState<RegistrationKind>(ownNumber ? "own" : "toll_free");
+  const [picked, setPicked] = useState<string | null>(null);
+  const [own, setOwn] = useState(ownNumber ?? "");
+  const [values, setValues] = useState<Values>({ business_type: "llc" });
+  const [errors, setErrors] = useState<Record<string, string>>({});
+  const [busy, setBusy] = useState(false);
+  // Details typed but not sent ask before leaving (owner, 2026-10-20).
+  useUnsavedChanges(Object.entries(values).some(([k, v]) => k !== "business_type" && !!v?.trim()));
+  async function register() {
+    setBusy(true);
+    const r = await act("register", {
+      kind,
+      number: kind === "local" ? picked : kind === "own" ? own : undefined,
+      business: values,
+    });
+    setBusy(false);
+    setErrors(r.fields ?? {});
+  }
+  return (
+    <>
+      <Section
+        title="Get a number"
+        footer="Texting needs a company number. Phone companies review each business before its number can text, so it takes a few days to a few weeks. We do the paperwork."
+      >
+        <Group>
+          {REGISTRATION_KINDS.map((k) => (
+            <ListRow
+              key={k}
+              title={KIND_TITLE[k]}
+              subtitle={KIND_DETAIL[k]}
+              trailing={
+                k === kind ? (
+                  <Text
+                    style={[type.body, { color: color.primary }]}
+                    maxFontSizeMultiplier={MAX_TEXT_SCALE}
+                  >
+                    ✓
+                  </Text>
+                ) : null
+              }
+              accessibilityLabel={`${KIND_TITLE[k]}${k === kind ? ", selected" : ""}`}
+              onPress={() => {
+                haptics.selection();
+                setKind(k);
+                setPicked(null);
+              }}
+            />
+          ))}
+        </Group>
+      </Section>
+      {kind === "local" ? <LocalPicker act={act} picked={picked} onPick={setPicked} /> : null}
+      {kind === "own" ? (
+        <Section title="Your number" footer="The number your customers call today.">
+          <FieldGroup labelWidth={110}>
+            <FieldRow
+              label="Number"
+              value={own}
+              onChangeText={setOwn}
+              keyboardType="phone-pad"
+              placeholder="(702) 555-0100"
+              error={errors.number}
+            />
+          </FieldGroup>
+        </Section>
+      ) : null}
+      {kind === "local" && errors.number ? <Notice tone="error">{errors.number}</Notice> : null}
+      <BusinessForm values={values} onChange={setValues} errors={errors} />
+      <Button title="Register Number" loading={busy} onPress={() => void register()} />
+    </>
+  );
+}
+
+/** A review came back: change the details and send them again. */
+function EditBusiness({
+  registration,
+  act,
+  onDone,
+}: {
+  registration: Registration;
+  act: Act;
+  onDone: () => void;
+}) {
+  const [values, setValues] = useState<Values>(savedValues(registration.business));
+  const [errors, setErrors] = useState<Record<string, string>>({});
+  const [busy, setBusy] = useState(false);
+  async function send() {
+    setBusy(true);
+    const r = await act("update", { business: values });
+    setBusy(false);
+    setErrors(r.fields ?? {});
+    if (!r.error && !r.fields) onDone();
+  }
+  return (
+    <View style={styles.part}>
+      <BusinessForm
+        values={values}
+        onChange={setValues}
+        errors={errors}
+        einLast4={registration.ein_last4}
+      />
+      <Button title="Send Again" loading={busy} onPress={() => void send()} />
+    </View>
+  );
+}
+
+/** Find a local number by area code and pick one. */
+function LocalPicker({
+  act,
+  picked,
+  onPick,
+}: {
+  act: Act;
+  picked: string | null;
+  onPick: (n: string) => void;
+}) {
   const [area, setArea] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | undefined>();
@@ -218,10 +470,7 @@ function NewNumber({ act }: { act: Act }) {
     if (!r.error && !(r.numbers ?? []).length) setError("No numbers there right now. Try another.");
   }
   return (
-    <Section
-      title="Get a new number"
-      footer="A local number that texts, sends photos, and takes calls. Included with Sundeck Pro."
-    >
+    <Section title="Choose a number">
       <View style={styles.part}>
         <View style={styles.searchRow}>
           <View style={{ flex: 1 }}>
@@ -251,59 +500,25 @@ function NewNumber({ act }: { act: Act }) {
                 key={n.number}
                 title={formatPhone(n.number)}
                 subtitle={[n.locality, n.region].filter(Boolean).join(", ") || undefined}
-                detail="Use This Number"
-                onPress={() =>
-                  confirmDestructive({
-                    title: `Use ${formatPhone(n.number)} as the company number?`,
-                    message: "Customers text and call it. Included with Sundeck Pro.",
-                    confirm: "Use This Number",
-                    onConfirm: () => void act("take", { number: n.number }),
-                  })
+                trailing={
+                  n.number === picked ? (
+                    <Text
+                      style={[type.body, { color: color.primary }]}
+                      maxFontSizeMultiplier={MAX_TEXT_SCALE}
+                    >
+                      ✓
+                    </Text>
+                  ) : null
                 }
+                accessibilityLabel={`${formatPhone(n.number)}${n.number === picked ? ", selected" : ""}`}
+                onPress={() => {
+                  haptics.selection();
+                  onPick(n.number);
+                }}
               />
             ))}
           </Group>
         ) : null}
-      </View>
-    </Section>
-  );
-}
-
-function KeepNumber({ act }: { act: Act }) {
-  const [number, setNumber] = useState("");
-  // A number typed but not sent asks before leaving (owner, 2026-10-20).
-  useUnsavedChanges(number.trim() !== "");
-  const [error, setError] = useState<string | undefined>();
-  const [busy, setBusy] = useState(false);
-  async function keep() {
-    const e164 = toE164(number);
-    if (!e164) return setError("Enter the shop’s number, like (480) 555-0100.");
-    setError(undefined);
-    setBusy(true);
-    const r = await act("keep", { number: e164 });
-    setBusy(false);
-    if (r.fields) setError(Object.values(r.fields)[0]);
-  }
-  return (
-    <Section title="Or use your shop’s number">
-      <View style={styles.part}>
-        <FieldGroup labelWidth={100}>
-          <FieldRow
-            label="Number"
-            value={number}
-            onChangeText={setNumber}
-            keyboardType="phone-pad"
-            placeholder="(480) 555-0100"
-            error={error}
-            hint="Sundeck Pro registers it for texting. It takes a few days."
-          />
-        </FieldGroup>
-        <Button
-          title="Set Up My Number"
-          kind="secondary"
-          loading={busy}
-          onPress={() => void keep()}
-        />
       </View>
     </Section>
   );

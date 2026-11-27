@@ -234,8 +234,16 @@ import Testing
         await model.search()
         #expect(model.numbers.map(\.number) == ["+14805550111"] && model.numbers[0].place == "Mesa, AZ")
         #expect(StubServer.calls(host).last?.body == ["company_id": "c1", "action": "search", "area_code": "480"])
-        await model.take("+14805550111")
-        #expect(StubServer.calls(host).contains { $0.body["action"] == "take" })
+        // A local number: picked, then registered with the business details.
+        model.kind = .local
+        model.picked = "+14805550111"
+        model.business["legal_name"] = "Blue Wave Pools LLC"
+        #expect(model.isDirty)
+        await model.register()
+        let sent = try #require(StubServer.calls(host).last { $0.body["action"] == "register" })
+        #expect(sent.body["kind"] == "local" && sent.body["number"] == "+14805550111")
+        #expect(sent.body["business"]?["legal_name"] == "Blue Wave Pools LLC")
+        #expect(model.business == ["business_type": "llc"])
         model.myPhone = "480 555 0199"
         await model.saveMyPhone()
         #expect(
@@ -254,6 +262,36 @@ import Testing
         await offline.load()
         #expect(!offline.loaded && offline.result?.text == WebAPI.Failure.noConnection)
         #expect(PhoneText.needsNumber.contains("Texting needs a company number"))
+    }
+
+    @Test func phoneSettingsReadTheRegistration() {
+        let model = PhoneSettingsModel(api: api(host()), companyId: "c1")
+        model.apply([
+            "line": [
+                "number": "+17023811966", "status": "pending", "pictures": true, "ring_user_ids": [],
+                "voicemail_greeting": .null,
+            ],
+            "registration": [
+                "kind": "own", "stage": "needs_changes", "title": "Needs Changes",
+                "detail": "The EIN doesn’t match.", "tone": "error",
+                "business": ["legal_name": "Blue Wave Pools LLC", "ein": "", "phone": "+17025550100"],
+                "ein_last4": "6789",
+            ],
+            "team": [], "my_phone": .null,
+        ])
+        #expect(model.registration?.kind == .own && model.registration?.title == "Needs Changes")
+        model.startEditing()
+        #expect(model.editing && model.business["phone"] == "(702) 555-0100" && model.business["ein"] == "")
+        #expect(RegistrationText.savedEIN("6789") == "Saved (ends in 6789)")
+        // A number entered before registrations: Use My Own Number, filled in.
+        model.apply([
+            "line": [
+                "number": "+17023811966", "status": "pending", "pictures": true, "ring_user_ids": [],
+                "voicemail_greeting": .null,
+            ],
+            "registration": .null, "team": [], "my_phone": .null,
+        ])
+        #expect(model.kind == .own && model.ownNumber == "(702) 381-1966")
     }
 
     @Test func phoneSettingsReadTheLine() {

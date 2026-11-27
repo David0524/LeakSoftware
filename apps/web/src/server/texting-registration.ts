@@ -247,7 +247,10 @@ export async function startRegistration(
   }
 
   if (!twilioConfigured()) {
-    // Demo mode (a server without Twilio keys): the number is made up and ready at once.
+    // The live site without Twilio keys: the details wait, and the 30-minute check starts the
+    // work once Twilio is connected. Anywhere else it's demo mode: made up and ready at once.
+    if (process.env.VERCEL_ENV === "production")
+      return { message: "We’ve got your details. We’ll start registering your number shortly." };
     await finishDemo(db, id, companyId, lineId);
     return { message: "Your number is ready." };
   }
