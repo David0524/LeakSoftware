@@ -1,0 +1,1134 @@
+{
+  "QUOTE_DEPOSIT_TEXT": [
+    {
+      "args": [],
+      "result": {
+        "row": "Deposit",
+        "title": "Deposit for This Quote",
+        "choices": {
+          "default": "Shop Default",
+          "percent": "Percent",
+          "fixed": "Fixed Amount",
+          "none": "No Deposit"
+        },
+        "percentLabel": "Percent of total",
+        "fixedLabel": "Amount",
+        "save": "Save",
+        "footer": "For this quote only. Change the shop’s default in Settings › Payments and Deposits."
+      }
+    }
+  ],
+  "quoteDepositChoice": [
+    {
+      "args": [
+        null
+      ],
+      "result": "default"
+    },
+    {
+      "args": [
+        {
+          "type": "percent",
+          "value_bps": 3000,
+          "minimum_cents": 0
+        }
+      ],
+      "result": "percent"
+    },
+    {
+      "args": [
+        {
+          "type": "percent",
+          "value_bps": 2500,
+          "minimum_cents": 10000
+        }
+      ],
+      "result": "percent"
+    },
+    {
+      "args": [
+        {
+          "type": "percent",
+          "value_bps": 0,
+          "minimum_cents": 0
+        }
+      ],
+      "result": "none"
+    },
+    {
+      "args": [
+        {
+          "type": "fixed",
+          "value_cents": 25000,
+          "minimum_cents": 0
+        }
+      ],
+      "result": "fixed"
+    },
+    {
+      "args": [
+        {
+          "type": "fixed",
+          "value_cents": 0,
+          "minimum_cents": 0
+        }
+      ],
+      "result": "none"
+    }
+  ],
+  "depositRuleSummary": [
+    {
+      "args": [
+        {
+          "type": "percent",
+          "value_bps": 5000,
+          "minimum_cents": 0
+        }
+      ],
+      "result": "50%"
+    },
+    {
+      "args": [
+        {
+          "type": "percent",
+          "value_bps": 3000,
+          "minimum_cents": 0
+        }
+      ],
+      "result": "30%"
+    },
+    {
+      "args": [
+        {
+          "type": "percent",
+          "value_bps": 2500,
+          "minimum_cents": 10000
+        }
+      ],
+      "result": "25%, at least $100.00"
+    },
+    {
+      "args": [
+        {
+          "type": "percent",
+          "value_bps": 0,
+          "minimum_cents": 0
+        }
+      ],
+      "result": "None"
+    },
+    {
+      "args": [
+        {
+          "type": "fixed",
+          "value_cents": 25000,
+          "minimum_cents": 0
+        }
+      ],
+      "result": "$250.00"
+    },
+    {
+      "args": [
+        {
+          "type": "fixed",
+          "value_cents": 0,
+          "minimum_cents": 0
+        }
+      ],
+      "result": "None"
+    }
+  ],
+  "quoteDepositLabel": [
+    {
+      "args": [
+        null,
+        {
+          "type": "percent",
+          "value_bps": 5000,
+          "minimum_cents": 0
+        }
+      ],
+      "result": "Shop Default (50%)"
+    },
+    {
+      "args": [
+        {
+          "type": "percent",
+          "value_bps": 3000,
+          "minimum_cents": 0
+        },
+        {
+          "type": "percent",
+          "value_bps": 5000,
+          "minimum_cents": 0
+        }
+      ],
+      "result": "30%"
+    },
+    {
+      "args": [
+        {
+          "type": "percent",
+          "value_bps": 2500,
+          "minimum_cents": 10000
+        },
+        {
+          "type": "percent",
+          "value_bps": 5000,
+          "minimum_cents": 0
+        }
+      ],
+      "result": "25%, at least $100.00"
+    },
+    {
+      "args": [
+        {
+          "type": "percent",
+          "value_bps": 0,
+          "minimum_cents": 0
+        },
+        {
+          "type": "percent",
+          "value_bps": 5000,
+          "minimum_cents": 0
+        }
+      ],
+      "result": "No Deposit"
+    },
+    {
+      "args": [
+        {
+          "type": "fixed",
+          "value_cents": 25000,
+          "minimum_cents": 0
+        },
+        {
+          "type": "percent",
+          "value_bps": 5000,
+          "minimum_cents": 0
+        }
+      ],
+      "result": "$250.00"
+    },
+    {
+      "args": [
+        {
+          "type": "fixed",
+          "value_cents": 0,
+          "minimum_cents": 0
+        },
+        {
+          "type": "percent",
+          "value_bps": 5000,
+          "minimum_cents": 0
+        }
+      ],
+      "result": "No Deposit"
+    }
+  ],
+  "quoteDepositFromInput": [
+    {
+      "args": [
+        "default",
+        "30",
+        ""
+      ],
+      "result": {
+        "rule": null
+      }
+    },
+    {
+      "args": [
+        "default",
+        "30%",
+        ""
+      ],
+      "result": {
+        "rule": null
+      }
+    },
+    {
+      "args": [
+        "default",
+        "0",
+        ""
+      ],
+      "result": {
+        "rule": null
+      }
+    },
+    {
+      "args": [
+        "default",
+        "101",
+        ""
+      ],
+      "result": {
+        "rule": null
+      }
+    },
+    {
+      "args": [
+        "default",
+        "12.5",
+        ""
+      ],
+      "result": {
+        "rule": null
+      }
+    },
+    {
+      "args": [
+        "default",
+        "",
+        "250"
+      ],
+      "result": {
+        "rule": null
+      }
+    },
+    {
+      "args": [
+        "default",
+        "",
+        "$1,250.50"
+      ],
+      "result": {
+        "rule": null
+      }
+    },
+    {
+      "args": [
+        "default",
+        "",
+        "x"
+      ],
+      "result": {
+        "rule": null
+      }
+    },
+    {
+      "args": [
+        "default",
+        "",
+        "0"
+      ],
+      "result": {
+        "rule": null
+      }
+    },
+    {
+      "args": [
+        "percent",
+        "30",
+        ""
+      ],
+      "result": {
+        "rule": {
+          "type": "percent",
+          "value_bps": 3000,
+          "minimum_cents": 0
+        }
+      }
+    },
+    {
+      "args": [
+        "percent",
+        "30%",
+        ""
+      ],
+      "result": {
+        "rule": {
+          "type": "percent",
+          "value_bps": 3000,
+          "minimum_cents": 0
+        }
+      }
+    },
+    {
+      "args": [
+        "percent",
+        "0",
+        ""
+      ],
+      "result": {
+        "error": "Enter a percent from 1 to 100."
+      }
+    },
+    {
+      "args": [
+        "percent",
+        "101",
+        ""
+      ],
+      "result": {
+        "error": "Enter a percent from 1 to 100."
+      }
+    },
+    {
+      "args": [
+        "percent",
+        "12.5",
+        ""
+      ],
+      "result": {
+        "rule": {
+          "type": "percent",
+          "value_bps": 1250,
+          "minimum_cents": 0
+        }
+      }
+    },
+    {
+      "args": [
+        "percent",
+        "",
+        "250"
+      ],
+      "result": {
+        "error": "Enter a percent from 1 to 100."
+      }
+    },
+    {
+      "args": [
+        "percent",
+        "",
+        "$1,250.50"
+      ],
+      "result": {
+        "error": "Enter a percent from 1 to 100."
+      }
+    },
+    {
+      "args": [
+        "percent",
+        "",
+        "x"
+      ],
+      "result": {
+        "error": "Enter a percent from 1 to 100."
+      }
+    },
+    {
+      "args": [
+        "percent",
+        "",
+        "0"
+      ],
+      "result": {
+        "error": "Enter a percent from 1 to 100."
+      }
+    },
+    {
+      "args": [
+        "fixed",
+        "30",
+        ""
+      ],
+      "result": {
+        "error": "Enter an amount, like 250."
+      }
+    },
+    {
+      "args": [
+        "fixed",
+        "30%",
+        ""
+      ],
+      "result": {
+        "error": "Enter an amount, like 250."
+      }
+    },
+    {
+      "args": [
+        "fixed",
+        "0",
+        ""
+      ],
+      "result": {
+        "error": "Enter an amount, like 250."
+      }
+    },
+    {
+      "args": [
+        "fixed",
+        "101",
+        ""
+      ],
+      "result": {
+        "error": "Enter an amount, like 250."
+      }
+    },
+    {
+      "args": [
+        "fixed",
+        "12.5",
+        ""
+      ],
+      "result": {
+        "error": "Enter an amount, like 250."
+      }
+    },
+    {
+      "args": [
+        "fixed",
+        "",
+        "250"
+      ],
+      "result": {
+        "rule": {
+          "type": "fixed",
+          "value_cents": 25000,
+          "minimum_cents": 0
+        }
+      }
+    },
+    {
+      "args": [
+        "fixed",
+        "",
+        "$1,250.50"
+      ],
+      "result": {
+        "rule": {
+          "type": "fixed",
+          "value_cents": 125050,
+          "minimum_cents": 0
+        }
+      }
+    },
+    {
+      "args": [
+        "fixed",
+        "",
+        "x"
+      ],
+      "result": {
+        "error": "Enter an amount, like 250."
+      }
+    },
+    {
+      "args": [
+        "fixed",
+        "",
+        "0"
+      ],
+      "result": {
+        "error": "Enter an amount, like 250."
+      }
+    },
+    {
+      "args": [
+        "none",
+        "30",
+        ""
+      ],
+      "result": {
+        "rule": {
+          "type": "percent",
+          "value_bps": 0,
+          "minimum_cents": 0
+        }
+      }
+    },
+    {
+      "args": [
+        "none",
+        "30%",
+        ""
+      ],
+      "result": {
+        "rule": {
+          "type": "percent",
+          "value_bps": 0,
+          "minimum_cents": 0
+        }
+      }
+    },
+    {
+      "args": [
+        "none",
+        "0",
+        ""
+      ],
+      "result": {
+        "rule": {
+          "type": "percent",
+          "value_bps": 0,
+          "minimum_cents": 0
+        }
+      }
+    },
+    {
+      "args": [
+        "none",
+        "101",
+        ""
+      ],
+      "result": {
+        "rule": {
+          "type": "percent",
+          "value_bps": 0,
+          "minimum_cents": 0
+        }
+      }
+    },
+    {
+      "args": [
+        "none",
+        "12.5",
+        ""
+      ],
+      "result": {
+        "rule": {
+          "type": "percent",
+          "value_bps": 0,
+          "minimum_cents": 0
+        }
+      }
+    },
+    {
+      "args": [
+        "none",
+        "",
+        "250"
+      ],
+      "result": {
+        "rule": {
+          "type": "percent",
+          "value_bps": 0,
+          "minimum_cents": 0
+        }
+      }
+    },
+    {
+      "args": [
+        "none",
+        "",
+        "$1,250.50"
+      ],
+      "result": {
+        "rule": {
+          "type": "percent",
+          "value_bps": 0,
+          "minimum_cents": 0
+        }
+      }
+    },
+    {
+      "args": [
+        "none",
+        "",
+        "x"
+      ],
+      "result": {
+        "rule": {
+          "type": "percent",
+          "value_bps": 0,
+          "minimum_cents": 0
+        }
+      }
+    },
+    {
+      "args": [
+        "none",
+        "",
+        "0"
+      ],
+      "result": {
+        "rule": {
+          "type": "percent",
+          "value_bps": 0,
+          "minimum_cents": 0
+        }
+      }
+    }
+  ],
+  "quoteDepositInputs": [
+    {
+      "args": [
+        null
+      ],
+      "result": {
+        "percent": "",
+        "amount": ""
+      }
+    },
+    {
+      "args": [
+        {
+          "type": "percent",
+          "value_bps": 3000,
+          "minimum_cents": 0
+        }
+      ],
+      "result": {
+        "percent": "30",
+        "amount": ""
+      }
+    },
+    {
+      "args": [
+        {
+          "type": "percent",
+          "value_bps": 2500,
+          "minimum_cents": 10000
+        }
+      ],
+      "result": {
+        "percent": "25",
+        "amount": ""
+      }
+    },
+    {
+      "args": [
+        {
+          "type": "percent",
+          "value_bps": 0,
+          "minimum_cents": 0
+        }
+      ],
+      "result": {
+        "percent": "",
+        "amount": ""
+      }
+    },
+    {
+      "args": [
+        {
+          "type": "fixed",
+          "value_cents": 25000,
+          "minimum_cents": 0
+        }
+      ],
+      "result": {
+        "percent": "",
+        "amount": "250.00"
+      }
+    },
+    {
+      "args": [
+        {
+          "type": "fixed",
+          "value_cents": 0,
+          "minimum_cents": 0
+        }
+      ],
+      "result": {
+        "percent": "",
+        "amount": ""
+      }
+    }
+  ],
+  "SETTINGS_SEARCH": [
+    {
+      "args": [],
+      "result": {
+        "company": {
+          "label": "Company and Branding",
+          "terms": [
+            "Company name",
+            "Legal name",
+            "Phone",
+            "Email",
+            "Address",
+            "Time zone",
+            "Review link",
+            "Services",
+            "Quote reminders",
+            "Invoice reminders",
+            "Review requests",
+            "Ask How We Did First",
+            "Report terms",
+            "Disclaimer",
+            "Job numbers",
+            "Logo",
+            "Main color",
+            "Accent color",
+            "Branding",
+            "Second business"
+          ]
+        },
+        "team": {
+          "label": "Team",
+          "terms": [
+            "Invite",
+            "Roles",
+            "Owners",
+            "Admins",
+            "Techs",
+            "Tech colors",
+            "Tech photos",
+            "Profiles",
+            "Emergency contact",
+            "Text and Call Customers",
+            "Techs see every job",
+            "Techs make new jobs",
+            "Turn off access"
+          ]
+        },
+        "import": {
+          "label": "Import Customers",
+          "terms": [
+            "Spreadsheet",
+            "CSV",
+            "Old software",
+            "Customers"
+          ]
+        },
+        "scheduling": {
+          "label": "Scheduling and Routes",
+          "terms": [
+            "Working day",
+            "Shop location",
+            "Drive times",
+            "Routes",
+            "Start from home"
+          ]
+        },
+        "phone": {
+          "label": "Phone and Texting",
+          "terms": [
+            "Company number",
+            "Texts",
+            "Calls",
+            "Voicemail",
+            "On My Way"
+          ]
+        },
+        "price-book": {
+          "label": "Price Book",
+          "terms": [
+            "Prices",
+            "Services",
+            "Chemicals",
+            "Repairs",
+            "Detection fee",
+            "Charge for Chemicals"
+          ]
+        },
+        "payments": {
+          "label": "Payments and Deposits",
+          "terms": [
+            "Deposit",
+            "Stripe",
+            "Card payments",
+            "Card fee",
+            "Autopay",
+            "Invoice day",
+            "Sales tax",
+            "Discount limit",
+            "Import saved cards"
+          ]
+        },
+        "billing": {
+          "label": "Sundeck Pro Billing",
+          "terms": [
+            "Subscription",
+            "Plan",
+            "Receipts"
+          ]
+        },
+        "components": {
+          "label": "Checklist Components",
+          "terms": [
+            "Checklist",
+            "Skimmer",
+            "Main drain",
+            "Returns",
+            "Lights"
+          ]
+        },
+        "tests": {
+          "label": "Test Types",
+          "terms": [
+            "Pressure test",
+            "Bucket test",
+            "Dye test",
+            "Thresholds"
+          ]
+        },
+        "severities": {
+          "label": "Severities",
+          "terms": [
+            "Findings"
+          ]
+        },
+        "exclusions": {
+          "label": "Exclusion Reasons",
+          "terms": [
+            "Not inspected"
+          ]
+        },
+        "skip-reasons": {
+          "label": "Skip Reasons",
+          "terms": [
+            "Skip Visit"
+          ]
+        },
+        "reports": {
+          "label": "Report Templates",
+          "terms": [
+            "Visit reports",
+            "Monthly reports",
+            "Require a Photo",
+            "Show the Tech on Reports",
+            "Saved reports"
+          ]
+        }
+      }
+    }
+  ],
+  "SETTINGS_SEARCH_TEXT": [
+    {
+      "args": [],
+      "result": {
+        "placeholder": "Search",
+        "label": "Search Settings"
+      }
+    }
+  ],
+  "settingsNoResults": [
+    {
+      "args": [
+        "deposit"
+      ],
+      "result": "No Results for “deposit”"
+    },
+    {
+      "args": [
+        " xyz "
+      ],
+      "result": "No Results for “xyz”"
+    }
+  ],
+  "searchSettings": [
+    {
+      "args": [
+        "dep",
+        [
+          "company",
+          "team",
+          "import",
+          "scheduling",
+          "phone",
+          "price-book",
+          "payments",
+          "billing",
+          "components",
+          "tests",
+          "severities",
+          "exclusions",
+          "skip-reasons",
+          "reports"
+        ]
+      ],
+      "result": [
+        {
+          "key": "payments",
+          "label": "Payments and Deposits",
+          "match": null
+        }
+      ]
+    },
+    {
+      "args": [
+        "deposit",
+        [
+          "company",
+          "team",
+          "import",
+          "scheduling",
+          "phone",
+          "price-book",
+          "payments",
+          "billing",
+          "components",
+          "tests",
+          "severities",
+          "exclusions",
+          "skip-reasons",
+          "reports"
+        ]
+      ],
+      "result": [
+        {
+          "key": "payments",
+          "label": "Payments and Deposits",
+          "match": null
+        }
+      ]
+    },
+    {
+      "args": [
+        "logo",
+        [
+          "company",
+          "team",
+          "import",
+          "scheduling",
+          "phone",
+          "price-book",
+          "payments",
+          "billing",
+          "components",
+          "tests",
+          "severities",
+          "exclusions",
+          "skip-reasons",
+          "reports"
+        ]
+      ],
+      "result": [
+        {
+          "key": "company",
+          "label": "Company and Branding",
+          "match": "Logo"
+        }
+      ]
+    },
+    {
+      "args": [
+        "TECH photo",
+        [
+          "company",
+          "team",
+          "import",
+          "scheduling",
+          "phone",
+          "price-book",
+          "payments",
+          "billing",
+          "components",
+          "tests",
+          "severities",
+          "exclusions",
+          "skip-reasons",
+          "reports"
+        ]
+      ],
+      "result": [
+        {
+          "key": "team",
+          "label": "Team",
+          "match": "Tech photos"
+        }
+      ]
+    },
+    {
+      "args": [
+        "  ",
+        [
+          "company",
+          "team",
+          "import",
+          "scheduling",
+          "phone",
+          "price-book",
+          "payments",
+          "billing",
+          "components",
+          "tests",
+          "severities",
+          "exclusions",
+          "skip-reasons",
+          "reports"
+        ]
+      ],
+      "result": []
+    },
+    {
+      "args": [
+        "pressure",
+        [
+          "company",
+          "payments"
+        ]
+      ],
+      "result": []
+    },
+    {
+      "args": [
+        "report",
+        [
+          "company",
+          "team",
+          "import",
+          "scheduling",
+          "phone",
+          "price-book",
+          "payments",
+          "billing",
+          "components",
+          "tests",
+          "severities",
+          "exclusions",
+          "skip-reasons",
+          "reports"
+        ]
+      ],
+      "result": [
+        {
+          "key": "company",
+          "label": "Company and Branding",
+          "match": "Report terms"
+        },
+        {
+          "key": "reports",
+          "label": "Report Templates",
+          "match": null
+        }
+      ]
+    },
+    {
+      "args": [
+        "café",
+        [
+          "company",
+          "team",
+          "import",
+          "scheduling",
+          "phone",
+          "price-book",
+          "payments",
+          "billing",
+          "components",
+          "tests",
+          "severities",
+          "exclusions",
+          "skip-reasons",
+          "reports"
+        ]
+      ],
+      "result": []
+    },
+    {
+      "args": [
+        "on my way",
+        [
+          "company",
+          "team",
+          "import",
+          "scheduling",
+          "phone",
+          "price-book",
+          "payments",
+          "billing",
+          "components",
+          "tests",
+          "severities",
+          "exclusions",
+          "skip-reasons",
+          "reports"
+        ]
+      ],
+      "result": [
+        {
+          "key": "phone",
+          "label": "Phone and Texting",
+          "match": "On My Way"
+        }
+      ]
+    }
+  ]
+}

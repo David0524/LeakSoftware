@@ -62,6 +62,8 @@ export * from "./sample";
 export * from "./wrap-up";
 export * from "./visit-report-bar";
 export * from "./business";
+export * from "./quote-deposit";
+export * from "./settings-search";
 export * from "./report-photo";
 export * from "./report-summary";
 export * from "./prefill";
