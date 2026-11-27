@@ -114,11 +114,12 @@ test("the App Review shop's sends are recorded but not delivered", async ({ requ
   // Phone numbers: refused before a search, a purchase, or setting up the shop's own number.
   for (const action of [
     { action: "search", area_code: "602" },
-    { action: "take", number: "+16025550147" },
-    { action: "keep", number: "(602) 555-0147" },
+    { action: "register", kind: "local", number: "+16025550147", business: {} },
+    { action: "register", kind: "own", number: "(602) 555-0147", business: {} },
+    { action: "register", kind: "toll_free", business: {} },
   ]) {
     const r = await request.post("/api/phone", { headers, data: { company_id: co, ...action } });
-    expect(r.status(), action.action).toBe(400);
+    expect(r.status(), JSON.stringify(action)).toBe(400);
     expect((await r.json()).error).toBe(NUMBERS);
   }
   const { count: lines } = await admin!

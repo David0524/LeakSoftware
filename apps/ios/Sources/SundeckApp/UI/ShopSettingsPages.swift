@@ -894,7 +894,8 @@
                                     label: f.label,
                                     text: Binding(
                                         get: { model.business[key] ?? "" },
-                                        set: { model.business[key] = $0 }),
+                                        set: { model.business[key] = $0 }
+                                    ),
                                     placeholder: key == "ein" && einLast4 != nil
                                         ? RegistrationText.savedEIN(einLast4!) : f.placeholder,
                                     keyboard: Self.keyboard(f.keyboard))

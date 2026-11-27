@@ -225,7 +225,9 @@ public final class PhoneSettingsModel {
 
     /// Send the number and business details to be registered (Sundeck Pro submits and pays).
     public func register() async {
-        var body: [String: JSONValue] = ["action": "register", "kind": .string(kind.rawValue), "business": businessJSON]
+        var body: [String: JSONValue] = [
+            "action": "register", "kind": .string(kind.rawValue), "business": businessJSON,
+        ]
         switch kind {
         case .local: body["number"] = .string(picked ?? "")
         case .own: body["number"] = .string(ownNumber)

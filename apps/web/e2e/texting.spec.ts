@@ -43,11 +43,33 @@ test("customers text and call the company number, and the team answers", async (
   // looks for the number.
   const customer = `+148055501${57 + Math.floor(Math.random() * 20)}`;
 
-  // The owner takes a number.
+  // The owner gets a local number: picks one, then enters the business details phone
+  // companies review (texting registration, 2026-11-27). Without Twilio it's ready at once.
   await signIn(page, OWNER, "/settings/phone");
+  await page.getByRole("radio", { name: /Get a Local Number/ }).click();
   await page.getByLabel("Area code").fill("602");
   await page.getByRole("button", { name: "Search", exact: true }).click();
-  await page.getByRole("button", { name: "Use This Number" }).first().click();
+  await page
+    .getByRole("radio", { name: /\(602\)/ })
+    .first()
+    .click();
+  const form = page.locator("form", { has: page.getByRole("button", { name: "Register Number" }) });
+  for (const [label, value] of [
+    ["Legal name", "Test Pools LLC"],
+    ["EIN", "12-3456789"],
+    ["Street", "123 Main St"],
+    ["City", "Phoenix"],
+    ["State", "AZ"],
+    ["ZIP code", "85004"],
+    ["Website", "testpools.example.com"],
+    ["First name", "Alex"],
+    ["Last name", "Rivera"],
+    ["Job title", "Owner"],
+    ["Email", "alex@testpools.example.com"],
+    ["Mobile", "(602) 555-0100"],
+  ])
+    await form.getByLabel(label, { exact: true }).fill(value);
+  await form.getByRole("button", { name: "Register Number" }).click();
   await expect(page.getByText("Working. Texts and calls show up in Messages.")).toBeVisible();
   const { data: line } = await admin
     .from("phone_line")
