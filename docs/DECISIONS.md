@@ -2,6 +2,10 @@
 
 Newest first. Each entry: date, decision, reason.
 
+## 2026-11-27 (owner: "Let's do A and C. Some shops will want their own number")
+- **Shops get texting three ways:** a toll-free number (free verification), a local number, or their own number (hosted SMS). Local and own numbers register a Low-Volume A2P brand and campaign for the shop. **Sundeck Pro pays for all of it** (owner's choice), about $20 once and $3 a month for a local or own number, about $2 a month for toll-free.
+- **Registrations go to Twilio automatically** (owner's choice over submitting by hand). Plan: `docs/plans/texting-registration.md`, waiting on the owner's go. Needs Sundeck Pro's Twilio Business Profile (ISV) first.
+
 ## 2026-11-27 (owner: "Add it", the texting line in the privacy policy)
 - **The privacy policy says mobile numbers and texting consent are never shared or sold for marketing** (Your choices and rights; updated November 27, 2026). Twilio's A2P 10DLC campaign review looks for this sentence. One page serves all four platforms (`/privacy`, and `/in-app/privacy`, which both apps open).
 - **Texting isn't live yet:** Sundeck Pro's Twilio account has no numbers, Messaging Service or compliance profile, so every send so far has been demo mode. The shop that entered its own number ((702) 381-1966, 2026-11-24) stays pending until the Business Profile (ISV), that shop's own A2P brand and campaign, and hosted SMS are done. The owner is choosing between registration tiers (Low-Volume vs Standard) and who pays the setup.
