@@ -898,7 +898,8 @@
                                     ),
                                     placeholder: key == "ein" && einLast4 != nil
                                         ? RegistrationText.savedEIN(einLast4!) : f.placeholder,
-                                    keyboard: Self.keyboard(f.keyboard))
+                                    keyboard: Self.keyboard(f.keyboard)
+                                )
                                 .textInputAutocapitalization(
                                     f.keyboard == .email || f.keyboard == .url
                                         ? .never : key == "state" ? .characters : .words
