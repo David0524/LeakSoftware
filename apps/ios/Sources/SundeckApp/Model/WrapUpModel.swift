@@ -24,7 +24,7 @@ public func wrapUpInput(store: LocalStore, companyId: String, settings: JSONValu
         let quote = q.quote
         let total =
             quote.status == .draft
-            ? quoteTotals(q.lines, quote.discountCents, pricing.taxRateBps, pricing.deposit).totalCents
+            ? quoteTotals(q.lines, quote.discountCents, pricing.taxRateBps, pricing.deposit(for: quote)).totalCents
             : quote.totalCents
         return WrapUpQuote(
             id: quote.id, number: quote.number, status: quote.status, totalCents: total,

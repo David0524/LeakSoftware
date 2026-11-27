@@ -114,6 +114,12 @@ public struct QuoteBuilderModel: Equatable, Sendable {
     public var discountText: String
     /// Under the discount field for techs: "Techs can give up to 10% off."; nil for managers.
     public var discountHint: String?
+    /// The quote's own deposit rule (nil: the shop's default), for the Deposit sheet.
+    public var depositRule: DepositRule?
+    /// The Deposit row's value: "Shop Default (50%)", "30%", "$250.00", "No Deposit".
+    public var depositLabel: String
+    /// Owners and admins change a draft's deposit (owner, 2026-11-27); techs see the amount only.
+    public var canChangeDeposit: Bool
     public var canSend: Bool { !lines.isEmpty }
 
     public static let noLines = "No lines yet."
@@ -170,7 +176,7 @@ public struct QuoteSectionModel: Equatable, Sendable {
             let draft = quote.status == .draft
             let total =
                 draft
-                ? quoteTotals(q.lines, quote.discountCents, pricing.taxRateBps, pricing.deposit).totalCents
+                ? quoteTotals(q.lines, quote.discountCents, pricing.taxRateBps, pricing.deposit(for: quote)).totalCents
                 : quote.totalCents
             var card = QuoteCardModel(
                 quote: q,
@@ -229,14 +235,18 @@ public struct QuoteSectionModel: Equatable, Sendable {
                 findingId: f.id, title: f.title,
                 items: suggestItems(book, key).map { QuoteItemOption(item: $0, added: onQuote.contains($0.id)) })
         }
-        let totals = quoteTotals(draft.lines, draft.quote.discountCents, pricing.taxRateBps, pricing.deposit)
+        // The quote's own deposit, else the shop's (owner, 2026-11-27).
+        let totals = quoteTotals(
+            draft.lines, draft.quote.discountCents, pricing.taxRateBps, pricing.deposit(for: draft.quote))
         let limit = techDiscountLimitBps(settings)
         return QuoteBuilderModel(
             findings: findings, lines: draft.lines,
             priceBook: book.map { QuoteItemOption(item: $0, added: onQuote.contains($0.id)) }, totals: totals,
             totalRows: quoteTotalRows(totals),
             discountText: draft.quote.discountCents > 0 ? centsFieldText(draft.quote.discountCents) : "",
-            discountHint: isManager ? nil : "Techs can give up to \(percentText(limit))% off.")
+            discountHint: isManager ? nil : "Techs can give up to \(percentText(limit))% off.",
+            depositRule: draft.quote.depositRule,
+            depositLabel: quoteDepositLabel(draft.quote.depositRule, pricing.deposit), canChangeDeposit: isManager)
     }
 }
 
@@ -412,6 +422,29 @@ public final class QuoteFlow {
         attempt {
             try QuoteWrites.removeLine(sync, companyId: companyId, pricing: pricing, quote: quote, lineId: lineId)
         }
+    }
+
+    /// The Deposit sheet's Save (owner, 2026-11-27): the choice and what was typed become the
+    /// quote's own rule (nil: the shop's default). Returns the error to show under the field, or
+    /// nil once saved. Owners and admins only.
+    public func setDeposit(
+        _ choice: QuoteDepositChoice, percent: String, amount: String, on quoteId: String
+    ) -> String? {
+        let rule: DepositRule?
+        switch quoteDepositFromInput(choice, percent: percent, amount: amount) {
+        case .error(let message): return message
+        case .rule(let r): rule = r
+        }
+        guard isManager else { return "Only owners and admins can change a quote’s deposit." }
+        guard let quote = draft(quoteId) else { return error }
+        guard rule != quote.quote.depositRule else {
+            error = nil
+            return nil
+        }
+        attempt {
+            try QuoteWrites.setDepositRule(sync, companyId: companyId, pricing: pricing, quote: quote, rule: rule)
+        }
+        return error
     }
 
     /// A discount off the subtotal. Techs are held to the shop's limit; owners and admins are not.

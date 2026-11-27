@@ -2,6 +2,10 @@
 
 Newest first. Each entry: date, decision, reason.
 
+## 2026-11-27 (owner: "Add a search to the settings page"; "Allow the owner to adjust the deposit settings within the quote/invoice pages", chose "Change it per quote")
+- **Search Settings** on all four platforms: a search field at the top of Settings finds a page by its name or by a setting on it ("deposit" finds Payments and Deposits; "logo" finds Company and Branding, saying "Logo"). Pages and their settings are listed in core `settings-search.ts` (Swift `SettingsSearch.swift`); a new setting should be added there.
+- **A quote's own deposit** on all four platforms: owners and admins get a Deposit row on a draft quote, opening a sheet with Default | Percent | Amount | None for that quote only (the shop's default stays in Settings › Payments and Deposits). Stored as `quote.deposit_rule` (null = the shop's default), frozen when the quote is sent. Techs see the deposit but can't change it; the database refuses it too (migration `20261022006000_quote_deposit.sql`). Invoices take no deposit, as before.
+
 ## 2026-11-27 (owner: "Make our text boxes look more iOS", with Calendar's New Event; chose "New and sign-in forms" and "Phones only")
 - **Text fields in forms that make something new and in signing in show their name as the gray hint inside, with no label beside them** (phones: mobile website, iPhone, Android): sign in, forgot and new password, sign up, setup, joining by invite, the two-step code, Sign In Again, Invite Someone's email, and New Job's and New Quote's customer and address fields. Rows sit in one inset grouped card with hairlines between them. Screen readers still read each field's name.
 - **Settings and edit pages keep their labels on the left**, as Apple's Settings does, so a saved value is never mistaken for another (a sketch showed "Desert Leak Co." vs "Desert Leak Co. LLC" without labels). Dates, times, pickers, switches, segmented controls, long booking questions, and More Details keep their labels too. The desktop website keeps labels above its outlined fields.
