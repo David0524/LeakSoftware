@@ -7,6 +7,7 @@ import type {
   CompanyAccess,
   ChecklistItemResult,
   ComponentType,
+  DepositRule,
   Customer,
   ExclusionReason,
   Finding,
@@ -956,6 +957,8 @@ export interface QuoteRow {
   tax_cents: number;
   total_cents: number;
   deposit_cents: number;
+  /** The quote's own deposit (2026-11-27); null = the shop's default. */
+  deposit_rule?: DepositRule | null;
   valid_until: string | null;
   sent_at: string | null;
   accepted_at: string | null;
@@ -996,7 +999,7 @@ export const getQuotes = cache(async function getQuotes(
     await supabase
       .from("quote")
       .select(
-        "id, number, status, subtotal_cents, discount_cents, tax_cents, total_cents, deposit_cents, valid_until, sent_at, accepted_at, accepted_by_name, repair_job_id",
+        "id, number, status, subtotal_cents, discount_cents, tax_cents, total_cents, deposit_cents, deposit_rule, valid_until, sent_at, accepted_at, accepted_by_name, repair_job_id",
       )
       .eq("company_id", office.company.id)
       .eq("job_id", jobId)

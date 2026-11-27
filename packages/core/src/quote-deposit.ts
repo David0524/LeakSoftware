@@ -12,12 +12,16 @@ export type QuoteDepositChoice = "default" | "percent" | "fixed" | "none";
 export const QUOTE_DEPOSIT_TEXT = {
   row: "Deposit",
   title: "Deposit for This Quote",
+  /** The segmented control's labels: short, so four fit a phone. */
   choices: {
-    default: "Shop Default",
+    default: "Default",
     percent: "Percent",
-    fixed: "Fixed Amount",
-    none: "No Deposit",
+    fixed: "Amount",
+    none: "None",
   } satisfies Record<QuoteDepositChoice, string>,
+  /** The Deposit row's words for the shop's default and for none. */
+  shopDefault: "Shop Default",
+  noDeposit: "No Deposit",
   percentLabel: "Percent of total",
   fixedLabel: "Amount",
   save: "Save",
@@ -54,8 +58,8 @@ export function quoteDepositLabel(
 ): string {
   const choice = quoteDepositChoice(quoteRule);
   if (choice === "default")
-    return `${QUOTE_DEPOSIT_TEXT.choices.default} (${depositRuleSummary(shopRule)})`;
-  if (choice === "none") return QUOTE_DEPOSIT_TEXT.choices.none;
+    return `${QUOTE_DEPOSIT_TEXT.shopDefault} (${depositRuleSummary(shopRule)})`;
+  if (choice === "none") return QUOTE_DEPOSIT_TEXT.noDeposit;
   return depositRuleSummary(quoteRule!);
 }
 

@@ -4,6 +4,7 @@ import { useState, useTransition } from "react";
 import {
   formatCents,
   lineTotal,
+  quoteDepositRule,
   quoteTotals,
   type CompanySettings,
   type QuoteLine,
@@ -20,6 +21,7 @@ import type { QuoteRow } from "@/lib/data";
 import { useConfirm } from "./sheet";
 import { Button, Field, Select, buttonClass } from "./ui";
 import { Draft } from "./draft-keeper";
+import { QuoteDepositRow } from "./quote-deposit";
 import { NO_CONNECTION, whenOffline } from "@/lib/offline";
 
 // The phone's Quote tab for a browser (M9.5): price the findings from the price book, add
@@ -96,7 +98,7 @@ export function QuoteBuilder({
     quote.lines.map((l) => ({ ...l, quantity: Number(l.quantity) })) as QuoteLine[],
     quote.discount_cents,
     settings.tax_rate_bps,
-    settings.deposit,
+    quoteDepositRule(quote.deposit_rule ?? null, settings.deposit),
   );
   const onQuote = new Set(quote.lines.map((l) => l.price_book_item_id).filter(Boolean));
 
@@ -258,8 +260,19 @@ export function QuoteBuilder({
           <dd className="text-right">{formatCents(totals.tax_cents)}</dd>
           <dt className="font-semibold">Total</dt>
           <dd className="text-right font-semibold">{formatCents(totals.total_cents)}</dd>
-          <dt className="text-text-muted">Deposit</dt>
-          <dd className="text-right">{formatCents(totals.deposit_cents)}</dd>
+          {isOwner ? (
+            <QuoteDepositRow
+              quoteId={quote.id}
+              rule={quote.deposit_rule ?? null}
+              shop={settings.deposit}
+              depositCents={formatCents(totals.deposit_cents)}
+            />
+          ) : (
+            <>
+              <dt className="text-text-muted">Deposit</dt>
+              <dd className="text-right">{formatCents(totals.deposit_cents)}</dd>
+            </>
+          )}
         </dl>
       </div>
     </Draft>

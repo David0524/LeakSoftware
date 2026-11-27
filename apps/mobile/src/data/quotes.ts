@@ -2,8 +2,10 @@ import { useMemo } from "react";
 import {
   lineFromItem,
   quoteShareText,
+  quoteDepositRule,
   quoteTotals,
   type Company,
+  type DepositRule,
   type PriceBookItem,
   type Quote,
   type QuoteLine,
@@ -62,7 +64,7 @@ function saveTotals(sync: SyncService, company: Company, quote: Quote, lines: Qu
     lines,
     quote.discount_cents,
     company.settings.tax_rate_bps ?? 0,
-    company.settings.deposit,
+    quoteDepositRule(quote.deposit_rule, company.settings.deposit),
   );
   sync.write("quote", quote.id, company.id, {
     subtotal_cents: t.subtotal_cents,
@@ -142,6 +144,24 @@ export function setDiscount(sync: SyncService, company: Company, quote: JobQuote
   sync.batch(() => {
     sync.write("quote", quote.id, company.id, { discount_cents: cents });
     saveTotals(sync, company, { ...quote, discount_cents: cents }, quote.lines);
+  });
+}
+
+/**
+ * A draft quote's own deposit (owner, 2026-11-27; core quote-deposit.ts): null for the shop's
+ * default. Owners and admins only (the server's guard_quote_deposit checks too).
+ */
+export function setDepositRule(
+  sync: SyncService,
+  company: Company,
+  quote: JobQuote,
+  rule: DepositRule | null,
+) {
+  sync.batch(() => {
+    sync.write("quote", quote.id, company.id, {
+      deposit_rule: rule as unknown as JsonValue,
+    });
+    saveTotals(sync, company, { ...quote, deposit_rule: rule }, quote.lines);
   });
 }
 

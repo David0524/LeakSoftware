@@ -1,9 +1,26 @@
 import { router } from "expo-router";
-import { Linking } from "react-native";
-import { offersLeak, offersPool } from "@leakbook/core";
+import { useState } from "react";
+import { Linking, StyleSheet, View } from "react-native";
+import {
+  SETTINGS_SEARCH_TEXT,
+  offersLeak,
+  offersPool,
+  searchSettings,
+  settingsNoResults,
+} from "@leakbook/core";
 import { API_URL } from "../../lib/config";
 import { useCompany } from "../../state/session";
-import { Button, Group, ListRow, Notice, Screen, Section, T } from "../../ui/components";
+import {
+  Button,
+  Group,
+  ListRow,
+  Notice,
+  Screen,
+  SearchField,
+  Section,
+  T,
+} from "../../ui/components";
+import { space } from "../../ui/theme";
 import { ManagersOnly } from "./SettingsList";
 
 // Settings (spec 5.12; the website's settings index and lib/settings-sections.ts): the pages in
@@ -91,33 +108,70 @@ export function SettingsIndex() {
   );
 }
 
+/** Opens a settings page: in the app, or on the website for the pages the app doesn't have. */
+function openPage(page: string) {
+  if (NATIVE_PAGES.includes(page) || page === "import" || !API_URL)
+    router.push(`/settings/${page}`);
+  else void Linking.openURL(`${API_URL}/settings/${page}`);
+}
+
+function hintFor(page: string) {
+  return NATIVE_PAGES.includes(page) || page === "import" ? undefined : "Opens on the website";
+}
+
 function SettingsIndexPage() {
   const company = useCompany();
+  // Search Settings (owner, 2026-11-27), as iOS Settings has: typing replaces the list with
+  // the pages that match, each saying which setting matched (core settings-search.ts).
+  const [query, setQuery] = useState("");
+  const groups = settingsGroups(company.settings);
+  const results = searchSettings(
+    query,
+    groups.flatMap((g) => g.pages.map((p) => p.page)),
+  );
   return (
     <Screen title="Settings">
-      {settingsGroups(company.settings).map((g) => (
-        <Section key={g.title} title={g.title}>
-          <Group>
-            {g.pages.map((p) => (
-              <ListRow
-                key={p.page}
-                title={p.label}
-                subtitle={p.detail}
-                accessibilityHint={
-                  NATIVE_PAGES.includes(p.page) || p.page === "import"
-                    ? undefined
-                    : "Opens on the website"
-                }
-                onPress={() =>
-                  NATIVE_PAGES.includes(p.page) || p.page === "import" || !API_URL
-                    ? router.push(`/settings/${p.page}`)
-                    : void Linking.openURL(`${API_URL}/settings/${p.page}`)
-                }
-              />
-            ))}
-          </Group>
-        </Section>
-      ))}
+      <SearchField
+        value={query}
+        onChangeText={setQuery}
+        placeholder={SETTINGS_SEARCH_TEXT.placeholder}
+        label={SETTINGS_SEARCH_TEXT.label}
+      />
+      {!query.trim() ? (
+        groups.map((g) => (
+          <Section key={g.title} title={g.title}>
+            <Group>
+              {g.pages.map((p) => (
+                <ListRow
+                  key={p.page}
+                  title={p.label}
+                  subtitle={p.detail}
+                  accessibilityHint={hintFor(p.page)}
+                  onPress={() => openPage(p.page)}
+                />
+              ))}
+            </Group>
+          </Section>
+        ))
+      ) : results.length ? (
+        <Group>
+          {results.map((r) => (
+            <ListRow
+              key={r.key}
+              title={r.label}
+              subtitle={r.match ?? undefined}
+              accessibilityHint={hintFor(r.key)}
+              onPress={() => openPage(r.key)}
+            />
+          ))}
+        </Group>
+      ) : (
+        <View style={styles.none} accessibilityLiveRegion="polite">
+          <T muted style={{ textAlign: "center" }}>
+            {settingsNoResults(query)}
+          </T>
+        </View>
+      )}
     </Screen>
   );
 }
@@ -161,3 +215,7 @@ export function WebsitePage({ page }: { page: string }) {
     </ManagersOnly>
   );
 }
+
+const styles = StyleSheet.create({
+  none: { paddingVertical: space["7"] },
+});

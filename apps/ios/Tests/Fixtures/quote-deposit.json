@@ -6,11 +6,13 @@
         "row": "Deposit",
         "title": "Deposit for This Quote",
         "choices": {
-          "default": "Shop Default",
+          "default": "Default",
           "percent": "Percent",
-          "fixed": "Fixed Amount",
-          "none": "No Deposit"
+          "fixed": "Amount",
+          "none": "None"
         },
+        "shopDefault": "Shop Default",
+        "noDeposit": "No Deposit",
         "percentLabel": "Percent of total",
         "fixedLabel": "Amount",
         "save": "Save",
