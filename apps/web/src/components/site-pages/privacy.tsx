@@ -15,7 +15,7 @@ const Mail = () => (
 export function PrivacyBody({ inApp = false }: { inApp?: boolean }) {
   const to = (path: string) => (inApp ? `/in-app${path}` : path);
   return (
-    <LegalPage title="Privacy Policy" updated="October 24, 2026">
+    <LegalPage title="Privacy Policy" updated="November 27, 2026">
       <section>
         <h2>Who we are</h2>
         <p>
@@ -223,6 +223,11 @@ export function PrivacyBody({ inApp = false }: { inApp?: boolean }) {
           <li>
             Customers can stop a shop’s emails with the unsubscribe link in any of them, and stop
             its texts by replying STOP.
+          </li>
+          <li>
+            Mobile numbers and consent to receive texts are never shared with or sold to third
+            parties or affiliates for marketing or promotional purposes. Twilio carries the texts
+            only to deliver them.
           </li>
           <li>
             Depending on where you live, you may have the right to know, get a copy of, correct, or

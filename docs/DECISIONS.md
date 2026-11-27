@@ -2,6 +2,10 @@
 
 Newest first. Each entry: date, decision, reason.
 
+## 2026-11-27 (owner: "Add it", the texting line in the privacy policy)
+- **The privacy policy says mobile numbers and texting consent are never shared or sold for marketing** (Your choices and rights; updated November 27, 2026). Twilio's A2P 10DLC campaign review looks for this sentence. One page serves all four platforms (`/privacy`, and `/in-app/privacy`, which both apps open).
+- **Texting isn't live yet:** Sundeck Pro's Twilio account has no numbers, Messaging Service or compliance profile, so every send so far has been demo mode. The shop that entered its own number ((702) 381-1966, 2026-11-24) stays pending until the Business Profile (ISV), that shop's own A2P brand and campaign, and hosted SMS are done. The owner is choosing between registration tiers (Low-Volume vs Standard) and who pays the setup.
+
 ## 2026-11-24 (owner: "Push the latest app version for release on the App Store")
 - **iPhone 1.0.6 is submitted to App Review** (App Store workflow `submit`) with the TestFlight build of `a0732fd` (TestFlight run 100), which carries everything since 1.0.5: standalone quotes, refunds from the invoice, Dashboard by tech, the Pool Nerd chemical doses, and Refer a Pool Company for owners. It releases automatically once approved (2026-11-18). What's New: `docs/release/APP_STORE.md` § 1.9. Backend stays the dev project.
 
