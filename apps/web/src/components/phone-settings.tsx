@@ -22,7 +22,7 @@ import {
 } from "@/app/actions/texting";
 import { Banner } from "./doc-ui";
 import { SField, SSelect, SettingsFields, SettingsForm, SettingsSection } from "./settings-forms";
-import { Button, Field, cx } from "./ui";
+import { Button, Field, SectionTitle, cx } from "./ui";
 import { orOffline } from "@/lib/offline";
 
 // Settings › Phone and Texting: getting a company number (owner, 2026-11-27; plan
@@ -88,11 +88,10 @@ function BusinessFields({
 }) {
   return (
     <>
-      {BUSINESS_SECTIONS.map((section) => (
-        <div key={section.title} className="space-y-2">
-          <h3 className="px-4 text-[0.8125rem] text-text-muted uppercase sm:px-0">
-            {section.title}
-          </h3>
+      {BUSINESS_SECTIONS.map((section, i) => (
+        <div key={section.title} className={i > 0 ? "pt-4" : undefined}>
+          {/* The first group sits under the section's own title (Business details). */}
+          {i > 0 ? <SectionTitle>{section.title}</SectionTitle> : null}
           <SettingsFields labelWidth="7.5rem">
             {section.keys.map((key) => {
               if (key === "business_type")
@@ -118,7 +117,7 @@ function BusinessFields({
                   inputMode={INPUT_MODE[f.keyboard]}
                   type={f.keyboard === "email" ? "email" : f.keyboard === "phone" ? "tel" : "text"}
                   autoComplete="off"
-                  placeholder={keep ? `Saved (ends in ${einLast4})` : f.placeholder}
+                  placeholder={keep ? `Ends in ${einLast4}` : f.placeholder}
                   defaultValue={
                     key === "ein"
                       ? ""

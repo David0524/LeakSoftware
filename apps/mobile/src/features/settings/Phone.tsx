@@ -317,9 +317,7 @@ function BusinessForm({
                         : "words"
                   }
                   autoCorrect={false}
-                  placeholder={
-                    key === "ein" && einLast4 ? `Saved (ends in ${einLast4})` : f.placeholder
-                  }
+                  placeholder={key === "ein" && einLast4 ? `Ends in ${einLast4}` : f.placeholder}
                   error={errors[key]}
                 />
               );

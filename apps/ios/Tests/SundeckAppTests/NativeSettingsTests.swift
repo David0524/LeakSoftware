@@ -282,7 +282,7 @@ import Testing
         #expect(model.registration?.kind == .own && model.registration?.title == "Needs Changes")
         model.startEditing()
         #expect(model.editing && model.business["phone"] == "(702) 555-0100" && model.business["ein"] == "")
-        #expect(RegistrationText.savedEIN("6789") == "Saved (ends in 6789)")
+        #expect(RegistrationText.savedEIN("6789") == "Ends in 6789")
         // A number entered before registrations: Use My Own Number, filled in.
         model.apply([
             "line": [

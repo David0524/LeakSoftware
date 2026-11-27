@@ -102,5 +102,5 @@ public enum RegistrationText {
     public static let type = "Type"
 
     /// The EIN field's placeholder while editing: the saved one stays when it's left empty.
-    public static func savedEIN(_ last4: String) -> String { "Saved (ends in \(last4))" }
+    public static func savedEIN(_ last4: String) -> String { "Ends in \(last4)" }
 }
