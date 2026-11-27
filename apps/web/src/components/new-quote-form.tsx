@@ -3,10 +3,10 @@
 import { useState } from "react";
 import { createQuoteAction } from "@/app/actions/standalone-quotes";
 import { AddressField } from "./address-field";
-import { Section } from "./new-job-form";
+import { HINT_ADDRESS, HINT_FIELDS, Section } from "./new-job-form";
 import { BusinessField } from "./business-popup";
 import { businessChoices, hasSecondBusiness, type BusinessCompany } from "@leakbook/core";
-import { FieldError, SField, SettingsForm } from "./settings-forms";
+import { FieldError, SField, SettingsFields, SettingsForm } from "./settings-forms";
 import { Segmented } from "./segmented";
 import { Select } from "./ui";
 
@@ -20,14 +20,12 @@ export interface QuoteCustomerOption {
 /** A new address for the quote's pool: Street, City, State, ZIP (all optional together). */
 export function PoolAddressFields() {
   return (
-    <div className="grid gap-4 sm:grid-cols-2">
-      <AddressField label="Street" name="address_line1" className="sm:col-span-2" />
-      <SField label="City" name="city" />
-      <div className="grid grid-cols-2 gap-4">
-        <SField label="State" name="state" maxLength={2} />
-        <SField label="ZIP" name="postal_code" />
-      </div>
-    </div>
+    <SettingsFields labelInside className={HINT_ADDRESS}>
+      <AddressField label="Street" name="address_line1" className="sm:col-span-4" />
+      <SField label="City" name="city" className="sm:col-span-2" />
+      <SField label="State" name="state" maxLength={2} />
+      <SField label="ZIP" name="postal_code" />
+    </SettingsFields>
   );
 }
 
@@ -93,11 +91,11 @@ export function NewQuoteForm({
             <FieldError name="customer" />
           </div>
         ) : (
-          <div className="grid gap-4 sm:grid-cols-2">
+          <SettingsFields labelInside className={HINT_FIELDS}>
             <SField label="Name" name="customer_name" autoComplete="off" />
             <SField label="Phone" name="customer_phone" type="tel" />
             <SField label="Email" name="customer_email" type="email" />
-          </div>
+          </SettingsFields>
         )}
       </Section>
 

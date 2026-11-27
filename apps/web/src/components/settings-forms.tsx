@@ -58,6 +58,8 @@ export const SheetDone = createContext<((message: string) => void) | undefined>(
 
 /** Set by SettingsFields: fields inside it draw as rows of an iOS grouped block on phones. */
 const InGroup = createContext(false);
+/** SettingsFields' labelInside, for the SField rows in it. */
+const LabelInside = createContext(false);
 
 /** Field-level error for an input inside a SettingsForm. */
 function useFieldError(name: string): string | undefined {
@@ -351,19 +353,24 @@ function SaveBar({
  */
 export function SettingsFields({
   labelWidth = "8rem",
+  labelInside = false,
   className,
   children,
 }: {
   labelWidth?: string;
+  /** Phones: each text field's label is the hint inside it (forms that make something new). */
+  labelInside?: boolean;
   /** Wider screens' layout, e.g. a grid. Defaults to a stack. */
   className?: string;
   children: ReactNode;
 }) {
   return (
     <InGroup value={true}>
-      <FieldGroup labelWidth={labelWidth} className={className}>
-        {children}
-      </FieldGroup>
+      <LabelInside value={labelInside}>
+        <FieldGroup labelWidth={labelWidth} className={className}>
+          {children}
+        </FieldGroup>
+      </LabelInside>
     </InGroup>
   );
 }
@@ -767,7 +774,15 @@ export function SField({ stacked, ...props }: Parameters<typeof Field>[0] & { st
     const placeholder =
       props.placeholder ??
       (TYPED.has(props.type) ? (props.required ? "Required" : "Optional") : undefined);
-    return <GroupedField {...props} placeholder={placeholder} stacked={stacked} error={error} />;
+    return (
+      <GroupedField
+        {...props}
+        placeholder={placeholder}
+        stacked={stacked}
+        error={error}
+        labelInside={use(LabelInside)}
+      />
+    );
   }
   return <Field {...props} error={error} />;
 }

@@ -16,9 +16,12 @@ export function PasswordField({
   hint,
   error,
   meter = false,
+  labelInside = false,
   className,
   ...input
 }: Omit<ComponentProps<"input">, "type"> & {
+  /** Phones: the label is the hint inside the field (GroupedField's labelInside). */
+  labelInside?: boolean;
   label: string;
   hint?: string;
   error?: string;
@@ -39,7 +42,11 @@ export function PasswordField({
       <div className="max-sm:flex max-sm:min-h-11 max-sm:items-center max-sm:gap-3 max-[280px]:flex-col max-[280px]:items-stretch max-[280px]:gap-0 max-[280px]:pt-2.5">
         <label
           htmlFor={id}
-          className="block max-sm:w-(--label-w) max-sm:shrink-0 max-[280px]:w-auto sm:mb-1 sm:font-medium"
+          className={
+            labelInside
+              ? "max-sm:sr-only sm:mb-1 sm:block sm:font-medium"
+              : "block max-sm:w-(--label-w) max-sm:shrink-0 max-[280px]:w-auto sm:mb-1 sm:font-medium"
+          }
         >
           {label}
         </label>
@@ -48,6 +55,7 @@ export function PasswordField({
             {...input}
             id={id}
             type={shown ? "text" : "password"}
+            placeholder={labelInside ? label : input.placeholder}
             autoCapitalize="none"
             autoCorrect="off"
             spellCheck={false}
@@ -59,6 +67,7 @@ export function PasswordField({
             aria-describedby={describedBy || undefined}
             className={cx(
               "block w-full min-h-11 min-w-0 text-text placeholder:text-placeholder disabled:text-text-muted",
+              labelInside && "sm:placeholder:text-transparent",
               "max-sm:flex-1 max-sm:rounded-md max-sm:bg-transparent max-sm:focus-visible:outline-offset-0",
               "sm:rounded-[10px] sm:border sm:border-control-border sm:bg-surface sm:py-2 sm:pr-12 sm:pl-3",
               "sm:focus:outline-3 sm:focus:outline-offset-1 sm:focus:outline-focus sm:aria-[invalid=true]:border-status-fail",

@@ -174,49 +174,56 @@
                             })
                     }
                 } else {
-                    OutlinedField(label: "Name", text: $form.input.customerName, error: form.errors["customerName"])
-                        .textContentType(.name)
-                    OutlinedField(label: "Phone", text: $form.input.customerPhone, keyboard: .phonePad)
-                        .textContentType(.telephoneNumber)
-                    OutlinedField(
-                        label: "Email", text: $form.input.customerEmail, error: form.errors["customerEmail"],
-                        keyboard: .emailAddress
-                    )
-                    .textInputAutocapitalization(.never)
-                    .autocorrectionDisabled()
+                    // The iOS New Event look: each field's name the hint inside it (owner, 2026-11-27).
+                    HintFields(bleed: form.customers.isEmpty ? Edge.Set.all : [.horizontal, .bottom]) {
+                        LabeledFieldRow(
+                            label: "Name", text: $form.input.customerName, contentType: .name, labelInside: true,
+                            error: form.errors["customerName"])
+                        LabeledFieldRow(
+                            label: "Phone", text: $form.input.customerPhone, keyboard: .phonePad,
+                            contentType: .telephoneNumber, labelInside: true)
+                        LabeledFieldRow(
+                            label: "Email", text: $form.input.customerEmail, keyboard: .emailAddress,
+                            contentType: .emailAddress, labelInside: true, error: form.errors["customerEmail"]
+                        )
+                        .textInputAutocapitalization(.never)
+                        .autocorrectionDisabled()
+                    }
                 }
             }
         }
 
         private var poolCard: some View {
             FormCard("Address") {
-                OutlinedField(
-                    label: "Street address", text: $form.input.addressLine1, error: form.errors["addressLine1"],
-                    onFocusChange: { streetFocused = $0 }
-                )
-                .textContentType(.streetAddressLine1)
-                .addressLookup(suggester, text: form.input.addressLine1, focused: streetFocused)
-                // Address suggestions as you type (owner, 2026-10-20), under the field.
-                if !suggester.items.isEmpty {
-                    Grouped {
-                        AddressSuggestionRows(suggester: suggester) { s in
-                            form.input.addressLine1 = s.line1
-                            form.input.city = s.city
-                            form.input.state = s.state
-                            form.input.postalCode = s.postalCode
+                HintFields(bleed: .all) {
+                    LabeledFieldRow(
+                        label: "Street address", text: $form.input.addressLine1, contentType: .streetAddressLine1,
+                        labelInside: true, error: form.errors["addressLine1"], onFocusChange: { streetFocused = $0 }
+                    )
+                    .addressLookup(suggester, text: form.input.addressLine1, focused: streetFocused)
+                    // Address suggestions as you type (owner, 2026-10-20), under the field.
+                    if !suggester.items.isEmpty {
+                        Grouped {
+                            AddressSuggestionRows(suggester: suggester) { s in
+                                form.input.addressLine1 = s.line1
+                                form.input.city = s.city
+                                form.input.state = s.state
+                                form.input.postalCode = s.postalCode
+                            }
                         }
                     }
-                }
-                OutlinedField(label: "City", text: $form.input.city).textContentType(.addressCity)
-                HStack(alignment: .top, spacing: 16) {
-                    OutlinedField(label: "State", text: $form.input.state)
-                        .textInputAutocapitalization(.characters)
-                        .autocorrectionDisabled()
-                        .onChange(of: form.input.state) { _, v in
-                            if v.count > 2 { form.input.state = String(v.prefix(2)) }
-                        }
-                    OutlinedField(label: "ZIP", text: $form.input.postalCode, keyboard: .numberPad)
-                        .textContentType(.postalCode)
+                    LabeledFieldRow(label: "City", text: $form.input.city, contentType: .addressCity, labelInside: true)
+                    LabeledFieldRow(
+                        label: "State", text: $form.input.state, contentType: .addressState, labelInside: true
+                    )
+                    .textInputAutocapitalization(.characters)
+                    .autocorrectionDisabled()
+                    .onChange(of: form.input.state) { _, v in
+                        if v.count > 2 { form.input.state = String(v.prefix(2)) }
+                    }
+                    LabeledFieldRow(
+                        label: "ZIP", text: $form.input.postalCode, keyboard: .numberPad, contentType: .postalCode,
+                        labelInside: true)
                 }
             }
         }

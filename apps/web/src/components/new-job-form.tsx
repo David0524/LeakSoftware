@@ -25,7 +25,14 @@ import {
 import { createJobAction } from "@/app/actions/jobs";
 import { NewJobRepairs } from "./job-repairs";
 import { AddressField } from "./address-field";
-import { FieldError, SField, SSelect, STextArea, SettingsForm } from "./settings-forms";
+import {
+  FieldError,
+  SField,
+  SSelect,
+  STextArea,
+  SettingsFields,
+  SettingsForm,
+} from "./settings-forms";
 import { Suggestions } from "./route-board";
 import type { RepeatChoice } from "@/lib/plan-repeat";
 import { PlanRepeat } from "./plan-repeat";
@@ -73,6 +80,14 @@ export function Section({
     </section>
   );
 }
+
+/**
+ * Text fields with their names inside them on phones (SettingsFields labelInside), filling the
+ * section's card there; two columns on wider screens.
+ */
+export const HINT_FIELDS = "max-sm:-mx-4 max-sm:-mb-4 sm:grid sm:grid-cols-2 sm:gap-4";
+/** An address the same way: wider, Street across, then City, and State and ZIP side by side. */
+export const HINT_ADDRESS = "max-sm:-mx-4 max-sm:-mb-4 sm:grid sm:grid-cols-4 sm:gap-4";
 
 /** The pool's gallons, saved on the pool (owner, 2026-10-19: it replaced "Size of the pool"). */
 function GallonsField({ known }: { known: number | null }) {
@@ -269,24 +284,24 @@ export function NewJobForm({
               ) : null}
             </div>
           ) : (
-            <div className="grid gap-4 sm:grid-cols-2">
+            // Phones: the iOS New Event look, each field's name the hint inside it (owner,
+            // 2026-11-27), filling the card.
+            <SettingsFields labelInside className={HINT_FIELDS}>
               <SField label="Name" name="customer_name" autoComplete="off" />
               <SField label="Phone" name="customer_phone" type="tel" />
               <SField label="Email" name="customer_email" type="email" />
-            </div>
+            </SettingsFields>
           )}
         </Section>
 
         {newPool ? (
           <Section title="Address">
-            <div className="grid gap-4 sm:grid-cols-2">
-              <AddressField label="Street address" name="address_line1" className="sm:col-span-2" />
-              <SField label="City" name="city" />
-              <div className="grid grid-cols-2 gap-4">
-                <SField label="State" name="state" maxLength={2} />
-                <SField label="ZIP" name="postal_code" />
-              </div>
-            </div>
+            <SettingsFields labelInside className={cx(HINT_ADDRESS, "max-sm:-mt-4")}>
+              <AddressField label="Street address" name="address_line1" className="sm:col-span-4" />
+              <SField label="City" name="city" className="sm:col-span-2" />
+              <SField label="State" name="state" maxLength={2} />
+              <SField label="ZIP" name="postal_code" />
+            </SettingsFields>
           </Section>
         ) : null}
 

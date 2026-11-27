@@ -124,6 +124,31 @@
         }
     }
 
+    /// Text fields whose names are the gray hint inside them (`LabeledFieldRow(labelInside:)`), one
+    /// to a row with hairlines between, filling the card they sit in, as in iOS Calendar's New
+    /// Event (owner, 2026-11-27; the website's HINT_FIELDS). `bleed`: the card's edges the rows
+    /// reach, the top too when they start the card.
+    ///
+    ///     FormCard("Address") { HintFields(bleed: .all) { LabeledFieldRow(label: "City", …, labelInside: true) } }
+    struct HintFields<Content: View>: View {
+        var bleed: Edge.Set = [.horizontal, .bottom]
+        @ViewBuilder var content: Content
+
+        var body: some View {
+            let inset = CGFloat(Spacing.cardPadding)
+            VStack(spacing: 0) {
+                Group(subviews: content) { rows in
+                    ForEach(rows) { row in
+                        if row.id != rows.first?.id { Hairline().padding(.leading, inset) }
+                        // The row's own 16 plus 4: its text lines up with the card's 20.
+                        row.padding(.horizontal, inset - CGFloat(Spacing.rowHorizontal))
+                    }
+                }
+            }
+            .padding(bleed, -inset)
+        }
+    }
+
     /// A phone field formats its number as it's typed (core `formatPhoneTyping`, owner
     /// 2026-10-20), only while it has the keyboard, so a saved number that's loaded in isn't
     /// changed. The value it sets itself is skipped, so it isn't formatted twice.
