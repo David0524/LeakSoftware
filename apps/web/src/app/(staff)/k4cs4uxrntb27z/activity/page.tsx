@@ -35,6 +35,7 @@ const ACTION: Record<StaffActionKind, string> = {
   pause_on: "Paused billing",
   pause_off: "Resumed billing",
   prices_change: "Changed the prices",
+  texting_retry: "Retried a texting registration",
 };
 
 function detail(details: Record<string, unknown>): string {

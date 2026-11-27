@@ -1,11 +1,11 @@
 import "server-only";
 import type { SupabaseClient } from "@supabase/supabase-js";
-import { isManagerRole, isUsNumber, toE164, uuidv7 } from "@leakbook/core";
+import { isManagerRole, isUsNumber, toE164 } from "@leakbook/core";
 import { adminClient } from "./admin";
 import { REVIEW_NUMBERS_MESSAGE, isReviewShop } from "./review-shop";
 import { TextingError, activeLine, type PhoneLine } from "./texting";
-import { TwilioError, buyNumber, searchNumbers, twilioConfigured } from "./twilio";
-import { READ_ONLY_MESSAGE, shopWritable } from "./usage";
+import { cancelRegistration, currentRegistration, registrationView } from "./texting-registration";
+import { TwilioError, searchNumbers, twilioConfigured } from "./twilio";
 
 import { friendlyDbError } from "@/lib/limits";
 // The company number (Settings › Phone and Texting), shared by the website's settings page and
@@ -14,8 +14,6 @@ import { friendlyDbError } from "@/lib/limits";
 // the service role writes the line (members can't write phone_line directly).
 
 export type LineResult = { message: string } | { error: string; fields?: Record<string, string> };
-
-const NOT_SET_UP = "Texting isn’t set up on this server.";
 
 function failed(e: unknown): LineResult {
   if (e instanceof TextingError || e instanceof TwilioError) return { error: e.message };
@@ -39,89 +37,12 @@ export async function findLineNumbers(companyId: string, areaCode: string) {
   }
 }
 
-async function addLine(
-  user: SupabaseClient,
-  companyId: string,
-  number: string,
-  source: "new" | "existing",
-  providerSid: string | null,
-): Promise<LineResult> {
-  if (!(await shopWritable(user, companyId))) return { error: READ_ONLY_MESSAGE };
-  const db = adminClient();
-  if (!db) return { error: NOT_SET_UP };
-  if (await isReviewShop(companyId, db)) return { error: REVIEW_NUMBERS_MESSAGE };
-  if (await activeLine(db, companyId)) return { error: "This shop already has a number." };
-  const { error } = await db.from("phone_line").insert({
-    id: uuidv7(),
-    company_id: companyId,
-    number,
-    source,
-    // A shop's own number takes a few days to move or register; Sundeck Pro finishes it.
-    status: source === "new" ? "active" : "pending",
-    provider_sid: providerSid,
-  });
-  if (error) {
-    return { error: error.code === "23505" ? "Another shop uses that number." : error.message };
-  }
-  return { message: source === "new" ? "Your number is ready." : "We’ll set up your number." };
-}
-
 /**
- * Buy a new local number (Sundeck Pro pays for it). The shop's one line is reserved first, so a
- * double-click or two owners at once can't buy two numbers (security review 2026-10-16); if
- * buying fails, the reservation is let go.
+ * Older apps' "take a number" and "use my number" (before registrations, 2026-11-27): a number
+ * can't text until its business is registered, so those versions are asked to update.
  */
-export async function takeLineNumber(
-  user: SupabaseClient,
-  companyId: string,
-  raw: string,
-  origin: string,
-): Promise<LineResult> {
-  const number = toE164(raw);
-  if (!isUsNumber(number)) return { error: "Pick a number." };
-  // A read-only (unpaid) shop doesn't buy numbers on Sundeck Pro's account (security audit).
-  if (!(await shopWritable(user, companyId))) return { error: READ_ONLY_MESSAGE };
-  const db = adminClient();
-  if (!db) return { error: NOT_SET_UP };
-  // Never buy a number for the App Review shop (it would be real, and paid for).
-  if (await isReviewShop(companyId, db)) return { error: REVIEW_NUMBERS_MESSAGE };
-  const id = uuidv7();
-  const { error: held } = await db
-    .from("phone_line")
-    .insert({ id, company_id: companyId, number, source: "new", status: "pending" });
-  if (held) {
-    if (held.code !== "23505") return { error: held.message };
-    return {
-      error: (await activeLine(db, companyId))
-        ? "This shop already has a number."
-        : "Another shop uses that number.",
-    };
-  }
-  try {
-    const providerSid = await buyNumber(number, origin);
-    const { error } = await db
-      .from("phone_line")
-      .update({ status: "active", provider_sid: providerSid })
-      .eq("id", id);
-    if (error) throw new Error(error.message);
-  } catch (e) {
-    await db.from("phone_line").update({ status: "released" }).eq("id", id);
-    return failed(e);
-  }
-  return { message: "Your number is ready." };
-}
-
-/** Use the shop's existing number (set up by Sundeck Pro: ported or registered for texting). */
-export async function keepLineNumber(
-  user: SupabaseClient,
-  companyId: string,
-  raw: string,
-): Promise<LineResult> {
-  const number = toE164(raw);
-  if (!number)
-    return { error: "Enter a US phone number.", fields: { number: "Enter a US phone number." } };
-  return addLine(user, companyId, number, "existing", null);
-}
+export const UPDATE_TO_REGISTER =
+  "Update Sundeck Pro to set up a number. Phone companies now need your business details first.";
 
 /** Pictures, who rings, and the voicemail greeting. */
 export async function saveLineSettings(
@@ -148,16 +69,9 @@ export async function saveLineSettings(
   return { message: "Saved." };
 }
 
-/** Stop setting up an existing number (only while it's pending). */
+/** Stop setting up a number (only while it's pending). */
 export async function cancelLineNumber(companyId: string): Promise<LineResult> {
-  const db = adminClient();
-  if (!db) return { error: NOT_SET_UP };
-  await db
-    .from("phone_line")
-    .update({ status: "released" })
-    .eq("company_id", companyId)
-    .eq("status", "pending");
-  return { message: "Cancelled." };
+  return cancelRegistration(companyId);
 }
 
 /** My own mobile number: calls I place ring it first, and incoming calls can ring it. */
@@ -176,8 +90,9 @@ export async function saveOwnPhone(
 
 /** Everything the Phone and Texting page shows. */
 export async function phoneSettings(user: SupabaseClient, companyId: string, userId: string) {
-  const [line, { data: members }, { data: me }] = await Promise.all([
+  const [line, registration, { data: members }, { data: me }] = await Promise.all([
     activeLine(user, companyId),
+    currentRegistration(user, companyId),
     user
       .from("membership")
       .select(
@@ -206,6 +121,7 @@ export async function phoneSettings(user: SupabaseClient, companyId: string, use
   return {
     configured: phoneConfigured(),
     line: line ? lineView(line) : null,
+    registration: registrationView(registration, line?.number ?? null),
     my_phone: (me?.phone as string | null) ?? null,
     team,
   };

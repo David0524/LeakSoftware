@@ -20,6 +20,7 @@ const SECTIONS: { title?: string; links: { href: string; label: string }[] }[] =
     links: [
       { href: "/k4cs4uxrntb27z/support", label: "Support" },
       { href: "/k4cs4uxrntb27z/health", label: "Health" },
+      { href: "/k4cs4uxrntb27z/texting", label: "Texting" },
     ],
   },
   {

@@ -32,8 +32,8 @@ const { sendEmail, sendEmailBatch } = await import("../src/server/email");
 const { isReviewShop, reviewDeliverable, REVIEW_NUMBERS_MESSAGE } =
   await import("../src/server/review-shop");
 const { sendText } = await import("../src/server/twilio");
-const { takeLineNumber, keepLineNumber, findLineNumbers } =
-  await import("../src/server/phone-line");
+const { findLineNumbers } = await import("../src/server/phone-line");
+const { startRegistration } = await import("../src/server/texting-registration");
 
 const base = {
   from: '"Palo Verde Pool Service via Sundeck Pro" <reports@send.sundeckpro.com>',
@@ -154,14 +154,18 @@ describe("the App Review shop's texts and number", () => {
     vi.stubGlobal("fetch", twilio);
     // The owner's own client: the shop isn't locked.
     const user = { rpc: async () => ({ data: { locked: false }, error: null }) };
-    const asOwner = user as unknown as Parameters<typeof takeLineNumber>[0];
+    const asOwner = user as unknown as Parameters<typeof startRegistration>[0];
     expect(await findLineNumbers(REVIEW, "602")).toEqual({ error: REVIEW_NUMBERS_MESSAGE });
-    expect(await takeLineNumber(asOwner, REVIEW, "+16025550147", "https://x.test")).toEqual({
-      error: REVIEW_NUMBERS_MESSAGE,
-    });
-    expect(await keepLineNumber(asOwner, REVIEW, "(602) 555-0147")).toEqual({
-      error: REVIEW_NUMBERS_MESSAGE,
-    });
+    for (const kind of ["toll_free", "local", "own"])
+      expect(
+        await startRegistration(
+          asOwner,
+          REVIEW,
+          "u1",
+          { kind, number: "(602) 555-0147", business: {} },
+          "https://x.test",
+        ),
+      ).toEqual({ error: REVIEW_NUMBERS_MESSAGE });
     expect(REVIEW_NUMBERS_MESSAGE).toBe("Phone numbers can’t be added to the App Review shop.");
     expect(twilio).not.toHaveBeenCalled();
     // Only the shop was read: no line was reserved.

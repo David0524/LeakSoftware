@@ -80,7 +80,8 @@ export type StaffActionKind =
   | "cancel_change"
   | "pause_on"
   | "pause_off"
-  | "prices_change";
+  | "prices_change"
+  | "texting_retry";
 
 /** Writes the staff log (public.staff_action), which no one can change afterwards. */
 export async function logStaffAction(

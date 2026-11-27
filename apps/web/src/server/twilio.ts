@@ -19,20 +19,103 @@ export function twilioConfigured(): boolean {
   return Boolean(sid() && token());
 }
 
-async function api<T>(path: string, form?: URLSearchParams, method = form ? "POST" : "GET") {
-  const res = await fetch(`${API}/Accounts/${sid()}${path}`, {
+/** Credentials for a request: Sundeck Pro's main account, or a shop's subaccount. */
+export interface TwilioAuth {
+  sid: string;
+  token: string;
+}
+const mainAuth = (): TwilioAuth => ({ sid: sid(), token: token() });
+
+/** Twilio's own words for a failed request, kept for staff (TwilioError carries the plain one). */
+export class TwilioRequestError extends TwilioError {
+  constructor(
+    message: string,
+    readonly status: number,
+    readonly detail: string,
+  ) {
+    super(message);
+  }
+}
+
+/**
+ * Any Twilio REST call: a form POST (or GET, or DELETE) to a full URL, as `auth` (the main
+ * account by default). Throws TwilioRequestError with Twilio's own message in `detail`.
+ */
+export async function twilioRequest<T>(
+  url: string,
+  {
+    form,
+    method = form ? "POST" : "GET",
+    auth = mainAuth(),
+  }: { form?: URLSearchParams; method?: string; auth?: TwilioAuth } = {},
+): Promise<T> {
+  const res = await fetch(url, {
     method,
     headers: {
-      authorization: `Basic ${Buffer.from(`${sid()}:${token()}`).toString("base64")}`,
+      authorization: `Basic ${Buffer.from(`${auth.sid}:${auth.token}`).toString("base64")}`,
       ...(form ? { "content-type": "application/x-www-form-urlencoded" } : {}),
     },
     body: form,
   });
+  if (res.status === 204) return {} as T;
   const body = (await res.json().catch(() => ({}))) as T & { message?: string; code?: number };
   // The provider's own words are for the logs; people read the plain version.
-  if (!res.ok)
-    throw new TwilioError(friendlyError(body.message ?? `The server said ${res.status}.`));
+  if (!res.ok) {
+    const detail = body.message ?? `The server said ${res.status}.`;
+    throw new TwilioRequestError(friendlyError(detail), res.status, detail);
+  }
   return body;
+}
+
+/** A v2010 API call on an account (the main one unless a subaccount is named). */
+async function api<T>(
+  path: string,
+  form?: URLSearchParams,
+  method = form ? "POST" : "GET",
+  account = sid(),
+) {
+  // The main account's credentials reach its subaccounts' v2010 resources.
+  return twilioRequest<T>(`${API}/Accounts/${account}${path}`, { form, method });
+}
+
+/** A v2010 call on a shop's subaccount (or the main account when it has none). */
+export function accountApi<T>(
+  account: string | null | undefined,
+  path: string,
+  form?: URLSearchParams,
+) {
+  return api<T>(path, form, form ? "POST" : "GET", account || sid());
+}
+
+const subaccountTokens = new Map<string, string>();
+
+/**
+ * A subaccount's own credentials: Twilio's other APIs (Trust Hub, Messaging) and its webhook
+ * signatures use them. Read from Twilio with the main account's, never stored.
+ */
+export async function subaccountAuth(account: string): Promise<TwilioAuth> {
+  if (account === sid()) return mainAuth();
+  let t = subaccountTokens.get(account);
+  if (!t) {
+    const r = await api<{ auth_token: string; owner_account_sid?: string }>(
+      "",
+      undefined,
+      "GET",
+      account,
+    );
+    t = r.auth_token;
+    subaccountTokens.set(account, t);
+  }
+  return { sid: account, token: t };
+}
+
+/** A new subaccount for a shop's numbers and registrations. */
+export async function createSubaccount(name: string): Promise<string> {
+  const r = await twilioRequest<{ sid: string; auth_token: string }>(`${API}/Accounts.json`, {
+    form: new URLSearchParams({ FriendlyName: name.slice(0, 64) }),
+  });
+  subaccountTokens.set(r.sid, r.auth_token);
+  return r.sid;
 }
 
 export interface SentText {
@@ -51,19 +134,25 @@ export async function sendText(
     body: string;
     mediaUrls?: string[];
     statusCallback?: string;
+    /** The shop's subaccount and Messaging Service (its registration), when it has them. */
+    account?: string | null;
+    messagingService?: string | null;
   },
   { hold = false }: { hold?: boolean } = {},
 ): Promise<SentText> {
   if (hold || !twilioConfigured()) return { sid: `demo-${randomUUID()}`, status: "sent" };
   const form = new URLSearchParams({ To: input.to, Body: input.body });
   // With a registered campaign (A2P 10DLC), texts go through its Messaging Service.
-  if (process.env.TWILIO_MESSAGING_SERVICE_SID) {
-    form.set("MessagingServiceSid", process.env.TWILIO_MESSAGING_SERVICE_SID);
-  }
+  const service = input.messagingService ?? process.env.TWILIO_MESSAGING_SERVICE_SID;
+  if (service) form.set("MessagingServiceSid", service);
   form.set("From", input.from);
   for (const url of input.mediaUrls ?? []) form.append("MediaUrl", url);
   if (input.statusCallback) form.set("StatusCallback", input.statusCallback);
-  const r = await api<{ sid: string; status: string }>("/Messages.json", form);
+  const r = await accountApi<{ sid: string; status: string }>(
+    input.account,
+    "/Messages.json",
+    form,
+  );
   return { sid: r.sid, status: r.status === "failed" ? "failed" : "queued" };
 }
 
@@ -73,27 +162,29 @@ export interface AvailableNumber {
   region: string | null;
 }
 
-/** Local numbers that text, take pictures, and take calls, in an area code. */
-export async function searchNumbers(areaCode: string): Promise<AvailableNumber[]> {
-  if (!/^[2-9]\d{2}$/.test(areaCode)) throw new TwilioError("Enter a 3-digit area code.");
+/**
+ * Numbers that text, take pictures, and take calls: local ones in an area code, or toll-free
+ * ones (`areaCode` null).
+ */
+export async function searchNumbers(areaCode: string | null): Promise<AvailableNumber[]> {
+  if (areaCode !== null && !/^[2-9]\d{2}$/.test(areaCode))
+    throw new TwilioError("Enter a 3-digit area code.");
   if (!twilioConfigured()) {
     // Demo: 555-01xx numbers are reserved for fiction.
     return [11, 23, 47].map((n) => ({
-      number: `+1${areaCode}55501${n}`,
+      number: `+1${areaCode ?? "800"}55501${n}`,
       locality: "Demo",
       region: null,
     }));
   }
-  const q = new URLSearchParams({
-    AreaCode: areaCode,
-    SmsEnabled: "true",
-    MmsEnabled: "true",
-    VoiceEnabled: "true",
-    PageSize: "8",
-  });
+  const q = new URLSearchParams({ SmsEnabled: "true", VoiceEnabled: "true", PageSize: "8" });
+  if (areaCode) {
+    q.set("AreaCode", areaCode);
+    q.set("MmsEnabled", "true");
+  }
   const r = await api<{
     available_phone_numbers: { phone_number: string; locality: string; region: string }[];
-  }>(`/AvailablePhoneNumbers/US/Local.json?${q}`);
+  }>(`/AvailablePhoneNumbers/US/${areaCode ? "Local" : "TollFree"}.json?${q}`);
   return r.available_phone_numbers.map((n) => ({
     number: n.phone_number,
     locality: n.locality || null,
@@ -101,30 +192,26 @@ export async function searchNumbers(areaCode: string): Promise<AvailableNumber[]
   }));
 }
 
-/** Buy a number and point its texts and calls at Sundeck Pro. */
-export async function buyNumber(number: string, origin: string): Promise<string> {
+/** Point a number's texts and calls at Sundeck Pro. */
+export function numberWebhooks(origin: string) {
+  return { SmsUrl: `${origin}/api/twilio/sms`, VoiceUrl: `${origin}/api/twilio/voice` };
+}
+
+/**
+ * Buy a number (in the shop's subaccount when it has one) and point its texts and calls at
+ * Sundeck Pro. Returns the number's sid.
+ */
+export async function buyNumber(
+  number: string,
+  origin: string,
+  account?: string | null,
+): Promise<string> {
   if (!twilioConfigured()) return `demo-${randomUUID()}`;
-  const r = await api<{ sid: string }>(
+  const r = await accountApi<{ sid: string }>(
+    account,
     "/IncomingPhoneNumbers.json",
-    new URLSearchParams({
-      PhoneNumber: number,
-      SmsUrl: `${origin}/api/twilio/sms`,
-      VoiceUrl: `${origin}/api/twilio/voice`,
-    }),
+    new URLSearchParams({ PhoneNumber: number, ...numberWebhooks(origin) }),
   );
-  if (process.env.TWILIO_MESSAGING_SERVICE_SID) {
-    await fetch(
-      `https://messaging.twilio.com/v1/Services/${process.env.TWILIO_MESSAGING_SERVICE_SID}/PhoneNumbers`,
-      {
-        method: "POST",
-        headers: {
-          authorization: `Basic ${Buffer.from(`${sid()}:${token()}`).toString("base64")}`,
-          "content-type": "application/x-www-form-urlencoded",
-        },
-        body: new URLSearchParams({ PhoneNumberSid: r.sid }),
-      },
-    );
-  }
   return r.sid;
 }
 
@@ -134,9 +221,12 @@ export async function startBridgeCall(input: {
   ringPhone: string;
   twimlUrl: string;
   statusCallback: string;
+  /** The shop's subaccount, when its number lives there. */
+  account?: string | null;
 }): Promise<string> {
   if (!twilioConfigured()) return `demo-${randomUUID()}`;
-  const r = await api<{ sid: string }>(
+  const r = await accountApi<{ sid: string }>(
+    input.account,
     "/Calls.json",
     new URLSearchParams({
       From: input.from,
@@ -159,8 +249,8 @@ export async function fetchTwilioFile(url: string): Promise<Response> {
   });
 }
 
-export const recordingUrl = (recordingSid: string) =>
-  `${API}/Accounts/${sid()}/Recordings/${recordingSid}.mp3`;
+export const recordingUrl = (recordingSid: string, account?: string | null) =>
+  `${API}/Accounts/${account || sid()}/Recordings/${recordingSid}.mp3`;
 
 /**
  * Twilio signs each webhook: HMAC-SHA1 of the full URL followed by the POSTed parameters
@@ -176,15 +266,36 @@ export function twilioSignature(url: string, params: Record<string, string>, key
   return createHmac("sha1", key).update(data, "utf8").digest("base64");
 }
 
-export function validTwilioRequest(
+function signatureMatches(
+  url: string,
+  params: Record<string, string>,
+  signature: string,
+  key: string,
+) {
+  const want = Buffer.from(twilioSignature(url, params, key));
+  const got = Buffer.from(signature);
+  return want.length === got.length && timingSafeEqual(want, got);
+}
+
+/**
+ * Whether Twilio sent this webhook. A shop's subaccount signs with its own token: when the main
+ * account's doesn't match and the request names another account, that subaccount's token is
+ * read from Twilio (which only answers for Sundeck Pro's own subaccounts).
+ */
+export async function validTwilioRequest(
   url: string,
   params: Record<string, string>,
   signature: string | null,
-): boolean {
+): Promise<boolean> {
   if (!token() || !signature) return false;
-  const want = Buffer.from(twilioSignature(url, params));
-  const got = Buffer.from(signature);
-  return want.length === got.length && timingSafeEqual(want, got);
+  if (signatureMatches(url, params, signature, token())) return true;
+  const account = params.AccountSid;
+  if (!account || account === sid() || !/^AC[0-9a-f]{32}$/.test(account)) return false;
+  try {
+    return signatureMatches(url, params, signature, (await subaccountAuth(account)).token);
+  } catch {
+    return false;
+  }
 }
 
 /** TwiML: text escaped for XML. */

@@ -18,6 +18,7 @@ import { adminClient } from "./admin";
 import { notifyText } from "./notify-events";
 import { REVIEW_CALLS_MESSAGE, isReviewShop } from "./review-shop";
 import { LIMIT_MESSAGE, READ_ONLY_MESSAGE, shopWritable, takeAllowance } from "./usage";
+import { lineRoute } from "./texting-registration";
 import { fetchTwilioFile, sendText, startBridgeCall, twilioConfigured, twiml, xml } from "./twilio";
 
 // Company texting and calls (owner, 2026-10-16), as Housecall Pro does them: one company number
@@ -322,6 +323,7 @@ export async function sendCompanyText(
     const hold = await isReviewShop(companyId, db);
     const sent = await sendText(
       {
+        ...(await lineRoute(db, companyId)),
         from: line.number,
         to: phone,
         body,
@@ -626,6 +628,7 @@ export async function startCall(user: Db, userId: string, conversationId: string
   if (!(await takeAllowance(conv.company_id as string, "call", 1, db)))
     throw new TextingError(LIMIT_MESSAGE);
   const providerSid = await startBridgeCall({
+    account: (await lineRoute(db, conv.company_id as string)).account,
     from: line.number,
     ringPhone: mine,
     twimlUrl: `${origin}/api/twilio/voice/bridge?to=${encodeURIComponent(conv.phone as string)}`,

@@ -3,20 +3,23 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 const session = vi.fn();
 const line = {
   findLineNumbers: vi.fn(),
-  takeLineNumber: vi.fn(),
-  keepLineNumber: vi.fn(),
   cancelLineNumber: vi.fn(),
   saveLineSettings: vi.fn(),
   saveOwnPhone: vi.fn(),
   phoneSettings: vi.fn(),
 };
+const registration = { startRegistration: vi.fn(), updateRegistration: vi.fn() };
 const locate = { locatePropertyWith: vi.fn(), locateCompanyWith: vi.fn() };
 const home = { locateHomeWith: vi.fn(), memberStartOf: vi.fn() };
 vi.mock("@/server/bearer", () => ({
   bearerSession: (r: Request) => session(r),
   jsonError: (message: string, status: number) => Response.json({ error: message }, { status }),
 }));
-vi.mock("@/server/phone-line", () => line);
+vi.mock("@/server/phone-line", () => ({
+  ...line,
+  UPDATE_TO_REGISTER: "Update Sundeck Pro to set up a number.",
+}));
+vi.mock("@/server/texting-registration", () => registration);
 vi.mock("@/server/route-days", () => locate);
 vi.mock("@/server/member-start", () => home);
 vi.mock("@/server/routing", () => ({ routingConfigured: () => true }));
@@ -44,7 +47,8 @@ const post = (handler: (r: Request) => Promise<Response>, body: unknown) =>
 describe("/api/phone (the apps' Phone and Texting)", () => {
   beforeEach(() => {
     session.mockReset().mockResolvedValue({ db: db("owner"), userId: "u1", email: "d@x.test" });
-    for (const f of Object.values(line)) f.mockReset().mockResolvedValue({ message: "Saved." });
+    for (const f of [...Object.values(line), ...Object.values(registration)])
+      f.mockReset().mockResolvedValue({ message: "Saved." });
   });
 
   it("needs a signed-in member of the shop", async () => {
@@ -63,32 +67,53 @@ describe("/api/phone (the apps' Phone and Texting)", () => {
     ).toBe(200);
     expect(line.saveOwnPhone).toHaveBeenCalledWith(expect.anything(), "u2", "6025550100");
     expect(
-      (await post(phone.POST, { company_id: "c1", action: "take", number: "+16025550100" })).status,
+      (await post(phone.POST, { company_id: "c1", action: "register", kind: "toll_free" })).status,
     ).toBe(403);
-    expect(line.takeLineNumber).not.toHaveBeenCalled();
+    expect(registration.startRegistration).not.toHaveBeenCalled();
   });
 
-  it("buys a number for an owner, and passes form errors back", async () => {
+  it("registers a number for an owner, and passes form errors back", async () => {
+    const business = { legal_name: "Blue Wave Pools LLC" };
     expect(
       await (
-        await post(phone.POST, { company_id: "c1", action: "take", number: "+16025550100" })
+        await post(phone.POST, {
+          company_id: "c1",
+          action: "register",
+          kind: "own",
+          number: "+16025550100",
+          business,
+        })
       ).json(),
-    ).toEqual({
-      message: "Saved.",
-    });
-    expect(line.takeLineNumber).toHaveBeenCalledWith(
+    ).toEqual({ message: "Saved." });
+    expect(registration.startRegistration).toHaveBeenCalledWith(
       expect.anything(),
       "c1",
-      "+16025550100",
+      "u1",
+      { kind: "own", number: "+16025550100", business },
       "https://sundeckpro.test",
     );
-    line.keepLineNumber.mockResolvedValue({
-      error: "Enter a US phone number.",
-      fields: { number: "Enter a US phone number." },
+    registration.updateRegistration.mockResolvedValue({
+      error: "Check the highlighted fields.",
+      fields: { ein: "Enter the 9-digit EIN, like 12-3456789." },
     });
-    const res = await post(phone.POST, { company_id: "c1", action: "keep", number: "12" });
+    const res = await post(phone.POST, { company_id: "c1", action: "update", business: "x" });
     expect(res.status).toBe(400);
-    expect((await res.json()).fields).toEqual({ number: "Enter a US phone number." });
+    expect((await res.json()).fields).toEqual({ ein: "Enter the 9-digit EIN, like 12-3456789." });
+    // Business details that aren't an object arrive as none.
+    expect(registration.updateRegistration).toHaveBeenCalledWith(
+      expect.anything(),
+      "c1",
+      {},
+      "https://sundeckpro.test",
+    );
+  });
+
+  it("asks apps from before registrations to update", async () => {
+    for (const action of ["take", "keep"]) {
+      const res = await post(phone.POST, { company_id: "c1", action, number: "+16025550100" });
+      expect(res.status).toBe(400);
+      expect((await res.json()).error).toBe("Update Sundeck Pro to set up a number.");
+    }
   });
 
   it("saves the line's settings with only the ids it was sent", async () => {

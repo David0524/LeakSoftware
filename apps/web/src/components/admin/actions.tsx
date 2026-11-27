@@ -4,6 +4,7 @@ import { useActionState, useState } from "react";
 import {
   addShopNote,
   extendTrial,
+  retryTexting,
   setDemo,
   staffPasswordReset,
   startSupport,
@@ -208,6 +209,20 @@ export function SendPasswordReset({ userId }: { userId: string }) {
       <input type="hidden" name="user_id" value={userId} />
       <Button type="submit" kind="secondary" disabled={pending}>
         {pending ? "Sending…" : "Send Password Reset"}
+      </Button>
+      <Result state={state} />
+    </form>
+  );
+}
+
+/** Admin › Texting: check a registration again now. */
+export function RetryTexting({ registrationId }: { registrationId: string }) {
+  const [state, action, pending] = useActionState(retryTexting, {});
+  return (
+    <form action={action} className="space-y-2">
+      <input type="hidden" name="registration_id" value={registrationId} />
+      <Button type="submit" kind="secondary" disabled={pending}>
+        {pending ? "Saving…" : "Retry Now"}
       </Button>
       <Result state={state} />
     </form>

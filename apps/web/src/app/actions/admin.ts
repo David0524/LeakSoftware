@@ -14,6 +14,7 @@ import { cookies } from "next/headers";
 import { redirect, unstable_rethrow } from "next/navigation";
 import { ACTIVE_COMPANY_COOKIE } from "@/lib/auth";
 import { sendPasswordReset } from "@/server/password-reset";
+import { retryRegistration } from "@/server/texting-registration";
 import { logStaffAction, requireStaff } from "@/server/staff";
 import { staffActionError, staffFailure } from "@/server/staff-error";
 
@@ -430,4 +431,26 @@ async function setPromoCodeActiveAction(form: FormData): Promise<AdminState> {
   await logStaffAction(staff, on ? "promo_on" : "promo_off", { details: { code } });
   revalidatePath("/k4cs4uxrntb27z/codes");
   return { message: on ? "Turned on." : "Turned off. Shops that used it keep their offer." };
+}
+
+/** Admin › Texting: check a shop's texting registration again now (logged). */
+export async function retryTexting(_: AdminState, form: FormData): Promise<AdminState> {
+  return guarded("retryTexting", async () => {
+    const { staff, db } = await requireStaff();
+    const id = text(form, "registration_id", 64);
+    const { data } = await db
+      .from("texting_registration")
+      .select("company_id")
+      .eq("id", id)
+      .maybeSingle();
+    if (!data) return { error: "That registration is gone." };
+    const companyId = data.company_id as string;
+    await retryRegistration(id);
+    await logStaffAction(staff, "texting_retry", {
+      companyId,
+      companyName: await shopName(db, companyId),
+    });
+    revalidatePath("/k4cs4uxrntb27z/texting");
+    return { message: "It’s checked again within 30 minutes." };
+  });
 }

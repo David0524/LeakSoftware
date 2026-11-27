@@ -2,14 +2,14 @@ import { siteOrigin } from "@/lib/origin";
 import { bearerSession, jsonError } from "@/server/bearer";
 import { isManager, memberRole } from "@/server/bearer-member";
 import {
+  UPDATE_TO_REGISTER,
   cancelLineNumber,
   findLineNumbers,
-  keepLineNumber,
   phoneSettings,
   saveLineSettings,
   saveOwnPhone,
-  takeLineNumber,
 } from "@/server/phone-line";
+import { startRegistration, updateRegistration } from "@/server/texting-registration";
 
 // Settings › Phone and Texting in the apps (owner, 2026-10-20: "From the app, do not link to
 // the website"), the same rules as the website's page.
@@ -25,9 +25,10 @@ export async function GET(request: Request) {
 }
 
 /**
- * POST { company_id, action, ... }: search (area_code), take (number), keep (number), cancel,
- * save (pictures, ring_user_ids, voicemail_greeting), my_phone (phone). All but my_phone are
- * for owners and admins.
+ * POST { company_id, action, ... }: search (area_code), register (kind, number, business),
+ * update (business: new details after a review came back), cancel, save (pictures,
+ * ring_user_ids, voicemail_greeting), my_phone (phone). All but my_phone are for owners and
+ * admins. take and keep (apps from before registrations) ask to update.
  */
 export async function POST(request: Request) {
   const session = await bearerSession(request);
@@ -49,10 +50,23 @@ export async function POST(request: Request) {
       const found = await findLineNumbers(id, str("area_code"));
       return "error" in found ? jsonError(found.error, 400) : Response.json(found);
     }
+    case "register":
+      return reply(
+        await startRegistration(
+          session.db,
+          id,
+          session.userId,
+          { kind: body.kind, number: body.number, business: business(body.business) },
+          await siteOrigin(),
+        ),
+      );
+    case "update":
+      return reply(
+        await updateRegistration(session.db, id, business(body.business), await siteOrigin()),
+      );
     case "take":
-      return reply(await takeLineNumber(session.db, id, str("number"), await siteOrigin()));
     case "keep":
-      return reply(await keepLineNumber(session.db, id, str("number")));
+      return jsonError(UPDATE_TO_REGISTER, 400);
     case "cancel":
       return reply(await cancelLineNumber(id));
     case "save":
@@ -72,4 +86,9 @@ export async function POST(request: Request) {
 
 function reply(result: { message: string } | { error: string; fields?: Record<string, string> }) {
   return "error" in result ? Response.json(result, { status: 400 }) : Response.json(result);
+}
+
+/** The business details as sent: an object of strings, or nothing. */
+function business(v: unknown): Record<string, unknown> {
+  return v && typeof v === "object" && !Array.isArray(v) ? (v as Record<string, unknown>) : {};
 }

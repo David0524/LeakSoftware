@@ -1,8 +1,8 @@
 import type { Metadata } from "next";
 import { formatPhone, isManagerRole, onMyWayVia, toE164 } from "@leakbook/core";
-import { cancelNumber, keepNumber, saveLine, saveMyPhone } from "@/app/actions/texting";
+import { cancelNumber, saveLine, saveMyPhone } from "@/app/actions/texting";
 import { OnMyWayForm } from "@/components/on-my-way-form";
-import { NumberPicker } from "@/components/phone-settings";
+import { EditBusiness, NumberSetup } from "@/components/phone-settings";
 import {
   SField,
   SSwitch,
@@ -16,6 +16,7 @@ import { getOffice } from "@/lib/auth";
 import { getCompany, getTeam } from "@/lib/data";
 import { getLine, myPhone } from "@/lib/messages";
 import { createClient } from "@/lib/supabase/server";
+import { currentRegistration, registrationView } from "@/server/texting-registration";
 
 export const metadata: Metadata = { title: "Phone and Texting · Sundeck Pro" };
 
@@ -32,6 +33,10 @@ export default async function PhoneSettingsPage() {
     myPhone(office),
     getCompany(office),
   ]);
+  const registration = registrationView(
+    await currentRegistration(supabase, office.company.id),
+    line?.number ?? null,
+  );
   const active = team.filter((t) => t.status === "active");
   const { data: profiles } = await supabase
     .from("profile")
@@ -49,15 +54,25 @@ export default async function PhoneSettingsPage() {
     <>
       <PageHeader back={{ href: "/settings", label: "Settings" }} title="Phone and Texting" />
       <div className="max-w-2xl space-y-6">
-        {line ? (
+        {line?.status === "active" || registration ? (
           <SettingsSection title="Company number" boxed>
-            <p className="text-[1.375rem] font-semibold">{formatPhone(line.number)}</p>
-            <p className="mt-1 text-text-muted">
-              {line.status === "active"
-                ? "Working. Texts and calls show up in Messages."
-                : "Your own number is being set up for texting. It usually takes a few days."}
-            </p>
-            {line.status === "pending" ? (
+            {line ? (
+              <p className="text-[1.375rem] font-semibold">{formatPhone(line.number)}</p>
+            ) : null}
+            {line?.status === "active" ? (
+              <p className="mt-1 text-text-muted">Working. Texts and calls show up in Messages.</p>
+            ) : registration ? (
+              <div className="mt-2 space-y-2">
+                <p className="font-semibold">{registration.title}</p>
+                <p className="text-text-muted">{registration.detail}</p>
+              </div>
+            ) : null}
+            {registration?.stage === "needs_changes" ? (
+              <div className="mt-4">
+                <EditBusiness saved={registration.business} einLast4={registration.ein_last4} />
+              </div>
+            ) : null}
+            {line?.status !== "active" ? (
               <div className="mt-4">
                 <SettingsForm
                   action={cancelNumber}
@@ -69,31 +84,8 @@ export default async function PhoneSettingsPage() {
             ) : null}
           </SettingsSection>
         ) : (
-          <>
-            <SettingsSection title="Get a new number" boxed>
-              <p className="mb-4 text-text-muted">
-                Texting needs a company number: a local number that texts, sends photos, and takes
-                calls. Included with Sundeck Pro. Your own mobile number, below, is only where calls
-                ring.
-              </p>
-              <NumberPicker />
-            </SettingsSection>
-            <SettingsSection title="Or use your shop’s number">
-              <SettingsForm action={keepNumber} submit="Set Up My Number">
-                <SettingsFields labelWidth="6rem">
-                  <SField
-                    label="Number"
-                    name="number"
-                    type="tel"
-                    autoComplete="off"
-                    placeholder="(480) 555-0100"
-                    required
-                    hint="Sundeck Pro registers it for texting. It takes a few days."
-                  />
-                </SettingsFields>
-              </SettingsForm>
-            </SettingsSection>
-          </>
+          // A number entered before registrations (still pending): Use My Own Number, filled in.
+          <NumberSetup ownNumber={line ? formatPhone(line.number) : undefined} />
         )}
 
         {line ? (

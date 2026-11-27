@@ -126,6 +126,9 @@ begin
   -- Company texting: a number per shop, made unique by the label.
   insert into phone_line (company_id, number)
     values (c, '+1555' || lpad((abs(hashtext(label)) % 10000000)::text, 7, '0'));
+  -- Its texting registration (server only; owners and admins read it).
+  insert into texting_registration (company_id, kind, business)
+    values (c, 'toll_free', '{"legal_name": "Shop LLC"}');
   insert into conversation (company_id, phone, customer_id)
     values (c, '+16025550100', cust) returning id into conv;
   insert into text_message (company_id, conversation_id, direction, body, status)

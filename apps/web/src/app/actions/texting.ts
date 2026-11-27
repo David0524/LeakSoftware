@@ -5,15 +5,15 @@ import { friendlyError, uploadRefusal, uploadRefusalMessage, uuidv7 } from "@lea
 import { getOffice, requireManager } from "@/lib/auth";
 import { siteOrigin } from "@/lib/origin";
 import { createClient } from "@/lib/supabase/server";
+import { BUSINESS_FIELDS } from "@leakbook/core";
 import {
   cancelLineNumber,
   findLineNumbers,
-  keepLineNumber,
   saveLineSettings,
   saveOwnPhone,
-  takeLineNumber,
   type LineResult,
 } from "@/server/phone-line";
+import { startRegistration, updateRegistration } from "@/server/texting-registration";
 import { TextingError, sendCompanyText, startCall } from "@/server/texting";
 import { TwilioError, type AvailableNumber } from "@/server/twilio";
 import type { FormState } from "./auth";
@@ -53,23 +53,40 @@ function done(result: LineResult): FormState {
   return { message: result.message };
 }
 
-/** Buy a new local number (Sundeck Pro pays for it). */
-export async function takeNumber(_: FormState, form: FormData): Promise<FormState> {
+function businessFrom(form: FormData): Record<string, string> {
+  const out: Record<string, string> = { business_type: text(form, "business_type") };
+  for (const f of BUSINESS_FIELDS) out[f.key] = text(form, f.key);
+  return out;
+}
+
+/**
+ * Register a number for texting: a toll-free one, a local one picked from the search, or the
+ * shop's own (docs/plans/texting-registration.md). Sundeck Pro submits it and pays.
+ */
+export async function registerNumber(_: FormState, form: FormData): Promise<FormState> {
   const office = await requireManager();
   return done(
-    await takeLineNumber(
+    await startRegistration(
       await createClient(),
       office.company.id,
-      text(form, "number"),
+      office.user.id,
+      { kind: text(form, "kind"), number: text(form, "number"), business: businessFrom(form) },
       await siteOrigin(),
     ),
   );
 }
 
-/** Use the shop's existing number (set up by Sundeck Pro: ported or registered for texting). */
-export async function keepNumber(_: FormState, form: FormData): Promise<FormState> {
+/** New business details after a review came back. */
+export async function updateBusiness(_: FormState, form: FormData): Promise<FormState> {
   const office = await requireManager();
-  return done(await keepLineNumber(await createClient(), office.company.id, text(form, "number")));
+  return done(
+    await updateRegistration(
+      await createClient(),
+      office.company.id,
+      businessFrom(form),
+      await siteOrigin(),
+    ),
+  );
 }
 
 /** Pictures, who rings, and the voicemail greeting. */
@@ -84,7 +101,7 @@ export async function saveLine(_: FormState, form: FormData): Promise<FormState>
   );
 }
 
-/** Stop setting up an existing number (only while it's pending). */
+/** Stop setting up a number (only while it's pending). */
 export async function cancelNumber(): Promise<FormState> {
   const office = await requireManager();
   return done(await cancelLineNumber(office.company.id));

@@ -17,7 +17,7 @@ export async function twilioParams(
   const origin = await siteOrigin();
   const url = new URL(request.url);
   const signed = `${origin}${url.pathname}${url.search}`;
-  if (!validTwilioRequest(signed, params, request.headers.get("x-twilio-signature")))
+  if (!(await validTwilioRequest(signed, params, request.headers.get("x-twilio-signature"))))
     return forbidden();
   return { params, origin };
 }

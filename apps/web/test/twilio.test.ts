@@ -22,18 +22,23 @@ describe("webhook signatures", () => {
   beforeEach(() => vi.stubEnv("TWILIO_AUTH_TOKEN", "12345"));
   afterEach(() => vi.unstubAllEnvs());
 
-  it("match Twilio's own example", () => {
+  it("match Twilio's own example", async () => {
     expect(twilioSignature(URL, PARAMS)).toBe("0/KCTR6DLpKmkAf8muzZqo1nDgQ=");
-    expect(validTwilioRequest(URL, PARAMS, "0/KCTR6DLpKmkAf8muzZqo1nDgQ=")).toBe(true);
+    expect(await validTwilioRequest(URL, PARAMS, "0/KCTR6DLpKmkAf8muzZqo1nDgQ=")).toBe(true);
   });
 
-  it("refuse a changed parameter, a missing signature, or a server without a token", () => {
+  it("refuse a changed parameter, a missing signature, or a server without a token", async () => {
     expect(
-      validTwilioRequest(URL, { ...PARAMS, Digits: "9" }, "0/KCTR6DLpKmkAf8muzZqo1nDgQ="),
+      await validTwilioRequest(URL, { ...PARAMS, Digits: "9" }, "0/KCTR6DLpKmkAf8muzZqo1nDgQ="),
     ).toBe(false);
-    expect(validTwilioRequest(URL, PARAMS, null)).toBe(false);
+    expect(await validTwilioRequest(URL, PARAMS, null)).toBe(false);
+    // Signed by another account: only a Sundeck Pro subaccount's own token is tried (Twilio
+    // answers for those only), and an account id that isn't one is refused without asking.
+    expect(await validTwilioRequest(URL, { ...PARAMS, AccountSid: "not-an-account" }, "x")).toBe(
+      false,
+    );
     vi.stubEnv("TWILIO_AUTH_TOKEN", "");
-    expect(validTwilioRequest(URL, PARAMS, "0/KCTR6DLpKmkAf8muzZqo1nDgQ=")).toBe(false);
+    expect(await validTwilioRequest(URL, PARAMS, "0/KCTR6DLpKmkAf8muzZqo1nDgQ=")).toBe(false);
   });
 });
 
