@@ -305,11 +305,15 @@
         var title: String
         var detail: String?
         @Binding var isOn: Bool
+        /// Padded like a list row; off among outlined fields (New Job, New Quote), whose card
+        /// already sets the margin.
+        var inset = true
 
-        init(_ title: String, detail: String? = nil, isOn: Binding<Bool>) {
+        init(_ title: String, detail: String? = nil, isOn: Binding<Bool>, inset: Bool = true) {
             self.title = title
             self.detail = detail
             _isOn = isOn
+            self.inset = inset
         }
 
         var body: some View {
@@ -320,7 +324,7 @@
                 }
             }
             .tint(Color.pass)
-            .padding(.horizontal, CGFloat(Spacing.rowHorizontal))
+            .padding(.horizontal, inset ? CGFloat(Spacing.rowHorizontal) : 0)
             .padding(.vertical, CGFloat(Spacing.rowVertical))
             .frame(minHeight: minTarget)
         }
