@@ -659,7 +659,7 @@ function JobRowFace({ job, gestures, onComplete, tech, when, first, last }: JobR
       <View style={styles.rowBody}>
         {/* The status sits by the name, so the lines under it use the row's whole width
             (owner, 2026-11-28: "each job is too large"). */}
-        <View style={styles.nameRow}>
+        <View style={styles.jobNameRow}>
           <T variant="bodyEmphasis" numberOfLines={1} style={{ flexShrink: 1 }}>
             {job.customer?.name ?? "Customer"}
           </T>
@@ -811,6 +811,15 @@ const styles = StyleSheet.create({
   },
   rowBody: { flex: 1, gap: 2 },
   nameRow: { flexDirection: "row", alignItems: "center", gap: 8 },
+  // The status beside the name when both fit; under it with larger text, so the name is never
+  // cut to a few letters.
+  jobNameRow: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    alignItems: "center",
+    columnGap: 8,
+    rowGap: 4,
+  },
   rowStatus: { marginLeft: "auto" },
   pinRow: { flexDirection: "row", alignItems: "center", gap: 4 },
   searchRow: {

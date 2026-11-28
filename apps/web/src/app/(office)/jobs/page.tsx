@@ -203,16 +203,23 @@ export default async function JobsPage({ searchParams }: PageProps<"/jobs">) {
             <Grouped className="sm:hidden">
               {jobs.map((j) => (
                 <JobActions key={j.id} as="li" job={actions(j)}>
-                  <RowContent href={`/jobs/${j.id}`} icon={<JobTypeIcon type={j.type} />}>
+                  <RowContent
+                    href={`/jobs/${j.id}`}
+                    // Its size in pixels: larger text goes to the words, not the symbol.
+                    icon={<JobTypeIcon type={j.type} className="size-[32px]" />}
+                  >
                     {/* The status sits by the name, so the lines under it use the row's whole
                         width (owner, 2026-11-28: "each job is too large"). */}
                     <span className="min-w-0 flex-1">
-                      <span className="flex min-w-0 items-center gap-2">
+                      {/* The status beside the name when both fit; under it with larger text. */}
+                      <span className="flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1">
                         <span className="min-w-0 truncate font-semibold">
                           {j.customer?.name ?? "Customer"}
                         </span>
                         {j.sample ? <SamplePill className="shrink-0" /> : null}
-                        <span className="ml-auto shrink-0">
+                        {/* A pill too long for the row (very large text) is cut short rather
+                            than running into the chevron. */}
+                        <span className="ml-auto max-w-full min-w-0 [&>*]:max-w-full [&>*]:truncate [&>*]:align-middle">
                           <LiveStatusBadge jobId={j.id} status={j.status} />
                         </span>
                       </span>

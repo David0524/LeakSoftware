@@ -308,7 +308,7 @@ export function JobTypeIcon({ type, className = "size-8" }: { type: JobType; cla
       title={JOB_TYPE_LABELS[type] ?? "Job"}
       className={`grid shrink-0 place-items-center rounded-full bg-link/10 text-link ${className}`}
     >
-      <JobTypeGlyph type={type} className="size-[1.125rem]" />
+      <JobTypeGlyph type={type} className="size-[18px]" />
     </span>
   );
 }

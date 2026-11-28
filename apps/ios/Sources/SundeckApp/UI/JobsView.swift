@@ -633,6 +633,13 @@
     struct JobListRowView: View {
         var row: JobListRow
 
+        private var name: some View {
+            HStack(alignment: .firstTextBaseline, spacing: 6) {
+                Text(row.customer).textRole(.bodyEmphasis).foregroundStyle(Color.text).lineLimit(1)
+                if row.sample { SamplePill() }
+            }
+        }
+
         var body: some View {
             HStack(spacing: 12) {
                 Image(systemName: row.type.symbol)
@@ -642,17 +649,24 @@
                     .background(Color.link.opacity(0.1), in: Circle())
                     .accessibilityHidden(true)
                 VStack(alignment: .leading, spacing: 2) {
-                    HStack(alignment: .center, spacing: 8) {
-                        Text(row.customer).textRole(.bodyEmphasis).foregroundStyle(Color.text).lineLimit(1)
-                        if row.sample { SamplePill() }
-                        Spacer(minLength: 0)
-                        StatusChip(status: row.status).fixedSize()
+                    // The status beside the name when both fit; under it with larger text, so the
+                    // name is never cut to a few letters.
+                    ViewThatFits(in: .horizontal) {
+                        HStack(alignment: .center, spacing: 8) {
+                            name.fixedSize()
+                            Spacer(minLength: 0)
+                            StatusChip(status: row.status).fixedSize()
+                        }
+                        VStack(alignment: .leading, spacing: 4) {
+                            name
+                            StatusChip(status: row.status).fixedSize()
+                        }
                     }
                     Text("\(row.numberText) · \(row.when)")
                         .textRole(.secondary).foregroundStyle(Color.text).lineLimit(1)
                     if let street = row.street {
                         HStack(spacing: 4) {
-                            Image(systemName: "mappin").font(.system(size: 12)).accessibilityHidden(true)
+                            Image(systemName: "mappin.and.ellipse").font(.system(size: 12)).accessibilityHidden(true)
                             Text(street).lineLimit(1)
                         }
                         .textRole(.secondary).foregroundStyle(Color.textMuted)
