@@ -25,7 +25,7 @@ export function TextingTermsBody({ inApp = false }: { inApp?: boolean }) {
         <p>
           You agree to get texts when you give the company your mobile number for your service, by
           phone, in person, or on the company’s website or service form, and say it’s OK to text
-          you. The company records that in Sundeck Pro.
+          you.
         </p>
       </section>
       <section>
