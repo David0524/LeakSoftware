@@ -118,12 +118,15 @@ test.describe("job type filter", () => {
     const b = (await sort.boundingBox())!;
     expect(Math.abs(a.y - b.y)).toBeLessThan(4);
     expect(b.x + b.width).toBeLessThanOrEqual(390);
-    // Every job listed is a repair.
+    // Every job listed is a repair: its row's type symbol reads "Repair" (owner, 2026-11-28).
     const rows = page.getByRole("main").getByRole("listitem");
     await expect(rows.first()).toBeVisible();
-    for (const text of await rows.allInnerTexts()) {
-      expect(text).toMatch(/· Repair/);
-      expect(text).not.toMatch(/· (Leak detection|Maintenance|Pool inspection)/);
+    const count = await rows.count();
+    for (let i = 0; i < count; i++) {
+      await expect(rows.nth(i).getByRole("img", { name: "Repair", exact: true })).toHaveCount(1);
+      await expect(
+        rows.nth(i).getByRole("img", { name: /^(Leak detection|Maintenance|Pool inspection)$/ }),
+      ).toHaveCount(0);
     }
   });
 
