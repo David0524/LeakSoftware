@@ -164,6 +164,17 @@ service account in step 8 exists), download the `.aab` from the run's summary, t
 release › **Internal testing › Create new release** › upload it › release notes ›
 **Start rollout**, and promote the same release to Production when it's tested.
 
+**1.0.4** (2026-11-28) release notes, en-US (500 characters): everything since 1.0.3, including the work merged from `main` (second business, quote deposits, Search Settings):
+
+```text
+Quotes on their own: make a quote without a job, and set a deposit on each quote.
+Two business names: shops that do pool care and leak detection pick which one a job is for.
+OK to Text: mark which customers said it's OK to text them.
+Jobs and Schedule: an icon for each kind of job, shorter rows, and the street only.
+Search Settings, Dashboard by tech, and Refer a Pool Company in More.
+Faster on Android; Day, Week and Month always show their names.
+```
+
 **1.0.3** (2026-11-23) release notes, en-US (500 characters), the iPhone 1.0.5 What's New shortened. The portrait screen and Wi-Fi are no longer required device features (Play's 1.0.2 warning):
 
 ```text
