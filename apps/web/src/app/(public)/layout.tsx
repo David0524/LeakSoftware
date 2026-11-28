@@ -52,6 +52,7 @@ export default function PublicLayout({ children }: LayoutProps<"/">) {
             { href: "/faq", label: "FAQ" },
             { href: "/privacy", label: "Privacy" },
             { href: "/terms", label: "Terms" },
+            { href: "/texting-terms", label: "Texting Terms" },
             { href: "/security", label: "Security" },
             { href: "/status", label: "Status" },
             { href: `mailto:${CONTACT_EMAIL}`, label: `Contact Us: ${CONTACT_EMAIL}` },

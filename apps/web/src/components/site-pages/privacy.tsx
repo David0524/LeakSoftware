@@ -15,7 +15,7 @@ const Mail = () => (
 export function PrivacyBody({ inApp = false }: { inApp?: boolean }) {
   const to = (path: string) => (inApp ? `/in-app${path}` : path);
   return (
-    <LegalPage title="Privacy Policy" updated="November 27, 2026">
+    <LegalPage title="Privacy Policy" updated="November 28, 2026">
       <section>
         <h2>Who we are</h2>
         <p>
@@ -222,7 +222,11 @@ export function PrivacyBody({ inApp = false }: { inApp?: boolean }) {
           </li>
           <li>
             Customers can stop a shop’s emails with the unsubscribe link in any of them, and stop
-            its texts by replying STOP.
+            its texts by replying STOP (HELP for help; see the{" "}
+            <a className="text-link underline" href={to("/texting-terms")}>
+              Texting Terms
+            </a>
+            ).
           </li>
           <li>
             Mobile numbers and consent to receive texts are never shared with or sold to third

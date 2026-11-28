@@ -14,6 +14,7 @@ export default function sitemap(): MetadataRoute.Sitemap {
     { url: `${SITE}/security`, changeFrequency: "monthly", priority: 0.5 },
     { url: `${SITE}/privacy`, changeFrequency: "yearly", priority: 0.3 },
     { url: `${SITE}/terms`, changeFrequency: "yearly", priority: 0.3 },
+    { url: `${SITE}/texting-terms`, changeFrequency: "yearly", priority: 0.3 },
     { url: `${SITE}/status`, changeFrequency: "daily", priority: 0.2 },
     { url: `${SITE}/sign-in`, changeFrequency: "yearly", priority: 0.2 },
   ];

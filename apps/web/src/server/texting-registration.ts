@@ -429,11 +429,13 @@ function jobPosition(title: string) {
 function campaignText(shop: string) {
   return {
     description: `${shop} is a pool service and leak detection company. It texts its own customers about their appointments (on the way, arrival times), service reports, quotes and invoices, and answers their questions.`,
-    flow: `Customers give ${shop} their mobile number when they book a pool service or leak detection visit, by phone, in person, or on ${shop}'s website, and agree then to get texts about their service. The first text says who it's from. Reply STOP to opt out or HELP for help. Privacy policy: https://sundeckpro.com/privacy`,
+    flow: `Customers give ${shop} their mobile number when they book a pool service or leak detection visit, by phone, in person, or on ${shop}'s website or service form, and say it's OK to text them; ${shop} records that in Sundeck Pro, its field service software. Texts are about the customer's own service only, usually a few per visit. Message and data rates may apply. Reply STOP to opt out, HELP for help. Texting terms: https://sundeckpro.com/texting-terms Privacy policy: https://sundeckpro.com/privacy`,
     samples: [
       `${shop}: Hi Sam, Alex is on the way and should arrive around 10:30 AM. Reply STOP to opt out.`,
       `${shop}: Your leak detection report is ready: https://sundeckpro.com/r/7f3k2q Questions? Just reply. Reply STOP to opt out.`,
+      `${shop}: Reminder: your pool service is tomorrow between 9 and 11 AM. Reply here to reschedule, HELP for help, STOP to opt out. Msg & data rates may apply.`,
     ],
+    help: `${shop}: For help, reply here or call us. Texts about your pool service; usually a few per visit. Msg & data rates may apply. Reply STOP to opt out. Terms: sundeckpro.com/texting-terms`,
   };
 }
 
@@ -522,8 +524,9 @@ const STEP: Record<string, (c: Ctx) => Promise<StepResult>> = {
         UseCaseCategories: ["ACCOUNT_NOTIFICATIONS", "CUSTOMER_CARE"],
         UseCaseSummary: text.description,
         ProductionMessageSample: text.samples[0],
-        OptInImageUrls: "https://sundeckpro.com/privacy",
+        OptInImageUrls: "https://sundeckpro.com/texting-terms",
         OptInType: "VERBAL",
+        HelpMessageSample: text.help,
         MessageVolume: "1,000",
         AdditionalInformation: text.flow,
         BusinessType:
@@ -545,7 +548,7 @@ const STEP: Record<string, (c: Ctx) => Promise<StepResult>> = {
         BusinessContactEmail: b.email,
         BusinessContactPhone: b.phone,
         PrivacyPolicyUrl: "https://sundeckpro.com/privacy",
-        TermsAndConditionsUrl: "https://sundeckpro.com/terms",
+        TermsAndConditionsUrl: "https://sundeckpro.com/texting-terms",
       }),
     });
     return { done: { tf_verification_sid: r.sid } };
@@ -793,7 +796,7 @@ const STEP: Record<string, (c: Ctx) => Promise<StepResult>> = {
           HasEmbeddedLinks: "true",
           HasEmbeddedPhone: "false",
           PrivacyPolicyUrl: "https://sundeckpro.com/privacy",
-          TermsAndConditionsUrl: "https://sundeckpro.com/terms",
+          TermsAndConditionsUrl: "https://sundeckpro.com/texting-terms",
         }),
       },
     );
