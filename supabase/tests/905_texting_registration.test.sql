@@ -30,5 +30,11 @@ select tests.authenticate_as((select (a ->> 'tech')::uuid from fx));
 select is((select count(*) from texting_registration), 0::bigint, 'techs read none');
 reset role;
 
+-- Never copied into the audit log (its EIN with it).
+update texting_registration set business = '{"ein": "12-3456789"}'
+  where company_id = (select (b ->> 'company')::uuid from fx);
+select is((select count(*) from audit_log where table_name = 'texting_registration'), 0::bigint,
+  'registrations stay out of the audit log');
+
 select * from finish();
 rollback;

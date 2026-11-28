@@ -940,7 +940,10 @@ export async function advance(db: Db, reg: Registration, origin: string): Promis
     if (Object.keys(result.done).length) await saveTwilio(c, result.done);
     const next = steps[steps.indexOf(step) + 1];
     if (!next) {
+      // Approved: the EIN isn't needed any more (Twilio holds it), so only its last 4 stay.
+      const last4 = (reg.business.ein ?? "").replace(/\D/g, "").slice(-4);
       await update({
+        business: { ...reg.business, ein: `*****${last4}` },
         step: "ready",
         stage: "ready",
         ready_at: now().toISOString(),

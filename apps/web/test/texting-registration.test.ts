@@ -162,6 +162,8 @@ describe("a toll-free number", () => {
     await cron();
     expect(one("texting_registration")).toMatchObject({ stage: "ready" });
     expect(one("phone_line").status).toBe("active");
+    // Approved: only the EIN's last 4 are kept.
+    expect((one("texting_registration").business as { ein: string }).ein).toBe("*****6789");
     // Bought once, however often it was checked.
     expect(
       calls.filter((c) => c.startsWith("POST") && c.includes("IncomingPhoneNumbers")),

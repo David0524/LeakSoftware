@@ -2,6 +2,12 @@
 
 Newest first. Each entry: date, decision, reason.
 
+## 2026-11-28 (owner asked how the business details are stored)
+- **Texting registrations live in `public.texting_registration`** (Supabase, encrypted at rest, SSL enforced): the shop's owners and admins read their own, the server alone writes, techs and other shops see nothing; the website and apps show only the EIN's last 4. Twilio holds its own copy (the phone companies need it).
+- **Kept out of the audit log** (`20261022006000_texting_registration_private.sql`): the trigger every synced table gets was copying each registration, EIN included, into `audit_log`, which managers read. The copies made so far (one test row) are deleted.
+- **The EIN is erased once the number is approved,** keeping `*****` and its last 4; a shop that registers again types it again.
+- **Texting Terms** (`/texting-terms`, footer and privacy policy link to it): opt-in, frequency, "Message and data rates may apply", STOP/START/HELP, numbers never shared or sold. Each shop's campaign links to it, with three sample texts and a HELP reply. It doesn't claim consent is recorded in Sundeck Pro until the OK to Text checkbox exists.
+
 ## 2026-11-28 (owner: "Make the improvements", after comparing Housecall Pro's texting registration)
 - **Housecall Pro asks for the same details** (legal name and address as on the EIN letter, EIN, type, website, a representative) and publishes no registration fee; its texting is a new local number only, calls forwarding to the business's own.
 - **Website guidance as theirs:** the Business group says to use a Facebook, Instagram, or Yelp page that's been active for a few weeks when there's no website, and every address is sent as https.
