@@ -3,10 +3,13 @@ import {
   CUSTOMER_EMAILS_LABEL,
   CUSTOMER_EMAILS_OFF_LABEL,
   FEEDBACK_WORDS,
+  OK_TO_TEXT,
+  OK_TO_TEXT_HINT,
   autopaySettings,
   mapStatus,
   offersLeak,
   offersPool,
+  okToTextValue,
   shopInvoiceDay,
 } from "@leakbook/core";
 import type { Metadata } from "next";
@@ -15,6 +18,7 @@ import { notFound } from "next/navigation";
 import { NotOnMapTag } from "@/components/not-on-map";
 import { routingConfigured } from "@/server/routing";
 import { isUuid } from "@/lib/uuid";
+import { createClient } from "@/lib/supabase/server";
 import {
   JOB_TYPE_LABELS,
   poolSummary,
@@ -144,6 +148,17 @@ export default async function CustomerPage({ params }: PageProps<"/customers/[id
     .filter((t) => t.status === "active")
     .map((t) => ({ id: t.user_id, name: t.name }));
   const today = localDate(now, office.company.timezone);
+  // A STOP reply from any of their numbers shows instead of OK to Text.
+  const { count: stopped } = await (
+    await createClient()
+  )
+    .from("conversation")
+    .select("id", { count: "exact", head: true })
+    .eq("company_id", office.company.id)
+    .eq("customer_id", customer.id)
+    .eq("opted_out", true)
+    .is("deleted_at", null);
+  const repliedStop = (stopped ?? 0) > 0;
   const doneCounts: Record<string, number> = {};
   for (const j of jobs)
     if (j.service_plan_id && j.status === "done")
@@ -202,6 +217,10 @@ export default async function CustomerPage({ params }: PageProps<"/customers/[id
               <>
                 <Row label="Phone" value={customer.phone ?? "None"} />
                 <Row
+                  label={OK_TO_TEXT}
+                  value={okToTextValue(customer.text_ok_at, repliedStop, office.company.timezone)}
+                />
+                <Row
                   label="Email"
                   value={<span className="break-all">{customer.email ?? "None"}</span>}
                 />
@@ -249,6 +268,12 @@ export default async function CustomerPage({ params }: PageProps<"/customers/[id
                           type="tel"
                           defaultValue={customer.phone ?? ""}
                           autoComplete="off"
+                        />
+                        <SSwitch
+                          name="text_ok"
+                          label={OK_TO_TEXT}
+                          hint={OK_TO_TEXT_HINT}
+                          defaultChecked={!!customer.text_ok_at}
                         />
                         <SField
                           label="Email"

@@ -3,13 +3,20 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { isUuid } from "@/lib/uuid";
-import { JOB_TYPE_LABELS, dateFormat, formatAddress, formatPhone } from "@leakbook/core";
+import {
+  JOB_TYPE_LABELS,
+  dateFormat,
+  formatAddress,
+  formatPhone,
+  needsTextOk,
+} from "@leakbook/core";
 import { ConversationList, Thread, conversationName } from "@/components/inbox";
 import {
   AutoRefresh,
   CallButton,
   Composer,
   MarkRead,
+  MarkOkToText,
   MarkUnreadButton,
   ScrollToEnd,
 } from "@/components/messages";
@@ -105,7 +112,12 @@ export default async function ConversationPage({ params }: PageProps<"/messages/
                 on.
               </Notice>
             ) : active ? (
-              <Composer conversationId={c.id} pictures={line.pictures} />
+              <>
+                {c.customer_id && needsTextOk(c.customer, c.opted_out) ? (
+                  <MarkOkToText customerId={c.customer_id} />
+                ) : null}
+                <Composer conversationId={c.id} pictures={line.pictures} />
+              </>
             ) : (
               <Notice tone="info">Texting is off until the company number is working.</Notice>
             )}

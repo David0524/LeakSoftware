@@ -32,6 +32,7 @@ export * from "./plans";
 export * from "./chemistry";
 export * from "./texting";
 export * from "./texting-registration";
+export * from "./ok-to-text";
 export * from "./trial-offer";
 export * from "./codes";
 export * from "./refer";

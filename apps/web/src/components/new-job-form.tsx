@@ -17,11 +17,13 @@ import {
   PLAN_INVOICE_DAY_FOOTER,
   ordinalDay,
   planInvoiceDayLabel,
+  OK_TO_TEXT,
+  OK_TO_TEXT_HINT,
 } from "@leakbook/core";
 import { createJobAction } from "@/app/actions/jobs";
 import { NewJobRepairs } from "./job-repairs";
 import { AddressField } from "./address-field";
-import { FieldError, SField, SSelect, STextArea, SettingsForm } from "./settings-forms";
+import { FieldError, SField, SSelect, SSwitch, STextArea, SettingsForm } from "./settings-forms";
 import { Suggestions } from "./route-board";
 import type { RepeatChoice } from "@/lib/plan-repeat";
 import { PlanRepeat } from "./plan-repeat";
@@ -264,6 +266,7 @@ export function NewJobForm({
             <div className="grid gap-4 sm:grid-cols-2">
               <SField label="Name" name="customer_name" autoComplete="off" />
               <SField label="Phone" name="customer_phone" type="tel" />
+              <SSwitch name="text_ok" label={OK_TO_TEXT} hint={OK_TO_TEXT_HINT} />
               <SField label="Email" name="customer_email" type="email" />
             </div>
           )}

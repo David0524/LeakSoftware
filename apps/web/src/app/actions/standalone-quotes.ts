@@ -75,7 +75,13 @@ export async function createQuoteAction(_: FormState, form: FormData): Promise<F
   let newPool: string | null = null;
   try {
     const customerId = records.customer
-      ? await insert("customer", records.customer)
+      ? await insert("customer", {
+          ...records.customer,
+          // OK to Text, asked with the new customer's phone.
+          ...(form.get("text_ok") === "on"
+            ? { text_ok_at: new Date().toISOString(), text_ok_by: office.user.id }
+            : {}),
+        })
       : input.customerId!;
     newPool = records.property
       ? await insert("property", { ...records.property, customer_id: customerId })

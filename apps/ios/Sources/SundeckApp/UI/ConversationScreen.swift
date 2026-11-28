@@ -28,6 +28,8 @@
         @State private var calling = false
         @State private var callResult: (text: String, error: Bool)?
         @State private var draft = TextDraft()
+        /// A customer not marked OK to Text yet (owner, 2026-11-28: texts still go, with a reminder).
+        @State private var needsOk = false
 
         var body: some View {
             let timeZone = session.company?.timeZone ?? "America/Phoenix"
@@ -135,9 +137,13 @@
                 .padding(8)
                 .chromeBar(hairline: nil)
             } else if let line, line.status == "active" {
-                TextComposer(draft: draft, pictures: line.pictures, draftId: conversationId) {
-                    await draft.send(app: app, sync: sync, companyId: session.company?.id) { server, body, pictures in
-                        try await server.send(conversationId: c.id, body: body, pictures: pictures)
+                VStack(spacing: 0) {
+                    if needsOk, let customerId = c.customerId { okReminder(customerId) }
+                    TextComposer(draft: draft, pictures: line.pictures, draftId: conversationId) {
+                        await draft.send(app: app, sync: sync, companyId: session.company?.id) {
+                            server, body, pictures in
+                            try await server.send(conversationId: c.id, body: body, pictures: pictures)
+                        }
                     }
                 }
             } else {
@@ -147,9 +153,35 @@
             }
         }
 
+        /// One tap marks them OK to Text, now, by this person.
+        private func okReminder(_ customerId: String) -> some View {
+            HStack(spacing: 12) {
+                Text(OkToText.reminder).textRole(.secondary).foregroundStyle(Color.text)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                Button(OkToText.mark) {
+                    guard let company = session.company else { return }
+                    try? CustomerWrites.markOkToText(
+                        sync, companyId: company.id, customerId: customerId, userId: session.user?.id)
+                    needsOk = false
+                }
+                .buttonStyle(.secondary)
+            }
+            .padding(.horizontal, 16)
+            .padding(.vertical, 8)
+            .background(Color.warning.opacity(0.12))
+        }
+
         private func reload() {
             guard let company = session.company else { return }
             conversation = conversations(sync.store, companyId: company.id).first { $0.id == conversationId }
+            if let c = conversation, let customerId = c.customerId,
+                let customer = try? sync.store.get("customer", customerId)
+            {
+                needsOk = OkToText.needsMark(
+                    textOkAt: customer["text_ok_at"]?.string, isCustomer: true, repliedStop: c.optedOut)
+            } else {
+                needsOk = false
+            }
             rows = threadRows(
                 thread(sync.store, companyId: company.id, conversationId: conversationId), timeZone: company.timeZone)
             line = companyLine(sync.store, companyId: company.id)

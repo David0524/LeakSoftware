@@ -206,6 +206,8 @@ public final class NewQuoteForm {
     /// One of the picked customer's pools, or nil for another address (blank: no pool yet).
     public var propertyId: String?
     public var input = NewQuoteInput()
+    /// OK to Text for a new customer (OkToText, owner 2026-11-28).
+    public var textOk = false
     public private(set) var errors: [String: String] = [:]
 
     public init(sync: SyncService, company: CompanyContext, userId: String, customerId: String? = nil) {
@@ -295,12 +297,14 @@ public final class NewQuoteForm {
         let records = newQuoteRecords(checked, assignedUserId: company.role == "tech" ? userId : nil)
         let store = sync.store
         let companyId = company.id
+        var customerValues = records.customer ?? [:]
+        customerValues.merge(OkToTextWrites.fields(textOk, userId: userId)) { _, new in new }
         return try sync.batch {
             let customer: String
             if let id = checked.customerId {
                 customer = id
             } else {
-                customer = try store.insert("customer", companyId: companyId, records.customer ?? [:])
+                customer = try store.insert("customer", companyId: companyId, customerValues)
             }
             var property = checked.propertyId
             if property == nil, var values = records.property {

@@ -340,6 +340,9 @@ export interface Customer extends Base {
   notes?: string | null;
   /** Charged automatically with a saved card (server-written; 2026-11-16-autopay.md). */
   autopay?: boolean;
+  /** When the shop marked that they said it's OK to text them, and who (ok-to-text.ts). */
+  text_ok_at?: string | null;
+  text_ok_by?: string | null;
 }
 
 export type PoolType = "gunite_plaster" | "vinyl" | "fiberglass" | "other";

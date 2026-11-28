@@ -2,10 +2,12 @@
 
 import { useRouter } from "next/navigation";
 import { useActionState, useEffect, useId, useRef, useState, useTransition } from "react";
+import { MARK_OK_TO_TEXT, OK_TO_TEXT_REMINDER } from "@leakbook/core";
 import { shrinkTextPictures } from "@/lib/shrink-photo";
 import { saveFailed } from "./instant";
 import {
   callCustomer,
+  markOkToText,
   markRead,
   sendMessage,
   setUnread,
@@ -206,6 +208,43 @@ export function MarkUnreadButton({ conversationId }: { conversationId: string })
     >
       Mark as Unread
     </Button>
+  );
+}
+
+/**
+ * OK to Text (owner, 2026-11-28: texts still go, with a reminder): a customer not marked yet
+ * shows this above the message box; one tap marks them, now, by this person.
+ */
+export function MarkOkToText({ customerId }: { customerId: string }) {
+  const router = useRouter();
+  const [pending, start] = useTransition();
+  const [done, setDone] = useState(false);
+  if (done) return null;
+  return (
+    <div
+      role="status"
+      className="mb-2 flex flex-wrap items-center justify-between gap-3 rounded-2xl bg-status-warning/10 px-4 py-2.5"
+    >
+      <span className="min-w-0 flex-1 text-[0.9375rem]">{OK_TO_TEXT_REMINDER}</span>
+      <Button
+        type="button"
+        kind="secondary"
+        disabled={pending}
+        onClick={() => {
+          // Hidden at once (changes show instantly); a save that fails says so.
+          setDone(true);
+          start(async () => {
+            const r = await whenOffline(markOkToText(customerId), { error: NO_CONNECTION });
+            if (r.error) {
+              setDone(false);
+              saveFailed("Couldn’t mark them OK to Text. Try again.");
+            } else router.refresh();
+          });
+        }}
+      >
+        {MARK_OK_TO_TEXT}
+      </Button>
+    </div>
   );
 }
 

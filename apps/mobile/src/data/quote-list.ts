@@ -87,10 +87,17 @@ export function createQuote(
   companyId: string,
   input: NewQuoteInput,
   assignedUserId: string | null,
+  /** OK to Text for a new customer: when, and who marked it. */
+  textOk: { at: string; by: string | null } | null = null,
 ): { quoteId: string; jobId: string; newPool: string | null } {
   const records = newQuoteRecords(input, assignedUserId);
   return sync.batch(() => {
-    const customer = input.customerId ?? sync.insert("customer", companyId, records.customer!);
+    const customer =
+      input.customerId ??
+      sync.insert("customer", companyId, {
+        ...records.customer!,
+        ...(textOk ? { text_ok_at: textOk.at, text_ok_by: textOk.by } : {}),
+      });
     const newPool = records.property
       ? sync.insert("property", companyId, { ...records.property, customer_id: customer })
       : null;

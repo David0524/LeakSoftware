@@ -1394,16 +1394,28 @@ export function Toggle({
   value,
   onChange,
   inList = false,
+  hint,
 }: {
   label: string;
   value: boolean;
   onChange: (v: boolean) => void;
   /** Inside a Group: padded like a list row. */
   inList?: boolean;
+  /** A line under the label saying what it means (OK to Text). */
+  hint?: string;
 }) {
   return (
     <View style={[styles.toggle, inList && styles.rowPad]}>
-      <T style={{ flex: 1 }}>{label}</T>
+      {hint ? (
+        <View style={{ flex: 1 }}>
+          <T>{label}</T>
+          <T variant="secondary" muted>
+            {hint}
+          </T>
+        </View>
+      ) : (
+        <T style={{ flex: 1 }}>{label}</T>
+      )}
       <SwitchControl value={value} onValueChange={onChange} label={label} />
     </View>
   );

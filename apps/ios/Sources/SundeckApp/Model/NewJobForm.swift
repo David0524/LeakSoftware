@@ -117,6 +117,8 @@ public final class NewJobForm {
     /// time on 9:00 AM, as the website's Start field does.
     public var input = NewJobInput()
     public var otherEmails = ""
+    /// OK to Text for a new customer (OkToText, owner 2026-11-28).
+    public var textOk = false
     /// Intake answers by question key: a string, or an array of strings for a multi question.
     public private(set) var answers: [String: JSONValue] = [:]
     /// The price as typed.
@@ -608,6 +610,8 @@ public final class NewJobForm {
                 [
                     "name": .string(c.name), "phone": optional(c.phone), "email": optional(c.email),
                     "cc_emails": .array(splitEmails(otherEmails).map { .string($0) }),
+                    // The server stamps it now, by this person.
+                    "text_ok": .bool(textOk),
                 ]
             } ?? .null
         let newProperty: JSONValue =
@@ -726,11 +730,14 @@ public final class NewJobForm {
             hoursValue.map { isoString(start.addingTimeInterval($0 * 3600)) }
         }
 
+        var customerValues = customerRow(records.customer, ccEmails)
+        customerValues.merge(OkToTextWrites.fields(textOk, userId: userId)) { _, new in new }
+
         // Customer, property, job, and its checklist are saved together or not at all.
         return try sync.batch {
             let customer =
                 try customerId
-                ?? store.insert("customer", companyId: companyId, customerRow(records.customer, ccEmails))
+                ?? store.insert("customer", companyId: companyId, customerValues)
             var newProperty = propertyRow(records.property, customer: customer, shape)
             if let gallons { newProperty["approx_gallons"] = .number(Double(gallons)) }
             let property = try propertyId ?? store.insert("property", companyId: companyId, newProperty)

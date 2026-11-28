@@ -46,6 +46,8 @@ function NewQuoteForm() {
   const properties = useRows<Property>("property", company.id);
   const poolsOf = (id: string | undefined) =>
     id ? properties.filter((p) => p.customer_id === id) : [];
+  // OK to Text for a new customer (owner, 2026-11-28).
+  const [textOk, setTextOk] = useState(false);
   const [customerId, setCustomerId] = useState<string | undefined>(() =>
     asked && customers.some((c) => c.id === asked) ? asked : undefined,
   );
@@ -86,7 +88,13 @@ function NewQuoteForm() {
     created.current = true;
     // A tech's quote is theirs, so a tech who sees only their own jobs still sees it.
     const mine = membership?.role === "tech" ? (user?.id ?? null) : null;
-    const { quoteId, newPool } = createQuote(services.sync, company.id, input, mine);
+    const { quoteId, newPool } = createQuote(
+      services.sync,
+      company.id,
+      input,
+      mine,
+      textOk ? { at: new Date().toISOString(), by: user?.id ?? null } : null,
+    );
     if (newPool) void locateAfterSync(company.id, { property_id: newPool });
     haptics.success();
     leave(() => router.replace(`/quotes/${quoteId}`));
@@ -110,6 +118,8 @@ function NewQuoteForm() {
             setPropertyId(undefined);
           }}
           fields={form}
+          textOk={textOk}
+          onTextOk={setTextOk}
           onField={set}
           errors={errors}
         />

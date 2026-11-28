@@ -20,6 +20,9 @@ import {
   splitEmails,
   type Property,
   friendlyError,
+  OK_TO_TEXT,
+  OK_TO_TEXT_HINT,
+  okToTextValue,
 } from "@leakbook/core";
 import type { JsonValue } from "@leakbook/sync";
 import { useState } from "react";
@@ -32,7 +35,8 @@ import { MaintenancePlans } from "../../../../../features/maintenance/Maintenanc
 import { AutopayGroup } from "../../../../../features/autopay/AutopayGroup";
 import { useRememberOpened } from "../../../../../features/search/useRememberOpened";
 import { useTeam } from "../../../../../data/schedule";
-import { useLine } from "../../../../../data/texting";
+import { useLine, type ConversationRow } from "../../../../../data/texting";
+import { useRows } from "../../../../../data/hooks";
 import { useRoutingOn } from "../../../../../lib/routing";
 import { AddressLine } from "../../../../../ui/NotOnMap";
 import { PoolForm } from "../../../../../features/pool/PoolForm";
@@ -100,6 +104,10 @@ export default function CustomerPage() {
         }
       : null,
   );
+
+  // A STOP reply from any of their numbers shows instead of OK to Text.
+  const conversations = useRows<ConversationRow>("conversation", company.id);
+  const repliedStop = conversations.some((c) => c.customer_id === id && c.opted_out);
 
   if (!customer) {
     return (
@@ -201,6 +209,10 @@ export default function CustomerPage() {
                 <ListRow
                   title="Phone"
                   detail={customer.phone ? formatPhone(customer.phone) : "None"}
+                />
+                <ListRow
+                  title={OK_TO_TEXT}
+                  detail={okToTextValue(customer.text_ok_at, repliedStop, company.timezone)}
                 />
                 <ListRow title="Email" detail={customer.email ?? "None"} />
                 {cc.length ? <ListRow title="Other emails" subtitle={cc.join(", ")} /> : null}
@@ -411,6 +423,7 @@ type CustomerFields = ReturnType<typeof useCustomerData>["customers"][number];
 
 function ContactForm({ customer, onSaved }: { customer: CustomerFields; onSaved: () => void }) {
   const company = useCompany();
+  const { user } = useSession();
   const canContact = useCanContact();
   const [f, setF] = useState({
     name: customer.name,
@@ -421,6 +434,7 @@ function ContactForm({ customer, onSaved }: { customer: CustomerFields; onSaved:
     cc: (customer.cc_emails ?? []).join(" "),
     notes: customer.notes ?? "",
     optOut: Boolean(customer.marketing_opt_out),
+    textOk: Boolean(customer.text_ok_at),
   });
   // Unsaved entries ask before closing (owner, 2026-10-20: "Discard changes?" everywhere).
   const [startF] = useState(f);
@@ -462,6 +476,12 @@ function ContactForm({ customer, onSaved }: { customer: CustomerFields; onSaved:
         : {}),
       notes: f.notes.trim() || null,
       marketing_opt_out: f.optOut,
+      // OK to Text: turned on now stamps today and who; left on keeps the first date.
+      ...(canContact && f.textOk !== Boolean(customer.text_ok_at)
+        ? f.textOk
+          ? { text_ok_at: new Date().toISOString(), text_ok_by: user?.id ?? null }
+          : { text_ok_at: null, text_ok_by: null }
+        : {}),
     } as Record<string, JsonValue>);
     haptics.success();
     draft.clear();
@@ -485,6 +505,15 @@ function ContactForm({ customer, onSaved }: { customer: CustomerFields; onSaved:
             value={f.phone}
             onChangeText={set("phone")}
             keyboardType="phone-pad"
+          />
+        ) : null}
+        {canContact ? (
+          <Toggle
+            inList
+            label={OK_TO_TEXT}
+            hint={OK_TO_TEXT_HINT}
+            value={f.textOk}
+            onChange={(v) => setF({ ...f, textOk: v })}
           />
         ) : null}
         {canContact ? (

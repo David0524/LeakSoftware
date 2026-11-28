@@ -1,6 +1,12 @@
 import { router, useLocalSearchParams } from "expo-router";
 import { ContactOnly } from "../../../../../features/messages/ContactOnly";
-import { formatPhone, friendlyError } from "@leakbook/core";
+import {
+  MARK_OK_TO_TEXT,
+  OK_TO_TEXT_REMINDER,
+  formatPhone,
+  friendlyError,
+  needsTextOk,
+} from "@leakbook/core";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Alert, Animated, Text, View } from "react-native";
 import {
@@ -18,7 +24,9 @@ import { Thread } from "../../../../../features/messages/Thread";
 import { recordOnMyWay } from "../../../../../features/today/OnMyWay";
 import { readOnMyWayDraft } from "../../../../../lib/heroMessage";
 import { getServices } from "../../../../../lib/services";
-import { useCompany } from "../../../../../state/session";
+import { useCompany, useSession } from "../../../../../state/session";
+import { useRows } from "../../../../../data/hooks";
+import { haptics } from "../../../../../ui/haptics";
 import {
   Button,
   Notice,
@@ -56,6 +64,9 @@ function ConversationScreen() {
   const company = useCompany();
   const line = useLine(company.id);
   const conversation = useConversations(company.id).find((c) => c.id === id);
+  const { user } = useSession();
+  const customers = useRows<{ id: string; text_ok_at?: string | null }>("customer", company.id);
+  const customer = customers.find((c) => c.id === conversation?.customer_id) ?? null;
   const items = useThread(company.id, id);
   const team = useTeam(company.id);
   const names = useMemo(() => new Map(team.map((t) => [t.user_id, t.name])), [team]);
@@ -170,6 +181,27 @@ function ConversationScreen() {
     }
   }
 
+  // OK to Text (owner, 2026-11-28: texts still go, with a reminder): one tap marks them, now.
+  const okReminder =
+    active && conversation.customer_id && needsTextOk(customer, conversation.opted_out) ? (
+      <Notice tone="warning">
+        <View style={{ gap: space["2"] }}>
+          <T>{OK_TO_TEXT_REMINDER}</T>
+          <Button
+            title={MARK_OK_TO_TEXT}
+            kind="secondary"
+            onPress={() => {
+              getServices().sync.write("customer", conversation.customer_id!, company.id, {
+                text_ok_at: new Date().toISOString(),
+                text_ok_by: user?.id ?? null,
+              });
+              haptics.success();
+            }}
+          />
+        </View>
+      </Notice>
+    ) : null;
+
   const composer = conversation.opted_out ? (
     <Notice tone="warning">
       {`${name} replied STOP, so texts to them are off. They can text START to turn them back on.`}
@@ -194,6 +226,7 @@ function ConversationScreen() {
       >
         {header}
         <Thread items={items} names={names} timeZone={company.timezone} urls={urls} />
+        {okReminder}
         {composer}
       </Animated.ScrollView>
       {active && !conversation.opted_out ? (

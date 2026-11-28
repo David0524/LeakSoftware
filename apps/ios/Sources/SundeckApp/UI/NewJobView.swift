@@ -178,6 +178,7 @@
                         .textContentType(.name)
                     OutlinedField(label: "Phone", text: $form.input.customerPhone, keyboard: .phonePad)
                         .textContentType(.telephoneNumber)
+                    SwitchRow(OkToText.label, detail: OkToText.hint, isOn: $form.textOk)
                     OutlinedField(
                         label: "Email", text: $form.input.customerEmail, error: form.errors["customerEmail"],
                         keyboard: .emailAddress

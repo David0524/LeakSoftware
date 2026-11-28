@@ -270,6 +270,9 @@ public struct CustomerDetail: Equatable, Sendable {
     public var pools: [CustomerPool]
     /// Charged automatically with a saved card (server-written; 2026-11-16-autopay.md).
     public var autopay = false
+    /// When the shop marked them OK to Text (OkToText), and whether they replied STOP.
+    public var textOkAt: String?
+    public var repliedStop = false
 
     /// "Homeowner · Blue Wave Pools".
     public var subtitle: String { [customerKindLabel(kind), companyName].compactMap { $0 }.joined(separator: " · ") }
@@ -331,7 +334,11 @@ public func customerDetail(
         id: c.id, row: c, name: c["name"]?.string ?? "Customer", kind: c["kind"]?.string ?? "homeowner",
         companyName: trimmed(c["company_name"]), phone: trimmed(c["phone"]), email: trimmed(c["email"]),
         otherEmails: c["cc_emails"]?.array?.compactMap(\.string) ?? [], notes: trimmed(c["notes"]),
-        remindersOn: c["marketing_opt_out"]?.bool != true, pools: pools, autopay: c["autopay"]?.bool == true)
+        remindersOn: c["marketing_opt_out"]?.bool != true, pools: pools, autopay: c["autopay"]?.bool == true,
+        textOkAt: trimmed(c["text_ok_at"]),
+        repliedStop: ((try? store.list("conversation", companyId: companyId)) ?? []).contains {
+            $0["customer_id"]?.string == customerId && $0["opted_out"]?.bool == true
+        })
 }
 
 /// Edits to a customer and their pools, through the sync layer (row + outbox).
@@ -341,7 +348,8 @@ public enum CustomerWrites {
     /// column).
     public static func saveContact(
         _ sync: SyncService, companyId: String, customerId: String, name: String, kind: String, companyName: String,
-        phone: String, email: String, notes: String, noReminders: Bool, canContact: Bool = true
+        phone: String, email: String, notes: String, noReminders: Bool, canContact: Bool = true,
+        textOk: Bool? = nil, wasTextOk: Bool = false, userId: String? = nil
     ) throws {
         let clean = { (s: String) -> JSONValue in
             let t = s.trimmingCharacters(in: .whitespacesAndNewlines)
@@ -355,8 +363,22 @@ public enum CustomerWrites {
         if canContact {
             values["phone"] = clean(phone)
             values["email"] = clean(email)
+            // OK to Text: turned on now stamps today and who; left on keeps the first date.
+            if let textOk, textOk != wasTextOk {
+                values["text_ok_at"] = textOk ? .string(OkToTextWrites.now()) : .null
+                values["text_ok_by"] = textOk ? (userId.map { .string($0) } ?? .null) : .null
+            }
         }
         try sync.write("customer", id: customerId, companyId: companyId, values)
+    }
+
+    /// OK to Text from a conversation: marked now, by this person.
+    public static func markOkToText(_ sync: SyncService, companyId: String, customerId: String, userId: String?)
+        throws
+    {
+        try sync.write(
+            "customer", id: customerId, companyId: companyId,
+            ["text_ok_at": .string(OkToTextWrites.now()), "text_ok_by": userId.map { .string($0) } ?? .null])
     }
 
     public static func savePool(_ sync: SyncService, companyId: String, propertyId: String, _ values: Row) throws {
@@ -408,4 +430,19 @@ public func validateCustomerContact(name: String, phone: String, email: String) 
     let e = email.trimmingCharacters(in: .whitespaces)
     if !e.isEmpty && (!e.contains("@") || !e.contains(".")) { return "Enter a valid email." }
     return nil
+}
+
+/// OK to Text's timestamp, as the website writes it ("2026-11-28T06:30:00.123Z").
+public enum OkToTextWrites {
+    public static func now(_ date: Date = Date()) -> String {
+        let f = ISO8601DateFormatter()
+        f.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
+        return f.string(from: date)
+    }
+
+    /// The fields a new customer gets when OK to Text is on (New Job, New Quote).
+    public static func fields(_ on: Bool, userId: String?) -> Row {
+        guard on else { return [:] }
+        return ["text_ok_at": .string(now()), "text_ok_by": userId.map { .string($0) } ?? .null]
+    }
 }

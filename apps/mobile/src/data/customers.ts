@@ -43,6 +43,7 @@ export type CustomerRow = Customer & {
   company_name?: string | null;
   cc_emails?: string[] | null;
   marketing_opt_out?: boolean | null;
+  text_ok_at?: string | null;
   notes?: string | null;
   created_at?: string | null;
   deleted_at?: string | null;

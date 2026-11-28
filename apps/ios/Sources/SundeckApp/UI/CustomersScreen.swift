@@ -258,6 +258,11 @@
                     // Numbers and emails only with Text and Call Customers (owner, 2026-11-23).
                     if canContact {
                         ListRow("Phone", value: c.phone ?? "None")
+                        ListRow(
+                            OkToText.label,
+                            value: OkToText.value(
+                                c.textOkAt, repliedStop: c.repliedStop,
+                                timeZone: session.company?.timeZone ?? "America/Phoenix"))
                         ListRow("Email", value: c.email ?? "None")
                     }
                     if canContact && !c.otherEmails.isEmpty {
@@ -454,6 +459,7 @@
         @State private var email = ""
         @State private var notes = ""
         @State private var noReminders = false
+        @State private var textOk = false
         @State private var error: String?
         @State private var ready = false
         /// Typed text kept until it's saved or discarded (owner, 2026-10-27).
@@ -463,7 +469,8 @@
             ready
                 && (name != customer.name || kind != customer.kind || company != (customer.companyName ?? "")
                     || phone != (customer.phone ?? "") || email != (customer.email ?? "")
-                    || notes != (customer.notes ?? "") || noReminders == customer.remindersOn)
+                    || notes != (customer.notes ?? "") || noReminders == customer.remindersOn
+                    || textOk != (customer.textOkAt != nil))
         }
 
         var body: some View {
@@ -478,6 +485,7 @@
                     if canContact {
                         LabeledFieldRow(label: "Phone", text: $phone, keyboard: .phonePad)
                         LabeledFieldRow(label: "Email", text: $email, keyboard: .emailAddress)
+                        SwitchRow(OkToText.label, detail: OkToText.hint, isOn: $textOk)
                     }
                 }
                 Grouped(
@@ -500,6 +508,7 @@
                 email = customer.email ?? ""
                 notes = customer.notes ?? ""
                 noReminders = !customer.remindersOn
+                textOk = customer.textOkAt != nil
                 ready = true
             }
             .keepsDraft(
@@ -526,7 +535,8 @@
             do {
                 try CustomerWrites.saveContact(
                     sync, companyId: companyId, customerId: customer.id, name: name, kind: kind, companyName: company,
-                    phone: phone, email: email, notes: notes, noReminders: noReminders, canContact: canContact)
+                    phone: phone, email: email, notes: notes, noReminders: noReminders, canContact: canContact,
+                    textOk: textOk, wasTextOk: customer.textOkAt != nil, userId: session.user?.id)
                 draft.clear()
                 saved()
                 dismiss()

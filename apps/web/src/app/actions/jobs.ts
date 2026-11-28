@@ -127,6 +127,24 @@ const CUSTOMER_KINDS = [
 const POOL_TYPES = ["gunite_plaster", "vinyl", "fiberglass", "other"] as const;
 
 /** Office: a customer's name, contact details, the other emails that get reports, and notes. */
+/** The OK to Text fields for a save: kept, newly marked (now, by this person), or cleared. */
+async function okToText(
+  supabase: Awaited<ReturnType<typeof createClient>>,
+  customerId: string,
+  form: FormData,
+  userId: string,
+): Promise<{ text_ok_at?: string | null; text_ok_by?: string | null }> {
+  const on = form.get("text_ok") === "on";
+  const { data } = await supabase
+    .from("customer")
+    .select("text_ok_at")
+    .eq("id", customerId)
+    .maybeSingle();
+  if (on)
+    return data?.text_ok_at ? {} : { text_ok_at: new Date().toISOString(), text_ok_by: userId };
+  return { text_ok_at: null, text_ok_by: null };
+}
+
 export async function saveCustomer(_: FormState, form: FormData): Promise<FormState> {
   const office = await getOffice();
   const id = text(form, "customer");
@@ -156,6 +174,8 @@ export async function saveCustomer(_: FormState, form: FormData): Promise<FormSt
         : {}),
       notes: text(form, "notes") || null,
       marketing_opt_out: form.get("no_followups") === "on",
+      // OK to Text: turned on now stamps today and who; left on keeps the first date.
+      ...(office.canContact ? await okToText(supabase, id, form, office.user.id) : {}),
     })
     .eq("id", id)
     .eq("company_id", office.company.id);
@@ -347,6 +367,8 @@ export async function createJobAction(_: FormState, form: FormData): Promise<For
         phone: input.customerPhone || null,
         email: input.customerEmail || null,
         cc_emails: splitEmails(text(form, "cc_emails")),
+        // OK to Text: create_job and create_service_plan stamp it now, by this person.
+        text_ok: form.get("text_ok") === "on",
       };
   const newProperty = propertyId
     ? null

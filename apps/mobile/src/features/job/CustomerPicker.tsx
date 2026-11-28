@@ -1,7 +1,7 @@
 import { useMemo } from "react";
-import type { Customer } from "@leakbook/core";
+import { OK_TO_TEXT, OK_TO_TEXT_HINT, type Customer } from "@leakbook/core";
 import { useCanContact } from "../../state/session";
-import { Button, Card, Field, Group, ListRow, T } from "../../ui/components";
+import { Button, Card, Field, Group, ListRow, T, Toggle } from "../../ui/components";
 
 export interface NewCustomerFields {
   customerName: string;
@@ -23,6 +23,8 @@ export function CustomerPicker({
   fields,
   onField,
   errors,
+  textOk,
+  onTextOk,
 }: {
   customers: Customer[];
   selectedId: string | undefined;
@@ -33,6 +35,9 @@ export function CustomerPicker({
   fields: NewCustomerFields;
   onField: (k: keyof NewCustomerFields) => (v: string) => void;
   errors: Partial<Record<keyof NewCustomerFields, string>>;
+  /** OK to Text for the new customer (ok-to-text.ts). */
+  textOk: boolean;
+  onTextOk: (v: boolean) => void;
 }) {
   const canContact = useCanContact();
   const selected = customers.find((c) => c.id === selectedId);
@@ -98,6 +103,7 @@ export function CustomerPicker({
         onChangeText={onField("customerPhone")}
         keyboardType="phone-pad"
       />
+      <Toggle label={OK_TO_TEXT} hint={OK_TO_TEXT_HINT} value={textOk} onChange={onTextOk} />
       <Field
         label="Email"
         value={fields.customerEmail}

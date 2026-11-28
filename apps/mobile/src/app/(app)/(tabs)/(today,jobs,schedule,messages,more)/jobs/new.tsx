@@ -123,6 +123,8 @@ function NewJobForm() {
   // Owners and admins can start a maintenance plan here: visits that repeat (website's New Job).
   const canPlan = isManagerRole(membership?.role);
   const [repeat, setRepeat] = useState<Repeat | "0">("0");
+  // OK to Text for a new customer (owner, 2026-11-28).
+  const [textOk, setTextOk] = useState(false);
   const plan = maintenance && canPlan && repeat !== "0";
   const members = useTeam(company.id);
   const offline = useSyncStatus().phase === "offline";
@@ -396,6 +398,8 @@ function NewJobForm() {
               phone: input.customerPhone.trim() || null,
               email: input.customerEmail.trim() || null,
               cc_emails: splitEmails(otherEmails),
+              // OK to Text: the server stamps it now, by this person.
+              text_ok: textOk,
             },
         existing_customer: customerId ?? null,
         new_property: propertyId
@@ -500,6 +504,7 @@ function NewJobForm() {
         sync.insert("customer", company.id, {
           ...records.customer!,
           cc_emails: splitEmails(otherEmails),
+          ...(textOk ? { text_ok_at: new Date().toISOString(), text_ok_by: user?.id ?? null } : {}),
         });
       const prop =
         propertyId ??
@@ -597,6 +602,8 @@ function NewJobForm() {
             pickPool(undefined);
           }}
           fields={form}
+          textOk={textOk}
+          onTextOk={setTextOk}
           onField={set}
           errors={errors}
         />

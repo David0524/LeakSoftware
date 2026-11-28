@@ -211,6 +211,22 @@ export async function setUnread(conversationId: string, unread: boolean) {
   return {};
 }
 
+/** OK to Text from a conversation: the customer said it's OK, marked now by this person. */
+export async function markOkToText(customerId: string) {
+  const office = await getOffice();
+  const supabase = await createClient();
+  const { error } = await supabase
+    .from("customer")
+    .update({ text_ok_at: new Date().toISOString(), text_ok_by: office.user.id })
+    .eq("id", customerId)
+    .eq("company_id", office.company.id)
+    .is("text_ok_at", null);
+  if (error) return { error: friendlyDbError(error.message) };
+  revalidatePath("/messages", "layout");
+  revalidatePath(`/customers/${customerId}`);
+  return {};
+}
+
 /** My own mobile number: calls I place ring it first, and incoming calls can ring it. */
 export async function saveMyPhone(_: FormState, form: FormData): Promise<FormState> {
   const office = await getOffice();

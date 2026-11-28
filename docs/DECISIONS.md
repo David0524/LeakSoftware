@@ -2,6 +2,11 @@
 
 Newest first. Each entry: date, decision, reason.
 
+## 2026-11-28 (owner: "Yes" to recording consent; "Allow, with a reminder"; placement "Yes, build it")
+- **OK to Text on each customer** (`customer.text_ok_at`, `text_ok_by`; `20261022006100_ok_to_text.sql`), all four platforms: a row under Phone on the customer page ("Yes · Nov 28, 2026", "Not yet", or "Replied STOP"), a switch in Edit Contact Details, and one on New Job's and New Quote's new-customer fields. Turning it on stamps the date and who; left on keeps the first date; off clears it. Anyone on the team can mark it, like the rest of the customer.
+- **Texts still go to customers not marked;** a conversation with one shows "Not marked OK to Text yet. Text only customers who said it's OK." with **Mark OK to Text** above the message box.
+- The Texting Terms and each shop's campaign say again that consent is recorded in Sundeck Pro, with the date.
+
 ## 2026-11-28 (owner asked how the business details are stored)
 - **Texting registrations live in `public.texting_registration`** (Supabase, encrypted at rest, SSL enforced): the shop's owners and admins read their own, the server alone writes, techs and other shops see nothing; the website and apps show only the EIN's last 4. Twilio holds its own copy (the phone companies need it).
 - **Kept out of the audit log** (`20261022006000_texting_registration_private.sql`): the trigger every synced table gets was copying each registration, EIN included, into `audit_log`, which managers read. The copies made so far (one test row) are deleted.

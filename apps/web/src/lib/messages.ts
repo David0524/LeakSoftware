@@ -20,7 +20,7 @@ export interface ConversationRow {
   id: string;
   phone: string;
   customer_id: string | null;
-  customer: { name: string } | null;
+  customer: { name: string; text_ok_at?: string | null } | null;
   last_at: string;
   last_preview: string | null;
   unread: boolean;
@@ -84,7 +84,7 @@ export async function getThread(office: Office, conversationId: string) {
     supabase
       .from("conversation")
       .select(
-        "id, phone, customer_id, last_at, last_preview, unread, opted_out, customer:customer!conversation_customer_id_company_id_fkey(name)",
+        "id, phone, customer_id, last_at, last_preview, unread, opted_out, customer:customer!conversation_customer_id_company_id_fkey(name, text_ok_at)",
       )
       .eq("id", conversationId)
       .eq("company_id", office.company.id)

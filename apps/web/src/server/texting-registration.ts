@@ -429,7 +429,7 @@ function jobPosition(title: string) {
 function campaignText(shop: string) {
   return {
     description: `${shop} is a pool service and leak detection company. It texts its own customers about their appointments (on the way, arrival times), service reports, quotes and invoices, and answers their questions.`,
-    flow: `Customers give ${shop} their mobile number when they book a pool service or leak detection visit, by phone, in person, or on ${shop}'s website or service form, and say it's OK to text them. ${shop} uses Sundeck Pro, its field service software, to send them. Texts are about the customer's own service only, usually a few per visit. Message and data rates may apply. Reply STOP to opt out, HELP for help. Texting terms: https://sundeckpro.com/texting-terms Privacy policy: https://sundeckpro.com/privacy`,
+    flow: `Customers give ${shop} their mobile number when they book a pool service or leak detection visit, by phone, in person, or on ${shop}'s website or service form, and say it's OK to text them; ${shop} records that in Sundeck Pro, its field service software (OK to Text, with the date and who recorded it). Texts are about the customer's own service only, usually a few per visit. Message and data rates may apply. Reply STOP to opt out, HELP for help. Texting terms: https://sundeckpro.com/texting-terms Privacy policy: https://sundeckpro.com/privacy`,
     samples: [
       `${shop}: Hi Sam, Alex is on the way and should arrive around 10:30 AM. Reply STOP to opt out.`,
       `${shop}: Your leak detection report is ready: https://sundeckpro.com/r/7f3k2q Questions? Just reply. Reply STOP to opt out.`,
