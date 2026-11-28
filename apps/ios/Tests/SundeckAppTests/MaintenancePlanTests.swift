@@ -120,6 +120,7 @@ extension NewJobFormTests {
         #expect(
             args["new_customer"] == [
                 "name": "Maria Lopez", "phone": "602-555-0101", "email": nil, "cc_emails": ["a@x.com"],
+                "text_ok": false,
             ])
         #expect(
             args["new_property"] == [
