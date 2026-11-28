@@ -76,18 +76,27 @@ public let businessFields: [BusinessFieldSpec] = [
 public struct BusinessSection: Sendable {
     public let title: String
     public let keys: [String]
+    /// What phone companies check in this group (core BUSINESS_GROUP_FOOTER).
+    public let footer: String
 }
 
 /// The two groups the form shows them in (core BUSINESS_SECTIONS).
 public let businessSections: [BusinessSection] = [
     .init(
         title: "Business",
-        keys: ["legal_name", "business_type", "ein", "street", "city", "state", "postal_code", "website"]),
-    .init(title: "Contact person", keys: ["first_name", "last_name", "title", "email", "phone"]),
+        keys: ["legal_name", "business_type", "ein", "street", "city", "state", "postal_code", "website"],
+        footer:
+            "Use your legal name and address exactly as on your IRS EIN letter. No website? Use a Facebook, Instagram, or Yelp page that’s been active for a few weeks. Phone companies check that it shows your business name, services, and how to reach you."
+    ),
+    .init(
+        title: "Contact person", keys: ["first_name", "last_name", "title", "email", "phone"],
+        footer:
+            "Use a cell phone that gets texts, not a landline. Phone companies may text it to confirm. Reply YES within 24 hours."
+    ),
 ]
 
 public let businessFooter =
-    "Phone companies require this before your shop can text customers. Use your legal name and address exactly as on your IRS EIN letter. No website? A Facebook or Google business page works. We submit it for you."
+    "Phone companies require this before your shop can text customers. We submit it for you."
 
 public enum RegistrationText {
     public static let getNumber = "Get a number"

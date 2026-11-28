@@ -885,7 +885,7 @@
             @Bindable var model = model
             return VStack(alignment: .leading, spacing: 16) {
                 ForEach(businessSections, id: \.title) { section in
-                    Grouped(label: section.title) {
+                    Grouped(label: section.title, footer: section.footer) {
                         ForEach(section.keys, id: \.self) { key in
                             if key == "business_type" {
                                 businessTypeRow(model)

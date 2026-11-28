@@ -65,6 +65,8 @@ function twilio(url: string, init?: RequestInit) {
     failNext = null;
     return json({ message: "Service unavailable", code: 20500 }, 503);
   }
+  if (path.includes("/v2/PhoneNumbers/"))
+    return json({ line_type_intelligence: { type: status.line ?? "mobile" } });
   if (path.endsWith("/Accounts.json")) return json({ sid: "AC_shop", auth_token: "tok" });
   if (path.includes("/AvailablePhoneNumbers/US/TollFree"))
     return json({ available_phone_numbers: [{ phone_number: "+18885550100" }] });
@@ -194,6 +196,26 @@ describe("a toll-free number", () => {
     expect(
       calls.filter((c) => c.startsWith("POST") && c.includes("IncomingPhoneNumbers")),
     ).toHaveLength(1);
+  });
+});
+
+describe("the contact person's mobile", () => {
+  it("must get texts: a landline is refused before anything is bought", async () => {
+    status.line = "landline";
+    const r = await reg.startRegistration(
+      owner,
+      "c1",
+      "u1",
+      { kind: "toll_free", business },
+      ORIGIN,
+    );
+    expect(r).toMatchObject({ fields: { phone: reg.NOT_A_CELL } });
+    expect(tables.texting_registration ?? []).toHaveLength(0);
+    expect(calls.some((c) => c.includes("Accounts.json"))).toBe(false);
+    status.line = "mobile";
+    expect(
+      await reg.startRegistration(owner, "c1", "u1", { kind: "toll_free", business }, ORIGIN),
+    ).toEqual({ message: expect.any(String) });
   });
 });
 

@@ -4,6 +4,7 @@ import { useActionState, useState } from "react";
 import {
   BUSINESS_FIELDS,
   BUSINESS_FOOTER,
+  BUSINESS_GROUP_FOOTER,
   BUSINESS_SECTIONS,
   BUSINESS_TYPES,
   BUSINESS_TYPE_LABEL,
@@ -130,6 +131,9 @@ function BusinessFields({
               );
             })}
           </SettingsFields>
+          <p className="mt-2 px-4 text-[0.9375rem] text-text-muted sm:px-0">
+            {BUSINESS_GROUP_FOOTER[section.title]}
+          </p>
         </div>
       ))}
       <p className="px-4 text-[0.9375rem] text-text-muted sm:px-0">{BUSINESS_FOOTER}</p>

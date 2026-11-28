@@ -65,6 +65,8 @@ describe("business details", () => {
     expect(normalizeWebsite("https://www.example.com/")).toBe("https://www.example.com");
     expect(normalizeWebsite("example.com/pools")).toBe("https://example.com/pools");
     expect(normalizeWebsite("example")).toBeNull();
+    // Phone companies want the secure address.
+    expect(normalizeWebsite("http://www.example.com")).toBe("https://www.example.com");
   });
 });
 
@@ -75,6 +77,9 @@ describe("registration status", () => {
     );
     expect(registrationStatus("registering", "own", null, null).detail).toContain(
       "Calls keep ringing",
+    );
+    expect(registrationStatus("registering", "local", null, null).detail).toContain(
+      "reply YES within 24 hours",
     );
     expect(registrationStatus("ready", "local", "(702) 555-0100", null).detail).toBe(
       "Your customers can text (702) 555-0100.",

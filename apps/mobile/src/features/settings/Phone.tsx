@@ -4,6 +4,7 @@ import { StyleSheet, Text, View } from "react-native";
 import {
   BUSINESS_FIELDS,
   BUSINESS_FOOTER,
+  BUSINESS_GROUP_FOOTER,
   BUSINESS_SECTIONS,
   BUSINESS_TYPES,
   BUSINESS_TYPE_LABEL,
@@ -284,7 +285,11 @@ function BusinessForm({
   return (
     <>
       {BUSINESS_SECTIONS.map((section) => (
-        <Section key={section.title} title={section.title}>
+        <Section
+          key={section.title}
+          title={section.title}
+          footer={BUSINESS_GROUP_FOOTER[section.title]}
+        >
           <FieldGroup labelWidth={110}>
             {section.keys.map((key) => {
               if (key === "business_type")

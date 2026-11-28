@@ -97,8 +97,19 @@ export const BUSINESS_SECTIONS: readonly { title: string; keys: readonly Busines
   { title: "Contact person", keys: ["first_name", "last_name", "title", "email", "phone"] },
 ];
 
+/**
+ * What phone companies check in each group (as Housecall Pro tells its pros, 2026-11-28): the
+ * website shows the business, and the contact's mobile gets texts.
+ */
+export const BUSINESS_GROUP_FOOTER: Record<string, string> = {
+  Business:
+    "Use your legal name and address exactly as on your IRS EIN letter. No website? Use a Facebook, Instagram, or Yelp page that’s been active for a few weeks. Phone companies check that it shows your business name, services, and how to reach you.",
+  "Contact person":
+    "Use a cell phone that gets texts, not a landline. Phone companies may text it to confirm. Reply YES within 24 hours.",
+};
+
 export const BUSINESS_FOOTER =
-  "Phone companies require this before your shop can text customers. Use your legal name and address exactly as on your IRS EIN letter. No website? A Facebook or Google business page works. We submit it for you.";
+  "Phone companies require this before your shop can text customers. We submit it for you.";
 
 const US_STATES = new Set(
   (
@@ -107,7 +118,10 @@ const US_STATES = new Set(
   ).split(" "),
 );
 
-/** "https://bluewavepools.com" from "bluewavepools.com", or null when it isn't a web address. */
+/**
+ * "https://bluewavepools.com" from "bluewavepools.com" (or "http://…": phone companies want the
+ * secure address), or null when it isn't a web address.
+ */
 export function normalizeWebsite(input: string): string | null {
   const t = input.trim();
   if (!t) return null;
@@ -115,7 +129,7 @@ export function normalizeWebsite(input: string): string | null {
   try {
     const u = new URL(withScheme);
     if (!/^[a-z0-9-]+(\.[a-z0-9-]+)+$/i.test(u.hostname)) return null;
-    return u.origin + (u.pathname === "/" ? "" : u.pathname);
+    return `https://${u.host}${u.pathname === "/" ? "" : u.pathname}`;
   } catch {
     return null;
   }
@@ -159,7 +173,7 @@ export function checkBusinessDetails(
   if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) fields.email = "Enter an email address.";
 
   const phone = toE164(s("phone"));
-  if (!phone) fields.phone = "Enter a US mobile number.";
+  if (!phone) fields.phone = "Enter a US cell phone number.";
 
   if (Object.keys(fields).length) return { fields };
   return {
@@ -180,6 +194,10 @@ export function checkBusinessDetails(
     },
   };
 }
+
+/** If the phone companies text the contact person to confirm (Housecall Pro's pros see the same). */
+const REPLY_YES =
+  "If your contact person gets a text asking them to confirm, reply YES within 24 hours.";
 
 /** What the shop sees about a registration. */
 export type RegistrationStage = "registering" | "verify_number" | "ready" | "needs_changes";
@@ -224,10 +242,10 @@ export function registrationStatus(
         title: "Registering…",
         detail:
           kind === "own"
-            ? "Phone companies are reviewing your business. This usually takes one to three weeks. We’ll call or email your contact person to confirm the number is yours. Calls keep ringing where they do today."
+            ? `Phone companies are reviewing your business. This usually takes one to three weeks. We’ll call or email your contact person to confirm the number is yours. Calls keep ringing where they do today. ${REPLY_YES}`
             : kind === "toll_free"
-              ? "Phone companies are reviewing your business. This usually takes about a week. Calls to the number already work."
-              : "Phone companies are reviewing your business. This usually takes one to three weeks. Calls to the number already work.",
+              ? `Phone companies are reviewing your business. This usually takes about a week. Calls to the number already work. ${REPLY_YES}`
+              : `Phone companies are reviewing your business. This usually takes one to three weeks. Calls to the number already work. ${REPLY_YES}`,
         tone: "info",
       };
   }

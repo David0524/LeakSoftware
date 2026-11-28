@@ -20,6 +20,7 @@ import {
   accountApi,
   buyNumber,
   createSubaccount,
+  lineType,
   numberWebhooks,
   searchNumbers,
   subaccountAuth,
@@ -92,6 +93,19 @@ export const STEPS: Record<RegistrationKind, string[]> = {
   local: ["account", "number", ...A2P_STEPS, "attach", "ready"],
   own: ["account", ...A2P_STEPS, "hosted_wait", "attach", "ready"],
 };
+
+/** Lines that can't get a confirmation text (Twilio Lookup's types). */
+const NOT_TEXTABLE = ["landline", "fixedVoip", "tollFree", "pager", "voicemail", "uan"];
+export const NOT_A_CELL = "This looks like a landline. Use a cell phone that gets texts.";
+
+/**
+ * The contact person's mobile must get texts: phone companies may text it to confirm the
+ * business (as Housecall Pro checks for its pros). Unknown answers are let through.
+ */
+async function contactCanText(phone: string): Promise<boolean> {
+  const type = await lineType(phone);
+  return !type || !NOT_TEXTABLE.includes(type);
+}
 
 /** Plain words for staff: what each step is doing. */
 export const STEP_LABEL: Record<string, string> = {
@@ -197,6 +211,8 @@ export async function startRegistration(
     if (kind !== "toll_free" && !number) fields.number = "Enter a US phone number.";
     return { error: "Check the highlighted fields.", fields };
   }
+  if (!(await contactCanText(checked.details.phone)))
+    return { error: "Check the highlighted fields.", fields: { phone: NOT_A_CELL } };
   if (await currentRegistration(db, companyId))
     return { error: "This shop is already setting up a number." };
   const existing = await activeLine(db, companyId);
@@ -315,6 +331,8 @@ export async function updateRegistration(
   const checked = checkBusinessDetails({ ...business, ein });
   if ("fields" in checked)
     return { error: "Check the highlighted fields.", fields: checked.fields };
+  if (!(await contactCanText(checked.details.phone)))
+    return { error: "Check the highlighted fields.", fields: { phone: NOT_A_CELL } };
 
   // Keep what isn't a review: the subaccount, the number, the Messaging Service.
   const keep = ["account_sid", "number", "number_sid", "messaging_service_sid"];

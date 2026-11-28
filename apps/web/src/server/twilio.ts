@@ -308,3 +308,19 @@ export function twiml(body: string): Response {
     headers: { "content-type": "text/xml" },
   });
 }
+
+/**
+ * What kind of line a number is (Twilio Lookup: "mobile", "landline", "fixedVoip", …), or null
+ * when it can't be told (no Twilio, or Lookup didn't answer). About a cent a lookup.
+ */
+export async function lineType(e164: string): Promise<string | null> {
+  if (!twilioConfigured()) return null;
+  try {
+    const r = await twilioRequest<{ line_type_intelligence?: { type?: string | null } | null }>(
+      `https://lookups.twilio.com/v2/PhoneNumbers/${encodeURIComponent(e164)}?Fields=line_type_intelligence`,
+    );
+    return r.line_type_intelligence?.type ?? null;
+  } catch {
+    return null;
+  }
+}

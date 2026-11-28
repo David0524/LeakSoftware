@@ -2,6 +2,11 @@
 
 Newest first. Each entry: date, decision, reason.
 
+## 2026-11-28 (owner: "Make the improvements", after comparing Housecall Pro's texting registration)
+- **Housecall Pro asks for the same details** (legal name and address as on the EIN letter, EIN, type, website, a representative) and publishes no registration fee; its texting is a new local number only, calls forwarding to the business's own.
+- **Website guidance as theirs:** the Business group says to use a Facebook, Instagram, or Yelp page that's been active for a few weeks when there's no website, and every address is sent as https.
+- **The contact person's mobile must get texts:** with Twilio connected, the number is looked up (Twilio Lookup, about a cent) and a landline is refused before anything is filed; the Contact person group and the Registering… status say to reply YES within 24 hours if the phone companies text to confirm.
+
 ## 2026-11-27 (owner: "Do it", texting registration)
 - **Built on all four platforms** (`docs/plans/texting-registration.md`): Settings › Phone and Texting offers Get a Toll-Free Number, Get a Local Number, or Use My Own Number, then the Business Details form; the status line says Registering…, Needs Changes (with Edit Business Details and Send Again), or the number when it's ready. Older apps' "take"/"keep" are asked to update.
 - **Each shop gets its own Twilio subaccount** (Twilio's ISV setup registers as the sending account). The server files the secondary business profile, A2P profile, Low-Volume brand, Messaging Service and campaign (or the toll-free verification), saves every Twilio id at once so a retry never pays twice, and checks every 30 minutes (`/api/cron/texting`). Webhooks from a subaccount are checked with that subaccount's token, read from Twilio, never stored.
