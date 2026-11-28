@@ -164,18 +164,23 @@
         var labelWidth: CGFloat = 96
         /// A new password: show the rules as they're met.
         var meter = false
+        /// No label beside it: "Password" is the gray hint inside (owner, 2026-11-27; `LabeledFieldRow`).
+        var labelInside = false
         @State private var shown = false
 
         var body: some View {
+            let prompt = Text(labelInside ? label : "Required").foregroundStyle(Color.placeholder)
             VStack(alignment: .leading, spacing: 4) {
                 HStack(spacing: 12) {
-                    Text(label).textRole(.body).foregroundStyle(Color.text).frame(
-                        width: labelWidth, alignment: .leading)
+                    if !labelInside {
+                        Text(label).textRole(.body).foregroundStyle(Color.text).frame(
+                            width: labelWidth, alignment: .leading)
+                    }
                     Group {
                         if shown {
-                            TextField("", text: $text, prompt: Text("Required").foregroundStyle(Color.placeholder))
+                            TextField("", text: $text, prompt: prompt)
                         } else {
-                            SecureField("", text: $text, prompt: Text("Required").foregroundStyle(Color.placeholder))
+                            SecureField("", text: $text, prompt: prompt)
                         }
                     }
                     .textRole(.body)
@@ -278,13 +283,12 @@
                 }
                 Grouped {
                     LabeledFieldRow(
-                        label: "Email", text: $email, placeholder: "name@example.com", keyboard: .emailAddress,
-                        labelWidth: 96, contentType: .username
+                        label: "Email", text: $email, keyboard: .emailAddress, contentType: .username, labelInside: true
                     )
                     .textInputAutocapitalization(.never)
                     .autocorrectionDisabled()
                     .submitLabel(.next)
-                    SecureFieldRow(label: "Password", text: $password)
+                    SecureFieldRow(label: "Password", text: $password, labelInside: true)
                         .submitLabel(.go)
                         .onSubmit { Task { await signIn() } }
                 }
@@ -346,8 +350,8 @@
             } content: {
                 Grouped {
                     LabeledFieldRow(
-                        label: "Email", text: $form.email, placeholder: "name@example.com", keyboard: .emailAddress,
-                        labelWidth: 96, contentType: .username
+                        label: "Email", text: $form.email, keyboard: .emailAddress, contentType: .username,
+                        labelInside: true
                     )
                     .textInputAutocapitalization(.never)
                     .autocorrectionDisabled()
@@ -392,15 +396,14 @@
                 Text("If your company already uses Sundeck Pro, ask the owner to invite this email, then sign up here.")
             } content: {
                 Grouped {
+                    LabeledFieldRow(label: "Name", text: $name, contentType: .name, labelInside: true)
                     LabeledFieldRow(
-                        label: "Name", text: $name, placeholder: "Required", labelWidth: 96, contentType: .name)
-                    LabeledFieldRow(
-                        label: "Email", text: $email, placeholder: "name@example.com", keyboard: .emailAddress,
-                        labelWidth: 96, contentType: .username
+                        label: "Email", text: $email, keyboard: .emailAddress, contentType: .username, labelInside: true
                     )
                     .textInputAutocapitalization(.never)
                     .autocorrectionDisabled()
-                    SecureFieldRow(label: "Password", text: $password, contentType: .newPassword, meter: true)
+                    SecureFieldRow(
+                        label: "Password", text: $password, contentType: .newPassword, meter: true, labelInside: true)
                 }
                 HeardFromRows(key: $heardFrom, other: $heardFromOther)
                 if let error { Notice(kind: .error, text: error) }
@@ -551,8 +554,8 @@
                 } content: {
                     Grouped {
                         LabeledFieldRow(
-                            label: "Code", text: $code, placeholder: "123456", keyboard: .numberPad, labelWidth: 96,
-                            contentType: .oneTimeCode
+                            label: "Code", text: $code, keyboard: .numberPad, contentType: .oneTimeCode,
+                            labelInside: true
                         )
                         .onChange(of: code) { _, new in if new.count > 7 { code = String(new.prefix(7)) } }
                     }
@@ -639,7 +642,7 @@
                 label: "Join your team",
                 footer: "Use the invite code your owner sent to \(session.user?.email ?? "your email")."
             ) {
-                LabeledFieldRow(label: "Invite code", text: $invite, placeholder: "From your email", labelWidth: 112)
+                LabeledFieldRow(label: "Invite code", text: $invite, labelInside: true)
                     .textInputAutocapitalization(.never)
                     .autocorrectionDisabled()
                     .submitLabel(.join)
@@ -746,7 +749,7 @@
                     Text("Signed in as \(session.user?.email ?? ""). Everything on this phone stays put.")
                 } content: {
                     Grouped {
-                        SecureFieldRow(label: "Password", text: $password)
+                        SecureFieldRow(label: "Password", text: $password, labelInside: true)
                             .submitLabel(.go)
                             .onSubmit { Task { await signIn() } }
                     }

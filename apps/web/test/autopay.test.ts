@@ -366,6 +366,13 @@ describe("charging a saved card", () => {
       pay_method: "card",
       paid_account: "acct_shop",
     });
+    // The fee is kept beside the payment, for the receipt (owner, 2026-11-24).
+    expect(calls.find((c) => c.fn === "stripe_record_card_fee")?.args).toEqual({
+      session_id: null,
+      intent_id: "pi_1",
+      fee: 492,
+      paid_account: "acct_shop",
+    });
   });
 
   it("a bank account has no card fee and is processing until it clears", async () => {

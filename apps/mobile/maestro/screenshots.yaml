@@ -9,11 +9,11 @@ appId: com.sundeckpro.app
     permissions:
       all: allow
 - extendedWaitUntil:
-    visible: "name@example.com"
+    visible: "Email"
     timeout: 90000
-- tapOn: "name@example.com"
+- tapOn: "Email"
 - inputText: ${EMAIL}
-- tapOn: "Required"
+- tapOn: "Password"
 - inputText: ${PASSWORD}
 - pressKey: Enter
 # The first sign-in downloads the shop to the phone.

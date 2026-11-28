@@ -103,22 +103,53 @@
         }
     }
 
-    /// The day's progress: a thin white bar on a faint track.
+    /// How much of each of the day's stops is filled, from the day's progress: done stops full,
+    /// the current one part way (owner, 2026-11-24: progress bars that begin with a bit filled).
+    public func liveStopPieces(_ value: Double, stops: Int) -> [Double] {
+        let filled = min(1, max(0, value)) * Double(stops)
+        return (0..<max(0, stops)).map { min(1, max(0, filled - Double($0))) }
+    }
+
+    /// The day's progress: one thin white piece per stop on a faint track (owner, 2026-11-24),
+    /// or one bar when there are too many stops (or none known) to tell apart.
     public struct LiveStopProgress: View {
         public var value: Double
+        public var stops: Int
 
-        public init(value: Double) { self.value = value }
+        public init(value: Double, stops: Int = 0) {
+            self.value = value
+            self.stops = stops
+        }
 
         public var body: some View {
-            GeometryReader { geo in
-                ZStack(alignment: .leading) {
-                    Capsule().fill(LiveStopStyle.track)
-                    Capsule().fill(LiveStopStyle.accent)
-                        .frame(width: max(geo.size.height, geo.size.width * min(1, max(0, value))))
+            HStack(spacing: 4) {
+                if (2...12).contains(stops) {
+                    ForEach(Array(liveStopPieces(value, stops: stops).enumerated()), id: \.offset) { _, part in
+                        LiveStopBar(value: part)
+                    }
+                } else {
+                    LiveStopBar(value: value)
                 }
             }
             .frame(height: 4)
             .accessibilityHidden(true)
+        }
+    }
+
+    /// One piece of the bar: white over the faint track, nothing drawn while empty.
+    struct LiveStopBar: View {
+        var value: Double
+
+        var body: some View {
+            GeometryReader { geo in
+                ZStack(alignment: .leading) {
+                    Capsule().fill(LiveStopStyle.track)
+                    if value > 0 {
+                        Capsule().fill(LiveStopStyle.accent)
+                            .frame(width: max(geo.size.height, geo.size.width * min(1, value)))
+                    }
+                }
+            }
         }
     }
 
@@ -181,11 +212,17 @@
         public var content: LiveStopContent
         public var size: CGFloat
         public var alignment: HorizontalAlignment
+        /// Under the figure: its label ("Stop"), or in the Dynamic Island the step ("Up next").
+        public var label: String
 
-        public init(content: LiveStopContent, size: CGFloat = 34, alignment: HorizontalAlignment = .trailing) {
+        public init(
+            content: LiveStopContent, size: CGFloat = 34, alignment: HorizontalAlignment = .trailing,
+            label: String? = nil
+        ) {
             self.content = content
             self.size = size
             self.alignment = alignment
+            self.label = label ?? content.figureLabel
         }
 
         /// A calendar for "Today" (a day without its place); never a clock (no clock times).
@@ -206,10 +243,10 @@
                         .lineLimit(1)
                         .minimumScaleFactor(0.6)
                 }
-                if !content.figureLabel.isEmpty || symbol != nil {
+                if !label.isEmpty || symbol != nil {
                     HStack(spacing: 3) {
                         if let symbol { Image(systemName: symbol) }
-                        if !content.figureLabel.isEmpty { Text(content.figureLabel) }
+                        if !label.isEmpty { Text(label) }
                     }
                     .font(LiveStopStyle.small(.semibold))
                     .foregroundStyle(LiveStopStyle.muted)
@@ -287,7 +324,7 @@
                     Spacer(minLength: 4)
                     LiveStopFigure(content: content)
                 }
-                LiveStopProgress(value: content.progress)
+                LiveStopProgress(value: content.progress, stops: content.stops)
             }
             // More room above the top row's buttons (owner, 2026-10-21: "cramped at the top").
             .padding(.horizontal, 16)
@@ -306,18 +343,21 @@
             LiveStopMark(logo: logo, height: 30).padding(.leading, 4)
         }
 
-        /// Trailing: the figure.
+        /// Trailing: the figure, with the step under it ("Up next", "On the way"), since the
+        /// name stands alone (owner, 2026-11-24).
         public static func trailing(_ content: LiveStopContent) -> some View {
-            LiveStopFigure(content: content, size: 26).padding(.trailing, 4)
+            LiveStopFigure(content: content, size: 26, label: content.step).padding(.trailing, 4)
         }
 
-        /// Center: the headline.
+        /// Center: the customer's name, larger and left-aligned over the address (owner,
+        /// 2026-11-24: it was centered with "Up next:", and everything under it is left-aligned).
         public static func center(_ content: LiveStopContent) -> some View {
-            Text(content.headline)
-                .font(LiveStopStyle.display(18))
+            Text(content.name.isEmpty ? content.headline : content.name)
+                .font(LiveStopStyle.display(21))
                 .foregroundStyle(LiveStopStyle.text)
                 .lineLimit(1)
                 .minimumScaleFactor(0.75)
+                .frame(maxWidth: .infinity, alignment: .leading)
         }
 
         /// Bottom: the stop, the access notes and the cleanings due, and the progress, then Call
@@ -335,7 +375,7 @@
                 }
                 .accessibilityElement(children: .ignore)
                 .accessibilityLabel(content.spoken)
-                LiveStopProgress(value: content.progress)
+                LiveStopProgress(value: content.progress, stops: content.stops)
                 HStack(spacing: 8) {
                     if let call {
                         Link(destination: call) {
@@ -359,17 +399,24 @@
             }
         }
 
-        /// Compact trailing: the few characters ("9:42", "4/9", "✓").
+        /// Compact trailing: the few characters ("1/3", "4/9", "✓"), larger (owner, 2026-11-24:
+        /// "we can make it bigger"; the island's height is the camera's, so the type grows, not
+        /// the island). No ring beside it: it would say the same as the count (owner).
         public static func compact(_ content: LiveStopContent) -> some View {
             Text(content.compact)
-                .font(LiveStopStyle.display(15))
+                .font(LiveStopStyle.display(18))
                 .monospacedDigit()
                 .foregroundStyle(LiveStopStyle.island)
+                .lineLimit(1)
+                .fixedSize()
                 .accessibilityLabel(content.spoken)
         }
 
-        /// Compact leading and minimal: the mark.
-        public static func mark(logo: Image?) -> some View { LiveStopMark(logo: logo, height: 20) }
+        /// Compact leading: the mark, larger (owner, 2026-11-24).
+        public static func mark(logo: Image?) -> some View { LiveStopMark(logo: logo, height: 25) }
+
+        /// Minimal (beside another app's activity): the mark, in the small circle.
+        public static func minimal(logo: Image?) -> some View { LiveStopMark(logo: logo, height: 20) }
     }
 
     /// A Live Activity action as a round icon button, 44 points, white on a faint fill (owner,

@@ -144,6 +144,44 @@ import Testing
         #expect(reportDisclaimerProblem(String(repeating: "a", count: 20_001)) == "Keep it under 20,000 characters.")
     }
 
+    // MARK: - Second business and the tech on reports (2026-11-26)
+
+    @Test func secondBusinessSavesAndNamesTheJobs() throws {
+        let s = try Shell()
+        try s.seedCompany(userId: "u1", role: "owner", settings: ["services": "both"])
+        var form = SecondBusinessForm(try s.sync.store.get("company", "c1"))
+        #expect(form.name.isEmpty && form.useFor == .leak && form.logoPath == nil)
+        form.name = " Southern Nevada Leak Detection "
+        form.primary = "#0a5c8a"
+        form.reviewURL = "g.page/x"
+        #expect(form.errors == ["second_review_url": Limits.reviewLinkText])
+        form.reviewURL = ""
+        #expect(form.errors.isEmpty)
+        try ShopSettingsWrites.saveSecondBusiness(s.sync, companyId: "c1", form)
+        let row = try s.sync.store.get("company", "c1")
+        #expect(row?["second_name"] == "Southern Nevada Leak Detection" && row?["second_brand_primary"] == "#0A5C8A")
+        #expect(row?["second_phone"] == .null && row?["second_for"] == "leak")
+        #expect(SecondBusinessForm(row).name == "Southern Nevada Leak Detection")
+
+        let leak = try s.sync.insert("job", companyId: "c1", ["type": "detection", "status": "scheduled"])
+        let repair = try s.sync.insert(
+            "job", companyId: "c1", ["type": "repair", "status": "scheduled", "parent_job_id": .string(leak)])
+        let visit = try s.sync.insert("job", companyId: "c1", ["type": "maintenance", "status": "scheduled"])
+        let name = { (id: String?) in
+            customerBusinessName(s.sync.store, companyId: "c1", fallbackName: "Demo Leak Co.", jobId: id)
+        }
+        #expect(name(leak) == "Southern Nevada Leak Detection" && name(repair) == "Southern Nevada Leak Detection")
+        #expect(name(visit) == "Demo Leak Co." && name(nil) == "Demo Leak Co.")
+        try s.sync.write("job", id: leak, companyId: "c1", ["business": "main"])
+        #expect(name(leak) == "Demo Leak Co." && name(repair) == "Demo Leak Co.")
+
+        try ShopSettingsWrites.saveTechOnReports(
+            s.sync, companyId: "c1", settings: row?["settings"], true)
+        let settings = try s.sync.store.get("company", "c1")?["settings"]
+        #expect(showsTechOnReports(settings) && settings?["services"] == "both")
+        #expect(myMembership(s.sync.store, companyId: "c1", userId: "u1")?.id == "m1")
+    }
+
     // MARK: - Scheduling and Routes
 
     @Test func schedulingFormSavesTheRoutingSettings() {

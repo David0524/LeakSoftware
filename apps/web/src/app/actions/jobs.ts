@@ -537,6 +537,15 @@ export async function createJobAction(_: FormState, form: FormData): Promise<For
     components,
   });
   if (error) return { error: friendlyDbError(error.message) };
+  // New Job's Business row (2026-11-26), only when picked: otherwise the job stays automatic.
+  const business = text(form, "business");
+  if (business === "main" || business === "second") {
+    const { error: businessError } = await supabase
+      .from("job")
+      .update({ business })
+      .eq("id", data as string);
+    if (businessError) return { error: friendlyDbError(businessError.message) };
+  }
   // Coordinates for routing, from the address (when the routing service is set up).
   const { data: made } = await supabase
     .from("job")
@@ -560,4 +569,23 @@ export async function createJobAction(_: FormState, form: FormData): Promise<For
   revalidatePath("/jobs");
   revalidatePath("/schedule");
   redirect(`/jobs/${data as string}`);
+}
+
+/** The job page's Business row (2026-11-26): which of the shop's businesses the job uses. */
+export async function setJobBusiness(input: {
+  jobId: string;
+  business: "main" | "second";
+}): Promise<FormState> {
+  const office = await getOffice();
+  if (!isUuid(input.jobId)) return { error: "Couldn’t find this job." };
+  const business = input.business === "second" ? "second" : "main";
+  const supabase = await createClient();
+  const { error } = await supabase
+    .from("job")
+    .update({ business })
+    .eq("company_id", office.company.id)
+    .eq("id", input.jobId);
+  if (error) return { error: friendlyDbError(error.message) };
+  revalidatePath(`/jobs/${input.jobId}`);
+  return {};
 }

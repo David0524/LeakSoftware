@@ -25,6 +25,7 @@ import { ColorPicker, ContactSwitch, MemberSwitch, RolePopUp } from "@/component
 import { StartFromForm } from "@/components/start-from";
 import { loadStarts } from "@/server/member-start";
 import { TechDot } from "@/components/tech-dot";
+import { TechPhotoPicker } from "@/components/tech-photo-picker";
 import { CompleteJobForm, JobVisibilityForm } from "@/components/job-visibility";
 import {
   CopyLink,
@@ -44,7 +45,7 @@ import { Grouped } from "@/components/ui";
 import { OWNER_ONLY, getOffice } from "@/lib/auth";
 import { RoleChoice } from "@/components/role-choice";
 import { Banner } from "@/components/doc-ui";
-import { getCompany, getTeam, listConfig, type TeamMember } from "@/lib/data";
+import { getCompany, getTeam, listConfig, signedAssetUrls, type TeamMember } from "@/lib/data";
 import { siteOrigin } from "@/lib/origin";
 import { createClient } from "@/lib/supabase/server";
 
@@ -176,6 +177,11 @@ export default async function TeamSettingsPage() {
     loadStarts(supabase, office.company.id, { userId: office.user.id, manager: true }),
   ]);
   const startOf = new Map(starts.map((s) => [s.user_id, s]));
+  // Tech photos, once the database has them (migration 20261022006200).
+  const photosReady = "second_for" in company;
+  const photoUrls = await signedAssetUrls(
+    team.map((m) => m.photo_path).filter((p): p is string => !!p),
+  );
   const profileOf = new Map(profiles.filter((p) => p.user_id).map((p) => [p.user_id!, p]));
   const others = profiles.filter((p) => !p.user_id).sort((a, b) => a.name.localeCompare(b.name));
   const open = (invites ?? []) as Invite[];
@@ -267,6 +273,14 @@ export default async function TeamSettingsPage() {
           {m.role === "tech" ? (
             <ContactSwitch id={m.membership_id} name={name} on={m.can_contact_customers} />
           ) : null}
+          {photosReady ? (
+            <TechPhotoPicker
+              memberId={m.membership_id}
+              url={m.photo_path ? (photoUrls.get(m.photo_path) ?? null) : null}
+              name={name}
+              color={m.color}
+            />
+          ) : null}
           <ColorPicker id={m.membership_id} name={name} color={m.color} />
           <ul className="grouped">
             <li>
@@ -296,7 +310,7 @@ export default async function TeamSettingsPage() {
         inList: true,
         form: (
           <SettingsForm action={inviteMember} submit="Send Invite" full>
-            <SettingsFields labelWidth="4.5rem">
+            <SettingsFields labelWidth="4.5rem" labelInside>
               <SField label="Email" name="email" type="email" autoComplete="off" required />
             </SettingsFields>
             <div className="mt-4 px-4 sm:px-0">

@@ -2,18 +2,26 @@ import { router } from "expo-router";
 import { useEffect, useMemo, useState } from "react";
 import { Linking, Platform, Pressable, StyleSheet, Text, View } from "react-native";
 import {
+  QUOTE_DEPOSIT_TEXT,
   QUOTE_STATUS_LABELS,
   discountAllowed,
   formatCents,
   isManagerRole,
   lineTotal,
   parseDollars,
+  quoteDepositChoice,
+  quoteDepositFromInput,
+  quoteDepositInputs,
+  quoteDepositLabel,
+  quoteDepositRule,
   quoteShareText,
   quoteTotals,
   suggestItems,
   type Job,
+  type QuoteDepositChoice,
   type PriceBookItem,
   friendlyError,
+  cardFeeText,
 } from "@leakbook/core";
 import { useRow, useRows } from "../../data/hooks";
 import { useInspectionConfig, useJobInspection } from "../../data/inspection";
@@ -23,6 +31,7 @@ import {
   quoteLink,
   removeLine,
   sendQuoteFromPhone,
+  setDepositRule,
   setDiscount,
   startQuote,
   updateLine,
@@ -35,16 +44,17 @@ import { API_URL } from "../../lib/config";
 import { discountTooLarge, lineDescriptionError } from "../../lib/limits";
 import { getServices } from "../../lib/services";
 import { useCompany, useSession } from "../../state/session";
-import { Button, Card, Field, Notice, T } from "../../ui/components";
+import { Button, Card, Field, Group, ListRow, Notice, Segmented, T } from "../../ui/components";
 import { confirmDestructive } from "../../ui/confirm";
 import { haptics } from "../../ui/haptics";
 import { Select } from "../../ui/Select";
 import { color, face, MAX_TEXT_SCALE, minTap, shape, space, tabular } from "../../ui/theme";
 import { WebIcon } from "../../ui/WebIcon";
 import { DraftNote } from "../../ui/DraftNote";
-import { useUnsavedChanges } from "../../ui/ModalSheet";
+import { ModalSheet, useUnsavedChanges } from "../../ui/ModalSheet";
 import { useDraft } from "../../ui/useDraft";
 import { shareLink } from "../../lib/shareLink";
+import { businessNameFor } from "../../lib/business";
 
 const PAYMENT_LABELS: Record<string, string> = {
   pending: "processing",
@@ -59,6 +69,8 @@ interface PaymentRow {
   amount_cents: number;
   method: string;
   status: string;
+  /** The card fee charged with it (2026-11-25). */
+  fee_cents?: number | null;
 }
 
 /**
@@ -158,7 +170,7 @@ function QuoteCard({ job, quote }: { job: Job; quote: JobQuote }) {
         quote.lines,
         quote.discount_cents,
         company.settings.tax_rate_bps ?? 0,
-        company.settings.deposit,
+        quoteDepositRule(quote.deposit_rule, company.settings.deposit),
       ).total_cents
     : quote.total_cents;
   return (
@@ -210,7 +222,8 @@ function QuoteBuilder({ job, quote }: { job: Job; quote: JobQuote }) {
     quote.lines,
     quote.discount_cents,
     company.settings.tax_rate_bps ?? 0,
-    company.settings.deposit,
+    // The quote's own deposit, else the shop's (owner, 2026-11-27).
+    quoteDepositRule(quote.deposit_rule, company.settings.deposit),
   );
   const findings = [...inspection.findings]
     .filter((f) => f.status !== "repaired")
@@ -259,7 +272,7 @@ function QuoteBuilder({ job, quote }: { job: Job; quote: JobQuote }) {
     setError(null);
     setSending(true);
     try {
-      const r = await sendQuoteFromPhone(quote, company.name);
+      const r = await sendQuoteFromPhone(quote, businessNameFor(company, job));
       await shareLink(r.message);
     } catch (e) {
       setError(friendlyError(e));
@@ -369,6 +382,9 @@ function QuoteBuilder({ job, quote }: { job: Job; quote: JobQuote }) {
         />
       </View>
 
+      {/* A quote's own deposit (owner, 2026-11-27): owners and admins, drafts only. */}
+      {isOwner ? <DepositRow quote={quote} /> : null}
+
       {error ? <Notice tone="error">{error}</Notice> : null}
 
       <View style={styles.totals}>
@@ -404,6 +420,98 @@ function QuoteBuilder({ job, quote }: { job: Job; quote: JobQuote }) {
         onPress={() => router.push(`/jobs/${job.id}/signature?quote=${quote.id}`)}
       />
     </View>
+  );
+}
+
+const DEPOSIT_CHOICES: QuoteDepositChoice[] = ["default", "percent", "fixed", "none"];
+
+/**
+ * A draft quote's Deposit row (core quote-deposit.ts): the shop's default, a percent, a fixed
+ * amount, or no deposit, chosen in a sheet. Saved to the quote through the sync layer.
+ */
+function DepositRow({ quote }: { quote: JobQuote }) {
+  const company = useCompany();
+  const { services } = useSession();
+  const shopRule = company.settings.deposit;
+  const [open, setOpen] = useState(false);
+  const [choice, setChoice] = useState<QuoteDepositChoice>("default");
+  const [percent, setPercent] = useState("");
+  const [amount, setAmount] = useState("");
+  const [error, setError] = useState<string | null>(null);
+  const label = quoteDepositLabel(quote.deposit_rule, shopRule);
+
+  function start() {
+    const inputs = quoteDepositInputs(quote.deposit_rule);
+    setChoice(quoteDepositChoice(quote.deposit_rule));
+    setPercent(inputs.percent);
+    setAmount(inputs.amount);
+    setError(null);
+    setOpen(true);
+  }
+
+  function save() {
+    const r = quoteDepositFromInput(choice, percent, amount);
+    if ("error" in r) return setError(r.error);
+    setDepositRule(services.sync, company, quote, r.rule);
+    haptics.success();
+    setOpen(false);
+  }
+
+  return (
+    <>
+      <Group style={{ backgroundColor: color.well }}>
+        <ListRow
+          title={QUOTE_DEPOSIT_TEXT.row}
+          detail={label}
+          accessibilityLabel={`${QUOTE_DEPOSIT_TEXT.row}, ${label}`}
+          onPress={start}
+        />
+      </Group>
+      <ModalSheet
+        visible={open}
+        onClose={() => setOpen(false)}
+        title={QUOTE_DEPOSIT_TEXT.title}
+        done={{ label: QUOTE_DEPOSIT_TEXT.save, onPress: save }}
+      >
+        <View style={styles.stack}>
+          <Segmented
+            accessibilityLabel={QUOTE_DEPOSIT_TEXT.title}
+            options={DEPOSIT_CHOICES.map((c) => ({
+              value: c,
+              label: QUOTE_DEPOSIT_TEXT.choices[c],
+            }))}
+            value={choice}
+            onChange={(c) => {
+              setChoice(c);
+              setError(null);
+            }}
+            compact
+          />
+          {choice === "percent" ? (
+            <Field
+              label={QUOTE_DEPOSIT_TEXT.percentLabel}
+              keyboardType="decimal-pad"
+              value={percent}
+              onChangeText={setPercent}
+              error={error ?? undefined}
+              style={tabular}
+            />
+          ) : choice === "fixed" ? (
+            <Field
+              label={QUOTE_DEPOSIT_TEXT.fixedLabel}
+              keyboardType="decimal-pad"
+              value={amount}
+              onChangeText={setAmount}
+              error={error ?? undefined}
+              style={tabular}
+            />
+          ) : null}
+          <T variant="secondary" muted>
+            {QUOTE_DEPOSIT_TEXT.footer}
+          </T>
+        </View>
+      </ModalSheet>
+    </>
   );
 }
 
@@ -593,11 +701,15 @@ function SentQuote({ job, quote }: { job: Job; quote: JobQuote }) {
       <T variant="secondary" muted>
         {`Deposit ${formatCents(quote.deposit_cents)}${
           deposit
-            ? ` · ${PAYMENT_LABELS[deposit.status]} (${deposit.method === "ach" ? "bank" : "card"})`
+            ? ` · ${PAYMENT_LABELS[deposit.status]} (${deposit.method === "ach" ? "bank" : "card"})${
+                cardFeeText(deposit) ? ` · ${cardFeeText(deposit)}` : ""
+              }`
             : ""
         }`}
       </T>
-      {link ? <LinkRow url={link} message={quoteShareText(company.name, link)} /> : null}
+      {link ? (
+        <LinkRow url={link} message={quoteShareText(businessNameFor(company, job), link)} />
+      ) : null}
       {quote.status === "accepted" ? (
         <T>
           {`Accepted by ${quote.accepted_by_name ?? "the customer"}${

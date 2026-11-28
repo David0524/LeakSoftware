@@ -652,6 +652,76 @@
         }
       ],
       "result": "Blue Wave Pools: Thank you for your $200.00 payment (Cash). Invoice is paid in full. Your receipt: https://x/i/t"
+    },
+    {
+      "args": [
+        "Blue Wave Pools",
+        {
+          "id": "p4",
+          "amount_cents": 20000,
+          "method": "card",
+          "check_number": null,
+          "status": "succeeded",
+          "paid_at": "2026-10-22T17:00:00Z",
+          "fee_cents": 1947
+        },
+        {
+          "number": null,
+          "status": "paid",
+          "total_cents": 64900,
+          "amount_paid_cents": 64900
+        }
+      ],
+      "result": "Blue Wave Pools: Thank you for your $219.47 payment (Card, including a $19.47 card fee). Invoice is paid in full. Your receipt: https://x/i/t"
+    }
+  ],
+  "cardFeeText": [
+    {
+      "args": [
+        3
+      ],
+      "result": "Card fee $0.03"
+    },
+    {
+      "args": [
+        1950
+      ],
+      "result": "Card fee $19.50"
+    },
+    {
+      "args": [
+        0
+      ],
+      "result": null
+    },
+    {
+      "args": [
+        null
+      ],
+      "result": null
+    }
+  ],
+  "chargedCents": [
+    {
+      "args": [
+        100,
+        3
+      ],
+      "result": 103
+    },
+    {
+      "args": [
+        64900,
+        0
+      ],
+      "result": 64900
+    },
+    {
+      "args": [
+        64900,
+        null
+      ],
+      "result": 64900
     }
   ]
 }

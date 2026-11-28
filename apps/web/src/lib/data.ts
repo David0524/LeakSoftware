@@ -7,6 +7,7 @@ import type {
   CompanyAccess,
   ChecklistItemResult,
   ComponentType,
+  DepositRule,
   Customer,
   ExclusionReason,
   Finding,
@@ -87,6 +88,8 @@ export interface TeamMember {
   schedule_order: number | null;
   /** Text and Call Customers (owner, 2026-11-23); read with core canContactCustomers. */
   can_contact_customers: boolean;
+  /** Their photo in company-assets (2026-11-26), for reports; null without one. */
+  photo_path: string | null;
 }
 
 /** Cached per request: several parts of a page ask for the team. */
@@ -111,6 +114,7 @@ export const getTeam = cache(async (office: Office): Promise<TeamMember[]> => {
     disabled_at: string | null;
     schedule_order?: number | null;
     can_contact_customers?: boolean | null;
+    photo_path?: string | null;
     profile: { id: string; full_name: string | null; email: string | null } | null;
   }[];
   const profiles = members.flatMap((m) => (m.profile ? [m.profile] : []));
@@ -129,6 +133,7 @@ export const getTeam = cache(async (office: Office): Promise<TeamMember[]> => {
         disabled_at: m.disabled_at ?? null,
         schedule_order: m.schedule_order ?? null,
         can_contact_customers: m.can_contact_customers !== false,
+        photo_path: m.photo_path ?? null,
       };
     })
     .sort((a, b) => a.name.localeCompare(b.name));
@@ -510,6 +515,18 @@ export async function signedMediaUrls(paths: string[]): Promise<Map<string, stri
   if (paths.length === 0) return new Map();
   const supabase = await db();
   const { data } = await supabase.storage.from("media").createSignedUrls(paths, 3600);
+  return new Map(
+    (data ?? [])
+      .filter((d) => d.signedUrl && d.path)
+      .map((d) => [d.path as string, d.signedUrl as string]),
+  );
+}
+
+/** Signed URLs for the shop's own files (tech photos), keyed by path. */
+export async function signedAssetUrls(paths: string[]): Promise<Map<string, string>> {
+  if (paths.length === 0) return new Map();
+  const supabase = await db();
+  const { data } = await supabase.storage.from("company-assets").createSignedUrls(paths, 3600);
   return new Map(
     (data ?? [])
       .filter((d) => d.signedUrl && d.path)
@@ -940,6 +957,8 @@ export interface QuoteRow {
   tax_cents: number;
   total_cents: number;
   deposit_cents: number;
+  /** The quote's own deposit (2026-11-27); null = the shop's default. */
+  deposit_rule?: DepositRule | null;
   valid_until: string | null;
   sent_at: string | null;
   accepted_at: string | null;
@@ -964,6 +983,8 @@ export interface QuoteRow {
     paid_at: string | null;
     /** Refunded so far (2026-11-24); invoices only. */
     refunded_cents?: number;
+    /** The card fee charged with it (shown with the payment, 2026-11-24). */
+    fee_cents?: number | null;
   }[];
   token: string | null;
   repairNumber: number | null;
@@ -978,7 +999,7 @@ export const getQuotes = cache(async function getQuotes(
     await supabase
       .from("quote")
       .select(
-        "id, number, status, subtotal_cents, discount_cents, tax_cents, total_cents, deposit_cents, valid_until, sent_at, accepted_at, accepted_by_name, repair_job_id",
+        "id, number, status, subtotal_cents, discount_cents, tax_cents, total_cents, deposit_cents, deposit_rule, valid_until, sent_at, accepted_at, accepted_by_name, repair_job_id",
       )
       .eq("company_id", office.company.id)
       .eq("job_id", jobId)
@@ -999,7 +1020,7 @@ export const getQuotes = cache(async function getQuotes(
       .order("sort_order"),
     supabase
       .from("payment")
-      .select("id, quote_id, amount_cents, method, status, paid_at")
+      .select("id, quote_id, amount_cents, method, status, paid_at, fee_cents")
       .in("quote_id", ids)
       .is("deleted_at", null),
     supabase
@@ -1016,7 +1037,10 @@ export const getQuotes = cache(async function getQuotes(
   return quotes.map((q) => ({
     ...q,
     lines: by(must(lines) as (QuoteRow["lines"][number] & { quote_id: string })[], q.id),
-    payments: by(must(payments) as (QuoteRow["payments"][number] & { quote_id: string })[], q.id),
+    payments: by(
+      must(payments) as unknown as (QuoteRow["payments"][number] & { quote_id: string })[],
+      q.id,
+    ),
     token:
       (must(links) as { token: string; quote_id: string }[]).find((l) => l.quote_id === q.id)
         ?.token ?? null,
@@ -1203,12 +1227,7 @@ export const getInvoices = cache(async function getInvoices(
       .in("invoice_id", ids)
       .is("deleted_at", null)
       .order("sort_order"),
-    supabase
-      .from("payment")
-      .select("id, invoice_id, amount_cents, method, check_number, status, paid_at, refunded_cents")
-      .in("invoice_id", ids)
-      .is("deleted_at", null)
-      .order("created_at"),
+    invoicePayments(supabase, ids),
     supabase
       .from("share_link")
       .select("token, invoice_id")
@@ -1223,7 +1242,10 @@ export const getInvoices = cache(async function getInvoices(
       ...l,
       quantity: Number(l.quantity),
     })),
-    payments: by(must(payments) as (QuoteRow["payments"][number] & { invoice_id: string })[], i.id),
+    payments: by(
+      must(payments) as unknown as (QuoteRow["payments"][number] & { invoice_id: string })[],
+      i.id,
+    ),
     token:
       (must(links) as { token: string; invoice_id: string }[]).find((l) => l.invoice_id === i.id)
         ?.token ?? null,
@@ -1253,6 +1275,24 @@ export interface InvoiceListRow {
 
 /** Every invoice in the company, newest first, with its job number and customer. */
 /** Drafts' totals from their lines, discount and the shop's tax rate. */
+/**
+ * The invoices' payments with their card fees (2026-11-24). Until the database keeps card fees
+ * (20261022005800_card_fee_on_receipts.sql), the same without them.
+ */
+async function invoicePayments(supabase: Db, ids: string[]) {
+  const read = (cols: string) =>
+    supabase
+      .from("payment")
+      .select(cols)
+      .in("invoice_id", ids)
+      .is("deleted_at", null)
+      .order("created_at");
+  const cols =
+    "id, invoice_id, amount_cents, method, check_number, status, paid_at, refunded_cents";
+  const r = await read(`${cols}, fee_cents`);
+  return r.error && /fee_cents/.test(r.error.message) ? await read(cols) : r;
+}
+
 async function draftTotals(office: Office, ids: string[]): Promise<Map<string, number>> {
   if (ids.length === 0) return new Map();
   const supabase = await db();

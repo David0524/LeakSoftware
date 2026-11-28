@@ -296,32 +296,33 @@
 
         var body: some View {
             FormCard(title) {
-                OutlinedField(
-                    label: "Street address", text: $input.addressLine1, error: error,
-                    onFocusChange: { streetFocused = $0 }
-                )
-                .textContentType(.streetAddressLine1)
-                .addressLookup(suggester, text: input.addressLine1, focused: streetFocused)
-                if !suggester.items.isEmpty {
-                    Grouped {
-                        AddressSuggestionRows(suggester: suggester) { s in
-                            input.addressLine1 = s.line1
-                            input.city = s.city
-                            input.state = s.state
-                            input.postalCode = s.postalCode
+                // The iOS New Event look: each field's name the hint inside it (owner, 2026-11-27).
+                HintFields(bleed: .all) {
+                    LabeledFieldRow(
+                        label: "Street address", text: $input.addressLine1, contentType: .streetAddressLine1,
+                        labelInside: true, error: error, onFocusChange: { streetFocused = $0 }
+                    )
+                    .addressLookup(suggester, text: input.addressLine1, focused: streetFocused)
+                    if !suggester.items.isEmpty {
+                        Grouped {
+                            AddressSuggestionRows(suggester: suggester) { s in
+                                input.addressLine1 = s.line1
+                                input.city = s.city
+                                input.state = s.state
+                                input.postalCode = s.postalCode
+                            }
                         }
                     }
-                }
-                OutlinedField(label: "City", text: $input.city).textContentType(.addressCity)
-                HStack(alignment: .top, spacing: 16) {
-                    OutlinedField(label: "State", text: $input.state)
+                    LabeledFieldRow(label: "City", text: $input.city, contentType: .addressCity, labelInside: true)
+                    LabeledFieldRow(label: "State", text: $input.state, contentType: .addressState, labelInside: true)
                         .textInputAutocapitalization(.characters)
                         .autocorrectionDisabled()
                         .onChange(of: input.state) { _, v in
                             if v.count > 2 { input.state = String(v.prefix(2)) }
                         }
-                    OutlinedField(label: "ZIP", text: $input.postalCode, keyboard: .numberPad)
-                        .textContentType(.postalCode)
+                    LabeledFieldRow(
+                        label: "ZIP", text: $input.postalCode, keyboard: .numberPad, contentType: .postalCode,
+                        labelInside: true)
                 }
             }
         }
@@ -372,6 +373,13 @@
             ScreenScroll(spacing: 16) {
                 if form.canMakeJobs {
                     customerCard
+                    // Which business the customer sees (2026-11-26): the main one unless picked.
+                    if form.showsBusiness {
+                        BusinessField(choices: form.businessOptions, current: form.shownBusiness) {
+                            form.business = $0
+                        }
+                        .card()
+                    }
                     poolCard
                     if !form.errors.isEmpty { Notice(kind: .error, text: "Fix the highlighted fields.") }
                     Button(QuotesText.createQuote, action: save).buttonStyle(.primary)
@@ -417,17 +425,22 @@
                         if let error = form.errors["customer"] { FieldHint(text: error, error: true) }
                     }
                 } else {
-                    OutlinedField(label: "Name", text: $form.input.customerName, error: form.errors["customerName"])
-                        .textContentType(.name)
-                    OutlinedField(label: "Phone", text: $form.input.customerPhone, keyboard: .phonePad)
-                        .textContentType(.telephoneNumber)
-                    SwitchRow(OkToText.label, detail: OkToText.hint, isOn: $form.textOk, inset: false)
-                    OutlinedField(
-                        label: "Email", text: $form.input.customerEmail, error: form.errors["customerEmail"],
-                        keyboard: .emailAddress
-                    )
-                    .textInputAutocapitalization(.never)
-                    .autocorrectionDisabled()
+                    // The iOS New Event look: each field's name the hint inside it (owner, 2026-11-27).
+                    HintFields(bleed: form.customers.isEmpty ? Edge.Set.all : [.horizontal, .bottom]) {
+                        LabeledFieldRow(
+                            label: "Name", text: $form.input.customerName, contentType: .name, labelInside: true,
+                            error: form.errors["customerName"])
+                        LabeledFieldRow(
+                            label: "Phone", text: $form.input.customerPhone, keyboard: .phonePad,
+                            contentType: .telephoneNumber, labelInside: true)
+                        SwitchRow(OkToText.label, detail: OkToText.hint, isOn: $form.textOk)
+                        LabeledFieldRow(
+                            label: "Email", text: $form.input.customerEmail, keyboard: .emailAddress,
+                            contentType: .emailAddress, labelInside: true, error: form.errors["customerEmail"]
+                        )
+                        .textInputAutocapitalization(.never)
+                        .autocorrectionDisabled()
+                    }
                 }
             }
         }

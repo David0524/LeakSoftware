@@ -6,6 +6,7 @@ import {
   canSendReceipt,
   formatCents,
   latestReceiptPayment,
+  cardFeeText,
   paymentMethodLabel,
   parseDollars,
   receiptSummary,
@@ -50,6 +51,7 @@ import { useDraft } from "../../ui/useDraft";
 import { useLine } from "../../data/texting";
 import { RecordPayment, SendReceiptSheet } from "./Receipt";
 import { shareLink } from "../../lib/shareLink";
+import { businessNameFor } from "../../lib/business";
 import { InvoiceAutopay } from "../autopay/AutopayGroup";
 import { RefundSheet } from "./Refund";
 
@@ -97,7 +99,7 @@ export function InvoiceSection({ job, customer }: { job: Job; customer: Customer
   return (
     <View style={styles.stack}>
       {current ? (
-        <InvoiceCard invoice={current} customer={customer} />
+        <InvoiceCard job={job} invoice={current} customer={customer} />
       ) : job.type === "maintenance" ? (
         <Empty>
           {job.billed_invoice_id
@@ -134,7 +136,15 @@ export function InvoiceSection({ job, customer }: { job: Job; customer: Customer
   );
 }
 
-function InvoiceCard({ invoice, customer }: { invoice: JobInvoice; customer?: Customer }) {
+function InvoiceCard({
+  job,
+  invoice,
+  customer,
+}: {
+  job: Job;
+  invoice: JobInvoice;
+  customer?: Customer;
+}) {
   const company = useCompany();
   const { services, membership } = useSession();
   const manager = isManagerRole(membership?.role);
@@ -253,6 +263,7 @@ function InvoiceCard({ invoice, customer }: { invoice: JobInvoice; customer?: Cu
             <View style={{ gap: 4 }}>
               {invoice.payments.map((p) => {
                 const refunded = refundedText(p);
+                const fee = cardFeeText(p);
                 const method = paymentMethodLabel(p.method, p.check_number, "office");
                 return (
                   <View key={p.id} style={styles.payment}>
@@ -261,7 +272,7 @@ function InvoiceCard({ invoice, customer }: { invoice: JobInvoice; customer?: Cu
                         p.paid_at
                           ? ` · ${new Date(p.paid_at).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}`
                           : ""
-                      }${refunded ? ` · ${refunded}` : ""}`}
+                      }${fee ? ` · ${fee}` : ""}${refunded ? ` · ${refunded}` : ""}`}
                     </T>
                     {canRefund(membership?.role, invoice, p) ? (
                       <Button
@@ -297,7 +308,7 @@ function InvoiceCard({ invoice, customer }: { invoice: JobInvoice; customer?: Cu
             canCharge={manager}
           />
           {link && invoice.status !== "void" ? (
-            <LinkRow url={link} message={invoiceShareText(company.name, link)} />
+            <LinkRow url={link} message={invoiceShareText(businessNameFor(company, job), link)} />
           ) : null}
           {canRecordPayment(membership?.role, invoice) ? (
             <RecordPayment

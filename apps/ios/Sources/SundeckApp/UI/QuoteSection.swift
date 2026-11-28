@@ -83,7 +83,10 @@
                         Button {
                             Task {
                                 await flow.send(
-                                    card.id, shopName: session.company?.name ?? "",
+                                    card.id,
+                                    shopName: customerBusinessName(
+                                        sync.store, companyId: session.company?.id ?? "",
+                                        fallbackName: session.company?.name ?? "", jobId: flow.jobId),
                                     server: MoneyServer(sync: sync, api: app.api))
                             }
                         } label: {
@@ -151,6 +154,8 @@
         @State private var custom = ""
         @State private var customPrice = ""
         @State private var removing: QuoteLine?
+        /// The Deposit sheet, open (owners and admins).
+        @State private var editingDeposit = false
         /// A custom line typed, kept until it's added or discarded (owner, 2026-10-27).
         @State private var kept = DraftHandle()
 
@@ -231,6 +236,19 @@
 
                 DiscountField(quoteId: quoteId, saved: model.discountText, hint: model.discountHint, flow: flow)
 
+                // A quote's own deposit (owner, 2026-11-27): owners and admins, drafts only. Techs
+                // see the deposit in the totals.
+                if model.canChangeDeposit {
+                    Button {
+                        editingDeposit = true
+                    } label: {
+                        ListRow(QuoteDepositText.row, value: model.depositLabel, chevron: true)
+                    }
+                    .buttonStyle(.row)
+                    .well(padding: 0)
+                    .clipShape(RoundedRectangle(cornerRadius: CGFloat(Radius.block), style: .continuous))
+                }
+
                 MoneyRows(rows: model.totalRows)
             }
             // A custom line typed but not added: leaving the job asks first (owner, 2026-10-20).
@@ -252,6 +270,97 @@
                     if let id = line.id { flow.removeLine(id, from: quoteId) }
                 }
                 Button("Cancel", role: .cancel) {}
+            }
+            .sheet(isPresented: $editingDeposit) {
+                QuoteDepositSheet(quoteId: quoteId, rule: model.depositRule, flow: flow)
+            }
+        }
+    }
+
+    /// A draft quote's own deposit (owner, 2026-11-27; core QuoteDeposit.swift): the shop's
+    /// default, a percent, a fixed amount, or no deposit. Save in the bar; Cancel asks first when
+    /// something changed.
+    private struct QuoteDepositSheet: View {
+        var quoteId: String
+        /// The quote's own rule (nil: the shop's default).
+        var rule: DepositRule?
+        var flow: QuoteFlow
+        @Environment(\.dismiss) private var dismiss
+        @State private var choice = QuoteDepositChoice.shopDefault
+        @State private var percent = ""
+        @State private var amount = ""
+        @State private var error: String?
+        @State private var loaded = false
+        @State private var confirmDiscard = false
+
+        private var dirty: Bool {
+            let inputs = quoteDepositInputs(rule)
+            return loaded
+                && (choice != quoteDepositChoice(rule) || percent != inputs.percent || amount != inputs.amount)
+        }
+
+        var body: some View {
+            NavigationStack {
+                ScrollView {
+                    VStack(alignment: .leading, spacing: 24) {
+                        Segmented(
+                            selection: $choice, options: QuoteDepositChoice.allCases, label: { $0.label },
+                            title: QuoteDepositText.title, fillsWidth: true, segmentPadding: 8)
+                        if choice == .percent {
+                            Grouped {
+                                LabeledFieldRow(
+                                    label: QuoteDepositText.percentLabel, text: $percent, keyboard: .decimalPad,
+                                    labelWidth: 150, error: error)
+                            }
+                        } else if choice == .fixed {
+                            Grouped {
+                                LabeledFieldRow(
+                                    label: QuoteDepositText.fixedLabel, text: $amount, keyboard: .decimalPad,
+                                    labelWidth: 150, error: error)
+                            }
+                        } else if let error {
+                            Notice(kind: .error, text: error)
+                        }
+                        Text(QuoteDepositText.footer)
+                            .textRole(.footnote)
+                            .foregroundStyle(Color.textMuted)
+                            .padding(.horizontal, 16)
+                    }
+                    .padding(.horizontal, CGFloat(Spacing.pageMargin))
+                    .padding(.top, 8)
+                    .padding(.bottom, 24)
+                }
+                .background(Color.bg)
+                .navigationTitle(QuoteDepositText.title)
+                .navigationBarTitleDisplayMode(.inline)
+                .toolbar {
+                    ToolbarItem(placement: .cancellationAction) {
+                        Button("Cancel") { if dirty { confirmDiscard = true } else { dismiss() } }
+                    }
+                    ToolbarItem(placement: .confirmationAction) {
+                        Button(QuoteDepositText.save) { save() }.fontWeight(.semibold)
+                    }
+                }
+            }
+            .sheetPresentation(dirty: dirty, detents: [.medium, .large])
+            .discardPrompt(dirty: dirty, isPresented: $confirmDiscard)
+            .onChange(of: choice) { error = nil }
+            .onAppear {
+                if !loaded {
+                    let inputs = quoteDepositInputs(rule)
+                    choice = quoteDepositChoice(rule)
+                    percent = inputs.percent
+                    amount = inputs.amount
+                    loaded = true
+                }
+            }
+        }
+
+        private func save() {
+            if let problem = flow.setDeposit(choice, percent: percent, amount: amount, on: quoteId) {
+                error = problem
+            } else {
+                dismiss()
             }
         }
     }

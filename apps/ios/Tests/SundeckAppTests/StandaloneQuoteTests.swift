@@ -156,6 +156,34 @@ import Testing
         #expect(job["assigned_user_id"]?.string == "u1")
     }
 
+    /// The second business (2026-11-26): New Quote starts on the main business; only a pick is saved.
+    @Test func newQuoteSavesAPickedBusinessOnly() throws {
+        #expect(!form().showsBusiness)
+        try sync.store.applyPage(
+            PullPage(
+                rows: [
+                    PulledRow(
+                        table: "company", xid: "5",
+                        row: [
+                            "id": "c1", "company_id": "c1", "name": "Demo Leak Co.", "timezone": "America/Phoenix",
+                            "settings": ["services": "both"], "second_name": "Demo Pool Care", "second_for": "pool",
+                        ])
+                ], done: true, cursor: [:], serverHLC: "1760000000005-0000-srv"))
+        let f = form(customerId: "cu2")
+        #expect(f.showsBusiness)
+        #expect(f.businessOptions.map(\.label) == ["Demo Leak Co.", "Demo Pool Care"])
+        #expect(f.shownBusiness == .main)
+        let automatic = try #require(try sync.store.getLive("quote", f.save())?["job_id"]?.string)
+        let job = try #require(try sync.store.getLive("job", automatic))
+        #expect(job["business"] == nil || job["business"] == .null)
+
+        let g = form(customerId: "cu2")
+        g.business = .second
+        #expect(g.shownBusiness == .second)
+        let picked = try #require(try sync.store.getLive("quote", g.save())?["job_id"]?.string)
+        #expect(try sync.store.getLive("job", picked)?["business"] == "second")
+    }
+
     @Test func addPoolSetsTheQuoteJobsPool() throws {
         try StandaloneQuoteWrites.addPool(
             sync, companyId: "c1", jobId: "j2", propertyId: nil, customerId: "cu1",

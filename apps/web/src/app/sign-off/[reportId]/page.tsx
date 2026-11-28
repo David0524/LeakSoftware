@@ -4,6 +4,7 @@ import { notFound, redirect } from "next/navigation";
 import { Suspense } from "react";
 import {
   reportSignOffPurposes,
+  techCardPhotoPaths,
   type FinalSection,
   type ReportSnapshot,
   type ReportTemplateKey,
@@ -11,7 +12,7 @@ import {
 import { ReportView } from "@/components/report-view";
 import { SignOff } from "@/components/sign-off";
 import { getOffice } from "@/lib/auth";
-import { getCompany, signedMediaUrls } from "@/lib/data";
+import { getCompany, signedAssetUrls, signedMediaUrls } from "@/lib/data";
 import { createClient } from "@/lib/supabase/server";
 import { ReportLoading } from "@/components/report-loading";
 
@@ -55,15 +56,17 @@ async function Review({ params }: { params: Promise<{ reportId: string }> }) {
 
   const s = r.snapshot;
   const company = await getCompany(office);
-  const [urls, logo] = await Promise.all([
+  const [media, techPhotos, logo] = await Promise.all([
     signedMediaUrls([
       ...s.media.filter((m) => m.kind === "photo").map((m) => m.storage_path),
       ...s.signatures.map((x) => x.image_path).filter((x): x is string => !!x),
     ]),
+    signedAssetUrls(techCardPhotoPaths(s)),
     s.company.logo_path
       ? db.storage.from("company-assets").createSignedUrl(s.company.logo_path, 3600)
       : Promise.resolve({ data: null }),
   ]);
+  const urls = new Map([...media, ...techPhotos]);
   const hasText = (r.final_sections ?? []).some((x) => x.text.trim());
   const back = `/jobs/${r.job_id}?tab=wrap-up`;
 

@@ -209,6 +209,9 @@ public final class NewQuoteForm {
     /// OK to Text for a new customer (OkToText, owner 2026-11-28).
     public var textOk = false
     public private(set) var errors: [String: String] = [:]
+    /// The business the person picked (2026-11-26), or nil for the automatic one: a quote job is a
+    /// repair from no job, so the main business. Only a pick is saved.
+    public var business: Business?
 
     public init(sync: SyncService, company: CompanyContext, userId: String, customerId: String? = nil) {
         self.sync = sync
@@ -234,6 +237,18 @@ public final class NewQuoteForm {
         guard let customerId else { return [] }
         return properties.filter { $0["customer_id"]?.string == customerId }
     }
+    /// The shop's company row as the business rules read it.
+    public var businessShop: BusinessCompany {
+        _ = sync.revision
+        return businessCompany(sync.store, companyId: company.id, fallbackName: company.name)
+    }
+    /// The Business row shows with a second business.
+    public var showsBusiness: Bool { hasSecondBusiness(businessShop) }
+    /// Both businesses, main first.
+    public var businessOptions: [BusinessChoice] { businessChoices(businessShop) }
+    /// The picked business, else the main one.
+    public var shownBusiness: Business { business ?? .main }
+
     /// The address fields show for a new customer or another address.
     public var newPool: Bool { mode == .new || propertyId == nil }
 
@@ -299,6 +314,7 @@ public final class NewQuoteForm {
         let companyId = company.id
         var customerValues = records.customer ?? [:]
         customerValues.merge(OkToTextWrites.fields(textOk, userId: userId)) { _, new in new }
+        let business = showsBusiness ? self.business : nil
         return try sync.batch {
             let customer: String
             if let id = checked.customerId {
@@ -314,6 +330,8 @@ public final class NewQuoteForm {
             var job = records.job
             job["bill_to_customer_id"] = .string(customer)
             if let property { job["property_id"] = .string(property) }
+            // Only a picked business is saved; without one the quote job uses the main business.
+            if let business { job["business"] = .string(business.rawValue) }
             let jobId = try store.insert("job", companyId: companyId, job)
             var quote = records.quote
             quote["job_id"] = .string(jobId)

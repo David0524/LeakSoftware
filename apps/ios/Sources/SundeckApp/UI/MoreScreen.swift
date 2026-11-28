@@ -460,6 +460,16 @@
 
         var body: some View {
             ScreenScroll {
+                // Your Photo (2026-11-26): customers see it on reports when the shop shows the tech.
+                let _ = sync.revision
+                if let company = session.company, let me = session.user?.id,
+                    let membership = myMembership(sync.store, companyId: company.id, userId: me)
+                {
+                    MemberPhotoGroup(
+                        label: TechCardText.myPhoto, footer: TechCardText.myPhotoFooter, membershipId: membership.id,
+                        userId: me, name: sync.kv.team.first { $0.id == me }?.displayName ?? "",
+                        color: techColor(membership["color"]), photoPath: membership["photo_path"]?.string)
+                }
                 StartFromSection(form: $form, saved: saved, userId: session.user?.id ?? "")
                 if let result { Notice(kind: result.error ? .error : .success, text: result.text) }
                 Button(ProfileText.save) { save() }

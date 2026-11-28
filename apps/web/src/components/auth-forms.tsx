@@ -140,6 +140,7 @@ export function SignInForm({ next }: { next: string }) {
         <input type="hidden" name="next" value={next} />
         <FieldGroup labelWidth="6rem">
           <GroupedField
+            labelInside
             label="Email"
             name="email"
             {...EMAIL}
@@ -162,6 +163,7 @@ export function SignInForm({ next }: { next: string }) {
       <input type="hidden" name="next" value={next} />
       <FieldGroup labelWidth="6rem">
         <GroupedField
+          labelInside
           label="Email"
           name="email"
           {...EMAIL}
@@ -169,6 +171,7 @@ export function SignInForm({ next }: { next: string }) {
           defaultValue={passwordState.values?.email}
         />
         <PasswordField
+          labelInside
           label="Password"
           name="password"
           {...PASSWORD}
@@ -197,6 +200,7 @@ export function ForgotPasswordForm() {
     <form data-no-discard action={action} className="space-y-4">
       <FieldGroup labelWidth="6rem">
         <GroupedField
+          labelInside
           label="Email"
           name="email"
           {...EMAIL}
@@ -233,6 +237,7 @@ export function NewPasswordForm() {
     <form data-no-discard action={action} className="space-y-4">
       <FieldGroup labelWidth="9rem">
         <PasswordField
+          labelInside
           label="New password"
           name="password"
           {...PASSWORD}
@@ -244,6 +249,7 @@ export function NewPasswordForm() {
           error={state.fields?.password}
         />
         <PasswordField
+          labelInside
           label="Type it again"
           name="confirm"
           {...PASSWORD}
@@ -297,6 +303,7 @@ export function TrialForm({
       {offer ? <SignUpCode offer={offer} /> : null}
       <FieldGroup labelWidth="8.25rem">
         <GroupedField
+          labelInside
           label="Your name"
           name="name"
           {...NAME}
@@ -304,6 +311,7 @@ export function TrialForm({
           error={state.fields?.name}
         />
         <GroupedField
+          labelInside
           label="Company name"
           name="company"
           {...COMPANY}
@@ -311,6 +319,7 @@ export function TrialForm({
           error={state.fields?.company}
         />
         <GroupedField
+          labelInside
           label="Email"
           name="email"
           {...EMAIL}
@@ -318,6 +327,7 @@ export function TrialForm({
           error={state.fields?.email}
         />
         <GroupedField
+          labelInside
           label="Mobile phone"
           name="phone"
           {...PHONE}
@@ -325,6 +335,7 @@ export function TrialForm({
           error={state.fields?.phone}
         />
         <PasswordField
+          labelInside
           label="Password"
           name="password"
           {...PASSWORD}
@@ -395,6 +406,7 @@ export function SetupForm({
       <TimezoneInput />
       <FieldGroup labelWidth="8.25rem">
         <GroupedField
+          labelInside
           label="Company name"
           name="company"
           {...COMPANY}
@@ -460,6 +472,7 @@ export function InviteForm({
       <FieldGroup labelWidth={mode === "sign-up" ? "9.5rem" : "6rem"}>
         {/* Shown (and offered to password managers as the account name), not posted. */}
         <GroupedField
+          labelInside
           label="Email"
           name="email-shown"
           type="email"
@@ -470,6 +483,7 @@ export function InviteForm({
         />
         {mode === "sign-up" ? (
           <GroupedField
+            labelInside
             label="Your name"
             name="name"
             {...NAME}
@@ -478,6 +492,7 @@ export function InviteForm({
           />
         ) : null}
         <PasswordField
+          labelInside
           key={mode}
           label={mode === "sign-up" ? "Choose a password" : "Password"}
           name="password"

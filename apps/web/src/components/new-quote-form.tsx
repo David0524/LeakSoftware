@@ -4,8 +4,10 @@ import { useState } from "react";
 import { OK_TO_TEXT, OK_TO_TEXT_HINT } from "@leakbook/core";
 import { createQuoteAction } from "@/app/actions/standalone-quotes";
 import { AddressField } from "./address-field";
-import { Section } from "./new-job-form";
-import { FieldError, SField, SSwitch, SettingsForm } from "./settings-forms";
+import { HINT_ADDRESS, HINT_FIELDS, Section } from "./new-job-form";
+import { BusinessField } from "./business-popup";
+import { businessChoices, hasSecondBusiness, type BusinessCompany } from "@leakbook/core";
+import { FieldError, SField, SSwitch, SettingsFields, SettingsForm } from "./settings-forms";
 import { Segmented } from "./segmented";
 import { Select } from "./ui";
 
@@ -19,14 +21,12 @@ export interface QuoteCustomerOption {
 /** A new address for the quote's pool: Street, City, State, ZIP (all optional together). */
 export function PoolAddressFields() {
   return (
-    <div className="grid gap-4 sm:grid-cols-2">
-      <AddressField label="Street" name="address_line1" className="sm:col-span-2" />
-      <SField label="City" name="city" />
-      <div className="grid grid-cols-2 gap-4">
-        <SField label="State" name="state" maxLength={2} />
-        <SField label="ZIP" name="postal_code" />
-      </div>
-    </div>
+    <SettingsFields labelInside className={HINT_ADDRESS}>
+      <AddressField label="Street" name="address_line1" className="sm:col-span-4" />
+      <SField label="City" name="city" className="sm:col-span-2" />
+      <SField label="State" name="state" maxLength={2} />
+      <SField label="ZIP" name="postal_code" />
+    </SettingsFields>
   );
 }
 
@@ -37,8 +37,11 @@ export function PoolAddressFields() {
 export function NewQuoteForm({
   customers,
   customerId: picked = "",
+  business = null,
 }: {
   customers: QuoteCustomerOption[];
+  /** The shop's two businesses (2026-11-26): a Business row when it has a second one. */
+  business?: BusinessCompany | null;
   /** Opened from a customer page: that customer, already picked. */
   customerId?: string;
 }) {
@@ -89,14 +92,23 @@ export function NewQuoteForm({
             <FieldError name="customer" />
           </div>
         ) : (
-          <div className="grid gap-4 sm:grid-cols-2">
+          <SettingsFields labelInside className={HINT_FIELDS}>
             <SField label="Name" name="customer_name" autoComplete="off" />
             <SField label="Phone" name="customer_phone" type="tel" />
             <SSwitch name="text_ok" label={OK_TO_TEXT} hint={OK_TO_TEXT_HINT} />
             <SField label="Email" name="customer_email" type="email" />
-          </div>
+          </SettingsFields>
         )}
       </Section>
+
+      {/* A quote on its own uses the main business unless picked (2026-11-26). */}
+      {business && hasSecondBusiness(business) ? (
+        <div className="pt-3">
+          <div className="card p-4">
+            <BusinessField auto="main" choices={businessChoices(business)} />
+          </div>
+        </div>
+      ) : null}
 
       <Section
         title="Pool (Optional)"

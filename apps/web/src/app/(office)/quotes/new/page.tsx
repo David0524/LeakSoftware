@@ -3,7 +3,8 @@ import { formatAddress, type Customer, type Property } from "@leakbook/core";
 import { NewQuoteForm } from "@/components/new-quote-form";
 import { Notice, PageHeader } from "@/components/ui";
 import { getOffice } from "@/lib/auth";
-import { getCustomer, listCustomers, mayMakeJobs } from "@/lib/data";
+import { getCompany, getCustomer, listCustomers, mayMakeJobs } from "@/lib/data";
+import { businessForForm } from "@/server/business";
 import { isUuid } from "@/lib/uuid";
 
 export const metadata: Metadata = { title: "New Quote · Sundeck Pro" };
@@ -43,7 +44,11 @@ export default async function NewQuotePage({ searchParams }: PageProps<"/quotes/
   return (
     <>
       <PageHeader title="New Quote" back={back} />
-      <NewQuoteForm customerId={picked} customers={customers} />
+      <NewQuoteForm
+        customerId={picked}
+        customers={customers}
+        business={businessForForm(await getCompany(office))}
+      />
     </>
   );
 }

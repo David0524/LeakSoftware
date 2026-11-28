@@ -420,6 +420,49 @@ import Testing
         #expect(f.hours == "2")
     }
 
+    /// The second business (2026-11-26): a Business row that follows the job type until a business
+    /// is picked; only a pick is saved on the job.
+    @Test func businessFollowsTheJobTypeUntilPicked() throws {
+        let (customer, _) = try seedCustomer(spa: false)
+        let f = form(settings: ["services": "both"])
+        #expect(!f.showsBusiness)
+        try sync.store.applyPage(
+            PullPage(
+                rows: [
+                    PulledRow(
+                        table: "company", xid: "3",
+                        row: [
+                            "id": .string(Self.company), "company_id": .string(Self.company), "name": "Desert Leak",
+                            "settings": ["services": "both"], "second_name": "Southern Nevada Leak Detection",
+                        ])
+                ], done: true, cursor: [:], serverHLC: "1800000000002-0000-server"))
+        #expect(f.showsBusiness)
+        #expect(f.businessOptions.map(\.label) == ["Desert Leak", "Southern Nevada Leak Detection"])
+        // Leak detection uses the second business; a repair from no job the main one.
+        #expect(f.shownBusiness == .second)
+        f.jobType = .repair
+        #expect(f.shownBusiness == .main)
+        // A maintenance plan that repeats has no Business row; a single visit keeps it.
+        f.jobType = .maintenance
+        f.repeatChoice = .weekly
+        #expect(!f.showsBusiness)
+        f.repeatChoice = nil
+        #expect(f.showsBusiness)
+        f.jobType = .detection
+        f.mode = .existing
+        f.selectCustomer(customer)
+        let automatic = try #require(try sync.store.get("job", f.save()))
+        #expect(automatic["business"] == nil || automatic["business"] == .null)
+
+        let g = form(settings: ["services": "both"])
+        g.business = .main
+        #expect(g.shownBusiness == .main)
+        g.mode = .existing
+        g.selectCustomer(customer)
+        let picked = try #require(try sync.store.get("job", g.save()))
+        #expect(picked["business"] == "main")
+    }
+
     @Test func aTechWhoSeesOnlyTheirJobsIsAlwaysAssigned() throws {
         let f = form(role: "tech", settings: ["techs_see_all_jobs": false])
         #expect(!f.seesAll)

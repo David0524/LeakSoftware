@@ -93,7 +93,9 @@
     }
 
     /// A row of a grouped form (spec 3.14): the label at a fixed width on the left, the field
-    /// filling the rest, no box.
+    /// filling the rest, no box. `labelInside`: no label beside it; its name is the gray hint
+    /// inside, gone once you type, as in iOS Calendar's New Event (owner, 2026-11-27). Only on
+    /// forms that make something new and on signing in; settings and edits keep the label.
     struct LabeledFieldRow: View {
         var label: String
         @Binding var text: String
@@ -102,30 +104,39 @@
         var labelWidth: CGFloat = 104
         var multiline = false
         var contentType: UITextContentType?
+        var labelInside = false
+        /// Shown under the field, in `fail`.
+        var error: String? = nil
         /// Told when the field gets or lets go of the keyboard (address suggestions).
         var onFocusChange: ((Bool) -> Void)? = nil
         @FocusState private var focused: Bool
 
         var body: some View {
-            HStack(alignment: multiline ? .top : .center, spacing: 12) {
-                Text(label)
+            VStack(alignment: .leading, spacing: 4) {
+                HStack(alignment: multiline ? .top : .center, spacing: 12) {
+                    if !labelInside {
+                        Text(label)
+                            .textRole(.body)
+                            .foregroundStyle(Color.text)
+                            .frame(width: labelWidth, alignment: .leading)
+                    }
+                    TextField(
+                        "", text: $text,
+                        prompt: Text(labelInside ? label : placeholder).foregroundStyle(Color.placeholder),
+                        axis: multiline ? .vertical : .horizontal
+                    )
+                    .lineLimit(multiline ? 3...12 : 1...1)
                     .textRole(.body)
                     .foregroundStyle(Color.text)
-                    .frame(width: labelWidth, alignment: .leading)
-                TextField(
-                    "", text: $text, prompt: Text(placeholder).foregroundStyle(Color.placeholder),
-                    axis: multiline ? .vertical : .horizontal
-                )
-                .lineLimit(multiline ? 3...12 : 1...1)
-                .textRole(.body)
-                .foregroundStyle(Color.text)
-                .keyboardType(keyboard)
-                .textContentType(contentType)
-                .focused($focused)
-                // Phone numbers format as they're typed (owner, 2026-10-20).
-                .phoneTyping($text, active: keyboard == .phonePad && focused)
-                .onChange(of: focused) { _, now in onFocusChange?(now) }
-                .accessibilityLabel(label)
+                    .keyboardType(keyboard)
+                    .textContentType(contentType)
+                    .focused($focused)
+                    // Phone numbers format as they're typed (owner, 2026-10-20).
+                    .phoneTyping($text, active: keyboard == .phonePad && focused)
+                    .onChange(of: focused) { _, now in onFocusChange?(now) }
+                    .accessibilityLabel(label)
+                }
+                if let error { FieldHint(text: error, error: true) }
             }
             .padding(.horizontal, CGFloat(Spacing.rowHorizontal))
             .padding(.vertical, CGFloat(Spacing.rowVertical))

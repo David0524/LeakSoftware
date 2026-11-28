@@ -16,6 +16,10 @@ import {
   uploadRefusalMessage,
   type Job,
   friendlyError,
+  BUSINESS_WORK_LABELS,
+  SECOND_BUSINESS_TEXT,
+  companyServices,
+  type BusinessWork,
 } from "@leakbook/core";
 import type { JsonValue } from "@leakbook/sync";
 import { useRows } from "../../data/hooks";
@@ -107,12 +111,32 @@ const brandingOf = (row: Row) => ({
   secondary: str(row, "brand_secondary"),
 });
 
+/** The second business (Services = Both; docs/design/2026-11-26-second-business-and-tech-photos.md). */
+const secondOf = (row: Row) => ({
+  name: str(row, "second_name"),
+  phone: str(row, "second_phone"),
+  email: str(row, "second_email"),
+  review_url: str(row, "second_review_url"),
+  primary: str(row, "second_brand_primary"),
+  for: (row.second_for === "pool" ? "pool" : "leak") as BusinessWork,
+});
+
 type Profile = ReturnType<typeof profileOf>;
+type Second = ReturnType<typeof secondOf>;
 type Followups = ReturnType<typeof followupsOf>;
 type Branding = ReturnType<typeof brandingOf>;
 type Errors = Partial<
   Record<
-    "name" | "review_url" | "quote" | "invoice" | "terms" | "number" | "primary" | "secondary",
+    | "name"
+    | "review_url"
+    | "quote"
+    | "invoice"
+    | "terms"
+    | "number"
+    | "primary"
+    | "secondary"
+    | "second_review_url"
+    | "second_primary",
     string
   >
 >;
@@ -182,6 +206,34 @@ function CompanyPage() {
     // Read once per logo.
   }, [logoPath]); // eslint-disable-line react-hooks/exhaustive-deps
 
+  // The second business (Services = Both only): its fields, and a logo picked or removed, which
+  // waits for Save like the main one.
+  const both = companyServices(company.settings) === "both";
+  const [second, setSecond] = useState(() => secondOf(row));
+  const [savedSecond, setSavedSecond] = useState(second);
+  const [secondLogo, setSecondLogo] = useState<PickedLogo | null>(null);
+  const [secondLogoRemoved, setSecondLogoRemoved] = useState(false);
+  const [secondLogoError, setSecondLogoError] = useState<string | undefined>();
+  const [secondColors, setSecondColors] = useState<string[]>([]);
+  const [secondPicked, setSecondPicked] = useState(false);
+  const secondLogoPath = str(row, "second_logo_path");
+  const [secondLogoUrl, setSecondLogoUrl] = useState<string | null>(null);
+  useEffect(() => {
+    if (!secondLogoPath) return;
+    let live = true;
+    void getServices()
+      .supabase.storage.from("company-assets")
+      .createSignedUrl(secondLogoPath, 3600)
+      .then(({ data }) => {
+        if (live && data?.signedUrl) setSecondLogoUrl((was) => was ?? data.signedUrl);
+      });
+    return () => {
+      live = false;
+    };
+  }, [secondLogoPath]);
+  const secondChanged =
+    both && (formChanged(savedSecond, second) || secondLogo !== null || secondLogoRemoved);
+
   const [errors, setErrors] = useState<Errors>({});
   const [saving, setSaving] = useState(false);
   const [result, setResult] = useState<SaveResult | null>(null);
@@ -195,7 +247,8 @@ function CompanyPage() {
     formChanged(savedFollowups, followups) ||
     formChanged({ terms: savedTerms }, { terms }) ||
     numberChanged ||
-    logo !== null;
+    logo !== null ||
+    secondChanged;
   const changed = rest || formChanged(savedBranding, branding);
   const dirty = rest || formChanged(brandingBaseline, branding);
   useUnsavedChanges(dirty);
@@ -219,6 +272,12 @@ function CompanyPage() {
     if (!isHexColor(branding.primary.trim())) e.primary = "Use a color like #12263A.";
     if (branding.secondary.trim() && !isHexColor(branding.secondary.trim()))
       e.secondary = "Use a color like #EE6A1F.";
+    if (both) {
+      if (second.review_url.trim() && !isWebUrl(second.review_url.trim()))
+        e.second_review_url = REVIEW_URL_ERROR;
+      if (second.primary.trim() && !isHexColor(second.primary.trim()))
+        e.second_primary = "Use a color like #12263A.";
+    }
     return e;
   }
 
@@ -328,6 +387,46 @@ function CompanyPage() {
         failure = OFFLINE;
       }
     }
+    if (both && formChanged(savedSecond, second)) {
+      const opt = (v: string) => v.trim() || null;
+      const values = {
+        second_name: opt(second.name),
+        second_phone: opt(second.phone),
+        second_email: opt(second.email),
+        second_review_url: opt(second.review_url),
+        second_brand_primary: second.primary.trim().toUpperCase() || null,
+        second_for: second.for,
+      };
+      write(values);
+      const stored = secondOf(values as Row);
+      setSecond(stored);
+      setSavedSecond(stored);
+      setSecondPicked(false);
+    }
+    if (both && secondLogo) {
+      try {
+        // A new name each time, as the main logo's, so sent reports keep theirs.
+        const path = `${company.id}/logo2-${Date.now()}.${secondLogo.ext}`;
+        const { error } = await getServices()
+          .supabase.storage.from("company-assets")
+          .upload(path, secondLogo.body, { contentType: secondLogo.type, upsert: false });
+        const refusal = error ? uploadRefusal(null, error.message) : null;
+        if (error)
+          failure = refusal ? uploadRefusalMessage(refusal, "logo") : friendlyError(error.message);
+        else {
+          write({ second_logo_path: path });
+          setSecondLogoUrl(secondLogo.uri);
+          setSecondLogo(null);
+          setSecondLogoRemoved(false);
+        }
+      } catch {
+        failure = OFFLINE;
+      }
+    } else if (both && secondLogoRemoved) {
+      write({ second_logo_path: null });
+      setSecondLogoUrl(null);
+      setSecondLogoRemoved(false);
+    }
     if (!failure && numberChanged) {
       const n = Number(numberValue.trim());
       try {
@@ -375,6 +474,29 @@ function CompanyPage() {
     }
   }
 
+  /** The second business's logo, with the main logo's checks; uploaded on Save. */
+  async function chooseSecondLogo() {
+    setSecondLogoError(undefined);
+    const pick = await ImagePicker.launchImageLibraryAsync({ mediaTypes: ["images"], quality: 1 });
+    const asset = pick.canceled ? null : pick.assets[0];
+    if (!asset) return;
+    const type = asset.mimeType ?? (asset.uri.endsWith(".png") ? "image/png" : "image/jpeg");
+    const ext = { "image/png": "png", "image/jpeg": "jpg" }[type];
+    if (!ext) return setSecondLogoError("Use a PNG or JPEG image.");
+    const body = await (await fetch(asset.uri)).arrayBuffer();
+    if (body.byteLength > 2 * 1024 * 1024) return setSecondLogoError("Use a file under 2 MB.");
+    setSecondLogo({ uri: asset.uri, type, ext, body });
+    setSecondLogoRemoved(false);
+    setResult(null);
+    const colors = await logoColorsFrom(asset.uri);
+    setSecondColors(colors);
+    const fill = suggestedBrandColor(colors, second.primary, true);
+    if (fill) {
+      setSecond((x) => ({ ...x, primary: fill }));
+      setSecondPicked(true);
+    }
+  }
+
   const setP = (k: keyof Profile) => (v: string) => setProfile((x) => ({ ...x, [k]: v }));
   const setF =
     <K extends keyof Followups>(k: K) =>
@@ -415,6 +537,28 @@ function CompanyPage() {
         picked={picked}
         errors={{ ...errors, logo: logoError }}
       />
+      {both ? (
+        <SecondBusinessPart
+          value={second}
+          set={(next) => {
+            setResult(null);
+            setSecond(next);
+          }}
+          logoUri={secondLogoRemoved ? null : (secondLogo?.uri ?? secondLogoUrl)}
+          hasLogo={Boolean(secondLogo || (secondLogoPath && !secondLogoRemoved))}
+          chooseLogo={() => void chooseSecondLogo()}
+          removeLogo={() => {
+            setSecondLogo(null);
+            setSecondLogoError(undefined);
+            setSecondLogoRemoved(Boolean(secondLogoPath));
+            setResult(null);
+          }}
+          logoColors={secondColors}
+          picked={secondPicked}
+          onPickColor={() => setSecondPicked(false)}
+          errors={{ ...errors, logo: secondLogoError }}
+        />
+      ) : null}
       <SaveBarSpace />
     </Screen>
   );
@@ -731,8 +875,129 @@ function BrandingPart({
   );
 }
 
+/**
+ * Second Business (Services = Both): its name, logo, main color, phone, email, review link, and
+ * the line of work it's for. Saved with the page's one Save; a blank name turns it off.
+ */
+function SecondBusinessPart({
+  value,
+  set,
+  logoUri,
+  hasLogo,
+  chooseLogo,
+  removeLogo,
+  logoColors,
+  picked,
+  onPickColor,
+  errors,
+}: {
+  value: Second;
+  set: (next: Second) => void;
+  logoUri: string | null;
+  hasLogo: boolean;
+  chooseLogo: () => void;
+  removeLogo: () => void;
+  logoColors: string[];
+  picked: boolean;
+  onPickColor: () => void;
+  errors: Errors & { logo?: string };
+}) {
+  const T2 = SECOND_BUSINESS_TEXT;
+  const field = (k: Exclude<keyof Second, "for">) => (v: string) => set({ ...value, [k]: v });
+  return (
+    <Section title={T2.header} footer={T2.footer}>
+      <View style={styles.part}>
+        <FieldGroup labelWidth={120}>
+          <FieldRow
+            label={T2.name}
+            value={value.name}
+            onChangeText={field("name")}
+            autoCapitalize="words"
+          />
+        </FieldGroup>
+        <View style={[styles.logo, { backgroundColor: color.surface }]}>
+          <T variant="bodyMedium">{T2.logo}</T>
+          {logoUri ? (
+            <Image
+              source={{ uri: logoUri }}
+              style={styles.logoImage}
+              resizeMode="contain"
+              accessibilityLabel={`${value.name.trim() || T2.header} logo`}
+            />
+          ) : (
+            <T muted>No logo yet. Reports show the business name instead.</T>
+          )}
+          <View style={styles.logoButtons}>
+            <Button
+              title={hasLogo ? "Change Logo" : "Choose Logo"}
+              kind="secondary"
+              onPress={chooseLogo}
+            />
+            {hasLogo ? <Button title="Remove Logo" kind="danger" onPress={removeLogo} /> : null}
+          </View>
+          <T variant="secondary" muted>
+            PNG or JPEG, under 2 MB. A wide logo works best.
+          </T>
+          {errors.logo ? (
+            <T variant="secondary" style={{ color: color.fail }}>
+              {errors.logo}
+            </T>
+          ) : null}
+        </View>
+        <BrandColorRow
+          label={T2.color}
+          value={value.primary}
+          onChange={(v) => {
+            field("primary")(v);
+            onPickColor();
+          }}
+          logoColors={logoColors}
+          optional
+          note={picked ? "Color picked from your logo." : undefined}
+          error={errors.second_primary}
+        />
+        <FieldGroup labelWidth={120}>
+          <FieldRow
+            label={T2.phone}
+            value={value.phone}
+            onChangeText={field("phone")}
+            keyboardType="phone-pad"
+          />
+          <FieldRow
+            label={T2.email}
+            value={value.email}
+            onChangeText={field("email")}
+            keyboardType="email-address"
+            autoCapitalize="none"
+          />
+          <FieldRow
+            label={T2.reviewUrl}
+            value={value.review_url}
+            onChangeText={field("review_url")}
+            keyboardType="url"
+            autoCapitalize="none"
+            error={errors.second_review_url}
+          />
+        </FieldGroup>
+        <View style={styles.setting}>
+          <Segmented
+            label={T2.useFor}
+            options={(["leak", "pool"] as const).map((w) => ({
+              value: w,
+              label: BUSINESS_WORK_LABELS[w],
+            }))}
+            value={value.for}
+            onChange={(v: BusinessWork) => set({ ...value, for: v })}
+          />
+        </View>
+      </View>
+    </Section>
+  );
+}
+
 const styles = StyleSheet.create({
   part: { gap: space["3"] },
+  logoButtons: { flexDirection: "row", flexWrap: "wrap", gap: space["2"] },
   setting: { paddingHorizontal: space["4"], paddingVertical: space["2"] },
   logo: { borderRadius: 12, padding: space["4"], gap: space["2"] },
   logoImage: { height: 80, alignSelf: "stretch" },

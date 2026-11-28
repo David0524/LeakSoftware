@@ -19,16 +19,29 @@ import {
   planInvoiceDayLabel,
   OK_TO_TEXT,
   OK_TO_TEXT_HINT,
+  businessChoices,
+  hasSecondBusiness,
+  jobBusiness,
+  type BusinessCompany,
 } from "@leakbook/core";
 import { createJobAction } from "@/app/actions/jobs";
 import { NewJobRepairs } from "./job-repairs";
 import { AddressField } from "./address-field";
-import { FieldError, SField, SSelect, SSwitch, STextArea, SettingsForm } from "./settings-forms";
+import {
+  FieldError,
+  SField,
+  SSelect,
+  SSwitch,
+  STextArea,
+  SettingsFields,
+  SettingsForm,
+} from "./settings-forms";
 import { Suggestions } from "./route-board";
 import type { RepeatChoice } from "@/lib/plan-repeat";
 import { PlanRepeat } from "./plan-repeat";
 import { Draft } from "./draft-keeper";
 import { Segmented } from "./segmented";
+import { BusinessField } from "./business-popup";
 import { MoreDetails } from "./more-details";
 import { ShapePicker } from "./shape-picker";
 import { Checkbox, ChipToggle, cx, SectionTitle, Select } from "./ui";
@@ -71,6 +84,14 @@ export function Section({
   );
 }
 
+/**
+ * Text fields with their names inside them on phones (SettingsFields labelInside), filling the
+ * section's card there; two columns on wider screens.
+ */
+export const HINT_FIELDS = "max-sm:-mx-4 max-sm:-mb-4 sm:grid sm:grid-cols-2 sm:gap-4";
+/** An address the same way: wider, Street across, then City, and State and ZIP side by side. */
+export const HINT_ADDRESS = "max-sm:-mx-4 max-sm:-mb-4 sm:grid sm:grid-cols-4 sm:gap-4";
+
 /** The pool's gallons, saved on the pool (owner, 2026-10-19: it replaced "Size of the pool"). */
 function GallonsField({ known }: { known: number | null }) {
   const [value, setValue] = useState(known ? known.toLocaleString("en-US") : "");
@@ -110,6 +131,7 @@ export function NewJobForm({
   repairItems = [],
   inspectionFee = null,
   shopInvoiceDay = 1,
+  business = null,
 }: {
   /** Settings › Payments › Invoice Day: a new plan's default. */
   shopInvoiceDay?: number;
@@ -129,6 +151,8 @@ export function NewJobForm({
   canPlan?: boolean;
   /** Settings › Scheduling: a maintenance visit's length. */
   visitMinutes?: number;
+  /** The shop's two businesses (2026-11-26): a Business row when it has a second one. */
+  business?: BusinessCompany | null;
 }) {
   const [mode, setMode] = useState<"new" | "existing">("new");
   const [customerId, setCustomerId] = useState("");
@@ -263,25 +287,25 @@ export function NewJobForm({
               ) : null}
             </div>
           ) : (
-            <div className="grid gap-4 sm:grid-cols-2">
+            // Phones: the iOS New Event look, each field's name the hint inside it (owner,
+            // 2026-11-27), filling the card.
+            <SettingsFields labelInside className={HINT_FIELDS}>
               <SField label="Name" name="customer_name" autoComplete="off" />
               <SField label="Phone" name="customer_phone" type="tel" />
               <SSwitch name="text_ok" label={OK_TO_TEXT} hint={OK_TO_TEXT_HINT} />
               <SField label="Email" name="customer_email" type="email" />
-            </div>
+            </SettingsFields>
           )}
         </Section>
 
         {newPool ? (
           <Section title="Address">
-            <div className="grid gap-4 sm:grid-cols-2">
-              <AddressField label="Street address" name="address_line1" className="sm:col-span-2" />
-              <SField label="City" name="city" />
-              <div className="grid grid-cols-2 gap-4">
-                <SField label="State" name="state" maxLength={2} />
-                <SField label="ZIP" name="postal_code" />
-              </div>
-            </div>
+            <SettingsFields labelInside className={cx(HINT_ADDRESS, "max-sm:-mt-4")}>
+              <AddressField label="Street address" name="address_line1" className="sm:col-span-4" />
+              <SField label="City" name="city" className="sm:col-span-2" />
+              <SField label="State" name="state" maxLength={2} />
+              <SField label="ZIP" name="postal_code" />
+            </SettingsFields>
           </Section>
         ) : null}
 
@@ -298,6 +322,12 @@ export function NewJobForm({
               }}
               options={newJobTypes(services)}
             />
+            {business && hasSecondBusiness(business) && !plan ? (
+              <BusinessField
+                auto={jobBusiness(business, { type: kind })}
+                choices={businessChoices(business)}
+              />
+            ) : null}
             {maintenance && canPlan ? <PlanRepeat initial="0" once onChange={setRepeat} /> : null}
             {plan ? (
               <div className="grid grid-cols-2 gap-4 sm:grid-cols-3">

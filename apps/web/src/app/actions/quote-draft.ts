@@ -6,9 +6,11 @@ import {
   lineFromItem,
   lineTotal,
   parseDollars,
+  quoteDepositRule,
   quoteTotals,
   uuidv7,
   type CompanySettings,
+  type DepositRule,
   type PriceBookItem,
   type QuoteLine,
 } from "@leakbook/core";
@@ -39,7 +41,7 @@ const DEFAULT_DEPOSIT: CompanySettings["deposit"] = {
 async function draft(db: Db, quoteId: string) {
   const { data } = await db
     .from("quote")
-    .select("id, job_id, status, discount_cents")
+    .select("id, job_id, status, discount_cents, deposit_rule")
     .eq("id", quoteId)
     .is("deleted_at", null)
     .maybeSingle();
@@ -63,11 +65,20 @@ async function saveTotals(
   jobId: string,
   discountCents: number,
 ): Promise<Result> {
+  // The quote's own deposit when it has one (2026-11-27), else the shop's.
+  const { data: own } = await db
+    .from("quote")
+    .select("deposit_rule")
+    .eq("id", quoteId)
+    .maybeSingle();
   const t = quoteTotals(
     (await liveLines(db, quoteId)) as QuoteLine[],
     discountCents,
     settings.tax_rate_bps ?? 0,
-    settings.deposit ?? DEFAULT_DEPOSIT,
+    quoteDepositRule(
+      (own?.deposit_rule as DepositRule | null) ?? null,
+      settings.deposit ?? DEFAULT_DEPOSIT,
+    ),
   );
   const { error } = await db
     .from("quote")
@@ -223,4 +234,37 @@ export async function setQuoteDiscount(input: {
       error: `Techs can give up to ${limit / 100}% off. Ask an owner for more.`,
     };
   return saveTotals(db, settings, input.quoteId, quote.job_id, cents);
+}
+
+/**
+ * A draft quote's own deposit (owner, 2026-11-27): owners and admins only (the database checks
+ * too). Null puts it back on the shop's default.
+ */
+export async function setQuoteDeposit(input: {
+  quoteId: string;
+  rule: DepositRule | null;
+}): Promise<Result> {
+  const { office, db, settings } = await ctx();
+  if (!office.isManager)
+    return { ok: false, error: "Only owners and admins can change the deposit." };
+  const quote = await draft(db, input.quoteId);
+  if (!quote) return { ok: false, error: "This quote was already sent." };
+  const rule = input.rule;
+  if (
+    rule &&
+    !(
+      (rule.type === "percent" &&
+        Number.isInteger(rule.value_bps) &&
+        rule.value_bps! >= 0 &&
+        rule.value_bps! <= 10_000) ||
+      (rule.type === "fixed" && Number.isInteger(rule.value_cents) && rule.value_cents! > 0)
+    )
+  )
+    return { ok: false, error: "Enter a percent from 1 to 100." };
+  const { error } = await db
+    .from("quote")
+    .update({ deposit_rule: rule ? { ...rule, minimum_cents: 0 } : null })
+    .eq("id", input.quoteId);
+  if (error) return { ok: false, error: friendlyDbError(error.message) };
+  return saveTotals(db, settings, input.quoteId, quote.job_id, quote.discount_cents);
 }

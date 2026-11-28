@@ -8,6 +8,7 @@ import {
   shopInvoiceDay,
 } from "@leakbook/core";
 import { NewJobForm } from "@/components/new-job-form";
+import { businessForForm } from "@/server/business";
 import { Notice, PageHeader } from "@/components/ui";
 import { getOffice } from "@/lib/auth";
 import {
@@ -92,6 +93,7 @@ export default async function NewJobPage() {
             ?.price_cents ?? null
         }
         repairItems={repairCallItems(prices)}
+        business={businessForForm(company)}
       />
     </>
   );

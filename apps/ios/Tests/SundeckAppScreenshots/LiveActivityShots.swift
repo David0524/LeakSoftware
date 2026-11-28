@@ -100,13 +100,14 @@
                 ForEach(phases, id: \.name) { phase in
                     let content = liveStopContent(phase.input)
                     VStack(spacing: 8) {
-                        HStack(alignment: .center) {
+                        // As iOS places the regions: the mark and the figure beside the camera,
+                        // the name under it.
+                        HStack(alignment: .top) {
                             LiveStopIsland.leading(logo: logo)
-                            Spacer()
-                            LiveStopIsland.center(content)
                             Spacer()
                             LiveStopIsland.trailing(content)
                         }
+                        LiveStopIsland.center(content)
                         LiveStopIsland.bottom(
                             content, call: LiveStopLink.call("(602) 555-0100"), open: LiveStopLink.job("j1"))
                     }
@@ -125,7 +126,7 @@
                     }
                 }
                 HStack {
-                    LiveStopIsland.mark(logo: logo)
+                    LiveStopIsland.minimal(logo: logo)
                         .frame(width: 36, height: 36)
                         .background(Color.black, in: Circle())
                     Spacer()

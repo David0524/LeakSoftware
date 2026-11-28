@@ -174,50 +174,57 @@
                             })
                     }
                 } else {
-                    OutlinedField(label: "Name", text: $form.input.customerName, error: form.errors["customerName"])
-                        .textContentType(.name)
-                    OutlinedField(label: "Phone", text: $form.input.customerPhone, keyboard: .phonePad)
-                        .textContentType(.telephoneNumber)
-                    SwitchRow(OkToText.label, detail: OkToText.hint, isOn: $form.textOk, inset: false)
-                    OutlinedField(
-                        label: "Email", text: $form.input.customerEmail, error: form.errors["customerEmail"],
-                        keyboard: .emailAddress
-                    )
-                    .textInputAutocapitalization(.never)
-                    .autocorrectionDisabled()
+                    // The iOS New Event look: each field's name the hint inside it (owner, 2026-11-27).
+                    HintFields(bleed: form.customers.isEmpty ? Edge.Set.all : [.horizontal, .bottom]) {
+                        LabeledFieldRow(
+                            label: "Name", text: $form.input.customerName, contentType: .name, labelInside: true,
+                            error: form.errors["customerName"])
+                        LabeledFieldRow(
+                            label: "Phone", text: $form.input.customerPhone, keyboard: .phonePad,
+                            contentType: .telephoneNumber, labelInside: true)
+                        SwitchRow(OkToText.label, detail: OkToText.hint, isOn: $form.textOk)
+                        LabeledFieldRow(
+                            label: "Email", text: $form.input.customerEmail, keyboard: .emailAddress,
+                            contentType: .emailAddress, labelInside: true, error: form.errors["customerEmail"]
+                        )
+                        .textInputAutocapitalization(.never)
+                        .autocorrectionDisabled()
+                    }
                 }
             }
         }
 
         private var poolCard: some View {
             FormCard("Address") {
-                OutlinedField(
-                    label: "Street address", text: $form.input.addressLine1, error: form.errors["addressLine1"],
-                    onFocusChange: { streetFocused = $0 }
-                )
-                .textContentType(.streetAddressLine1)
-                .addressLookup(suggester, text: form.input.addressLine1, focused: streetFocused)
-                // Address suggestions as you type (owner, 2026-10-20), under the field.
-                if !suggester.items.isEmpty {
-                    Grouped {
-                        AddressSuggestionRows(suggester: suggester) { s in
-                            form.input.addressLine1 = s.line1
-                            form.input.city = s.city
-                            form.input.state = s.state
-                            form.input.postalCode = s.postalCode
+                HintFields(bleed: .all) {
+                    LabeledFieldRow(
+                        label: "Street address", text: $form.input.addressLine1, contentType: .streetAddressLine1,
+                        labelInside: true, error: form.errors["addressLine1"], onFocusChange: { streetFocused = $0 }
+                    )
+                    .addressLookup(suggester, text: form.input.addressLine1, focused: streetFocused)
+                    // Address suggestions as you type (owner, 2026-10-20), under the field.
+                    if !suggester.items.isEmpty {
+                        Grouped {
+                            AddressSuggestionRows(suggester: suggester) { s in
+                                form.input.addressLine1 = s.line1
+                                form.input.city = s.city
+                                form.input.state = s.state
+                                form.input.postalCode = s.postalCode
+                            }
                         }
                     }
-                }
-                OutlinedField(label: "City", text: $form.input.city).textContentType(.addressCity)
-                HStack(alignment: .top, spacing: 16) {
-                    OutlinedField(label: "State", text: $form.input.state)
-                        .textInputAutocapitalization(.characters)
-                        .autocorrectionDisabled()
-                        .onChange(of: form.input.state) { _, v in
-                            if v.count > 2 { form.input.state = String(v.prefix(2)) }
-                        }
-                    OutlinedField(label: "ZIP", text: $form.input.postalCode, keyboard: .numberPad)
-                        .textContentType(.postalCode)
+                    LabeledFieldRow(label: "City", text: $form.input.city, contentType: .addressCity, labelInside: true)
+                    LabeledFieldRow(
+                        label: "State", text: $form.input.state, contentType: .addressState, labelInside: true
+                    )
+                    .textInputAutocapitalization(.characters)
+                    .autocorrectionDisabled()
+                    .onChange(of: form.input.state) { _, v in
+                        if v.count > 2 { form.input.state = String(v.prefix(2)) }
+                    }
+                    LabeledFieldRow(
+                        label: "ZIP", text: $form.input.postalCode, keyboard: .numberPad, contentType: .postalCode,
+                        labelInside: true)
                 }
             }
         }
@@ -234,6 +241,10 @@
                             // segments (owner, 2026-10-20: "Repair is cut off").
                             fillsWidth: true, segmentPadding: 8)
                     }
+                }
+                // Which business the customer sees (2026-11-26), with a second business only.
+                if form.showsBusiness {
+                    BusinessField(choices: form.businessOptions, current: form.shownBusiness) { form.business = $0 }
                 }
                 if form.showsRepeat {
                     PlanRepeatPicker(
@@ -645,6 +656,40 @@
                         timeZone: form.company.timeZone) ?? Date()
                 },
                 set: { form.input.scheduleTime = minutesToClock(localMinutes($0, timeZone: form.company.timeZone)) })
+        }
+    }
+
+    /// New Job's and New Quote's Business row (2026-11-26): "Business" and the business's name;
+    /// tapping offers both, a check on the current one, as on the job page. The website's BusinessField.
+    struct BusinessField: View {
+        var choices: [BusinessChoice]
+        var current: Business
+        var pick: (Business) -> Void
+
+        var body: some View {
+            let name = choices.first { $0.value == current }?.label ?? ""
+            HStack(spacing: CGFloat(Spacing.rowItems)) {
+                Text(SecondBusinessText.jobRow).textRole(.body).foregroundStyle(Color.text)
+                Spacer(minLength: 0)
+                Menu {
+                    ForEach(choices, id: \.value) { choice in
+                        Button {
+                            pick(choice.value)
+                        } label: {
+                            if choice.value == current {
+                                Label(choice.label, systemImage: "checkmark")
+                            } else {
+                                Text(choice.label)
+                            }
+                        }
+                    }
+                } label: {
+                    MenuValue(text: name)
+                }
+                .accessibilityLabel(SecondBusinessText.jobRow)
+                .accessibilityValue(name)
+            }
+            .frame(maxWidth: .infinity, minHeight: minTarget, alignment: .leading)
         }
     }
 

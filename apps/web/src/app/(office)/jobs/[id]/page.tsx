@@ -68,6 +68,12 @@ import {
   type JobRepair,
   customItemType,
   takesCustomItems,
+  SECOND_BUSINESS_TEXT,
+  businessChoices,
+  businessIdentity,
+  jobBusiness,
+  type BusinessCompany,
+  type BusinessJob,
 } from "@leakbook/core";
 import { CustomerLinks } from "@/components/customer-links";
 import { DiagramPanel } from "@/components/diagram-work";
@@ -141,6 +147,8 @@ import { SheetRow } from "@/components/settings-list";
 import { SkipVisit, SkippedActions } from "@/components/skip-visit";
 import { SampleJob } from "@/components/sample-job";
 import { JobRepairs } from "@/components/job-repairs";
+import { BusinessPopUp } from "@/components/business-popup";
+import { jobBusinessNames } from "@/server/business";
 import { JobIssues } from "@/components/issues";
 import { jobIssues } from "@/lib/issues";
 import { WrapUpList } from "@/components/wrap-up";
@@ -191,6 +199,23 @@ export default async function JobPage({ params, searchParams }: PageProps<"/jobs
       : null;
   // The sample job opens to its finished report (owner, 2026-10-22: first win).
   if (job.sample) return <SampleJob office={office} job={job} />;
+  // Which business the job uses, with a second business (2026-11-26). A repair follows the job
+  // it came from unless it has its own choice.
+  const biz = company as unknown as BusinessCompany;
+  const bizChoices = businessChoices(biz);
+  const parentJob =
+    bizChoices.length && job.type === "repair" && job.parent_job_id && !job.business
+      ? ((
+          await (
+            await createClient()
+          )
+            .from("job")
+            .select("type, business")
+            .eq("id", job.parent_job_id)
+            .maybeSingle()
+        ).data as BusinessJob | null)
+      : null;
+  const shopName = businessIdentity(biz, jobBusiness(biz, job, parentJob)).name;
   const tz = office.company.timezone;
   const tally = checklistTally(detail.components, [...detail.results.values()]);
   const total = detail.components.length;
@@ -290,7 +315,7 @@ export default async function JobPage({ params, searchParams }: PageProps<"/jobs
           customer={job.customer?.name ?? null}
           phone={job.customer?.phone ?? null}
           tech={office.user.name ?? "your technician"}
-          shop={office.company.name}
+          shop={shopName}
         />
       ) : null}
 
@@ -481,6 +506,19 @@ export default async function JobPage({ params, searchParams }: PageProps<"/jobs
                       {job.secondTechName ? <Row label="With" value={job.secondTechName} /> : null}
                       {/* The fee is edited under On Site, so it isn't repeated here. */}
                     </Grouped>
+
+                    {bizChoices.length ? (
+                      <Grouped>
+                        <li className="flex min-h-11 items-center justify-between gap-3 px-4 py-1.5">
+                          <span className="shrink-0">{SECOND_BUSINESS_TEXT.jobRow}</span>
+                          <BusinessPopUp
+                            jobId={job.id}
+                            current={jobBusiness(biz, job, parentJob)}
+                            choices={bizChoices}
+                          />
+                        </li>
+                      </Grouped>
+                    ) : null}
 
                     {/* A repair job's repairs and its price (owner, 2026-10-22). */}
                     {job.type === "repair" ? <Repairs office={office} job={job} /> : null}
@@ -1107,7 +1145,13 @@ async function Signatures({ detail, tz }: { detail: JobDetail; tz: string }) {
           (p) => p.value === "work_authorization",
         )}
         signer={detail.job.customer?.name ?? ""}
-        shop={company.name}
+        shop={
+          (
+            await jobBusinessNames(await createClient(), company as unknown as BusinessCompany, [
+              detail.job,
+            ])
+          ).get(detail.job.id) ?? company.name
+        }
         address={detail.job.property ? formatAddress(detail.job.property) : null}
         signed={signatures.map((s) => s.purpose)}
       />

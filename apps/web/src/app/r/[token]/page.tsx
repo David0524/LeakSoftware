@@ -5,6 +5,7 @@ import { after } from "next/server";
 import { Suspense, cache } from "react";
 import {
   reportTitle,
+  techCardPhotoPaths,
   type FinalSection,
   type ReportSnapshot,
   type ReportTemplateKey,
@@ -100,9 +101,13 @@ async function Report({ params, searchParams }: PageProps<"/r/[token]">) {
   ];
   // "How did we do?" under the report, when the shop asks (owner's competitor notes, 2026-11-16).
   // Not in the PDF, and not on a report that was updated since.
-  const [media, logo, feedback] = await Promise.all([
+  const techPaths = techCardPhotoPaths(s);
+  const [media, techPhotos, logo, feedback] = await Promise.all([
     paths.length
       ? db.storage.from("media").createSignedUrls(paths, 3600)
+      : Promise.resolve({ data: [] }),
+    techPaths.length
+      ? db.storage.from("company-assets").createSignedUrls(techPaths, 3600)
       : Promise.resolve({ data: [] }),
     s.company.logo_path
       ? db.storage.from("company-assets").createSignedUrl(s.company.logo_path, 3600)
@@ -110,7 +115,7 @@ async function Report({ params, searchParams }: PageProps<"/r/[token]">) {
     !print && r.status === "sent" ? feedbackCard(token, admin) : Promise.resolve(null),
   ]);
   const urls = new Map(
-    (media.data ?? [])
+    [...(media.data ?? []), ...(techPhotos.data ?? [])]
       .filter((d) => d.signedUrl && d.path)
       .map((d) => [d.path as string, d.signedUrl as string]),
   );

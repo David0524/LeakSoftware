@@ -13,19 +13,38 @@
         @Environment(Session.self) private var session
         @State private var browser: BrowserPage?
         @State private var importNote = false
+        /// Search Settings (owner, 2026-11-27), as iOS Settings has: typing replaces the list with
+        /// the pages that match, each saying which setting matched (core SettingsSearch.swift).
+        @State private var query = ""
 
         var body: some View {
             let company = session.company
             let services = company?.services ?? .both
+            let manager = isManagerRole(company?.role)
+            let groups = settingsGroups(services)
+            let searching = manager && !searchWords(query).isEmpty
+            let results = searching ? searchSettings(query, groups.flatMap { $0.pages.map(\.rawValue) }) : []
             List {
-                if !isManagerRole(company?.role) {
+                if !manager {
                     Section {
                         Notice(kind: .warning, text: settingsTechNotice(company?.name ?? "your shop")).plainListRow()
                     }
-                } else {
-                    ForEach(settingsGroups(services), id: \.title) { group in
+                } else if searching {
+                    if !results.isEmpty {
                         Section {
-                            ForEach(group.pages, id: \.self) { page in row(page, services: services) }
+                            ForEach(results, id: \.key) { result in
+                                if let page = SettingsPage(rawValue: result.key) {
+                                    row(page, title: result.label, detail: result.match)
+                                }
+                            }
+                        }
+                    }
+                } else {
+                    ForEach(groups, id: \.title) { group in
+                        Section {
+                            ForEach(group.pages, id: \.self) { page in
+                                row(page, title: page.title, detail: page.detail(services))
+                            }
                         } header: {
                             SectionLabel(group.title)
                         }
@@ -33,6 +52,12 @@
                 }
             }
             .groupedList()
+            .overlay {
+                if searching && results.isEmpty {
+                    ContentUnavailableView(settingsNoResults(query), systemImage: "magnifyingglass")
+                }
+            }
+            .modifier(SettingsSearchField(query: $query, shown: manager))
             .navigationTitle("Settings")
             .navigationBarTitleDisplayMode(.large)
             .browserSheet($browser)
@@ -43,8 +68,8 @@
             }
         }
 
-        @ViewBuilder private func row(_ page: SettingsPage, services: Services) -> some View {
-            let label = ListRow(page.title, detail: page.detail(services))
+        @ViewBuilder private func row(_ page: SettingsPage, title: String, detail: String?) -> some View {
+            let label = ListRow(title, detail: detail)
             if page.isNative {
                 NavigationLink(value: MoreRoute.settingsPage(page)) { label }
                     .surfaceRow()
@@ -53,12 +78,28 @@
                 Button {
                     if page == .importCustomers { importNote = true } else { browser = .site(page.webPath) }
                 } label: {
-                    ListRow(page.title, detail: page.detail(services), chevron: true)
+                    ListRow(title, detail: detail, chevron: true)
                 }
                 .buttonStyle(.row)
                 .surfaceRow()
                 .listRowInsets(EdgeInsets())
                 .accessibilityHint(page == .importCustomers ? "" : "Opens the website")
+            }
+        }
+    }
+
+    /// The standard iOS search field on Settings, for owners and admins (techs see a notice).
+    private struct SettingsSearchField: ViewModifier {
+        @Binding var query: String
+        var shown: Bool
+
+        @ViewBuilder func body(content: Content) -> some View {
+            if shown {
+                content.searchable(
+                    text: $query, placement: .navigationBarDrawer(displayMode: .always),
+                    prompt: SettingsSearchText.placeholder)
+            } else {
+                content
             }
         }
     }
@@ -723,6 +764,10 @@
 
         var body: some View {
             FormSheet(title: member.name, dirty: dirty) {
+                // The tech's photo on reports (2026-11-26): saved at once, online.
+                MemberPhotoGroup(
+                    label: TechCardText.photo, membershipId: member.id, userId: member.userId, name: member.name,
+                    color: color, photoPath: member.photoPath)
                 Grouped {
                     LabeledFieldRow(label: "Name", text: $form.name, labelWidth: 96)
                     LabeledFieldRow(label: "Phone", text: $form.phone, keyboard: .phonePad, labelWidth: 96)

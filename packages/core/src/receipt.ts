@@ -72,6 +72,32 @@ export interface ReceiptPayment {
   check_number?: string | null;
   status: string;
   paid_at: string | null;
+  /**
+   * The card fee charged with it (owner, 2026-11-24: customers see it on the receipt). The shop
+   * keeps it; it's never part of amount_cents. Missing or null: none known.
+   */
+  fee_cents?: Cents | null;
+}
+
+/** The card fee's label on the receipt and the invoice's payment lines. */
+export const CARD_FEE_LABEL = "Card fee";
+
+/** What the customer was charged for a payment: the payment and its card fee. */
+export function chargedCents(p: Pick<ReceiptPayment, "amount_cents" | "fee_cents">): Cents {
+  return p.amount_cents + Math.max(p.fee_cents ?? 0, 0);
+}
+
+/** "Card fee $0.03" for the invoice's payment lines, or null without a fee. */
+export function cardFeeText(p: Pick<ReceiptPayment, "fee_cents">): string | null {
+  const fee = p.fee_cents ?? 0;
+  return fee > 0 ? `${CARD_FEE_LABEL} ${formatCents(fee)}` : null;
+}
+
+/** "Card" or "Card, including a $0.03 card fee": how a payment was made, for the customer. */
+function paidWith(p: Pick<ReceiptPayment, "method" | "check_number" | "fee_cents">): string {
+  const fee = p.fee_cents ?? 0;
+  const how = paymentMethodLabel(p.method, p.check_number);
+  return fee > 0 ? `${how}, including a ${formatCents(fee)} card fee` : how;
 }
 
 /** What a receipt says about its invoice. */
@@ -178,14 +204,14 @@ export function receiptSentMessage(channel: ReceiptChannel, to: string): string 
 /** The text message: "Blue Wave Pools: Thank you for your $200.00 payment (Check #1234). …" */
 export function receiptTextMessage(
   shop: string,
-  payment: Pick<ReceiptPayment, "amount_cents" | "method" | "check_number">,
+  payment: Pick<ReceiptPayment, "amount_cents" | "method" | "check_number" | "fee_cents">,
   invoice: Pick<ReceiptInvoice, "number" | "total_cents" | "amount_paid_cents">,
   link: string,
 ): string {
   const balance = Math.max(invoice.total_cents - invoice.amount_paid_cents, 0);
   const what = `Invoice${invoice.number ? ` #${invoice.number}` : ""}`;
   return [
-    `${shop}: Thank you for your ${formatCents(payment.amount_cents)} payment (${paymentMethodLabel(payment.method, payment.check_number)}).`,
+    `${shop}: Thank you for your ${formatCents(chargedCents(payment))} payment (${paidWith(payment)}).`,
     balance > 0
       ? `Balance remaining on ${what}: ${formatCents(balance)}.`
       : `${what} is paid in full.`,
@@ -195,12 +221,12 @@ export function receiptTextMessage(
 
 /**
  * The receipt's rows, in the email and on the invoice page: Invoice, Payment date, Method,
- * Amount paid, Invoice total, then Balance remaining or Paid in full. `paidOn` is the date as the
- * shop writes it ("October 22, 2026").
+ * Card fee (when one was charged), Amount paid (with the fee), Invoice total, then Balance
+ * remaining or Paid in full. `paidOn` is the date as the shop writes it ("October 22, 2026").
  */
 export function receiptRows(
   invoice: Pick<ReceiptInvoice, "number" | "total_cents" | "amount_paid_cents">,
-  payment: Pick<ReceiptPayment, "amount_cents" | "method" | "check_number">,
+  payment: Pick<ReceiptPayment, "amount_cents" | "method" | "check_number" | "fee_cents">,
   paidOn: string | null,
 ): { label: string; value: string }[] {
   const balance = Math.max(invoice.total_cents - invoice.amount_paid_cents, 0);
@@ -208,7 +234,10 @@ export function receiptRows(
     ...(invoice.number ? [{ label: "Invoice", value: `#${invoice.number}` }] : []),
     ...(paidOn ? [{ label: "Payment date", value: paidOn }] : []),
     { label: "Method", value: paymentMethodLabel(payment.method, payment.check_number) },
-    { label: "Amount paid", value: formatCents(payment.amount_cents) },
+    ...((payment.fee_cents ?? 0) > 0
+      ? [{ label: CARD_FEE_LABEL, value: formatCents(payment.fee_cents ?? 0) }]
+      : []),
+    { label: "Amount paid", value: formatCents(chargedCents(payment)) },
     { label: "Invoice total", value: formatCents(invoice.total_cents) },
     balance > 0
       ? { label: "Balance remaining", value: formatCents(balance) }

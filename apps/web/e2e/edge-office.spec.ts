@@ -53,10 +53,10 @@ test.describe("office edge cases", () => {
 
   test("the review link takes web addresses only", async ({ page }) => {
     await page.goto("/settings/company");
-    await page.getByLabel("Review link").fill("javascript:alert(document.cookie)");
+    await page.locator("input[name=review_url]").fill("javascript:alert(document.cookie)");
     await page
       .locator("form")
-      .filter({ has: page.getByLabel("Review link") })
+      .filter({ has: page.locator("input[name=review_url]") })
       .getByRole("button", { name: "Save" })
       .click();
     await expect(page.getByText("Enter a web address that starts with https://.")).toBeVisible();

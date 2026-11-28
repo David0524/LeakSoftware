@@ -22,6 +22,7 @@ import {
   friendlyError,
 } from "@leakbook/core";
 import { useRow } from "../../../../data/hooks";
+import { businessNameFor } from "../../../../lib/business";
 import {
   useChecklistProgress,
   useInspectionConfig,
@@ -193,7 +194,7 @@ export default function ReviewScreen() {
       <T muted>Please read your report. Sign at the bottom to confirm the visit.</T>
       <Card>
         <T variant="secondary" muted style={face.semiBold}>
-          {company.name}
+          {businessNameFor(company, job)}
         </T>
         <T variant="sectionHeading">{maintenance ? "Service Report" : reportTitle(job.type)}</T>
         <T variant="bodyEmphasis">{customer?.name ?? "Customer"}</T>
@@ -307,7 +308,7 @@ export default function ReviewScreen() {
             {purpose ? (
               <Card>
                 <T style={styles.statement}>
-                  {signatureStatement(purpose, company.name, address || null)}
+                  {signatureStatement(purpose, businessNameFor(company, job), address || null)}
                 </T>
               </Card>
             ) : null}

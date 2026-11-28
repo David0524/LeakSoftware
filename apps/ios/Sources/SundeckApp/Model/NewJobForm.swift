@@ -213,6 +213,29 @@ public final class NewJobForm {
     /// questions (else a Notes card).
     public var showsBooking: Bool { isLeak || isInspection }
 
+    // MARK: - Business
+
+    // The second business (2026-11-26; docs/design/2026-11-26-second-business-and-tech-photos.md):
+    // with one, a Business row after the job type. It follows the job type until the person picks a
+    // business; only a pick is saved (no `business` is automatic). The website's BusinessField.
+
+    /// The business the person picked, or nil for the job type's.
+    public var business: Business?
+    /// The shop's company row as the business rules read it.
+    public var businessShop: BusinessCompany {
+        _ = sync.revision
+        return businessCompany(sync.store, companyId: company.id, fallbackName: company.name)
+    }
+    /// With a second business, except while starting a maintenance plan that repeats (pool care,
+    /// automatic; its visits are made on the server). A single visit of any type keeps it.
+    public var showsBusiness: Bool { !isPlan && hasSecondBusiness(businessShop) }
+    /// Both businesses, main first.
+    public var businessOptions: [BusinessChoice] { businessChoices(businessShop) }
+    /// The picked business, else the job type's.
+    public var shownBusiness: Business {
+        business ?? jobBusiness(businessShop, BusinessJob(type: jobType.rawValue), nil)
+    }
+
     /// The title over what the customer said: a repair's and leak detection's (owner, 2026-10-19).
     public static let fromCustomerTitle = "From the Customer"
 
@@ -719,6 +742,7 @@ public final class NewJobForm {
         let jobType = self.jobType
         let (shape, hasSpa, poolType, answers) = (self.shape, self.hasSpa, self.poolType, self.answers)
         let secondTech = showsSecondTech ? self.secondTech : nil
+        let business = showsBusiness ? self.business : nil
         let ccEmails = splitEmails(otherEmails)
         let notes = trim(self.notes)
         // Only this kind of job's questions are kept (answers to another kind's stay behind).
@@ -748,6 +772,8 @@ public final class NewJobForm {
             }
             var job = jobRow(records.job)
             job["property_id"] = .string(property)
+            // Only a picked business is saved; without one the job type decides.
+            if let business { job["business"] = .string(business.rawValue) }
             job["bill_to_customer_id"] = .string(customer)
             if let end { job["scheduled_end"] = .string(end) }
             job["fee_cents"] = feeCents.map { .number(Double($0)) } ?? .null

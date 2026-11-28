@@ -161,6 +161,55 @@ public struct BrandingForm: Equatable, Sendable {
     }
 }
 
+// MARK: - Second business
+
+/// Settings › Company and Branding › Second Business (2026-11-26; core Business.swift): a second
+/// name, logo and contact info for one line of work, for shops whose Services are Both.
+public struct SecondBusinessForm: Equatable, Sendable {
+    public var name = ""
+    public var phone = ""
+    public var email = ""
+    public var reviewURL = ""
+    public var primary = ""
+    public var useFor = BusinessWork.leak
+    /// The stored logo; nil after Remove Logo (a new one uploads on Save).
+    public var logoPath: String?
+
+    public init() {}
+
+    public init(_ row: Row?) {
+        let s = { (k: String) in row?[k]?.string ?? "" }
+        name = s("second_name")
+        phone = s("second_phone")
+        email = s("second_email")
+        reviewURL = s("second_review_url")
+        primary = s("second_brand_primary")
+        useFor = row?["second_for"]?.string == "pool" ? .pool : .leak
+        logoPath = row?["second_logo_path"]?.string
+    }
+
+    /// Field errors, by the column names.
+    public var errors: [String: String] {
+        var e: [String: String] = [:]
+        if !trimmed(reviewURL).isEmpty && !Limits.isWebURL(trimmed(reviewURL)) {
+            e["second_review_url"] = Limits.reviewLinkText
+        }
+        if !trimmed(primary).isEmpty && !isHexColor(trimmed(primary)) {
+            e["second_brand_primary"] = "Use a color like #12263A."
+        }
+        return e
+    }
+
+    public var values: Row {
+        [
+            "second_name": optional(name), "second_phone": optional(phone), "second_email": optional(email),
+            "second_review_url": optional(reviewURL),
+            "second_brand_primary": trimmed(primary).isEmpty ? .null : .string(trimmed(primary).uppercased()),
+            "second_for": .string(useFor.rawValue), "second_logo_path": logoPath.map { JSONValue.string($0) } ?? .null,
+        ]
+    }
+}
+
 /// A logo file's checks (`saveBranding`): PNG, JPEG or SVG, under 2 MB. The extension, or why not.
 public func logoFileProblem(contentType: String, bytes: Int) -> (ext: String?, error: String?) {
     let ext = ["image/png": "png", "image/jpeg": "jpg", "image/svg+xml": "svg"][contentType]
@@ -377,6 +426,18 @@ public enum ShopSettingsWrites {
         var values = form.values
         if let logoPath { values["logo_path"] = .string(logoPath) }
         try sync.write("company", id: companyId, companyId: companyId, values)
+    }
+
+    /// The second business (its logo path included: a new upload, or nil after Remove Logo).
+    public static func saveSecondBusiness(_ sync: SyncService, companyId: String, _ form: SecondBusinessForm) throws {
+        try sync.write("company", id: companyId, companyId: companyId, form.values)
+    }
+
+    /// Show the Tech on Reports (2026-11-26): company.settings.tech_on_reports.
+    public static func saveTechOnReports(
+        _ sync: SyncService, companyId: String, settings: JSONValue?, _ on: Bool
+    ) throws {
+        try saveSettings(sync, companyId: companyId, merged(settings, ["tech_on_reports": .bool(on)]))
     }
 
     public static func saveReportTemplate(

@@ -127,6 +127,8 @@ export interface ReportSnapshot {
     timezone: string;
     /** The shop's legal text, printed at the end of every report. */
     disclaimer?: string | null;
+    /** Which of the shop's businesses the job used (2026-11-26); missing before then. */
+    business?: "main" | "second";
   };
   customer: {
     name: string;
@@ -176,6 +178,20 @@ export interface ReportSnapshot {
    * item it was booked for. Missing on other jobs and on reports frozen before it existed.
    */
   work?: SnapshotWork[] | null;
+  /**
+   * Who did the work, with their photos (2026-11-26), when the shop shows the tech on reports;
+   * null or missing otherwise (business.ts techCardLine).
+   */
+  tech_card?: SnapshotTechCard | null;
+}
+
+export interface SnapshotTechCard {
+  techs: { name: string | null; photo_path: string | null; color: string | null }[];
+}
+
+/** The tech photos a report shows (company-assets paths), to sign with its other files. */
+export function techCardPhotoPaths(s: { tech_card?: SnapshotTechCard | null }): string[] {
+  return (s.tech_card?.techs ?? []).map((t) => t.photo_path).filter((p): p is string => !!p);
 }
 
 // ---------------------------------------------------------------------------

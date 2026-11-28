@@ -1,19 +1,22 @@
 import { useEffect, useRef, useState } from "react";
+import { TECH_CARD_TEXT } from "@leakbook/core";
 import { saveMemberStart, useMemberStart } from "../../../../../data/memberStarts";
 import { startForm, startWrite, type StartForm } from "../../../../../lib/memberStart";
 import { StartFromFields } from "../../../../../features/settings/StartFrom";
+import { MemberPhoto } from "../../../../../features/settings/MemberPhoto";
 import { useCompany, useSession } from "../../../../../state/session";
 import { Button, Notice, Screen, Section } from "../../../../../ui/components";
 import { haptics } from "../../../../../ui/haptics";
 
 /**
- * My Profile (owner, 2026-10-21; docs/design/2026-10-21-start-from-home.md): where your day
- * starts, The Shop or Home, as the website's More › My Profile. Your own member_start row,
- * saved through sync; a new home address is then looked up on the map by the website.
+ * My Profile (owner, 2026-10-21; docs/design/2026-10-21-start-from-home.md): your photo
+ * (docs/design/2026-11-26-second-business-and-tech-photos.md), and where your day starts, The
+ * Shop or Home, as the website's More › My Profile. Your own member_start row, saved through
+ * sync; a new home address is then looked up on the map by the website.
  */
 export default function MyProfile() {
   const company = useCompany();
-  const { user } = useSession();
+  const { user, membership } = useSession();
   const me = user?.id ?? "";
   const row = useMemberStart(company.id, me);
   const [form, setForm] = useState<StartForm>(() => startForm(row));
@@ -46,6 +49,14 @@ export default function MyProfile() {
   return (
     <Screen title="My Profile">
       {notice ? <Notice tone="success">{notice}</Notice> : null}
+      {/* Your photo on reports, when the shop shows the tech (saves at once, with signal). */}
+      {membership ? (
+        <MemberPhoto
+          membershipId={membership.id}
+          title={TECH_CARD_TEXT.myPhoto}
+          footer={TECH_CARD_TEXT.myPhotoFooter}
+        />
+      ) : null}
       <Section title="Your day">
         <StartFromFields form={form} onChange={change} row={row} error={error} />
       </Section>

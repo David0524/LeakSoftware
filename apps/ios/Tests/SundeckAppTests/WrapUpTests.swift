@@ -182,7 +182,7 @@ private func sentQuote(_ status: String, accepted: Bool = false) -> [(String, JS
             "payment",
             [
                 "id": "pay1", "company_id": "c1", "quote_id": "q1", "amount_cents": 62500, "method": "card",
-                "status": "succeeded",
+                "status": "succeeded", "fee_cents": 1875,
             ]
         ),
         ("job", ["id": "j2", "company_id": "c1", "property_id": "p1", "type": "repair", "number": 1296]),
@@ -324,7 +324,8 @@ private func sentQuote(_ status: String, accepted: Bool = false) -> [(String, JS
         #expect(!card.isEditable)
         #expect(card.lines.map(\.description) == ["Repair underground pressure line (per break)"])
         #expect(card.lines.map(\.amount) == ["$1,250.00"])
-        #expect(card.depositText == "Deposit $625.00 · paid (card)")
+        // With the card fee the customer paid (owner, 2026-11-25).
+        #expect(card.depositText == "Deposit $625.00 · paid (card) · Card fee $18.75")
         #expect(card.link?.absoluteString == "https://sundeck.test/q/qtok")
         #expect(card.acceptedText == "Accepted by Riley Rivera on Oct 14, 2026.")
         #expect(card.repairJobId == "j2" && card.repairJobLabel == "Repair job #1296")

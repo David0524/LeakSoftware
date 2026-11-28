@@ -313,6 +313,8 @@ public struct SettingsTeamMember: Identifiable, Equatable, Sendable {
     public var color: TechColor = .slate
     /// Text and Call Customers (`membership.can_contact_customers`; owner, 2026-11-23).
     public var canContact: Bool = true
+    /// Their photo in this shop (`membership.photo_path`, 2026-11-26).
+    public var photoPath: String? = nil
 }
 
 extension SettingsTeamMember: TeamOrdered {
@@ -338,9 +340,16 @@ public func teamMembers(_ store: LocalStore, kv: KeyValue, companyId: String, me
                 value: roleLabel(m["role"]?.string) + (off ? " · Turned off" : ""),
                 isMe: user == me, role: m["role"]?.string ?? "tech", active: !off,
                 disabledAt: m["disabled_at"]?.string, color: colors[user] ?? .slate,
-                canContact: m["can_contact_customers"]?.bool != false)
+                canContact: m["can_contact_customers"]?.bool != false, photoPath: m["photo_path"]?.string)
         }
         .sorted { $0.name.localizedCaseInsensitiveCompare($1.name) == .orderedAscending }
+}
+
+/// This person's membership row in the shop (My Profile's photo).
+public func myMembership(_ store: LocalStore, companyId: String, userId: String) -> Row? {
+    ((try? store.list("membership", companyId: companyId)) ?? []).first {
+        $0["user_id"]?.string == userId && $0["status"]?.string != "removed"
+    }
 }
 
 /// Settings › Team as one list (owner, 2026-10-20: "Put the active techs on top - alphabetical

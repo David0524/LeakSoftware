@@ -31,6 +31,7 @@ import { ContactLine } from "./contact-line";
 import { PdfLink } from "./pdf-link";
 import { PHONE_CARD, PHONE_GROUP, PHONE_LABEL, PHONE_ROW, PHONE_VALUE } from "./doc-ui";
 import { ReportLead } from "./report-lead";
+import { TechCard } from "./tech-photo";
 import { cx } from "./ui";
 
 // The customer-facing report, rendered from the frozen snapshot and the tech-approved text
@@ -650,6 +651,7 @@ export function ReportView(p: ReportViewProps) {
       ) : null,
     footer: () => (
       <>
+        <TechCard card={s.tech_card} jobType={s.job.type} urls={p.urls} />
         {s.company.disclaimer ? (
           <section
             className="report-disclaimer mt-10 text-[0.75rem] leading-snug whitespace-pre-line text-text-muted"

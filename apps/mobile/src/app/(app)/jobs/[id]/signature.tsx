@@ -18,6 +18,7 @@ import {
   friendlyError,
 } from "@leakbook/core";
 import { useRow } from "../../../../data/hooks";
+import { businessNameFor } from "../../../../lib/business";
 import { currentPosition, storeSignatureSvg } from "../../../../lib/media";
 import { useCompany, useSession } from "../../../../state/session";
 import {
@@ -72,7 +73,7 @@ export default function SignatureScreen() {
   const bar = (
     <Stack.Screen
       options={{
-        title: company.name,
+        title: businessNameFor(company, job),
         headerBackVisible: false,
         headerLeft: () => <HeaderButton title="Cancel" onPress={() => router.back()} />,
       }}
@@ -152,7 +153,9 @@ export default function SignatureScreen() {
         ) : null}
         {purpose ? (
           <Card>
-            <T style={styles.statement}>{signatureStatement(purpose, company.name, address)}</T>
+            <T style={styles.statement}>
+              {signatureStatement(purpose, businessNameFor(company, job), address)}
+            </T>
           </Card>
         ) : null}
         {/* The signer is the customer, so the phone doesn't offer the tech's own name. */}

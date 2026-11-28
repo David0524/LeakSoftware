@@ -21,6 +21,8 @@ interface PaymentRow {
   paid_at: string | null;
   /** Refunded so far through Stripe (0 or missing when none); amount_cents is what's kept. */
   refunded_cents?: number | null;
+  /** The card fee charged with it (shown with the payment, 2026-11-24). */
+  fee_cents?: number | null;
 }
 
 interface ShareLinkRow {

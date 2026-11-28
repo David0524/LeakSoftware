@@ -28,12 +28,11 @@ export default function Code() {
       title="Enter Your Code"
       intro="Open your authenticator app and enter the 6-digit code for Sundeck Pro."
     >
-      <FieldGroup labelWidth={96}>
+      <FieldGroup labelsInside>
         <FieldRow
           label="Code"
           value={code}
           onChangeText={setCode}
-          placeholder="123456"
           keyboardType="number-pad"
           autoComplete="one-time-code"
           textContentType="oneTimeCode"

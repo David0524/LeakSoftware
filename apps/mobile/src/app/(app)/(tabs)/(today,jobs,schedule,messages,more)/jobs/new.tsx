@@ -44,9 +44,14 @@ import {
   type JobType,
   type PlanRepeat as Repeat,
   friendlyError,
+  businessChoices,
+  businessIdentity,
+  hasSecondBusiness,
+  jobBusiness,
+  SECOND_BUSINESS_TEXT,
+  type Business,
 } from "@leakbook/core";
 import { useRows, useSyncStatus } from "../../../../../data/hooks";
-import { AddressSuggestions } from "../../../../../features/address/AddressSuggestions";
 import { locateAfterSync } from "../../../../../lib/locate";
 import { useTeam } from "../../../../../data/schedule";
 import {
@@ -58,8 +63,9 @@ import {
 } from "../../../../../features/maintenance/plan";
 import { PlanRepeat } from "../../../../../features/maintenance/PlanRepeat";
 import { ChipToggles } from "../../../../../features/inspection/ChoicePills";
-import { Select } from "../../../../../ui/Select";
+import { Select, useMenu } from "../../../../../ui/Select";
 import { CustomerPicker } from "../../../../../features/job/CustomerPicker";
+import { AddressFields } from "../../../../../features/quote/AddressFields";
 import { AddRepairButton, RepairFields, repairItemsOf } from "../../../../../features/job/Repairs";
 import { useCompany, useSession } from "../../../../../state/session";
 import {
@@ -67,6 +73,8 @@ import {
   Card,
   Choice,
   Field,
+  Group,
+  ListRow,
   Notice,
   Screen,
   Section,
@@ -120,6 +128,12 @@ function NewJobForm() {
   const repair = jobType === "repair";
   // From the Customer asks this job type's own questions (a pool inspection its features).
   const questions = intakeQuestionsFor(company.settings.intake_questions ?? [], jobType);
+  // Which of the shop's two businesses the job uses (Services = Both with a second business;
+  // docs/design/2026-11-26-second-business-and-tech-photos.md). It follows the job type until
+  // the person picks one; only a picked one is saved on the job (null = automatic).
+  const [business, setBusiness] = useState<Business | null>(null);
+  const businessMenu = useMenu();
+  const shownBusiness = jobBusiness(company, { type: jobType, business }, null);
   // Owners and admins can start a maintenance plan here: visits that repeat (website's New Job).
   const canPlan = isManagerRole(membership?.role);
   const [repeat, setRepeat] = useState<Repeat | "0">("0");
@@ -290,6 +304,7 @@ function NewJobForm() {
     repairNotes.trim() ||
     Boolean(gallonsTyped?.text) ||
     repeat !== "0" ||
+    business !== null ||
     planForm.price.trim() ||
     planForm.invoiceDay ||
     planForm.notes.trim() ||
@@ -535,6 +550,7 @@ function NewJobForm() {
               ? { [REPAIR_ITEM_KEY]: bookedName }
               : {},
         ...(repair && repairNotes.trim() ? { summary_notes: repairNotes.trim() } : {}),
+        ...(business && hasSecondBusiness(company) ? { business } : {}),
       });
       // Each repair is its own row, with the job (offline too).
       booked.forEach((r, i) =>
@@ -586,6 +602,29 @@ function NewJobForm() {
         options={jobTypes}
         compact={jobTypes.length > 3}
       />
+      {/* Hidden while starting a plan that repeats: its visits are pool care, automatic. */}
+      {hasSecondBusiness(company) && !plan ? (
+        <Section title="">
+          <Group>
+            <ListRow
+              title={SECOND_BUSINESS_TEXT.jobRow}
+              detail={businessIdentity(company, shownBusiness).name}
+              accessibilityHint="Choose the business name this job's customer sees."
+              onPress={() =>
+                businessMenu.open({
+                  title: SECOND_BUSINESS_TEXT.jobRow,
+                  items: businessChoices(company).map((c) => ({
+                    label: c.label,
+                    checked: c.value === shownBusiness,
+                    onPress: () => setBusiness(c.value),
+                  })),
+                })
+              }
+            />
+          </Group>
+        </Section>
+      ) : null}
+      {businessMenu.element}
       <Section title="Customer">
         <CustomerPicker
           customers={customers}
@@ -721,47 +760,13 @@ function NewJobForm() {
             <T variant="small">{formatAddress(properties.find((p) => p.id === propertyId)!)}</T>
           </Card>
         ) : (
-          <>
-            <Field
-              label="Street address"
-              value={form.addressLine1}
-              onChangeText={set("addressLine1")}
-              error={errors.addressLine1}
-            />
-            <AddressSuggestions
-              street={form.addressLine1}
-              onPick={(s) =>
-                setForm((f) => ({
-                  ...f,
-                  addressLine1: s.line1,
-                  city: s.city,
-                  state: s.state,
-                  postalCode: s.postal_code,
-                }))
-              }
-            />
-            <View style={styles.cols}>
-              <View style={{ flex: 2 }}>
-                <Field label="City" value={form.city} onChangeText={set("city")} />
-              </View>
-              <View style={{ flex: 1 }}>
-                <Field
-                  label="State"
-                  value={form.state}
-                  onChangeText={set("state")}
-                  autoCapitalize="characters"
-                  maxLength={2}
-                />
-              </View>
-            </View>
-            <Field
-              label="ZIP"
-              value={form.postalCode}
-              onChangeText={set("postalCode")}
-              keyboardType="number-pad"
-              maxLength={10}
-            />
-          </>
+          <AddressFields
+            form={form}
+            set={set}
+            setForm={setForm}
+            error={errors.addressLine1}
+            labelsInside
+          />
         )}
       </Section>
 

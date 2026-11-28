@@ -112,7 +112,14 @@ export function TwoStepSettings({ on }: { on: boolean }) {
       </p>
       <p>2. Enter the 6-digit code the app shows.</p>
       <FieldGroup labelWidth="6rem">
-        <GroupedField label="Code" name="code" {...CODE} required error={confirmed.fields?.code} />
+        <GroupedField
+          labelInside
+          label="Code"
+          name="code"
+          {...CODE}
+          required
+          error={confirmed.fields?.code}
+        />
       </FieldGroup>
       {confirmed.error ? <Banner tone="error">{confirmed.error}</Banner> : null}
       <Button type="submit" disabled={confirming} className="w-full">

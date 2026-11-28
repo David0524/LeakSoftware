@@ -88,6 +88,9 @@ public struct QuotePricing: Equatable, Sendable {
         // New shops default to no deposit (2026-10-18).
         deposit = (try? settings["deposit"]?.decode(DepositRule.self)) ?? DepositRule(type: .percent, valueBps: 0)
     }
+
+    /// The deposit a quote asks for: its own rule, else the shop's (owner, 2026-11-27).
+    public func deposit(for quote: Quote) -> DepositRule { quoteDepositRule(quote.depositRule, deposit) }
 }
 
 /// Every quote write. All go through the sync service; a line change and the quote's new totals
@@ -189,11 +192,26 @@ public enum QuoteWrites {
         }
     }
 
+    /// A draft's own deposit (owner, 2026-11-27; core QuoteDeposit.swift): nil for the shop's
+    /// default. Owners and admins only (the server's guard_quote_deposit checks too). The rule and
+    /// the new deposit are one batch.
+    public static func setDepositRule(
+        _ sync: SyncService, companyId: String, pricing: QuotePricing, quote: JobQuote, rule: DepositRule?
+    ) throws {
+        var q = quote.quote
+        q.depositRule = rule
+        let value = try rule.map { try JSONDecoder().decode(JSONValue.self, from: JSONEncoder().encode($0)) } ?? .null
+        try sync.batch {
+            try sync.store.write("quote", id: quote.id, companyId: companyId, ["deposit_rule": value])
+            try saveTotals(sync, companyId: companyId, pricing: pricing, quote: q, quote.lines)
+        }
+    }
+
     /// Recomputes and saves a draft's totals so the office sees current numbers.
     private static func saveTotals(
         _ sync: SyncService, companyId: String, pricing: QuotePricing, quote: Quote, _ lines: [QuoteLine]
     ) throws {
-        let t = quoteTotals(lines, quote.discountCents, pricing.taxRateBps, pricing.deposit)
+        let t = quoteTotals(lines, quote.discountCents, pricing.taxRateBps, pricing.deposit(for: quote))
         try sync.store.write(
             "quote", id: quote.id, companyId: companyId,
             [

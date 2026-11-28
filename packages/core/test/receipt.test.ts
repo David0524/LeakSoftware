@@ -10,6 +10,8 @@ import {
   receiptBalanceText,
   receiptPrompt,
   receiptRecipientError,
+  cardFeeText,
+  chargedCents,
   receiptRows,
   receiptSentMessage,
   receiptSummary,
@@ -87,6 +89,29 @@ describe("receipts for cash and check", () => {
       { label: "Invoice total", value: "$649.00" },
       { label: "Balance remaining", value: "$449.00" },
     ]);
+  });
+
+  // Owner, 2026-11-24: "On the receipt, it does not show the credit card processing fee".
+  it("shows the card fee the customer paid with a card payment", () => {
+    const card = { ...check, method: "card", check_number: null, fee_cents: 3 };
+    const paid = { number: 1002, total_cents: 100, amount_paid_cents: 100 };
+    expect(chargedCents({ amount_cents: 100, fee_cents: 3 })).toBe(103);
+    expect(chargedCents({ amount_cents: 100, fee_cents: null })).toBe(100);
+    expect(cardFeeText(card)).toBe("Card fee $0.03");
+    expect(cardFeeText({ fee_cents: 0 })).toBeNull();
+    expect(receiptRows(paid, { ...card, amount_cents: 100 }, null)).toEqual([
+      { label: "Invoice", value: "#1002" },
+      { label: "Method", value: "Card" },
+      { label: "Card fee", value: "$0.03" },
+      { label: "Amount paid", value: "$1.03" },
+      { label: "Invoice total", value: "$1.00" },
+      { label: "Balance", value: "Paid in full" },
+    ]);
+    expect(
+      receiptTextMessage("All In Pool", { ...card, amount_cents: 100 }, paid, "https://x"),
+    ).toBe(
+      "All In Pool: Thank you for your $1.03 payment (Card, including a $0.03 card fee). Invoice #1002 is paid in full. Your receipt: https://x",
+    );
   });
 
   it("checks where it goes and says where it went", () => {

@@ -1,10 +1,12 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { Suspense } from "react";
+import { Fragment, Suspense } from "react";
 import {
   autopayConsent,
+  CARD_FEE_LABEL,
   cardFeeChoice,
+  chargedCents,
   customerAutopayLine,
   formatCents,
   payOverTimeButton,
@@ -22,7 +24,7 @@ import { tokens } from "@leakbook/tokens";
 import { PayInvoiceForm } from "@/components/invoice-actions";
 import { cx } from "@/components/ui";
 import { publicClient } from "@/server/reports";
-import { cardFeeFor, payLaterOffer, paymentsConfigured } from "@/server/stripe";
+import { cardFeeFor, fillCardFees, payLaterOffer, paymentsConfigured } from "@/server/stripe";
 import { ContactLine } from "@/components/contact-line";
 import {
   Banner,
@@ -90,6 +92,8 @@ interface TokenInvoice {
     check_number: string | null;
     status: string;
     paid_at: string | null;
+    /** The card fee charged with it; null or missing for a card payment not yet read from Stripe. */
+    fee_cents?: number | null;
   }[];
   can_pay: boolean;
 }
@@ -121,6 +125,12 @@ async function InvoicePage({ params, searchParams }: PageProps<"/i/[token]">) {
   });
   const i = data as TokenInvoice | null;
   if (!i) notFound();
+  // A card payment whose fee the database doesn't know (from before the receipt showed it, or
+  // before the database kept fees at all): read it from Stripe (owner, 2026-11-24).
+  if (i.payments.some((p) => p.method === "card" && p.fee_cents == null)) {
+    const fees = await fillCardFees(i.invoice_id);
+    for (const p of i.payments) if (p.id in fees) p.fee_cents = fees[p.id];
+  }
   // A monthly invoice sent with the month's service report links it (owner, 2026-10-24).
   const { data: monthReport } = await db.rpc("month_report_link", { link_token: token });
   const report = monthReport as { token: string; month: string; visits: number } | null;
@@ -360,11 +370,16 @@ async function InvoicePage({ params, searchParams }: PageProps<"/i/[token]">) {
             ))}
           <Row label="Total" value={formatCents(i.total_cents)} strong />
           {received.map((p, n) => (
-            <Row
-              key={n}
-              label={`${paymentMethodLabel(p.method, p.check_number)}${p.paid_at ? `, ${date(p.paid_at, tz)}` : ""}`}
-              value={`−${formatCents(p.amount_cents)}`}
-            />
+            <Fragment key={n}>
+              {/* The card fee the customer paid with it (owner, 2026-11-24). */}
+              {(p.fee_cents ?? 0) > 0 ? (
+                <Row label={CARD_FEE_LABEL} value={formatCents(p.fee_cents ?? 0)} />
+              ) : null}
+              <Row
+                label={`${paymentMethodLabel(p.method, p.check_number)}${p.paid_at ? `, ${date(p.paid_at, tz)}` : ""}`}
+                value={`−${formatCents(chargedCents(p))}`}
+              />
+            </Fragment>
           ))}
           {i.status !== "void" ? (
             <Row label="Balance due" value={formatCents(i.balance_cents)} strong />
@@ -380,10 +395,13 @@ async function InvoicePage({ params, searchParams }: PageProps<"/i/[token]">) {
           </h2>
           {lastPaid ? (
             <p className="mb-4" data-testid="payment-received">
-              Thank you for your payment of {formatCents(lastPaid.amount_cents)} (
+              Thank you for your payment of {formatCents(chargedCents(lastPaid))} (
               {paymentMethodLabel(lastPaid.method, lastPaid.check_number)}
-              {lastPaid.paid_at ? `, ${date(lastPaid.paid_at, tz)}` : ""}). The balance due is{" "}
-              {formatCents(i.balance_cents)}.
+              {lastPaid.paid_at ? `, ${date(lastPaid.paid_at, tz)}` : ""})
+              {(lastPaid.fee_cents ?? 0) > 0
+                ? `, including a ${formatCents(lastPaid.fee_cents ?? 0)} card fee`
+                : ""}
+              . The balance due is {formatCents(i.balance_cents)}.
             </p>
           ) : null}
           {autopayLine ? (

@@ -1,5 +1,6 @@
 import { offersLeak, offersPool } from "@leakbook/core";
-import { Grouped, PageHeader, Row } from "@/components/ui";
+import { PageHeader } from "@/components/ui";
+import { SettingsSearchList } from "@/components/settings-search";
 import { getOffice } from "@/lib/auth";
 import { getCompany } from "@/lib/data";
 import { settingsGroups } from "@/lib/settings-sections";
@@ -35,14 +36,13 @@ export default async function SettingsIndex() {
   return (
     <>
       <PageHeader title="Settings" back={{ href: "/more", label: "More" }} />
-      <div className="max-w-xl space-y-6">
-        {groups.map((g) => (
-          <Grouped key={g.title} title={g.title}>
-            {g.sections.map((s) => (
-              <Row key={s.href} href={s.href} label={s.label} detail={detail[s.href]} />
-            ))}
-          </Grouped>
-        ))}
+      <div className="max-w-xl">
+        <SettingsSearchList
+          groups={groups.map((g) => ({
+            title: g.title,
+            sections: g.sections.map((s) => ({ ...s, detail: detail[s.href] })),
+          }))}
+        />
       </div>
     </>
   );

@@ -29,12 +29,11 @@ export default function Reauth() {
       <T muted style={{ paddingHorizontal: space["4"], textAlign: "center" }}>
         Signed in as {user?.email}. Everything on this phone stays put.
       </T>
-      <FieldGroup labelWidth={96}>
+      <FieldGroup labelsInside>
         <PasswordRow
           label="Password"
           value={password}
           onChangeText={setPassword}
-          placeholder="Required"
           autoFocus
           autoComplete="current-password"
           textContentType="password"

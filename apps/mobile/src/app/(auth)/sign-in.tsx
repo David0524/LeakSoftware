@@ -62,12 +62,11 @@ export default function SignIn() {
           {[SIGNED_OUT_MESSAGE, signedOutNote(pending, signedOut.email)].filter(Boolean).join(" ")}
         </Notice>
       ) : null}
-      <FieldGroup labelWidth={96}>
+      <FieldGroup labelsInside>
         <FieldRow
           label="Email"
           value={email}
           onChangeText={setEmail}
-          placeholder="name@example.com"
           autoCapitalize="none"
           autoCorrect={false}
           spellCheck={false}
@@ -81,7 +80,6 @@ export default function SignIn() {
           label="Password"
           value={password}
           onChangeText={setPassword}
-          placeholder="Required"
           autoComplete="current-password"
           textContentType="password"
           returnKeyType="go"

@@ -298,6 +298,7 @@ export function GroupedField({
   error,
   stacked = false,
   labelHidden = false,
+  labelInside = false,
   className,
   ...input
 }: ComponentProps<"input"> & {
@@ -307,9 +308,16 @@ export function GroupedField({
   stacked?: boolean;
   /** Only for screen readers: the field's placeholder and the row above say what it is. */
   labelHidden?: boolean;
+  /**
+   * Phones: the label is the gray hint inside the field, gone once you type, as in iOS
+   * Calendar's New Event (owner, 2026-11-27). For forms that make something new and for signing
+   * in; settings keep their labels. Wider screens keep the label above.
+   */
+  labelInside?: boolean;
 }) {
   const auto = useId();
   const id = input.id ?? `${input.name ?? "field"}-${auto}`;
+  const inside = labelInside && !labelHidden && !stacked;
   return (
     <div className={cx(GROUP_ROW, className)}>
       <div
@@ -324,8 +332,12 @@ export function GroupedField({
         <label
           htmlFor={id}
           className={cx(
-            labelHidden ? "sr-only" : "block max-sm:shrink-0 sm:mb-1 sm:font-medium",
-            !stacked && !labelHidden && "max-sm:w-(--label-w) max-[280px]:w-auto",
+            labelHidden
+              ? "sr-only"
+              : inside
+                ? "max-sm:sr-only sm:mb-1 sm:block sm:font-medium"
+                : "block max-sm:shrink-0 sm:mb-1 sm:font-medium",
+            !stacked && !labelHidden && !inside && "max-sm:w-(--label-w) max-[280px]:w-auto",
           )}
         >
           {label}
@@ -333,10 +345,13 @@ export function GroupedField({
         <input
           {...input}
           id={id}
+          placeholder={inside ? label : input.placeholder}
           aria-invalid={error ? true : undefined}
           aria-describedby={error || hint ? `${id}-note` : undefined}
           className={cx(
             "block w-full min-h-11 min-w-0 text-text placeholder:text-placeholder disabled:text-text-muted",
+            // Wider screens show the label above, so the hint inside would repeat it.
+            inside && "sm:placeholder:text-transparent",
             // A value too long for the row ends in "…" until it's tapped, instead of being cut.
             "max-sm:flex-1 max-sm:truncate max-sm:rounded-md max-sm:bg-transparent max-sm:focus-visible:outline-offset-0",
             "sm:rounded-[10px] sm:border sm:border-control-border sm:bg-surface sm:px-3 sm:py-2",

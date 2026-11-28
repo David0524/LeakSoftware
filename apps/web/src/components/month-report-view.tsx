@@ -19,6 +19,7 @@ import { ContactLine } from "./contact-line";
 import { PdfLink } from "./pdf-link";
 import { PHONE_CARD } from "./doc-ui";
 import { ReportLead } from "./report-lead";
+import { TechCard } from "./tech-photo";
 import type { VisitSnapshot } from "./visit-report-view";
 import { cx } from "./ui";
 
@@ -295,6 +296,8 @@ export function MonthReportView({
           {s.visits.slice(SHOWN).map(visit)}
         </details>
       ) : null}
+
+      <TechCard card={s.tech_card} jobType={"maintenance"} urls={urls} />
 
       <footer className="mt-10 text-center text-[0.8125rem] text-text-muted">
         {s.company.disclaimer ? (

@@ -69,6 +69,8 @@
                     }
                     // The fee is edited under On site, so it isn't repeated here.
                 }
+                // Which business the customer sees (2026-11-26), with a second business only.
+                if let company { businessGroup(company) }
                 // A repair job's repairs and its price (owner, 2026-10-22).
                 if details.showsRepairs { JobRepairsGroup(job: job) }
                 if !details.intake.isEmpty {
@@ -484,6 +486,38 @@
         private func saveNotes() {
             if (job.job["summary_notes"]?.string ?? "") != notes {
                 save(["summary_notes": notes.isEmpty ? .null : .string(notes)])
+            }
+        }
+
+        /// Business: the job's business name; tapping offers both, a check on the current one.
+        @ViewBuilder
+        private func businessGroup(_ company: CompanyContext) -> some View {
+            let shop = businessCompany(sync.store, companyId: company.id, fallbackName: company.name)
+            if hasSecondBusiness(shop), let own = BusinessJob(row: job.job) {
+                let parent = parentBusinessJob(sync.store, job: job.job)
+                let current = jobBusiness(shop, own, parent)
+                let name = jobBusinessName(shop, own, parent)
+                Grouped {
+                    ListRow(SecondBusinessText.jobRow) {
+                        Menu {
+                            ForEach(businessChoices(shop), id: \.value) { choice in
+                                Button {
+                                    save(["business": .string(choice.value.rawValue)])
+                                } label: {
+                                    if choice.value == current {
+                                        Label(choice.label, systemImage: "checkmark")
+                                    } else {
+                                        Text(choice.label)
+                                    }
+                                }
+                            }
+                        } label: {
+                            MenuValue(text: name)
+                        }
+                        .accessibilityLabel(SecondBusinessText.jobRow)
+                        .accessibilityValue(name)
+                    }
+                }
             }
         }
 

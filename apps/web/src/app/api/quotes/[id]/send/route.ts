@@ -2,6 +2,7 @@ import { quoteShareText } from "@leakbook/core";
 import { clientFromRequest, jsonError } from "@/server/bearer";
 import { friendlyDbError } from "@/lib/limits";
 import { siteOrigin } from "@/lib/origin";
+import { jobBusinessNameById } from "@/server/business";
 
 /** POST: send this quote (locks its totals). Returns the customer link and a text message. */
 export async function POST(request: Request, ctx: RouteContext<"/api/quotes/[id]/send">) {
@@ -12,11 +13,15 @@ export async function POST(request: Request, ctx: RouteContext<"/api/quotes/[id]
   if (error) return jsonError(friendlyDbError(error.message, "Quote not found"), 400);
   const { data: q } = await db
     .from("quote")
-    .select("company:company_id(name)")
+    .select("job_id, company:company_id(name)")
     .eq("id", id)
     .single();
+  const row = q as { job_id: string; company: { name: string } | null } | null;
+  // The quote's job's business (2026-11-26): its second business's name when it uses it.
   const shop =
-    (q as { company: { name: string } | null } | null)?.company?.name ?? "Your pool shop";
+    (row?.job_id ? await jobBusinessNameById(db, row.job_id) : null) ??
+    row?.company?.name ??
+    "Your pool shop";
   const link = `${await siteOrigin()}/q/${(data as { token: string }).token}`;
   return Response.json({ link, message: quoteShareText(shop, link) });
 }

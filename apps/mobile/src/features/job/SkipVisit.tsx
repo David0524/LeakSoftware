@@ -26,6 +26,7 @@ import {
   currentPosition,
   type CapturedFile,
 } from "../../lib/media";
+import { businessNameFor } from "../../lib/business";
 import { smsUrl } from "../../lib/heroMessage";
 import { announceUndoable } from "../../lib/removedBanner";
 import { requestReschedule } from "../../lib/rescheduleRequest";
@@ -120,7 +121,7 @@ export function SkipVisitSheet({
       const body = skipCustomerText({
         customer: customer?.name ?? null,
         tech,
-        shop: company.name,
+        shop: businessNameFor(company, job),
         reason: chosen,
       });
       chooseAction({
