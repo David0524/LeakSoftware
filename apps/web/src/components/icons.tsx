@@ -1,4 +1,5 @@
 import type { ReactNode } from "react";
+import { JOB_TYPE_LABELS, type JobType } from "@leakbook/core";
 
 // Line icons in one style (1.8 stroke, round caps) to sit with 17 pt text.
 
@@ -260,3 +261,54 @@ export const ShareIcon = ({ className }: { className?: string }) => (
     <path d="M12 3.5V14M8 7.5l4-4 4 4M8.5 10H7a2 2 0 0 0-2 2v6.5a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V12a2 2 0 0 0-2-2h-1.5" />
   </Icon>
 );
+
+/**
+ * Each kind of job's symbol (owner, 2026-11-28: "add an icon for each job like Maintenance (make
+ * this a water drop since it's the most common, regular job)"), as the apps draw it: a drop, a
+ * magnifying glass, a wrench, a clipboard.
+ */
+export function JobTypeGlyph({ type, className }: { type: JobType; className?: string }) {
+  if (type === "maintenance")
+    return (
+      <Icon className={className}>
+        <path
+          d="M12 3.2c-2.9 3.9-6 7.3-6 10.8a6 6 0 0 0 12 0c0-3.5-3.1-6.9-6-10.8z"
+          fill="currentColor"
+        />
+      </Icon>
+    );
+  if (type === "repair")
+    return (
+      <Icon className={className}>
+        <path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.8-3.8a6 6 0 0 1-7.9 7.9l-6.9 6.9a2.1 2.1 0 0 1-3-3l6.9-6.9a6 6 0 0 1 7.9-7.9z" />
+      </Icon>
+    );
+  if (type === "inspection")
+    return (
+      <Icon className={className}>
+        <rect x="8" y="2.5" width="8" height="4" rx="1" />
+        <path d="M16 4.5h2a2 2 0 0 1 2 2V20a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6.5a2 2 0 0 1 2-2h2" />
+        <path d="M9 14l2 2 4-4" />
+      </Icon>
+    );
+  return (
+    <Icon className={className}>
+      <circle cx="11" cy="11" r="6.5" />
+      <path d="M20 20l-4.4-4.4" />
+    </Icon>
+  );
+}
+
+/** A job's type in a tinted circle, leading a Jobs row; it reads as the type's name. */
+export function JobTypeIcon({ type, className = "size-8" }: { type: JobType; className?: string }) {
+  return (
+    <span
+      role="img"
+      aria-label={JOB_TYPE_LABELS[type] ?? "Job"}
+      title={JOB_TYPE_LABELS[type] ?? "Job"}
+      className={`grid shrink-0 place-items-center rounded-full bg-link/10 text-link ${className}`}
+    >
+      <JobTypeGlyph type={type} className="size-[1.125rem]" />
+    </span>
+  );
+}

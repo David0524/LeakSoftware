@@ -4,6 +4,7 @@ import { JOB_STATUS_LABELS, NOT_ON_MAP, type JobStatus } from "@leakbook/core";
 import { CleaningIcon } from "../maintenance/Cleanings";
 import { SamplePill, StatusChip } from "../../ui/components";
 import { Grip } from "../../ui/Grip";
+import { JobTypeIcon } from "../../ui/JobTypeIcon";
 import { LockTag } from "../../ui/LockTag";
 import { NotOnMapTag } from "../../ui/NotOnMap";
 import { TechStripe } from "../../ui/TechDot";
@@ -259,6 +260,7 @@ export function StopTileFace({
       <Badge n={n} status={s.status} done={s.done} big />
       <View style={[styles.text, s.done && { opacity: 0.7 }]}>
         <View style={styles.line1}>
+          {s.type ? <JobTypeIcon type={s.type} /> : null}
           {onOpen ? (
             <Pressable
               accessibilityRole="link"

@@ -129,8 +129,10 @@ public func jobTypeLabel(_ type: JobType) -> String { type.label }
 public struct JobListRow: Identifiable, Equatable, Sendable {
     public var id: String
     public var customer: String
-    /// "#1040 · Leak detection" (or "New job · …").
+    /// "#1040 · Leak detection" (or "New job · …"): what VoiceOver reads; the row shows the
+    /// type as a symbol (`type`) and the number on the time's line.
     public var kind: String
+    /// The whole address, for VoiceOver; the row shows `street`.
     public var address: String?
     /// "Sun, Oct 11, 9:00 AM · Tony Tech", "Started · Tony Tech", "Not scheduled · Unassigned".
     public var when: String
@@ -146,6 +148,13 @@ public struct JobListRow: Identifiable, Equatable, Sendable {
     public var movable = false
     /// The shop's sample job (owner, 2026-10-22): a Sample pill by the name.
     public var sample = false
+    /// The job's type, as a symbol leading the row (owner, 2026-11-28).
+    public var type: JobType = .detection
+    /// "#1040", "Sample job" or "New job": first on the time's line.
+    public var numberText = ""
+    /// The street alone ("4921 N 18th Ave"), after a pin, so it fits on one line (owner,
+    /// 2026-11-28).
+    public var street: String? = nil
 }
 
 /// A row's "Sun, Nov 1, 9:00 AM · Tony Tech" with the time held on one line and the dot kept after
@@ -211,6 +220,12 @@ public func jobList(
             completable: jobHeaderPhoneActions(v.status, type: v.type).contains(.done) || checklistShowsCompleteJob(v),
             movable: canMoveJob(v.status) && jobReschedulable(type: v.type.rawValue, status: v.status.rawValue))
         row.sample = sample
+        row.type = v.type
+        row.numberText = number
+        row.street = v.property.flatMap { $0["address_line1"]?.string }.flatMap {
+            let t = $0.trimmingCharacters(in: .whitespaces)
+            return t.isEmpty ? nil : t
+        }
         return row
     }
 }

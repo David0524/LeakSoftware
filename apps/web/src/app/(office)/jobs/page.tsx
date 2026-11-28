@@ -30,6 +30,7 @@ import {
   pillClass,
 } from "@/components/ui";
 import { LiveStatusBadge } from "@/components/instant";
+import { JobTypeIcon, PinIcon } from "@/components/icons";
 import { getOffice } from "@/lib/auth";
 import { OPEN_STATUSES, getCompany, listJobs, mayMakeJobs, type JobRow } from "@/lib/data";
 import { openIssues } from "@/lib/issues";
@@ -121,6 +122,10 @@ export default async function JobsPage({ searchParams }: PageProps<"/jobs">) {
     return `/jobs${next.size ? `?${next}` : ""}`;
   };
   const now = new Date();
+  const when = (j: JobRow) =>
+    j.status === "in_progress" && j.started_at
+      ? "Started"
+      : formatSchedule(j.scheduled_start ?? null, now, office.company.timezone);
 
   return (
     <>
@@ -198,40 +203,37 @@ export default async function JobsPage({ searchParams }: PageProps<"/jobs">) {
             <Grouped className="sm:hidden">
               {jobs.map((j) => (
                 <JobActions key={j.id} as="li" job={actions(j)}>
-                  <RowContent
-                    href={`/jobs/${j.id}`}
-                    label={
-                      <span className="font-semibold">
-                        {j.customer?.name ?? "Customer"}
-                        {j.sample ? <SamplePill className="ml-2 align-middle" /> : null}
+                  <RowContent href={`/jobs/${j.id}`} icon={<JobTypeIcon type={j.type} />}>
+                    {/* The status sits by the name, so the lines under it use the row's whole
+                        width (owner, 2026-11-28: "each job is too large"). */}
+                    <span className="min-w-0 flex-1">
+                      <span className="flex min-w-0 items-center gap-2">
+                        <span className="min-w-0 truncate font-semibold">
+                          {j.customer?.name ?? "Customer"}
+                        </span>
+                        {j.sample ? <SamplePill className="shrink-0" /> : null}
+                        <span className="ml-auto shrink-0">
+                          <LiveStatusBadge jobId={j.id} status={j.status} />
+                        </span>
                       </span>
-                    }
-                    detail={
-                      <>
-                        <span className="block">
-                          {j.number ? `#${j.number}` : j.sample ? "Sample job" : "New job"} ·{" "}
-                          {JOB_TYPE_LABELS[j.type]}
+                      <span className="block truncate text-[0.9375rem]">
+                        {j.number ? `#${j.number}` : j.sample ? "Sample job" : "New job"} ·{" "}
+                        {when(j)} · {j.techName ?? "Unassigned"}
+                      </span>
+                      {/* The street only, after a pin, so it fits on one line (owner,
+                          2026-11-28); hover shows the whole address. */}
+                      {j.property?.address_line1 ? (
+                        <span
+                          className="flex min-w-0 items-center gap-1 text-[0.9375rem] text-text-muted"
+                          title={formatAddress(j.property)}
+                        >
+                          <PinIcon className="size-3.5 shrink-0" />
+                          <span className="truncate">{j.property.address_line1}</span>
+                          <span className="sr-only">{`, ${formatAddress(j.property)}`}</span>
                         </span>
-                        {j.property ? (
-                          <span className="block truncate">{formatAddress(j.property)}</span>
-                        ) : null}
-                        <span className="block text-text">
-                          {/* The time stays on one line with the dot after it, so a wrapped line
-                              breaks only before the tech, never inside the time or before "·". */}
-                          {j.status === "in_progress" && j.started_at
-                            ? "Started"
-                            : formatSchedule(
-                                j.scheduled_start ?? null,
-                                now,
-                                office.company.timezone,
-                              ).replace(/ /g, "\u00a0")}
-                          {"\u00a0· "}
-                          {j.techName ?? "Unassigned"}
-                        </span>
-                      </>
-                    }
-                    value={<LiveStatusBadge jobId={j.id} status={j.status} />}
-                  />
+                      ) : null}
+                    </span>
+                  </RowContent>
                 </JobActions>
               ))}
             </Grouped>
@@ -265,14 +267,19 @@ export default async function JobsPage({ searchParams }: PageProps<"/jobs">) {
                       className="border-b border-border last:border-0 hover:bg-bg"
                     >
                       <td className="px-4 py-3 align-top">
-                        <Link
-                          href={`/jobs/${j.id}`}
-                          className="font-semibold text-link underline-offset-4 hover:underline"
-                        >
-                          {j.number ? `#${j.number}` : j.sample ? "Sample job" : "New job"}
-                        </Link>
-                        <div className="text-[0.9375rem] text-text-muted">
-                          {JOB_TYPE_LABELS[j.type]}
+                        <div className="flex items-start gap-3">
+                          <JobTypeIcon type={j.type} />
+                          <div>
+                            <Link
+                              href={`/jobs/${j.id}`}
+                              className="font-semibold text-link underline-offset-4 hover:underline"
+                            >
+                              {j.number ? `#${j.number}` : j.sample ? "Sample job" : "New job"}
+                            </Link>
+                            <div className="text-[0.9375rem] text-text-muted">
+                              {JOB_TYPE_LABELS[j.type]}
+                            </div>
+                          </div>
                         </div>
                       </td>
                       <td className="px-4 py-3 align-top">
@@ -280,18 +287,21 @@ export default async function JobsPage({ searchParams }: PageProps<"/jobs">) {
                           {j.customer?.name ?? "Customer"}
                           {j.sample ? <SamplePill className="ml-2 align-middle" /> : null}
                         </div>
-                        <div className="text-[0.9375rem] text-text-muted">
-                          {j.property ? formatAddress(j.property) : ""}
-                        </div>
+                        {j.property?.address_line1 ? (
+                          <div
+                            className="flex items-center gap-1 text-[0.9375rem] text-text-muted"
+                            title={formatAddress(j.property)}
+                          >
+                            <PinIcon className="size-3.5 shrink-0" />
+                            <span>{j.property.address_line1}</span>
+                            <span className="sr-only">{`, ${formatAddress(j.property)}`}</span>
+                          </div>
+                        ) : null}
                       </td>
                       <td className="px-4 py-3 align-top">
                         <LiveStatusBadge jobId={j.id} status={j.status} />
                       </td>
-                      <td className="px-4 py-3 align-top whitespace-nowrap">
-                        {j.status === "in_progress" && j.started_at
-                          ? "Started"
-                          : formatSchedule(j.scheduled_start ?? null, now, office.company.timezone)}
-                      </td>
+                      <td className="px-4 py-3 align-top whitespace-nowrap">{when(j)}</td>
                       {/* Room kept at the end for the row's "⋯" button (gestures.md section 12). */}
                       <td className="relative py-3 pr-12 pl-4 align-top">
                         {j.techName ?? <span className="text-text-muted">Unassigned</span>}

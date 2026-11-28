@@ -8,6 +8,7 @@ import {
   startLegLabel,
   type CleaningKind,
   type JobStatus,
+  type JobType,
   type LatLng,
   type RouteStartLabel,
 } from "@leakbook/core";
@@ -57,6 +58,8 @@ export interface Stop {
   tag: string;
   /** The kind of visit alone ("Repair"): the first line of the stop's menu title. */
   visit: string;
+  /** The job's type, as a symbol before the name (owner, 2026-11-28). */
+  type?: JobType;
   /** Its address wasn't found on the map, so drive times leave it out. */
   notOnMap: boolean;
   /** Gate code, which gate, dogs. */

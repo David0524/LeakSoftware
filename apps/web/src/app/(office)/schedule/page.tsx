@@ -121,6 +121,7 @@ function toStop(j: JobRow, ctx: RouteContext, route?: DayRoute, i = 0): BoardSto
     // The kind of visit, for the stop's menu title and screen readers (it's off the tile:
     // docs/design/2026-10-21-schedule-tile.md).
     visit: JOB_TYPE_LABELS[j.type],
+    type: j.type,
     notOnMap,
     access: j.property?.access_notes?.trim() || null,
     // One line for Needs a Time's compact cards.

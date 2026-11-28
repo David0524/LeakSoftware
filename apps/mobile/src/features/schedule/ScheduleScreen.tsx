@@ -338,6 +338,7 @@ export function ScheduleScreen() {
       note: tag,
       tag,
       visit,
+      type: j.type,
       notOnMap,
       access: j.property?.access_notes?.trim() || null,
       done: day ? stopDone(j, day) : false,

@@ -18,6 +18,9 @@ export default function TabsLayout() {
         tabBar={(props) => <TabBar {...props} />}
         screenOptions={{
           headerShown: false,
+          // A tab out of view doesn't redraw as sync writes come in (owner, 2026-11-28:
+          // Android "very slow"); it catches up when it's shown again.
+          freezeOnBlur: true,
           sceneStyle: { backgroundColor: color.bg },
         }}
       >

@@ -1,7 +1,7 @@
-import { router } from "expo-router";
+import { router, useFocusEffect } from "expo-router";
 import { ContactOnly } from "../../../../../features/messages/ContactOnly";
 import { formatPhone, isManagerRole, friendlyError } from "@leakbook/core";
-import { useEffect, useState } from "react";
+import { useCallback, useState } from "react";
 import { Platform, Pressable, RefreshControl, StyleSheet, Text, View } from "react-native";
 import { callFromCompany, setUnread, useConversations, useLine } from "../../../../../data/texting";
 import { API_URL } from "../../../../../lib/config";
@@ -45,12 +45,16 @@ function MessagesScreen() {
   const banner = useResultBanner();
   const [refreshing, setRefreshing] = useState(false);
 
-  // Refreshes on open and every 20 seconds while showing (until push notifications exist).
-  useEffect(() => {
-    void services.sync.syncNow();
-    const t = setInterval(() => void services.sync.syncNow(), 20_000);
-    return () => clearInterval(t);
-  }, [services]);
+  // Refreshes on open and every 20 seconds while showing (until push notifications exist);
+  // only while it's the tab in view, so the other tabs don't sync every 20 seconds once
+  // Messages has been opened (owner, 2026-11-28: Android "very slow").
+  useFocusEffect(
+    useCallback(() => {
+      void services.sync.syncNow();
+      const t = setInterval(() => void services.sync.syncNow(), 20_000);
+      return () => clearInterval(t);
+    }, [services]),
+  );
 
   async function refresh() {
     haptics.light();

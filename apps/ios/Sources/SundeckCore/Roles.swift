@@ -112,6 +112,18 @@ public enum JobType: String, Codable, CaseIterable, Sendable {
     /// Pool Inspection (owner, 2026-10-20; PoolInspection.swift).
     case inspection
 
+    /// Its SF Symbol on Jobs and Schedule (owner, 2026-11-28: "add an icon for each job like
+    /// Maintenance (make this a water drop since it's the most common, regular job)"): the same
+    /// shapes the website and Android draw.
+    public var symbol: String {
+        switch self {
+        case .maintenance: "drop.fill"
+        case .detection: "magnifyingglass"
+        case .repair: "wrench.and.screwdriver.fill"
+        case .inspection: "list.clipboard"
+        }
+    }
+
     /// "Leak detection", "Repair", "Maintenance", "Pool inspection" (`JOB_TYPE_LABELS`).
     public var label: String {
         switch self {

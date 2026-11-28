@@ -627,28 +627,38 @@
         }
     }
 
-    /// A job in the list: the customer, then "#1040 · Leak detection", the address, and the
-    /// time and tech; the status chip and a chevron at the right.
+    /// A job in the list (owner, 2026-11-28: "each job is too large"): the type's symbol in a
+    /// tinted circle; the customer with the status chip beside it; "#1040 · Mon, Nov 16, 8:00 AM
+    /// · Dana"; a pin and the street. Each line one line, cut short; a chevron at the right.
     struct JobListRowView: View {
         var row: JobListRow
 
         var body: some View {
             HStack(spacing: 12) {
+                Image(systemName: row.type.symbol)
+                    .font(.system(size: 15, weight: .semibold))
+                    .foregroundStyle(Color.link)
+                    .frame(width: 32, height: 32)
+                    .background(Color.link.opacity(0.1), in: Circle())
+                    .accessibilityHidden(true)
                 VStack(alignment: .leading, spacing: 2) {
-                    HStack(alignment: .firstTextBaseline, spacing: 6) {
-                        Text(row.customer).textRole(.bodyEmphasis).foregroundStyle(Color.text)
+                    HStack(alignment: .center, spacing: 8) {
+                        Text(row.customer).textRole(.bodyEmphasis).foregroundStyle(Color.text).lineLimit(1)
                         if row.sample { SamplePill() }
+                        Spacer(minLength: 0)
+                        StatusChip(status: row.status).fixedSize()
                     }
-                    Text(row.kind).textRole(.secondary).foregroundStyle(Color.textMuted)
-                    if let address = row.address {
-                        Text(address).textRole(.secondary).foregroundStyle(Color.textMuted).lineLimit(1)
+                    Text("\(row.numberText) · \(row.when)")
+                        .textRole(.secondary).foregroundStyle(Color.text).lineLimit(1)
+                    if let street = row.street {
+                        HStack(spacing: 4) {
+                            Image(systemName: "mappin").font(.system(size: 12)).accessibilityHidden(true)
+                            Text(street).lineLimit(1)
+                        }
+                        .textRole(.secondary).foregroundStyle(Color.textMuted)
                     }
-                    // The time stays on one line with the dot after it, so a wrapped line breaks
-                    // only before the tech, never inside the time or before "·".
-                    Text(unbrokenWhen(row.when)).textRole(.secondary).foregroundStyle(Color.text)
                 }
                 .frame(maxWidth: .infinity, alignment: .leading)
-                StatusChip(status: row.status)
                 Chevron()
             }
             .multilineTextAlignment(.leading)
@@ -656,7 +666,10 @@
             .padding(.vertical, 10)
             .frame(maxWidth: .infinity, minHeight: minTarget, alignment: .leading)
             .contentShape(Rectangle())
-            .accessibilityElement(children: .combine)
+            .accessibilityElement(children: .ignore)
+            .accessibilityLabel(
+                [row.customer, row.status.label, row.kind, row.when, row.address].compactMap { $0 }
+                    .joined(separator: ", "))
         }
     }
 

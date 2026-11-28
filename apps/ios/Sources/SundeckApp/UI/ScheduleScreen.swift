@@ -1793,6 +1793,12 @@
         var body: some View {
             VStack(alignment: .leading, spacing: 2) {
                 HStack(alignment: .firstTextBaseline, spacing: 8) {
+                    // The job's type as a symbol (owner, 2026-11-28); VoiceOver reads the kind
+                    // of visit from the tile.
+                    Image(systemName: job.type.symbol)
+                        .font(.system(size: 14))
+                        .foregroundStyle(Color.textMuted)
+                        .accessibilityHidden(true)
                     // The name gets the room it needs; the small icons give way first.
                     name
                         .multilineTextAlignment(.leading)

@@ -1,10 +1,11 @@
 import { router, useLocalSearchParams } from "expo-router";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Animated, Linking, Pressable, RefreshControl, StyleSheet, View } from "react-native";
 import {
   ISSUE_FILTERS,
   ISSUE_STATUS_LABELS,
   JOB_SORTS,
+  JOB_STATUS_LABELS,
   JOB_TYPE_FILTER_TITLE,
   JOB_TYPE_LABELS,
   REPORT_SORTS,
@@ -53,7 +54,6 @@ import {
 } from "../../../../../lib/reportList";
 import { bannerText } from "../../../../../lib/resultBanner";
 import {
-  jobCompletable,
   jobRowActions,
   menuTitle,
   reportRowActions,
@@ -78,6 +78,8 @@ import {
   useShopSearchState,
 } from "../../../../../features/search/ShopSearch";
 import { haptics } from "../../../../../ui/haptics";
+import { Icon } from "../../../../../ui/Icon";
+import { JobTypeIcon } from "../../../../../ui/JobTypeIcon";
 import { useResultBanner } from "../../../../../ui/ResultBanner";
 import { rowGestures, useRowMenu, type RowGestures } from "../../../../../ui/RowMenu";
 import { MenuButton, useMenu } from "../../../../../ui/Select";
@@ -274,6 +276,13 @@ export default function Jobs() {
     });
   }
 
+  // The row whose Complete Job was asked for, while its rules are checked (CompleteCheck).
+  const [completing, setCompleting] = useState<JobView | null>(null);
+  const onChecked = (j: JobView, blocker: string | null) => {
+    setCompleting(null);
+    completeJob(j, blocker);
+  };
+
   const shown = useMemo(() => {
     const statuses = FILTERS.find((f) => f.value === filter)?.statuses;
     const matched = jobs
@@ -421,7 +430,7 @@ export default function Jobs() {
               <JobRow
                 job={j}
                 gestures={gesturesFor}
-                onComplete={completeJob}
+                onComplete={setCompleting}
                 tech={techName(j.assigned_user_id)}
                 when={
                   j.status === "in_progress" && j.started_at
@@ -484,6 +493,9 @@ export default function Jobs() {
         initialNumToRender={20}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={refresh} />}
       />
+      {completing ? (
+        <CompleteCheck key={completing.id} job={completing} onChecked={onChecked} />
+      ) : null}
       {rowMenu.element}
       {mover.element}
       {banner.element}
@@ -593,71 +605,81 @@ function GroupedRow({
   );
 }
 
+/**
+ * Complete Job from a row checks the shop's rules (checklist, photos) for that one job when it's
+ * asked for, not for every row as the list draws (owner, 2026-11-28: Android "very slow").
+ */
+function CompleteCheck({
+  job,
+  onChecked,
+}: {
+  job: JobView;
+  onChecked: (job: JobView, blocker: string | null) => void;
+}) {
+  const blocker = useCompleteJobBlocker(job);
+  const done = useRef(false);
+  useEffect(() => {
+    if (done.current) return;
+    done.current = true;
+    onChecked(job, blocker);
+    // Once, with what the job's rows say now.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+  return null;
+}
+
 function JobRow(props: JobRowProps) {
-  // Only a visit that can be completed checks the shop's rules for Complete Job.
-  return jobCompletable(props.job) ? <CompletableJobRow {...props} /> : <JobRowFace {...props} />;
+  return <JobRowFace {...props} />;
 }
 
 interface JobRowProps {
   job: JobView;
   gestures: (job: JobView, complete: () => void) => RowGestures;
-  onComplete: (job: JobView, blocker: string | null) => void;
+  onComplete: (job: JobView) => void;
   tech: string | null;
   when: string;
   first: boolean;
   last: boolean;
 }
 
-function CompletableJobRow(props: JobRowProps) {
-  const blocker = useCompleteJobBlocker(props.job);
-  return <JobRowFace {...props} blocker={blocker} />;
-}
-
-function JobRowFace({
-  job,
-  gestures,
-  onComplete,
-  tech,
-  when,
-  first,
-  last,
-  blocker = null,
-}: JobRowProps & { blocker?: string | null }) {
+function JobRowFace({ job, gestures, onComplete, tech, when, first, last }: JobRowProps) {
   // Swipe left to Call or get Directions, right to Mark Complete; touch and hold for the menu
   // (gestures spec section 12). The job's page keeps every one of these as a button.
-  const g = gestures(job, () => onComplete(job, blocker));
+  const g = gestures(job, () => onComplete(job));
+  const numberText = job.number ? `#${job.number}` : job.sample ? "Sample job" : "New job";
   const row = (
     <GroupedRow
       first={first}
       last={last}
       onPress={() => router.push(`/jobs/${job.id}`)}
+      label={jobRowLabel(job, numberText, when, tech)}
       gestures={g}
     >
+      <JobTypeIcon type={job.type} badge />
       <View style={styles.rowBody}>
+        {/* The status sits by the name, so the lines under it use the row's whole width
+            (owner, 2026-11-28: "each job is too large"). */}
         <View style={styles.nameRow}>
           <T variant="bodyEmphasis" numberOfLines={1} style={{ flexShrink: 1 }}>
             {job.customer?.name ?? "Customer"}
           </T>
           {job.sample ? <SamplePill /> : null}
+          <StatusChip status={job.status} style={styles.rowStatus} />
         </View>
-        <T variant="secondary" muted>
-          {job.number ? `#${job.number}` : job.sample ? "Sample job" : "New job"} ·{" "}
-          {JOB_TYPE_LABELS[job.type]}
+        <T variant="secondary" numberOfLines={1}>
+          {numberText} · {when} · {tech ?? "Unassigned"}
         </T>
-        {job.property ? (
-          <T variant="secondary" muted numberOfLines={1}>
-            {formatAddress(job.property)}
-          </T>
+        {/* The street only, after a pin: it fits on one line (owner, 2026-11-28); the job's
+            page has the whole address. */}
+        {job.property?.address_line1 ? (
+          <View style={styles.pinRow}>
+            <Icon name="pin" size={14} color={color.textMuted} />
+            <T variant="secondary" muted numberOfLines={1} style={{ flexShrink: 1 }}>
+              {job.property.address_line1}
+            </T>
+          </View>
         ) : null}
-        <T variant="secondary">
-          {/* The time stays on one line with the dot after it, so a wrapped line breaks only
-              before the tech, never inside the time or before "·". */}
-          {when.replace(/ /g, "\u00a0")}
-          {"\u00a0· "}
-          {tech ?? "Unassigned"}
-        </T>
       </View>
-      <StatusChip status={job.status} style={{ alignSelf: "center" }} />
     </GroupedRow>
   );
   return g.leading || g.trailing.length ? (
@@ -667,6 +689,20 @@ function JobRowFace({
   ) : (
     row
   );
+}
+
+/** What TalkBack and VoiceOver read for a job's row: everything on it, the whole address. */
+function jobRowLabel(job: JobView, numberText: string, when: string, tech: string | null): string {
+  return [
+    job.customer?.name ?? "Customer",
+    JOB_STATUS_LABELS[job.status],
+    `${numberText}, ${JOB_TYPE_LABELS[job.type]}`,
+    when,
+    tech ?? "Unassigned",
+    job.property ? formatAddress(job.property) : null,
+  ]
+    .filter(Boolean)
+    .join(", ");
 }
 
 /** An issue in Issues: "**Customer** · What's wrong", the line under it, its status. */
@@ -775,6 +811,8 @@ const styles = StyleSheet.create({
   },
   rowBody: { flex: 1, gap: 2 },
   nameRow: { flexDirection: "row", alignItems: "center", gap: 8 },
+  rowStatus: { marginLeft: "auto" },
+  pinRow: { flexDirection: "row", alignItems: "center", gap: 4 },
   searchRow: {
     flexDirection: "row",
     alignItems: "center",

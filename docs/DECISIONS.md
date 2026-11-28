@@ -2,6 +2,11 @@
 
 Newest first. Each entry: date, decision, reason.
 
+## 2026-11-28 (owner: Android notes and "everywhere" notes on Jobs and Schedule; address: "Street only")
+- **Job type icons, every platform:** Maintenance is a water drop, Leak detection a magnifying glass, Repair a wrench, Pool inspection a clipboard. Jobs rows lead with it in a tinted circle; Schedule tiles (Day, Week, Needs a Time) show it small and muted before the name.
+- **Jobs rows are shorter:** the status pill sits beside the customer's name; one line for "#9334 · Mon, Nov 16, 8:00 AM · Dana"; then a pin and the street only (no city), each line cut short rather than wrapping. The whole address is in the hover text (website) and read by VoiceOver and TalkBack, and on the job page.
+- **Android:** segmented controls (Day · Week · Month) no longer shrink their labels to fit, which could draw them blank; Messages syncs every 20 seconds only while it's open; tabs out of view don't redraw; Complete Job's checks run for the one job when asked, not for every row.
+
 ## 2026-11-28 (owner: "Yes" to recording consent; "Allow, with a reminder"; placement "Yes, build it")
 - **OK to Text on each customer** (`customer.text_ok_at`, `text_ok_by`; `20261022006100_ok_to_text.sql`), all four platforms: a row under Phone on the customer page ("Yes · Nov 28, 2026", "Not yet", or "Replied STOP"), a switch in Edit Contact Details, and one on New Job's and New Quote's new-customer fields. Turning it on stamps the date and who; left on keeps the first date; off clears it. Anyone on the team can mark it, like the rest of the customer.
 - **Texts still go to customers not marked;** a conversation with one shows "Not marked OK to Text yet. Text only customers who said it's OK." with **Mark OK to Text** above the message box.

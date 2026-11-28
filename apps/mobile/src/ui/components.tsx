@@ -1282,8 +1282,11 @@ export function Segmented<V extends string>({
                 { color: color.text },
               ]}
               // One word never breaks across lines ("Freefor / m"): it shrinks to fit instead.
+              // Only on iPhone: Android's shrink-to-fit can draw the label at no size at all,
+              // which left Schedule's Day · Week · Month blank (owner, 2026-11-28); there a
+              // long word is cut short instead.
               numberOfLines={switcher || !o.label.includes(" ") ? 1 : 2}
-              adjustsFontSizeToFit={switcher || !o.label.includes(" ")}
+              adjustsFontSizeToFit={ios && (switcher || !o.label.includes(" "))}
               maxFontSizeMultiplier={switcher ? 1.4 : MAX_TEXT_SCALE}
             >
               {o.label}

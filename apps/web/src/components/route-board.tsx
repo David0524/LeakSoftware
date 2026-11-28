@@ -62,6 +62,7 @@ import {
   type JobChange,
   type JobLock,
   type JobStatus,
+  type JobType,
   type LatLng,
   type RouteStart,
 } from "@leakbook/core";
@@ -87,7 +88,7 @@ import {
   type RowActionsHandle,
 } from "./row-actions";
 import { DayMap } from "./day-map";
-import { CleaningIcon, HouseFillIcon } from "./icons";
+import { CleaningIcon, HouseFillIcon, JobTypeGlyph } from "./icons";
 import { DriveChip } from "./drive-chip";
 import { driveChipMinutes, driveFromOffMap, driveHomeLine } from "@/lib/schedule-tile";
 import { LockTag } from "./lock-tag";
@@ -236,6 +237,8 @@ export interface BoardStop {
   tag: string;
   /** The kind of visit alone ("Repair"): the first line of the stop's menu title. */
   visit: string;
+  /** The job's type, as a symbol before the name (owner, 2026-11-28). */
+  type?: JobType;
   /** The address wasn't found on the map, so drive times leave the stop out. */
   notOnMap: boolean;
   /** The pool's access notes (gate code, which gate, dogs): one line on the card. */
@@ -1549,6 +1552,11 @@ function ScheduleCard({
                 {time}
               </span>
             ) : null}
+            {s.type ? (
+              <span className="inline-flex shrink-0 self-center text-text-muted" title={s.visit}>
+                <JobTypeGlyph type={s.type} className={week ? "size-3.5" : "size-4"} />
+              </span>
+            ) : null}
             {/* Only the customer's name opens the job (owner, 2026-10-21: "I find myself
                 accidentally opening jobs all the time"): a link with "›", its hit area a
                 little bigger than the text. The card's body does nothing on a tap. */}
@@ -1722,6 +1730,11 @@ function StopTile({
         <StopBadge position={position} status={s.status} small={compact} />
         <div className={cx("min-w-0 flex-1", finished(s.status) && "opacity-70")}>
           <p className="flex min-w-0 items-center gap-1.5 leading-snug">
+            {s.type ? (
+              <span className="inline-flex shrink-0 self-center text-text-muted" title={s.visit}>
+                <JobTypeGlyph type={s.type} className={compact ? "size-3.5" : "size-4"} />
+              </span>
+            ) : null}
             {/* Only the customer's name opens the job (owner, 2026-10-21: "I find myself
                 accidentally opening jobs all the time"), its hit area 44 pt tall. */}
             <Link

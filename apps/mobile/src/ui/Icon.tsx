@@ -44,6 +44,13 @@ const ICONS = {
   /** More's Refer a Pool Company row: another shop, and the share sheet it opens. */
   refer: { sf: "person.2.fill", ion: "people" },
   share: { sf: "square.and.arrow.up", ion: "share-outline" },
+  /** A job's type on Jobs and Schedule (owner, 2026-11-28): Maintenance is a water drop. */
+  jobMaintenance: { sf: "drop.fill", ion: "water" },
+  jobDetection: { sf: "magnifyingglass", ion: "search" },
+  jobRepair: { sf: "wrench.and.screwdriver.fill", ion: "construct" },
+  jobInspection: { sf: "list.clipboard", ion: "clipboard-outline" },
+  /** Before a job row's street. */
+  pin: { sf: "mappin", ion: "location-outline" },
 } as const satisfies Record<string, { sf: SFSymbolName; ion: IoniconName }>;
 
 export type IconName = keyof typeof ICONS;
